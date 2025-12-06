@@ -1,0 +1,239 @@
+"""
+Advanced Risk-Aware Execution Engine based on Enterprise Hedge Fund Architecture
+"""
+import pandas as pd
+from typing import Dict, List, Tuple, Optional
+from datetime import datetime
+from decimal import Decimal
+import numpy as np
+
+from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager, PositionDirection
+from application.position_sizing.enterprise_position_sizing import PositionSizingService
+
+
+class AdvancedExecutionEngine:
+    """
+    Advanced execution engine with integrated risk management
+    """
+    def __init__(self, 
+                 risk_manager: EnterpriseRiskManager,
+                 position_sizing_service: PositionSizingService,
+                 fees_per_trade: float = 0.1,
+                 slippage_tolerance: float = 0.001):
+        
+        self.risk_manager = risk_manager
+        self.position_sizing_service = position_sizing_service
+        self.fees_per_trade = fees_per_trade
+        self.slippage_tolerance = slippage_tolerance
+        
+        # Track execution results
+        self.trade_log: List[Dict] = []
+        self.execution_reports: Dict[str, List] = {}
+        
+    def calculate_stop_loss_take_profit(self, entry_price: float, direction: PositionDirection, 
+                                      signal_strength: float = 1.0, volatility: float = 1.0) -> Tuple[float, float]:
+        """
+        Calculate dynamic stop loss and take profit based on signal strength and volatility
+        """
+        # Use ATR-like measure for stop loss calculation
+        atr_factor = volatility * 1.5  # 1.5x volatility for stop loss
+        
+        # Calculate stop loss distance based on direction
+        if direction == PositionDirection.LONG:
+            sl_distance = atr_factor * signal_strength
+            sl = entry_price - sl_distance
+            # Take profit is typically 2-3x the risk distance
+            tp_distance = atr_factor * signal_strength * 2.0
+            tp = entry_price + tp_distance
+        else:  # SHORT
+            sl_distance = atr_factor * signal_strength
+            sl = entry_price + sl_distance
+            tp_distance = atr_factor * signal_strength * 2.0
+            tp = entry_price - tp_distance
+        
+        # Ensure SL and TP are valid
+        if direction == PositionDirection.LONG:
+            sl = min(sl, entry_price * 0.95)  # Stop loss shouldn't be above entry for long
+            tp = max(tp, entry_price * 1.05)  # Take profit shouldn't be below entry for long
+        else:
+            sl = max(sl, entry_price * 1.05)  # Stop loss shouldn't be below entry for short
+            tp = min(tp, entry_price * 0.95)  # Take profit shouldn't be above entry for short
+        
+        return sl, tp
+
+    def execute_entry(self, symbol: str, entry_price: float, direction: PositionDirection,
+                     signal_strength: float = 1.0, volatility: float = 1.0,
+                     position_size_model: str = 'fixed_risk',
+                     portfolio_equity: float = 100000, risk_per_trade: float = 0.01) -> bool:
+        """
+        Execute a position entry with full risk management
+        """
+        # Check if trading is allowed based on risk limits
+        if not self.risk_manager.is_trading_allowed():
+            print(f"Execution blocked: Risk limits exceeded")
+            return False
+
+        # Calculate stop loss and take profit
+        sl, tp = self.calculate_stop_loss_take_profit(entry_price, direction, signal_strength, volatility)
+
+        # Calculate position size using the specified model
+        size = self.position_sizing_service.compute_size(
+            model_name=position_size_model,
+            entry_price=entry_price,
+            stop_loss=sl,
+            portfolio_equity=portfolio_equity,
+            risk_per_trade=risk_per_trade,
+            volatility=volatility
+        )
+
+        # Attempt to enter the position
+        success = self.risk_manager.enter_position(
+            symbol=symbol,
+            entry_price=entry_price,
+            size=size,
+            direction=direction,
+            stop_loss=sl,
+            take_profit=tp
+        )
+
+        if success:
+            # Log the trade
+            self.trade_log.append({
+                'timestamp': datetime.now(),
+                'symbol': symbol,
+                'action': 'ENTRY',
+                'direction': direction.value,
+                'entry_price': entry_price,
+                'size': size,
+                'stop_loss': sl,
+                'take_profit': tp,
+                'signal_strength': signal_strength,
+                'volatility': volatility
+            })
+            
+            print(f"Position entered: {symbol} {direction.value} at {entry_price}, size: {size:.2f}")
+        
+        return success
+
+    def process_candle(self, symbol: str, candle_high: float, candle_low: float, 
+                      candle_close: float) -> float:
+        """
+        Process a candle and check for SL/TP exits
+        Returns PnL from any exits
+        """
+        # Check if this symbol has an open position
+        exit_price, exit_type = self.risk_manager.check_stop_loss_take_profit(symbol, candle_high, candle_low)
+        
+        total_pnl = 0.0
+        if exit_price and exit_type:
+            # Exit the position
+            pnl = self.risk_manager.exit_position(symbol, exit_price, exit_type)
+            total_pnl += pnl
+            
+            # Log the exit
+            position = self._get_recent_position(symbol)
+            if position:
+                self.trade_log.append({
+                    'timestamp': datetime.now(),
+                    'symbol': symbol,
+                    'action': 'EXIT',
+                    'direction': position.direction.value,
+                    'exit_price': exit_price,
+                    'exit_type': exit_type,
+                    'size': position.size,
+                    'entry_price': position.entry_price,
+                    'pnl': pnl,
+                    'candle_high': candle_high,
+                    'candle_low': candle_low
+                })
+                
+                print(f"Position exited: {symbol} {exit_type} at {exit_price}, PnL: {pnl:.2f}")
+        
+        return total_pnl
+
+    def _get_recent_position(self, symbol: str):
+        """
+        Get the most recent position for a symbol (helper method)
+        """
+        # This is a simplified helper - in a real implementation, 
+        # you might want to keep more detailed position tracking
+        from application.risk_management.enterprise_risk_manager import Position
+        # In this case, we're using the position from risk manager directly
+        return self.risk_manager.positions.get(symbol)
+
+    def process_signal(self, symbol: str, signal_direction: PositionDirection, signal_confidence: float,
+                      market_data: Dict[str, float], position_size_model: str = 'fixed_risk') -> bool:
+        """
+        Process a trading signal and execute if conditions are met
+        """
+        if 'price' not in market_data:
+            print(f"Cannot process signal: missing price data for {symbol}")
+            return False
+
+        current_price = market_data['price']
+        volatility = market_data.get('volatility', 1.0)  # Default to 1.0 if not provided
+        portfolio_equity = market_data.get('portfolio_equity', self.risk_manager.starting_equity)
+        risk_per_trade = market_data.get('risk_per_trade', self.risk_manager.max_risk_per_trade)
+
+        # Execute entry if no position exists for this symbol
+        if symbol not in self.risk_manager.positions:
+            return self.execute_entry(
+                symbol=symbol,
+                entry_price=current_price,
+                direction=signal_direction,
+                signal_strength=signal_confidence,
+                volatility=volatility,
+                position_size_model=position_size_model,
+                portfolio_equity=portfolio_equity,
+                risk_per_trade=risk_per_trade
+            )
+        else:
+            # Position already exists, could implement additional logic here
+            # such as position adding or modification
+            print(f"Position already exists for {symbol}, skipping entry")
+            return False
+
+    def get_execution_metrics(self) -> Dict[str, any]:
+        """
+        Get execution performance metrics
+        """
+        total_trades = len([t for t in self.trade_log if t['action'] == 'EXIT'])
+        winning_trades = len([t for t in self.trade_log if t['action'] == 'EXIT' and t['pnl'] > 0])
+        losing_trades = len([t for t in self.trade_log if t['action'] == 'EXIT' and t['pnl'] < 0])
+        
+        win_rate = winning_trades / total_trades if total_trades > 0 else 0
+        
+        # Calculate total PnL
+        total_pnl = sum(t['pnl'] for t in self.trade_log if t['action'] == 'EXIT')
+        
+        return {
+            'total_trades': total_trades,
+            'winning_trades': winning_trades,
+            'losing_trades': losing_trades,
+            'win_rate': win_rate,
+            'total_pnl': total_pnl,
+            'avg_win': np.mean([t['pnl'] for t in self.trade_log if t['action'] == 'EXIT' and t['pnl'] > 0]) if winning_trades > 0 else 0,
+            'avg_loss': np.mean([t['pnl'] for t in self.trade_log if t['action'] == 'EXIT' and t['pnl'] < 0]) if losing_trades > 0 else 0,
+            'risk_metrics': self.risk_manager.get_risk_metrics()
+        }
+
+    def export_trade_log(self, filename: str = None) -> str:
+        """
+        Export trade log to file
+        """
+        import json
+        from datetime import datetime
+        
+        if filename is None:
+            filename = f"trade_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        export_data = {
+            'timestamp': datetime.now().isoformat(),
+            'trade_log': self.trade_log,
+            'execution_metrics': self.get_execution_metrics()
+        }
+        
+        with open(filename, 'w') as f:
+            json.dump(export_data, f, indent=2, default=str)
+        
+        return filename

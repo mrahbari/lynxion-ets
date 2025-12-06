@@ -1,0 +1,408 @@
+"""
+Consolidated watcher services for the enterprise hedge fund trading system.
+from shared.exceptions import error_service, ValidationException, DataException, SystemException
+This file combines functionality from the original watcher_services.py and enhanced_watcher_services.py
+to provide a complete, integrated solution while maintaining backward compatibility.
+"""
+from typing import List, Optional, Dict, Any, Callable
+from datetime import datetime
+import time
+
+from domain.ports.watcher_ports import WatcherPort
+from domain.entities.trading_entities import Signal, Symbol
+from domain.value_objects import Percentage
+from application.use_cases.trading_use_cases import ProcessMultipleSignalsUseCase
+from infrastructure.data.market_data_feed import MarketDataFeed
+from shared.logger import logger
+
+
+class WatcherManagementService:
+    """Application service for managing market watchers"""
+
+    def __init__(self,
+                 watchers: List[WatcherPort],
+                 signal_processing_service):
+        self.watchers = watchers
+        self.signal_processing_service = signal_processing_service
+
+    def start_all_watchers(self):
+        """Start all registered watchers"""
+        for watcher in self.watchers:
+            watcher.start()
+        logger.info(f"Started {len(self.watchers)} watchers")
+
+    def stop_all_watchers(self):
+        """Stop all registered watchers"""
+        for watcher in self.watchers:
+            watcher.stop()
+        logger.info(f"Stopped {len(self.watchers)} watchers")
+
+    def analyze_all_watchers(self, symbol: Symbol) -> List[Signal]:
+        """Run analysis on all watchers for a given symbol"""
+        signals = []
+
+        for watcher in self.watchers:
+            try:
+                # The watcher already has its symbol, so we'll check if it matches the requested symbol
+                # If not, we could skip or handle accordingly, but for now, we'll analyze anyway
+                signal = watcher.analyze(symbol)
+                if signal:
+                    signals.append(signal)
+                    logger.info(f"Watcher {watcher.name} generated signal: {signal.signal_type.name}")
+            except TypeError as e:
+                if "takes" in str(e) and "positional argument" in str(e):
+                    # This is the interface mismatch, fall back to analyze() without parameter
+                    try:
+                        signal = watcher.analyze()
+                        if signal:
+                            # Set the symbol on the signal if it's not already set
+                            if not hasattr(signal, 'symbol') or signal.symbol is None:
+                                from domain.value_objects import Symbol
+                                signal.symbol = symbol
+                            signals.append(signal)
+                            logger.info(f"Watcher {watcher.name} generated signal: {signal.signal_type.name}")
+                    except Exception as fallback_e:
+                        logger.error(f"Fallback analyze method failed for watcher {watcher.name}: {fallback_e}")
+                else:
+                    logger.error(f"Error in watcher {watcher.name}: {e}")
+            except Exception as e:
+                logger.error(f"Error in watcher {watcher.name}: {e}")
+
+        return signals
+
+    def update_all_watchers(self, data: Dict[str, Any]):
+        """Update all watchers with new market data"""
+        for watcher in self.watchers:
+            try:
+                watcher.update_data(data)
+            except Exception as e:
+                logger.error(f"Error updating watcher {watcher.name}: {e}")
+
+    def get_active_watchers(self) -> List[str]:
+        """Get list of active watchers"""
+        active_watchers = []
+        for w in self.watchers:
+            if hasattr(w, 'is_running'):
+                if callable(w.is_running):
+                    if w.is_running():
+                        active_watchers.append(w.name)
+                else:  # is_running is a property
+                    if w.is_running:
+                        active_watchers.append(w.name)
+            else:
+                active_watchers.append(w.name)  # If no is_running method/property, assume active
+        return active_watchers
+
+
+class WatcherOrchestrationService:
+    """Service for orchestrating watcher signals"""
+
+    def __init__(self,
+                 watcher_service: WatcherManagementService,
+                 signal_fusion_service):
+        self.watcher_service = watcher_service
+        self.signal_fusion_service = signal_fusion_service
+
+    def process_market_conditions(self, symbol: Symbol) -> Optional[Signal]:
+        """Process market conditions through all watchers and fuse results"""
+        # Get signals from all watchers
+        watcher_signals = self.watcher_service.analyze_all_watchers(symbol)
+
+        if not watcher_signals:
+            logger.info(f"No signals generated by watchers for {symbol.value}")
+            return None
+
+        logger.info(f"Collected {len(watcher_signals)} signals from watchers for {symbol.value}")
+
+        # Fuse the signals into a single signal
+        fused_signal = self.signal_fusion_service.process_multiple_signals(watcher_signals)
+
+        logger.info(f"Fused signal generated: {fused_signal.signal_type.name if fused_signal else 'None'}")
+        return fused_signal
+
+
+class EnhancedWatcherOrchestrationService:
+    """Enhanced service for orchestrating watchers with real market data"""
+
+    def __init__(self, watcher_service: WatcherManagementService):
+        # Add metrics collection
+        self.metrics = {
+            "signals_generated": 0,
+            "signals_processed": 0,
+            "errors_encountered": 0,
+            "last_error_time": None,
+            "active_watchers_count": 0
+        }
+
+        self.watcher_service = watcher_service
+        self.market_data_feed = MarketDataFeed()
+        self.signal_handlers = []  # List of functions to handle generated signals
+        self.active_symbols = set()
+        self.last_signal_times = {}  # symbol -> timestamp
+        self.signal_cooldown = 30  # seconds between signals per symbol
+
+    def add_symbol(self, symbol: Symbol):
+        try:
+        """Add a symbol to be monitored by watchers"""
+        if symbol.value not in self.active_symbols:
+            self.active_symbols.add(symbol.value)
+            self.market_data_feed.add_symbol(symbol)
+            self.last_signal_times[symbol.value] = datetime.min
+
+            # Register a handler to update watchers with new market data
+            self.market_data_feed.register_handler(symbol, self._handle_market_data)
+            logger.info(f"Added symbol {symbol.value} to watcher monitoring")
+
+    def remove_symbol(self, symbol: Symbol):
+        """Remove a symbol from watcher monitoring"""
+        if symbol.value in self.active_symbols:
+            self.active_symbols.remove(symbol.value)
+            self.market_data_feed.remove_symbol(symbol)
+            logger.info(f"Removed symbol {symbol.value} from watcher monitoring")
+
+    def register_signal_handler(self, handler: Callable[[Signal], None]):
+        """Register a handler for generated signals"""
+        self.signal_handlers.append(handler)
+
+    def start_monitoring(self):
+        """Start the watcher orchestration with market data feed"""
+        logger.info("Starting enhanced watcher orchestration...")
+
+        # Start the market data feed
+        self.market_data_feed.start_feed()
+
+        # Start all watchers
+        self.watcher_service.start_all_watchers()
+
+        logger.info("Enhanced watcher orchestration started")
+
+    def stop_monitoring(self):
+        """Stop the watcher orchestration"""
+        logger.info("Stopping enhanced watcher orchestration...")
+
+        # Stop market data feed
+        self.market_data_feed.stop_feed()
+
+        # Stop all watchers
+        self.watcher_service.stop_all_watchers()
+
+        logger.info("Enhanced watcher orchestration stopped")
+
+    def _handle_market_data(self, data: Dict):
+        """Handle incoming market data and update watchers"""
+        symbol_str = data.get('symbol')
+        if not symbol_str:
+            return
+
+        symbol = Symbol(symbol_str)
+
+        # Update all watchers with the new market data
+        self.watcher_service.update_all_watchers(data)
+
+        # Check if enough time has passed since last signal for this symbol
+        time_since_last = (datetime.now() - self.last_signal_times.get(symbol_str, datetime.min)).seconds
+        if time_since_last < self.signal_cooldown:
+            return  # Skip to avoid too many signals
+
+        # Update watchers and then analyze them
+        # The watchers are already updated via update_all_watchers, now analyze them
+        signals = self.watcher_service.analyze_all_watchers(symbol)
+
+        # Process each signal
+        for signal in signals:
+            if signal:  # Only process non-None signals
+                self._process_signal(signal)
+                self.last_signal_times[symbol_str] = datetime.now()
+
+    def _process_signal(self, signal: Signal):
+        """Process a generated signal"""
+        logger.info(f"Generated signal: {signal.signal_type.name} for {signal.symbol.value} "
+                   f"with confidence {float(signal.confidence.value):.1%}")
+
+        # Call all registered signal handlers
+        for handler in self.signal_handlers:
+            try:
+                handler(signal)
+            except Exception as e:
+                logger.error(f"Error in signal handler: {e}")
+
+    def process_market_conditions(self, symbol: Symbol) -> Optional[Signal]:
+        """Process market conditions for a specific symbol (for compatibility)"""
+        # This calls the original watcher service method
+        signals = self.watcher_service.analyze_all_watchers(symbol)
+
+        if not signals:
+            return None
+
+        # For now, return the first non-None signal
+        # In a real system, you'd implement fusion logic here
+        for signal in signals:
+            if signal:
+                return signal
+
+        return None
+
+    def get_status(self) -> Dict:
+        """Get current status of the orchestration service"""
+        return {
+            'active_symbols': list(self.active_symbols),
+            'active_watchers': self.watcher_service.get_active_watchers(),
+            'market_data_feed_online': True,  # This would check actual status
+            'last_update': datetime.now().isoformat()
+        }
+
+
+class SignalFusionService:
+    """Service to fuse signals from multiple watchers"""
+
+    def __init__(self):
+        self.confidence_threshold = 0.6  # Minimum confidence to consider a signal
+        self.fusion_weights = {}  # watcher_name -> weight
+        self.default_weight = 1.0
+
+    def set_watcher_weights(self, weights: Dict[str, float]):
+        """Set custom weights for different watchers"""
+        self.fusion_weights = weights
+
+    def process_multiple_signals(self, signals: List[Signal]) -> Optional[Signal]:
+        """Main method to process multiple signals - maintains compatibility with existing use cases"""
+        return self.fuse_signals(signals)
+
+    def fuse_signals(self, signals: List[Signal]) -> Optional[Signal]:
+        """Fuse multiple signals into a single unified signal"""
+        if not signals:
+            return None
+
+        # Filter out low-confidence signals
+        valid_signals = [s for s in signals if float(s.confidence.value) >= self.confidence_threshold]
+
+        if not valid_signals:
+            return None
+
+        # Group signals by symbol
+        symbol_signals = {}
+        for signal in valid_signals:
+            symbol_str = signal.symbol.value
+            if symbol_str not in symbol_signals:
+                symbol_signals[symbol_str] = []
+            symbol_signals[symbol_str].append(signal)
+
+        # Process each symbol's signals
+        for symbol_str, symbol_signals_list in symbol_signals.items():
+            if not symbol_signals_list:
+                continue
+
+            # Count BUY vs SELL signals
+            buy_signals = [s for s in symbol_signals_list if s.signal_type.name == 'BUY']
+            sell_signals = [s for s in symbol_signals_list if s.signal_type.name == 'SELL']
+
+            # Calculate weighted confidence for each type
+            buy_confidence = sum(float(s.confidence.value) for s in buy_signals) / len(buy_signals) if buy_signals else 0
+            sell_confidence = sum(float(s.confidence.value) for s in sell_signals) / len(sell_signals) if sell_signals else 0
+
+            # Determine final signal type based on majority/vote
+            if buy_confidence > sell_confidence:
+                # Create unified BUY signal with average confidence
+                avg_confidence = (buy_confidence + sell_confidence) / 2
+                return Signal(
+                    symbol=symbol_signals_list[0].symbol,
+                    signal_type=signal.signal_type.__class__.BUY,  # Use the enum type
+                    confidence=Percentage(avg_confidence),
+                    score=max(s.score for s in buy_signals),  # Use highest score of BUY signals
+                    strategy_name="FusedSignal",
+                    timestamp=datetime.now(),
+                    metadata={
+                        'fused_from': [s.strategy_name for s in symbol_signals_list],
+                        'buy_signals': len(buy_signals),
+                        'sell_signals': len(sell_signals),
+                        'buy_confidence': buy_confidence,
+                        'sell_confidence': sell_confidence
+                    }
+                )
+            elif sell_confidence > buy_confidence:
+                # Create unified SELL signal
+                avg_confidence = (buy_confidence + sell_confidence) / 2
+                from domain.entities.trading_entities import SignalType
+                return Signal(
+                    symbol=symbol_signals_list[0].symbol,
+                    signal_type=SignalType.SELL,  # Use the enum type
+                    confidence=Percentage(avg_confidence),
+                    score=min(s.score for s in sell_signals),  # Use lowest score of SELL signals
+                    strategy_name="FusedSignal",
+                    timestamp=datetime.now(),
+                    metadata={
+                        'fused_from': [s.strategy_name for s in symbol_signals_list],
+                        'buy_signals': len(buy_signals),
+                        'sell_signals': len(sell_signals),
+                        'buy_confidence': buy_confidence,
+                        'sell_confidence': sell_confidence
+                    }
+                )
+
+        return None  # No clear direction from signals
+
+
+class RiskAwareTradingService:
+    """Trading service that incorporates risk management"""
+
+    def __init__(self,
+                 enhanced_watcher_service: EnhancedWatcherOrchestrationService,
+                 signal_fusion_service: SignalFusionService,
+                 risk_use_case):
+        self.watcher_service = enhanced_watcher_service
+        self.fusion_service = signal_fusion_service
+        self.risk_use_case = risk_use_case
+        self.max_position_size = 0.1  # Max 10% of portfolio per position
+        self.daily_loss_limit = 0.02  # Max 2% daily loss
+        self.active_positions = {}
+        self.daily_pnl = 0.0
+
+    def register_for_signals(self):
+        """Register the trading service to receive signals"""
+        self.watcher_service.register_signal_handler(self._handle_signal)
+
+    def _handle_signal(self, signal: Signal):
+        """Handle an incoming trading signal"""
+        logger.info(f"RiskAwareTradingService received signal: {signal.signal_type.name} for {signal.symbol.value}")
+
+        # Validate risk before proceeding
+        risk_result = self.risk_use_case.execute(signal)
+
+        # Check if risk validation passed (the result should contain validation info)
+        # For ValidateSignalRiskUseCase, the result is a dictionary with validation results
+        risk_ok = risk_result.get('is_valid', True) if isinstance(risk_result, dict) else bool(risk_result)
+
+        if not risk_ok:
+            logger.warning(f"Risk validation failed for signal: {signal.signal_type.name} {signal.symbol.value}")
+            logger.debug(f"Risk validation result: {risk_result}")
+            return
+
+        # Check daily loss limit
+        if self.daily_pnl <= -self.daily_loss_limit:
+            logger.warning("Daily loss limit exceeded, not executing trades")
+            return
+
+        # Check position size limits
+        if not self._is_position_size_acceptable(signal):
+            logger.warning(f"Position size too large for {signal.symbol.value}")
+            return
+
+        # Execute the trade (in a real system, this would connect to execution services)
+        logger.info(f"Risk validated, ready to execute trade for {signal.symbol.value}")
+        # The actual execution would happen here, connecting to the execution services
+
+    def _is_position_size_acceptable(self, signal: Signal) -> bool:
+        """Check if the proposed position size is acceptable"""
+        # This would implement position sizing logic based on risk parameters
+        # For now, return True as a placeholder
+        return True
+
+    def get_risk_status(self) -> Dict:
+        """Get current risk status"""
+        return {
+            'daily_pnl': self.daily_pnl,
+            'daily_loss_limit': self.daily_loss_limit,
+            'max_position_size': self.max_position_size,
+            'active_positions_count': len(self.active_positions),
+            'risk_ok': self.daily_pnl > -self.daily_loss_limit
+        }

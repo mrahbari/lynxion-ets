@@ -1,0 +1,39 @@
+# Core data science and numerical computation
+numpy==1.24.3
+pandas==1.5.3
+
+# Machine learning and optimization
+scipy>=1.7.0
+hyperopt>=0.2.7
+
+# Web requests and API interactions
+requests>=2.25.1
+
+# Database connectivity
+redis>=4.0.0
+
+# Visualization
+matplotlib>=3.4.0
+
+# Cryptocurrency trading - using pre-compiled wheels to avoid compilation issues
+ccxt>=1.55.98
+aiodns>=1.1.1; platform_system != "Windows"  # Only install on non-Windows systems
+
+# Trading and financial analysis
+TA-Lib>=0.4.24  # Technical analysis library
+yfinance>=0.1.70
+
+# Asynchronous programming
+aiohttp>=3.8.0
+
+# Web frameworks (if needed for APIs)
+flask>=2.0.0
+fastapi>=0.70.0
+uvicorn>=0.15.0
+
+# Testing
+pytest>=6.2.4
+pytest-asyncio>=0.16.0
+
+# Utilities
+python-dotenv>=0.19.0
