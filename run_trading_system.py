@@ -456,35 +456,196 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(0)
 
-    print(f"🚀 Starting Production Trading Orchestrator in {args.mode} mode...")
+    print(f"🚀 Starting Trading System in {args.mode} mode...")
 
-    def sample_data_fetcher():
-        """Sample data fetcher for testing."""
+    # Import required modules for specific modes
+    if args.mode in ["backtest", "optimize", "retune"]:
+        from datetime import datetime, timedelta
+        from domain.value_objects.money import Symbol
+        from application.use_cases.backtest_use_cases import RunBacktestUseCase
+        from application.services.backtest_services import BacktestExecutionService
+        from infrastructure.backtest.backtest_adapters import (
+            MockHistoricalDataProviderAdapter, BasicBacktestEngineAdapter,
+            BacktestMetricsCalculatorAdapter
+        )
+        from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager
+
+    # Handle different modes
+    if args.mode == "backtest":
+        print(f"📊 Running backtest for strategy: {args.strategy}, symbol: {args.symbol}")
+
+        # Set up backtest components
+        risk_manager = EnterpriseRiskManager(
+            max_portfolio_exposure=100000,
+            max_position_exposure=50000,
+            max_risk_per_trade=0.01,
+            max_daily_loss_pct=0.05,
+            max_drawdown_pct=0.15
+        )
+
+        # Set up dates for backtesting
+        end_date = datetime.now().strftime('%Y-%m-%d')
+        start_date = (datetime.now() - timedelta(days=args.days_back)).strftime('%Y-%m-%d')
+
+        # Create backtesting components
+        historical_data_provider = MockHistoricalDataProviderAdapter()
+        backtest_engine = BasicBacktestEngineAdapter(
+            strategy=args.strategy,
+            risk_manager=risk_manager,
+            historical_data_provider=historical_data_provider
+        )
+        metrics_calculator = BacktestMetricsCalculatorAdapter()
+
+        # Create service and use case
+        backtest_service = BacktestExecutionService(
+            backtest_engine_port=backtest_engine,
+            historical_data_port=historical_data_provider,
+            metrics_port=metrics_calculator
+        )
+        backtest_use_case = RunBacktestUseCase(backtest_service)
+
+        # Run backtest - convert symbol format from BTC/USDT to BTCUSDT
+        raw_symbol = args.symbol if args.symbol else "BTC/USDT"
+        formatted_symbol = raw_symbol.replace("/", "")  # Convert BTC/USDT to BTCUSDT
+        symbol = Symbol(formatted_symbol)
+        results = backtest_use_case.execute(
+            symbol=symbol,
+            start_date=start_date,
+            end_date=end_date,
+            initial_capital=10000,
+            strategy_name=args.strategy
+        )
+
+        print(f"✅ Backtest completed!")
+        print(f"📈 Results: Total Return = {results.get('total_return', 0):.2%}, "
+              f"Win Rate = {results.get('win_rate', 0):.2%}, "
+              f"Total Trades = {results.get('total_trades', 0)}")
+
+    elif args.mode == "optimize":
+        print(f"⚙️ Running optimization for strategy: {args.strategy}, symbol: {args.symbol}")
+
+        # Import optimization components
+        from shared.configurable_hyperopt import HyperoptConfig, ConfigurableHyperoptOptimizer
         import pandas as pd
         import numpy as np
-        timestamps = pd.date_range(start='2023-01-01', periods=100, freq='1min')
-        prices = 2000 + np.cumsum(np.random.randn(100) * 0.1)
-        df = pd.DataFrame({
+
+        # Set up optimization
+        config = HyperoptConfig(strategy_name=args.strategy)
+        optimizer = ConfigurableHyperoptOptimizer(hyperopt_config=config, strategy_name=args.strategy)
+
+        # Generate sample data for optimization (in a real system, this would come from data provider)
+        print("📊 Generating sample data for optimization...")
+        timestamps = pd.date_range(start='2023-01-01', periods=500, freq='1h')
+        prices = 30000 + np.cumsum(np.random.randn(500) * 100)  # Simulated BTC prices
+        sample_data = pd.DataFrame({
             'timestamp': timestamps,
-            'open': prices + np.random.randn(100) * 0.05,
-            'high': prices + abs(np.random.randn(100)) * 0.1,
-            'low': prices - abs(np.random.randn(100)) * 0.1,
+            'open': prices + np.random.randn(500) * 5,
+            'high': prices + abs(np.random.randn(500)) * 10,
+            'low': prices - abs(np.random.randn(500)) * 10,
             'close': prices,
-            'volume': np.abs(np.random.randn(100)) * 100,
-            'volatility': np.abs(np.random.randn(100)) * 0.1
+            'volume': np.abs(np.random.randn(500)) * 500,
+            'volatility': np.abs(np.random.randn(500)) * 5
         })
-        return {"XAUUSD": df, "BTCUSD": df.copy()}
 
-    risk_config = {
-        "max_risk": 0.02,
-        "atr_multiplier": 1.5,
-        "use_dynamic_position": True
-    }
+        # Run optimization
+        symbol = args.symbol if args.symbol else "BTCUSDT"
+        results = optimizer.optimize_with_config(
+            strategy_name=args.strategy,
+            data=sample_data,
+            symbol=symbol,
+            custom_config={"max_evals": args.max_evals}
+        )
 
-    print("📊 Running production orchestrator with sample data...")
-    run_production_orchestrator(
-        data_fetcher=sample_data_fetcher,
-        strategy_name=args.strategy,
-        risk_config=risk_config,
-        retune_interval_hours=1
-    )
+        print(f"✅ Optimization completed!")
+        print(f"📊 Best parameters: {results.get('best_params', {})}")
+        print(f"🏆 Best score: {results.get('best_value', 0) if 'best_value' in results else results.get('best_loss', 'N/A')}")
+
+    elif args.mode == "retune":
+        print(f"🔄 Running auto-retune for strategy: {args.strategy}")
+
+        # Import auto-retune components
+        from infrastructure.optimization.auto_retune_hyperopt import AutoRetuneOptimizer
+
+        symbols = args.symbols.split(",") if args.symbols else [args.symbol if args.symbol else "BTC/USDT"]
+
+        auto_retune = AutoRetuneOptimizer(
+            strategy_name=args.strategy,
+            performance_threshold=-5.0
+        )
+
+        # Run auto-retune for each symbol
+        for symbol in symbols:
+            result = auto_retune.run_auto_retune(
+                strategy_name=args.strategy,
+                symbols=[symbol],
+                risk_config={"atr_multiplier": 1.5, "use_dynamic_position": True}
+            )
+            print(f"✅ Auto-retune completed for {symbol}")
+
+        print("✅ All auto-retune processes completed!")
+
+    elif args.mode == "production":
+        # For production mode, run the orchestrator as before but allow it to work with command line args
+        def sample_data_fetcher():
+            """Sample data fetcher for testing."""
+            import pandas as pd
+            import numpy as np
+            timestamps = pd.date_range(start='2023-01-01', periods=100, freq='1min')
+            prices = 2000 + np.cumsum(np.random.randn(100) * 0.1)
+            df = pd.DataFrame({
+                'timestamp': timestamps,
+                'open': prices + np.random.randn(100) * 0.05,
+                'high': prices + abs(np.random.randn(100)) * 0.1,
+                'low': prices - abs(np.random.randn(100)) * 0.1,
+                'close': prices,
+                'volume': np.abs(np.random.randn(100)) * 100,
+                'volatility': np.abs(np.random.randn(100)) * 0.1
+            })
+            # Return data for the specified symbol if provided
+            symbol_key = args.symbol if args.symbol else "BTCUSD"
+            return {symbol_key: df}
+
+        risk_config = {
+            "max_risk": 0.02,
+            "atr_multiplier": 1.5,
+            "use_dynamic_position": True
+        }
+
+        print("📊 Running production orchestrator with sample data...")
+        run_production_orchestrator(
+            data_fetcher=sample_data_fetcher,
+            strategy_name=args.strategy,
+            risk_config=risk_config,
+            retune_interval_hours=1
+        )
+
+    elif args.mode == "monitor":
+        print("📊 Starting monitoring mode...")
+        print("Note: In a full implementation, this would connect to live data sources and monitor performance")
+        # For now, just simulate monitoring
+        import time
+        import random
+
+        while True:
+            try:
+                print(f"📈 Monitoring system: Portfolio value = ${10000 + random.randint(-500, 500):.2f}")
+                time.sleep(5)  # Update every 5 seconds
+            except KeyboardInterrupt:
+                print("\n🛑 Monitoring stopped by user")
+                break
+
+    elif args.mode == "config-test":
+        print("🔧 Testing configuration...")
+        # Test that we can import and instantiate key components
+        try:
+            from shared.logger import EnhancedLogger
+            logger = EnhancedLogger("ConfigTest")
+            logger.info("Configuration test passed!")
+            print("✅ Configuration test completed successfully")
+        except Exception as e:
+            print(f"❌ Configuration test failed: {e}")
+            sys.exit(1)
+    else:
+        print(f"❌ Unknown mode: {args.mode}")
+        parser.print_help()
+        sys.exit(1)

@@ -108,20 +108,23 @@ python run_trading_system.py --mode backtest \
 
 #### **Batch Backtesting**
 ```bash
-# Backtest multiple symbols
+# Backtest a strategy for a single symbol (multi-symbol backtesting coming soon)
+# Current implementation only processes a single symbol
 python run_trading_system.py --mode backtest \
   --strategy crypto_breakout \
-  --symbols BTC/USDT,ETH/USDT,SOL/USDT \
+  --symbol BTC/USDT \
   --timeframe 1h \
-  --days-back 180
+  --days-back 90
 ```
+
+**Note**: The current implementation only backtests for a single symbol. Multi-symbol backtesting functionality is planned for future releases.
 
 #### **Backtest with Custom Parameters**
 ```bash
 python run_trading_system.py --mode backtest \
   --strategy crypto_breakout \
   --symbol BTC/USDT \
-  --config "custom_backtest_config.json"
+  --config "application/configs/backtest_config.json"
 ```
 
 #### **Custom Backtest Configuration**
@@ -216,13 +219,16 @@ python run_trading_system.py --mode optimize \
 
 #### **Multi-Strategy Optimization**
 ```bash
-# Optimize multiple strategies for different symbols
+# Optimize a strategy for a single symbol (multi-symbol optimization coming soon)
+# Current implementation only processes the first symbol provided
 python run_trading_system.py --mode optimize \
   --strategy crypto_breakout \
-  --symbols BTC/USDT,ETH/USDT,SOL/USDT \
+  --symbol BTC/USDT \
   --timeframe 1h \
-  --max-evals 200
+  --max-evals 100
 ```
+
+**Note**: The current implementation only optimizes for a single symbol. Multi-symbol optimization functionality is planned for future releases.
 
 #### **Advanced Hyperopt Features**
 
@@ -446,6 +452,47 @@ python run_trading_system.py --mode production \
   --timeframe 5m \
   --config "live_trading_config.json"
 ```
+
+**Note on Strategy Selection and Watchers**:
+While the current implementation takes strategies and symbols as command-line parameters, in a fully automated setup, the system's Watcher components would monitor market conditions and recommend optimal strategies and instruments to the Orchestrator. The Orchestrator would then execute those recommendations automatically. The parameterized approach provides manual control for initial deployment and testing phases, but could be replaced with automated instrument and strategy selection in future implementations.
+
+#### **Watcher-Based Strategy Activation**
+```bash
+# In a fully automated setup, the system would run with automated strategy selection
+python run_trading_system.py --mode production \
+  --live-trading \
+  --auto-select-strategy \
+  --watcher-monitoring \
+  --timeframe 5m \
+  --config "live_trading_config.json"
+```
+
+In this mode, the system would:
+- Continuously monitor market conditions via Watcher components
+- Automatically select appropriate strategies based on market opportunity detection
+- Dynamically allocate capital across detected opportunities
+- Apply appropriate risk management per strategy and symbol
+
+### **System Architecture & Component Roles**
+
+#### **Watcher Components**
+Watchers continuously monitor market data and generate signals based on predefined conditions. They are responsible for:
+- Real-time market data analysis
+- Opportunity identification
+- Strategy recommendation based on market patterns
+- Risk threshold monitoring
+
+#### **Orchestrator Components**
+The orchestrator manages strategy execution and coordinates between different system components. Its responsibilities include:
+- Receiving recommendations from watchers
+- Managing strategy lifecycle (start/stop/reconfigure)
+- Coordinating execution engines
+- Applying risk management rules
+
+#### **Current Implementation vs Future State**
+- **Current**: Strategies and symbols are configured via command line parameters for predictable and controlled operation
+- **Future State**: Watchers would automatically recommend strategies/symbols to orchestrators based on market opportunities
+- **Architecture Flexibility**: The hexagonal architecture allows for easy transition between these modes
 
 ### **Safety Checks Before Going Live**
 ```python
