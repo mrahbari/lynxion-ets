@@ -2,7 +2,7 @@
 Engine port adapter to connect EngineManagementService to SignalProcessingService.
 """
 from domain.entities.trading_entities import Signal
-from domain.ports.strategy_ports import EnginePort
+from domain.ports.engine_ports import EnginePort
 from typing import List, Optional
 from application.services.engine_services import EngineManagementService
 

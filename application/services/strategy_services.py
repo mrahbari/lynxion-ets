@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from domain.entities.trading_entities import Signal, Position
 from domain.value_objects import Symbol
-from domain.ports.strategy_ports import StrategyPort
+from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger
 import statistics
 

@@ -5,7 +5,7 @@ from typing import List, Optional, Dict, Any
 from domain.entities.trading_entities import Signal
 from domain.entities.engine_entities import EngineResult
 from domain.value_objects import Symbol, Percentage
-from domain.ports.strategy_ports import FusionPort
+from domain.ports.engine_ports import FusionPort
 from shared.logger import logger
 from datetime import datetime
 from decimal import Decimal

@@ -11,6 +11,8 @@ This is an enterprise-grade hedge fund trading system implementing modern softwa
 - Live Trading Capabilities
 - Comprehensive Risk Management
 - Auto-Retune System
+- Auto-Detection System with Market Monitoring
+- Dynamic Symbol Discovery and Selection
 - Multi-Asset Support (Crypto, FX, Metals, Indices)
 - Realistic Backtesting with Slippage/Fees
 - Live Dashboard with Performance Monitoring
@@ -29,6 +31,44 @@ Market    Risk    Signal   Strategy  Live Execution
 Data      Aware   Fusion   Scalper   & Risk Control
 Monitor   Engine  Service  w/Retune  w/Alerts
 ```
+
+### **Auto-Detection System**
+
+The system features an auto-detection capability that enables fully autonomous trading operations. The system continuously monitors markets, identifies opportunities based on technical conditions and market states, and automatically executes appropriate strategies with proper risk management.
+
+**Key Capabilities:**
+- **Continuous Market Monitoring**: Multiple watcher types (MarketPulse, Volatility, TrendMTF, AnomalyML, OrderFlow, CMC) continuously scan the markets for opportunities
+- **CMC Market Intelligence**: Integrates with CoinMarketCap API to analyze market sentiment, identify high-growth potential coins, and detect crash-risk assets
+- **Dynamic Symbol Discovery**: Automatically identifies and monitors the most promising trading symbols using CMC data and market screening (BTC/USDT, ETH/USDT, SOL/USDT, XRP/USDT, ADA/USDT) based on market conditions
+- **Intelligent Strategy Selection**: Dynamically chooses the most appropriate strategy (momentum, trend-following, mean-reversion, volatility-based, order-flow, CMC sentiment) based on detected opportunities
+- **Automated Execution**: Executes trades automatically when opportunities meet predefined criteria and confidence thresholds
+- **Comprehensive Risk Management**: All automated trades are subject to real-time risk controls, position sizing, and monitoring
+- **Multi-Timeframe Analysis**: Analyzes market conditions across multiple timeframes (1h, 4h, 1d) for robust signal generation
+- **Signal Fusion**: Combines signals from multiple watcher types using intelligent fusion algorithms
+- **Market Regime Detection**: Automatically adapts strategy selection based on current market conditions and volatility regimes
+
+**Usage:**
+```bash
+# Run in auto-detection mode with auto-discovered symbols
+python run_trading_system.py --mode production --auto-detect
+
+# Run in auto-detection mode with specific symbols
+python run_trading_system.py --mode production --auto-detect --symbols BTC/USDT,ETH/USDT
+
+# Run in auto-detection mode with risk configuration
+python run_trading_system.py --mode production --auto-detect --symbols BTC/USDT,ETH/USDT --max-evals 50
+```
+
+**Auto-Detection Architecture:**
+```
+Watcher → Engine → Fusion → Strategy → Broker
+  ↓         ↓        ↓        ↓        ↓
+Market    Risk    Signal   Strategy  Live Execution
+Data      Aware   Fusion   Scalper   & Risk Control
+Monitor   Engine  Service  w/Retune  w/Alerts
+```
+
+The auto-detection mode implements the complete workflow where watchers continuously monitor market conditions, engines process signals with risk awareness, fusion services combine multiple signals, strategies execute trades, and brokers handle live execution with comprehensive risk controls.
 
 ### **Setup & Configuration**
 

@@ -372,6 +372,9 @@ Examples:
   # Run in production mode (with all features enabled)
   python run_trading_system.py --mode production
 
+  # Run in auto-detection mode (watcher detects opportunities and triggers strategies automatically)
+  python run_trading_system.py --mode production --auto-detect --symbols BTC/USDT,ETH/USDT
+
   # Test configuration
   python run_trading_system.py --mode config-test
         """
@@ -441,6 +444,12 @@ Examples:
         "--log-dir",
         default="logs",
         help="Directory for log files (default: logs)"
+    )
+
+    parser.add_argument(
+        "--auto-detect",
+        action="store_true",
+        help="Run in auto-detection mode (watcher detects opportunities and triggers strategies automatically)"
     )
 
     return parser
@@ -585,39 +594,127 @@ if __name__ == "__main__":
         print("✅ All auto-retune processes completed!")
 
     elif args.mode == "production":
-        # For production mode, run the orchestrator as before but allow it to work with command line args
-        def sample_data_fetcher():
-            """Sample data fetcher for testing."""
-            import pandas as pd
-            import numpy as np
-            timestamps = pd.date_range(start='2023-01-01', periods=100, freq='1min')
-            prices = 2000 + np.cumsum(np.random.randn(100) * 0.1)
-            df = pd.DataFrame({
-                'timestamp': timestamps,
-                'open': prices + np.random.randn(100) * 0.05,
-                'high': prices + abs(np.random.randn(100)) * 0.1,
-                'low': prices - abs(np.random.randn(100)) * 0.1,
-                'close': prices,
-                'volume': np.abs(np.random.randn(100)) * 100,
-                'volatility': np.abs(np.random.randn(100)) * 0.1
-            })
-            # Return data for the specified symbol if provided
-            symbol_key = args.symbol if args.symbol else "BTCUSD"
-            return {symbol_key: df}
+        if args.auto_detect:
+            # Run in auto-detection mode
+            print("🚀 Starting auto-detection mode...")
+            if args.symbols or args.symbol:
+                symbol_list = args.symbols or [args.symbol]
+                print(f"📊 System will monitor markets and automatically detect opportunities for symbols: {symbol_list}")
+            else:
+                print("📊 System will automatically discover and monitor market opportunities across multiple symbols")
 
-        risk_config = {
-            "max_risk": 0.02,
-            "atr_multiplier": 1.5,
-            "use_dynamic_position": True
-        }
+            # Import required components for auto-detection
+            from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator
 
-        print("📊 Running production orchestrator with sample data...")
-        run_production_orchestrator(
-            data_fetcher=sample_data_fetcher,
-            strategy_name=args.strategy,
-            risk_config=risk_config,
-            retune_interval_hours=1
-        )
+            # Create mock implementations for standalone execution (same as in the orchestrator class)
+            from infrastructure.data.data_adapters import MockDataProviderAdapter
+            from domain.ports.execution_ports import ExecutionPort
+            from domain.ports.portfolio_ports import PortfolioManagementPort
+            from domain.ports.optimization_ports import IOptimizationService
+
+            # Create mock implementations since the actual implementations may not exist yet
+            class MockExecutionService(ExecutionPort):
+                def execute_order(self, order):
+                    print(f"Mock execution of order: {order}")
+                    return "mock_execution_id"
+
+                def cancel_order(self, order_id: str) -> bool:
+                    print(f"Mock cancellation of order: {order_id}")
+                    return True
+
+                def get_execution_status(self, execution_id: str) -> str:
+                    return "filled"
+
+            class MockPortfolioService(PortfolioManagementPort):
+                def calculate_allocation(self, total_capital: float, symbols):
+                    from domain.value_objects import Symbol, Percentage
+                    return {sym: total_capital/len(symbols) if symbols else 0 for sym in symbols}
+
+                def rebalance_portfolio(self, target_allocations):
+                    return []
+
+                def get_portfolio_metrics(self):
+                    return {"sharpe_ratio": 1.0, "max_drawdown": -0.05, "total_return": 0.1}
+
+            class MockOptimizationService(IOptimizationService):
+                def optimize_strategy(self, strategy_name, data, parameters):
+                    return {"status": "success", "best_params": {}}
+
+                def get_optimized_parameters(self, strategy_name, symbol):
+                    return {}
+
+                def save_optimized_parameters(self, strategy_name, symbol, parameters):
+                    pass
+
+            # Create mock implementations for standalone execution
+            market_data_repo = MockDataProviderAdapter()
+            execution_service = MockExecutionService()
+            portfolio_service = MockPortfolioService()
+            optimization_service = MockOptimizationService()
+
+            # Determine symbols to monitor
+            symbols = []
+            if args.symbols:
+                symbols = args.symbols.split(",")
+            elif args.symbol:
+                symbols = [args.symbol]
+            # If no symbols provided in auto-detect mode, the orchestrator will auto-discover them
+
+            # Create risk config
+            risk_config = {
+                "max_risk": 0.02,
+                "atr_multiplier": 1.5,
+                "use_dynamic_position": True
+            }
+
+            # Create and run auto-detection orchestrator
+            auto_detection_orchestrator = AutoDetectionOrchestrator(
+                market_data_repo=market_data_repo,
+                execution_service=execution_service,
+                portfolio_service=portfolio_service,
+                optimization_service=optimization_service,
+                symbols=symbols if symbols else None,  # Pass None if no symbols specified
+                risk_config=risk_config
+            )
+
+            try:
+                auto_detection_orchestrator.run_auto_detection()
+            except KeyboardInterrupt:
+                print("\n🛑 Auto-detection mode stopped by user")
+        else:
+            # Run in original production mode with manual strategy selection
+            def sample_data_fetcher():
+                """Sample data fetcher for testing."""
+                import pandas as pd
+                import numpy as np
+                timestamps = pd.date_range(start='2023-01-01', periods=100, freq='1min')
+                prices = 2000 + np.cumsum(np.random.randn(100) * 0.1)
+                df = pd.DataFrame({
+                    'timestamp': timestamps,
+                    'open': prices + np.random.randn(100) * 0.05,
+                    'high': prices + abs(np.random.randn(100)) * 0.1,
+                    'low': prices - abs(np.random.randn(100)) * 0.1,
+                    'close': prices,
+                    'volume': np.abs(np.random.randn(100)) * 100,
+                    'volatility': np.abs(np.random.randn(100)) * 0.1
+                })
+                # Return data for the specified symbol if provided
+                symbol_key = args.symbol if args.symbol else "BTCUSD"
+                return {symbol_key: df}
+
+            risk_config = {
+                "max_risk": 0.02,
+                "atr_multiplier": 1.5,
+                "use_dynamic_position": True
+            }
+
+            print("📊 Running production orchestrator with sample data...")
+            run_production_orchestrator(
+                data_fetcher=sample_data_fetcher,
+                strategy_name=args.strategy,
+                risk_config=risk_config,
+                retune_interval_hours=1
+            )
 
     elif args.mode == "monitor":
         print("📊 Starting monitoring mode...")

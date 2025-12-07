@@ -4,7 +4,7 @@ Application service for risk governance in the enterprise hedge fund trading sys
 from typing import List, Optional, Dict, Any
 from domain.entities.trading_entities import Signal, Order, Position
 from domain.value_objects import Symbol, Money, Percentage, RiskValue
-from domain.ports.strategy_ports import RiskGovernorPort
+from domain.ports.engine_ports import RiskGovernorPort
 from domain.ports.trading_ports import RiskManagementPort
 from shared.logger import logger
 

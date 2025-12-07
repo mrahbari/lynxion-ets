@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 from domain.entities.trading_entities import Signal, Order, Position
 from domain.value_objects import Symbol, Money
-from domain.ports.strategy_ports import StrategyPort, EnginePort, FusionPort
+from domain.ports.engine_ports import StrategyPort, EnginePort, FusionPort
 from domain.ports.trading_ports import (
     SignalPort, OrderManagementPort, MarketDataPort, 
     PositionManagementPort, RiskManagementPort
