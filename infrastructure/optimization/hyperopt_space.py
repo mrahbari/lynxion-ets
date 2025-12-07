@@ -28,8 +28,59 @@ class StrategyRegistry(IStrategyRegistry):
         if strategy and hasattr(strategy, 'get_parameter_space'):
             return strategy.get_parameter_space()
         else:
-            # Fallback to generic space if strategy not found or doesn't support optimization
-            return cls._get_generic_space()
+            # Return specific space based on strategy name
+            if strategy_name == "CryptoLiquidity":
+                return cls._get_crypto_liquidity_space()
+            elif strategy_name == "CryptoMTFTrend":
+                return cls._get_crypto_mtf_trend_space()
+            elif strategy_name == "CryptoVWAPReversal":
+                return cls._get_crypto_vwap_reversal_space()
+            elif strategy_name == "CryptoOIFootprint":
+                return cls._get_crypto_oi_footprint_space()
+            elif strategy_name == "CryptoSweepScalper":
+                return cls._get_crypto_sweep_scalper_space()
+            else:
+                # Fallback to generic space if strategy not found or doesn't support optimization
+                return cls._get_generic_space()
+
+    @classmethod
+    def _get_crypto_liquidity_space(cls) -> Dict[str, Any]:
+        """Get parameter space for CryptoLiquidity strategy."""
+        return {
+            "min_oi_trend": hp.uniform("min_oi_trend", 0.01, 0.10),
+            "max_funding_bias": hp.uniform("max_funding_bias", 0.001, 0.01),
+            "cvd_divergence_strength": hp.uniform("cvd_divergence_strength", 1.0, 6.0)
+        }
+
+    @classmethod
+    def _get_crypto_mtf_trend_space(cls) -> Dict[str, Any]:
+        """Get parameter space for CryptoMTFTrend strategy."""
+        return {
+            "trend_period": hp.choice("trend_period", [30, 50, 80]),
+        }
+
+    @classmethod
+    def _get_crypto_vwap_reversal_space(cls) -> Dict[str, Any]:
+        """Get parameter space for CryptoVWAPReversal strategy."""
+        return {
+            "lookback": hp.quniform("lookback", 100, 400, 10),
+            "std_mult": hp.uniform("std_mult", 1.0, 4.0),
+        }
+
+    @classmethod
+    def _get_crypto_oi_footprint_space(cls) -> Dict[str, Any]:
+        """Get parameter space for CryptoOIFootprint strategy."""
+        return {
+            "oi_expansion": hp.uniform("oi_expansion", 0.02, 0.10),
+            "delta_strength": hp.uniform("delta_strength", 2, 10),
+        }
+
+    @classmethod
+    def _get_crypto_sweep_scalper_space(cls) -> Dict[str, Any]:
+        """Get parameter space for CryptoSweepScalper strategy."""
+        return {
+            "lookback": hp.choice("lookback", [3, 4, 5]),
+        }
 
     @classmethod
     def _get_generic_space(cls) -> Dict[str, Any]:
@@ -54,6 +105,19 @@ class HyperoptParameterSpace(IParameterSpace):
     def __init__(self):
         self.logger = EnhancedLogger("HyperoptParameterSpace")
         self.strategy_registry = StrategyRegistry()
+
+        # Register all crypto strategies with the registry
+        from infrastructure.strategies.adapters.crypto_liquidity_strategy_adapter import CryptoLiquidityStrategyAdapter
+        from infrastructure.strategies.adapters.crypto_mtf_trend_strategy_adapter import CryptoMTFTrendStrategyAdapter
+        from infrastructure.strategies.adapters.crypto_vwap_reversal_strategy_adapter import CryptoVWAPReversalStrategyAdapter
+        from infrastructure.strategies.adapters.crypto_oi_footprint_strategy_adapter import CryptoOIFootprintStrategyAdapter
+        from infrastructure.strategies.adapters.crypto_sweep_scalper_adapter import CryptoSweepScalperAdapter
+
+        self.strategy_registry.register_strategy("CryptoLiquidity", CryptoLiquidityStrategyAdapter)
+        self.strategy_registry.register_strategy("CryptoMTFTrend", CryptoMTFTrendStrategyAdapter)
+        self.strategy_registry.register_strategy("CryptoVWAPReversal", CryptoVWAPReversalStrategyAdapter)
+        self.strategy_registry.register_strategy("CryptoOIFootprint", CryptoOIFootprintStrategyAdapter)
+        self.strategy_registry.register_strategy("CryptoSweepScalper", CryptoSweepScalperAdapter)
 
     def get_space(self, strategy_name: str) -> Dict[str, Any]:
         """Get parameter space for a given strategy via registry."""

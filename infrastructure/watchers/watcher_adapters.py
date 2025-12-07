@@ -28,12 +28,12 @@ class BaseWatcherAdapter(WatcherPort):
     def start(self):
         """Start the watcher"""
         self._is_running = True
-        self.logger.log_watcher_analysis(self.name, self.symbol.value, "Started", 1.0)
+        self.logger.log_watcher_analysis(self.name, self.symbol.value, "Started")
 
     def stop(self):
         """Stop the watcher"""
         self._is_running = False
-        self.logger.log_watcher_analysis(self.name, self.symbol.value, "Stopped", 1.0)
+        self.logger.log_watcher_analysis(self.name, self.symbol.value, "Stopped")
     
     def update_data(self, data: Dict[str, Any]):
         """Update the watcher with new market data"""

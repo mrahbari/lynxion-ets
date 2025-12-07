@@ -17,8 +17,23 @@ This is an enterprise-grade hedge fund trading system implementing modern softwa
 - Realistic Backtesting with Slippage/Fees
 - Live Dashboard with Performance Monitoring
 - Automated Retuning Capabilities
+- Advanced Crypto Strategies (Liquidity, VWAP, MTF Trend, OI Footprint, Sweep Scalper)
 
 ## 🚀 Complete System Manual
+
+### **New Advanced Crypto Strategies**
+
+This system now includes 5 advanced professional-grade crypto strategies specifically designed for cryptocurrency markets:
+
+1. **Crypto Liquidity Strategy** (`CryptoLiquidity`) - Combines liquidity sweeps, funding rate bias, OI expansion, CVD divergences, and MTF trend confirmation
+2. **MTF Trend Strategy** (`CryptoMTFTrend`) - Multi-timeframe trend following with weighted signal aggregation
+3. **VWAP Reversal Strategy** (`CryptoVWAPReversal`) - Mean reversion around Volume Weighted Average Price levels
+4. **OI Footprint Strategy** (`CryptoOIFootprint`) - Open Interest and volume footprint analysis for institutional activity
+5. **Liquidity Sweep Scalper** (`CryptoSweepScalper`) - High-frequency scalping focused on liquidity sweep detection
+
+These strategies are fully integrated with the hyperparameter optimization system and follow the same hexagonal architecture as existing strategies.
+
+For detailed documentation on these strategies, see `Crypto_Strategies_README.md`.
 
 ### **System Overview**
 
@@ -282,29 +297,64 @@ space = {
     # Trend parameters
     'fast_ma': hp.quniform('fast_ma', 5, 30, 1),
     'slow_ma': hp.quniform('slow_ma', 20, 120, 1),
-    
-    # Momentum parameters  
+
+    # Momentum parameters
     'rsi_period': hp.quniform('rsi_period', 5, 30, 1),
     'rsi_overbought': hp.quniform('rsi_overbought', 60, 90, 1),
     'rsi_oversold': hp.quniform('rsi_oversold', 10, 40, 1),
-    
+
     # Volatility parameters
     'atr_period': hp.quniform('atr_period', 5, 40, 1),
     'atr_multiplier_sl': hp.uniform('atr_multiplier_sl', 1.0, 5.0),
     'atr_multiplier_tp': hp.uniform('atr_multiplier_tp', 1.0, 8.0),
-    
+
     # Position sizing parameters
     'risk_per_trade': hp.uniform('risk_per_trade', 0.001, 0.05),
     'max_position_size': hp.uniform('max_position_size', 0.01, 0.5),
-    
+
     # Execution parameters
     'signal_smoothing': hp.uniform('signal_smoothing', 0.1, 1.0),
     'min_volume_filter': hp.uniform('min_volume_filter', 0, 5),
-    
+
     # Advanced parameters
     'dynamic_risk_weight': hp.uniform('dynamic_risk_weight', 0.1, 2.0),
     'volatility_position_scale': hp.uniform('volatility_position_scale', 0.1, 3.0)
 }
+
+# The new crypto strategies each have their own specialized parameter spaces:
+
+# CryptoLiquidity parameter space
+{
+    "min_oi_trend": hp.uniform("min_oi_trend", 0.01, 0.10),
+    "max_funding_bias": hp.uniform("max_funding_bias", 0.001, 0.01),
+    "cvd_divergence_strength": hp.uniform("cvd_divergence_strength", 1.0, 6.0)
+}
+
+# CryptoMTFTrend parameter space
+{
+    "trend_period": hp.choice("trend_period", [30, 50, 80])
+}
+
+# CryptoVWAPReversal parameter space
+{
+    "lookback": hp.quniform("lookback", 100, 400, 10),
+    "std_mult": hp.uniform("std_mult", 1.0, 4.0)
+}
+
+# CryptoOIFootprint parameter space
+{
+    "oi_expansion": hp.uniform("oi_expansion", 0.02, 0.10),
+    "delta_strength": hp.uniform("delta_strength", 2, 10)
+}
+
+# CryptoSweepScalper parameter space
+{
+    "lookback": hp.choice("lookback", [3, 4, 5])
+}
+
+# All these spaces are accessible through the StrategyRegistry:
+from infrastructure.optimization.hyperopt_space import parameter_space
+space = parameter_space.get_space("CryptoLiquidity")  # Returns the specific parameter space
 ```
 
 ##### **Objective Function with Multiple Metrics**

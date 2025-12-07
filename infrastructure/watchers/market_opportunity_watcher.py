@@ -15,7 +15,7 @@ from infrastructure.watchers.watcher_adapters import (
     AnomalyMLWatcherAdapter,
     OrderFlowWatcherAdapter
 )
-from infrastructure.watchers.adapters.cmc_watcher_adapter import CMCWatcherAdapter, CMCScreenerAdapter
+from infrastructure.watchers.adapters.cmc_screener import CMCScreener
 from shared.logger import EnhancedLogger
 
 
@@ -58,7 +58,7 @@ class MarketOpportunityWatcher:
 
         try:
             # Try to use the CMCScreener to get a comprehensive list of symbols
-            cmc_screener = CMCScreenerAdapter(name="CMCAutoDiscovery")
+            cmc_screener = CMCScreener(name="CMCAutoDiscovery")
 
             # Get screening results using analyze method (which will screen top coins)
             # For auto-discovery of symbols, we'll fetch the top coins directly
@@ -87,7 +87,7 @@ class MarketOpportunityWatcher:
                     "LINKUSDT", # Chainlink - oracle network
                 ]
             else:
-                # Use the CMCScreenerAdapter's screening capability
+                # Use the CMCScreener's screening capability
                 headers = {
                     'Accepts': 'application/json',
                     'X-CMC_PRO_API_KEY': cmc_api_key,
@@ -204,7 +204,7 @@ class MarketOpportunityWatcher:
                         'trend_mtf': TrendMTFWatcherAdapter(symbol),
                         'anomaly_ml': AnomalyMLWatcherAdapter(symbol),
                         'order_flow': OrderFlowWatcherAdapter(symbol),
-                        'cmc_watcher': CMCWatcherAdapter(symbol),
+                        'cmc_watcher': CMCScreener(name=f"CMCWatcher_{symbol.value}", symbol=symbol.value),
                     }
                     # Start new watchers
                     for watcher_name, watcher in self.watchers[symbol_str].items():
@@ -222,7 +222,7 @@ class MarketOpportunityWatcher:
                 'trend_mtf': TrendMTFWatcherAdapter(symbol),
                 'anomaly_ml': AnomalyMLWatcherAdapter(symbol),
                 'order_flow': OrderFlowWatcherAdapter(symbol),
-                'cmc_watcher': CMCWatcherAdapter(symbol),
+                'cmc_watcher': CMCScreener(name=f"CMCWatcher_{symbol.value}", symbol=symbol.value),
             }
             # Start each watcher
             for watcher_name, watcher in self.watchers[symbol.value].items():

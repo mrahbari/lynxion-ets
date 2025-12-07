@@ -19,7 +19,7 @@ from domain.ports.portfolio_ports import PortfolioManagementPort
 from domain.ports.optimization_ports import IOptimizationService
 
 from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator
-from infrastructure.watchers.adapters.cmc_watcher_adapter import CMCScreenerAdapter
+from infrastructure.watchers.adapters.cmc_screener import CMCScreener
 
 
 def create_mock_services():
@@ -113,9 +113,9 @@ def test_cmc_watcher():
     print("🔍 Testing CMC Watcher...")
     
     try:
-        # Test CMCScreenerAdapter
-        screener = CMCScreenerAdapter(name="TestScreener")
-        print(f"✓ CMCScreenerAdapter created successfully: {screener.name}")
+        # Test CMCScreener
+        screener = CMCScreener(name="TestScreener")
+        print(f"✓ CMCScreener created successfully: {screener.name}")
         
         # Test analyze method (will return None if CMC_API_KEY not set, which is expected)
         import os
