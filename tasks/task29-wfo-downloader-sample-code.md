@@ -618,7 +618,7 @@ class MarketDataLoader:
     Works for Backtest, Hyperopt, WFO.
     """
 
-    def __init__(self, root_raw="./data/raw/", root_processed="./data/processed/"):
+    def __init__(self, root_raw="./data/history/raw/", root_processed="./data/history/processed/"):
         self.root_raw = root_raw
         self.root_processed = root_processed
 

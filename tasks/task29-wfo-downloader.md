@@ -35,7 +35,7 @@ We need a **real, standard, production-level Downloader / Sync Engine** that can
 * Store raw data in:
 
 ```
-/data/raw/1m/<SYMBOL>.csv
+/data/history/raw/1m/<SYMBOL>.csv
 ```
 
 * Generate derivative timeframes:
