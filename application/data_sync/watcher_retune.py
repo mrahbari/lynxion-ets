@@ -27,17 +27,93 @@ class WatcherRetuneUseCase:
     def request_repair_sync(self, symbol: str, start_ts: int, end_ts: int, timeout: int = 300) -> bool:
         """
         Synchronous request for priority repair of a symbol and interval.
-        
+
         Args:
             symbol: The symbol to repair
             start_ts: Start timestamp of the interval
-            end_ts: End timestamp of the interval  
+            end_ts: End timestamp of the interval
             timeout: Maximum time to wait for repair in seconds (default 300 = 5 minutes)
-            
+
         Returns:
             True when the requested interval is confirmed gap-free, False if timeout
         """
-        return asyncio.run(self.request_repair_async(symbol, start_ts, end_ts, timeout))
+        import time
+        from domain.sync.entities import SyncJob
+
+        # Start time for timeout tracking
+        start_time = time.time()
+
+        # Log the repair request
+        logger.log_operation(
+            operation=OperationType.WATCHER_REPAIR,
+            symbol=symbol,
+            status=StatusType.OK,
+            duration_ms=0,
+            fixed_ranges=[[start_ts, end_ts]],
+            description="Priority repair requested"
+        )
+
+        # Replicate the async logic directly in sync form
+        # Add to job queue with high priority (replicating request_priority_repair logic)
+        job = SyncJob(
+            symbol=symbol,
+            start_ts=start_ts,
+            end_ts=end_ts,
+            priority=20,  # Higher than normal jobs
+            is_priority_repair=True
+        )
+        self.sync_manager.job_queue.push(job)
+
+        # Also try to fill gaps in the range immediately
+        success = self.file_repo.fill_gaps_in_range(symbol, start_ts, end_ts)
+
+        if not success:
+            # If immediate fill didn't work, queue for full repair (replicating add_symbol_to_queue logic)
+            # Create a job for the symbol with normal priority
+            symbol_job = SyncJob(
+                symbol=symbol,
+                start_ts=start_ts,
+                end_ts=end_ts,
+                priority=10,  # Normal priority
+                is_priority_repair=False
+            )
+            self.sync_manager.job_queue.push(symbol_job)
+
+        # Wait until the requested interval is gap-free (with timeout)
+        while time.time() - start_time < timeout:
+            # Check if the range is now continuous
+            is_continuous = self.file_repo.validate_continuous_range(symbol, start_ts, end_ts)
+
+            if is_continuous:
+                duration_ms = int((time.time() - start_time) * 1000)
+
+                logger.log_operation(
+                    operation=OperationType.WATCHER_REPAIR,
+                    symbol=symbol,
+                    status=StatusType.OK,
+                    duration_ms=duration_ms,
+                    fixed_ranges=[[start_ts, end_ts]],
+                    description="Priority repair completed successfully"
+                )
+
+                return True
+
+            # Wait a bit before checking again
+            time.sleep(1)
+
+        # If we get here, we timed out
+        duration_ms = int((time.time() - start_time) * 1000)
+
+        logger.log_operation(
+            operation=OperationType.WATCHER_REPAIR,
+            symbol=symbol,
+            status=StatusType.ERROR,
+            duration_ms=duration_ms,
+            fixed_ranges=[[start_ts, end_ts]],
+            error="Timeout waiting for gap-free data after priority repair request"
+        )
+
+        return False
     
     async def request_repair_async(self, symbol: str, start_ts: int, end_ts: int, timeout: int = 300) -> bool:
         """
