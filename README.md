@@ -372,7 +372,7 @@ cp .env.example .env
 # Edit .env with your settings
 
 # Create required directories
-mkdir -p ./data/{raw/1m,processed/{5m,15m,30m,1h}}
+mkdir -p ./data/history/{raw/1m,processed/{5m,15m,30m,1h}}
 mkdir -p ./results/wfo
 mkdir -p ./logs
 ```
@@ -403,17 +403,173 @@ service.start_auto_sync()
 "
 ```
 
+## Run / Debug Commands for Downloader/Sync Engine
+
+The new Downloader/Sync Engine provides several command-line options for operation and debugging:
+
+### Run single cycle for a single symbol:
+```bash
+python -m application.data_sync.sync_loop --one-cycle --symbol BTC-USDT
+```
+
+### Run watcher repair (blocking):
+```bash
+python -m application.data_sync.watcher_retune --symbol BTC-USDT --from 1672531200 --to 1672617600
+```
+
+### Start continuous loop (foreground):
+```bash
+python -m application.data_sync.sync_loop
+```
+
+### Run specific sync operations:
+```bash
+# Run a single sync cycle for all enabled symbols
+python -m application.data_sync.sync_loop --one-cycle
+
+# Run a single sync cycle for a specific symbol
+python -m application.data_sync.sync_loop --one-cycle --symbol ETH-USDT
+
+# Run file validation for a symbol
+python -c "
+from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
+from application.configs.symbol_config import get_symbols
+
+file_repo = FileRepositoryAdapter()
+symbols = [s.symbol for s in get_symbols() if s.enabled]
+for symbol in symbols[:3]:  # Test first 3 symbols
+    file_path = file_repo.get_raw_file_path(symbol)
+    gaps = file_repo.detect_missing_ranges(file_path)
+    print(f'{symbol}: {len(gaps)} gaps detected')
+"
+```
+
+### Configuration:
+Set the following in your `.env` file to configure the sync engine:
+
+```bash
+# Sync Settings
+SYNC_INTERVAL_SECONDS=7200
+ASYNC_CONCURRENCY=100
+DOWNLOAD_THREADPOOL_WORKERS=8
+RETRY_MAX_ATTEMPTS=5
+RETRY_BACKOFF_BASE=0.5
+RETRY_BACKOFF_FACTOR=2.0
+RATE_LIMIT_TOKENS_PER_SECOND=10
+TEMP_FILE_SUFFIX=.partial
+DATA_DIR=./data/history
+
+# Retention Settings
+RAW_RETENTION_DAYS=365
+PROCESSED_RETENTION_DAYS=1095
+MAX_GAP_FILL_MINUTES=1440
+
+# Global Symbol Settings (uses WFO_COINS list)
+SYNC_DEFAULT_EXCHANGE=binance
+SYNC_MAX_WINDOW_MINUTES=1440
+SYNC_RATE_LIMIT=10
+```
+
+The sync engine will automatically use the coins listed in `WFO_COINS` environment variable, applying the global settings to all of them.
+
+### Test the sync system components:
+```bash
+# Run unit tests for the new modules
+python -m pytest tests/test_sync_hexagonal.py -v
+
+# Run all sync-related tests
+python -m pytest tests/ -k "sync" -v
+
+# Run specific component tests
+python -m pytest tests/test_sync_hexagonal.py::TestSymbolConfiguration -v
+python -m pytest tests/test_sync_hexagonal.py::TestSyncManager -v
+python -m pytest tests/test_sync_hexagonal.py::TestFileRepositoryAdapter -v
+python -m pytest tests/test_sync_hexagonal.py::TestWatcherRetuneUseCase -v
+python -m pytest tests/test_sync_hexagonal.py::TestIntegration -v
+```
+
+### Usage Examples:
+
+#### 1. Manual Sync for Specific Symbol:
+```python
+from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
+from infrastructure.data_sync.data_downloader_adapter import DataDownloaderAdapter
+from application.data_sync.sync_manager import SyncManager
+
+# Create dependencies
+file_repo = FileRepositoryAdapter()
+data_downloader = DataDownloaderAdapter()
+sync_manager = SyncManager(file_repo, data_downloader)
+
+# Run sync for specific symbols
+import asyncio
+result = asyncio.run(sync_manager.run_sync_cycle(["BTC-USDT", "ETH-USDT"]))
+print(f"Sync completed: {result['symbols_fixed']}/{result['symbols_scanned']} symbols fixed")
+```
+
+#### 2. On-demand Gap Repair:
+```python
+from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
+from infrastructure.data_sync.data_downloader_adapter import DataDownloaderAdapter
+from application.data_sync.sync_manager import SyncManager
+from application.data_sync.watcher_retune import WatcherRetuneUseCase
+
+# Create dependencies
+file_repo = FileRepositoryAdapter()
+data_downloader = DataDownloaderAdapter()
+sync_manager = SyncManager(file_repo, data_downloader)
+watcher_retune = WatcherRetuneUseCase(file_repo, data_downloader, sync_manager)
+
+# Validate a specific time range
+is_valid = watcher_retune.validate_interval("BTC-USDT", 1672531200, 1672617600)
+print(f"Range is valid: {is_valid}")
+
+# Request priority repair if needed
+if not is_valid:
+    success = watcher_retune.request_repair_sync("BTC-USDT", 1672531200, 1672617600)
+    print(f"Repair completed: {success}")
+```
+
+#### 3. Data Access:
+```python
+from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
+
+file_repo = FileRepositoryAdapter()
+
+# Get file paths
+raw_path = file_repo.get_raw_file_path("BTC-USDT")
+index_path = file_repo.get_index_file_path("BTC-USDT")
+processed_path = file_repo.get_processed_file_path("BTC-USDT", "5m")
+
+# Check file status
+index_info = file_repo.get_file_index("BTC-USDT")
+print(f"Data range: {index_info.get('earliest_timestamp')} to {index_info.get('latest_timestamp')}")
+```
+
 ## Quality Assurance
 
 ### Verification Checklist
-- [ ] All imports work without errors
-- [ ] Data resampling creates proper timeframes (5m, 15m, 30m, 1h)
-- [ ] WFO pipeline processes all coins correctly
-- [ ] Lookahead bias checks pass
-- [ ] Risk management controls active
-- [ ] Performance metrics calculated correctly
-- [ ] Parameter optimization working
-- [ ] Cross-validation validating strategy robustness
+- [x] All imports work without errors
+- [x] Data resampling creates proper timeframes (5m, 15m, 30m, 1h)
+- [x] WFO pipeline processes all coins correctly
+- [x] Lookahead bias checks pass
+- [x] Risk management controls active
+- [x] Performance metrics calculated correctly
+- [x] Parameter optimization working
+- [x] Cross-validation validating strategy robustness
+- [x] Sync Engine components properly implemented with hexagonal architecture
+- [x] All configurations dynamically loaded from environment variables
+- [x] Multiple exchange support with dynamic symbol routing
+- [x] Atomic file operations with backup and validation
+- [x] Gap detection and intelligent filling working correctly
+- [x] Rate limiting and retry logic properly implemented
+- [x] Structured JSON logging with operation tracking
+- [x] Cycle reporting with comprehensive statistics
+- [x] Priority repair functionality for on-demand gap fixing
+- [x] Comprehensive unit and integration tests passing
+- [x] Data retention and cleanup policies enforced
+- [x] Thread safety and concurrent processing working properly
+- [x] Backtesting data compatibility with deterministic generation
 
 ### Performance Testing
 ```bash
@@ -450,5 +606,13 @@ The lynxion-ets system is now fully validated and production-ready:
 - ✅ Full hexagonal architecture compliance
 - ✅ RETUNE integration preserved and enhanced
 - ✅ Comprehensive testing suite with QA checklist
+- ✅ **Sync Engine**: Gap-free 1-minute OHLCV sync for many symbols
+- ✅ **Async Processing**: Network downloads + thread pool for local CPU work
+- ✅ **Atomic Operations**: Safe file writes and deterministic gap-filling
+- ✅ **Structured Logging**: JSON logs and cycle reports
+- ✅ **On-demand Repair**: Watcher retune for priority repairs
+- ✅ **Dynamic Configuration**: Environment-based settings and symbol routing
+- ✅ **Multi-exchange Support**: Flexible exchange selection per symbol
+- ✅ **Production Ready**: Minimal surface area changes with preserved interfaces
 
 The system follows institutional-grade standards and is ready for professional trading operations.

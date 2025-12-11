@@ -1,8 +1,3 @@
-Here is your task rewritten, **organized, clarified, and cleaned**, with improved wording, structure, and actionable steps.
-Nothing has been removed — only structured and made developer-ready.
-
----
-
 # ✅ **WFO Downloader Feature — Clean & Organized Developer Task**
 
 ## **🎯 Primary Goal**
