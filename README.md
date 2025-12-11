@@ -1,21 +1,24 @@
-# lynxion-ets: Enterprise Hedge Fund Trading System
+# Lynxion ETS - Enterprise Trading System
 
-## 🎯 Complete System Overview
+## 🚀 Complete System Overview
 
-This is an enterprise-grade hedge fund trading system implementing hexagonal architecture with advanced Walk-Forward Optimization (WFO) capabilities. The system follows the complete workflow: **Watcher → Engine → Fusion → Strategy → Broker** with production-ready quality.
+Lynxion ETS (Enterprise Trading System) is a professional-grade hedge fund trading system implementing hexagonal architecture with advanced Walk-Forward Optimization (WFO) capabilities. The system follows the complete workflow: **Watcher → Engine → Fusion → Strategy → Broker** with production-ready quality.
 
 ## 📋 Table of Contents
 1. [Architecture Overview](#architecture-overview)
-2. [WFO Pipeline](#wfo-pipeline)
-3. [Data Resampling](#data-resampling)
+2. [Key Features](#key-features)
+3. [Installation](#installation)
 4. [Configuration](#configuration)
-5. [Testing & QA](#testing--qa)
-6. [Usage Examples](#usage-examples)
-7. [Production Deployment](#production-deployment)
+5. [Usage](#usage)
+6. [Runner Scripts](#runner-scripts)
+7. [Risk Management](#risk-management)
+8. [Performance](#performance)
+9. [Troubleshooting](#troubleshooting)
 
 ## Architecture Overview
 
-### Core Workflow Sequence
+### Core Workflow: Watcher → Engine → Fusion → Strategy → Broker
+
 ```
 Downloader → Resample Engine → Data Loader → Strategy Engine → Watcher Layer → MultiSymbol Router → Execution Engine → Brokers
 ```
@@ -32,66 +35,68 @@ Downloader → Resample Engine → Data Loader → Strategy Engine → Watcher L
 - **Strategies**: Multi-strategy implementation with risk management
 - **Brokers**: Multi-exchange integration with order management
 
-## WFO Pipeline
+## Key Features
 
-### Walk-Forward Optimization Implementation
-The system implements professional-grade WFO with:
+### 🎯 **Complete WFO Pipeline**
 - **Training Window**: 90 days
-- **Testing Window**: 30 days  
+- **Testing Window**: 30 days
 - **Sliding Step**: 30 days
 - **Complete Architecture**: SlidingWindowSplitter → CrossValidationEngine → HyperoptAdapter → WFOOrchestrator
 
-### Features:
+### 📈 **Advanced Capabilities**
 - Multi-asset parameter optimization
 - Cross-validation with robustness testing
 - Parameter aggregation across assets
 - Realistic backtesting with fees/slippage
 - Lookahead bias prevention through proper indicator shifting
 
-## Data Resampling
-
-### Resampling Engine
-The system implements zero-drift resampling from 1m base data to higher timeframes:
+### 🔄 **Data Resampling**
+- Zero-drift resampling from 1m base data to higher timeframes
 - `1m → 5m`: 5-minute bars from 1-minute data
 - `1m → 15m`: 15-minute bars from 1-minute data
 - `1m → 30m`: 30-minute bars from 1-minute data
 - `1m → 1h`: 1-hour bars from 1-minute data
 
-#### Resampling Methodology:
-1. **Downsample**: Aggregate 1m candles to higher timeframes using proper OHLCV rules
-2. **Forward Fill**: Maintain continuity for missing periods
-3. **Shift**: Apply proper lookback bias correction
-4. **Align**: Ensure temporal consistency across timeframes
+### 🛡️ **Risk Management**
+- Stop-loss and take-profit with priority logic
+- Portfolio exposure limits
+- Drawdown monitoring
+- Correlation risk management
+- Position sizing based on risk parameters
 
-#### Usage:
-```python
-from infrastructure.data.resample_engine import ResampleEngine
-from infrastructure.data.wfo_config import config
+## Installation
 
-# Initialize resample engine with configuration
-resample_engine = ResampleEngine(
-    raw_root=config.get_data_paths()['raw_dir'],
-    out_root=config.get_data_paths()['processed_dir']
-)
+### Prerequisites
+- Python 3.9+
+- Pip package manager
 
-# Convert all timeframes for a single symbol
-resample_engine.resample_tf("BTCUSDT")
+### Setup
+```bash
+# 1. Clone or download the repository
+git clone https://github.com/your-repo/lynxion-ets.git
+cd lynxion-ets
 
-# Convert all timeframes for all configured symbols
-symbols = config.get_coins()
-resample_engine.resample_all(symbols)
+# 2. Create virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Create environment file
+cp .env.example .env
+# Edit .env with your configuration settings
+
+# 5. Create required directories
+mkdir -p ./data/history/{raw/1m,processed/{5m,15m,30m,1h}}
+mkdir -p ./results/{wfo,backtest,hyperopt}
+mkdir -p ./logs
 ```
 
 ## Configuration
 
-### Environment Settings (`.env` file)
-
-Copy and customize the environment settings:
-```bash
-cp .env.example .env
-```
-
-Key configurations:
+### Environment Variables
+Key configuration options in `.env`:
 ```bash
 # WFO Settings
 WFO_COINS=BTCUSDT,ETHUSDT,SOLUSDT,ADAUSDT,AVAXUSDT,DOGEUSDT,MATICUSDT,ATOMUSDT,TONUSDT,LINKUSDT,TRXUSDT,NEARUSDT,EGLDUSDT,APTUSDT,AAVEUSDT,CROUSDT,UNIUSDT,INJUSDT,FILUSDT,ARBUSDT,PEPEUSDT,APTUSDT,GMXUSDT,ORDIUSDT,RUNEUSSDT
@@ -100,15 +105,11 @@ WFO_TEST_SIZE=30
 WFO_STEP_SIZE=30
 WFO_MAX_EVALS=100
 
-# RETUNE Settings (preserved from original)
+# RETUNE Settings
 RETUNE_ENABLED=true
 RETUNE_INTERVAL_HOURS=6
 RETUNE_PERFORMANCE_THRESHOLD=0.15
 RETUNE_EVALS_PER_CYCLE=20
-
-# Data sync settings
-WFO_SYNC_DAYS=180
-WFO_REFRESH_INTERVAL_HOURS=24
 
 # Risk Management
 RISK_MAX_POSITION_SIZE=0.20
@@ -121,194 +122,42 @@ MAX_CACHE_AGE_HOURS=24
 MAX_COIN_CACHE_SIZE=50
 ```
 
-## Testing & QA
+## Usage
 
-### Test Structure
-```
-/tests/
-├── wfo_comprehensive_tests.py      # End-to-end WFO pipeline tests
-├── wfo_component_tests.py          # Individual component tests
-├── wfo_advanced_tests.py           # Advanced tests with realistic data
-├── wfo_complete_pipeline_tests.py  # Complete pipeline validation
-├── test_integration_*.py           # Integration tests
-└── ... other tests
-```
+### 🏃‍♂️ **Quick Start**
 
-### Running Tests
-
-#### All WFO Tests:
+#### 1. Run with Default Configuration
 ```bash
-# Run all WFO-specific tests
-python -m pytest tests/ -k wfo -v
+# Run the main trading system
+python run_trading_system.py --mode optimize --strategy crypto_breakout --symbol BTCUSDT
 
-# Run comprehensive pipeline tests
-python -m pytest tests/wfo_complete_pipeline_tests.py -v
+# Run backtest with optimized parameters
+python run_trading_system.py --mode backtest --strategy crypto_breakout --symbol BTCUSDT --use-optimized-params
+
+# Run auto-retune on multiple symbols
+python run_trading_system.py --mode retune --strategy crypto_breakout --symbols BTCUSDT,ETHUSDT,SOLUSDT
+
+# Run in production mode
+python run_trading_system.py --mode production --strategy crypto_breakout
 ```
 
-#### Individual Component Tests:
+#### 2. Auto-Detection Mode
 ```bash
-# Test window splitters
-python -c "
-from application.walk_forward.sliding_window_splitter import SlidingWindowSplitter
-import pandas as pd
-import numpy as np
+# Run in auto-detection mode (watcher detects opportunities and triggers strategies automatically)
+python run_trading_system.py --mode production --auto-detect --symbols BTCUSDT,ETHUSDT
 
-# Create sample data
-dates = pd.date_range(start='2023-01-01', end='2023-06-30', freq='D')
-data = pd.DataFrame({
-    'open': np.random.random(len(dates)) * 100,
-    'high': np.random.random(len(dates)) * 110,
-    'low': np.random.random(len(dates)) * 90,
-    'close': np.random.random(len(dates)) * 100,
-    'volume': np.random.random(len(dates)) * 1000000
-}, index=dates)
-
-splitter = SlidingWindowSplitter(train_size=60, test_size=20, step=20)
-windows = splitter.split(data)
-print(f'✅ Generated {len(windows)} windows')
-print(f'   Window 1: Train {len(windows[0].train_data)} days, Test {len(windows[0].test_data)} days')
-"
+# Run auto-detection with all configured coins
+python run_trading_system.py --mode production --auto-detect
 ```
 
-#### Data Resampling Tests:
-```bash
-python -c "
-from infrastructure.data.resample_engine import ResampleEngine
-from infrastructure.data.wfo_config import config
-
-# Test resample engine initialization
-resample_engine = ResampleEngine(
-    raw_root=config.get_data_paths()['raw_dir'],
-    out_root=config.get_data_paths()['processed_dir']
-)
-print('✅ Resample engine initialized successfully')
-print(f'✅ Raw data path: {config.get_data_paths()[\"raw_dir\"]}')
-print(f'✅ Processed data path: {config.get_data_paths()[\"processed_dir\"]}')
-"
-```
-
-#### Complete Pipeline Test:
-```bash
-python -c "
-from application.walk_forward.wfo_orchestrator import WFOOrchestrator
-
-config = {
-    'train_size': 30,  # Smaller for testing
-    'test_size': 10,
-    'step': 10,
-    'max_evals': 5,    # Limited for testing
-    'results_dir': './results/test'
-}
-
-try:
-    orchestrator = WFOOrchestrator(config=config)
-    print('✅ WFO Orchestrator initialized successfully')
-    print('   - Training window: {} days'.format(config[\"train_size\"]))
-    print('   - Testing window: {} days'.format(config[\"test_size\"]))
-    print('   - Sliding step: {} days'.format(config[\"step\"]))
-    print('   - Max evaluations: {}'.format(config[\"max_evals\"]))
-except Exception as e:
-    print(f'❌ Error: {e}')
-"
-```
-
-### QA Checklist
-
-#### 1. Architecture Compliance
-- [ ] All components follow hexagonal architecture (ports/adapters)
-- [ ] Proper dependency direction (outside → inside)
-- [ ] No circular dependencies
-- [ ] Clean separation of concerns
-
-#### 2. WFO Pipeline Verification  
-- [ ] SlidingWindowSplitter creates proper train/test windows
-- [ ] CrossValidationEngine validates strategy robustness
-- [ ] HyperoptAdapter optimizes parameters per asset
-- [ ] WFOOrchestrator combines all components correctly
-- [ ] 90/30/30 window configuration working
-
-#### 3. LookAhead Bias Prevention
-- [ ] All indicators properly shifted (`.shift(1)`)
-- [ ] MTF sync follows: downsample → ffill → shift → align
-- [ ] Stop-loss priority > take-profit for longs
-- [ ] Proper SL/TP using candle high/low
-- [ ] No future data in current calculations
-
-#### 4. Data Quality Validation
-- [ ] OHLC relationships: high ≥ max(open, close), low ≤ min(open, close)
-- [ ] Volume > 0 for all entries
-- [ ] No future timestamps
-- [ ] Continuous time periods without gaps (after resampling)
-- [ ] Proper data format (CSV with OHLCV columns)
-
-#### 5. Risk Management
-- [ ] Position sizing controls active
-- [ ] Maximum drawdown limits enforced
-- [ ] Portfolio exposure limits maintained
-- [ ] No double entries allowed
-- [ ] Correlation risk considered
-
-#### 6. Performance Validation
-- [ ] Backtester includes fees and slippage
-- [ ] Realistic execution modeling
-- [ ] Peak-trough drawdown calculation
-- [ ] Proper equity curve generation
-- [ ] Performance metrics accurately calculated
-
-### QA Test Scripts
-
-#### Quick Architecture Check:
-```bash
-python -c "
-from application.walk_forward.wfo_orchestrator import WFOOrchestrator
-from application.walk_forward.sliding_window_splitter import SlidingWindowSplitter
-from infrastructure.backtest.realistic_backtester import RealisticBacktester
-from domain.ports.engine_ports import StrategyPort, EnginePort
-print('✅ All WFO components import successfully')
-print('✅ Architecture compliance verified')
-"
-```
-
-#### Data Quality Check:
-```bash
-python -c "
-import pandas as pd
-import numpy as np
-
-def check_data_quality(df):
-    '''Check OHLC relationships and other data quality metrics'''
-    issues = []
-    
-    # Check OHLC relationships
-    invalid_high = df[(df['high'] < df['open']) & (df['high'] < df['close'])]
-    if not invalid_high.empty:
-        issues.append(f'Found {len(invalid_high)} rows where high < both open and close')
-    
-    invalid_low = df[(df['low'] > df['open']) & (df['low'] > df['close'])]
-    if not invalid_low.empty:
-        issues.append(f'Found {len(invalid_low)} rows where low > both open and close')
-    
-    # Check volume
-    invalid_volume = df[df['volume'] <= 0]
-    if not invalid_volume.empty:
-        issues.append(f'Found {len(invalid_volume)} rows with non-positive volume')
-    
-    return issues
-
-print('✅ Data quality validation function ready')
-"
-```
-
-## Usage Examples
-
-### Running Complete WFO Pipeline:
+### 📊 **Complete WFO Pipeline**
 ```python
 from application.walk_forward.wfo_orchestrator import WFOOrchestrator
 
 # Configuration for the pipeline
 wfo_config = {
     'train_size': 90,
-    'test_size': 30, 
+    'test_size': 30,
     'step': 30,
     'max_evals': 100,
     'results_dir': './results/wfo',
@@ -341,258 +190,179 @@ results = orchestrator.run_complete_wfo_pipeline(
 )
 ```
 
-### Resample All Data:
-```python
-from infrastructure.data.resample_engine import ResampleEngine
-from infrastructure.data.wfo_config import config
+### 🔄 **Resync Data**
+```bash
+# Run complete resync process (download, timeframe processing, validation)
+python runner_resync.py --all
 
-# Resample all data from 1m to higher timeframes
-resample_engine = ResampleEngine(
-    raw_root=config.get_data_paths()['raw_dir'],
-    out_root=config.get_data_paths()['processed_dir']
-)
+# Run only download and sync
+python runner_resync.py --download --timeframes
 
-# Resample all configured symbols into all timeframes (5m, 15m, 30m, 1h)
-symbols = config.get_coins()
-resample_engine.resample_all(symbols)
+# Run for specific symbols
+python runner_resync.py --all --symbols BTCUSDT ETHUSDT
 ```
+
+## Runner Scripts
+
+### Available Runner Scripts
+
+The system provides several specialized runner scripts in the root directory:
+
+#### 1. **Resync Runner** (`runner_resync.py`)
+Orchestrates downloader, sync, and retune processes for data consistency.
+```bash
+python runner_resync.py --all
+
+# Run only download and timeframe processing
+python runner_resync.py --download --timeframes
+
+# Run for specific symbols
+python runner_resync.py --symbols BTCUSDT ETHUSDT
+```
+
+#### 2. **Retune Runner** (`runner_retune.py`)
+Automated hyperparameter retuning for trading strategies.
+```bash
+python runner_retune.py --strategy crypto_breakout --symbols BTCUSDT --evals 50 --days 90
+```
+
+#### 3. **History Download Runner** (`runner_history_download.py`)
+Download historical market data for multiple symbols and timeframes.
+```bash
+python runner_history_download.py --start 2023-01-01 --end 2023-12-31 --symbols BTCUSDT ETHUSDT
+```
+
+#### 4. **Multi-Timeframe Update Runner** (`runner_multitimeframe_update.py`)
+Aggregates 1-minute data to higher timeframes following the proper MTF sync pattern.
+```bash
+python runner_multitimeframe_update.py --symbols BTCUSDT --timeframes 5m 15m 30m 1h 4h 1d
+```
+
+#### 5. **Backtest Runner** (`runner_backtest.py`)
+Execute comprehensive backtesting for trading strategies.
+```bash
+python runner_backtest.py --strategy rsi_strategy --start 2023-01-01 --end 2023-12-31 --symbols BTCUSDT
+```
+
+#### 6. **Walk-Forward Runner** (`runner_walkforward.py`)
+Execute walk-forward optimization and analysis.
+```bash
+python runner_walkforward.py --strategy crypto_breakout --symbols BTCUSDT ETHUSDT --train 90 --test 30 --step 30
+```
+
+### Runner Script Options
+All runner scripts support common options:
+- `--validate`: Validate results after processing
+- `--output FILE`: Save results to JSON file
+- `--verbose`: Enable detailed output
+
+## Risk Management
+
+### Core Risk Controls
+- **Position Sizing**: Based on risk percentage and stop-loss distance
+- **Portfolio Exposure Limits**: Maximum percentage of capital per position
+- **Drawdown Controls**: Automatic trading halt when drawdown threshold exceeded
+- **Correlation Management**: Limit position overlap across strategies
+- **Order Management**: Proper SL/TP execution using candle high/low
+
+### Configuration
+Risk parameters are configured in `.env` file:
+```bash
+RISK_MAX_POSITION_SIZE=0.20      # Max 20% per position
+RISK_MAX_TOTAL_EXPOSURE=0.80     # Max 80% total exposure  
+RISK_MAX_DRAWDOWN=0.15           # Max 15% drawdown
+RISK_MAX_LEVERAGE=5.0            # Max 5x leverage
+```
+
+## Performance
+
+### System Characteristics
+- **Low Latency**: Optimized for high-frequency signal processing
+- **Scalable Architecture**: Supports multiple symbols and strategies
+- **Memory Efficient**: Data caching with size limits
+- **Parallel Processing**: Concurrent operations where possible
+
+### Performance Metrics
+- **Sharpe Ratio**: Risk-adjusted return metric
+- **Win Rate**: Percentage of profitable trades
+- **Max Drawdown**: Peak-to-trough decline
+- **Profit Factor**: Gross profit / gross loss
+- **Expectancy**: Average profit per trade
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. Data Loading Issues
+- **Issue**: "No data found for symbol"
+- **Solution**: Verify data files exist in correct format
+- **Check**: `./data/history/raw/1m/{SYMBOL}.csv`
+
+#### 2. Memory Issues
+- **Issue**: System running out of memory
+- **Solution**: Reduce cache sizes in configuration
+- **Config**: `MAX_COIN_CACHE_SIZE` in `.env`
+
+#### 3. Configuration Errors
+- **Issue**: Invalid parameter ranges
+- **Solution**: Verify parameter bounds in hyperopt configuration
+- **Check**: Parameter ranges in `HyperoptParameterSpace`
+
+### Error Reporting
+- Check log files in `./logs/` directory
+- Enable verbose output with `--verbose` flag
+- Review configuration files for missing values
+
+### Support
+- Review documentation in `./docs/` directory
+- Check runner scripts for usage examples
+- Examine test files for implementation examples
 
 ## Production Deployment
 
-### 1. Setup:
+### 1. Setup
 ```bash
-# Clone and navigate to project
-cd /path/to/lynxion-ets
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Create environment file
-cp .env.example .env
-# Edit .env with your settings
-
-# Create required directories
-mkdir -p ./data/history/{raw/1m,processed/{5m,15m,30m,1h}}
-mkdir -p ./results/wfo
-mkdir -p ./logs
+# Create production environment
+cp .env.example .env.production
+# Configure production settings
 ```
 
-### 2. Initial Data Load:
-```bash
-# Run with your configured coins and timeframes
-python -c "
-from infrastructure.data.auto_sync_service import create_auto_sync_service
-service = create_auto_sync_service()
-service.manual_full_refresh()
-"
-```
+### 2. Monitoring
+- Enable logging to file
+- Set up alert notifications
+- Monitor resource usage
+- Track performance metrics
 
-### 3. Start Production Service:
-```bash
-python -c "
-from infrastructure.data.auto_sync_service import create_auto_sync_service
-
-service = create_auto_sync_service()
-print('Starting auto-sync service...')
-print(f'- Coins: {len(service.config.get_coins())}')
-print(f'- Full refresh: every {service.config.get_sync_settings()[\"sync_days\"]} days')
-print(f'- Incremental refresh: every {service.config.get_sync_settings()[\"refresh_interval_hours\"]} hours')
-print(f'- RETUNE enabled: {service.config.get_retune_settings()[\"enabled\"]}')
-
-service.start_auto_sync()
-"
-```
-
-## Run / Debug Commands for Downloader/Sync Engine
-
-The new Downloader/Sync Engine provides several command-line options for operation and debugging:
-
-### Run single cycle for a single symbol:
-```bash
-python -m application.data_sync.sync_loop --one-cycle --symbol BTC-USDT
-```
-
-### Run watcher repair (blocking):
-```bash
-python -m application.data_sync.watcher_retune --symbol BTC-USDT --from 1672531200 --to 1672617600
-```
-
-### Start continuous loop (foreground):
-```bash
-python -m application.data_sync.sync_loop
-```
-
-### Run specific sync operations:
-```bash
-# Run a single sync cycle for all enabled symbols
-python -m application.data_sync.sync_loop --one-cycle
-
-# Run a single sync cycle for a specific symbol
-python -m application.data_sync.sync_loop --one-cycle --symbol ETH-USDT
-
-# Run file validation for a symbol
-python -c "
-from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
-from application.configs.symbol_config import get_symbols
-
-file_repo = FileRepositoryAdapter()
-symbols = [s.symbol for s in get_symbols() if s.enabled]
-for symbol in symbols[:3]:  # Test first 3 symbols
-    file_path = file_repo.get_raw_file_path(symbol)
-    gaps = file_repo.detect_missing_ranges(file_path)
-    print(f'{symbol}: {len(gaps)} gaps detected')
-"
-```
-
-### Configuration:
-Set the following in your `.env` file to configure the sync engine:
-
-```bash
-# Sync Settings
-SYNC_INTERVAL_SECONDS=7200
-ASYNC_CONCURRENCY=100
-DOWNLOAD_THREADPOOL_WORKERS=8
-RETRY_MAX_ATTEMPTS=5
-RETRY_BACKOFF_BASE=0.5
-RETRY_BACKOFF_FACTOR=2.0
-RATE_LIMIT_TOKENS_PER_SECOND=10
-TEMP_FILE_SUFFIX=.partial
-DATA_DIR=./data/history
-
-# Retention Settings
-RAW_RETENTION_DAYS=365
-PROCESSED_RETENTION_DAYS=1095
-MAX_GAP_FILL_MINUTES=1440
-
-# Global Symbol Settings (uses WFO_COINS list)
-SYNC_DEFAULT_EXCHANGE=binance
-SYNC_MAX_WINDOW_MINUTES=1440
-SYNC_RATE_LIMIT=10
-```
-
-The sync engine will automatically use the coins listed in `WFO_COINS` environment variable, applying the global settings to all of them.
-
-### Test the sync system components:
-```bash
-# Run unit tests for the new modules
-python -m pytest tests/test_sync_hexagonal.py -v
-
-# Run all sync-related tests
-python -m pytest tests/ -k "sync" -v
-
-# Run specific component tests
-python -m pytest tests/test_sync_hexagonal.py::TestSymbolConfiguration -v
-python -m pytest tests/test_sync_hexagonal.py::TestSyncManager -v
-python -m pytest tests/test_sync_hexagonal.py::TestFileRepositoryAdapter -v
-python -m pytest tests/test_sync_hexagonal.py::TestWatcherRetuneUseCase -v
-python -m pytest tests/test_sync_hexagonal.py::TestIntegration -v
-```
-
-### Usage Examples:
-
-#### 1. Manual Sync for Specific Symbol:
-```python
-from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
-from infrastructure.data_sync.data_downloader_adapter import DataDownloaderAdapter
-from application.data_sync.sync_manager import SyncManager
-
-# Create dependencies
-file_repo = FileRepositoryAdapter()
-data_downloader = DataDownloaderAdapter()
-sync_manager = SyncManager(file_repo, data_downloader)
-
-# Run sync for specific symbols
-import asyncio
-result = asyncio.run(sync_manager.run_sync_cycle(["BTC-USDT", "ETH-USDT"]))
-print(f"Sync completed: {result['symbols_fixed']}/{result['symbols_scanned']} symbols fixed")
-```
-
-#### 2. On-demand Gap Repair:
-```python
-from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
-from infrastructure.data_sync.data_downloader_adapter import DataDownloaderAdapter
-from application.data_sync.sync_manager import SyncManager
-from application.data_sync.watcher_retune import WatcherRetuneUseCase
-
-# Create dependencies
-file_repo = FileRepositoryAdapter()
-data_downloader = DataDownloaderAdapter()
-sync_manager = SyncManager(file_repo, data_downloader)
-watcher_retune = WatcherRetuneUseCase(file_repo, data_downloader, sync_manager)
-
-# Validate a specific time range
-is_valid = watcher_retune.validate_interval("BTC-USDT", 1672531200, 1672617600)
-print(f"Range is valid: {is_valid}")
-
-# Request priority repair if needed
-if not is_valid:
-    success = watcher_retune.request_repair_sync("BTC-USDT", 1672531200, 1672617600)
-    print(f"Repair completed: {success}")
-```
-
-#### 3. Data Access:
-```python
-from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
-
-file_repo = FileRepositoryAdapter()
-
-# Get file paths
-raw_path = file_repo.get_raw_file_path("BTC-USDT")
-index_path = file_repo.get_index_file_path("BTC-USDT")
-processed_path = file_repo.get_processed_file_path("BTC-USDT", "5m")
-
-# Check file status
-index_info = file_repo.get_file_index("BTC-USDT")
-print(f"Data range: {index_info.get('earliest_timestamp')} to {index_info.get('latest_timestamp')}")
-```
+### 3. Backup Strategy
+- Regular backup of results data
+- Configuration version control
+- Log rotation and archival
 
 ## Quality Assurance
 
-### Verification Checklist
-- [x] All imports work without errors
-- [x] Data resampling creates proper timeframes (5m, 15m, 30m, 1h)
-- [x] WFO pipeline processes all coins correctly
-- [x] Lookahead bias checks pass
-- [x] Risk management controls active
-- [x] Performance metrics calculated correctly
-- [x] Parameter optimization working
-- [x] Cross-validation validating strategy robustness
-- [x] Sync Engine components properly implemented with hexagonal architecture
-- [x] All configurations dynamically loaded from environment variables
-- [x] Multiple exchange support with dynamic symbol routing
-- [x] Atomic file operations with backup and validation
-- [x] Gap detection and intelligent filling working correctly
-- [x] Rate limiting and retry logic properly implemented
-- [x] Structured JSON logging with operation tracking
-- [x] Cycle reporting with comprehensive statistics
-- [x] Priority repair functionality for on-demand gap fixing
-- [x] Comprehensive unit and integration tests passing
-- [x] Data retention and cleanup policies enforced
-- [x] Thread safety and concurrent processing working properly
-- [x] Backtesting data compatibility with deterministic generation
+### Testing Framework
+- Unit tests: Individual component functionality
+- Integration tests: Complete workflow validation
+- End-to-end tests: Full system validation
+- Performance tests: Load and stress testing
 
-### Performance Testing
+### Run Tests
 ```bash
-# Benchmark the system performance
-python -c "
-import time
-from application.walk_forward.wfo_orchestrator import WFOOrchestrator
+# Run all tests
+python -m pytest tests/ -v
 
-config = {
-    'train_size': 30, 'test_size': 10, 'step': 10, 
-    'max_evals': 5, 'results_dir': './results/test'
-}
-orchestrator = WFOOrchestrator(config=config)
-
-start_time = time.time()
-# Run a quick benchmark - would need real data to complete
-print(f'Benchmark: WFO Orchestrator initialization took {time.time() - start_time:.2f}s')
-"
+# Run specific test suites
+python -m pytest tests/test_complete_orchestrator_workflow.py -v
+python -m pytest tests/wfo_complete_pipeline_tests.py -v
 ```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
-## 🏆 Final Verification
+## 🏆 System Status
 
 The lynxion-ets system is now fully validated and production-ready:
 

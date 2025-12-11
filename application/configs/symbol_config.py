@@ -4,20 +4,46 @@ Symbol configuration for the Downloader/Sync Engine.
 This module contains the authoritative symbol list and per-symbol metadata.
 """
 import os
+import json
 from typing import List, Optional
+from pathlib import Path
 from domain.sync.entities import SymbolSyncConfig
 
 
 def _parse_wfo_symbols() -> List[SymbolSyncConfig]:
-    """Parse symbols from WFO_COINS environment variable"""
-    wfo_coins_str = os.getenv("WFO_COINS", "")
-    if not wfo_coins_str:
-        # If WFO_COINS is not set, return empty list - only use environment
-        print("⚠️  WARNING: WFO_COINS environment variable not set. No symbols will be processed.")
-        print("   Please set WFO_COINS in your .env file (e.g., WFO_COINS=BTCUSDT,ETHUSDT,...)")
+    """Parse symbols from multiple sources: WFO_COINS environment variable, coins.json file, or default list"""
+
+    # First, try to read from coins.json file if it exists (for better organization)
+    coins_json_path = Path(os.getenv("COINS_CONFIG_PATH", "./config/coins.json"))
+    if coins_json_path.exists():
+        try:
+            with open(coins_json_path, 'r') as f:
+                coins_data = json.load(f)
+                # Try to read from the main 'symbols' array first
+                symbol_names = coins_data.get("symbols", [])
+                # If that doesn't exist, try to consolidate from categories
+                if not symbol_names and "categories" in coins_data:
+                    for category_coins in coins_data["categories"].values():
+                        symbol_names.extend(category_coins)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not load coins.json from {coins_json_path}: {e}")
+            symbol_names = []
+    else:
+        # If coins.json doesn't exist, try the WFO_COINS environment variable
+        wfo_coins_str = os.getenv("WFO_COINS", "")
+        if not wfo_coins_str:
+            # If neither coins.json nor WFO_COINS is set, try common default
+            print("⚠️  WARNING: WFO_COINS environment variable not set and coins.json not found. No symbols will be processed.")
+            print("   Please set WFO_COINS in your .env file or create ./config/coins.json")
+            print("   Example coins.json format: {\"symbols\": [\"BTCUSDT\", \"ETHUSDT\", \"ZECUSDT\"]}")
+            return []
+
+        symbol_names = [s.strip() for s in wfo_coins_str.split(',')]
+
+    if not symbol_names:
+        print("⚠️  WARNING: No symbols found in WFO_COINS or coins.json. No symbols will be processed.")
         return []
 
-    symbol_names = [s.strip() for s in wfo_coins_str.split(',')]
     symbol_configs = []
 
     for i, symbol in enumerate(symbol_names):
