@@ -2,6 +2,7 @@
 Market Opportunity Watcher for auto-detection system.
 Monitors markets continuously and identifies opportunities based on technical conditions.
 """
+import os
 import threading
 import time
 from datetime import datetime
@@ -46,8 +47,9 @@ class MarketOpportunityWatcher:
                 converted_symbols.append(Symbol(s))
             self.symbols = converted_symbols
         else:
-            # Default symbols to monitor if none provided and auto-discovery is off
-            self.symbols = [Symbol("BTCUSDT"), Symbol("ETHUSDT"), Symbol("SOLUSDT"), Symbol("XRPUSDT")]
+            # Use default symbols from environment variables or fallback to hard-coded defaults
+            default_symbols = os.getenv("DEFAULT_WATCHLIST_SYMBOLS", "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT").split(",")
+            self.symbols = [Symbol(s.strip()) for s in default_symbols]
 
         # Initialize watcher adapters for each symbol
         self._initialize_watchers()
@@ -56,13 +58,25 @@ class MarketOpportunityWatcher:
         """Dynamically discover symbols to monitor based on market conditions or other criteria."""
         self.logger.info("🔍 Discovering symbols to monitor automatically...")
 
-        try:
-            # Try to use the CMCScreener to get a comprehensive list of symbols
-            cmc_screener = CMCScreener(name="CMCAutoDiscovery")
+        # Try multiple methods to discover symbols, starting with the most comprehensive
+        discovered_symbols = self._discover_by_market_cap()
 
-            # Get screening results using analyze method (which will screen top coins)
-            # For auto-discovery of symbols, we'll fetch the top coins directly
-            from decimal import Decimal
+        if not discovered_symbols:
+            # Fallback to basic discovery if market cap method fails
+            discovered_symbols = self._discover_by_price_activity()
+
+        if not discovered_symbols:
+            # Final fallback to default symbols from environment variables
+            fallback_symbols_str = os.getenv("FALLBACK_WATCHLIST_SYMBOLS", "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,AVAXUSDT,MATICUSDT,DOTUSDT,LINKUSDT")
+            fallback_symbols = [s.strip() for s in fallback_symbols_str.split(",")]
+            discovered_symbols = fallback_symbols
+
+        self.logger.info(f"✅ Auto-discovered {len(discovered_symbols)} symbols to monitor: {discovered_symbols}")
+        return [Symbol(s) for s in discovered_symbols]
+
+    def _discover_by_market_cap(self) -> List[str]:
+        """Discover symbols based on market cap from CMC API."""
+        try:
             import requests
             import os
             from dotenv import load_dotenv
@@ -72,116 +86,132 @@ class MarketOpportunityWatcher:
             cmc_listings_url = os.getenv("CMC_LISTINGS_URL", "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest")
 
             if not cmc_api_key:
-                self.logger.warning("CMC_API_KEY not found, using default symbols")
-                # Use default symbols if no CMC API key is available
-                discovered_symbols = [
-                    "BTCUSDT",  # Bitcoin - major trading pair
-                    "ETHUSDT",  # Ethereum - major trading pair
-                    "SOLUSDT",  # Solana - high volume altcoin
-                    "XRPUSDT",  # Ripple - high volume altcoin
-                    "ADAUSDT",  # Cardano - high volume altcoin
-                    "DOGEUSDT", # Dogecoin - popular meme coin
-                    "AVAXUSDT", # Avalanche - smart contract platform
-                    "MATICUSDT", # Polygon - scaling solution
-                    "DOTUSDT",  # Polkadot - interoperability
-                    "LINKUSDT", # Chainlink - oracle network
-                ]
-            else:
-                # Use the CMCScreener's screening capability
-                headers = {
-                    'Accepts': 'application/json',
-                    'X-CMC_PRO_API_KEY': cmc_api_key,
-                }
+                self.logger.warning("CMC_API_KEY not found, skipping market cap discovery")
+                return []
 
-                params = {
-                    'start': '1',
-                    'limit': '50',
-                    'convert': 'USD'
-                }
+            headers = {
+                'Accepts': 'application/json',
+                'X-CMC_PRO_API_KEY': cmc_api_key,
+            }
 
-                try:
-                    response = requests.get(cmc_listings_url, headers=headers, params=params)
-                    response.raise_for_status()
-                    data = response.json()
+            params = {
+                'start': '1',
+                'limit': '50',
+                'convert': 'USD'
+            }
 
-                    if 'data' in data:
-                        # Extract symbols from the top 15 coins (excluding major coins that are typically excluded)
-                        excluded_coins_str = os.getenv("CMC_EXCLUDED_COINS", "BTC,ETH,SOL,ADA,DOT,XRP,DOGE,LINK,BNB,AVAX,MATIC,BTCUSDT,ETHUSDT,SOLUSDT,ADAUSDT,DOTUSDT,XRPUSDT,DOGEUSDT,LINKUSDT,BNBUSDT,AVAXUSDT,MATICUSDT")
-                        excluded_coins = set(coin.strip().upper() for coin in excluded_coins_str.split(',') if coin.strip())
+            try:
+                response = requests.get(cmc_listings_url, headers=headers, params=params)
+                response.raise_for_status()
+                data = response.json()
 
-                        discovered_symbols = []
-                        for coin in data['data']:
-                            symbol = coin['symbol']
-                            # Skip if in excluded list
-                            if symbol in excluded_coins:
-                                continue
+                if 'data' in data:
+                    # Extract symbols from the top coins with filtering
+                    excluded_coins_str = os.getenv("CMC_EXCLUDED_COINS", "BTC,ETH,SOL,ADA,DOT,XRP,DOGE,LINK,BNB,AVAX,MATIC,BTCUSDT,ETHUSDT,SOLUSDT,ADAUSDT,DOTUSDT,XRPUSDT,DOGEUSDT,LINKUSDT,BNBUSDT,AVAXUSDT,MATICUSDT")
+                    excluded_coins = set(coin.strip().upper() for coin in excluded_coins_str.split(',') if coin.strip())
 
-                            # Format as proper trading pair
-                            formatted_symbol = f"{symbol}USDT"
+                    discovered_symbols = []
+                    for coin in data['data']:
+                        symbol = coin['symbol']
+                        # Skip if in excluded list
+                        if symbol in excluded_coins:
+                            continue
 
-                            # Validate the symbol format
-                            try:
-                                Symbol(formatted_symbol)  # This will validate the format
-                                discovered_symbols.append(formatted_symbol)
-                                if len(discovered_symbols) >= 10:  # Limit to top 10 for auto-discovery
-                                    break
-                            except ValueError:
-                                continue  # Skip invalid symbols
-                    else:
-                        self.logger.warning("CMC API returned no data, using defaults")
-                        discovered_symbols = [
-                            "BTCUSDT",  # Bitcoin - major trading pair
-                            "ETHUSDT",  # Ethereum - major trading pair
-                            "SOLUSDT",  # Solana - high volume altcoin
-                            "XRPUSDT",  # Ripple - high volume altcoin
-                            "ADAUSDT",  # Cardano - high volume altcoin
-                            "DOGEUSDT", # Dogecoin - popular meme coin
-                            "AVAXUSDT", # Avalanche - smart contract platform
-                            "MATICUSDT", # Polygon - scaling solution
-                            "DOTUSDT",  # Polkadot - interoperability
-                            "LINKUSDT", # Chainlink - oracle network
-                        ]
-                except Exception as e:
-                    self.logger.warning(f"Error fetching from CMC API: {e}. Using default symbols.")
-                    discovered_symbols = [
-                        "BTCUSDT",  # Bitcoin - major trading pair
-                        "ETHUSDT",  # Ethereum - major trading pair
-                        "SOLUSDT",  # Solana - high volume altcoin
-                        "XRPUSDT",  # Ripple - high volume altcoin
-                        "ADAUSDT",  # Cardano - high volume altcoin
-                        "DOGEUSDT", # Dogecoin - popular meme coin
-                        "AVAXUSDT", # Avalanche - smart contract platform
-                        "MATICUSDT", # Polygon - scaling solution
-                        "DOTUSDT",  # Polkadot - interoperability
-                        "LINKUSDT", # Chainlink - oracle network
-                    ]
+                        # Format as proper trading pair
+                        formatted_symbol = f"{symbol}USDT"
+
+                        # Validate the symbol format
+                        try:
+                            Symbol(formatted_symbol)  # This will validate the format
+                            discovered_symbols.append(formatted_symbol)
+                            if len(discovered_symbols) >= 10:  # Limit to top 10 for auto-discovery
+                                break
+                        except ValueError:
+                            continue  # Skip invalid symbols
+                    return discovered_symbols
+                else:
+                    self.logger.warning("CMC API returned no data")
+                    return []
+            except Exception as e:
+                self.logger.warning(f"Error fetching from CMC API: {e}")
+                return []
         except Exception as e:
-            self.logger.warning(f"Error during symbol discovery: {e}. Falling back to default symbols.")
-            discovered_symbols = [
-                "BTCUSDT",  # Bitcoin - major trading pair
-                "ETHUSDT",  # Ethereum - major trading pair
-                "SOLUSDT",  # Solana - high volume altcoin
-                "XRPUSDT",  # Ripple - high volume altcoin
-                "ADAUSDT",  # Cardano - high volume altcoin
-                "DOGEUSDT", # Dogecoin - popular meme coin
-                "AVAXUSDT", # Avalanche - smart contract platform
-                "MATICUSDT", # Polygon - scaling solution
-                "DOTUSDT",  # Polkadot - interoperability
-                "LINKUSDT", # Chainlink - oracle network
-            ]
+            self.logger.warning(f"Error during market cap symbol discovery: {e}")
+            return []
 
-        self.logger.info(f"✅ Auto-discovered {len(discovered_symbols)} symbols to monitor: {discovered_symbols}")
-        return [Symbol(s) for s in discovered_symbols]
+    def _discover_by_price_activity(self) -> List[str]:
+        """Discover symbols based on price/volume activity from exchange data."""
+        try:
+            # This would connect to exchange APIs to get recent activity
+            # For now, we'll simulate using a placeholder that would connect to exchange data
+            # This could use ccxt or other exchange APIs to get recent price/volume spikes
+            discovered_symbols = self._get_active_symbols_from_exchange()
+
+            if discovered_symbols:
+                return discovered_symbols[:10]  # Limit to top 10
+
+            # If exchange-based discovery fails, return empty list and let fallback happen
+            return []
+        except Exception as e:
+            self.logger.warning(f"Error during activity-based symbol discovery: {e}")
+            return []
+
+    def _get_active_symbols_from_exchange(self) -> List[str]:
+        """Get active symbols from exchange based on volume and price changes."""
+        # In a real implementation, this would connect to exchange APIs
+        # to get recent symbols with high volume or price volatility
+        try:
+            import ccxt
+            # Use a public exchange to get top volume symbols
+            exchange = ccxt.binance()
+            tickers = exchange.fetch_tickers()
+
+            # Filter for USDT pairs and sort by volume
+            usdt_pairs = {}
+            for symbol, ticker in tickers.items():
+                if symbol.endswith('/USDT') and 'quoteVolume' in ticker and ticker['quoteVolume']:
+                    usdt_pairs[symbol] = ticker['quoteVolume']
+
+            # Sort by volume and return top symbols
+            sorted_symbols = sorted(usdt_pairs.items(), key=lambda x: x[1], reverse=True)
+            top_symbols = []
+            for pair, volume in sorted_symbols[:15]:  # Get top 15
+                # Convert from exchange format to our format
+                formatted = pair.replace('/', '').replace('USDT', 'USDT')  # Already in correct format
+                if formatted.endswith('USDT'):
+                    top_symbols.append(formatted)
+                    if len(top_symbols) >= 10:  # Limit to 10
+                        break
+
+            return top_symbols
+        except Exception as e:
+            self.logger.warning(f"Error getting active symbols from exchange: {e}")
+            return []
+
+    def _discover_by_trending_searches(self) -> List[str]:
+        """Discover symbols based on trending searches or social media activity."""
+        # This could integrate with social media APIs or other trending indicators
+        # For now, this is a placeholder that would implement such functionality
+        try:
+            # In a real implementation:
+            # - Monitor social media for crypto mentions
+            # - Track Google Trends for crypto searches
+            # - Monitor crypto news sentiment
+            # - Track sudden increases in trading volume across exchanges
+            discovered_symbols = []
+            return discovered_symbols
+        except Exception as e:
+            self.logger.warning(f"Error during trending-based symbol discovery: {e}")
+            return []
 
     def _update_symbol_list(self):
         """Dynamically update the list of symbols to monitor based on market conditions."""
         if not self.auto_discover_symbols:
             return  # Only update if auto-discovery is enabled
 
-        # In a real system, this would run periodically to re-evaluate which symbols to watch
-        # For example, identifying symbols with sudden volatility spikes, increased volume, etc.
+        # Use activity-based discovery for more timely updates
         current_symbols = [s.value for s in self.symbols]
-        new_symbols = self._discover_symbols_automatically()
+        new_symbols = self._discover_by_recent_activity()
         new_symbol_values = [s.value for s in new_symbols]
 
         if current_symbols != new_symbol_values:
@@ -190,13 +220,24 @@ class MarketOpportunityWatcher:
             removed_symbols = set(current_symbols) - set(new_symbol_values)
             added_symbols = set(new_symbol_values) - set(current_symbols)
 
-            if removed_symbols:
-                self.logger.info(f"🗑️ Symbols removed: {removed_symbols}")
-            if added_symbols:
-                self.logger.info(f"🆕 New symbols added: {added_symbols}")
-                # Add watchers for new symbols
-                for symbol_str in added_symbols:
-                    symbol = Symbol(symbol_str)
+            # Remove watchers for symbols no longer in the list
+            for symbol_str in removed_symbols:
+                if symbol_str in self.watchers:
+                    # Stop all watchers for this symbol
+                    for watcher_name, watcher in self.watchers[symbol_str].items():
+                        if hasattr(watcher, 'stop'):
+                            watcher.stop()
+                    del self.watchers[symbol_str]
+                    # Remove from symbols list
+                    self.symbols = [s for s in self.symbols if s.value != symbol_str]
+
+                if Symbol(symbol_str) in self.symbols:
+                    self.symbols.remove(Symbol(symbol_str))
+
+            # Add watchers for new symbols
+            for symbol_str in added_symbols:
+                symbol = Symbol(symbol_str)
+                if symbol not in self.symbols:  # Avoid duplicates
                     self.symbols.append(symbol)
                     self.watchers[symbol_str] = {
                         'market_pulse': MarketPulseWatcherAdapter(symbol),
@@ -208,10 +249,73 @@ class MarketOpportunityWatcher:
                     }
                     # Start new watchers
                     for watcher_name, watcher in self.watchers[symbol_str].items():
-                        watcher.start()
+                        if hasattr(watcher, 'start'):
+                            watcher.start()
 
-            # Update symbol list
+            # Update symbol list to match the new discovery
             self.symbols = new_symbols
+        else:
+            self.logger.debug(f"✅ Symbol list unchanged: {len(current_symbols)} symbols")
+
+    def _discover_by_recent_activity(self) -> List[Symbol]:
+        """Discover symbols based on recent market activity like volume surges or price movements."""
+        try:
+            # This method focuses on recent market activity rather than just market cap
+            import ccxt
+            import time
+
+            exchange = ccxt.binance()
+
+            # Get recent tickers
+            tickers = exchange.fetch_tickers()
+
+            # Filter for active USDT pairs with recent volume and price changes
+            active_symbols = []
+            for symbol, ticker in tickers.items():
+                if not symbol.endswith('/USDT'):
+                    continue
+
+                # Check if the ticker has recent data
+                if not all(key in ticker for key in ['close', 'high', 'low', 'quoteVolume', 'change', 'changePercentage']):
+                    continue
+
+                # Look for symbols with high volume and price movement
+                volume = ticker['quoteVolume'] or 0
+                price_change_pct = abs(ticker['changePercentage'] or 0)
+
+                # Thresholds for "active" symbols (these values can be tuned)
+                min_volume_threshold = 10_000_000  # $10M in volume
+                min_change_threshold = 2.0  # 2% price movement
+
+                if volume > min_volume_threshold or price_change_pct > min_change_threshold:
+                    formatted_symbol = symbol.replace('/', '')  # Convert BTC/USDT to BTCUSDT
+                    active_symbols.append({
+                        'symbol': Symbol(formatted_symbol),
+                        'volume': volume,
+                        'change_pct': price_change_pct,
+                        'close': ticker['close']
+                    })
+
+            # Sort by a combination of volume and price movement for relevance
+            active_symbols.sort(key=lambda x: x['volume'] * (1 + x['change_pct'] / 100), reverse=True)
+
+            # Return top symbols, but ensure we include some stable major coins too
+            top_active = [item['symbol'] for item in active_symbols[:7]]  # Top 7 active symbols
+
+            # Add some major coins that might not be trending but are important
+            major_coins = [Symbol('BTCUSDT'), Symbol('ETHUSDT')]
+            important_symbols = [coin for coin in major_coins if coin not in [item['symbol'] for item in active_symbols]]
+
+            # Combine and limit to 10
+            final_symbols = (top_active + important_symbols)[:10]
+
+            self.logger.info(f"📈 Found {len(final_symbols)} active symbols based on recent activity")
+            return final_symbols
+
+        except Exception as e:
+            self.logger.warning(f"Error during recent activity symbol discovery: {e}")
+            # Fallback to basic discovery if activity detection fails
+            return self._discover_symbols_automatically()
         
     def _initialize_watchers(self):
         """Initialize watcher adapters for each symbol."""

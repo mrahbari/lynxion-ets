@@ -12,6 +12,15 @@ from decimal import Decimal
 import statistics
 import numpy as np
 
+# Import ML fusion service for enhanced capabilities
+try:
+    from infrastructure.fusion.ml_signal_fusion import MLSignalFusionService, MLFusionMethod
+    ML_AVAILABLE = True
+except ImportError:
+    ML_AVAILABLE = False
+    MLSignalFusionService = None
+    MLFusionMethod = None
+
 
 class FusionServiceAdapter(FusionPort):
     """Infrastructure implementation of signal fusion"""
@@ -25,133 +34,309 @@ class FusionServiceAdapter(FusionPort):
 
     def fuse_signals(self, signals: List[Signal]) -> Signal:
         """Fuse multiple signals into a single consolidated signal"""
-        if not signals:
-            logger.warning("No signals to fuse")
+        try:
+            if not signals:
+                logger.warning("No signals to fuse")
+                return None
+
+            # Validate all signals are for the same symbol
+            if len(set(s.symbol for s in signals)) > 1:
+                logger.warning("Fusion called with signals for different symbols, using first symbol")
+
+            # Filter out overlapping signals from similar strategies to reduce redundancy
+            filtered_signals = self._filter_overlapping_signals(signals)
+
+            if not filtered_signals:
+                logger.warning("No non-overlapping signals after filtering")
+                return None
+
+            if len(filtered_signals) < self.min_signals_for_fusion:
+                logger.info(f"Insufficient signals for fusion ({len(filtered_signals)} < {self.min_signals_for_fusion}), returning most confident signal after overlap filtering")
+                # If not enough signals after filtering, return the most confident one
+                return max(filtered_signals, key=lambda s: float(s.confidence.value))
+
+            logger.info(f"Fusing {len(filtered_signals)} signals after overlap filtering using {self.fusion_method}")
+
+            # Calculate fusion weights
+            weights = self.calculate_fusion_weights(filtered_signals)
+
+            # Apply fusion using weighted average
+            fused_signal = self._apply_weighted_fusion(filtered_signals, weights)
+
+            logger.info(f"Fused signal: type={fused_signal.signal_type.name}, confidence={fused_signal.confidence}, score={fused_signal.score}")
+            return fused_signal
+        except Exception as e:
+            logger.error(f"Error in fuse_signals: {e}")
+            # Return the highest confidence signal as fallback
+            if signals:
+                return max(signals, key=lambda s: float(s.confidence.value))
             return None
 
-        if len(signals) < self.min_signals_for_fusion:
-            logger.info(f"Insufficient signals for fusion ({len(signals)} < {self.min_signals_for_fusion}), returning first signal")
-            # If not enough signals, return the most confident one
-            return max(signals, key=lambda s: float(s.confidence.value))
+    def _filter_overlapping_signals(self, signals: List[Signal]) -> List[Signal]:
+        """Filter out overlapping signals to reduce redundancy from similar strategies"""
+        if not signals or len(signals) <= 1:
+            return signals
 
-        logger.info(f"Fusing {len(signals)} signals using {self.fusion_method}")
+        # First, group by strategy source to handle similar strategies separately
+        strategy_groups = {}
+        for signal in signals:
+            strategy_key = signal.strategy_name.split('_')[0] if '_' in signal.strategy_name else signal.strategy_name
+            if strategy_key not in strategy_groups:
+                strategy_groups[strategy_key] = []
+            strategy_groups[strategy_key].append(signal)
 
-        # Calculate fusion weights
-        weights = self.calculate_fusion_weights(signals)
+        # From each group, only keep the signal with highest confidence
+        filtered_by_strategy = []
+        for strategy_key, group_signals in strategy_groups.items():
+            if len(group_signals) > 1:
+                # Multiple signals from same strategy type, keep the one with highest confidence
+                best_signal = max(group_signals, key=lambda s: float(s.confidence.value))
+                filtered_by_strategy.append(best_signal)
+            else:
+                # Only one signal from this strategy type, keep it
+                filtered_by_strategy.extend(group_signals)
 
-        # Apply fusion using weighted average
-        fused_signal = self._apply_weighted_fusion(signals, weights)
+        # Additional overlapping detection based on signal type and confidence similarity
+        # If multiple signals are for same direction and similar confidence, consolidate
+        final_signals = []
+        processed_signals = set()
 
-        logger.info(f"Fused signal: type={fused_signal.signal_type.name}, confidence={fused_signal.confidence}, score={fused_signal.score}")
-        return fused_signal
+        for i, signal1 in enumerate(filtered_by_strategy):
+            if i in processed_signals:
+                continue
+
+            # Find similar signals (same signal type and close confidence)
+            similar_signals = [signal1]
+            for j, signal2 in enumerate(filtered_by_strategy[i+1:], i+1):
+                if j in processed_signals:
+                    continue
+
+                # Check if signals are similar: same type and close confidence
+                if (signal1.signal_type == signal2.signal_type and
+                    abs(float(signal1.confidence.value) - float(signal2.confidence.value)) < 0.15):  # 15% confidence similarity threshold
+                    similar_signals.append(signal2)
+
+            # Mark all similar signals as processed
+            for k, _ in enumerate(filtered_by_strategy):
+                if filtered_by_strategy[k] in similar_signals:
+                    processed_signals.add(k)
+
+            # If we have similar signals, keep the one with highest confidence
+            if len(similar_signals) > 1:
+                best_of_similar = max(similar_signals, key=lambda s: float(s.confidence.value))
+                final_signals.append(best_of_similar)
+            else:
+                final_signals.append(signal1)
+
+        return final_signals
 
     def calculate_fusion_weights(self, signals: List[Signal]) -> List[Percentage]:
         """Calculate weights for fusing signals"""
         if not signals:
             return []
 
-        # Different weighting strategies could be implemented here
-        # For now, we'll use a combination of confidence and recency
+        try:
+            # Different weighting strategies could be implemented here
+            # For now, we'll use a combination of confidence and recency
 
-        weights = []
-        total_weight = 0.0
+            weights = []
+            total_weight = 0.0
 
-        for signal in signals:
-            # Base weight on confidence
-            base_weight = float(signal.confidence.value)
+            for signal in signals:
+                # Base weight on confidence, with validation
+                try:
+                    base_weight = float(signal.confidence.value)
+                    # Ensure confidence is between 0 and 1
+                    base_weight = max(0.0, min(1.0, base_weight))
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid confidence value {signal.confidence.value}, using 0.5 as default")
+                    base_weight = 0.5
 
-            # Adjust for recency if needed (more recent signals might be weighted higher)
-            # For now, we'll just use confidence as the primary factor
-            weight = base_weight
-            weights.append(weight)
-            total_weight += weight
+                # Adjust for recency if needed (more recent signals might be weighted higher)
+                # For now, we'll just use confidence as the primary factor
+                weight = base_weight
+                weights.append(weight)
+                total_weight += weight
 
-        # Normalize weights to sum to 1.0
-        if total_weight > 0:
-            normalized_weights = [w / total_weight for w in weights]
-        else:
-            # If all weights are 0, give equal weight to all
-            normalized_weights = [1.0 / len(signals)] * len(signals)
+            # Normalize weights to sum to 1.0
+            if total_weight > 0:
+                normalized_weights = [w / total_weight for w in weights]
+            else:
+                # If all weights are 0, give equal weight to all
+                normalized_weights = [1.0 / len(signals)] * len(signals)
 
-        # Convert to Percentage objects
-        from domain.value_objects import Percentage
-        from decimal import Decimal
-        return [Percentage(Decimal(str(w))) for w in normalized_weights]
+            # Convert to Percentage objects with validation
+            from domain.value_objects import Percentage
+            from decimal import Decimal
+            return [Percentage(Decimal(str(max(0.0, min(1.0, w))))) for w in normalized_weights]
+
+        except Exception as e:
+            logger.error(f"Error calculating fusion weights: {e}")
+            # Return equal weights as fallback
+            equal_weight = 1.0 / len(signals) if signals else 1.0
+            from domain.value_objects import Percentage
+            from decimal import Decimal
+            return [Percentage(Decimal(str(equal_weight))) for _ in signals]
 
     def _apply_weighted_fusion(self, signals: List[Signal], weights: List[Percentage]) -> Signal:
         """Apply weighted fusion to create a single signal"""
-        if not signals or not weights or len(signals) != len(weights):
-            raise ValueError("Signals and weights must be non-empty and of equal length")
+        try:
+            if not signals or not weights or len(signals) != len(weights):
+                logger.error(f"Invalid input: signals={len(signals) if signals else 0}, weights={len(weights) if weights else 0}, equal_length={len(signals) == len(weights) if signals and weights else False}")
+                # Return a neutral signal as fallback
+                from domain.entities.trading_entities import Signal, SignalType
+                from domain.value_objects import Symbol, Percentage
+                from decimal import Decimal
+                return Signal(
+                    symbol=Symbol("BTCUSDT") if signals else Symbol("BTCUSDT"),
+                    signal_type=SignalType.NEUTRAL,
+                    confidence=Percentage(Decimal('0.5')),
+                    score=0.0,
+                    strategy_name="FusionService",
+                    timestamp=datetime.now(),
+                    metadata={'fusion_error': 'invalid_input_parameters'}
+                )
 
-        # Calculate weighted average of scores
-        weighted_scores = []
-        total_signal_confidence = 0.0
-        buy_signals = 0
-        sell_signals = 0
+            # Calculate weighted average of scores
+            weighted_scores = []
+            buy_signals = 0
+            sell_signals = 0
+            hold_signals = 0
 
-        for signal, weight in zip(signals, weights):
-            weighted_score = signal.score * float(weight.value)
-            weighted_scores.append(weighted_score)
+            for signal, weight in zip(signals, weights):
+                try:
+                    weight_value = float(weight.value)
+                    # Validate the weight value
+                    weight_value = max(0.0, min(1.0, weight_value))
+                    weighted_score = signal.score * weight_value
+                    weighted_scores.append(weighted_score)
 
-            # Count buy vs sell signals for determining final signal type
-            if signal.signal_type.name == 'BUY':
-                buy_signals += 1
-            elif signal.signal_type.name == 'SELL':
-                sell_signals += 1
+                    # Count buy vs sell signals for determining final signal type
+                    if signal.signal_type.name == 'BUY':
+                        buy_signals += 1
+                    elif signal.signal_type.name == 'SELL':
+                        sell_signals += 1
+                    else:
+                        hold_signals += 1
+                except Exception as e:
+                    logger.warning(f"Error processing signal {signal} with weight {weight}: {e}")
+                    # Skip this signal-weight pair
+                    continue
 
-        # Calculate the fused score
-        fused_score = sum(weighted_scores)
+            # If there were errors processing signals, adjust counts
+            if len(weighted_scores) != len(signals):
+                logger.warning(f"Only processed {len(weighted_scores)} out of {len(signals)} signals")
+                if len(weighted_scores) == 0:
+                    # No valid signals processed, return neutral
+                    from domain.entities.trading_entities import Signal, SignalType
+                    from domain.value_objects import Symbol, Percentage
+                    from decimal import Decimal
+                    return Signal(
+                        symbol=signals[0].symbol,
+                        signal_type=SignalType.NEUTRAL,
+                        confidence=Percentage(Decimal('0.5')),
+                        score=0.0,
+                        strategy_name="FusionService",
+                        timestamp=datetime.now(),
+                        metadata={'fusion_error': 'no_valid_signals_processed'}
+                    )
 
-        # Determine the signal type based on the majority of input signals
-        # or based on the sign of the fused score
-        if fused_score > 0.1:  # Threshold to avoid neutral signals
-            fused_signal_type = signals[0].signal_type.__class__.BUY  # type: ignore
-        elif fused_score < -0.1:
-            fused_signal_type = signals[0].signal_type.__class__.SELL  # type: ignore
-        else:
-            # If scores are around zero, use majority vote
-            if buy_signals > sell_signals:
-                fused_signal_type = signals[0].signal_type.__class__.BUY  # type: ignore
-            elif sell_signals > buy_signals:
-                fused_signal_type = signals[0].signal_type.__class__.SELL  # type: ignore
+            # Calculate the fused score
+            fused_score = sum(weighted_scores)
+
+            # Determine the signal type based on the majority of input signals
+            # or based on the sign of the fused score
+            if fused_score > 0.1:  # Threshold to avoid neutral signals
+                from domain.entities.trading_entities import SignalType
+                fused_signal_type = SignalType.BUY
+            elif fused_score < -0.1:
+                from domain.entities.trading_entities import SignalType
+                fused_signal_type = SignalType.SELL
             else:
-                fused_signal_type = signals[0].signal_type.__class__.NEUTRAL  # type: ignore
+                # If scores are around zero, use majority vote
+                if buy_signals > sell_signals and buy_signals > hold_signals:
+                    from domain.entities.trading_entities import SignalType
+                    fused_signal_type = SignalType.BUY
+                elif sell_signals > buy_signals and sell_signals > hold_signals:
+                    from domain.entities.trading_entities import SignalType
+                    fused_signal_type = SignalType.SELL
+                else:
+                    from domain.entities.trading_entities import SignalType
+                    fused_signal_type = SignalType.NEUTRAL
 
-        # Calculate fused confidence as the weighted average of confidences
-        confidence_values = [float(signal.confidence.value) for signal in signals]
-        weighted_confidences = [conf * float(weight.value) for conf, weight in zip(confidence_values, weights)]
-        fused_confidence = sum(weighted_confidences)
+            # Calculate fused confidence as the weighted average of confidences
+            confidence_values = []
+            weight_sum = 0.0
+            for signal, weight in zip(signals, weights):
+                try:
+                    conf_val = float(signal.confidence.value)
+                    conf_val = max(0.0, min(1.0, conf_val))  # Clamp confidence to [0, 1]
+                    w_val = float(weight.value)
+                    w_val = max(0.0, min(1.0, w_val))  # Clamp weight to [0, 1]
 
-        # Use the symbol from the first signal (all should be the same in a proper fusion)
-        if signals:
-            symbol = signals[0].symbol
-            strategy_name = "FusionService"
-        else:
-            from domain.value_objects import Symbol
-            symbol = Symbol("BTCUSDT")
-            strategy_name = "FusionService"
+                    confidence_values.append(conf_val * w_val)
+                    weight_sum += w_val
+                except Exception as e:
+                    logger.warning(f"Error processing confidence for signal {signal}: {e}")
+                    continue
 
-        # Create the fused signal
-        from domain.entities.trading_entities import Signal as DomainSignal
-        from domain.value_objects import Percentage as DomainPercentage
-        from decimal import Decimal
+            if weight_sum > 0:
+                fused_confidence = sum(confidence_values) / weight_sum
+            else:
+                fused_confidence = 0.5  # Default to 0.5 if no valid weights
 
-        fused_signal = DomainSignal(
-            symbol=symbol,
-            signal_type=fused_signal_type,
-            confidence=DomainPercentage(Decimal(str(max(0.0, min(1.0, fused_confidence))))),  # Clamp to [0,1]
-            score=max(-1.0, min(1.0, fused_score)),  # Clamp to [-1, 1]
-            strategy_name=strategy_name,
-            timestamp=datetime.now(),
-            metadata={
-                'original_signals_count': len(signals),
-                'fusion_method': self.fusion_method,
-                'individual_scores': [s.score for s in signals],
-                'individual_confidences': [float(s.confidence.value) for s in signals]
-            }
-        )
+            # Use the symbol from the first signal (all should be the same in a proper fusion)
+            if signals:
+                symbol = signals[0].symbol
+                strategy_name = "FusionService"
+            else:
+                from domain.value_objects import Symbol
+                symbol = Symbol("BTCUSDT")
+                strategy_name = "FusionService"
 
-        return fused_signal
+            # Create the fused signal
+            from domain.entities.trading_entities import Signal as DomainSignal
+            from domain.value_objects import Percentage as DomainPercentage
+            from decimal import Decimal
+
+            fused_signal = DomainSignal(
+                symbol=symbol,
+                signal_type=fused_signal_type,
+                confidence=DomainPercentage(Decimal(str(max(0.0, min(1.0, fused_confidence))))),  # Clamp to [0,1]
+                score=max(-1.0, min(1.0, fused_score)),  # Clamp to [-1, 1]
+                strategy_name=strategy_name,
+                timestamp=datetime.now(),
+                metadata={
+                    'original_signals_count': len(signals),
+                    'valid_signals_count': len(weighted_scores),
+                    'fusion_method': self.fusion_method,
+                    'individual_scores': [getattr(s, 'score', 0) for s in signals],
+                    'individual_confidences': [float(s.confidence.value) if hasattr(s, 'confidence') and hasattr(s.confidence, 'value') else 0.5 for s in signals],
+                    'processing_errors': len(signals) - len(weighted_scores) > 0
+                }
+            )
+
+            return fused_signal
+        except Exception as e:
+            logger.error(f"Error in _apply_weighted_fusion: {e}")
+            # Return a neutral signal as fallback
+            from domain.entities.trading_entities import Signal, SignalType
+            from domain.value_objects import Symbol, Percentage
+            from decimal import Decimal
+            return Signal(
+                symbol=Symbol("BTCUSDT") if signals else Symbol("BTCUSDT"),
+                signal_type=SignalType.NEUTRAL,
+                confidence=Percentage(Decimal('0.5')),
+                score=0.0,
+                strategy_name="FusionService",
+                timestamp=datetime.now(),
+                metadata={'fusion_error': str(e)}
+            )
+
+
+# Import the ML fusion service at the top of the file (add after other imports)
+# (This would typically be at the top, but since the file is large, I'm showing this change here)
+# from infrastructure.fusion.ml_signal_fusion import MLSignalFusionService, MLFusionMethod
 
 
 class AdvancedFusionServiceAdapter(FusionServiceAdapter):

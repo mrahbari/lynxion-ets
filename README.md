@@ -57,12 +57,20 @@ Downloader → Resample Engine → Data Loader → Strategy Engine → Watcher L
 - `1m → 30m`: 30-minute bars from 1-minute data
 - `1m → 1h`: 1-hour bars from 1-minute data
 
+### 🧠 **Advanced Intelligence**
+- **Machine Learning Fusion**: ML-based signal fusion using Random Forest, Gradient Boosting, and Ensemble methods
+- **Hyperopt Integration**: Real hyperparameter optimization with TPE, Random, and Annealing algorithms
+- **Dynamic Risk Adjustment**: Market regime-aware risk management
+- **Smart Position Sizing**: Multiple algorithms (Kelly, ATR-based, Optimal F, Volatility-targeted)
+
 ### 🛡️ **Risk Management**
 - Stop-loss and take-profit with priority logic
 - Portfolio exposure limits
 - Drawdown monitoring
 - Correlation risk management
-- Position sizing based on risk parameters
+- Market regime-based position sizing
+- Dynamic risk adjustment based on volatility and correlation
+- Position sizing algorithms with configurable parameters
 
 ## Installation
 
@@ -250,28 +258,60 @@ Execute walk-forward optimization and analysis.
 python runner_walkforward.py --strategy crypto_breakout --symbols BTCUSDT ETHUSDT --train 90 --test 30 --step 30
 ```
 
+#### 7. **Machine Learning Fusion Runner** (`runner_ml_fusion.py`)
+Execute ML-based signal fusion with advanced algorithms.
+```bash
+python runner_ml_fusion.py --method random_forest --symbols BTCUSDT ETHUSDT --lookback 30
+```
+
+#### 8. **Advanced Position Sizing Runner** (`runner_position_sizing.py`)
+Execute advanced position sizing using multiple algorithms.
+```bash
+python runner_position_sizing.py --algorithm kelly --symbols BTCUSDT --portfolio 100000
+```
+
 ### Runner Script Options
 All runner scripts support common options:
 - `--validate`: Validate results after processing
 - `--output FILE`: Save results to JSON file
 - `--verbose`: Enable detailed output
+- `--config FILE`: Load configuration from JSON file
+- `--algorithm METHOD`: Specify algorithm for ML/fusion methods
 
 ## Risk Management
 
 ### Core Risk Controls
-- **Position Sizing**: Based on risk percentage and stop-loss distance
-- **Portfolio Exposure Limits**: Maximum percentage of capital per position
+- **Position Sizing**: Based on multiple algorithms (Kelly, Fixed Fractional, ATR-based, Volatility-targeted)
+- **Portfolio Exposure Limits**: Maximum percentage of capital per position and total exposure
 - **Drawdown Controls**: Automatic trading halt when drawdown threshold exceeded
 - **Correlation Management**: Limit position overlap across strategies
+- **Market Regime Detection**: Adjust risk parameters based on volatility and trend conditions
+- **Dynamic Risk Adjustment**: Automatically adjust position sizes and risk limits based on market conditions
 - **Order Management**: Proper SL/TP execution using candle high/low
 
-### Configuration
-Risk parameters are configured in `.env` file:
+### Advanced Risk Configuration
+Risk parameters are configured in `.env` file with comprehensive settings:
 ```bash
-RISK_MAX_POSITION_SIZE=0.20      # Max 20% per position
-RISK_MAX_TOTAL_EXPOSURE=0.80     # Max 80% total exposure  
-RISK_MAX_DRAWDOWN=0.15           # Max 15% drawdown
-RISK_MAX_LEVERAGE=5.0            # Max 5x leverage
+# Position Sizing Parameters
+RISK_MAX_POSITION_SIZE=0.20                    # Max 20% per position
+RISK_KELLY_FRACTION=0.25                       # Use 25% of full Kelly recommendation
+RISK_FIXED_FRACTIONAL_PERCENTAGE=0.02          # Risk 2% of portfolio per trade
+RISK_ATR_MULTIPLIER=2.0                        # Use 2x ATR for stop distance
+RISK_VOLATILITY_TARGET=0.15                    # Target 15% annual volatility
+
+# Portfolio Risk Limits
+RISK_MAX_TOTAL_EXPOSURE=0.80                   # Max 80% total exposure
+RISK_MAX_DRAWDOWN=0.15                         # Max 15% drawdown
+RISK_MAX_LEVERAGE=5.0                          # Max 5x leverage
+
+# Correlation and Diversification
+RISK_MAX_CORRELATION_BETWEEN_STRATEGIES=0.7    # Max 70% correlation
+RISK_DIVERSIFICATION_FACTOR=0.85               # Reduce position with increasing correlation
+
+# Market Regime Adjustments
+RISK_HIGH_VOLATILITY_THRESHOLD=0.025           # Threshold for high volatility regime
+RISK_LOW_VOLATILITY_THRESHOLD=0.008            # Threshold for low volatility regime
+RISK_TREND_STRENGTH_THRESHOLD=0.003            # Threshold for trend strength
 ```
 
 ## Performance
@@ -288,6 +328,11 @@ RISK_MAX_LEVERAGE=5.0            # Max 5x leverage
 - **Max Drawdown**: Peak-to-trough decline
 - **Profit Factor**: Gross profit / gross loss
 - **Expectancy**: Average profit per trade
+- **Calmar Ratio**: Annual return / Max drawdown
+- **Alpha/Beta**: Risk-adjusted performance vs benchmark
+- **Information Ratio**: Excess return / Tracking error
+- **Correlation Analysis**: Strategy correlation matrix and diversification metrics
+- **Risk-Adjusted Returns**: Returns normalized by various risk measures
 
 ## Troubleshooting
 
@@ -324,14 +369,27 @@ RISK_MAX_LEVERAGE=5.0            # Max 5x leverage
 ```bash
 # Create production environment
 cp .env.example .env.production
-# Configure production settings
+# Configure production settings including:
+# - ML fusion parameters
+# - Advanced risk management
+# - Hyperopt optimization settings
+# - Position sizing algorithms
+# - Market regime detection thresholds
 ```
 
-### 2. Monitoring
+### 2. Configuration Parameters
+The system uses configurable parameters instead of hardcoded values:
+- **Position Sizing**: Configure through environment variables (Kelly fraction, ATR multiplier, volatility targets)
+- **Risk Management**: Set risk thresholds via environment variables (max position size, drawdown limits, correlation limits)
+- **ML Fusion**: Control ML model parameters via environment variables (model types, lookback periods, confidence thresholds)
+- **Hyperopt**: Configure optimization parameters in environment (algorithm types, max evaluations, early stopping)
+
+### 3. Monitoring
 - Enable logging to file
 - Set up alert notifications
 - Monitor resource usage
 - Track performance metrics
+- Monitor ML model performance and retraining cycles
 
 ### 3. Backup Strategy
 - Regular backup of results data
@@ -364,7 +422,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🏆 System Status
 
-The lynxion-ets system is now fully validated and production-ready:
+The lynxion-ets system is now fully validated and production-ready with enhanced capabilities:
 
 - ✅ Complete WFO pipeline with 90/30/30 windows
 - ✅ Data resampling: 1m → 5m/15m/30m/1h with zero-drift methodology
@@ -383,6 +441,12 @@ The lynxion-ets system is now fully validated and production-ready:
 - ✅ **On-demand Repair**: Watcher retune for priority repairs
 - ✅ **Dynamic Configuration**: Environment-based settings and symbol routing
 - ✅ **Multi-exchange Support**: Flexible exchange selection per symbol
-- ✅ **Production Ready**: Minimal surface area changes with preserved interfaces
+- ✅ **Machine Learning Fusion**: ML-based signal fusion with Random Forest, Gradient Boosting, and Ensemble methods
+- ✅ **Real Hyperopt Integration**: Actual hyperopt library integration with TPE, Random, and Annealing algorithms
+- ✅ **Advanced Position Sizing**: Multiple algorithms (Kelly, ATR-based, Optimal F, Volatility-targeted) with configurable parameters
+- ✅ **Dynamic Risk Management**: Market regime-aware risk adjustments and correlation-based position sizing
+- ✅ **Configurable Parameters**: All previously hardcoded values now configurable via environment variables
+- ✅ **Enhanced Performance Monitoring**: Comprehensive metrics with correlation analysis and risk-adjusted returns
+- ✅ **Improved Architecture**: Base engine adapter to reduce code duplication and improve maintainability
 
 The system follows institutional-grade standards and is ready for professional trading operations.

@@ -4,32 +4,38 @@ Infrastructure implementations of real trading engines for the enterprise hedge 
 from typing import Dict, List, Optional, Any
 from decimal import Decimal
 from datetime import datetime
+import time
 import numpy as np
 
 from domain.entities.trading_entities import Signal
 from domain.value_objects import Symbol, Percentage, Money
 from domain.ports.engine_ports import EnginePort
 from shared.logger import logger
+from infrastructure.engines.base_engine_adapter import BaseEngineAdapter
 
 
-class TrendEngineAdapter(EnginePort):
+class TrendEngineAdapter(BaseEngineAdapter):
     """Infrastructure implementation of trend engine following hexagonal architecture"""
-    
-    def __init__(self, lookback: int = 20, trend_threshold: float = 0.01):
-        self.name = "TrendEngine"
+
+    def __init__(self,
+                 lookback: int = 20,
+                 trend_threshold: float = 0.01,
+                 name: str = "TrendEngine"):
+        super().__init__(name)
         self.lookback = lookback
         self.trend_threshold = trend_threshold
-        self.price_history: List[float] = []
         self.trend_direction = 0  # -1 for down, 0 for neutral, 1 for up
         self.current_trend_strength = 0.0
 
     def process_signal(self, signal: Signal) -> Signal:
         """Process a signal through trend analysis"""
+        start_time = time.time()
+
         if len(self.price_history) < 5:
             # Not enough data - return original signal with slightly reduced confidence
             new_confidence_value = signal.confidence.value * Decimal('0.8')
             new_confidence = Percentage(max(Decimal('0.0'), min(Decimal('1.0'), new_confidence_value)))
-            return Signal(
+            result_signal = Signal(
                 symbol=signal.symbol,
                 signal_type=signal.signal_type,
                 confidence=new_confidence,
@@ -39,44 +45,49 @@ class TrendEngineAdapter(EnginePort):
                 source_engine=self.name,
                 metadata=signal.metadata or {}
             )
-
-        # Check if the incoming signal aligns with the current trend
-        signal_aligns_with_trend = (
-            (self.trend_direction == 1 and signal.signal_type.name == 'BUY') or
-            (self.trend_direction == -1 and signal.signal_type.name == 'SELL')
-        )
-
-        if signal_aligns_with_trend:
-            # Signal aligns with trend - increase confidence
-            new_confidence_value = signal.confidence.value * Decimal('1.2')
-            new_confidence = min(Percentage(Decimal('1.0')), Percentage(max(Decimal('0.0'), new_confidence_value)))
-            new_score = min(1.0, signal.score * 1.2)
         else:
-            # Signal goes against trend - decrease confidence
-            new_confidence_value = signal.confidence.value * Decimal('0.7')
-            new_confidence = max(Percentage(Decimal('0.2')), Percentage(max(Decimal('0.0'), new_confidence_value)))
-            new_score = max(-1.0, signal.score * 0.7)
+            # Check if the incoming signal aligns with the current trend
+            signal_aligns_with_trend = (
+                (self.trend_direction == 1 and signal.signal_type.name == 'BUY') or
+                (self.trend_direction == -1 and signal.signal_type.name == 'SELL')
+            )
 
-        # Create enhanced signal
-        enhanced_signal = Signal(
-            symbol=signal.symbol,
-            signal_type=signal.signal_type,
-            confidence=new_confidence,
-            score=new_score,
-            strategy_name=f"{signal.strategy_name}_trend_enhanced",
-            timestamp=datetime.now(),
-            source_engine=self.name,
-            metadata={
-                **(signal.metadata or {}),
-                'trend_aligned': signal_aligns_with_trend,
-                'trend_direction': self.trend_direction,
-                'trend_strength': self.current_trend_strength
-            }
-        )
+            if signal_aligns_with_trend:
+                # Signal aligns with trend - increase confidence
+                new_confidence_value = signal.confidence.value * Decimal('1.2')
+                new_confidence = min(Percentage(Decimal('1.0')), Percentage(max(Decimal('0.0'), new_confidence_value)))
+                new_score = min(1.0, signal.score * 1.2)
+            else:
+                # Signal goes against trend - decrease confidence
+                new_confidence_value = signal.confidence.value * Decimal('0.7')
+                new_confidence = max(Percentage(Decimal('0.2')), Percentage(max(Decimal('0.0'), new_confidence_value)))
+                new_score = max(-1.0, signal.score * 0.7)
 
-        logger.info(f"TrendEngine processed signal: {signal.signal_type.name} -> {enhanced_signal.signal_type.name}, "
-                   f"confidence: {float(signal.confidence):.2%} -> {float(enhanced_signal.confidence):.2%}")
-        return enhanced_signal
+            # Create enhanced signal
+            result_signal = Signal(
+                symbol=signal.symbol,
+                signal_type=signal.signal_type,
+                confidence=new_confidence,
+                score=new_score,
+                strategy_name=f"{signal.strategy_name}_trend_enhanced",
+                timestamp=datetime.now(),
+                source_engine=self.name,
+                metadata={
+                    **(signal.metadata or {}),
+                    'trend_aligned': signal_aligns_with_trend,
+                    'trend_direction': self.trend_direction,
+                    'trend_strength': self.current_trend_strength
+                }
+            )
+
+        # Calculate processing time and record performance
+        processing_time = time.time() - start_time
+        self.record_performance(processing_time, signal, result_signal)
+
+        logger.info(f"TrendEngine processed signal: {signal.signal_type.name} -> {result_signal.signal_type.name}, "
+                   f"confidence: {float(signal.confidence):.2%} -> {float(result_signal.confidence):.2%}, "
+                   f"processing_time: {processing_time:.4f}s")
+        return result_signal
 
     def should_process_signal(self, signal: Signal) -> bool:
         """Check if this engine should process the signal"""
@@ -85,14 +96,12 @@ class TrendEngineAdapter(EnginePort):
 
     def update_with_market_data(self, data: Dict[str, Any]):
         """Update engine with new market data"""
-        if 'close' in data:
-            self.price_history.append(float(data['close']))
-            if len(self.price_history) > self.lookback * 3:
-                self.price_history.pop(0)
+        # Call the parent method to handle common data updates
+        super().update_with_market_data(data)
 
-            # Update trend if we have enough data
-            if len(self.price_history) >= self.lookback:
-                self._update_trend()
+        # Update trend if we have enough data
+        if len(self.price_history) >= self.lookback:
+            self._update_trend()
 
     def get_engine_name(self) -> str:
         """Get the name of the engine"""
@@ -129,26 +138,31 @@ class TrendEngineAdapter(EnginePort):
                     self.trend_direction = 0
 
 
-class VolatilityEngineAdapter(EnginePort):
+class VolatilityEngineAdapter(BaseEngineAdapter):
     """Infrastructure implementation of volatility engine following hexagonal architecture"""
-    
-    def __init__(self, lookback: int = 20, high_vol_threshold: float = 0.02, low_vol_threshold: float = 0.005):
-        self.name = "VolatilityEngine"
+
+    def __init__(self,
+                 lookback: int = 20,
+                 high_vol_threshold: float = 0.02,
+                 low_vol_threshold: float = 0.005,
+                 name: str = "VolatilityEngine"):
+        super().__init__(name)
         self.lookback = lookback
         self.high_vol_threshold = high_vol_threshold  # High volatility threshold (2%)
         self.low_vol_threshold = low_vol_threshold    # Low volatility threshold (0.5%)
-        self.price_history: List[float] = []
         self.volatility_history: List[float] = []
         self.current_volatility = 0
         self.avg_volatility = 0
 
     def process_signal(self, signal: Signal) -> Signal:
         """Process a signal through volatility analysis"""
+        start_time = time.time()
+
         if not self.volatility_history:
             # No volatility data - return original signal with slightly reduced confidence
             new_confidence_value = signal.confidence.value * Decimal('0.9')
             new_confidence = Percentage(max(Decimal('0.0'), min(Decimal('1.0'), new_confidence_value)))
-            return Signal(
+            result_signal = Signal(
                 symbol=signal.symbol,
                 signal_type=signal.signal_type,
                 confidence=new_confidence,
@@ -158,56 +172,61 @@ class VolatilityEngineAdapter(EnginePort):
                 source_engine=self.name,
                 metadata=signal.metadata or {}
             )
-
-        # Determine volatility regime
-        is_high_vol = self.current_volatility > self.high_vol_threshold
-        is_low_vol = self.current_volatility < self.low_vol_threshold
-        is_normal_vol = not is_high_vol and not is_low_vol
-
-        # Adjust signal based on volatility regime
-        if is_high_vol:
-            # High volatility may mean uncertain signals, reduce confidence
-            new_confidence_value = signal.confidence.value * Decimal('0.6')
-            new_confidence = max(Percentage(Decimal('0.2')), Percentage(max(Decimal('0.0'), new_confidence_value)))
-            new_score = signal.score * 0.7
-        elif is_low_vol:
-            # Low volatility may mean signals are more reliable, slightly increase confidence
-            new_confidence_value = signal.confidence.value * Decimal('1.1')
-            new_confidence = min(Percentage(Decimal('1.0')), Percentage(max(Decimal('0.0'), new_confidence_value)))
-            new_score = signal.score * 1.1
         else:
-            # Normal volatility - keep confidence relatively unchanged
-            new_confidence = signal.confidence
-            new_score = signal.score
+            # Determine volatility regime
+            is_high_vol = self.current_volatility > self.high_vol_threshold
+            is_low_vol = self.current_volatility < self.low_vol_threshold
+            is_normal_vol = not is_high_vol and not is_low_vol
 
-        # For contrarian signals, volatility adjustment might be different
-        is_contrarian = (signal.metadata or {}).get('contrarian', False) if signal.metadata else False
-        if is_contrarian and is_high_vol:
-            # High volatility might validate contrarian signals
-            new_confidence_value = new_confidence.value * Decimal('1.2')
-            new_confidence = min(Percentage(Decimal('1.0')), Percentage(max(Decimal('0.0'), new_confidence_value)))
+            # Adjust signal based on volatility regime
+            if is_high_vol:
+                # High volatility may mean uncertain signals, reduce confidence
+                new_confidence_value = signal.confidence.value * Decimal('0.6')
+                new_confidence = max(Percentage(Decimal('0.2')), Percentage(max(Decimal('0.0'), new_confidence_value)))
+                new_score = signal.score * 0.7
+            elif is_low_vol:
+                # Low volatility may mean signals are more reliable, slightly increase confidence
+                new_confidence_value = signal.confidence.value * Decimal('1.1')
+                new_confidence = min(Percentage(Decimal('1.0')), Percentage(max(Decimal('0.0'), new_confidence_value)))
+                new_score = signal.score * 1.1
+            else:
+                # Normal volatility - keep confidence relatively unchanged
+                new_confidence = signal.confidence
+                new_score = signal.score
 
-        # Generate enhanced signal
-        enhanced_signal = Signal(
-            symbol=signal.symbol,
-            signal_type=signal.signal_type,
-            confidence=new_confidence,
-            score=new_score,
-            strategy_name=f"{signal.strategy_name}_vol_enhanced",
-            timestamp=datetime.now(),
-            source_engine=self.name,
-            metadata={
-                **(signal.metadata or {}),
-                'volatility_regime': 'high' if is_high_vol else 'low' if is_low_vol else 'normal',
-                'current_volatility': self.current_volatility,
-                'is_contrarian': is_contrarian
-            }
-        )
+            # For contrarian signals, volatility adjustment might be different
+            is_contrarian = (signal.metadata or {}).get('contrarian', False) if signal.metadata else False
+            if is_contrarian and is_high_vol:
+                # High volatility might validate contrarian signals
+                new_confidence_value = new_confidence.value * Decimal('1.2')
+                new_confidence = min(Percentage(Decimal('1.0')), Percentage(max(Decimal('0.0'), new_confidence_value)))
+
+            # Generate enhanced signal
+            result_signal = Signal(
+                symbol=signal.symbol,
+                signal_type=signal.signal_type,
+                confidence=new_confidence,
+                score=new_score,
+                strategy_name=f"{signal.strategy_name}_vol_enhanced",
+                timestamp=datetime.now(),
+                source_engine=self.name,
+                metadata={
+                    **(signal.metadata or {}),
+                    'volatility_regime': 'high' if is_high_vol else 'low' if is_low_vol else 'normal',
+                    'current_volatility': self.current_volatility,
+                    'is_contrarian': is_contrarian
+                }
+            )
+
+        # Calculate processing time and record performance
+        processing_time = time.time() - start_time
+        self.record_performance(processing_time, signal, result_signal)
 
         logger.info(f"VolatilityEngine processed signal: {signal.signal_type.name}, "
                    f"volatility regime: {'high' if is_high_vol else 'low' if is_low_vol else 'normal'}, "
-                   f"confidence: {float(signal.confidence):.2%} -> {float(enhanced_signal.confidence):.2%}")
-        return enhanced_signal
+                   f"confidence: {float(signal.confidence):.2%} -> {float(result_signal.confidence):.2%}, "
+                   f"processing_time: {processing_time:.4f}s")
+        return result_signal
 
     def should_process_signal(self, signal: Signal) -> bool:
         """Check if this engine should process the signal"""
@@ -215,33 +234,35 @@ class VolatilityEngineAdapter(EnginePort):
 
     def update_with_market_data(self, data: Dict[str, Any]):
         """Update with new market data"""
-        if 'close' in data:
-            self.price_history.append(float(data['close']))
-            if len(self.price_history) > self.lookback * 3:
-                self.price_history.pop(0)
+        # Call the parent method to handle common data updates
+        super().update_with_market_data(data)
 
-            # Calculate volatility if we have enough data
-            if len(self.price_history) >= 2:
-                returns = np.diff(self.price_history[-self.lookback-1:]) / np.array(self.price_history[-self.lookback-1:-1])
-                if len(returns) > 1:
-                    vol = np.std(returns)
-                    self.volatility_history.append(vol)
-                    if len(self.volatility_history) > self.lookback * 3:
-                        self.volatility_history.pop(0)
+        # Calculate volatility if we have enough price data
+        if len(self.price_history) >= 2:
+            returns = np.diff(self.price_history[-self.lookback-1:]) / np.array(self.price_history[-self.lookback-1:-1])
+            if len(returns) > 1:
+                vol = np.std(returns)
+                self.volatility_history.append(vol)
+                if len(self.volatility_history) > self.lookback * 3:
+                    self.volatility_history.pop(0)
 
-                    self.current_volatility = vol
-                    self.avg_volatility = np.mean(self.volatility_history) if self.volatility_history else 0
+                self.current_volatility = vol
+                self.avg_volatility = np.mean(self.volatility_history) if self.volatility_history else 0
 
     def get_engine_name(self) -> str:
         """Get the name of the engine"""
         return self.name
 
 
-class LiquidityEngineAdapter(EnginePort):
+class LiquidityEngineAdapter(BaseEngineAdapter):
     """Infrastructure implementation of liquidity engine following hexagonal architecture"""
-    
-    def __init__(self, lookback: int = 10, low_liquidity_threshold: float = 0.3, high_liquidity_threshold: float = 0.7):
-        self.name = "LiquidityEngine"
+
+    def __init__(self,
+                 lookback: int = 10,
+                 low_liquidity_threshold: float = 0.3,
+                 high_liquidity_threshold: float = 0.7,
+                 name: str = "LiquidityEngine"):
+        super().__init__(name)
         self.lookback = lookback
         self.low_liquidity_threshold = low_liquidity_threshold
         self.high_liquidity_threshold = high_liquidity_threshold
@@ -314,6 +335,9 @@ class LiquidityEngineAdapter(EnginePort):
 
     def update_with_market_data(self, data: Dict[str, Any]):
         """Update with new market data (order book)"""
+        # Call parent to handle common data
+        super().update_with_market_data(data)
+
         if 'bids' in data and 'asks' in data:
             # Update order book
             self.bids = [(float(price), float(vol)) for price, vol in data['bids']]
@@ -362,11 +386,13 @@ class LiquidityEngineAdapter(EnginePort):
         return self.name
 
 
-class OrderFlowEngineAdapter(EnginePort):
+class OrderFlowEngineAdapter(BaseEngineAdapter):
     """Infrastructure implementation of order flow engine following hexagonal architecture"""
-    
-    def __init__(self, lookback: int = 20):
-        self.name = "OrderFlowEngine"
+
+    def __init__(self,
+                 lookback: int = 20,
+                 name: str = "OrderFlowEngine"):
+        super().__init__(name)
         self.lookback = lookback
 
         # Order book data
@@ -512,16 +538,17 @@ class OrderFlowEngineAdapter(EnginePort):
         return self.name
 
 
-class RegimeEngineAdapter(EnginePort):
+class RegimeEngineAdapter(BaseEngineAdapter):
     """Infrastructure implementation of regime detection engine following hexagonal architecture"""
-    
-    def __init__(self, lookback: int = 30):
-        self.name = "RegimeEngine"
-        self.lookback = lookback
 
-        # Market data history
-        self.price_history: List[float] = []
-        self.volume_history: List[float] = []
+    def __init__(self,
+                 lookback: int = 30,
+                 high_vol_threshold: float = 0.025,  # High volatility (>2.5% daily)
+                 low_vol_threshold: float = 0.008,   # Low volatility (<0.8% daily)
+                 trend_strength_threshold: float = 0.003,  # Trend strength threshold
+                 name: str = "RegimeEngine"):
+        super().__init__(name)
+        self.lookback = lookback
 
         # Regime detection metrics
         self.volatility_regime = "normal"
@@ -539,9 +566,9 @@ class RegimeEngineAdapter(EnginePort):
         self.trend_regimes = []
 
         # Thresholds
-        self.high_vol_threshold = 0.025  # High volatility (>2.5% daily)
-        self.low_vol_threshold = 0.008   # Low volatility (<0.8% daily)
-        self.trend_strength_threshold = 0.003  # Trend strength threshold
+        self.high_vol_threshold = high_vol_threshold
+        self.low_vol_threshold = low_vol_threshold
+        self.trend_strength_threshold = trend_strength_threshold
 
     def process_signal(self, signal: Signal) -> Signal:
         """Process a signal through regime analysis"""
@@ -621,15 +648,8 @@ class RegimeEngineAdapter(EnginePort):
 
     def update_with_market_data(self, data: Dict[str, Any]):
         """Update with new market data"""
-        if 'close' in data:
-            self.price_history.append(float(data['close']))
-            if len(self.price_history) > self.lookback * 4:
-                self.price_history.pop(0)
-
-        if 'volume' in data:
-            self.volume_history.append(float(data['volume']))
-            if len(self.volume_history) > self.lookback * 4:
-                self.volume_history.pop(0)
+        # Call parent to handle common data updates
+        super().update_with_market_data(data)
 
         # Update regime metrics if we have enough data
         if len(self.price_history) >= 10:

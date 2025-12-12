@@ -15,11 +15,11 @@ import pandas as pd
 
 class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
     """Infrastructure adapter implementing both application and domain file repository ports"""
-    
+
     def __init__(self, base_data_dir: Optional[str] = None):
         """
         Initialize the file repository adapter
-        
+
         Args:
             base_data_dir: Base directory for data files (defaults to settings.data_dir)
         """
@@ -27,12 +27,12 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
         # Use the existing project data directory structure
         if self.base_data_dir == "./data/history":
             self.base_data_dir = os.path.join(os.getcwd(), "data", "history")
-        
+
         self.raw_dir = os.path.join(self.base_data_dir, "raw", "1m")
         self.processed_dir = os.path.join(self.base_data_dir, "processed")
         self.index_dir = os.path.join(self.base_data_dir, "index")
         self.reports_dir = os.path.join(os.path.dirname(self.base_data_dir), "reports")
-        
+
         # Create directories if they don't exist
         for directory in [self.raw_dir, self.processed_dir, self.index_dir, self.reports_dir]:
             os.makedirs(directory, exist_ok=True)
@@ -138,7 +138,7 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
     def write_csv_rows(self, file_path: str, rows: List[List[str]]) -> None:
         """Write rows to a CSV file atomically."""
         # Create temporary file
-        temp_path = file_path + settings.temp_file_suffix
+        temp_path = file_path + self.temp_file_suffix
         
         with open(temp_path, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
@@ -340,7 +340,7 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
             "last_updated": datetime.utcnow().isoformat()
         }
         
-        temp_path = idx_file_path + settings.temp_file_suffix
+        temp_path = idx_file_path + self.temp_file_suffix
         with open(temp_path, 'w') as f:
             json.dump(index_data, f)
         
@@ -562,7 +562,7 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
             if df.empty:
                 return
 
-            cutoff_date = datetime.now() - timedelta(days=settings.raw_retention_days)
+            cutoff_date = datetime.now() - timedelta(days=self.raw_retention_days)
             df_filtered = df[df['timestamp'] >= cutoff_date]
 
             if len(df_filtered) != len(df):

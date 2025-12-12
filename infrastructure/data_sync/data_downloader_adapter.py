@@ -195,22 +195,22 @@ class DataDownloaderAdapter(DataDownloader):
         symbol_config = get_symbol_config(symbol)
         max_window_minutes = symbol_config.max_api_window_minutes if symbol_config else 1440  # Default 24 hours
         max_window_seconds = max_window_minutes * 60
-        
+
         all_data = []
         current_start = start_ts
-        
+
         while current_start < end_ts:
             # Calculate end for this batch
             batch_end = min(current_start + max_window_seconds, end_ts)
-            
+
             # Fetch this batch
             batch_data = await self._fetch_with_retry(symbol, current_start, batch_end)
             all_data.extend(batch_data)
-            
+
             # Move to the next batch
             # Add 60 seconds to avoid overlap due to potential rounding
             current_start = batch_end + 60
-        
+
         return all_data
     
     async def fetch_range(self, symbol: str, start_ts: int, end_ts: int) -> List[dict]:

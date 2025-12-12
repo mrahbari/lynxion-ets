@@ -130,24 +130,132 @@ class StrategySelectionService:
         self.weights_cache: Dict[str, float] = {}  # Cache for calculated weights
 
     def calculate_strategy_score(self, strategy_name: str) -> float:
-        """Calculate a weighted score for a strategy based on multiple metrics"""
+        """Calculate a comprehensive score for a strategy based on multiple sophisticated metrics"""
         metrics = self.performance_tracker.get_recent_performance(strategy_name)
 
-        # Weighted scoring system (these weights can be adjusted based on priority)
-        # Higher is better for positive metrics, lower is better for negative metrics
-        score = (
-            0.30 * metrics['sharpe_ratio'] +                    # Sharpe ratio (30% weight)
-            0.25 * metrics['win_rate'] +                        # Win rate (25% weight)
-            0.20 * metrics['avg_return'] +                      # Average return (20% weight)
-            -0.15 * min(0.1, metrics['max_drawdown']) +         # Drawdown penalty (15% weight, capped)
-            0.10 * (1.0 / (1.0 + metrics['volatility']))       # Lower volatility is better (10% weight)
+        # Calculate more sophisticated metrics
+        # 1. Risk-adjusted return metrics
+        sharpe_contribution = 0.25 * self._normalize_metric(metrics['sharpe_ratio'], min_val=0, max_val=3.0)
+        sortino_contribution = 0.15 * self._normalize_metric(metrics.get('sortino_ratio', metrics['sharpe_ratio']), min_val=0, max_val=4.0)  # If sortino not available, use sharpe
+        calmar_contribution = 0.10 * self._normalize_metric(metrics.get('calmar_ratio', metrics['sharpe_ratio'] * 0.8), min_val=0, max_val=2.5)  # Estimation if not available
+
+        # 2. Profitability metrics
+        win_rate_contribution = 0.15 * self._normalize_metric(metrics['win_rate'], min_val=0, max_val=1.0)
+        avg_return_contribution = 0.10 * self._normalize_metric(metrics['avg_return'], min_val=0, max_val=0.05)  # 5% daily average as max
+
+        # 3. Risk metrics (negative contribution)
+        drawdown_contribution = -0.15 * self._clamp_metric(abs(metrics['max_drawdown']), max_val=0.3)  # Cap at 30% drawdown
+        volatility_contribution = -0.10 * self._normalize_metric(metrics['volatility'], min_val=0, max_val=0.03)  # Cap at 3% volatility
+
+        # 4. Consistency and stability metrics
+        consistency_contribution = 0.05 * self._calculate_consistency_score(strategy_name)
+        stability_contribution = 0.05 * self._calculate_stability_score(strategy_name)
+
+        # Calculate base score
+        base_score = (
+            sharpe_contribution +
+            sortino_contribution +
+            calmar_contribution +
+            win_rate_contribution +
+            avg_return_contribution +
+            drawdown_contribution +
+            volatility_contribution +
+            consistency_contribution +
+            stability_contribution
         )
 
         # Adjust score based on market regime fit
         regime_bonus = self.market_regime_detector.get_regime_strategy_bonus(strategy_name)
-        score += regime_bonus
+        adjusted_score = base_score + regime_bonus
 
-        return max(0.0, score)  # Ensure non-negative score
+        # Additional adjustment based on strategy recency and freshness of performance data
+        recency_bonus = self._calculate_recency_bonus(strategy_name)
+        final_score = adjusted_score + recency_bonus
+
+        return max(0.0, final_score)  # Ensure non-negative score
+
+    def _normalize_metric(self, value: float, min_val: float = 0.0, max_val: float = 1.0) -> float:
+        """Normalize a metric to a 0-1 scale"""
+        if max_val <= min_val:
+            return 1.0 if value >= min_val else 0.0
+        normalized = (value - min_val) / (max_val - min_val)
+        return min(1.0, max(0.0, normalized))
+
+    def _clamp_metric(self, value: float, max_val: float = 1.0) -> float:
+        """Clamp a metric to a maximum value"""
+        return min(value, max_val) / max_val if max_val != 0 else 0.0
+
+    def _calculate_consistency_score(self, strategy_name: str) -> float:
+        """Calculate how consistent the strategy performance has been"""
+        if strategy_name not in self.performance_tracker.performance_history:
+            return 0.5  # Neutral score if no history
+
+        records = self.performance_tracker.performance_history[strategy_name]
+        if len(records) < 5:  # Need sufficient data
+            return 0.5
+
+        # Calculate consistency as inverse of performance variance
+        returns = [r['avg_return'] for r in records]
+        if len(returns) < 2:
+            return 0.5
+
+        mean_return = statistics.mean(returns)
+        if mean_return == 0:
+            # If mean return is 0, consistency is based on variance from 0
+            variance = statistics.variance([abs(r) for r in returns]) if len(returns) > 1 else 0
+        else:
+            variance = statistics.variance(returns) if len(returns) > 1 else 0
+
+        # Lower variance means higher consistency
+        consistency = 1.0 / (1.0 + variance)  # Normalize to 0-1 range
+        return min(1.0, consistency)
+
+    def _calculate_stability_score(self, strategy_name: str) -> float:
+        """Calculate how stable the strategy performance has been"""
+        if strategy_name not in self.performance_tracker.performance_history:
+            return 0.5
+
+        records = self.performance_tracker.performance_history[strategy_name]
+        if len(records) < 5:
+            return 0.5
+
+        # Calculate stability based on consistency of Sharpe ratios
+        sharpe_ratios = [r['sharpe_ratio'] for r in records if r['sharpe_ratio'] is not None]
+        if len(sharpe_ratios) < 2:
+            return 0.5
+
+        # Calculate coefficient of variation (lower is more stable)
+        mean_sharpe = statistics.mean(sharpe_ratios)
+        if mean_sharpe == 0:
+            return 0.5
+
+        std_sharpe = statistics.stdev(sharpe_ratios) if len(sharpe_ratios) > 1 else 0
+        cv = abs(std_sharpe / mean_sharpe) if mean_sharpe != 0 else float('inf')
+
+        # Convert coefficient of variation to stability score (lower CV = higher stability)
+        stability = 1.0 / (1.0 + cv)  # Normalize to 0-1 range
+        return min(1.0, stability)
+
+    def _calculate_recency_bonus(self, strategy_name: str) -> float:
+        """Calculate bonus based on how recent the performance data is"""
+        if strategy_name not in self.performance_tracker.performance_history:
+            return 0.0
+
+        records = self.performance_tracker.performance_history[strategy_name]
+        if not records:
+            return 0.0
+
+        # Get the most recent performance record
+        latest_record = records[-1]
+        time_diff = datetime.now() - latest_record['timestamp']
+
+        # If performance data is very recent (last 24 hours), add small bonus
+        if time_diff.total_seconds() < 24 * 3600:  # Last 24 hours
+            return 0.05  # Small recency bonus
+        elif time_diff.total_seconds() < 7 * 24 * 3600:  # Last week
+            return 0.02  # Small recency bonus
+        else:
+            return 0.0  # No bonus for old data
 
     def select_best_strategy(self, symbol: Symbol, market_data: Dict[str, Any] = None) -> Optional[StrategyPort]:
         """Select the best strategy based on market conditions and performance"""
@@ -380,42 +488,125 @@ class PortfolioStrategyAllocationService:
                                           weights: Dict[str, float],
                                           correlation_matrix: np.ndarray,
                                           strategy_names: List[str]) -> Dict[str, float]:
-        """Adjust strategy weights to promote diversification"""
+        """Adjust strategy weights to promote diversification with enhanced correlation analysis"""
         # Create a copy of weights to adjust
         adjusted_weights = weights.copy()
 
         # Get indices for strategies
         n = len(strategy_names)
+        if n < 2:
+            return adjusted_weights
 
-        # Find strategies with high correlation and reduce their weights
+        # Calculate eigenvalues and eigenvectors for advanced correlation analysis
+        try:
+            # Calculate eigenvalues to assess matrix conditioning
+            eigenvalues = np.linalg.eigvals(correlation_matrix)
+            min_eigenvalue = np.min(eigenvalues)
+
+            # If correlation matrix is ill-conditioned, use shrinkage method
+            if min_eigenvalue < 0.01:
+                correlation_matrix = self._shrinkage_correction(correlation_matrix)
+        except np.linalg.LinAlgError:
+            # If eigenvalue calculation fails, revert to original matrix
+            pass
+
+        # Calculate composite risk metrics for each strategy
+        risk_metrics = {}
+        for i, strategy_i in enumerate(strategy_names):
+            total_correlation_risk = 0
+            correlation_count = 0
+
+            for j in range(n):
+                if i != j:
+                    corr = abs(correlation_matrix[i][j])
+                    # Weight by the weight of the other strategy for portfolio-level impact
+                    other_weight = weights.get(strategy_names[j], 0)
+                    total_correlation_risk += corr * other_weight
+                    correlation_count += 1
+
+            risk_metrics[strategy_i] = total_correlation_risk / correlation_count if correlation_count > 0 else 0
+
+        # Adjust weights based on correlation risk
+        for i, strategy_name in enumerate(strategy_names):
+            risk_factor = risk_metrics[strategy_name]
+
+            # Higher correlation risk reduces the weight proportionally
+            if risk_factor > 0.5:  # Adjust threshold based on risk tolerance
+                # Aggressive reduction for high-risk strategies
+                reduction_factor = min(0.5, risk_factor)  # Cap reduction at 50%
+                adjusted_weights[strategy_name] *= (1 - reduction_factor)
+            elif risk_factor > 0.2:
+                # Moderate reduction for medium-risk strategies
+                reduction_factor = min(0.3, risk_factor * 0.6)
+                adjusted_weights[strategy_name] *= (1 - reduction_factor)
+
+            # Ensure non-negative weights
+            adjusted_weights[strategy_name] = max(0, adjusted_weights[strategy_name])
+
+        # Also reduce weights of strategies that are highly correlated with each other
         for i in range(n):
             for j in range(i + 1, n):
                 corr = correlation_matrix[i][j]
                 if abs(corr) > self.diversification_threshold:
-                    # Reduce weights of highly correlated strategies
+                    # Reduce weights of highly correlated pairs
                     strategy_i = strategy_names[i]
                     strategy_j = strategy_names[j]
 
                     if adjusted_weights[strategy_i] > 0 and adjusted_weights[strategy_j] > 0:
-                        # Reduce both weights proportionally
-                        reduction_factor = abs(corr) - self.diversification_threshold
-                        adjustment_i = adjusted_weights[strategy_i] * reduction_factor * 0.1
-                        adjustment_j = adjusted_weights[strategy_j] * reduction_factor * 0.1
+                        # Calculate proportional reduction based on correlation strength
+                        reduction_factor = (abs(corr) - self.diversification_threshold) * 0.5
+                        adjustment_i = adjusted_weights[strategy_i] * reduction_factor
+                        adjustment_j = adjusted_weights[strategy_j] * reduction_factor
 
-                        adjusted_weights[strategy_i] -= adjustment_i
-                        adjusted_weights[strategy_j] -= adjustment_j
+                        adjusted_weights[strategy_i] = max(0, adjusted_weights[strategy_i] - adjustment_i)
+                        adjusted_weights[strategy_j] = max(0, adjusted_weights[strategy_j] - adjustment_j)
 
-        # Normalize adjusted weights to sum to 1
+        # After adjustments, redistribute any remaining weight proportionally
+        remaining_weight = 1.0 - sum(adjusted_weights.values())
+        if remaining_weight > 1e-6:  # If there's remaining weight to redistribute
+            total_existing_weights = sum(w for w in adjusted_weights.values() if w > 0)
+            if total_existing_weights > 0:
+                for strategy_name in adjusted_weights:
+                    if adjusted_weights[strategy_name] > 0:
+                        # Proportionally add back the remaining weight
+                        proportional_addition = remaining_weight * (adjusted_weights[strategy_name] / total_existing_weights)
+                        adjusted_weights[strategy_name] += proportional_addition
+            else:
+                # If all weights were reduced to zero, distribute equally
+                equal_weight = 1.0 / len(strategy_names) if strategy_names else 0
+                return {name: equal_weight for name in strategy_names}
+
+        # Final normalization to ensure weights sum to 1
         total_weight = sum(adjusted_weights.values())
         if total_weight > 0:
             for strategy_name in adjusted_weights:
-                adjusted_weights[strategy_name] /= total_weight
+                adjusted_weights[strategy_name] = adjusted_weights[strategy_name] / total_weight
         else:
             # If weights became negative or zero, revert to equal allocation
             equal_weight = 1.0 / len(strategy_names) if strategy_names else 0
             return {name: equal_weight for name in strategy_names}
 
         return adjusted_weights
+
+    def _shrinkage_correction(self, correlation_matrix: np.ndarray) -> np.ndarray:
+        """Apply shrinkage correction to improve correlation matrix conditioning"""
+        n = correlation_matrix.shape[0]
+        if n <= 1:
+            return correlation_matrix
+
+        # Simple shrinkage toward identity matrix
+        shrinkage_intensity = 0.1  # Adjust based on data quality
+        identity_matrix = np.eye(n)
+        corrected_matrix = (1 - shrinkage_intensity) * correlation_matrix + shrinkage_intensity * identity_matrix
+
+        # Ensure diagonal elements remain 1
+        for i in range(n):
+            corrected_matrix[i, i] = 1.0
+
+        # Ensure symmetry
+        corrected_matrix = (corrected_matrix + corrected_matrix.T) / 2.0
+
+        return corrected_matrix
 
     def allocate_capital_to_strategies(self, total_capital: float) -> Dict[str, float]:
         """Allocate capital to strategies based on calculated weights"""
@@ -428,7 +619,7 @@ class PortfolioStrategyAllocationService:
         return allocations
 
     def get_diversification_metrics(self) -> Dict[str, Any]:
-        """Get metrics related to strategy diversification"""
+        """Get metrics related to strategy diversification with enhanced analysis"""
         strategy_names = [s.get_strategy_name() for s in self.strategy_selection.strategies]
         correlation_matrix = self.strategy_selection.performance_tracker.get_strategies_correlation_matrix(strategy_names)
 
@@ -436,19 +627,51 @@ class PortfolioStrategyAllocationService:
         n = len(strategy_names)
         if n < 2:
             avg_correlation = 0
+            max_correlation = 0
+            min_correlation = 0
         else:
             # Calculate average absolute correlation (excluding diagonal)
-            total_corr = 0
-            count = 0
+            correlations = []
             for i in range(n):
                 for j in range(i + 1, n):
-                    total_corr += abs(correlation_matrix[i][j])
-                    count += 1
-            avg_correlation = total_corr / count if count > 0 else 0
+                    correlations.append(abs(correlation_matrix[i][j]))
+
+            if correlations:
+                avg_correlation = sum(correlations) / len(correlations)
+                max_correlation = max(correlations)
+                min_correlation = min(correlations)
+            else:
+                avg_correlation = max_correlation = min_correlation = 0
+
+        # Calculate eigenvalues for portfolio-level diversification metrics
+        eigenvalues = None
+        condition_number = None
+        try:
+            eigenvals = np.linalg.eigvals(correlation_matrix)
+            eigenvalues = eigenvals.real.tolist()  # Take real part if complex
+            if len(eigenvals) > 0 and min(eigenvals) > 0:
+                condition_number = max(eigenvals) / min(eigenvals)
+        except np.linalg.LinAlgError:
+            # If eigenvalue calculation fails, set to None values
+            eigenvalues = None
+            condition_number = None
+
+        # Calculate individual strategy contribution to correlation risk
+        strategy_contributions = {}
+        if n > 1:
+            for i, strategy_name in enumerate(strategy_names):
+                contrib = sum(abs(correlation_matrix[i][j]) for j in range(n) if i != j)
+                strategy_contributions[strategy_name] = contrib / (n - 1) if n > 1 else 0
 
         return {
             'strategy_names': strategy_names,
             'correlation_matrix': correlation_matrix.tolist(),
             'average_correlation': avg_correlation,
+            'max_correlation': max_correlation,
+            'min_correlation': min_correlation,
             'diversification_score': 1 - avg_correlation,  # Higher score means better diversification
+            'strategy_correlation_contributions': strategy_contributions,
+            'eigenvalues': eigenvalues,
+            'condition_number': condition_number,
+            'matrix_condition': 'good' if condition_number and condition_number < 100 else 'poor' if condition_number else 'unknown'
         }
