@@ -50,17 +50,17 @@ class TokenBucketRateLimiter:
 
 class DataDownloaderAdapter(DataDownloader):
     """Infrastructure adapter for downloading data from exchanges"""
-    
+
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
         self.rate_limiter = TokenBucketRateLimiter(settings.rate_limit_tokens_per_second)
         self.exchange_instances = {}
-    
+
     async def __aenter__(self):
         """Context manager entry"""
         self.session = aiohttp.ClientSession()
         return self
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit"""
         if self.session:
@@ -83,7 +83,22 @@ class DataDownloaderAdapter(DataDownloader):
             # Add specific configuration for Binance to use spot API
             if exchange_name.lower() == 'binance':
                 exchange_config['options'] = {
-                    'defaultType': 'spot'
+                    'defaultType': 'spot',
+                    'adjustForTimeDifference': True,  # Helps with API time sync issues
+                    'recvWindow': 60000,  # 60 seconds, increase if needed
+                }
+                # Properly configure all binance API URLs to use the spot API
+                exchange_config['urls'] = {
+                    'api': {
+                        'rest': 'https://api.binance.com',
+                        'public': 'https://api.binance.com/api/v3',
+                        'private': 'https://api.binance.com/api/v3',
+                    },
+                    'test': {
+                        'rest': 'https://testnet.binance.vision',
+                        'public': 'https://testnet.binance.vision/api/v3',
+                        'private': 'https://testnet.binance.vision/api/v3',
+                    }
                 }
 
             self.exchange_instances[exchange_name] = exchange_class(exchange_config)
@@ -106,15 +121,12 @@ class DataDownloaderAdapter(DataDownloader):
         last_error = None
 
         # Format symbol for exchange
-        # Convert BTC-USDT to BTC/USDT for exchange API
-        exchange_symbol = symbol.replace('-', '/')
-
-        # For Binance, ensure we're using the right format
+        # Convert BTC-USDT to BTCUSDT for Binance (no separator)
         if exchange_name.lower() == 'binance':
-            # Binance typically uses format like BTCUSDT, but we might need to be sure
-            if '/' not in symbol:
-                # If it's in BTCUSDT format, we may need to use it as is or convert
-                exchange_symbol = symbol.replace('-', '')  # Convert to BTCUSDT format
+            exchange_symbol = symbol.replace('-', '')
+        else:
+            # For other exchanges, use slash format
+            exchange_symbol = symbol.replace('-', '/')
 
         while attempt < settings.retry_max_attempts:
             try:
@@ -130,9 +142,9 @@ class DataDownloaderAdapter(DataDownloader):
                     since=start_ts * 1000,  # Convert to milliseconds
                     limit=1000  # Most exchanges support up to 1000 candles
                 )
-                
+
                 duration_ms = int((time.time() - start_time) * 1000)
-                
+
                 # Log successful request
                 logger.log_operation(
                     operation=OperationType.SYMBOL_DOWNLOAD,
@@ -141,7 +153,7 @@ class DataDownloaderAdapter(DataDownloader):
                     duration_ms=duration_ms,
                     api_usage={"requests": 1, "rate_limit_events": 0}
                 )
-                
+
                 # Convert CCXT format to our required format
                 # CCXT returns [timestamp, open, high, low, close, volume]
                 formatted_data = []
@@ -158,21 +170,21 @@ class DataDownloaderAdapter(DataDownloader):
                             'close': c,
                             'volume': v
                         })
-                
+
                 return formatted_data
-                
+
             except Exception as e:
                 last_error = e
                 attempt += 1
-                
+
                 if attempt >= settings.retry_max_attempts:
                     break
-                
+
                 # Calculate backoff time with jitter
                 backoff_time = settings.retry_backoff_base * (settings.retry_backoff_factor ** (attempt - 1))
                 jitter = random.uniform(0, 0.1 * backoff_time)
                 total_wait = backoff_time + jitter
-                
+
                 # Log retry attempt
                 logger.log_operation(
                     operation=OperationType.SYMBOL_DOWNLOAD,
@@ -181,9 +193,9 @@ class DataDownloaderAdapter(DataDownloader):
                     error=str(e),
                     duration_ms=int(total_wait * 1000)
                 )
-                
+
                 await asyncio.sleep(total_wait)
-        
+
         # If all retries failed, raise the last error
         if last_error:
             raise last_error

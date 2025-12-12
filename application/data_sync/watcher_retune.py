@@ -228,6 +228,30 @@ class WatcherRetuneUseCase:
         return success
 
 
+async def run_with_resources(args):
+    """Run the watcher retune with proper resource management"""
+    from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
+    from infrastructure.data_sync.data_downloader_adapter import DataDownloaderAdapter
+    from application.data_sync.sync_manager import SyncManager
+
+    file_repo = FileRepositoryAdapter()
+    data_downloader = DataDownloaderAdapter()
+    sync_manager = SyncManager(file_repo, data_downloader)
+    watcher_retune = WatcherRetuneUseCase(file_repo, data_downloader, sync_manager)
+
+    # Use context manager for proper resource cleanup
+    async with data_downloader:
+        # Use the synchronous method
+        success = watcher_retune.request_repair_sync(
+            args.symbol,
+            args.start_ts,
+            args.end_ts,
+            args.timeout
+        )
+
+        return success
+
+
 def main():
     """Main entry point for the watcher retune command line tool"""
     parser = argparse.ArgumentParser(description='Run watcher retune operations')
@@ -239,29 +263,14 @@ def main():
                         help='End timestamp for the repair interval')
     parser.add_argument('--timeout', type=int, default=300,
                         help='Maximum time to wait in seconds (default: 300)')
-    
+
     args = parser.parse_args()
-    
+
     print(f"Requesting priority repair for {args.symbol} from {args.start_ts} to {args.end_ts}")
-    
-    # Create dependencies (in a real system, this would use DI)
-    from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
-    from infrastructure.data_sync.data_downloader_adapter import DataDownloaderAdapter
-    from application.data_sync.sync_manager import SyncManager
-    
-    file_repo = FileRepositoryAdapter()
-    data_downloader = DataDownloaderAdapter()
-    sync_manager = SyncManager(file_repo, data_downloader)
-    watcher_retune = WatcherRetuneUseCase(file_repo, data_downloader, sync_manager)
-    
-    # Use the synchronous method
-    success = watcher_retune.request_repair_sync(
-        args.symbol, 
-        args.start_ts, 
-        args.end_ts, 
-        args.timeout
-    )
-    
+
+    # Run with proper resource management
+    success = asyncio.run(run_with_resources(args))
+
     if success:
         print("Repair completed successfully - data is now gap-free!")
         return 0

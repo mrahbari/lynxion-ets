@@ -146,37 +146,38 @@ class SyncLoop:
         return result
 
 
-def main():
-    """Main entry point for the sync loop"""
-    parser = argparse.ArgumentParser(description='Run the sync loop')
-    parser.add_argument('--one-cycle', action='store_true', 
-                        help='Run a single sync cycle and exit')
-    parser.add_argument('--symbol', type=str, 
-                        help='Specific symbol to sync (e.g. BTC-USDT)')
-    parser.add_argument('--dry-run', action='store_true', 
-                        help='Run in dry-run mode (not implemented in this version)')
-    
-    args = parser.parse_args()
-    
-    # Here we would typically use a DI container to inject dependencies
-    # For now, create the dependencies directly
+async def run_with_resources(args):
+    """Run the sync loop with proper resource management"""
     from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
     from infrastructure.data_sync.data_downloader_adapter import DataDownloaderAdapter
-    
+
     file_repo = FileRepositoryAdapter()
     data_downloader = DataDownloaderAdapter()
     sync_manager = SyncManager(file_repo, data_downloader)
     loop = SyncLoop(sync_manager)
-    
-    if args.one_cycle:
-        # Run a single cycle
-        async def run_single():
+
+    # Use context manager for proper resource cleanup
+    async with data_downloader:
+        if args.one_cycle:
             await loop.run_single_cycle(args.symbol)
-        
-        asyncio.run(run_single())
-    else:
-        # Run continuous sync loop
-        asyncio.run(loop.run_continuous_sync())
+        else:
+            await loop.run_continuous_sync()
+
+
+def main():
+    """Main entry point for the sync loop"""
+    parser = argparse.ArgumentParser(description='Run the sync loop')
+    parser.add_argument('--one-cycle', action='store_true',
+                        help='Run a single sync cycle and exit')
+    parser.add_argument('--symbol', type=str,
+                        help='Specific symbol to sync (e.g. BTC-USDT)')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Run in dry-run mode (not implemented in this version)')
+
+    args = parser.parse_args()
+
+    # Run with proper resource management
+    asyncio.run(run_with_resources(args))
 
 
 if __name__ == "__main__":

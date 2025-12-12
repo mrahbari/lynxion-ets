@@ -26,76 +26,128 @@ from utils.logger import logger, OperationType, StatusType
 from utils.logger import SyncLogger
 
 
-def create_sync_components():
-    """Create all necessary components for sync operations"""
+async def create_sync_components():
+    """Create all necessary components for sync operations with async support"""
     file_repo = FileRepositoryAdapter()
     data_downloader = DataDownloaderAdapter()
     sync_manager = SyncManager(file_repo, data_downloader)
     watcher_retune = WatcherRetuneUseCase(file_repo, data_downloader, sync_manager)
-    
+
     return file_repo, data_downloader, sync_manager, watcher_retune
 
 
-async def run_downloader_and_sync_process(symbols: Optional[List[str]] = None, 
+async def run_downloader_and_sync_process(symbols: Optional[List[str]] = None,
                                         file_repo: FileRepositoryAdapter = None,
                                         sync_manager: SyncManager = None):
     """Run the downloader and sync process for specified symbols"""
     print(f"🚀 Starting downloader and sync process at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    
+
     # Create components if not provided
     if file_repo is None or sync_manager is None:
-        file_repo, data_downloader, sync_manager, _ = create_sync_components()
+        file_repo, data_downloader, sync_manager, _ = await create_sync_components()
+
+        # Use context manager for proper resource cleanup when we create the downloader
+        async with data_downloader:
+            start_time = time.time()
+
+            try:
+                # Run the sync cycle using the sync manager
+                result = await sync_manager.run_sync_cycle(symbols)
+
+                duration = time.time() - start_time
+
+                # Log the results
+                print(f"✅ Download and sync completed in {duration:.2f} seconds")
+                print(f"  Symbols processed: {result['symbols_scanned']}")
+                print(f"  Symbols updated: {result['symbols_fixed']}")
+                print(f"  Rows written: {result['rows_written']:,}")
+                print(f"  Errors: {len(result['errors'])}")
+
+                if result['errors']:
+                    print("⚠️  Errors encountered:")
+                    for error in result['errors']:
+                        print(f"   - {error}")
+
+                # Log operation with structured format
+                logger.log_operation(
+                    operation=OperationType.CYCLE,
+                    symbol="ALL" if symbols is None else f"{len(symbols)}_SYMBOLS",
+                    status=StatusType.ERROR if result['errors'] else StatusType.OK,
+                    duration_ms=int(duration * 1000),
+                    rows_written=result['rows_written'],
+                    bytes_written=result['bytes_written'],
+                    errors=result['errors'] if result['errors'] else None
+                )
+
+                return result
+
+            except Exception as e:
+                duration = time.time() - start_time
+                print(f"❌ Download and sync failed after {duration:.2f} seconds: {e}")
+
+                logger.log_operation(
+                    operation=OperationType.CYCLE,
+                    symbol="ALL" if symbols is None else f"{len(symbols)}_SYMBOLS",
+                    status=StatusType.ERROR,
+                    duration_ms=int(duration * 1000),
+                    error=str(e)
+                )
+
+                raise
     else:
-        # Recreate downloader for this specific operation
+        # When components are provided, we assume they were created with proper resource management
+        # However, we still need to create a downloader for this specific operation
         data_downloader = DataDownloaderAdapter()
         sync_manager = SyncManager(file_repo, data_downloader)
-    
-    start_time = time.time()
-    
-    try:
-        # Run the sync cycle using the sync manager
-        result = await sync_manager.run_sync_cycle(symbols)
-        
-        duration = time.time() - start_time
-        
-        # Log the results
-        print(f"✅ Download and sync completed in {duration:.2f} seconds")
-        print(f"  Symbols processed: {result['symbols_scanned']}")
-        print(f"  Symbols updated: {result['symbols_fixed']}")
-        print(f"  Rows written: {result['rows_written']:,}")
-        print(f"  Errors: {len(result['errors'])}")
-        
-        if result['errors']:
-            print("⚠️  Errors encountered:")
-            for error in result['errors']:
-                print(f"   - {error}")
-        
-        # Log operation with structured format
-        logger.log_operation(
-            operation=OperationType.CYCLE,
-            symbol="ALL" if symbols is None else f"{len(symbols)}_SYMBOLS",
-            status=StatusType.ERROR if result['errors'] else StatusType.OK,
-            duration_ms=int(duration * 1000),
-            rows_written=result['rows_written'],
-            bytes_written=result['bytes_written'],
-            errors=result['errors'] if result['errors'] else None
-        )
-        
-        return result
-        
-    except Exception as e:
-        duration = time.time() - start_time
-        print(f"❌ Download and sync failed after {duration:.2f} seconds: {e}")
-        
-        logger.log_operation(
-            operation=OperationType.CYCLE,
-            symbol="ALL" if symbols is None else f"{len(symbols)}_SYMBOLS",
-            status=StatusType.ERROR,
-            duration_ms=int(duration * 1000),
-            error=str(e)
-        )
-        
-        raise
+
+        # Use context manager for proper resource cleanup
+        async with data_downloader:
+            start_time = time.time()
+
+            try:
+                # Run the sync cycle using the sync manager
+                result = await sync_manager.run_sync_cycle(symbols)
+
+                duration = time.time() - start_time
+
+                # Log the results
+                print(f"✅ Download and sync completed in {duration:.2f} seconds")
+                print(f"  Symbols processed: {result['symbols_scanned']}")
+                print(f"  Symbols updated: {result['symbols_fixed']}")
+                print(f"  Rows written: {result['rows_written']:,}")
+                print(f"  Errors: {len(result['errors'])}")
+
+                if result['errors']:
+                    print("⚠️  Errors encountered:")
+                    for error in result['errors']:
+                        print(f"   - {error}")
+
+                # Log operation with structured format
+                logger.log_operation(
+                    operation=OperationType.CYCLE,
+                    symbol="ALL" if symbols is None else f"{len(symbols)}_SYMBOLS",
+                    status=StatusType.ERROR if result['errors'] else StatusType.OK,
+                    duration_ms=int(duration * 1000),
+                    rows_written=result['rows_written'],
+                    bytes_written=result['bytes_written'],
+                    errors=result['errors'] if result['errors'] else None
+                )
+
+                return result
+
+            except Exception as e:
+                duration = time.time() - start_time
+                print(f"❌ Download and sync failed after {duration:.2f} seconds: {e}")
+
+                logger.log_operation(
+                    operation=OperationType.CYCLE,
+                    symbol="ALL" if symbols is None else f"{len(symbols)}_SYMBOLS",
+                    status=StatusType.ERROR,
+                    duration_ms=int(duration * 1000),
+                    error=str(e)
+                )
+
+                raise
 
 
 async def run_retune_process(symbols: Optional[List[str]] = None,
@@ -103,68 +155,131 @@ async def run_retune_process(symbols: Optional[List[str]] = None,
                            watcher_retune: WatcherRetuneUseCase = None):
     """Run the retune process to validate and repair data gaps"""
     print(f"🔄 Starting retune process at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    
+
     # Create components if not provided
     if file_repo is None or watcher_retune is None:
-        _, _, _, watcher_retune = create_sync_components()
+        # If we create the components, we need to handle the data downloader resource properly
+        _, data_downloader, _, watcher_retune = await create_sync_components()
         file_repo = FileRepositoryAdapter()
-    
-    start_time = time.time()
-    
-    try:
-        if symbols is None:
-            symbols = [sym.symbol for sym in get_symbols() if sym.enabled]
-        
-        retune_results = []
-        total_fixed = 0
-        
-        for symbol in symbols:
+
+        # Use context manager for proper resource cleanup when we create the downloader
+        async with data_downloader:
+            start_time = time.time()
+
             try:
-                # Check if symbol has gaps in the most recent data
-                index_info = file_repo.get_file_index(symbol)
-                if index_info and 'latest_timestamp' in index_info:
-                    # Check a recent window for gaps (last 24 hours)
-                    latest_ts = index_info['latest_timestamp']
-                    recent_start = latest_ts - (24 * 60 * 60)  # 24 hours ago
-                    recent_start = max(recent_start, index_info.get('earliest_timestamp', recent_start))
-                    
-                    is_valid = watcher_retune.validate_interval(symbol, recent_start, latest_ts)
-                    
-                    if not is_valid:
-                        print(f"  🔍 Found gaps in {symbol}, initiating repair...")
-                        success = watcher_retune.request_repair_sync(symbol, recent_start, latest_ts, timeout=300)
-                        if success:
-                            total_fixed += 1
-                            print(f"  ✅ {symbol} repaired successfully")
+                if symbols is None:
+                    symbols = [sym.symbol for sym in get_symbols() if sym.enabled]
+
+                retune_results = []
+                total_fixed = 0
+
+                for symbol in symbols:
+                    try:
+                        # Check if symbol has gaps in the most recent data
+                        index_info = file_repo.get_file_index(symbol)
+                        if index_info and 'latest_timestamp' in index_info:
+                            # Check a recent window for gaps (last 24 hours)
+                            latest_ts = index_info['latest_timestamp']
+                            recent_start = latest_ts - (24 * 60 * 60)  # 24 hours ago
+                            recent_start = max(recent_start, index_info.get('earliest_timestamp', recent_start))
+
+                            is_valid = watcher_retune.validate_interval(symbol, recent_start, latest_ts)
+
+                            if not is_valid:
+                                print(f"  🔍 Found gaps in {symbol}, initiating repair...")
+                                success = watcher_retune.request_repair_sync(symbol, recent_start, latest_ts, timeout=300)
+                                if success:
+                                    total_fixed += 1
+                                    print(f"  ✅ {symbol} repaired successfully")
+                                else:
+                                    print(f"  ❌ {symbol} repair timeout")
+                                retune_results.append((symbol, success))
+                            else:
+                                print(f"  🟢 {symbol} is gap-free")
                         else:
-                            print(f"  ❌ {symbol} repair timeout")
-                        retune_results.append((symbol, success))
-                    else:
-                        print(f"  🟢 {symbol} is gap-free")
-                else:
-                    print(f"  ⚠️  {symbol} has no data to validate")
-                    
+                            print(f"  ⚠️  {symbol} has no data to validate")
+
+                    except Exception as e:
+                        print(f"  ❌ Error validating {symbol}: {e}")
+                        retune_results.append((symbol, False))
+
+                duration = time.time() - start_time
+
+                print(f"✅ Retune process completed in {duration:.2f} seconds")
+                print(f"  Symbols validated: {len(symbols)}")
+                print(f"  Symbols fixed: {total_fixed}")
+
+                return {
+                    'total_symbols': len(symbols),
+                    'fixed_symbols': total_fixed,
+                    'results': retune_results,
+                    'duration_ms': int(duration * 1000)
+                }
+
             except Exception as e:
-                print(f"  ❌ Error validating {symbol}: {e}")
-                retune_results.append((symbol, False))
-        
-        duration = time.time() - start_time
-        
-        print(f"✅ Retune process completed in {duration:.2f} seconds")
-        print(f"  Symbols validated: {len(symbols)}")
-        print(f"  Symbols fixed: {total_fixed}")
-        
-        return {
-            'total_symbols': len(symbols),
-            'fixed_symbols': total_fixed,
-            'results': retune_results,
-            'duration_ms': int(duration * 1000)
-        }
-        
-    except Exception as e:
-        duration = time.time() - start_time
-        print(f"❌ Retune process failed after {duration:.2f} seconds: {e}")
-        raise
+                duration = time.time() - start_time
+                print(f"❌ Retune process failed after {duration:.2f} seconds: {e}")
+                raise
+    else:
+        # When components are provided, we need to get the data_downloader from the watcher_retune
+        # The WatcherRetuneUseCase should have access to the data_downloader
+        # For now, we'll assume the watcher_retune was properly set up with resources
+        start_time = time.time()
+
+        try:
+            if symbols is None:
+                symbols = [sym.symbol for sym in get_symbols() if sym.enabled]
+
+            retune_results = []
+            total_fixed = 0
+
+            for symbol in symbols:
+                try:
+                    # Check if symbol has gaps in the most recent data
+                    index_info = file_repo.get_file_index(symbol)
+                    if index_info and 'latest_timestamp' in index_info:
+                        # Check a recent window for gaps (last 24 hours)
+                        latest_ts = index_info['latest_timestamp']
+                        recent_start = latest_ts - (24 * 60 * 60)  # 24 hours ago
+                        recent_start = max(recent_start, index_info.get('earliest_timestamp', recent_start))
+
+                        is_valid = watcher_retune.validate_interval(symbol, recent_start, latest_ts)
+
+                        if not is_valid:
+                            print(f"  🔍 Found gaps in {symbol}, initiating repair...")
+                            success = watcher_retune.request_repair_sync(symbol, recent_start, latest_ts, timeout=300)
+                            if success:
+                                total_fixed += 1
+                                print(f"  ✅ {symbol} repaired successfully")
+                            else:
+                                print(f"  ❌ {symbol} repair timeout")
+                            retune_results.append((symbol, success))
+                        else:
+                            print(f"  🟢 {symbol} is gap-free")
+                    else:
+                        print(f"  ⚠️  {symbol} has no data to validate")
+
+                except Exception as e:
+                    print(f"  ❌ Error validating {symbol}: {e}")
+                    retune_results.append((symbol, False))
+
+            duration = time.time() - start_time
+
+            print(f"✅ Retune process completed in {duration:.2f} seconds")
+            print(f"  Symbols validated: {len(symbols)}")
+            print(f"  Symbols fixed: {total_fixed}")
+
+            return {
+                'total_symbols': len(symbols),
+                'fixed_symbols': total_fixed,
+                'results': retune_results,
+                'duration_ms': int(duration * 1000)
+            }
+
+        except Exception as e:
+            duration = time.time() - start_time
+            print(f"❌ Retune process failed after {duration:.2f} seconds: {e}")
+            raise
 
 
 def process_timeframes(symbols: Optional[List[str]] = None):

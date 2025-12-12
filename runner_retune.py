@@ -33,20 +33,20 @@ def load_symbols_from_env() -> List[str]:
 
 
 def run_retune_process(
-    symbols: List[str], 
-    strategy_name: str = "crypto_breakout",
-    max_evals: int = 50,
-    days_back: int = 90
+        symbols: List[str],
+        strategy_name: str = "crypto_breakout",
+        max_evals: int = 50,
+        days_back: int = 90
 ) -> Dict[str, Any]:
     """Run the retune process for specified symbols and strategy."""
     logger = EnhancedLogger(f"RetuneRunner_{strategy_name}")
-    
+
     print(f"🔄 Starting retune process for strategy: {strategy_name}")
     print(f"   Symbols: {symbols}")
     print(f"   Max evaluations per symbol: {max_evals}")
     print(f"   Data window: {days_back} days")
     print(f"   Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    
+
     start_time = datetime.now()
     results = {
         'strategy': strategy_name,
@@ -55,7 +55,7 @@ def run_retune_process(
         'failed_optimizations': 0,
         'results': {}
     }
-    
+
     # Initialize hyperopt components
     config = {
         'strategy_name': strategy_name,
@@ -65,20 +65,22 @@ def run_retune_process(
             'slippage_factor': float(os.getenv('SLIPPAGE_FACTOR', '0.0005'))
         }
     }
-    
-    optimizer = ConfigurableHyperoptOptimizer(hyperopt_config=config, strategy_name=strategy_name)
+
+    from shared.configurable_hyperopt import HyperoptConfig
+    hyperopt_config_obj = HyperoptConfig(strategy_name=strategy_name)
+    optimizer = ConfigurableHyperoptOptimizer(hyperopt_config=hyperopt_config_obj, strategy_name=strategy_name)
     param_space_handler = HyperoptParameterSpace()
-    
+
     for symbol in symbols:
         print(f"\n🔍 Optimizing {strategy_name} for {symbol}...")
-        
+
         try:
             # Load data for the symbol
             data_loader = None  # Would need proper data loading implementation
             # For now, we'll create sample data or use existing loaders
             from infrastructure.data.csv_history_loader import CSVHistoryLoaderAdapter
             data_loader = CSVHistoryLoaderAdapter()
-            
+
             try:
                 df = data_loader.load(symbol=symbol)
                 if df.empty:
@@ -87,19 +89,19 @@ def run_retune_process(
             except Exception as e:
                 print(f"   ❌ Error loading data for {symbol}: {e}")
                 continue
-            
+
             # Use only the last N days of data
             if days_back > 0:
                 cutoff_date = datetime.now() - timedelta(days=days_back)
                 df = df[df.index >= cutoff_date]
-                
+
             if len(df) < 20:  # Need minimum data for optimization
                 print(f"   ⚠️  Insufficient data for {symbol} (only {len(df)} rows), skipping...")
                 continue
-            
+
             # Get parameter space for this strategy
             param_space = param_space_handler.get_space(strategy_name)
-            
+
             # Run optimization
             optimization_result = optimizer.optimize_with_config(
                 strategy_name=strategy_name,
@@ -110,7 +112,7 @@ def run_retune_process(
                     "parameter_space": param_space
                 }
             )
-            
+
             if 'best_params' in optimization_result:
                 results['results'][symbol] = {
                     'status': 'success',
@@ -130,7 +132,7 @@ def run_retune_process(
                 }
                 results['failed_optimizations'] += 1
                 print(f"   ❌ {symbol} optimization failed")
-                
+
         except Exception as e:
             print(f"   ❌ Error during optimization for {symbol}: {e}")
             results['results'][symbol] = {
@@ -139,12 +141,12 @@ def run_retune_process(
                 'timestamp': datetime.now().isoformat()
             }
             results['failed_optimizations'] += 1
-    
+
     results['symbols_processed'] = symbols
     results['total_processed'] = len(symbols)
     results['end_time'] = datetime.now().isoformat()
     results['duration_seconds'] = (datetime.now() - start_time).total_seconds()
-    
+
     # Print summary
     print(f"\n📊 RETUNE PROCESS SUMMARY")
     print(f"   Strategy: {strategy_name}")
@@ -152,40 +154,40 @@ def run_retune_process(
     print(f"   Successful: {results['successful_optimizations']}")
     print(f"   Failed: {results['failed_optimizations']}")
     print(f"   Duration: {results['duration_seconds']:.2f}s")
-    
+
     return results
 
 
 def validate_retune_results(results: Dict[str, Any]) -> Dict[str, Any]:
     """Validate the results of the retune process."""
     print(f"\n✅ Validating retune results...")
-    
+
     validation_results = {
         'valid': 0,
         'invalid': 0,
         'total': results['total_processed'],
         'validation_details': {}
     }
-    
+
     for symbol, result in results['results'].items():
         if result['status'] == 'success':
             # Basic validation checks
             is_valid = True
             issues = []
-            
+
             if 'best_params' not in result or not result['best_params']:
                 is_valid = False
                 issues.append("No best_params found")
-            
+
             if result.get('best_value', -float('inf')) == -float('inf'):
                 is_valid = False
                 issues.append("No best_value found")
-            
+
             validation_results['validation_details'][symbol] = {
                 'valid': is_valid,
                 'issues': issues
             }
-            
+
             if is_valid:
                 validation_results['valid'] += 1
             else:
@@ -196,10 +198,10 @@ def validate_retune_results(results: Dict[str, Any]) -> Dict[str, Any]:
                 'issues': [result.get('error', 'Unknown error')]
             }
             validation_results['invalid'] += 1
-    
+
     print(f"   Valid results: {validation_results['valid']}")
     print(f"   Invalid results: {validation_results['invalid']}")
-    
+
     return validation_results
 
 
@@ -217,27 +219,27 @@ Examples:
         """
     )
 
-    parser.add_argument('--strategy', type=str, 
-                       default='crypto_breakout',
-                       help='Strategy name to retune (default: crypto_breakout)')
+    parser.add_argument('--strategy', type=str,
+                        default='crypto_breakout',
+                        help='Strategy name to retune (default: crypto_breakout)')
 
-    parser.add_argument('--symbols', nargs='+', type=str, 
-                       help='Specific symbols to retune (default: from WFO_COINS env var)')
+    parser.add_argument('--symbols', nargs='+', type=str,
+                        help='Specific symbols to retune (default: from WFO_COINS env var)')
 
     parser.add_argument('--evals', type=int, default=50,
-                       help='Maximum number of hyperopt evaluations per symbol (default: 50)')
+                        help='Maximum number of hyperopt evaluations per symbol (default: 50)')
 
     parser.add_argument('--days', type=int, default=90,
-                       help='Number of days of historical data to use (default: 90)')
+                        help='Number of days of historical data to use (default: 90)')
 
     parser.add_argument('--output', type=str,
-                       help='Output file to save results (JSON format)')
+                        help='Output file to save results (JSON format)')
 
     parser.add_argument('--validate', action='store_true',
-                       help='Validate results after retuning')
+                        help='Validate results after retuning')
 
     parser.add_argument('--verbose', '-v', action='store_true',
-                       help='Enable verbose output')
+                        help='Enable verbose output')
 
     args = parser.parse_args()
 
@@ -246,7 +248,7 @@ Examples:
         symbols = args.symbols
     else:
         symbols = load_symbols_from_env()
-    
+
     print(f"🚀 Retune Runner Started")
     print(f"   Strategy: {args.strategy}")
     print(f"   Symbols: {symbols}")

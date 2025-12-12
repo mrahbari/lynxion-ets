@@ -36,7 +36,7 @@ def format_symbol_for_exchange(symbol: str) -> str:
 
 
 async def run_history_download(
-    symbols: List[str], 
+    symbols: List[str],
     start_date: datetime,
     end_date: datetime,
     timeframes: List[str] = None,
@@ -44,125 +44,127 @@ async def run_history_download(
 ) -> Dict[str, Any]:
     """Run the history download process for specified symbols and date range."""
     logger = EnhancedLogger("HistoryDownloadRunner")
-    
+
     if timeframes is None:
         timeframes = ['1m', '5m', '15m', '30m', '1h', '4h', '1d']
-    
+
     print(f"📥 Starting history download process")
     print(f"   Symbols: {symbols}")
     print(f"   Date Range: {start_date.date()} to {end_date.date()}")
     print(f"   Timeframes: {timeframes}")
     print(f"   Exchange: {exchange}")
     print(f"   Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    
+
     start_time = datetime.now()
-    
+
     # Create components
     file_repo = FileRepositoryAdapter()
     data_downloader = DataDownloaderAdapter()
     sync_manager = SyncManager(file_repo, data_downloader)
-    
-    results = {
-        'start_time': start_time.isoformat(),
-        'symbols_processed': symbols,
-        'timeframes_requested': timeframes,
-        'exchange': exchange,
-        'downloads': {},
-        'summary': {
-            'total_symbols': len(symbols),
-            'successful_downloads': 0,
-            'failed_downloads': 0,
-            'total_candles': 0
+
+    # Use context manager for proper resource cleanup
+    async with data_downloader:
+        results = {
+            'start_time': start_time.isoformat(),
+            'symbols_processed': symbols,
+            'timeframes_requested': timeframes,
+            'exchange': exchange,
+            'downloads': {},
+            'summary': {
+                'total_symbols': len(symbols),
+                'successful_downloads': 0,
+                'failed_downloads': 0,
+                'total_candles': 0
+            }
         }
-    }
-    
-    for symbol in symbols:
-        formatted_symbol = format_symbol_for_exchange(symbol)
-        print(f"\n🔍 Downloading data for {symbol} ({formatted_symbol})...")
-        
-        try:
-            # For each symbol, download all specified timeframes
-            symbol_results = {}
-            
-            for timeframe in timeframes:
-                print(f"   🕐 Downloading {timeframe} timeframe...")
-                
-                try:
-                    # Calculate the date range for this specific timeframe
-                    # For higher timeframes, we might want to limit the date range to improve performance
-                    actual_start = start_date
-                    if timeframe in ['1d', '4h']:
-                        # For daily and 4-hour data, might have different limits or sources
-                        actual_start = max(start_date, datetime.now() - timedelta(days=365*2))  # Max 2 years for daily
-                    
-                    # Attempt to download data for the symbol and timeframe
-                    # This would use the sync manager's capabilities
-                    download_result = await sync_manager.sync_symbol_data(
-                        symbol=formatted_symbol,
-                        timeframes=[timeframe],
-                        start_time=int(actual_start.timestamp()),
-                        end_time=int(end_date.timestamp())
-                    )
-                    
-                    symbol_results[timeframe] = {
-                        'status': 'success',
-                        'candles_count': download_result.get('rows_written', 0) if download_result else 0,
-                        'start_time': actual_start.isoformat(),
-                        'end_time': end_date.isoformat(),
-                        'timestamp': datetime.now().isoformat()
-                    }
-                    
-                    results['summary']['total_candles'] += download_result.get('rows_written', 0) if download_result else 0
-                    print(f"      ✅ {timeframe}: {download_result.get('rows_written', 0) if download_result else 0} candles")
-                    
-                except Exception as tf_error:
-                    symbol_results[timeframe] = {
-                        'status': 'failed',
-                        'error': str(tf_error),
-                        'timestamp': datetime.now().isoformat()
-                    }
-                    print(f"      ❌ {timeframe}: {tf_error}")
-            
-            results['downloads'][symbol] = {
-                'status': 'partial' if any(r['status'] == 'failed' for r in symbol_results.values()) else 'success',
-                'timeframes': symbol_results,
-                'timestamp': datetime.now().isoformat()
-            }
-            
-            # Count successful vs failed downloads
-            successful_tfs = sum(1 for r in symbol_results.values() if r['status'] == 'success')
-            if successful_tfs == len(timeframes):
-                results['summary']['successful_downloads'] += 1
-            elif successful_tfs == 0:
+
+        for symbol in symbols:
+            formatted_symbol = format_symbol_for_exchange(symbol)
+            print(f"\n🔍 Downloading data for {symbol} ({formatted_symbol})...")
+
+            try:
+                # For each symbol, download all specified timeframes
+                symbol_results = {}
+
+                for timeframe in timeframes:
+                    print(f"   🕐 Downloading {timeframe} timeframe...")
+
+                    try:
+                        # Calculate the date range for this specific timeframe
+                        # For higher timeframes, we might want to limit the date range to improve performance
+                        actual_start = start_date
+                        if timeframe in ['1d', '4h']:
+                            # For daily and 4-hour data, might have different limits or sources
+                            actual_start = max(start_date, datetime.now() - timedelta(days=365*2))  # Max 2 years for daily
+
+                        # Attempt to download data for the symbol and timeframe
+                        # This would use the sync manager's capabilities
+                        download_result = await sync_manager.sync_symbol_data(
+                            symbol=formatted_symbol,
+                            timeframes=[timeframe],
+                            start_time=int(actual_start.timestamp()),
+                            end_time=int(end_date.timestamp())
+                        )
+
+                        symbol_results[timeframe] = {
+                            'status': 'success',
+                            'candles_count': download_result.get('rows_written', 0) if download_result else 0,
+                            'start_time': actual_start.isoformat(),
+                            'end_time': end_date.isoformat(),
+                            'timestamp': datetime.now().isoformat()
+                        }
+
+                        results['summary']['total_candles'] += download_result.get('rows_written', 0) if download_result else 0
+                        print(f"      ✅ {timeframe}: {download_result.get('rows_written', 0) if download_result else 0} candles")
+
+                    except Exception as tf_error:
+                        symbol_results[timeframe] = {
+                            'status': 'failed',
+                            'error': str(tf_error),
+                            'timestamp': datetime.now().isoformat()
+                        }
+                        print(f"      ❌ {timeframe}: {tf_error}")
+
+                results['downloads'][symbol] = {
+                    'status': 'partial' if any(r['status'] == 'failed' for r in symbol_results.values()) else 'success',
+                    'timeframes': symbol_results,
+                    'timestamp': datetime.now().isoformat()
+                }
+
+                # Count successful vs failed downloads
+                successful_tfs = sum(1 for r in symbol_results.values() if r['status'] == 'success')
+                if successful_tfs == len(timeframes):
+                    results['summary']['successful_downloads'] += 1
+                elif successful_tfs == 0:
+                    results['summary']['failed_downloads'] += 1
+                else:
+                    # Partial success - count as partially successful
+                    results['summary']['successful_downloads'] += 1  # Or could count differently
+
+            except Exception as e:
+                print(f"   ❌ Error downloading {symbol}: {e}")
+                results['downloads'][symbol] = {
+                    'status': 'failed',
+                    'error': str(e),
+                    'timeframes': {tf: {'status': 'failed', 'error': str(e)} for tf in timeframes},
+                    'timestamp': datetime.now().isoformat()
+                }
                 results['summary']['failed_downloads'] += 1
-            else:
-                # Partial success - count as partially successful
-                results['summary']['successful_downloads'] += 1  # Or could count differently
-            
-        except Exception as e:
-            print(f"   ❌ Error downloading {symbol}: {e}")
-            results['downloads'][symbol] = {
-                'status': 'failed',
-                'error': str(e),
-                'timeframes': {tf: {'status': 'failed', 'error': str(e)} for tf in timeframes},
-                'timestamp': datetime.now().isoformat()
-            }
-            results['summary']['failed_downloads'] += 1
-    
-    # Add end time and duration
-    end_time = datetime.now()
-    results['end_time'] = end_time.isoformat()
-    results['duration_seconds'] = (end_time - start_time).total_seconds()
-    
-    # Print summary
-    print(f"\n📊 HISTORY DOWNLOAD SUMMARY")
-    print(f"   Symbols processed: {results['summary']['total_symbols']}")
-    print(f"   Successful: {results['summary']['successful_downloads']}")
-    print(f"   Failed: {results['summary']['failed_downloads']}")
-    print(f"   Total candles downloaded: {results['summary']['total_candles']:,}")
-    print(f"   Duration: {results['duration_seconds']:.2f}s")
-    
-    return results
+
+        # Add end time and duration
+        end_time = datetime.now()
+        results['end_time'] = end_time.isoformat()
+        results['duration_seconds'] = (end_time - start_time).total_seconds()
+
+        # Print summary
+        print(f"\n📊 HISTORY DOWNLOAD SUMMARY")
+        print(f"   Symbols processed: {results['summary']['total_symbols']}")
+        print(f"   Successful: {results['summary']['successful_downloads']}")
+        print(f"   Failed: {results['summary']['failed_downloads']}")
+        print(f"   Total candles downloaded: {results['summary']['total_candles']:,}")
+        print(f"   Duration: {results['duration_seconds']:.2f}s")
+
+        return results
 
 
 def validate_downloaded_data(results: Dict[str, Any], file_repo: FileRepositoryAdapter) -> Dict[str, Any]:
