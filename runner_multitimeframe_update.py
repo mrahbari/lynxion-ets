@@ -74,10 +74,11 @@ def run_multitimeframe_update(symbols: List[str],
                 try:
                     # Use the file repository's built-in method for compacting and aggregating
                     # This follows the downsample → ffill → shift → align pattern
+                    # NOTE: compact_and_aggregate generates all timeframes at once, regardless of the specific timeframe
+                    # This is by design to ensure consistency across timeframes
                     result = file_repo.compact_and_aggregate(
-                        symbol=symbol, 
-                        timeframes=[timeframe], 
-                        force_update=force_update
+                        symbol=symbol,
+                        cleanup_old=not force_update  # If forcing update, keep old files temporarily for comparison
                     )
                     
                     symbol_results[timeframe] = {

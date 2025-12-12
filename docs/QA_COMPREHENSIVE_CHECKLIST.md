@@ -27,7 +27,7 @@ This document provides a complete quality assurance checklist to verify all aspe
 ### Environment Setup
 - [ ] Python 3.9+ is installed: `python --version`
 - [ ] All dependencies from `requirements.txt` are installed: `pip install -r requirements.txt`
-- [ ] Required directories exist: `./data/history/{raw/1m,processed/{5m,15m,30m,1h}} ./results/{wfo,backtest,hyperopt} ./logs`
+- [ ] Required directories exist: `./data/history/{raw/1m,processed/{5m,15m,30m,1h}} ./data/results/{wfo,backtest,hyperopt} ./logs`
 - [ ] `.env` file exists and contains necessary configurations
 - [ ] Exchange API keys are properly configured (if needed)
 

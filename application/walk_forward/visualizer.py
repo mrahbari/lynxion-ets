@@ -14,7 +14,7 @@ from pathlib import Path
 class WFVisualizer:
     """Visualizer for Walk-Forward Optimization results."""
     
-    def __init__(self, output_dir: str = "./results/wfo/plots"):
+    def __init__(self, output_dir: str = "./data/results/wfo/plots"):
         """
         Initialize the visualizer.
         

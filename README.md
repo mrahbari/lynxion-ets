@@ -97,7 +97,7 @@ cp .env.example .env
 
 # 5. Create required directories
 mkdir -p ./data/history/{raw/1m,processed/{5m,15m,30m,1h}}
-mkdir -p ./results/{wfo,backtest,hyperopt}
+mkdir -p ./data/results/{wfo,backtest,hyperopt}
 mkdir -p ./logs
 ```
 
@@ -168,7 +168,7 @@ wfo_config = {
     'test_size': 30,
     'step': 30,
     'max_evals': 100,
-    'results_dir': './results/wfo',
+    'results_dir': './data/results/wfo',
     'risk_config': {
         'initial_capital': 1000000.0,
         'fee_rate': 0.001,

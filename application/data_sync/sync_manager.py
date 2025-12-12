@@ -309,6 +309,70 @@ class SyncManager:
             'duration_ms': duration_ms
         }
 
+    async def sync_symbol_data(self, symbol: str, timeframes: List[str], start_time: int, end_time: int) -> Dict[str, any]:
+        """Synchronize data for a specific symbol and timeframes within the given time range"""
+        # Get raw file path using the file repository
+        file_path = self.file_repo.get_raw_file_path(symbol)
+
+        # First, download the data for the specified time range
+        try:
+            data = await self.data_downloader.fetch_range(symbol, start_time, end_time)
+
+            if not data:
+                # No data returned, return with appropriate structure
+                return {
+                    'success': False,
+                    'error': 'No data returned from exchange',
+                    'rows_written': 0,
+                    'message': f'No data available for {symbol} in range {start_time} to {end_time}'
+                }
+
+            # Format data as CSV rows
+            csv_rows = [['timestamp', 'open', 'high', 'low', 'close', 'volume']]
+            for entry in data:
+                csv_rows.append([
+                    str(int(entry['timestamp'])),
+                    str(entry['open']),
+                    str(entry['high']),
+                    str(entry['low']),
+                    str(entry['close']),
+                    str(entry['volume'])
+                ])
+
+            # Read existing file data
+            existing_rows = []
+            if self.file_repo.validate_csv_schema(file_path):
+                existing_rows = self.file_repo.read_csv_rows(file_path)
+
+            # Merge with existing data using the file repository
+            merged_rows = self.file_repo.merge_sorted_rows(existing_rows, csv_rows)
+
+            # Write merged data using the file repository
+            self.file_repo.write_csv_rows(file_path, merged_rows)
+
+            # Generate compacted/aggregated files for specified timeframes
+            # Note: compact_and_aggregate generates ALL timeframes, so we call it once
+            try:
+                self.file_repo.compact_and_aggregate(symbol, cleanup_old=False)
+            except Exception as e:
+                logger.error(f"Error generating aggregations for {symbol}: {e}")
+
+            rows_written = len(data)
+
+            return {
+                'success': True,
+                'rows_written': rows_written,
+                'message': f'Successfully synchronized {rows_written} rows for {symbol}'
+            }
+
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'rows_written': 0,
+                'message': f'Error syncing data for {symbol}: {str(e)}'
+            }
+
     async def request_priority_repair(self, symbol: str, start_ts: int, end_ts: int) -> bool:
         """Request a priority repair for a specific symbol and time range"""
         # Add to job queue with high priority

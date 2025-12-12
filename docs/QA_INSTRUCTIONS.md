@@ -20,7 +20,7 @@ This document provides comprehensive quality assurance instructions for the Lynx
 ### Environment Setup
 - [ ] Verify Python 3.9+ is installed: `python --version`
 - [ ] Confirm all dependencies from `requirements.txt` are installed: `pip install -r requirements.txt`
-- [ ] Create necessary directories: `mkdir -p ./data/history/{raw/1m,processed/{5m,15m,30m,1h}} ./results/{wfo,backtest,hyperopt} ./logs`
+- [ ] Create necessary directories: `mkdir -p ./data/history/{raw/1m,processed/{5m,15m,30m,1h}} ./data/results/{wfo,backtest,hyperopt} ./logs`
 - [ ] Copy `.env.example` to `.env` and verify placeholder values are set appropriately
 
 ### Configuration Validation
@@ -47,7 +47,7 @@ This document provides comprehensive quality assurance instructions for the Lynx
 ### Hyperparameter Optimization
 - [ ] Run optimization: `python runner_retune.py --strategy crypto_breakout --symbols BTCUSDT --evals 20`
 - [ ] Verify optimization completes without errors
-- [ ] Check that results are stored properly in `./results/hyperopt/`
+- [ ] Check that results are stored properly in `./data/results/hyperopt/`
 - [ ] Confirm that optimization respects risk constraints
 - [ ] Test with different strategy types (rsi_strategy, ma_crossover_strategy)
 

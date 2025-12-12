@@ -55,7 +55,7 @@ def run_walkforward_process(symbols: List[str],
         'test_size': test_size,
         'step': step_size,
         'max_evals': max_evals,
-        'results_dir': './results/wfo',
+        'results_dir': './data/results/wfo',
         'risk_config': {
             'initial_capital': float(os.getenv('INITIAL_CAPITAL', '100000')),
             'fee_rate': float(os.getenv('FEE_RATE', '0.001')),

@@ -35,7 +35,7 @@ def test_complete_pipeline():
             'performance_threshold': 0.05,
             'max_drawdown_threshold': 0.10,
             'max_evals': 5,
-            'results_dir': './results/test_results'
+            'results_dir': './data/results/test_results'
         }
         
         # Create orchestrator

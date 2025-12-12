@@ -33,6 +33,10 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
         self.index_dir = os.path.join(self.base_data_dir, "index")
         self.reports_dir = os.path.join(os.path.dirname(self.base_data_dir), "reports")
 
+        # Configuration attributes that were missing
+        self.temp_file_suffix = ".tmp"
+        self.raw_retention_days = getattr(settings, 'raw_retention_days', 365)  # Default to 1 year
+
         # Create directories if they don't exist
         for directory in [self.raw_dir, self.processed_dir, self.index_dir, self.reports_dir]:
             os.makedirs(directory, exist_ok=True)

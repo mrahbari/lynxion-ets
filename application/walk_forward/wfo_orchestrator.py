@@ -58,7 +58,7 @@ class WFOOrchestrator:
         self.wfo_analyzer = WalkForwardAnalyzer(wfo_configs)
 
         # Set up output directories
-        self.results_dir = Path(self.config.get('results_dir', './results/wfo'))
+        self.results_dir = Path(self.config.get('results_dir', './data/results/wfo'))
         self.results_dir.mkdir(parents=True, exist_ok=True)
         
     def run_complete_wfo_pipeline(self, 

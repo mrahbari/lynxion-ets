@@ -36,7 +36,7 @@ def test_existing_system_integration():
     try:
         wfo_config = {
             'data_path': config.get_data_paths()['processed_dir'],  # Use our processed data path
-            'results_dir': './results/test_int',
+            'results_dir': './data/results/test_int',
             'train_size': 10,  # Small for test
             'test_size': 5,
             'step': 5,

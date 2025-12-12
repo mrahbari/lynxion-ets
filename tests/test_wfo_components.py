@@ -217,7 +217,7 @@ class TestWFOComponents(unittest.TestCase):
             'test_size': 10,
             'step': 10,
             'max_evals': 5,
-            'results_dir': './results/test_results'
+            'results_dir': './data/results/test_results'
         }
 
         orchestrator = WFOOrchestrator(config)
@@ -253,7 +253,7 @@ class TestWFOComponents(unittest.TestCase):
                 'test_size': 10,
                 'step': 10,
                 'max_evals': 3,  # Small number for testing
-                'results_dir': './results/test_results_temp'
+                'results_dir': './data/results/test_results_temp'
             }
             
             orchestrator = WFOOrchestrator(config)
@@ -355,7 +355,7 @@ class TestWFOComponents(unittest.TestCase):
             ]
         }
         
-        visualizer = WFVisualizer('./results/test_plots')
+        visualizer = WFVisualizer('./data/results/test_plots')
         
         # Test report generation
         report = visualizer.generate_report(sample_results)
@@ -375,8 +375,8 @@ class TestWFOComponents(unittest.TestCase):
         # Clean up any temporary results files
         import shutil
         try:
-            shutil.rmtree('./results/test_results_temp', ignore_errors=True)
-            shutil.rmtree('./results/test_plots', ignore_errors=True)
+            shutil.rmtree('./data/results/test_results_temp', ignore_errors=True)
+            shutil.rmtree('./data/results/test_plots', ignore_errors=True)
         except:
             pass
 

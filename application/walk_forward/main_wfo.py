@@ -21,7 +21,7 @@ def create_sample_config():
     """Create a sample configuration for WFO."""
     return {
         "data_path": "./data",
-        "results_dir": "./results/wfo",
+        "results_dir": "./data/results/wfo",
         "train_size": 90,      # 3 months for training
         "test_size": 30,       # 1 month for testing  
         "step": 30,            # Move forward by 1 month

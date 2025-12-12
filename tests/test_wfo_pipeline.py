@@ -250,7 +250,7 @@ def test_visualizer():
         }
 
         # Create visualizer
-        visualizer = WFVisualizer('./results/temp_plots')
+        visualizer = WFVisualizer('./data/results/temp_plots')
         plot_files = visualizer.generate_comprehensive_report(
             results=sample_results,
             symbols=['BTCUSDT'],
@@ -262,7 +262,7 @@ def test_visualizer():
 
         # Clean up temp files
         import shutil
-        shutil.rmtree('./results/temp_plots', ignore_errors=True)
+        shutil.rmtree('./data/results/temp_plots', ignore_errors=True)
 
         return True
 
@@ -281,7 +281,7 @@ def test_complete_pipeline():
         # Create sample config
         config = {
             'data_path': './data/temp_test_data',
-            'results_dir': './results/temp_wfo_results',
+            'results_dir': './data/results/temp_wfo_results',
             'train_size': 30,
             'test_size': 10,
             'step': 10,

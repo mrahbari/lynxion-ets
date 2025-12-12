@@ -134,7 +134,7 @@ def demonstrate_full_workflow():
     print("🔄 Demonstrating WFO integration...")
     wfo_config = {
         'data_path': paths['data_dir'],
-        'results_dir': './results/wfo_demo',
+        'results_dir': './data/results/wfo_demo',
         'train_size': 10,  # Smaller for demo
         'test_size': 5,  # Smaller for demo
         'step': 5,  # Smaller for demo

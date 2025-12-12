@@ -57,8 +57,8 @@ mkdir -p ./data/{BTCUSDT,ETHUSDT,ADAUSDT,SOLUSDT}/
 # Add your OHLCV data in CSV format: 1m.csv, 5m.csv, 1h.csv, 1d.csv
 
 # 4. Create results directories
-mkdir -p ./results/wfo
-mkdir -p ./results/wfo/plots
+mkdir -p ./data/results/wfo
+mkdir -p ./data/results/wfo/plots
 ```
 
 ## Configuration
@@ -67,7 +67,7 @@ mkdir -p ./results/wfo/plots
 ```json
 {
   "data_path": "./data",
-  "results_dir": "./results/wfo",
+  "results_dir": "./data/results/wfo",
   "train_size": 90,      // Training window size in days
   "test_size": 30,       // Testing window size in days
   "step": 30,            // Sliding window step in days
@@ -241,7 +241,7 @@ config = {
     'step': 20,
     'max_evals': 10,  # For quick test
     'performance_threshold': 0.05,
-    'results_dir': './results/test_results'
+    'results_dir': './data/results/test_results'
 }
 
 try:
@@ -267,7 +267,7 @@ After running the pipeline, verify the output includes:
 - Overfit index < 1.0 (lower is better)
 - Consistency score > 0.6 (higher is better)
 - Sharpe ratio > 0.5 (higher is better)
-- All results saved to `./results/wfo/`
+- All results saved to `./data/results/wfo/`
 
 ## Results Interpretation
 
@@ -290,7 +290,7 @@ After running the pipeline, verify the output includes:
 ### Output Files
 1. `wfo_report_{strategy}_{symbols}_{timestamp}.json` - Complete WFO analysis
 2. `robust_params_{strategy}_{symbols}_{timestamp}.json` - Aggregate parameters
-3. Various plot files in `./results/wfo/plots/` - Visualizations
+3. Various plot files in `./data/results/wfo/plots/` - Visualizations
 
 ## Troubleshooting
 
