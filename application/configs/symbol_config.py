@@ -14,7 +14,7 @@ def _parse_wfo_symbols() -> List[SymbolSyncConfig]:
     """Parse symbols from multiple sources: WFO_COINS environment variable, coins.json file, or default list"""
 
     # First, try to read from coins.json file if it exists (for better organization)
-    coins_json_path = Path(os.getenv("COINS_CONFIG_PATH", "./config/coins.json"))
+    coins_json_path = Path(os.getenv("COINS_CONFIG_PATH", "./application/configs/coins.json"))
     if coins_json_path.exists():
         try:
             with open(coins_json_path, 'r') as f:
@@ -34,7 +34,7 @@ def _parse_wfo_symbols() -> List[SymbolSyncConfig]:
         if not wfo_coins_str:
             # If neither coins.json nor WFO_COINS is set, try common default
             print("⚠️  WARNING: WFO_COINS environment variable not set and coins.json not found. No symbols will be processed.")
-            print("   Please set WFO_COINS in your .env file or create ./config/coins.json")
+            print("   Please set WFO_COINS in your .env file or create ./application/configs/coins.json")
             print("   Example coins.json format: {\"symbols\": [\"BTCUSDT\", \"ETHUSDT\", \"ZECUSDT\"]}")
             return []
 
