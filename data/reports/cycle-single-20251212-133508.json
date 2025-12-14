@@ -1,0 +1,17 @@
+{
+  "cycle_start": "2025-12-12T13:35:08.542697",
+  "cycle_end": "2025-12-12T13:36:00.002223",
+  "cycle_type": "single",
+  "symbols_scanned": 1,
+  "symbols_fixed": 0,
+  "rows_written": 0,
+  "bytes_written": 0,
+  "errors": [
+    {
+      "symbol": "BTC-USDT",
+      "error": "binance GET https://dapi.binance.com/dapi/v1/exchangeInfo",
+      "attempts": 5
+    }
+  ],
+  "duration_ms": 51459
+}

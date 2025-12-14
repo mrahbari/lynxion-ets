@@ -1,5 +1,5 @@
 I want a **complete, detailed, and professional review** of my entire project.
-The final output must include a file named **`COMPREHENSIVE-ANALYSIS-PRO.<VERSION>.md`** that summarizes all findings.
+The final output must include a file named **`./docs/COMPREHENSIVE-ANALYSIS-PRO.<VERSION>.md`** that summarizes all findings.
 
 ---
 
@@ -103,7 +103,7 @@ All code **must 100% comply** with these standards:
 
 At the end of the review, generate a structured and well-written Markdown file:
 
-### **`COMPREHENSIVE-ANALYSIS-PRO.<VERSION>.md`**
+### **`./docs/COMPREHENSIVE-ANALYSIS-PRO.<VERSION>.md`**
 
 The file must include:
 

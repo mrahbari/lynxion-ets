@@ -487,7 +487,7 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
         df.set_index('timestamp', inplace=True)
         
         # Define timeframes to aggregate
-        timeframes = {'5m': '5T', '15m': '15T', '30m': '30T', '1h': '1H'}
+        timeframes = {'5m': '5T', '15m': '15T', '30m': '30T', '1h': '1H', '1d': '1D'}
         
         for tf_name, tf_spec in timeframes.items():
             # Create timeframe directory if it doesn't exist

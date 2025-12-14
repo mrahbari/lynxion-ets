@@ -12,6 +12,7 @@ import os
 import sys
 import argparse
 import json
+import asyncio
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
@@ -32,6 +33,67 @@ def load_symbols_from_env() -> List[str]:
     return [s.strip() for s in symbols_str.split(',') if s.strip()]
 
 
+async def download_1d_data_for_symbols(symbols: List[str], days_back: int = 180):
+    """Download 1-day timeframe data for specified symbols."""
+    from application.data_sync.sync_manager import SyncManager
+    from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
+    from infrastructure.data_sync.data_downloader_adapter import DataDownloaderAdapter
+
+    print(f"   Downloading 1-day data for {len(symbols)} symbols...")
+
+    # Create components for data download
+    file_repo = FileRepositoryAdapter()
+    data_downloader = DataDownloaderAdapter()
+    sync_manager = SyncManager(file_repo, data_downloader)
+
+    # Use context manager for proper resource cleanup
+    async with data_downloader:
+        start_time = datetime.now()
+
+        # Calculate date range
+        end_time = datetime.now()
+        start_time_data = end_time - timedelta(days=days_back)
+
+        for symbol in symbols:
+            # Convert format if needed (e.g., BTCUSDT -> BTC-USDT)
+            formatted_symbol = format_symbol_for_storage(symbol)
+
+            try:
+                print(f"     Downloading 1-day data for {symbol} (formatted as {formatted_symbol})...")
+
+                # Download 1-day timeframe data specifically
+                result = await sync_manager.sync_symbol_data(
+                    symbol=formatted_symbol,  # Use formatted symbol for download
+                    timeframes=['1d'],
+                    start_time=int(start_time_data.timestamp()),
+                    end_time=int(end_time.timestamp())
+                )
+
+                if result and result.get('rows_written', 0) > 0:
+                    print(f"       ✅ {result.get('rows_written', 0)} candles downloaded for {symbol}")
+                else:
+                    print(f"       ⚠️  No data downloaded for {symbol}")
+
+            except Exception as e:
+                print(f"     ❌ Error downloading 1-day data for {symbol}: {e}")
+
+        print(f"   1-day data download completed for {len(symbols)} symbols.")
+
+
+def format_symbol_for_storage(symbol: str) -> str:
+    """Format symbol for storage (e.g., BTCUSDT to BTC-USDT)."""
+    # If the symbol appears to be in format like BTCUSDT, convert to BTC-USDT
+    if not '-' in symbol and len(symbol) >= 6:  # Basic check for format like BTCUSDT
+        # Look for common base currencies
+        for base in ['USDT', 'USD', 'BTC', 'ETH']:
+            if symbol.endswith(base):
+                base_part = symbol[-len(base):]
+                quote_part = symbol[:-len(base)]
+                return f"{quote_part}-{base_part}"
+
+    return symbol  # Return as is if already in correct format
+
+
 def run_retune_process(
         symbols: List[str],
         strategy_name: str = "crypto_breakout",
@@ -46,6 +108,10 @@ def run_retune_process(
     print(f"   Max evaluations per symbol: {max_evals}")
     print(f"   Data window: {days_back} days")
     print(f"   Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+    # Download 1-day timeframe data first for better optimization
+    print(f"\n📥 Downloading 1-day timeframe data for optimization...")
+    asyncio.run(download_1d_data_for_symbols(symbols, days_back=180))  # 6 months for better optimization
 
     start_time = datetime.now()
     results = {
@@ -75,25 +141,39 @@ def run_retune_process(
         print(f"\n🔍 Optimizing {strategy_name} for {symbol}...")
 
         try:
-            # Load data for the symbol
-            data_loader = None  # Would need proper data loading implementation
-            # For now, we'll create sample data or use existing loaders
-            from infrastructure.data.csv_history_loader import CSVHistoryLoaderAdapter
-            data_loader = CSVHistoryLoaderAdapter()
+            # Load data for the symbol - specifically 1-day timeframe for retune
+            from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
+            import pandas as pd
+            data_repo = FileRepositoryAdapter()
 
-            try:
-                df = data_loader.load(symbol=symbol)
+            # Get normalized symbol and construct file path
+            normalized_symbol = data_repo._normalize_symbol_for_file(symbol)
+            file_path = data_repo.get_processed_file_path(normalized_symbol, "1d")
+
+            print(f"   🔍 Loading 1-day data from: {file_path}")
+
+            if os.path.exists(file_path):
+                # Load the CSV file directly
+                df = pd.read_csv(file_path)
+
+                # Convert timestamp to datetime and set as index
+                if 'timestamp' in df.columns:
+                    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)
+                    df = df.set_index('timestamp').sort_index()
+
                 if df.empty:
-                    print(f"   ⚠️  No data found for {symbol}, skipping...")
+                    print(f"   ⚠️  No 1-day data found for {normalized_symbol}, skipping...")
                     continue
-            except Exception as e:
-                print(f"   ❌ Error loading data for {symbol}: {e}")
+            else:
+                print(f"   ⚠️  1-day data file does not exist: {file_path}")
                 continue
 
             # Use only the last N days of data
             if days_back > 0:
                 cutoff_date = datetime.now() - timedelta(days=days_back)
-                df = df[df.index >= cutoff_date]
+                # Convert cutoff_date to timezone-aware to match the DataFrame index
+                cutoff_date_utc = pd.Timestamp(cutoff_date, tz='UTC')
+                df = df[df.index >= cutoff_date_utc]
 
             if len(df) < 20:  # Need minimum data for optimization
                 print(f"   ⚠️  Insufficient data for {symbol} (only {len(df)} rows), skipping...")
