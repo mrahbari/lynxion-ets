@@ -4,6 +4,7 @@ pandas==1.5.3
 
 # Machine learning and optimization
 scipy>=1.7.0
+scikit-learn>=1.0.0
 hyperopt>=0.2.7
 
 # Web requests and API interactions

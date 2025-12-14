@@ -1,0 +1,75 @@
+{
+  "description": "Cryptocurrency symbols configuration for the trading system",
+  "last_updated": "2025-12-11",
+  "categories": {
+    "major_coins": [
+      "ZECUSDT",
+      "BTCUSDT", 
+      "ETHUSDT"
+    ],
+    "large_cap_coins": [
+      "BNBUSDT",
+      "ADAUSDT", 
+      "XRPUSDT",
+      "SOLUSDT"
+    ],
+    "mid_cap_coins": [
+      "DOTUSDT",
+      "DOGEUSDT",
+      "AVAXUSDT", 
+      "SHIBUSDT",
+      "MATICUSDT",
+      "LTCUSDT",
+      "UNIUSDT", 
+      "LINKUSDT"
+    ],
+    "small_cap_coins": [
+      "LUNAUSDT",
+      "CROUSDT",
+      "ALGOUSDT",
+      "XLMUSDT",
+      "ETCUSDT",
+      "BCHUSDT",
+      "NEARUSDT",
+      "FLOWUSDT",
+      "MANAUSDT",
+      "SANDUSDT",
+      "AAVEUSDT"
+    ]
+  },
+  "symbols": [
+    "ZECUSDT",
+    "BTCUSDT",
+    "ETHUSDT",
+    "BNBUSDT", 
+    "ADAUSDT",
+    "XRPUSDT",
+    "SOLUSDT",
+    "DOTUSDT",
+    "DOGEUSDT", 
+    "AVAXUSDT",
+    "SHIBUSDT",
+    "MATICUSDT",
+    "LTCUSDT",
+    "UNIUSDT",
+    "LINKUSDT",
+    "LUNAUSDT",
+    "CROUSDT",
+    "ALGOUSDT",
+    "XLMUSDT",
+    "ETCUSDT",
+    "BCHUSDT",
+    "NEARUSDT",
+    "FLOWUSDT",
+    "MANAUSDT",
+    "SANDUSDT",
+    "AAVEUSDT"
+  ],
+  "metadata": {
+    "total_symbols": 26,
+    "major_coins": 3,
+    "large_cap_coins": 4,
+    "mid_cap_coins": 8,
+    "small_cap_coins": 11
+  }
+}
