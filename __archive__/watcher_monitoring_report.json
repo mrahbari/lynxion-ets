@@ -1,0 +1,230 @@
+{
+  "timestamp": "2025-12-20T16:36:32.295209",
+  "total_watchers": 9,
+  "active_signals": 2,
+  "hold_signals": 6,
+  "watcher_results": {
+    "MarketPulse": {
+      "watcher_name": "MarketPulseWatcher",
+      "symbol": "BTCUSDT",
+      "timestamp": "2025-12-20T16:36:31.238562",
+      "signal_type": "SELL",
+      "confidence": 0.3320720102090115,
+      "score": -0.3320720102090115,
+      "subscores": {
+        "momentum": -0.25118201080476715,
+        "trend": -1.0,
+        "volume": 0.8420039705644768
+      },
+      "explanation": "Momentum: -0.251, Trend: -1.000, Volume: 0.842, Combined: -0.332",
+      "subscore_breakdown": {
+        "momentum": -0.25118201080476715,
+        "trend": -1.0,
+        "volume": 0.8420039705644768,
+        "combined": -0.3320720102090115,
+        "explanation": "Momentum + volume expansion exceeded baseline by -0.332"
+      }
+    },
+    "Volatility": {
+      "watcher_name": "VolatilityWatcher",
+      "symbol": "BTCUSDT",
+      "timestamp": "2025-12-20T16:36:31.239843",
+      "signal_type": "HOLD",
+      "confidence": 0.3,
+      "score": 0.0,
+      "regime": "normal",
+      "volatility_ratio": 0.929004169876565,
+      "current_volatility": 563.3830657173775,
+      "regime_changed": false,
+      "current_regime": "normal"
+    },
+    "TrendMTF": {
+      "watcher_name": "TrendMTFWatcher",
+      "symbol": "BTCUSDT",
+      "timestamp": "2025-12-20T16:36:31.241246",
+      "signal_type": "SELL",
+      "confidence": 0.3,
+      "score": -0.49301728289894264,
+      "alignment_state": "MAINLY_BEARISH",
+      "divergence_detected": true,
+      "timeframe_states": {
+        "long": {
+          "direction": -1,
+          "strength": 0.06713452255239577,
+          "timestamp": "2025-12-20 16:36:31.241043"
+        },
+        "medium": {
+          "direction": -1,
+          "strength": 0.0261637400070705,
+          "timestamp": "2025-12-20 16:36:31.241043"
+        },
+        "short": {
+          "direction": 1,
+          "strength": 0.011442493956394378,
+          "timestamp": "2025-12-20 16:36:31.241043"
+        }
+      },
+      "trend_alignment": {
+        "alignment_state": "MAINLY_BEARISH",
+        "divergence_detected": true,
+        "long": {
+          "direction": "bearish",
+          "strength": 0.06713452255239577
+        },
+        "medium": {
+          "direction": "bearish",
+          "strength": 0.0261637400070705
+        },
+        "short": {
+          "direction": "bullish",
+          "strength": 0.011442493956394378
+        },
+        "explanation": "Long-term: bearish, Medium-term: bearish, Short-term: bullish, Alignment: MAINLY_BEARISH"
+      }
+    },
+    "AnomalyML": {
+      "watcher_name": "AnomalyMLWatcher",
+      "symbol": "BTCUSDT",
+      "timestamp": "2025-12-20T16:36:31.245372",
+      "signal_type": "HOLD",
+      "confidence": 0.9,
+      "score": -0.0,
+      "anomaly_score": 0.0,
+      "anomaly_type": "normal",
+      "explanation": "This deviates from recent distribution by approximately 0.71 sigma",
+      "anomaly_features": {
+        "anomaly_score": 0.09205962602127371,
+        "z_scores": [
+          0.6210117664547737,
+          0.5920283155294891,
+          0.21402465569861723,
+          1.5744632842576445,
+          0.5547608131757531
+        ],
+        "feature_means": [
+          -0.0045725189119065375,
+          -0.004629172105951374,
+          0.014930036877773573,
+          0.36689089270761854,
+          -0.00013220445588357777
+        ],
+        "feature_stds": [
+          0.018429416834743924,
+          0.009679367756237522,
+          0.004448734183769277,
+          0.4021110645275484,
+          0.025484630387270554
+        ],
+        "model_fitted": true,
+        "data_points": 46,
+        "anomaly_threshold": 0.7,
+        "suppression_threshold": 0.95
+      }
+    },
+    "OrderFlow": {
+      "watcher_name": "OrderFlowWSWatcher",
+      "symbol": "BTCUSDT",
+      "timestamp": "2025-12-20T16:36:31.246330",
+      "signal_type": "HOLD",
+      "confidence": 0.3,
+      "score": 0.0,
+      "explanation": "No persistent imbalance detected. Imbalance: 0.000",
+      "imbalance_detected": false,
+      "persistence_validated": false,
+      "order_flow_metrics": {
+        "current_imbalance": 0.0,
+        "bid_volume": 10242.673390381155,
+        "ask_volume": 10242.673390381155,
+        "timestamp": "2025-12-20 16:36:31.246295",
+        "persistence_validated": false,
+        "imbalance_detected": false
+      }
+    },
+    "CMCScreener": {
+      "watcher_name": "CMCScreener",
+      "symbol": "MARKET",
+      "timestamp": "2025-12-20T16:36:31.286386",
+      "enabled": true,
+      "api_key_set": true,
+      "cache_ttl": 300,
+      "screen_top_coins_interval_hours": 1,
+      "screen_top_coins_limit": 50,
+      "max_coins_to_analyze_per_run": 20,
+      "excluded_coins": [
+        "BTC",
+        "ETH",
+        "DOT",
+        "DOGE",
+        "MATIC",
+        "AVAX",
+        "XRP",
+        "ADA",
+        "LINK",
+        "SOL",
+        "BNB"
+      ]
+    },
+    "FundingRate": {
+      "watcher_name": "FundingRateWatcher",
+      "symbol": "BTCUSDT",
+      "timestamp": "2025-12-20T16:36:31.287865",
+      "signal_type": "HOLD",
+      "confidence": 0.3,
+      "score": 0.0,
+      "explanation": "Funding extreme: False, acceleration: False",
+      "current_funding_rate": 4.1661250041344644e-05,
+      "funding_rate_change": 6.178898802510564e-05,
+      "funding_rate_acceleration": 0.00025705632967800107,
+      "extreme_funding_detected": false,
+      "acceleration_detected": false,
+      "funding_metrics": {
+        "current_funding_rate": 4.1661250041344644e-05,
+        "average_funding_rate": 6.237062082979252e-05,
+        "funding_rate_change": 6.178898802510564e-05,
+        "funding_rate_acceleration": 0.00025705632967800107,
+        "funding_rate_volatility": 0.000176975838319261,
+        "regime": "moderately_long",
+        "data_points": 30,
+        "extreme_funding_detected": false,
+        "acceleration_detected": false,
+        "cooldown_remaining": 12
+      }
+    },
+    "Liquidity": {
+      "watcher_name": "LiquidityWatcher",
+      "symbol": "BTCUSDT",
+      "timestamp": "2025-12-20T16:36:31.290985",
+      "signal_type": "HOLD",
+      "confidence": 0.9,
+      "score": -0.19999999999999996,
+      "liquidity_regime": "low",
+      "sweep_detected": "False",
+      "explanation": "Liquidity regime: low, sweep detected: False",
+      "liquidity_metrics": {
+        "current_liquidity_score": -0.19999999999999996,
+        "current_liquidity_timestamp": "2025-12-20 16:36:31.290704",
+        "average_liquidity_score": -0.1999999999999869,
+        "current_spread_pct": 0.0020020020020019573,
+        "current_spread_timestamp": "2025-12-20 16:36:31.290704",
+        "average_spread_pct": 0.0020020020020019027,
+        "current_depth_score": 1.0,
+        "current_depth_timestamp": "2025-12-20 16:36:31.290704",
+        "regime": "low",
+        "sweep_detected": "False",
+        "data_points": 40
+      }
+    },
+    "HistoricalCandle": {
+      "watcher_name": "HistoricalCandleWatcherAdapter",
+      "symbol": "BTCUSDT",
+      "timestamp": "2025-12-20T16:36:31.291879",
+      "signal_type": "HOLD",
+      "confidence": 0.2,
+      "score": 0.0,
+      "explanation": "No confirmed patterns detected in recent candles",
+      "pattern_detected": false,
+      "pattern_type": "none",
+      "candles_analyzed": 3
+    }
+  }
+}

@@ -69,8 +69,57 @@ class MarketOpportunityWatcher:
             fallback_symbols = [s.strip() for s in fallback_symbols_str.split(",")]
             discovered_symbols = fallback_symbols
 
-        self.logger.info(f"✅ Auto-discovered {len(discovered_symbols)} symbols to monitor: {discovered_symbols}")
-        return [Symbol(s) for s in discovered_symbols]
+        # Filter out stablecoin-to-stablecoin pairs (e.g., USDTUSDT, USDCUSDT, etc.)
+        filtered_symbols = self._filter_stablecoin_pairs(discovered_symbols)
+
+        self.logger.info(f"✅ Auto-discovered {len(filtered_symbols)} symbols to monitor: {filtered_symbols}")
+        return [Symbol(s) for s in filtered_symbols]
+
+    def _filter_stablecoin_pairs(self, symbols: List[str]) -> List[str]:
+        """Filter out stablecoin-to-stablecoin pairs like USDTUSDT, USDCUSDT, etc."""
+        # Get stablecoin bases from environment variable
+        stablecoin_bases_str = os.getenv("STABLECOIN_BASES", "USDT,USDC,BUSD,DAI,TUSD,PAX,USDD,FDUSD,TERRA,FRAX,LUSD,FEI,ALUSD,GUSD,HUSD,EURT,USDK,RSV,PYUSD,EURS,USDP,TUSDS")
+        stablecoin_bases = set(coin.strip().upper() for coin in stablecoin_bases_str.split(',') if coin.strip())
+
+        filtered_symbols = []
+        for symbol in symbols:
+            # Extract base and quote currencies (assuming format like BTCUSDT, ETHUSDC, etc.)
+            # For symbols like BTCUSDT, we need to find where the base currency ends and quote currency begins
+            base_currency = None
+            quote_currency = None
+
+            # Check for common quote currencies at the end of the symbol
+            for quote in sorted(stablecoin_bases, key=len, reverse=True):  # Sort by length descending to match longer quotes first
+                if symbol.endswith(quote):
+                    base_part = symbol[:-len(quote)]
+                    if base_part:  # Make sure there's a base currency part
+                        base_currency = base_part
+                        quote_currency = quote
+                        break
+
+            # If we have both base and quote currencies
+            if base_currency and quote_currency:
+                # Skip if both are stablecoins (stablecoin to stablecoin pair)
+                if base_currency in stablecoin_bases and quote_currency in stablecoin_bases:
+                    # Note: The logger here will be a mock logger if this watcher is disabled,
+                    # so this debug message won't appear when disabled
+                    self.logger.debug(f"⏭️  Filtering out stablecoin pair: {symbol} ({base_currency} -> {quote_currency})")
+                    continue
+                # Skip if it's the same currency pair like USDTUSDT
+                elif base_currency == quote_currency:
+                    # Note: The logger here will be a mock logger if this watcher is disabled,
+                    # so this debug message won't appear when disabled
+                    self.logger.debug(f"⏭️  Filtering out same-currency pair: {symbol}")
+                    continue
+                else:
+                    # Valid pair, add to filtered symbols
+                    filtered_symbols.append(symbol)
+            else:
+                # If we can't parse the symbol properly, still add it (conservative approach)
+                # This handles cases where the symbol doesn't match our expected patterns
+                filtered_symbols.append(symbol)
+
+        return filtered_symbols
 
     def _discover_by_market_cap(self) -> List[str]:
         """Discover symbols based on market cap from CMC API."""
@@ -316,17 +365,32 @@ class MarketOpportunityWatcher:
             return self._discover_symbols_automatically()
         
     def _initialize_watchers(self):
-        """Initialize watcher adapters for each symbol."""
+        """Initialize watcher adapters for each symbol - only if enabled."""
         for symbol in self.symbols:
-            self.watchers[symbol.value] = {
-                'market_pulse': MarketPulseWatcher("MarketPulse", symbol.value),
-                'volatility': VolatilityWatcher("Volatility", symbol.value),
-                'trend_mtf': TrendMTFWatcher("TrendMTF", symbol.value),
-                'anomaly_ml': AnomalyMLWatcher("AnomalyML", symbol.value),
-                'order_flow': OrderFlowWSWatcher("OrderFlowWS", symbol.value),
-                'cmc_watcher': CMCScreener(name=f"CMCWatcher_{symbol.value}", symbol=symbol.value),
-            }
-            # Start each watcher
+            symbol_watchers = {}
+
+            # Check each watcher type before creating to avoid unnecessary instantiation
+            if os.getenv('MARKET_PULSE_WATCHER_ENABLED', 'true').lower() == 'true':
+                symbol_watchers['market_pulse'] = MarketPulseWatcher("MarketPulse", symbol.value)
+
+            if os.getenv('VOLATILITY_WATCHER_ENABLED', 'true').lower() == 'true':
+                symbol_watchers['volatility'] = VolatilityWatcher("Volatility", symbol.value)
+
+            if os.getenv('TREND_MTF_WATCHER_ENABLED', 'true').lower() == 'true':
+                symbol_watchers['trend_mtf'] = TrendMTFWatcher("TrendMTF", symbol.value)
+
+            if os.getenv('ANOMALY_ML_WATCHER_ENABLED', 'true').lower() == 'true':
+                symbol_watchers['anomaly_ml'] = AnomalyMLWatcher("AnomalyML", symbol.value)
+
+            if os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'true').lower() == 'true':
+                symbol_watchers['order_flow'] = OrderFlowWSWatcher("OrderFlowWS", symbol.value)
+
+            if os.getenv('CMC_SCREENER_ENABLED', 'true').lower() == 'true':
+                symbol_watchers['cmc_watcher'] = CMCScreener(name=f"CMCWatcher_{symbol.value}", symbol=symbol.value)
+
+            self.watchers[symbol.value] = symbol_watchers
+
+            # Start only the enabled watchers
             for watcher_name, watcher in self.watchers[symbol.value].items():
                 watcher.start()
                 
