@@ -279,6 +279,16 @@ class _BingXBroker:
             if order.price:
                 order_data['price'] = str(order.price.amount)
 
+            # Add Stop Loss and Take Profit parameters if they exist in the order
+            # According to the BingX API, these should be separate parameters in the same request
+            if hasattr(order, 'stop_loss_price') and order.stop_loss_price:
+                # For stop loss, BingX expects stopLossPrice parameter
+                order_data['stopLossPrice'] = str(order.stop_loss_price.amount)
+
+            if hasattr(order, 'take_profit_price') and order.take_profit_price:
+                # For take profit, BingX expects takeProfitPrice parameter
+                order_data['takeProfitPrice'] = str(order.take_profit_price.amount)
+
             endpoint = "/openApi/swap/v2/trade/order"
             response = self._make_request('POST', endpoint, data=order_data, signed=True)
 

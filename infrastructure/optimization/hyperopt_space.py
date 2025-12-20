@@ -107,17 +107,17 @@ class HyperoptParameterSpace(IParameterSpace):
         self.strategy_registry = StrategyRegistry()
 
         # Register all crypto strategies with the registry
-        from infrastructure.strategies.adapters.crypto_liquidity_strategy_adapter import CryptoLiquidityStrategyAdapter
-        from infrastructure.strategies.adapters.crypto_mtf_trend_strategy_adapter import CryptoMTFTrendStrategyAdapter
-        from infrastructure.strategies.adapters.crypto_vwap_reversal_strategy_adapter import CryptoVWAPReversalStrategyAdapter
-        from infrastructure.strategies.adapters.crypto_oi_footprint_strategy_adapter import CryptoOIFootprintStrategyAdapter
-        from infrastructure.strategies.adapters.crypto_sweep_scalper_adapter import CryptoSweepScalperAdapter
+        from infrastructure.strategies.adapters.liquidity_strategy_adapter import LiquidityStrategyAdapter
+        from infrastructure.strategies.adapters.mtf_trend_strategy_adapter import MTFTrendStrategyAdapter
+        from infrastructure.strategies.adapters.vwap_reversal_strategy_adapter import VWAPReversalStrategyAdapter
+        from infrastructure.strategies.adapters.oi_footprint_strategy_adapter import OIFootprintStrategyAdapter
+        from infrastructure.strategies.adapters.sweep_scalper_strategy_adapter import SweepScalperAdapter
 
-        self.strategy_registry.register_strategy("CryptoLiquidity", CryptoLiquidityStrategyAdapter)
-        self.strategy_registry.register_strategy("CryptoMTFTrend", CryptoMTFTrendStrategyAdapter)
-        self.strategy_registry.register_strategy("CryptoVWAPReversal", CryptoVWAPReversalStrategyAdapter)
-        self.strategy_registry.register_strategy("CryptoOIFootprint", CryptoOIFootprintStrategyAdapter)
-        self.strategy_registry.register_strategy("CryptoSweepScalper", CryptoSweepScalperAdapter)
+        self.strategy_registry.register_strategy("CryptoLiquidity", LiquidityStrategyAdapter)
+        self.strategy_registry.register_strategy("CryptoMTFTrend", MTFTrendStrategyAdapter)
+        self.strategy_registry.register_strategy("CryptoVWAPReversal", VWAPReversalStrategyAdapter)
+        self.strategy_registry.register_strategy("CryptoOIFootprint", OIFootprintStrategyAdapter)
+        self.strategy_registry.register_strategy("CryptoSweepScalper", SweepScalperAdapter)
 
     def get_space(self, strategy_name: str) -> Dict[str, Any]:
         """Get parameter space for a given strategy via registry."""

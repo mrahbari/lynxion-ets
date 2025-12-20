@@ -5,6 +5,7 @@
 * [ ] Ensure full compatibility with the current Hexagonal Architecture.
 * [ ] Verify that no part of the architecture (Watcher → Engine → Fusion → Strategy → Broker) is modified or broken.
 * [ ] Confirm the strategies integrate without introducing tight coupling or side effects.
+* [ ] Confirm and place orders on bingx, so that we have SUCCESSFUL ORDERS PLACED ON BINGX VST BROKER.
 
 ### **2. Integration & Functional Testing**
 * [ ] Confirm there are no performance delays, lags, or misalignment issues.

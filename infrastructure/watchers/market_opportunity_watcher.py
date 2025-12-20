@@ -9,13 +9,11 @@ from datetime import datetime
 from typing import Dict, List, Optional, Callable, Any
 from domain.entities.trading_entities import Signal
 from domain.value_objects import Symbol
-from infrastructure.watchers.watcher_adapters import (
-    MarketPulseWatcherAdapter,
-    VolatilityWatcherAdapter,
-    TrendMTFWatcherAdapter,
-    AnomalyMLWatcherAdapter,
-    OrderFlowWatcherAdapter
-)
+from infrastructure.watchers.adapters.market_pulse import MarketPulseWatcher
+from infrastructure.watchers.adapters.volatility import VolatilityWatcher
+from infrastructure.watchers.adapters.trend_mtf import TrendMTFWatcher
+from infrastructure.watchers.adapters.anomaly_ml import AnomalyMLWatcher
+from infrastructure.watchers.adapters.orderflow_ws import OrderFlowWSWatcher
 from infrastructure.watchers.adapters.cmc_screener import CMCScreener
 from shared.logger import EnhancedLogger
 
@@ -321,11 +319,11 @@ class MarketOpportunityWatcher:
         """Initialize watcher adapters for each symbol."""
         for symbol in self.symbols:
             self.watchers[symbol.value] = {
-                'market_pulse': MarketPulseWatcherAdapter(symbol),
-                'volatility': VolatilityWatcherAdapter(symbol),
-                'trend_mtf': TrendMTFWatcherAdapter(symbol),
-                'anomaly_ml': AnomalyMLWatcherAdapter(symbol),
-                'order_flow': OrderFlowWatcherAdapter(symbol),
+                'market_pulse': MarketPulseWatcher("MarketPulse", symbol.value),
+                'volatility': VolatilityWatcher("Volatility", symbol.value),
+                'trend_mtf': TrendMTFWatcher("TrendMTF", symbol.value),
+                'anomaly_ml': AnomalyMLWatcher("AnomalyML", symbol.value),
+                'order_flow': OrderFlowWSWatcher("OrderFlowWS", symbol.value),
                 'cmc_watcher': CMCScreener(name=f"CMCWatcher_{symbol.value}", symbol=symbol.value),
             }
             # Start each watcher
