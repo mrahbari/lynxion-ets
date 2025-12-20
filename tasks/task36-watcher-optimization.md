@@ -344,3 +344,20 @@ Only after this:
 
 > **Bad watchers create good-looking but fake strategies.**
 > **Perfect watchers make even simple strategies powerful.**
+
+
+
+---
+We need to test the system’s performance with respect to each watcher. So:
+
+* Disable all watchers.
+* Then enable them one by one.
+* For each watcher, give me a report on:
+
+  * Which coins were triggered/processed
+  * Why certain coins were rejected
+* For each watcher, tell me:
+
+  * Its strengths
+  * Its weaknesses
+* Give me recommendations on how to improve it, if improvement is needed.

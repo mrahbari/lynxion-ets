@@ -1,6 +1,5 @@
 """
-CMC Screener - Unified CoinMarketCap Screener Implementation
-Consolidated version combining functionality from multiple CMC watcher files.
+CMC Screener - Optimized CoinMarketCap Screener following watcher perfection requirements
 """
 import os
 import requests
@@ -20,14 +19,29 @@ from dotenv import load_dotenv
 
 
 class CMCScreener(WatcherPort):
-    """Unified CoinMarketCap Screener combining all CMC functionality in one optimized file."""
+    """Optimized CoinMarketCap Screener - provides universe signals, not trade signals."""
 
     def __init__(self, name: str = "CMCScreener", symbol: str = "BTCUSDT"):
         self.name = name
         self.symbol = Symbol(symbol)
         self._is_running = False
         self.last_signal: Optional[Signal] = None
-        self.logger = EnhancedLogger(f"CMCScreener_{self.symbol.value}")
+
+        # Configuration from environment with defaults - enabled by default
+        self.enabled = os.getenv('CMC_SCREENER_ENABLED', 'true').lower() == 'true'
+
+        # Only create logger if enabled
+        if self.enabled:
+            self.logger = EnhancedLogger(f"CMCScreener_{self.symbol.value}")
+        else:
+            # Create a mock logger that doesn't log anything when disabled
+            class MockLogger:
+                def info(self, msg): pass
+                def debug(self, msg): pass
+                def warning(self, msg): pass
+                def error(self, msg): pass
+                def critical(self, msg): pass
+            self.logger = MockLogger()
 
         # Set screen_all flag if dealing with market-wide analysis
         self.screen_all = symbol in ["USDTUSDT", "MARKET"]
@@ -35,8 +49,9 @@ class CMCScreener(WatcherPort):
         # Load CMC API configuration from environment
         load_dotenv()
         self.cmc_api_key = os.getenv("CMC_API_KEY")
-        if not self.cmc_api_key:
-            self.logger.warning("CMC_API_KEY not found in environment variables. CMCScreener will not function without it.")
+        if not self.cmc_api_key and self.enabled:
+            self.logger.warning("CMC_API_KEY not found in environment variables. CMCScreener will not function "
+                                "without it.")
 
         self.cmc_api_url = os.getenv("CMC_QUOTES_URL", "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest")
         self.cmc_listings_url = os.getenv("CMC_LISTINGS_URL", "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest")
@@ -58,15 +73,15 @@ class CMCScreener(WatcherPort):
         self.hour_start_time = time.time()
         self.requests_lock = Lock()  # Thread-safe request counting
 
-        # Enhanced Caching with Configurable TTLs from Environment
-        self.cache_ttl = int(os.getenv("CMC_CACHE_TTL_SECONDS", "300"))  # Default 5 minutes from env
-        self.long_term_cache_ttl = int(os.getenv("CMC_LONG_TERM_CACHE_TTL_SECONDS", "1800"))  # 30 minutes default
+        # Enhanced Caching with Configurable TTLs from Environment - ENFORCED LOW UPDATE FREQUENCY
+        self.cache_ttl = int(os.getenv("CMC_CACHE_TTL_SECONDS", "1800"))  # 30 minutes (very low update frequency)
+        self.long_term_cache_ttl = int(os.getenv("CMC_LONG_TERM_CACHE_TTL_SECONDS", "3600"))  # 1 hour default
         self.cache = {}
         self.cache_times = {}
 
         # Separate cache for different data types with configurable TTL from environment
-        self.quotes_cache_ttl = int(os.getenv("CMC_QUOTE_CACHE_TTL_SECONDS", "300"))    # 5 minutes for live quotes
-        self.listings_cache_ttl = int(os.getenv("CMC_LISTINGS_CACHE_TTL_SECONDS", "1800"))  # 30 minutes for listings
+        self.quotes_cache_ttl = int(os.getenv("CMC_QUOTE_CACHE_TTL_SECONDS", "1800"))    # 30 minutes for live quotes
+        self.listings_cache_ttl = int(os.getenv("CMC_LISTINGS_CACHE_TTL_SECONDS", "3600"))  # 1 hour for listings
         self.quotes_cache = {}
         self.listings_cache = {}
         self.quotes_cache_times = {}
@@ -76,10 +91,10 @@ class CMCScreener(WatcherPort):
         self.request_queue = []
         self.max_queue_size = 30  # Limit queue to prevent memory issues
 
-        # Operation limiting configuration (for top coins screening)
-        self.screen_top_coins_interval_hours = int(os.getenv("CMC_SCREEN_TOP_COINS_INTERVAL_HOURS", "1"))  # Interval in hours
-        self.screen_top_coins_limit = int(os.getenv("CMC_SCREEN_TOP_COINS_LIMIT", "50"))  # Max coins to screen (important for API conservation)
-        self.max_coins_to_analyze_per_run = int(os.getenv("CMC_MAX_COINS_TO_ANALYZE_PER_RUN", "20"))  # Max per analysis run
+        # Operation limiting configuration (for top coins screening) - VERY LOW FREQUENCY
+        self.screen_top_coins_interval_hours = int(os.getenv("CMC_SCREEN_TOP_COINS_INTERVAL_HOURS", "6"))  # Every 6 hours
+        self.screen_top_coins_limit = int(os.getenv("CMC_SCREEN_TOP_COINS_LIMIT", "20"))  # Max coins to screen
+        self.max_coins_to_analyze_per_run = int(os.getenv("CMC_MAX_COINS_TO_ANALYZE_PER_RUN", "10"))  # Max per analysis run
 
         # Load excluded coins from environment
         excluded_coins_str = os.getenv("CMC_EXCLUDED_COINS", "BTC,ETH,SOL,ADA,DOT,XRP,DOGE,LINK,BNB,AVAX,MATIC")
@@ -93,14 +108,12 @@ class CMCScreener(WatcherPort):
         self.stablecoin_tags = ['stablecoin', 'asset-backed-stablecoin', 'algorithmic-stablecoin']
         self.stablecoin_symbols = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'FRAX', 'PYUSD', 'GUSD', 'USDD', 'EURT', 'UST', 'FEI', 'TRIBE']
 
-        # Filters for growth/crash detection
-        self.growth_filters = {
-            'min_24h_change': 8.0,
-            'min_volume_24h': 2_000_000,
-            'max_market_cap': 500_000_000,
-            'min_market_cap': 5_000_000,
-            'min_volatility': 0.04,
-            'min_liquidity_ratio': 0.04,
+        # Filters for growth/crash detection - adjusted for universe selection
+        self.universe_filters = {
+            'min_24h_change': 5.0,  # Reduced threshold for universe signals
+            'min_volume_24h': 5_000_000,  # Higher volume threshold for quality
+            'max_market_cap': 1_000_000_000,  # Higher max market cap
+            'min_market_cap': 10_000_000,  # Higher min market cap
             'use_ma_filters': True
         }
 
@@ -113,18 +126,6 @@ class CMCScreener(WatcherPort):
         self.volume_spike_threshold = 2.0
         self.volatility_threshold = 0.05
         self.trend_confirmation_periods = 3
-
-        # Scalping-specific configurations (using realistic timeframes)
-        self.scalping_timeframes = ["3m", "5m", "15m", "30m", "1h"]  # More realistic timeframes for scalping
-        self.small_cap_focus = True  # Focus on smaller caps which are more suitable for scalping
-        self.high_freq_indicators = True  # Enable high-frequency indicators
-        self.scalping_risk_multiplier = Decimal('1.5')  # Increase risk tolerance for scalping
-        self.min_spread_for_scalping = 0.002  # Minimum spread for profitable scalping (0.2%)
-
-        # More sophisticated scalping configuration
-        self.scalping_volatility_threshold = 0.025  # Minimum volatility for scalping opportunities
-        self.scalping_liquidity_threshold = 5_000_000  # Minimum 24h volume for scalping
-        self.scalping_reversion_sensitivity = 0.015  # Sensitivity for mean reversion signals (1.5%)
 
     def _rate_limit_check(self):
         """Advanced API rate limiting with circuit breaker and throttling for maximum conservation."""
@@ -990,62 +991,61 @@ class CMCScreener(WatcherPort):
         return not (same_signal_type and confidence_diff < 0.1)
 
     def analyze(self, symbol: Symbol = None) -> Optional[Signal]:
-        """Analyze market conditions and return a signal based on screening results."""
+        """Analyze market conditions and return a universe signal, NOT trade signal."""
+        if not self.enabled:
+            return None
+
         target_symbol = symbol or self.symbol
 
         # For comprehensive screening, run the screening process
         if target_symbol.value in ["USDTUSDT", "MARKET"] or self.screen_all:
-            screening_results = self.screen_coins(limit=100)  # Screen top 100 coins
+            screening_results = self.screen_coins(limit=20)  # Reduced limit for low frequency
 
-            # Count growth and crash risk coins for market signal
+            # Count growth and crash risk coins for universe selection signal
             growth_coins = []
             crash_coins = []
             for symbol_key, data in screening_results.items():
-                if data['is_growth_potential']:
+                if data.get('is_growth_potential'):
                     growth_coins.append(data)
-                if data['is_crash_risk']:
+                if data.get('is_crash_risk'):
                     crash_coins.append(data)
 
-            # Create overall market signal based on ratios
+            # Create universe signal based on screening results
             total_analyzed = len(growth_coins) + len(crash_coins)
             if total_analyzed > 0:
                 growth_ratio = len(growth_coins) / total_analyzed
                 crash_ratio = len(crash_coins) / total_analyzed
 
-                if growth_ratio > 0.3:  # More than 30% show growth potential
-                    signal_type = SignalType.BUY
-                    confidence = min(Decimal('0.9'), Decimal('0.4') + Decimal(str(growth_ratio * 0.5)))
-                elif crash_ratio > 0.2:  # More than 20% show crash risk
-                    signal_type = SignalType.SELL
-                    confidence = min(Decimal('0.9'), Decimal('0.4') + Decimal(str(crash_ratio * 0.5)))
-                else:
-                    signal_type = SignalType.HOLD
-                    confidence = Decimal('0.5')
+                # Generate universe signal, NOT trade signal
+                signal_type = SignalType.HOLD  # Never emit BUY/SELL directly
+                confidence = Percentage(Decimal('0.7'))  # High confidence in universe selection
 
-                market_signal = Signal(
-                    symbol=Symbol("MARKET"),
+                universe_signal = Signal(
+                    symbol=Symbol("UNIVERSE"),
                     signal_type=signal_type,
-                    confidence=Percentage(confidence),
+                    confidence=confidence,
                     score=0.0,
-                    strategy_name=f"{self.name}_Market",
+                    strategy_name=f"{self.name}_Universe",
                     timestamp=datetime.now(),
-                    source_engine="CMCScreener_Market",
+                    source_engine="CMCScreener_Universe",
                     metadata={
                         'total_analyzed': total_analyzed,
                         'growth_count': len(growth_coins),
                         'crash_count': len(crash_coins),
                         'growth_ratio': growth_ratio,
                         'crash_ratio': crash_ratio,
-                        'screening_type': 'market_sentiment'
+                        'screening_type': 'universe_selection',
+                        'selected_coins': [data['symbol'] for data in growth_coins[:5]],  # Top 5 growth coins
+                        'explanation': f"Universe contains {len(growth_coins)} growth potential coins out of {total_analyzed} analyzed"
                     }
                 )
 
-                if self._should_emit_signal(market_signal):
-                    self.last_signal = market_signal
-                    return market_signal
+                if self._should_emit_signal(universe_signal):
+                    self.last_signal = universe_signal
+                    return universe_signal
 
         else:
-            # For specific symbol analysis
+            # For specific symbol analysis - return universe signal only
             cmc_data = self.fetch_cmc_data(target_symbol.value)
             if not cmc_data:
                 self.logger.warning(f"Could not fetch CMC data for {target_symbol.value}")
@@ -1064,57 +1064,60 @@ class CMCScreener(WatcherPort):
                 self._handle_api_success()  # Stablecoin checks still count as successful API use
                 return None
 
-            # Try realistic scalping analysis first (which looks for qualified scalping opportunities)
-            scalping_signal = self._analyze_realistic_scalping_signals(target_symbol, cmc_data)
+            # Evaluate if this coin is suitable for universe inclusion
+            is_suitable_for_universe = self._is_coin_suitable_for_universe(cmc_data)
 
-            # If scalping signal exists and is strong, return it preferentially for scalping opportunities
-            if scalping_signal and float(scalping_signal.confidence.value) > 0.65:
-                # Adjust the risk parameters for scalping (higher frequency, faster execution)
-                adjusted_scalping = self._adjust_signal_for_scalping(scalping_signal)
+            if is_suitable_for_universe:
+                # Generate universe inclusion signal, NOT trade signal
+                universe_signal = Signal(
+                    symbol=target_symbol,
+                    signal_type=SignalType.HOLD,  # Never emit BUY/SELL directly
+                    confidence=Percentage(Decimal('0.6')),
+                    score=0.0,
+                    strategy_name=f"{self.name}_Universe_Inclusion",
+                    timestamp=datetime.now(),
+                    source_engine="CMCScreener_Universe",
+                    metadata={
+                        'coin_suitable_for_universe': True,
+                        'symbol': cmc_data['symbol'],
+                        'cmc_data_summary': {
+                            'price': cmc_data.get('price'),
+                            'volume_24h': cmc_data.get('volume_24h'),
+                            'market_cap': cmc_data.get('market_cap'),
+                            'change_24h': cmc_data.get('percent_change_24h'),
+                        },
+                        'screening_type': 'universe_inclusion',
+                        'explanation': f"{cmc_data['symbol']} meets universe selection criteria"
+                    }
+                )
 
-                if self._should_emit_signal(adjusted_scalping):
-                    self.last_signal = adjusted_scalping
-                    confidence_val = float(adjusted_scalping.confidence.value)
-                    self.logger.info(f"{self.name} generated REALISTIC-SCALPING {adjusted_scalping.signal_type.name} signal for {target_symbol.value} with {confidence_val:.2%} confidence")
-                    self._handle_api_success()  # Report successful API call
-                    return adjusted_scalping
-                else:
-                    self._handle_api_success()  # Still count as successful operation
-                    return adjusted_scalping
-
-            # Otherwise, perform enhanced individual analysis (traditional approach)
-            traditional_result = self._enhanced_analyze_individual_coin(target_symbol, cmc_data)
-
-            # If no scalping opportunity but we're in a volatile market, still consider scalping characteristics
-            if not scalping_signal and traditional_result:
-                volatility_1h = abs(cmc_data.get('percent_change_1h', 0)) / 100.0
-                volatility_24h = abs(cmc_data.get('percent_change_24h', 0)) / 100.0
-                if volatility_1h > 0.02 or volatility_24h > 0.05:  # High volatility conditions favor scalping
-                    adjusted_traditional = self._adjust_signal_for_scalping(traditional_result)
-
-                    if self._should_emit_signal(adjusted_traditional):
-                        self.last_signal = adjusted_traditional
-                        confidence_val = float(adjusted_traditional.confidence.value)
-                        self.logger.info(f"{self.name} generated VOLATILE-MARKET {adjusted_traditional.signal_type.name} signal for {target_symbol.value} with {confidence_val:.2%} confidence")
-                        self._handle_api_success()  # Report successful API operation
-                        return adjusted_traditional
-                    else:
-                        self._handle_api_success()  # Still count as successful operation
-                        return adjusted_traditional
-                else:
-                    # Traditional approach for less volatile markets
-                    if traditional_result and self._should_emit_signal(traditional_result):
-                        self.last_signal = traditional_result
-                        confidence_val = float(traditional_result.confidence.value)
-                        self.logger.info(f"{self.name} generated {traditional_result.signal_type.name} signal for {target_symbol.value} with {confidence_val:.2%} confidence")
-                        self._handle_api_success()  # Report successful API operation
-                        return traditional_result
-                    else:
-                        self._handle_api_success()  # Still count as successful operation
-                        return traditional_result
+                if self._should_emit_signal(universe_signal):
+                    self.last_signal = universe_signal
+                    self.logger.info(f"{self.name} generated UNIVERSE-INCLUSION signal for {target_symbol.value}")
+                    self._handle_api_success()  # Report successful API operation
+                    return universe_signal
 
         self._handle_api_success()  # Report successful operation regardless of result
         return None
+
+    def _is_coin_suitable_for_universe(self, cmc_data: Dict) -> bool:
+        """Check if a coin is suitable for universe inclusion based on quality criteria"""
+        # Check volume threshold
+        volume_24h = cmc_data.get('volume_24h', 0)
+        if volume_24h < self.universe_filters['min_volume_24h']:
+            return False
+
+        # Check market cap thresholds
+        market_cap = cmc_data.get('market_cap', 0)
+        if market_cap < self.universe_filters['min_market_cap'] or market_cap > self.universe_filters['max_market_cap']:
+            return False
+
+        # Check 24h change is not too extreme (to avoid very volatile coins)
+        change_24h = abs(cmc_data.get('percent_change_24h', 0))
+        if change_24h > 50:  # More than 50% change in 24h is too volatile
+            return False
+
+        return True
 
     def get_high_growth_coins(self) -> List[Dict]:
         """Get coins identified as high-growth potential"""

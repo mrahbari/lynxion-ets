@@ -166,6 +166,24 @@ WFO_COINS=BTCUSDT,ETHUSDT,BNBUSDT
 python run_trading_system.py
 ```
 
+#### Production Mode with Auto-Detection
+
+To run the production system with watchers monitoring the market continuously:
+
+```bash
+# Run in production mode with auto-detection enabled
+python run_trading_system.py --mode production --auto-detect --symbols BTCUSDT,ETHUSDT
+
+# Production mode enables the complete Watcher → Engine → Fusion → Strategy → Broker flow
+# --auto-detect enables automatic opportunity detection and strategy triggering
+# --symbols specifies which symbols to monitor (comma-separated list)
+```
+
+**Command Options:**
+- `--mode production`: Runs the production trading system with all features enabled
+- `--auto-detect`: Enables the complete Watcher → Engine → Fusion → Strategy → Broker flow for automatic opportunity detection
+- `--symbols`: Specifies which symbols to monitor (e.g., BTCUSDT,ETHUSDT,SOLUSDT)
+
 ### Data Synchronization
 
 ```bash
@@ -200,6 +218,12 @@ python runner_history_download.py --start 365d --end today
 ---
 
 ## Recommended Workflow
+
+### Production Trading (Continuous Operation)
+
+* Run production system with auto-detection: `python run_trading_system.py --mode production --auto-detect --symbols BTCUSDT,ETHUSDT`
+* Monitor logs for watcher signals and trading activity
+* Review performance reports
 
 ### Daily
 

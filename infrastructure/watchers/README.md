@@ -62,7 +62,7 @@ Monitors market volatility patterns and identifies potential breakout or mean re
 - Volatility regime detection
 
 ### 3. TrendMTFWatcher (Multi-Timeframe Trend)
-Analyzes trends across multiple timeframes to identify aligned market direction.
+Analyze trends across multiple timeframes to identify aligned market direction.
 
 **Features:**
 - Multi-timeframe trend alignment analysis
