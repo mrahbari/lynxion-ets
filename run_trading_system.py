@@ -6,6 +6,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Callable
 import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from shared.logger import EnhancedLogger
 from domain.ports.data_ports import DataProviderPort

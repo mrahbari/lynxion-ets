@@ -15,6 +15,9 @@ from infrastructure.watchers.adapters.trend_mtf import TrendMTFWatcher
 from infrastructure.watchers.adapters.anomaly_ml import AnomalyMLWatcher
 from infrastructure.watchers.adapters.orderflow_ws import OrderFlowWSWatcher
 from infrastructure.watchers.adapters.cmc_screener import CMCScreener
+from infrastructure.watchers.adapters.funding_rate import FundingRateWatcher
+from infrastructure.watchers.adapters.liquidity import LiquidityWatcher
+from infrastructure.watchers.adapters.historical_candle_watcher import HistoricalCandleWatcherAdapter
 from shared.logger import EnhancedLogger
 
 
@@ -56,15 +59,90 @@ class MarketOpportunityWatcher:
         """Dynamically discover symbols to monitor based on market conditions or other criteria."""
         self.logger.info("🔍 Discovering symbols to monitor automatically...")
 
-        # Try multiple methods to discover symbols, starting with the most comprehensive
-        discovered_symbols = self._discover_by_market_cap()
+        # Check which watcher types are enabled to determine appropriate discovery method
+        market_pulse_enabled = os.getenv('MARKET_PULSE_WATCHER_ENABLED', 'true').lower() == 'true'
+        volatility_enabled = os.getenv('VOLATILITY_WATCHER_ENABLED', 'false').lower() == 'true'
+        trend_mtf_enabled = os.getenv('TREND_MTF_WATCHER_ENABLED', 'false').lower() == 'true'
+        anomaly_ml_enabled = os.getenv('ANOMALY_ML_WATCHER_ENABLED', 'false').lower() == 'true'
+        orderflow_ws_enabled = os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'false').lower() == 'true'
+        cmc_screener_enabled = os.getenv('CMC_SCREENER_ENABLED', 'false').lower() == 'true'
+        funding_rate_enabled = os.getenv('FUNDING_RATE_WATCHER_ENABLED', 'false').lower() == 'true'
+        liquidity_enabled = os.getenv('LIQUIDITY_WATCHER_ENABLED', 'false').lower() == 'true'
+        historical_candle_enabled = os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'false').lower() == 'true'
 
+        # If multiple watchers are enabled, use comprehensive discovery that covers all types
+        enabled_watchers = []
+        if market_pulse_enabled:
+            enabled_watchers.append('market_pulse')
+        if volatility_enabled:
+            enabled_watchers.append('volatility')
+        if trend_mtf_enabled:
+            enabled_watchers.append('trend_mtf')
+        if anomaly_ml_enabled:
+            enabled_watchers.append('anomaly_ml')
+        if orderflow_ws_enabled:
+            enabled_watchers.append('orderflow_ws')
+        if funding_rate_enabled:
+            enabled_watchers.append('funding_rate')
+        if liquidity_enabled:
+            enabled_watchers.append('liquidity')
+        if historical_candle_enabled:
+            enabled_watchers.append('historical_candle')
+        if cmc_screener_enabled:
+            enabled_watchers.append('cmc_screener')
+
+        # When multiple watchers are enabled, we should potentially use a combined discovery approach
+        # that captures symbols relevant to all enabled watcher types
+        if len(enabled_watchers) == 0:
+            # If no watchers are enabled, use default discovery
+            discovered_symbols = self._discover_by_market_cap()
+        elif len(enabled_watchers) == 1:
+            # If only one watcher is enabled, use its specific discovery method
+            watcher_type = enabled_watchers[0]
+            if watcher_type == 'trend_mtf':
+                discovered_symbols = self._discover_trend_oriented_symbols()
+            elif watcher_type == 'volatility':
+                discovered_symbols = self._discover_volatility_oriented_symbols()
+            elif watcher_type == 'market_pulse':
+                discovered_symbols = self._discover_momentum_oriented_symbols()
+            elif watcher_type == 'anomaly_ml':
+                discovered_symbols = self._discover_anomaly_oriented_symbols()
+            elif watcher_type == 'orderflow_ws':
+                discovered_symbols = self._discover_orderflow_oriented_symbols()
+            elif watcher_type == 'funding_rate':
+                discovered_symbols = self._discover_by_market_cap()
+            elif watcher_type == 'liquidity':
+                discovered_symbols = self._discover_liquidity_oriented_symbols()
+            elif watcher_type == 'historical_candle':
+                discovered_symbols = self._discover_by_market_cap()
+            elif watcher_type == 'cmc_screener':
+                discovered_symbols = self._discover_by_market_cap()
+            else:
+                discovered_symbols = self._discover_by_market_cap()
+        else:
+            # When multiple watchers are enabled, we want to ensure comprehensive coverage
+            # Rather than choosing one discovery method, we should use the most inclusive approach
+            # that finds symbols relevant to multiple watcher types
+            discovered_symbols = self._discover_by_market_cap()  # This is most comprehensive
+
+            # Additionally, if we want to ensure we capture different types of opportunities,
+            # we could potentially merge results from multiple discovery methods, but for now
+            # the market cap discovery should be comprehensive enough for all watcher types
+
+        # Ensure we have a good mix of symbols that would be relevant for all enabled watchers
+        # If the discovered symbols are too limited, expand to include more general market symbols
+        if len(discovered_symbols) < 10 and len(enabled_watchers) > 0:
+            # If we have enabled watchers but not enough symbols discovered, expand the discovery
+            additional_symbols = self._discover_by_market_cap()
+            all_symbols = list(set(discovered_symbols + additional_symbols))
+            discovered_symbols = all_symbols[:15]  # Limit to 15 symbols max
+
+        # If no specific discovery method worked, fall back to price activity
         if not discovered_symbols:
-            # Fallback to basic discovery if market cap method fails
             discovered_symbols = self._discover_by_price_activity()
 
+        # If still no symbols found, use fallback symbols
         if not discovered_symbols:
-            # Final fallback to default symbols from environment variables
             fallback_symbols_str = os.getenv("FALLBACK_WATCHLIST_SYMBOLS", "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,AVAXUSDT,MATICUSDT,DOTUSDT,LINKUSDT")
             fallback_symbols = [s.strip() for s in fallback_symbols_str.split(",")]
             discovered_symbols = fallback_symbols
@@ -74,6 +152,169 @@ class MarketOpportunityWatcher:
 
         self.logger.info(f"✅ Auto-discovered {len(filtered_symbols)} symbols to monitor: {filtered_symbols}")
         return [Symbol(s) for s in filtered_symbols]
+
+    def _discover_trend_oriented_symbols(self) -> List[str]:
+        """Discover symbols with strong trend characteristics for trend watchers"""
+        try:
+            # This would connect to exchange APIs to get trending symbols
+            # For now, we'll simulate by finding symbols with strong directional moves
+            import ccxt
+            exchange = ccxt.binance()
+            tickers = exchange.fetch_tickers()
+
+            # Find symbols with strong trending characteristics (significant price changes)
+            trending_symbols = []
+            for symbol, ticker in tickers.items():
+                if symbol.endswith('/USDT') and 'change' in ticker and ticker['change']:
+                    # Look for symbols with strong directional movement (indicative of trending)
+                    change_abs = abs(ticker['change'])
+                    if change_abs > 3.0 and ticker['quoteVolume'] and ticker['quoteVolume'] > 1000000:  # 3%+ change and high volume
+                        formatted_symbol = symbol.replace('/', '')
+                        trending_symbols.append(formatted_symbol)
+                        if len(trending_symbols) >= 10:  # Limit to top 10 trending symbols
+                            break
+
+            return trending_symbols
+        except Exception as e:
+            self.logger.warning(f"Error in trend-oriented symbol discovery: {e}")
+            return []  # Fall back to general discovery
+
+    def _discover_volatility_oriented_symbols(self) -> List[str]:
+        """Discover symbols with volatility opportunities for volatility watchers"""
+        try:
+            import ccxt
+            exchange = ccxt.binance()
+            tickers = exchange.fetch_tickers()
+
+            # Find symbols with high volatility (large differences between high/low)
+            volatile_symbols = []
+            for symbol, ticker in tickers.items():
+                if (symbol.endswith('/USDT') and
+                    'high' in ticker and ticker['high'] is not None and
+                    'low' in ticker and ticker['low'] is not None and
+                    'open' in ticker and ticker['open'] is not None and
+                    'quoteVolume' in ticker and ticker['quoteVolume'] is not None):
+
+                    if ticker['open'] != 0:
+                        volatility = abs((ticker['high'] - ticker['low']) / ticker['open']) * 100
+                        # Look for symbols with high volatility but also good volume
+                        if volatility > 5.0 and ticker['quoteVolume'] > 500000:
+                            formatted_symbol = symbol.replace('/', '')
+                            volatile_symbols.append(formatted_symbol)
+                            if len(volatile_symbols) >= 10:  # Limit to top 10 volatile symbols
+                                break
+
+            return volatile_symbols
+        except Exception as e:
+            self.logger.warning(f"Error in volatility-oriented symbol discovery: {e}")
+            return []  # Fall back to general discovery
+
+    def _discover_momentum_oriented_symbols(self) -> List[str]:
+        """Discover symbols with momentum opportunities for market pulse watchers"""
+        try:
+            import ccxt
+            exchange = ccxt.binance()
+            tickers = exchange.fetch_tickers()
+
+            # Find symbols with strong momentum (recent significant price changes with volume)
+            momentum_symbols = []
+            for symbol, ticker in tickers.items():
+                if (symbol.endswith('/USDT') and
+                    'change' in ticker and ticker['change'] and
+                    'quoteVolume' in ticker and ticker['quoteVolume']):
+                    # Look for symbols with significant recent changes and high volume (momentum)
+                    if abs(ticker['change']) > 2.5 and ticker['quoteVolume'] > 2000000:
+                        formatted_symbol = symbol.replace('/', '')
+                        momentum_symbols.append(formatted_symbol)
+                        if len(momentum_symbols) >= 10:  # Limit to top 10 momentum symbols
+                            break
+
+            return momentum_symbols
+        except Exception as e:
+            self.logger.warning(f"Error in momentum-oriented symbol discovery: {e}")
+            return []  # Fall back to general discovery
+
+    def _discover_anomaly_oriented_symbols(self) -> List[str]:
+        """Discover symbols with unusual patterns for anomaly watchers"""
+        try:
+            import ccxt
+            exchange = ccxt.binance()
+            tickers = exchange.fetch_tickers()
+
+            # Find symbols with unusual characteristics (high volatility, low correlation with market, etc.)
+            anomaly_symbols = []
+            for symbol, ticker in tickers.items():
+                if (symbol.endswith('/USDT') and
+                    'change' in ticker and ticker['change'] and
+                    'high' in ticker and 'low' in ticker and 'open' in ticker and
+                    'quoteVolume' in ticker and ticker['quoteVolume']):
+
+                    # Look for symbols with unusual patterns (high volatility + significant change)
+                    change_abs = abs(ticker['change'])
+                    volatility = abs((ticker['high'] - ticker['low']) / ticker['open']) * 100 if ticker['open'] != 0 else 0
+
+                    # Unusual = high volatility AND significant change (potential anomaly)
+                    if change_abs > 4.0 and volatility > 6.0 and ticker['quoteVolume'] > 1000000:
+                        formatted_symbol = symbol.replace('/', '')
+                        anomaly_symbols.append(formatted_symbol)
+                        if len(anomaly_symbols) >= 10:  # Limit to top 10 anomaly symbols
+                            break
+
+            return anomaly_symbols
+        except Exception as e:
+            self.logger.warning(f"Error in anomaly-oriented symbol discovery: {e}")
+            return []  # Fall back to general discovery
+
+    def _discover_orderflow_oriented_symbols(self) -> List[str]:
+        """Discover symbols with significant order flow for order flow watchers"""
+        try:
+            import ccxt
+            exchange = ccxt.binance()
+            tickers = exchange.fetch_tickers()
+
+            # Find symbols with high volume (indicative of significant order flow)
+            high_volume_symbols = []
+            for symbol, ticker in tickers.items():
+                if symbol.endswith('/USDT') and 'quoteVolume' in ticker and ticker['quoteVolume']:
+                    # Look for symbols with very high volume (indicative of significant order flow)
+                    if ticker['quoteVolume'] > 50000000:  # Very high volume threshold
+                        formatted_symbol = symbol.replace('/', '')
+                        high_volume_symbols.append(formatted_symbol)
+                        if len(high_volume_symbols) >= 10:  # Limit to top 10 high-volume symbols
+                            break
+
+            return high_volume_symbols
+        except Exception as e:
+            self.logger.warning(f"Error in order flow-oriented symbol discovery: {e}")
+            return []  # Fall back to general discovery
+
+    def _discover_liquidity_oriented_symbols(self) -> List[str]:
+        """Discover symbols with liquidity opportunities for liquidity watchers"""
+        try:
+            import ccxt
+            exchange = ccxt.binance()
+            tickers = exchange.fetch_tickers()
+
+            # Find symbols with high volume and tight spreads (good liquidity conditions)
+            liquid_symbols = []
+            for symbol, ticker in tickers.items():
+                if (symbol.endswith('/USDT') and
+                    'quoteVolume' in ticker and ticker['quoteVolume'] and
+                    'high' in ticker and 'low' in ticker and ticker['high'] and ticker['low']):
+
+                    # Look for symbols with high volume and relatively tight volatility (good liquidity)
+                    if ticker['quoteVolume'] > 10000000 and ticker['high'] != 0:  # High volume
+                        volatility = abs((ticker['high'] - ticker['low']) / ticker['high']) * 100
+                        if volatility < 8.0:  # Not too volatile (better liquidity conditions)
+                            formatted_symbol = symbol.replace('/', '')
+                            liquid_symbols.append(formatted_symbol)
+                            if len(liquid_symbols) >= 10:  # Limit to top 10 liquid symbols
+                                break
+
+            return liquid_symbols
+        except Exception as e:
+            self.logger.warning(f"Error in liquidity-oriented symbol discovery: {e}")
+            return []  # Fall back to general discovery
 
     def _filter_stablecoin_pairs(self, symbols: List[str]) -> List[str]:
         """Filter out stablecoin-to-stablecoin pairs like USDTUSDT, USDCUSDT, etc."""
@@ -383,16 +624,27 @@ class MarketOpportunityWatcher:
                 symbol_watchers['anomaly_ml'] = AnomalyMLWatcher("AnomalyML", symbol.value)
 
             if os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'true').lower() == 'true':
-                symbol_watchers['order_flow'] = OrderFlowWSWatcher("OrderFlowWS", symbol.value)
+                symbol_watchers['orderflow_ws'] = OrderFlowWSWatcher("OrderFlowWS", symbol.value)
 
             if os.getenv('CMC_SCREENER_ENABLED', 'true').lower() == 'true':
-                symbol_watchers['cmc_watcher'] = CMCScreener(name=f"CMCWatcher_{symbol.value}", symbol=symbol.value)
+                symbol_watchers['cmc_screener'] = CMCScreener(name=f"CMCWatcher_{symbol.value}", symbol=symbol.value)
+
+            if os.getenv('FUNDING_RATE_WATCHER_ENABLED', 'true').lower() == 'true':
+                symbol_watchers['funding_rate'] = FundingRateWatcher("FundingRate", symbol.value)
+
+            if os.getenv('LIQUIDITY_WATCHER_ENABLED', 'true').lower() == 'true':
+                symbol_watchers['liquidity'] = LiquidityWatcher("Liquidity", symbol.value)
+
+            if os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'true').lower() == 'true':
+                symbol_watchers['historical_candle'] = HistoricalCandleWatcherAdapter("HistoricalCandle", symbol.value, None)
 
             self.watchers[symbol.value] = symbol_watchers
 
-            # Start only the enabled watchers
+            # Start only the enabled watchers - double check enabled status
             for watcher_name, watcher in self.watchers[symbol.value].items():
-                watcher.start()
+                # Double-check the watcher's enabled status before starting
+                if getattr(watcher, 'enabled', True):
+                    watcher.start()
                 
     def start_monitoring(self):
         """Start continuous market monitoring."""
@@ -438,7 +690,7 @@ class MarketOpportunityWatcher:
                 self._process_opportunities(symbol, opportunities)
                 
     def _analyze_symbol(self, symbol: Symbol) -> Dict[str, Any]:
-        """Analyze a symbol using all available watchers."""
+        """Analyze a symbol using all available watchers - only if enabled."""
         symbol_str = symbol.value
         opportunities = {
             'symbol': symbol_str,
@@ -449,27 +701,38 @@ class MarketOpportunityWatcher:
             'confidence': 0.0,
             'strategy_suggestion': None
         }
-        
-        # Analyze with each watcher
+
+        # Analyze with each watcher - only if the watcher is enabled
         for watcher_name, watcher in self.watchers[symbol_str].items():
-            signal = watcher.analyze(symbol)
-            if signal:
-                opportunities['signals'][watcher_name] = {
-                    'signal_type': signal.signal_type.name,
-                    'confidence': float(signal.confidence.value),
-                    'score': signal.score,
-                    'timestamp': signal.timestamp.isoformat(),
-                    'metadata': signal.metadata
-                }
-                
-                # Determine overall recommendation based on signals
-                if signal.signal_type.name in ['BUY', 'SELL']:
-                    opportunities['recommendation'] = signal.signal_type.name
-                    opportunities['confidence'] = max(opportunities['confidence'], float(signal.confidence.value))
-                    
-                    # Suggest strategy based on signal type and characteristics
-                    opportunities['strategy_suggestion'] = self._suggest_strategy_for_signal(signal)
-                    
+            # Check if the specific watcher has an enabled attribute and if it's enabled
+            # Different watchers may have different attribute names for enabled status
+            watcher_is_enabled = True  # Default assumption
+
+            # Check if the watcher has an enabled attribute
+            if hasattr(watcher, 'enabled'):
+                watcher_is_enabled = watcher.enabled
+            # Add other possible attribute names as needed
+
+            # Only call analyze if the watcher is enabled
+            if watcher_is_enabled:
+                signal = watcher.analyze(symbol)
+                if signal:
+                    opportunities['signals'][watcher_name] = {
+                        'signal_type': signal.signal_type.name,
+                        'confidence': float(signal.confidence.value),
+                        'score': signal.score,
+                        'timestamp': signal.timestamp.isoformat(),
+                        'metadata': signal.metadata
+                    }
+
+                    # Determine overall recommendation based on signals
+                    if signal.signal_type.name in ['BUY', 'SELL']:
+                        opportunities['recommendation'] = signal.signal_type.name
+                        opportunities['confidence'] = max(opportunities['confidence'], float(signal.confidence.value))
+
+                        # Suggest strategy based on signal type and characteristics
+                        opportunities['strategy_suggestion'] = self._suggest_strategy_for_signal(signal)
+
         return opportunities
         
     def _suggest_strategy_for_signal(self, signal: Signal) -> str:

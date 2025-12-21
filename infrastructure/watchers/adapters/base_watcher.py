@@ -37,12 +37,16 @@ class BaseWatcher(ABC):
     def start(self):
         """Start the watcher"""
         self.is_running = True
-        logger.info(f"Started watcher: {self.name} for symbol: {self.symbol}")
-        
+        # Only log if the watcher is enabled
+        if getattr(self, 'enabled', True):  # Default to True if no 'enabled' attribute
+            logger.info(f"Started watcher: {self.name} for symbol: {self.symbol}")
+
     def stop(self):
         """Stop the watcher"""
         self.is_running = False
-        logger.info(f"Stopped watcher: {self.name} for symbol: {self.symbol}")
+        # Only log if the watcher is enabled
+        if getattr(self, 'enabled', True):  # Default to True if no 'enabled' attribute
+            logger.info(f"Stopped watcher: {self.name} for symbol: {self.symbol}")
         
     def update_data(self, data: Dict[str, Any]):
         """Update watcher with new market data"""
