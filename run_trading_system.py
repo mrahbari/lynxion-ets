@@ -456,6 +456,12 @@ Examples:
         help="Run in auto-detection mode (watcher detects opportunities and triggers strategies automatically)"
     )
 
+    parser.add_argument(
+        "--comprehensive-logs",
+        action="store_true",
+        help="Enable comprehensive logging with detailed background activity tracking"
+    )
+
     return parser
 
 
@@ -678,7 +684,8 @@ if __name__ == "__main__":
                 portfolio_service=portfolio_service,
                 optimization_service=optimization_service,
                 symbols=symbols if symbols else None,  # Pass None if no symbols specified
-                risk_config=risk_config
+                risk_config=risk_config,
+                comprehensive_logging=args.comprehensive_logs
             )
 
             try:

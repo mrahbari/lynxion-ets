@@ -174,8 +174,16 @@ class BaseEngineAdapter(EnginePort):
             }
         )
 
+    def process_signal(self, signal: Signal) -> Signal:
+        """Process a signal through the engine - base implementation"""
+        # Base implementation just returns the signal as is
+        # Subclasses should override this to implement actual signal processing
+        return signal
+
     def should_process_signal(self, signal: Signal) -> bool:
-        """Check if this engine should process the signal - base implementation"""
+        """Check if the engine should process this signal - base implementation"""
+        # Base implementation always processes the signal
+        # Subclasses should override this to implement actual logic
         return True
 
     def get_engine_name(self) -> str:

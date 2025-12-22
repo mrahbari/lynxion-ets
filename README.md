@@ -62,6 +62,9 @@ The system is suitable for both **research/backtesting** and **live trading**.
 * **Resource Optimization**: Instance pooling and resource limitation for optimal performance
 * **Enhanced Error Isolation**: Robust error handling between system components
 * **Adaptive Thresholds**: Market condition-based parameter adjustments
+* **Enhanced Logging System**: Comprehensive flow tracking (Watcher → Engine → Fusion → Strategy → Broker) with detailed decision logging
+* **Comprehensive Background Monitoring**: Detailed visibility into background activities with periodic status updates
+* **Configurable Logging**: Support for both brief and comprehensive logging modes
 * Multi-exchange support (Binance, BingX, MEXC, Phemex)
 * Automated hyperparameter optimization (retuning)
 * Walk-forward analysis for strategy robustness
@@ -254,10 +257,16 @@ python run_trading_system.py --mode production --auto-detect --symbols BTCUSDT,E
 # --symbols specifies which symbols to monitor (comma-separated list)
 ```
 
+```bash
+# Run with comprehensive logging for detailed background activity tracking
+python run_trading_system.py --mode production --auto-detect --symbols BTCUSDT,ETHUSDT --comprehensive-logs
+```
+
 **Command Options:**
 - `--mode production`: Runs the production trading system with all features enabled
 - `--auto-detect`: Enables the complete Watcher → Engine → Fusion → Strategy → Broker flow for automatic opportunity detection
 - `--symbols`: Specifies which symbols to monitor (e.g., BTCUSDT,ETHUSDT,SOLUSDT)
+- `--comprehensive-logs`: Enables comprehensive logging with detailed background activity tracking (optional)
 
 ### Data Synchronization
 

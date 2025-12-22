@@ -27,10 +27,12 @@ class MarketOpportunityWatcher:
 
     def __init__(self, symbols: Optional[List[str]] = None,
                  opportunity_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
-                 auto_discover_symbols: bool = False):
+                 auto_discover_symbols: bool = False,
+                 comprehensive_logging: bool = True):
         self.auto_discover_symbols = auto_discover_symbols
         self.opportunity_callback = opportunity_callback
-        self.logger = EnhancedLogger("MarketOpportunityWatcher")
+        self.logger = EnhancedLogger("MarketOpportunityWatcher", comprehensive_mode=comprehensive_logging)
+        self.comprehensive_logging = comprehensive_logging
         self.is_running = False
         self.watchers = {}
         self.last_signals = {}
@@ -129,6 +131,7 @@ class MarketOpportunityWatcher:
             # When multiple watchers are enabled, we want to ensure comprehensive coverage
             # Rather than choosing one discovery method, we should combine results from multiple discovery methods
             # to ensure symbols relevant to all watcher types are included
+            watcher_specific_symbols = {}
             all_discovered_symbols = set()
 
             # Add symbols from each enabled watcher type's specific discovery method
@@ -156,13 +159,32 @@ class MarketOpportunityWatcher:
                 else:
                     symbols = self._discover_by_market_cap()
 
+                # Track what symbols each watcher discovered
+                watcher_specific_symbols[watcher_type] = symbols
                 all_discovered_symbols.update(symbols)
+
+                # Log what symbols this specific watcher discovered
+                if hasattr(self, 'logger') and symbols:
+                    self.logger.info(f"🔍 {watcher_type.upper()} WATCHER DISCOVERED: {len(symbols)} symbols - {symbols[:5]}{'...' if len(symbols) > 5 else ''}",
+                                   watcher_type=watcher_type,
+                                   symbols_discovered=len(symbols),
+                                   sample_symbols=symbols[:5])
 
             # Also add symbols from general market discovery to ensure comprehensive coverage
             general_symbols = self._discover_by_market_cap()
             all_discovered_symbols.update(general_symbols)
 
             discovered_symbols = list(all_discovered_symbols)
+
+            # Store the watcher-specific symbols for later use in _initialize_watchers
+            self._watcher_specific_symbols = watcher_specific_symbols
+
+            # Log the combined symbol set
+            if hasattr(self, 'logger'):
+                self.logger.info(f"📊 COMBINED SYMBOLS: {len(discovered_symbols)} total symbols after combining {len(enabled_watchers)} watcher types",
+                               total_symbols=len(discovered_symbols),
+                               watcher_count=len(enabled_watchers),
+                               watcher_specific=watcher_specific_symbols)
 
         # Ensure we have a good mix of symbols that would be relevant for all enabled watchers
         # If the discovered symbols are too limited, expand to include more general market symbols
@@ -768,44 +790,198 @@ class MarketOpportunityWatcher:
             return self._discover_symbols_automatically()
         
     def _initialize_watchers(self):
-        """Initialize watcher adapters for each symbol - only if enabled."""
+        """Initialize watcher adapters for each symbol based on which watcher discovered it - only if enabled."""
+
+        # First, let's track which symbols were discovered by which watcher type
+        # This information is available in self._discover_symbols_automatically()
+        # We need to track the original discovery mapping
+
+        # Create a mapping of symbols to their primary watcher based on discovery
+        symbol_to_primary_watcher = {}
+
+        # If we're in auto-discovery mode, we know which watcher discovered which symbols
+        if hasattr(self, '_watcher_specific_symbols'):
+            for watcher_type, symbols in self._watcher_specific_symbols.items():
+                # Check if this watcher type is enabled
+                env_var = f"{watcher_type.upper()}_WATCHER_ENABLED"
+                if os.getenv(env_var, 'true').lower() == 'true':
+                    for symbol in symbols:
+                        # Assign this watcher as the primary watcher for this symbol
+                        if symbol not in symbol_to_primary_watcher:
+                            symbol_to_primary_watcher[symbol] = set()
+                        symbol_to_primary_watcher[symbol].add(watcher_type)
+
         for symbol in self.symbols:
             symbol_watchers = {}
 
             # Check each watcher type before creating to avoid unnecessary instantiation
+            # Only create watchers that are relevant to this symbol or if it's a general watcher
+
+            # Market Pulse watcher
             if os.getenv('MARKET_PULSE_WATCHER_ENABLED', 'true').lower() == 'true':
-                symbol_watchers['market_pulse'] = MarketPulseWatcher("MarketPulse", symbol.value)
+                # Check if this symbol was discovered by market pulse watcher
+                if (symbol.value in symbol_to_primary_watcher and
+                    'market_pulse' in symbol_to_primary_watcher[symbol.value]):
+                    symbol_watchers['market_pulse'] = MarketPulseWatcher("MarketPulse", symbol.value)
+                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                        self.logger.log_background_activity(
+                            "Watcher Assignment",
+                            f"MarketPulse assigned to {symbol.value} (discovered by MarketPulse)",
+                            symbol=symbol.value,
+                            watcher="market_pulse",
+                            discovery_source="market_pulse"
+                        )
+                elif not symbol_to_primary_watcher:  # If no specific mapping (fallback to original behavior)
+                    symbol_watchers['market_pulse'] = MarketPulseWatcher("MarketPulse", symbol.value)
 
+            # Volatility watcher
             if os.getenv('VOLATILITY_WATCHER_ENABLED', 'true').lower() == 'true':
-                symbol_watchers['volatility'] = VolatilityWatcher("Volatility", symbol.value)
+                # Check if this symbol was discovered by volatility watcher
+                if (symbol.value in symbol_to_primary_watcher and
+                    'volatility' in symbol_to_primary_watcher[symbol.value]):
+                    symbol_watchers['volatility'] = VolatilityWatcher("Volatility", symbol.value)
+                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                        self.logger.log_background_activity(
+                            "Watcher Assignment",
+                            f"Volatility assigned to {symbol.value} (discovered by Volatility)",
+                            symbol=symbol.value,
+                            watcher="volatility",
+                            discovery_source="volatility"
+                        )
+                elif not symbol_to_primary_watcher:  # If no specific mapping (fallback to original behavior)
+                    symbol_watchers['volatility'] = VolatilityWatcher("Volatility", symbol.value)
 
+            # Trend MTF watcher
             if os.getenv('TREND_MTF_WATCHER_ENABLED', 'true').lower() == 'true':
-                symbol_watchers['trend_mtf'] = TrendMTFWatcher("TrendMTF", symbol.value)
+                if (symbol.value in symbol_to_primary_watcher and
+                    'trend_mtf' in symbol_to_primary_watcher[symbol.value]):
+                    symbol_watchers['trend_mtf'] = TrendMTFWatcher("TrendMTF", symbol.value)
+                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                        self.logger.log_background_activity(
+                            "Watcher Assignment",
+                            f"TrendMTF assigned to {symbol.value} (discovered by TrendMTF)",
+                            symbol=symbol.value,
+                            watcher="trend_mtf",
+                            discovery_source="trend_mtf"
+                        )
+                elif not symbol_to_primary_watcher:
+                    symbol_watchers['trend_mtf'] = TrendMTFWatcher("TrendMTF", symbol.value)
 
+            # Anomaly ML watcher
             if os.getenv('ANOMALY_ML_WATCHER_ENABLED', 'true').lower() == 'true':
-                symbol_watchers['anomaly_ml'] = AnomalyMLWatcher("AnomalyML", symbol.value)
+                if (symbol.value in symbol_to_primary_watcher and
+                    'anomaly_ml' in symbol_to_primary_watcher[symbol.value]):
+                    symbol_watchers['anomaly_ml'] = AnomalyMLWatcher("AnomalyML", symbol.value)
+                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                        self.logger.log_background_activity(
+                            "Watcher Assignment",
+                            f"AnomalyML assigned to {symbol.value} (discovered by AnomalyML)",
+                            symbol=symbol.value,
+                            watcher="anomaly_ml",
+                            discovery_source="anomaly_ml"
+                        )
+                elif not symbol_to_primary_watcher:
+                    symbol_watchers['anomaly_ml'] = AnomalyMLWatcher("AnomalyML", symbol.value)
 
+            # OrderFlow WS watcher
             if os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'true').lower() == 'true':
-                symbol_watchers['orderflow_ws'] = OrderFlowWSWatcher("OrderFlowWS", symbol.value)
+                if (symbol.value in symbol_to_primary_watcher and
+                    'orderflow_ws' in symbol_to_primary_watcher[symbol.value]):
+                    symbol_watchers['orderflow_ws'] = OrderFlowWSWatcher("OrderFlowWS", symbol.value)
+                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                        self.logger.log_background_activity(
+                            "Watcher Assignment",
+                            f"OrderFlowWS assigned to {symbol.value} (discovered by OrderFlowWS)",
+                            symbol=symbol.value,
+                            watcher="orderflow_ws",
+                            discovery_source="orderflow_ws"
+                        )
+                elif not symbol_to_primary_watcher:
+                    symbol_watchers['orderflow_ws'] = OrderFlowWSWatcher("OrderFlowWS", symbol.value)
 
+            # CMC Screener watcher
             if os.getenv('CMC_SCREENER_ENABLED', 'true').lower() == 'true':
-                symbol_watchers['cmc_screener'] = CMCScreener(name=f"CMCWatcher_{symbol.value}", symbol=symbol.value)
+                if (symbol.value in symbol_to_primary_watcher and
+                    'cmc_screener' in symbol_to_primary_watcher[symbol.value]):
+                    symbol_watchers['cmc_screener'] = CMCScreener(name=f"CMCWatcher_{symbol.value}", symbol=symbol.value)
+                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                        self.logger.log_background_activity(
+                            "Watcher Assignment",
+                            f"CMCScreener assigned to {symbol.value} (discovered by CMCScreener)",
+                            symbol=symbol.value,
+                            watcher="cmc_screener",
+                            discovery_source="cmc_screener"
+                        )
+                elif not symbol_to_primary_watcher:
+                    symbol_watchers['cmc_screener'] = CMCScreener(name=f"CMCWatcher_{symbol.value}", symbol=symbol.value)
 
+            # Funding Rate watcher
             if os.getenv('FUNDING_RATE_WATCHER_ENABLED', 'true').lower() == 'true':
-                symbol_watchers['funding_rate'] = FundingRateWatcher("FundingRate", symbol.value)
+                if (symbol.value in symbol_to_primary_watcher and
+                    'funding_rate' in symbol_to_primary_watcher[symbol.value]):
+                    symbol_watchers['funding_rate'] = FundingRateWatcher("FundingRate", symbol.value)
+                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                        self.logger.log_background_activity(
+                            "Watcher Assignment",
+                            f"FundingRate assigned to {symbol.value} (discovered by FundingRate)",
+                            symbol=symbol.value,
+                            watcher="funding_rate",
+                            discovery_source="funding_rate"
+                        )
+                elif not symbol_to_primary_watcher:
+                    symbol_watchers['funding_rate'] = FundingRateWatcher("FundingRate", symbol.value)
 
+            # Liquidity watcher
             if os.getenv('LIQUIDITY_WATCHER_ENABLED', 'true').lower() == 'true':
-                symbol_watchers['liquidity'] = LiquidityWatcher("Liquidity", symbol.value)
+                if (symbol.value in symbol_to_primary_watcher and
+                    'liquidity' in symbol_to_primary_watcher[symbol.value]):
+                    symbol_watchers['liquidity'] = LiquidityWatcher("Liquidity", symbol.value)
+                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                        self.logger.log_background_activity(
+                            "Watcher Assignment",
+                            f"Liquidity assigned to {symbol.value} (discovered by Liquidity)",
+                            symbol=symbol.value,
+                            watcher="liquidity",
+                            discovery_source="liquidity"
+                        )
+                elif not symbol_to_primary_watcher:
+                    symbol_watchers['liquidity'] = LiquidityWatcher("Liquidity", symbol.value)
 
+            # Historical Candle watcher
             if os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'true').lower() == 'true':
-                symbol_watchers['historical_candle'] = HistoricalCandleWatcherAdapter("HistoricalCandle", symbol.value, None)
+                if (symbol.value in symbol_to_primary_watcher and
+                    'historical_candle' in symbol_to_primary_watcher[symbol.value]):
+                    symbol_watchers['historical_candle'] = HistoricalCandleWatcherAdapter("HistoricalCandle", symbol.value, None)
+                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                        self.logger.log_background_activity(
+                            "Watcher Assignment",
+                            f"HistoricalCandle assigned to {symbol.value} (discovered by HistoricalCandle)",
+                            symbol=symbol.value,
+                            watcher="historical_candle",
+                            discovery_source="historical_candle"
+                        )
+                elif not symbol_to_primary_watcher:
+                    symbol_watchers['historical_candle'] = HistoricalCandleWatcherAdapter("HistoricalCandle", symbol.value, None)
 
+            # Tick Watcher
             if os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true':
-                # For TickWatcher, we need a broker service - using a placeholder for now
-                # In a real implementation, this would be properly configured
-                from infrastructure.brokers.broker_manager import BrokerManager
-                broker_service = BrokerManager()  # This would be the proper broker service
-                symbol_watchers['tick_watcher'] = TickWatcherAdapter("TickWatcher", symbol.value, broker_service)
+                if (symbol.value in symbol_to_primary_watcher and
+                    'tick_watcher' in symbol_to_primary_watcher[symbol.value]):
+                    from infrastructure.brokers.broker_manager import BrokerManager
+                    broker_service = BrokerManager()
+                    symbol_watchers['tick_watcher'] = TickWatcherAdapter("TickWatcher", symbol.value, broker_service)
+                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                        self.logger.log_background_activity(
+                            "Watcher Assignment",
+                            f"TickWatcher assigned to {symbol.value} (discovered by TickWatcher)",
+                            symbol=symbol.value,
+                            watcher="tick_watcher",
+                            discovery_source="tick_watcher"
+                        )
+                elif not symbol_to_primary_watcher:
+                    from infrastructure.brokers.broker_manager import BrokerManager
+                    broker_service = BrokerManager()
+                    symbol_watchers['tick_watcher'] = TickWatcherAdapter("TickWatcher", symbol.value, broker_service)
 
             self.watchers[symbol.value] = symbol_watchers
 
@@ -842,10 +1018,32 @@ class MarketOpportunityWatcher:
     def _monitoring_loop(self):
         """Main monitoring loop that continuously checks for opportunities."""
         self.logger.info("🔄 Market opportunity monitoring loop started")
-        
+
+        # Track statistics for periodic reporting
+        last_report_time = time.time()
+        report_interval = 60  # seconds between detailed reports
+        analysis_count = 0
+        signals_found = 0
+
         while self.is_running:
             try:
-                self._check_market_opportunities()
+                opportunities = self._check_market_opportunities()
+                analysis_count += len(self.symbols)
+
+                # Count signals found
+                for opportunity in opportunities:
+                    if opportunity.get('recommendation') and opportunity['confidence'] > 0.6:
+                        signals_found += 1
+
+                # Log periodic detailed reports
+                current_time = time.time()
+                if current_time - last_report_time >= report_interval:
+                    self.logger.info(f"📊 WATCHER ANALYTICS: Analyzed {analysis_count} symbol checks in last {report_interval}s | "
+                                   f"Signals found: {signals_found} | Monitored symbols: {len(self.symbols)}")
+                    analysis_count = 0
+                    signals_found = 0
+                    last_report_time = current_time
+
                 time.sleep(30)  # Check every 30 seconds
             except Exception as e:
                 self.logger.error(f"Error in monitoring loop: {e}")
@@ -853,14 +1051,26 @@ class MarketOpportunityWatcher:
                 
     def _check_market_opportunities(self):
         """Check each symbol for trading opportunities."""
+        all_opportunities = []
         for symbol in self.symbols:
             opportunities = self._analyze_symbol(symbol)
             if opportunities:
                 self._process_opportunities(symbol, opportunities)
+                all_opportunities.append(opportunities)
+        return all_opportunities
                 
     def _analyze_symbol(self, symbol: Symbol) -> Dict[str, Any]:
         """Analyze a symbol using all available watchers - only if enabled."""
         symbol_str = symbol.value
+
+        # Log that the symbol analysis is starting
+        if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+            self.logger.log_background_activity(
+                "Symbol Analysis",
+                f"Starting analysis for {symbol_str}",
+                symbol=symbol_str
+            )
+
         opportunities = {
             'symbol': symbol_str,
             'timestamp': datetime.now(),
@@ -873,6 +1083,15 @@ class MarketOpportunityWatcher:
 
         # Analyze with each watcher - only if the watcher is enabled
         for watcher_name, watcher in self.watchers[symbol_str].items():
+            # Log that we're starting to analyze with this watcher
+            if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                self.logger.log_background_activity(
+                    "Watcher Analysis",
+                    f"Analyzing {symbol_str} with {watcher_name}",
+                    symbol=symbol_str,
+                    watcher=watcher_name
+                )
+
             # Check if the specific watcher has an enabled attribute and if it's enabled
             watcher_is_enabled = True  # Default assumption
 
@@ -893,6 +1112,15 @@ class MarketOpportunityWatcher:
                             'metadata': signal.metadata if hasattr(signal, 'metadata') else {}
                         }
 
+                        # Log the individual watcher signal
+                        self.logger.log_watcher_analysis(
+                            watcher=watcher_name,
+                            symbol=symbol_str,
+                            result=f"Signal Generated: {signal.signal_type.name}",
+                            confidence=float(signal.confidence.value) if hasattr(signal.confidence, 'value') else float(signal.confidence),
+                            signal_type=signal.signal_type.name
+                        )
+
                         # Determine overall recommendation based on signals
                         if signal.signal_type.name in ['BUY', 'SELL']:
                             opportunities['recommendation'] = signal.signal_type.name
@@ -900,9 +1128,116 @@ class MarketOpportunityWatcher:
 
                             # Suggest strategy based on signal type and characteristics
                             opportunities['strategy_suggestion'] = self._suggest_strategy_for_signal(signal)
+
+                            # Log the complete flow for this opportunity
+                            self.logger.log_full_flow(
+                                symbol=symbol_str,
+                                watcher=watcher_name,
+                                engine="SignalProcessor",
+                                fusion="SignalFusion",
+                                strategy=opportunities['strategy_suggestion'],
+                                broker="Binance",
+                                decision="Analyzed",
+                                confidence=opportunities['confidence'],
+                                reason=f"Signal generated by {watcher_name} for {signal.signal_type.name}",
+                            )
+                    else:
+                        # Log when no signal is generated by this watcher
+                        if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                            self.logger.log_background_activity(
+                                "Signal Analysis",
+                                f"No signal generated by {watcher_name} for {symbol_str}",
+                                symbol=symbol_str,
+                                watcher=watcher_name
+                            )
+
+                        # Log that the watcher didn't generate a signal (don't show confidence for no signal)
+                        self.logger.log_watcher_analysis(
+                            watcher=watcher_name,
+                            symbol=symbol_str,
+                            result="No Signal Generated"
+                            # Don't pass confidence when there's no signal
+                        )
                 except Exception as e:
                     self.logger.error(f"Error analyzing {symbol_str} with {watcher_name}: {e}")
+                    # Log the error in watcher analysis (don't show confidence for errors)
+                    self.logger.log_watcher_analysis(
+                        watcher=watcher_name,
+                        symbol=symbol_str,
+                        result=f"Error: {str(e)}"
+                        # Don't pass confidence when there's an error
+                    )
                     continue
+
+        # Log the final analysis result for this symbol with complete flow tracking
+        if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+            if opportunities['recommendation']:
+                self.logger.log_background_activity(
+                    "Symbol Analysis Complete",
+                    f"Opportunity found for {symbol_str}: {opportunities['recommendation']} with confidence {opportunities['confidence']:.2%}",
+                    symbol=symbol_str,
+                    recommendation=opportunities['recommendation'],
+                    confidence=opportunities['confidence']
+                )
+                # Log the complete flow for each watcher that generated a valid signal
+                for watcher_name, signal_data in opportunities['signals'].items():
+                    if signal_data.get('signal_type') in ['BUY', 'SELL']:
+                        self.logger.log_full_flow(
+                            symbol=symbol_str,
+                            watcher=watcher_name,
+                            engine="SignalProcessor",
+                            fusion="SignalFusion",
+                            strategy=opportunities['strategy_suggestion'],
+                            broker="Binance",
+                            decision="Opportunity Found",
+                            confidence=signal_data.get('confidence', opportunities['confidence']),
+                            reason=f"Opportunity detected by {watcher_name}",
+                        )
+            else:
+                self.logger.log_background_activity(
+                    "Symbol Analysis Complete",
+                    f"No opportunities found for {symbol_str}",
+                    symbol=symbol_str
+                )
+                # Even when no opportunity is found, log the complete flow showing what happened
+                # List all watchers that were checked
+                watcher_names = list(self.watchers[symbol_str].keys())
+                active_watchers = []
+                for watcher_name, signal_data in opportunities['signals'].items():
+                    if signal_data.get('signal_type'):
+                        active_watchers.append(watcher_name)
+
+                if active_watchers:
+                    # Some watchers generated signals but none met the threshold
+                    # Log individual watcher flows instead of combining them
+                    for watcher_name in active_watchers:
+                        signal_data = opportunities['signals'].get(watcher_name, {})
+                        if signal_data.get('signal_type') in ['BUY', 'SELL']:
+                            self.logger.log_full_flow(
+                                symbol=symbol_str,
+                                watcher=watcher_name,
+                                engine="SignalProcessor",
+                                fusion="SignalFusion",
+                                strategy="No Strategy Selected",  # No strategy executed for this signal
+                                broker="No Broker Interaction",  # No broker interaction for this signal
+                                decision="Signal Below Threshold",
+                                confidence=signal_data.get('confidence', 0.0),
+                                reason=f"Signal {signal_data.get('signal_type', 'UNKNOWN')} generated by {watcher_name} but below threshold",
+                            )
+                else:
+                    # No watchers generated any signals - log individual watcher status
+                    for watcher_name in watcher_names:
+                        self.logger.log_full_flow(
+                            symbol=symbol_str,
+                            watcher=watcher_name,
+                            engine="SignalProcessor",
+                            fusion="SignalFusion",
+                            strategy="No Strategy Selected",
+                            broker="No Broker Interaction",
+                            decision="No Signal Generated",
+                            confidence=0.0,
+                            reason=f"No signal generated by {watcher_name}",
+                        )
 
         return opportunities
         
@@ -931,6 +1266,26 @@ class MarketOpportunityWatcher:
                 opportunities['confidence'],
                 opportunities['strategy_suggestion']
             )
+
+            # Log the flow from watcher to the next component (engine)
+            self.logger.log_watcher_to_engine_flow(
+                symbol=symbol.value,
+                watcher_name="MarketOpportunityWatcher",
+                signal_generated=bool(opportunities['recommendation']),
+                signal_type=opportunities['recommendation'],
+                confidence=opportunities['confidence'],
+                reason=f"Opportunity detected with confidence {opportunities['confidence']:.2%}",
+            )
+
+            # Log background activity in comprehensive mode
+            if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                self.logger.log_background_activity(
+                    "Opportunity Processing",
+                    f"Processing opportunity for {symbol.value} - {opportunities['recommendation']} with confidence {opportunities['confidence']:.2%}",
+                    symbol=symbol.value,
+                    recommendation=opportunities['recommendation'],
+                    confidence=opportunities['confidence']
+                )
 
             if self.opportunity_callback:
                 try:
