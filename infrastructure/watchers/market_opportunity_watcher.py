@@ -18,6 +18,7 @@ from infrastructure.watchers.adapters.cmc_screener import CMCScreener
 from infrastructure.watchers.adapters.funding_rate import FundingRateWatcher
 from infrastructure.watchers.adapters.liquidity import LiquidityWatcher
 from infrastructure.watchers.adapters.historical_candle_watcher import HistoricalCandleWatcherAdapter
+from infrastructure.watchers.adapters.tick_watcher import TickWatcherAdapter
 from shared.logger import EnhancedLogger
 
 
@@ -69,6 +70,7 @@ class MarketOpportunityWatcher:
         funding_rate_enabled = os.getenv('FUNDING_RATE_WATCHER_ENABLED', 'false').lower() == 'true'
         liquidity_enabled = os.getenv('LIQUIDITY_WATCHER_ENABLED', 'false').lower() == 'true'
         historical_candle_enabled = os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'false').lower() == 'true'
+        tick_watcher_enabled = os.getenv('TICK_WATCHER_ENABLED', 'false').lower() == 'true'
 
         # If multiple watchers are enabled, use comprehensive discovery that covers all types
         enabled_watchers = []
@@ -90,6 +92,8 @@ class MarketOpportunityWatcher:
             enabled_watchers.append('historical_candle')
         if cmc_screener_enabled:
             enabled_watchers.append('cmc_screener')
+        if tick_watcher_enabled:
+            enabled_watchers.append('tick_watcher')
 
         # When multiple watchers are enabled, we should potentially use a combined discovery approach
         # that captures symbols relevant to all enabled watcher types
@@ -114,9 +118,11 @@ class MarketOpportunityWatcher:
             elif watcher_type == 'liquidity':
                 discovered_symbols = self._discover_liquidity_oriented_symbols()
             elif watcher_type == 'historical_candle':
-                discovered_symbols = self._discover_by_market_cap()
+                discovered_symbols = self._discover_historical_candle_oriented_symbols()
             elif watcher_type == 'cmc_screener':
                 discovered_symbols = self._discover_by_market_cap()
+            elif watcher_type == 'tick_watcher':
+                discovered_symbols = self._discover_tick_oriented_symbols()
             else:
                 discovered_symbols = self._discover_by_market_cap()
         else:
@@ -142,9 +148,11 @@ class MarketOpportunityWatcher:
                 elif watcher_type == 'liquidity':
                     symbols = self._discover_liquidity_oriented_symbols()
                 elif watcher_type == 'historical_candle':
-                    symbols = self._discover_by_market_cap()
+                    symbols = self._discover_historical_candle_oriented_symbols()
                 elif watcher_type == 'cmc_screener':
                     symbols = self._discover_by_market_cap()
+                elif watcher_type == 'tick_watcher':
+                    symbols = self._discover_tick_oriented_symbols()
                 else:
                     symbols = self._discover_by_market_cap()
 
@@ -541,6 +549,95 @@ class MarketOpportunityWatcher:
             self.logger.warning(f"Error getting active symbols from exchange: {e}")
             return []
 
+    def _discover_historical_candle_oriented_symbols(self) -> List[str]:
+        """Discover symbols with reliable historical data for historical candle watchers."""
+        try:
+            import ccxt
+            exchange = ccxt.binance()
+            tickers = exchange.fetch_tickers()
+
+            # Find symbols with consistent historical data availability (high volume + consistent trading)
+            historical_oriented_symbols = []
+            for symbol, ticker in tickers.items():
+                if (symbol.endswith('/USDT') and
+                    'quoteVolume' in ticker and ticker['quoteVolume'] and
+                    'count' in ticker and ticker['count'] and  # Number of trades (indicates data continuity)
+                    'high' in ticker and ticker['high'] and
+                    'low' in ticker and ticker['low']):
+
+                    # Look for symbols with good liquidity and consistent trading for reliable historical data
+                    volume = ticker['quoteVolume']
+                    trade_count = ticker['count']
+
+                    # High volume and consistent trading indicates reliable historical data
+                    if volume > 5000000 and trade_count > 2000:  # Good volume and consistent trading
+                        formatted_symbol = symbol.replace('/', '')  # Convert BTC/USDT to BTCUSDT
+                        historical_oriented_symbols.append(formatted_symbol)
+
+                        if len(historical_oriented_symbols) >= 10:  # Limit to top 10 symbols
+                            break
+
+            # If we don't have enough symbols, fall back to major coins with high volume
+            if len(historical_oriented_symbols) < 5:
+                major_symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT',
+                                'ADAUSDT', 'DOGEUSDT', 'AVAXUSDT', 'MATICUSDT', 'DOTUSDT']
+                historical_oriented_symbols = major_symbols
+
+            return historical_oriented_symbols
+        except Exception as e:
+            self.logger.warning(f"Error in historical candle-oriented symbol discovery: {e}")
+            # Fall back to general discovery if specific discovery fails
+            return self._discover_by_market_cap()
+
+    def _discover_tick_oriented_symbols(self) -> List[str]:
+        """Discover symbols with high tick frequency and trading activity for tick watchers."""
+        try:
+            import ccxt
+            exchange = ccxt.binance()
+            tickers = exchange.fetch_tickers()
+
+            # Find symbols with high tick frequency (high volume + high number of trades)
+            tick_oriented_symbols = []
+            for symbol, ticker in tickers.items():
+                if (symbol.endswith('/USDT') and
+                    'quoteVolume' in ticker and ticker['quoteVolume'] and
+                    'count' in ticker and ticker['count']):  # 'count' represents number of trades
+
+                    # High volume indicates frequent trading
+                    volume = ticker['quoteVolume']
+
+                    # High trade count indicates frequent ticks
+                    trade_count = ticker['count']
+
+                    # Look for symbols with both high volume and high trade frequency
+                    if volume > 10000000 and trade_count > 5000:  # High volume and frequent trades
+                        formatted_symbol = symbol.replace('/', '')  # Convert BTC/USDT to BTCUSDT
+                        tick_oriented_symbols.append(formatted_symbol)
+
+                        if len(tick_oriented_symbols) >= 10:  # Limit to top 10 tick-active symbols
+                            break
+
+            # If we don't have enough symbols with trade count data, fall back to high-volume symbols
+            if len(tick_oriented_symbols) < 5:
+                high_volume_symbols = []
+                for symbol, ticker in tickers.items():
+                    if (symbol.endswith('/USDT') and
+                        'quoteVolume' in ticker and ticker['quoteVolume'] and
+                        ticker['quoteVolume'] > 20000000):  # Even higher volume threshold
+                        formatted_symbol = symbol.replace('/', '')
+                        high_volume_symbols.append(formatted_symbol)
+
+                        if len(high_volume_symbols) >= 10:
+                            break
+
+                tick_oriented_symbols = high_volume_symbols
+
+            return tick_oriented_symbols
+        except Exception as e:
+            self.logger.warning(f"Error in tick-oriented symbol discovery: {e}")
+            # Fall back to general discovery if tick-specific discovery fails
+            return self._discover_by_market_cap()
+
     def _discover_by_trending_searches(self) -> List[str]:
         """Discover symbols based on trending searches or social media activity."""
         # This could integrate with social media APIs or other trending indicators
@@ -702,6 +799,13 @@ class MarketOpportunityWatcher:
 
             if os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'true').lower() == 'true':
                 symbol_watchers['historical_candle'] = HistoricalCandleWatcherAdapter("HistoricalCandle", symbol.value, None)
+
+            if os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true':
+                # For TickWatcher, we need a broker service - using a placeholder for now
+                # In a real implementation, this would be properly configured
+                from infrastructure.brokers.broker_manager import BrokerManager
+                broker_service = BrokerManager()  # This would be the proper broker service
+                symbol_watchers['tick_watcher'] = TickWatcherAdapter("TickWatcher", symbol.value, broker_service)
 
             self.watchers[symbol.value] = symbol_watchers
 
