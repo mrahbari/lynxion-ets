@@ -3,6 +3,7 @@ Infrastructure implementation of tick watcher following hexagonal architecture.
 This is inspired by the temp-sample-features tick_watcher but adapted to the current hexagonal architecture.
 """
 from typing import List, Dict, Any, Optional
+import os
 import threading
 import time
 from datetime import datetime
@@ -31,21 +32,40 @@ class TickWatcherAdapter(WatcherPort):
         self.last_tick_data = {}
         self.tick_cache = []
 
+        # Configuration from environment with defaults - enabled by default
+        self.enabled = os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true'
+
+        # Only set logger if enabled, otherwise use mock logger
+        if self.enabled:
+            self.logger = logger
+        else:
+            # Create a mock logger that doesn't log anything when disabled
+            class MockLogger:
+                def debug(self, msg): pass
+                def info(self, msg): pass
+                def warning(self, msg): pass
+                def error(self, msg): pass
+            self.logger = MockLogger()
+
     def analyze(self, symbol: Symbol = None):
-        """Analyze tick data (placeholder implementation)"""
+        """Analyze tick data with proper enablement check"""
+        # Check if enabled first
+        if not self.enabled:
+            return None
+
         if not self.running:
-            logger.warning(f"TickWatcher {self.name} not running, cannot analyze")
+            self.logger.warning(f"TickWatcher {self.name} not running, cannot analyze")
             return None
 
         # In a real implementation, this would analyze tick data for patterns,
         # momentum shifts, volume imbalances, etc.
-        
+
         # For now, return a neutral signal as placeholder
         try:
             current_price = self._get_current_price(symbol or self.symbol)
             if current_price is None:
                 return None
-                
+
             # Placeholder logic - in real implementation this would analyze tick data
             tick_signal = Signal(
                 symbol=symbol or self.symbol,
@@ -60,10 +80,10 @@ class TickWatcherAdapter(WatcherPort):
                     'tick_volume': len(self.tick_cache) if self.tick_cache else 0
                 }
             )
-            
+
             return tick_signal
         except Exception as e:
-            logger.error(f"Error in TickWatcher {self.name} analysis: {e}")
+            self.logger.error(f"Error in TickWatcher {self.name} analysis: {e}")
             return None
 
     def start(self):

@@ -110,7 +110,7 @@ class MarketOpportunityWatcher:
             elif watcher_type == 'orderflow_ws':
                 discovered_symbols = self._discover_orderflow_oriented_symbols()
             elif watcher_type == 'funding_rate':
-                discovered_symbols = self._discover_by_market_cap()
+                discovered_symbols = self._discover_funding_oriented_symbols()
             elif watcher_type == 'liquidity':
                 discovered_symbols = self._discover_liquidity_oriented_symbols()
             elif watcher_type == 'historical_candle':
@@ -121,13 +121,40 @@ class MarketOpportunityWatcher:
                 discovered_symbols = self._discover_by_market_cap()
         else:
             # When multiple watchers are enabled, we want to ensure comprehensive coverage
-            # Rather than choosing one discovery method, we should use the most inclusive approach
-            # that finds symbols relevant to multiple watcher types
-            discovered_symbols = self._discover_by_market_cap()  # This is most comprehensive
+            # Rather than choosing one discovery method, we should combine results from multiple discovery methods
+            # to ensure symbols relevant to all watcher types are included
+            all_discovered_symbols = set()
 
-            # Additionally, if we want to ensure we capture different types of opportunities,
-            # we could potentially merge results from multiple discovery methods, but for now
-            # the market cap discovery should be comprehensive enough for all watcher types
+            # Add symbols from each enabled watcher type's specific discovery method
+            for watcher_type in enabled_watchers:
+                if watcher_type == 'trend_mtf':
+                    symbols = self._discover_trend_oriented_symbols()
+                elif watcher_type == 'volatility':
+                    symbols = self._discover_volatility_oriented_symbols()
+                elif watcher_type == 'market_pulse':
+                    symbols = self._discover_momentum_oriented_symbols()
+                elif watcher_type == 'anomaly_ml':
+                    symbols = self._discover_anomaly_oriented_symbols()
+                elif watcher_type == 'orderflow_ws':
+                    symbols = self._discover_orderflow_oriented_symbols()
+                elif watcher_type == 'funding_rate':
+                    symbols = self._discover_funding_oriented_symbols()
+                elif watcher_type == 'liquidity':
+                    symbols = self._discover_liquidity_oriented_symbols()
+                elif watcher_type == 'historical_candle':
+                    symbols = self._discover_by_market_cap()
+                elif watcher_type == 'cmc_screener':
+                    symbols = self._discover_by_market_cap()
+                else:
+                    symbols = self._discover_by_market_cap()
+
+                all_discovered_symbols.update(symbols)
+
+            # Also add symbols from general market discovery to ensure comprehensive coverage
+            general_symbols = self._discover_by_market_cap()
+            all_discovered_symbols.update(general_symbols)
+
+            discovered_symbols = list(all_discovered_symbols)
 
         # Ensure we have a good mix of symbols that would be relevant for all enabled watchers
         # If the discovered symbols are too limited, expand to include more general market symbols
@@ -315,6 +342,44 @@ class MarketOpportunityWatcher:
         except Exception as e:
             self.logger.warning(f"Error in liquidity-oriented symbol discovery: {e}")
             return []  # Fall back to general discovery
+
+    def _discover_funding_oriented_symbols(self) -> List[str]:
+        """Discover symbols with significant funding rate opportunities for funding rate watchers"""
+        try:
+            import ccxt
+            exchange = ccxt.binance()  # Use Binance as example, but this would connect to funding rate APIs
+
+            # For funding rate discovery, we want perpetual futures with:
+            # 1. High absolute funding rates (potential reversal opportunities)
+            # 2. High funding rate acceleration (changing rapidly)
+
+            # In a real implementation, this would connect to funding rate APIs
+            # For now, we'll simulate by checking available perpetual symbols
+            # Fetch available perpetual symbols
+            markets = exchange.load_markets()
+            perp_symbols = []
+
+            for symbol, market in markets.items():
+                if (symbol.endswith('USDT') and
+                    market.get('swap', False) and  # Check if it's a swap/perpetual
+                    market.get('active', True)):    # Check if active
+
+                    # Add to perpetual symbols list
+                    formatted_symbol = symbol.replace('/', '')
+                    perp_symbols.append(formatted_symbol)
+
+                    if len(perp_symbols) >= 20:  # Limit to top 20 perpetual symbols
+                        break
+
+            # For demonstration, return top perpetual symbols
+            # In a real implementation, we'd filter based on current funding rate extremes
+            return perp_symbols[:10]  # Return top 10 perpetual symbols
+
+        except Exception as e:
+            # If we can't get real perpetual data, fall back to general market cap discovery
+            # but with preference for symbols that are likely to have perpetuals
+            self.logger.warning(f"Using fallback for funding-oriented discovery: {e}")
+            return self._discover_by_market_cap()
 
     def _filter_stablecoin_pairs(self, symbols: List[str]) -> List[str]:
         """Filter out stablecoin-to-stablecoin pairs like USDTUSDT, USDCUSDT, etc."""
@@ -705,33 +770,35 @@ class MarketOpportunityWatcher:
         # Analyze with each watcher - only if the watcher is enabled
         for watcher_name, watcher in self.watchers[symbol_str].items():
             # Check if the specific watcher has an enabled attribute and if it's enabled
-            # Different watchers may have different attribute names for enabled status
             watcher_is_enabled = True  # Default assumption
 
             # Check if the watcher has an enabled attribute
             if hasattr(watcher, 'enabled'):
                 watcher_is_enabled = watcher.enabled
-            # Add other possible attribute names as needed
 
             # Only call analyze if the watcher is enabled
             if watcher_is_enabled:
-                signal = watcher.analyze(symbol)
-                if signal:
-                    opportunities['signals'][watcher_name] = {
-                        'signal_type': signal.signal_type.name,
-                        'confidence': float(signal.confidence.value),
-                        'score': signal.score,
-                        'timestamp': signal.timestamp.isoformat(),
-                        'metadata': signal.metadata
-                    }
+                try:
+                    signal = watcher.analyze(symbol)
+                    if signal:
+                        opportunities['signals'][watcher_name] = {
+                            'signal_type': signal.signal_type.name,
+                            'confidence': float(signal.confidence.value) if hasattr(signal.confidence, 'value') else float(signal.confidence),
+                            'score': signal.score,
+                            'timestamp': signal.timestamp.isoformat() if hasattr(signal, 'timestamp') else datetime.now().isoformat(),
+                            'metadata': signal.metadata if hasattr(signal, 'metadata') else {}
+                        }
 
-                    # Determine overall recommendation based on signals
-                    if signal.signal_type.name in ['BUY', 'SELL']:
-                        opportunities['recommendation'] = signal.signal_type.name
-                        opportunities['confidence'] = max(opportunities['confidence'], float(signal.confidence.value))
+                        # Determine overall recommendation based on signals
+                        if signal.signal_type.name in ['BUY', 'SELL']:
+                            opportunities['recommendation'] = signal.signal_type.name
+                            opportunities['confidence'] = max(opportunities['confidence'], float(signal.confidence.value) if hasattr(signal.confidence, 'value') else float(signal.confidence))
 
-                        # Suggest strategy based on signal type and characteristics
-                        opportunities['strategy_suggestion'] = self._suggest_strategy_for_signal(signal)
+                            # Suggest strategy based on signal type and characteristics
+                            opportunities['strategy_suggestion'] = self._suggest_strategy_for_signal(signal)
+                except Exception as e:
+                    self.logger.error(f"Error analyzing {symbol_str} with {watcher_name}: {e}")
+                    continue
 
         return opportunities
         
