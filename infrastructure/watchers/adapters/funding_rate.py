@@ -83,7 +83,7 @@ class FundingRateWatcher(BaseWatcher):
                     self.funding_rate_acceleration = self.funding_rate_change - prev_change
                 self.funding_rate_volatility = np.std(self.funding_rates) if len(self.funding_rates) > 1 else 0
 
-    def analyze(self, symbol: Symbol) -> Optional[Signal]:
+    def _analyze_impl(self, symbol: Symbol) -> Optional[Signal]:
         """Analyze funding rate trends and return a signal"""
         if not self.enabled:
             return None

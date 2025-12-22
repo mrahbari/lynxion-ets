@@ -43,6 +43,25 @@ The system is suitable for both **research/backtesting** and **live trading**.
 
 ## Key Features
 
+* **Hexagonal Architecture**: Clean separation of concerns with domain, application, and infrastructure layers
+* **Multi-Exchange Support**: Binance, BingX, MEXC, Phemex integration
+* **Advanced Optimization**: Hyperopt integration with Walk-Forward Optimization (WFO)
+* **Risk Management**: Comprehensive risk controls and position sizing
+* **Real-time Monitoring**: Live dashboard and performance tracking
+* **Backtesting**: Realistic backtesting with fees, slippage, and execution simulation
+* **Multi-Asset Support**: Simultaneous trading across multiple cryptocurrencies
+* **Configurable Strategies**: Modular strategy system with easy customization
+* **Strategy Health Monitoring**: Comprehensive health monitoring with performance tracking
+* **Automatic Strategy Restart**: Self-healing capabilities with auto-restart on failure
+* **Signal Conflict Resolution**: Advanced algorithms for resolving conflicting signals
+* **Adaptive Signal Weighting**: Reliability-based weighting for signal fusion
+* **Engine Performance Tracking**: Detailed performance metrics for signal processing engines
+* **Advanced Fusion System**: Adaptive weights with diversity metrics and explainability
+* **Watcher Health Management**: Comprehensive monitoring and auto-restart for watchers
+* **Dynamic Registration**: Runtime registration for strategies and watchers
+* **Resource Optimization**: Instance pooling and resource limitation for optimal performance
+* **Enhanced Error Isolation**: Robust error handling between system components
+* **Adaptive Thresholds**: Market condition-based parameter adjustments
 * Multi-exchange support (Binance, BingX, MEXC, Phemex)
 * Automated hyperparameter optimization (retuning)
 * Walk-forward analysis for strategy robustness
@@ -71,6 +90,15 @@ Lynxion ETS follows **Hexagonal Architecture**, separating core business logic f
                    └──────────────┘
 ```
 
+### Enhanced Architecture Components
+
+* **Strategy Management**: Health monitoring, auto-restart, performance tracking
+* **Signal Processing**: Conflict resolution, adaptive weighting, validation
+* **Engine Performance**: Detailed metrics and optimization tracking
+* **Fusion Intelligence**: Adaptive weights with diversity metrics and explainability
+* **Watcher Orchestration**: Health monitoring, auto-restart, dynamic registration
+* **Resource Optimization**: Instance pooling and limitation systems
+
 ### Layers
 
 * **Domain** – Core entities, strategies, and business rules
@@ -80,16 +108,44 @@ Lynxion ETS follows **Hexagonal Architecture**, separating core business logic f
 
 ---
 
+## Complete Workflow: Watcher → Engine → Fusion → Strategy → Broker
+
+The system implements a complete automated trading workflow with proper validation and monitoring:
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Watcher   │───►│   Engine    │───►│   Fusion    │───►│  Strategy   │───►│   Broker    │
+│             │    │             │    │             │    │             │    │             │
+│ • Health    │    │ • Performance│   │ • Adaptive  │    │ • Health    │    │ • Order     │
+│   Monitoring│    │   Tracking  │    │   Weights   │    │   Monitoring│    │   Execution │
+│ • Auto-     │    │ • Validation│    │ • Diversity │    │ • Auto-     │    │ • Risk      │
+│   Restart   │    │ • Optimization│  │   Metrics   │    │   Restart   │    │   Management│
+│ • Signal    │    │             │    │ • Explain-  │    │ • Performance│   │             │
+│   Validation│    │             │    │   ability   │    │   Tracking  │    │             │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+```
+
+### Workflow Components
+
+* **Watcher Layer**: Health monitoring, auto-restart, signal validation, error isolation
+* **Engine Layer**: Performance tracking, validation, optimization, processing metrics
+* **Fusion Layer**: Adaptive weights, diversity metrics, explainability, conflict resolution
+* **Strategy Layer**: Health monitoring, auto-restart, performance tracking, resource optimization
+* **Broker Layer**: Order execution, risk management, performance monitoring
+
+---
+
 ## System Components
 
 ### Strategy System
 
-All strategies inherit from a shared base adapter and are fully isolated.
+All strategies inherit from a shared base adapter and are fully isolated with enhanced monitoring and management capabilities.
 
 **Base**
 
-* `BaseStrategyAdapter`
+* `BaseStrategyAdapter` with health monitoring and performance tracking
 * Technical indicators: RSI, EMA, SMA, Bollinger Bands, ATR, momentum, volume
+* **Enhanced Features**: Health monitoring, auto-restart, performance tracking, error isolation
 
 **Available Strategies**
 
@@ -97,24 +153,43 @@ All strategies inherit from a shared base adapter and are fully isolated.
 * **MeanReversionStrategyAdapter** – RSI + Bollinger Bands
 * **ScalpingStrategyAdapter** – Fast MA crossovers with volume confirmation
 * **BreakoutStrategyAdapter** – Consolidation and breakout detection
-* **LiquidityStrategyAdapter** – Liquidity sweeps and market structure
-* **MTFTrendStrategyAdapter** – Multi-timeframe trend alignment
-* **OIFootprintStrategyAdapter** – Open Interest & volume analysis
-* **SweepScalperAdapter** – Stop-hunt and volatility expansion
-* **VWAPReversalStrategyAdapter** – VWAP-based mean reversion
 
-### Strategy Execution Flow
+### Strategy Management System
 
-1. Market data ingestion (OHLCV)
-2. Technical analysis
-3. Signal generation (BUY / SELL / HOLD)
-4. Confidence scoring (0.0 – 1.0)
-5. Position sizing (default 2% risk)
-6. Order creation
-7. Broker execution
-8. Trade monitoring
+* `StrategyManager` – Comprehensive strategy lifecycle management with auto-restart
+* `StrategyHealthMonitor` – Real-time health monitoring and performance tracking
+* Dynamic registration and resource optimization
 
-✅ All strategies are production-ready and compatible with BingX VST testing.
+### Signal Processing System
+
+* `SignalConflictResolver` – Advanced conflict resolution algorithms
+* `SignalValidator` – Comprehensive validation with reliability weighting
+* Adaptive signal weighting based on watcher reliability
+
+### Engine System
+
+* Enhanced with performance tracking and optimization
+* `EnginePerformanceTracker` – Detailed metrics and optimization
+* Processing time monitoring and adaptive optimization
+
+### Fusion System
+
+* `AdvancedFusionServiceAdapter` – Adaptive weights with diversity metrics
+* Enhanced explainability and conflict resolution
+* Market regime awareness and correlation adjustment
+
+### Watcher System
+
+* Enhanced with comprehensive health monitoring
+* Auto-restart capabilities and error isolation
+* `WatcherManager` for centralized management
+* Adaptive threshold adjustments based on market conditions
+
+### Complete Workflow Integration
+
+* **Watcher → Engine → Fusion → Strategy → Broker** flow with full monitoring
+* End-to-end error isolation and health tracking
+* Performance metrics across all system components
 
 ---
 

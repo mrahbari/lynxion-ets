@@ -60,7 +60,7 @@ class VolatilityWatcher(BaseWatcher):
             if len(self.atr_history) > self.lookback * 3:
                 self.atr_history.pop(0)
 
-    def analyze(self, symbol: Symbol) -> Signal:
+    def _analyze_impl(self, symbol: Symbol) -> Signal:
         """Analyze volatility and return a signal"""
         if not self.enabled:
             return None

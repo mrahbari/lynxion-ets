@@ -10,6 +10,60 @@ from shared.logger import logger
 from datetime import datetime
 from decimal import Decimal
 import numpy as np
+import time
+import threading
+
+
+class StrategyHealthMonitor:
+    """Monitors strategy health metrics"""
+
+    def __init__(self, strategy_name: str):
+        self.strategy_name = strategy_name
+        self.last_signal_time = None
+        self.signal_count = 0
+        self.error_count = 0
+        self.last_error_time = None
+        self.performance_metrics = {}
+        self.health_status = "HEALTHY"  # HEALTHY, WARNING, ERROR
+        self.last_update = time.time()
+        self.lock = threading.Lock()
+
+    def record_signal(self):
+        """Record a successful signal generation"""
+        with self.lock:
+            self.last_signal_time = datetime.now()
+            self.signal_count += 1
+            self.health_status = "HEALTHY"
+            self.last_update = time.time()
+
+    def record_error(self, error: Exception):
+        """Record an error in strategy execution"""
+        with self.lock:
+            self.error_count += 1
+            self.last_error_time = datetime.now()
+            if self.health_status != "ERROR":
+                self.health_status = "WARNING"
+            self.last_update = time.time()
+
+    def update_performance(self, metrics: Dict[str, Any]):
+        """Update performance metrics"""
+        with self.lock:
+            self.performance_metrics.update(metrics)
+            self.last_update = time.time()
+
+    def get_health_status(self) -> Dict[str, Any]:
+        """Get current health status"""
+        with self.lock:
+            return {
+                'strategy_name': self.strategy_name,
+                'last_signal_time': self.last_signal_time,
+                'signal_count': self.signal_count,
+                'error_count': self.error_count,
+                'last_error_time': self.last_error_time,
+                'health_status': self.health_status,
+                'performance_metrics': self.performance_metrics,
+                'last_update': datetime.fromtimestamp(self.last_update)
+            }
 
 
 class BaseStrategyAdapter(StrategyPort):
@@ -22,6 +76,9 @@ class BaseStrategyAdapter(StrategyPort):
         # Initialize data buffer for market data storage
         self.data_buffer = []
         self.buffer_size_limit = 1000
+        # Add health monitoring
+        self.health_monitor = StrategyHealthMonitor(name)
+        self._last_error_time = None
 
     def update_with_market_data(self, data: Dict[str, Any]):
         """Update strategy with new market data"""
@@ -38,6 +95,19 @@ class BaseStrategyAdapter(StrategyPort):
     def generate_signal(self, symbol: Symbol) -> Optional[Signal]:
         """Generate signal - base implementation returns None"""
         # Base implementation - should be overridden by specific strategies
+        try:
+            signal = self._generate_signal_impl(symbol)
+            if signal:
+                self.health_monitor.record_signal()
+            return signal
+        except Exception as e:
+            self.health_monitor.record_error(e)
+            self.logger.error(f"Error in strategy {self.name}: {e}")
+            return None
+
+    def _generate_signal_impl(self, symbol: Symbol) -> Optional[Signal]:
+        """Internal method for generating signals - to be overridden by specific strategies"""
+        # Base implementation - should be overridden by specific strategies
         return None
 
     def calculate_position_size(self, signal: Signal, account_balance: float) -> float:
@@ -46,6 +116,14 @@ class BaseStrategyAdapter(StrategyPort):
         risk_per_trade = 0.02  # Risk 2% of account per trade
         position_risk = risk_per_trade * float(signal.confidence.value)
         return account_balance * position_risk
+
+    def get_health_status(self) -> Dict[str, Any]:
+        """Get the health status of this strategy"""
+        return self.health_monitor.get_health_status()
+
+    def track_performance(self, metrics: Dict[str, Any]):
+        """Track performance metrics for this strategy"""
+        self.health_monitor.update_performance(metrics)
 
     def get_strategy_name(self) -> str:
         """Get the name of the strategy"""

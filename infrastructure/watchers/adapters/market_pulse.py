@@ -55,7 +55,7 @@ class MarketPulseWatcher(BaseWatcher):
             if len(self.volume_history) > self.lookback * 3:
                 self.volume_history.pop(0)
 
-    def analyze(self, symbol: Symbol) -> Signal:
+    def _analyze_impl(self, symbol: Symbol) -> Signal:
         """Analyze market pulse and return a signal"""
         if not self.enabled:
             return None

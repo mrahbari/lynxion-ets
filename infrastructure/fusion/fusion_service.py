@@ -347,10 +347,19 @@ class AdvancedFusionServiceAdapter(FusionServiceAdapter):
         self.ml_weights_enabled = True
         self.regime_detection_enabled = True
         self.correlation_adjustment_enabled = True
+        self.adaptive_weights_enabled = True
+        self.signal_diversity_enabled = True
+        self.explainability_enabled = True
+        self.signal_weights = {}  # Track adaptive weights for each signal source
+        self.signal_diversity_matrix = {}  # Track diversity between signals
 
     def fuse_signals(self, signals: List[Signal]) -> Signal:
-        """Enhanced fusion with regime awareness and correlation adjustment"""
-        logger.info("Using advanced fusion with regime detection")
+        """Enhanced fusion with regime awareness, correlation adjustment, and adaptive weights"""
+        logger.info("Using advanced fusion with regime detection, correlation adjustment, and adaptive weights")
+
+        if not signals:
+            logger.warning("No signals to fuse")
+            return None
 
         # Apply regime-based adjustments if enabled
         if self.regime_detection_enabled:
@@ -360,8 +369,266 @@ class AdvancedFusionServiceAdapter(FusionServiceAdapter):
         if self.correlation_adjustment_enabled:
             signals = self._adjust_for_correlation(signals)
 
-        # Use the parent fusion method for the actual fusion
-        return super().fuse_signals(signals)
+        # Apply adaptive weights if enabled
+        if self.adaptive_weights_enabled:
+            weights = self._calculate_adaptive_weights(signals)
+        else:
+            weights = self.calculate_fusion_weights(signals)
+
+        # Apply diversity adjustments if enabled
+        if self.signal_diversity_enabled:
+            weights = self._adjust_weights_for_diversity(signals, weights)
+
+        # Use the enhanced fusion method for the actual fusion
+        fused_signal = self._apply_enhanced_fusion(signals, weights)
+
+        # Add explainability information if enabled
+        if self.explainability_enabled and fused_signal:
+            fused_signal.metadata['fusion_explanation'] = self._generate_fusion_explanation(signals, weights)
+
+        return fused_signal
+
+    def _calculate_adaptive_weights(self, signals: List[Signal]) -> List[Percentage]:
+        """Calculate adaptive weights based on signal source performance and reliability"""
+        if not signals:
+            return []
+
+        from domain.value_objects import Percentage
+        from decimal import Decimal
+
+        weights = []
+        for signal in signals:
+            source_engine = getattr(signal, 'source_engine', signal.strategy_name) if hasattr(signal, 'strategy_name') else 'unknown'
+
+            # Get baseline weight from confidence
+            try:
+                baseline_weight = float(signal.confidence.value)
+                baseline_weight = max(0.0, min(1.0, baseline_weight))
+            except (ValueError, TypeError):
+                baseline_weight = 0.5
+
+            # Adjust based on historical performance of the source engine
+            performance_factor = self.signal_weights.get(source_engine, 1.0)
+
+            # Adjust based on recency if needed
+            weight = baseline_weight * performance_factor
+            weights.append(weight)
+
+        # Normalize weights
+        total_weight = sum(weights) if weights else 1.0
+        if total_weight > 0:
+            normalized_weights = [w / total_weight for w in weights]
+        else:
+            normalized_weights = [1.0 / len(weights) if weights else 1.0] * len(weights)
+
+        return [Percentage(Decimal(str(max(0.0, min(1.0, w))))) for w in normalized_weights]
+
+    def _adjust_weights_for_diversity(self, signals: List[Signal], weights: List[Percentage]) -> List[Percentage]:
+        """Adjust weights based on signal diversity to avoid over-concentration"""
+        if len(signals) <= 1:
+            return weights
+
+        from domain.value_objects import Percentage
+        from decimal import Decimal
+
+        # Calculate diversity between signals
+        diversity_factors = []
+        for i, signal1 in enumerate(signals):
+            diversity_sum = 0.0
+            for j, signal2 in enumerate(signals):
+                if i != j:
+                    diversity = self._calculate_signal_diversity(signal1, signal2)
+                    diversity_sum += diversity
+            avg_diversity = diversity_sum / max(1, len(signals) - 1)
+            diversity_factors.append(avg_diversity)
+
+        # Adjust weights based on diversity
+        adjusted_weights = []
+        for i, (weight, diversity_factor) in enumerate(zip(weights, diversity_factors)):
+            adjusted_weight_value = float(weight.value) * (0.7 + 0.3 * diversity_factor)  # Boost diverse signals
+            adjusted_weights.append(Percentage(Decimal(str(max(0.0, min(1.0, adjusted_weight_value))))))
+
+        # Renormalize to sum to 1.0
+        total_weight = sum(float(w.value) for w in adjusted_weights)
+        if total_weight > 0:
+            renormalized_weights = [Percentage(Decimal(str(float(w.value) / total_weight))) for w in adjusted_weights]
+        else:
+            equal_weight = 1.0 / len(adjusted_weights) if adjusted_weights else 1.0
+            renormalized_weights = [Percentage(Decimal(str(equal_weight))) for _ in adjusted_weights]
+
+        return renormalized_weights
+
+    def _calculate_signal_diversity(self, signal1: Signal, signal2: Signal) -> float:
+        """Calculate diversity between two signals (0.0 to 1.0)"""
+        # Calculate diversity based on signal type difference
+        type_diversity = 1.0 if signal1.signal_type != signal2.signal_type else 0.3
+
+        # Calculate diversity based on confidence difference
+        conf_diff = abs(float(signal1.confidence.value) - float(signal2.confidence.value))
+        confidence_diversity = min(1.0, conf_diff * 2)  # More confidence difference = more diversity
+
+        # Calculate diversity based on source difference
+        source1 = getattr(signal1, 'source_engine', signal1.strategy_name) if hasattr(signal1, 'strategy_name') else 'unknown'
+        source2 = getattr(signal2, 'source_engine', signal2.strategy_name) if hasattr(signal2, 'strategy_name') else 'unknown'
+        source_diversity = 1.0 if source1 != source2 else 0.5
+
+        # Combine diversities with weights
+        diversity = (type_diversity * 0.4 + confidence_diversity * 0.3 + source_diversity * 0.3)
+        return min(1.0, max(0.0, diversity))
+
+    def _apply_enhanced_fusion(self, signals: List[Signal], weights: List[Percentage]) -> Signal:
+        """Apply enhanced fusion with better handling of conflicting signals"""
+        try:
+            if not signals or not weights or len(signals) != len(weights):
+                logger.error(f"Invalid input: signals={len(signals) if signals else 0}, weights={len(weights) if weights else 0}, equal_length={len(signals) == len(weights) if signals and weights else False}")
+                # Return a neutral signal as fallback
+                from domain.entities.trading_entities import Signal, SignalType
+                from domain.value_objects import Symbol, Percentage
+                from decimal import Decimal
+                return Signal(
+                    symbol=Symbol("BTCUSDT") if signals else Symbol("BTCUSDT"),
+                    signal_type=SignalType.NEUTRAL,
+                    confidence=Percentage(Decimal('0.5')),
+                    score=0.0,
+                    strategy_name="FusionService",
+                    timestamp=datetime.now(),
+                    metadata={'fusion_error': 'invalid_input_parameters'}
+                )
+
+            # Calculate weighted average of scores
+            weighted_scores = []
+            signal_types = []
+            total_confidence = 0.0
+
+            for signal, weight in zip(signals, weights):
+                try:
+                    weight_value = float(weight.value)
+                    # Validate the weight value
+                    weight_value = max(0.0, min(1.0, weight_value))
+                    weighted_score = signal.score * weight_value
+                    weighted_scores.append(weighted_score)
+
+                    signal_types.append(signal.signal_type.name)
+                    total_confidence += float(signal.confidence.value) * weight_value
+
+                except Exception as e:
+                    logger.warning(f"Error processing signal {signal} with weight {weight}: {e}")
+                    continue
+
+            if not weighted_scores:
+                # No valid signals processed, return neutral
+                from domain.entities.trading_entities import Signal, SignalType
+                from domain.value_objects import Symbol, Percentage
+                from decimal import Decimal
+                return Signal(
+                    symbol=signals[0].symbol if signals else Symbol("BTCUSDT"),
+                    signal_type=SignalType.NEUTRAL,
+                    confidence=Percentage(Decimal('0.5')),
+                    score=0.0,
+                    strategy_name="FusionService",
+                    timestamp=datetime.now(),
+                    metadata={'fusion_error': 'no_valid_signals_processed'}
+                )
+
+            # Calculate the fused score
+            fused_score = sum(weighted_scores)
+
+            # Determine the signal type based on weighted voting
+            buy_weight = sum(weight.value for signal, weight in zip(signals, weights) if signal.signal_type.name == 'BUY')
+            sell_weight = sum(weight.value for signal, weight in zip(signals, weights) if signal.signal_type.name == 'SELL')
+            hold_weight = sum(weight.value for signal, weight in zip(signals, weights) if signal.signal_type.name in ['HOLD', 'NEUTRAL'])
+
+            from domain.entities.trading_entities import SignalType
+            if buy_weight > sell_weight and buy_weight > hold_weight:
+                fused_signal_type = SignalType.BUY
+            elif sell_weight > buy_weight and sell_weight > hold_weight:
+                fused_signal_type = SignalType.SELL
+            else:
+                # If no clear majority, use score-based decision
+                if fused_score > 0.1:
+                    fused_signal_type = SignalType.BUY
+                elif fused_score < -0.1:
+                    fused_signal_type = SignalType.SELL
+                else:
+                    fused_signal_type = SignalType.NEUTRAL
+
+            # Calculate fused confidence
+            final_confidence = min(1.0, max(0.0, total_confidence))
+
+            # Use the symbol from the first signal
+            symbol = signals[0].symbol if signals else Symbol("BTCUSDT")
+            strategy_name = "FusionService"
+
+            # Create the fused signal
+            from domain.entities.trading_entities import Signal as DomainSignal
+            from domain.value_objects import Percentage as DomainPercentage
+            from decimal import Decimal
+
+            fused_signal = DomainSignal(
+                symbol=symbol,
+                signal_type=fused_signal_type,
+                confidence=DomainPercentage(Decimal(str(final_confidence))),
+                score=max(-1.0, min(1.0, fused_score)),
+                strategy_name=strategy_name,
+                timestamp=datetime.now(),
+                metadata={
+                    'original_signals_count': len(signals),
+                    'valid_signals_count': len(weighted_scores),
+                    'fusion_method': self.fusion_method,
+                    'individual_scores': [getattr(s, 'score', 0) for s in signals],
+                    'individual_confidences': [float(s.confidence.value) if hasattr(s, 'confidence') and hasattr(s.confidence, 'value') else 0.5 for s in signals],
+                    'processing_errors': len(signals) - len(weighted_scores) > 0,
+                    'signal_type_distribution': {
+                        'BUY': signal_types.count('BUY'),
+                        'SELL': signal_types.count('SELL'),
+                        'HOLD': signal_types.count('HOLD') + signal_types.count('NEUTRAL')
+                    },
+                    'weight_distribution': [float(w.value) for w in weights],
+                    'buy_weight': float(buy_weight),
+                    'sell_weight': float(sell_weight),
+                    'hold_weight': float(hold_weight)
+                }
+            )
+
+            return fused_signal
+        except Exception as e:
+            logger.error(f"Error in _apply_enhanced_fusion: {e}")
+            # Return a neutral signal as fallback
+            from domain.entities.trading_entities import Signal, SignalType
+            from domain.value_objects import Symbol, Percentage
+            from decimal import Decimal
+            return Signal(
+                symbol=Symbol("BTCUSDT") if signals else Symbol("BTCUSDT"),
+                signal_type=SignalType.NEUTRAL,
+                confidence=Percentage(Decimal('0.5')),
+                score=0.0,
+                strategy_name="FusionService",
+                timestamp=datetime.now(),
+                metadata={'fusion_error': str(e)}
+            )
+
+    def _generate_fusion_explanation(self, signals: List[Signal], weights: List[Percentage]) -> Dict[str, Any]:
+        """Generate explanation for the fusion decision"""
+        explanation = {
+            'input_signals': len(signals),
+            'fusion_method': 'enhanced_weighted_average',
+            'weight_calculation': 'adaptive_with_diversity',
+            'signal_sources': [getattr(s, 'source_engine', s.strategy_name) if hasattr(s, 'strategy_name') else 'unknown' for s in signals],
+            'signal_types': [s.signal_type.name for s in signals],
+            'weights_applied': [float(w.value) for w in weights],
+            'fusion_timestamp': datetime.now().isoformat()
+        }
+
+        # Add more detailed analysis
+        buy_signals = [s for s in signals if s.signal_type.name == 'BUY']
+        sell_signals = [s for s in signals if s.signal_type.name == 'SELL']
+        hold_signals = [s for s in signals if s.signal_type.name in ['HOLD', 'NEUTRAL']]
+
+        explanation['buy_signals'] = len(buy_signals)
+        explanation['sell_signals'] = len(sell_signals)
+        explanation['hold_signals'] = len(hold_signals)
+
+        return explanation
 
     def _adjust_for_regime(self, signals: List[Signal]) -> List[Signal]:
         """Adjust signals based on detected market regime"""

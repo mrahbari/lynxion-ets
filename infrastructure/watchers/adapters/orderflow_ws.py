@@ -117,7 +117,7 @@ class OrderFlowWSWatcher(BaseWatcher):
             except queue.Empty:
                 break
 
-    def analyze(self, symbol: Symbol) -> Signal:
+    def _analyze_impl(self, symbol: Symbol) -> Signal:
         """Analyze order flow and return a signal"""
         if not self.enabled:
             return None

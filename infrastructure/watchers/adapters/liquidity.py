@@ -153,7 +153,7 @@ class LiquidityWatcher(BaseWatcher):
         # Normalize to -1 to 1 range
         return combined_liquidity * 2 - 1  # Convert from 0-1 to -1-1 range
 
-    def analyze(self, symbol: Symbol) -> Signal:
+    def _analyze_impl(self, symbol: Symbol) -> Signal:
         """Analyze liquidity conditions and return a signal"""
         if not self.enabled:
             return None

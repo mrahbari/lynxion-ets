@@ -56,7 +56,7 @@ class HistoricalCandleWatcherAdapter(WatcherPort):
         self.max_patterns_to_detect = 5  # Limit to justified set of patterns
         self.pattern_history = []  # Track detected patterns for confirmation
 
-    def analyze(self, symbol: Symbol = None):
+    def _analyze_impl(self, symbol: Symbol = None):
         """Analyze current historical candle data with strict pattern detection rules"""
         if not self.enabled:
             return None

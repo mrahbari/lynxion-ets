@@ -94,7 +94,7 @@ class TrendMTFWatcher(BaseWatcher):
                 'timestamp': current_time
             }
 
-    def analyze(self, symbol: Symbol) -> Signal:
+    def _analyze_impl(self, symbol: Symbol) -> Signal:
         """Analyze multi-timeframe trends and return a signal"""
         if not self.enabled:
             return None

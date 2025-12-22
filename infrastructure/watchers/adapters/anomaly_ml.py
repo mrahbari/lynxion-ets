@@ -144,7 +144,7 @@ class AnomalyMLWatcher(BaseWatcher):
 
         return normalized_score
 
-    def analyze(self, symbol: Symbol) -> Signal:
+    def _analyze_impl(self, symbol: Symbol) -> Signal:
         """Analyze for anomalies and return a signal"""
         if not self.enabled:
             return None
