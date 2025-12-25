@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
-from shared.types import Signal
+from domain.entities.trading_entities import Signal
 from shared.logger import logger
 from domain.value_objects import Symbol
 from infrastructure.brokers.broker_manager import BrokerManager
@@ -162,7 +162,11 @@ class BaseWatcher(ABC):
         # Default: emit if the signal is different from the last one
         if not self.last_signal:
             return True
-            
+
+        # Handle the new signal structure with Percentage confidence
+        current_conf = float(current_signal.confidence.value) if hasattr(current_signal.confidence, 'value') else current_signal.confidence
+        last_conf = float(self.last_signal.confidence.value) if hasattr(self.last_signal.confidence, 'value') else self.last_signal.confidence
+
         # Don't emit if the same signal was generated recently
-        return (current_signal.signal_type != self.last_signal.signal_type or 
-                abs(current_signal.confidence - self.last_signal.confidence) > 0.1)
+        return (current_signal.signal_type != self.last_signal.signal_type or
+                abs(current_conf - last_conf) > 0.1)

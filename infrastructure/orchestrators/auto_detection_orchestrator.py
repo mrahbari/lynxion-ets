@@ -47,7 +47,8 @@ class AutoDetectionOrchestrator:
             symbols=symbols if symbols else None,
             opportunity_callback=self._handle_opportunity,
             auto_discover_symbols=not bool(symbols),  # Auto-discover if no symbols provided
-            comprehensive_logging=comprehensive_logging
+            comprehensive_logging=comprehensive_logging,
+            market_data_repo=market_data_repo
         )
 
         # Set symbols from the opportunity watcher (handles auto-discovery)

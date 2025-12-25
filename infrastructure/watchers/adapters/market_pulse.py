@@ -1,10 +1,11 @@
 from .base_watcher import BaseWatcher
-from shared.types import Signal, SignalType
+from domain.entities.trading_entities import Signal, SignalType
+from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
-from domain.value_objects import Symbol
 import numpy as np
 import os
+from decimal import Decimal
 
 
 class MarketPulseWatcher(BaseWatcher):
@@ -82,13 +83,17 @@ class MarketPulseWatcher(BaseWatcher):
             signal_type = SignalType.SELL
             confidence = min(1.0, abs(score))  # Confidence based on signal strength
 
+        # Convert confidence to Percentage object for domain compatibility
+        confidence_percentage = Percentage(Decimal(str(confidence)))
+
         signal = Signal(
             symbol=symbol,
             signal_type=signal_type,
-            confidence=confidence,
+            confidence=confidence_percentage,
             score=score,
-            strategy=self.name,
+            strategy_name=self.name,  # Changed from 'strategy' to 'strategy_name' for domain compatibility
             timestamp=datetime.now(),
+            source_engine=self.name,  # Add source engine for tracking
             metadata={
                 'subscores': {
                     'momentum': self.momentum_subscore,

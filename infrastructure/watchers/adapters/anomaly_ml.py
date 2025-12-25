@@ -1,5 +1,7 @@
 from .base_watcher import BaseWatcher
-from shared.types import Signal, SignalType
+from domain.entities.trading_entities import Signal, SignalType
+from domain.value_objects import Percentage
+from decimal import Decimal
 from shared.logger import logger
 from datetime import datetime
 from domain.value_objects import Symbol
@@ -172,13 +174,16 @@ class AnomalyMLWatcher(BaseWatcher):
         if (self.last_anomaly_timestamp is not None and
             len(self.feature_history) < self.data_point_counter + self.anomaly_cooldown):
             # During cooldown, only return HOLD signals with low confidence
+            confidence_percentage = Percentage(Decimal(str(0.1)))  # Very low confidence during cooldown
+
             signal = Signal(
                 symbol=symbol,
                 signal_type=SignalType.HOLD,
-                confidence=0.1,  # Very low confidence during cooldown
+                confidence=confidence_percentage,
                 score=0.0,
-                strategy=self.name,
+                strategy_name=self.name,  # Changed from 'strategy' to 'strategy_name' for domain compatibility
                 timestamp=datetime.now(),
+                source_engine=self.name,  # Add source engine for tracking
                 metadata={
                     'anomaly_score': anomaly_score,
                     'explanation': f"Anomaly cooldown period, score: {anomaly_score:.3f}",
@@ -221,13 +226,17 @@ class AnomalyMLWatcher(BaseWatcher):
             confidence = 0.9  # High confidence in normal conditions
             anomaly_type = 'normal'
 
+        # Convert confidence to Percentage object for domain compatibility
+        confidence_percentage = Percentage(Decimal(str(confidence)))
+
         signal = Signal(
             symbol=symbol,
             signal_type=signal_type,
-            confidence=confidence,
+            confidence=confidence_percentage,
             score=anomaly_score if signal_type != SignalType.HOLD else -anomaly_score,
-            strategy=self.name,
+            strategy_name=self.name,  # Changed from 'strategy' to 'strategy_name' for domain compatibility
             timestamp=datetime.now(),
+            source_engine=self.name,  # Add source engine for tracking
             metadata={
                 'anomaly_score': anomaly_score,
                 'anomaly_type': anomaly_type,

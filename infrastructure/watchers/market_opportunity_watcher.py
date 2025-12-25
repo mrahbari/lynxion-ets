@@ -30,7 +30,8 @@ class MarketOpportunityWatcher:
     def __init__(self, symbols: Optional[List[str]] = None,
                  opportunity_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
                  auto_discover_symbols: bool = False,
-                 comprehensive_logging: bool = True):
+                 comprehensive_logging: bool = True,
+                 market_data_repo=None):
         self.auto_discover_symbols = auto_discover_symbols
         self.opportunity_callback = opportunity_callback
         self.logger = EnhancedLogger("MarketOpportunityWatcher", comprehensive_mode=comprehensive_logging)
@@ -43,6 +44,8 @@ class MarketOpportunityWatcher:
         # Initialize signal processing services
         self.signal_validator = SignalValidator()
         self.signal_fusion_service = SignalFusionService()
+
+        self.market_data_repo = market_data_repo
 
         # If no symbols provided and auto-discovery is enabled, discover symbols dynamically
         if auto_discover_symbols and not symbols:
@@ -216,8 +219,21 @@ class MarketOpportunityWatcher:
         # Filter out stablecoin-to-stablecoin pairs (e.g., USDTUSDT, USDCUSDT, etc.)
         filtered_symbols = self._filter_stablecoin_pairs(discovered_symbols)
 
-        self.logger.info(f"✅ Auto-discovered {len(filtered_symbols)} symbols to monitor: {filtered_symbols}")
-        return [Symbol(s) for s in filtered_symbols]
+        # Filter symbols and handle invalid ones gracefully
+        valid_symbols = []
+        for symbol in filtered_symbols:
+            try:
+                # Try to create a Symbol object to validate it
+                Symbol(symbol)  # This will raise ValueError if invalid
+                valid_symbols.append(symbol)
+            except ValueError:
+                # Log the invalid symbol but continue processing others
+                self.logger.warning(f"Skipping invalid symbol: {symbol}")
+                continue
+
+        self.logger.info(f"✅ Auto-discovered {len(valid_symbols)} symbols to monitor: {valid_symbols}")
+        # Convert to Symbol objects only for valid ones
+        return [Symbol(symbol) for symbol in valid_symbols]
 
     def _discover_trend_oriented_symbols(self) -> List[str]:
         """Discover symbols with strong trend characteristics for trend watchers"""
@@ -1075,12 +1091,147 @@ class MarketOpportunityWatcher:
     def _check_market_opportunities(self):
         """Check each symbol for trading opportunities."""
         all_opportunities = []
+
+        # First, fetch market data and update all watchers with fresh data
+        for symbol in self.symbols:
+            self._update_watchers_with_market_data(symbol)
+
+        # Then analyze each symbol
         for symbol in self.symbols:
             opportunities = self._analyze_symbol(symbol)
             if opportunities:
                 self._process_opportunities(symbol, opportunities)
                 all_opportunities.append(opportunities)
         return all_opportunities
+
+    def _update_watchers_with_market_data(self, symbol: Symbol):
+        """Fetch market data and update all watchers for this symbol."""
+        if not self.market_data_repo:
+            self.logger.warning(f"No market data repository available for {symbol.value}")
+            return
+
+        try:
+            # Fetch latest market data for the symbol
+            # The market_data_repo should have a method to fetch data
+            # This is a generic approach that should work with different data providers
+            market_data = None
+
+            # Try different possible methods to fetch data
+            if hasattr(self.market_data_repo, 'get_historical_data'):
+                # Get historical data for initializing watchers with sufficient history
+                try:
+                    historical_data = self.market_data_repo.get_historical_data(Symbol(symbol.value), "30m", "1m")
+                    if historical_data:
+                        # Use the most recent data point to initialize, but the historical data will help populate history
+                        market_data = historical_data[0] if historical_data else None
+                        # Initialize watcher histories with historical data
+                        self._initialize_watcher_histories_with_historical_data(symbol, historical_data)
+                    else:
+                        # Fallback to current price if no historical data
+                        market_data = None
+                        # Try to get current price as fallback
+                        if hasattr(self.market_data_repo, 'get_current_price'):
+                            price = self.market_data_repo.get_current_price(Symbol(symbol.value))
+                            market_data = {'price': price, 'timestamp': datetime.now().timestamp(), 'symbol': symbol.value}
+                except Exception as e:
+                    # If get_historical_data fails, try current price as fallback
+                    if hasattr(self.market_data_repo, 'get_current_price'):
+                        price = self.market_data_repo.get_current_price(Symbol(symbol.value))
+                        market_data = {'price': price, 'timestamp': datetime.now().timestamp(), 'symbol': symbol.value}
+                    else:
+                        market_data = None
+            elif hasattr(self.market_data_repo, 'get_latest_data'):
+                market_data = self.market_data_repo.get_latest_data(symbol.value)
+            elif hasattr(self.market_data_repo, 'fetch_market_data'):
+                market_data = self.market_data_repo.fetch_market_data(symbol.value)
+            elif hasattr(self.market_data_repo, 'get_market_data'):
+                market_data = self.market_data_repo.get_market_data(symbol.value)
+            elif hasattr(self.market_data_repo, 'get_current_price'):
+                # For mock data provider, get current price
+                price = self.market_data_repo.get_current_price(Symbol(symbol.value))
+                market_data = {'price': price, 'timestamp': datetime.now().timestamp(), 'symbol': symbol.value}
+            elif hasattr(self.market_data_repo, 'get_data'):
+                market_data = self.market_data_repo.get_data(symbol.value)
+            else:
+                # If no standard method exists, try to use it as a callable
+                try:
+                    market_data = self.market_data_repo(symbol.value)
+                except:
+                    self.logger.warning(f"Unable to fetch market data for {symbol.value} - no compatible method found")
+                    return
+
+            if market_data is None:
+                self.logger.warning(f"No market data returned for {symbol.value}")
+                return
+
+            # Update all watchers for this symbol with the market data
+            symbol_str = symbol.value
+            if symbol_str in self.watchers:
+                for watcher_name, watcher in self.watchers[symbol_str].items():
+                    try:
+                        # Convert market_data to the format expected by the watcher's update_data method
+                        # The watchers expect a dictionary with market data
+                        formatted_data = self._format_market_data_for_watcher(market_data)
+                        watcher.update_data(formatted_data)
+                    except Exception as e:
+                        self.logger.warning(f"Error updating watcher {watcher_name} with market data: {e}")
+
+        except Exception as e:
+            self.logger.error(f"Error fetching market data for {symbol.value}: {e}")
+
+    def _format_market_data_for_watcher(self, market_data):
+        """Format market data to the structure expected by watchers."""
+        # The format depends on the data source, but typically includes:
+        # price, volume, high, low, open, close, timestamp
+        formatted_data = {}
+
+        if isinstance(market_data, dict):
+            # If it's already a dictionary, extract common fields
+            formatted_data.update({
+                'close': market_data.get('close') or market_data.get('price') or market_data.get('last'),
+                'open': market_data.get('open'),
+                'high': market_data.get('high'),
+                'low': market_data.get('low'),
+                'volume': market_data.get('volume') or market_data.get('quoteVolume'),
+                'timestamp': market_data.get('timestamp'),
+                'bid': market_data.get('bid'),
+                'ask': market_data.get('ask'),
+            })
+        elif hasattr(market_data, '__dict__'):
+            # If it's an object, try to extract attributes
+            data_dict = market_data.__dict__
+            formatted_data.update({
+                'close': data_dict.get('close') or data_dict.get('price') or data_dict.get('last'),
+                'open': data_dict.get('open'),
+                'high': data_dict.get('high'),
+                'low': data_dict.get('low'),
+                'volume': data_dict.get('volume') or data_dict.get('quoteVolume'),
+                'timestamp': data_dict.get('timestamp'),
+                'bid': data_dict.get('bid'),
+                'ask': data_dict.get('ask'),
+            })
+        else:
+            # If it's a single value, assume it's a price
+            formatted_data['close'] = market_data
+
+        # Remove None values
+        formatted_data = {k: v for k, v in formatted_data.items() if v is not None}
+        return formatted_data
+
+    def _initialize_watcher_histories_with_historical_data(self, symbol: Symbol, historical_data: List[Dict[str, Any]]):
+        """Initialize watcher histories with historical data to enable immediate signal generation."""
+        symbol_str = symbol.value
+        if symbol_str not in self.watchers:
+            return
+
+        # Update each watcher with all historical data points to build up their history
+        for data_point in historical_data:
+            for watcher_name, watcher in self.watchers[symbol_str].items():
+                try:
+                    formatted_data = self._format_market_data_for_watcher(data_point)
+                    watcher.update_data(formatted_data)
+                except Exception as e:
+                    self.logger.warning(f"Error updating watcher {watcher_name} with historical data point: {e}")
 
     def _analyze_symbol(self, symbol: Symbol) -> Dict[str, Any]:
         """Analyze a symbol using all available watchers - only if enabled."""

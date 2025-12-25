@@ -1,5 +1,7 @@
 from .base_watcher import BaseWatcher
-from shared.types import Signal, SignalType
+from domain.entities.trading_entities import Signal, SignalType
+from domain.value_objects import Percentage
+from decimal import Decimal
 from shared.logger import logger
 from datetime import datetime
 from domain.value_objects import Symbol
@@ -117,13 +119,17 @@ class TrendMTFWatcher(BaseWatcher):
         # Calculate confidence based on alignment clarity
         confidence = self.calculate_alignment_confidence(alignment_state, divergence_detected)
 
+        # Convert confidence to Percentage object for domain compatibility
+        confidence_percentage = Percentage(Decimal(str(confidence)))
+
         signal = Signal(
             symbol=symbol,
             signal_type=signal_type,
-            confidence=confidence,
+            confidence=confidence_percentage,
             score=score,
-            strategy=self.name,
+            strategy_name=self.name,  # Changed from 'strategy' to 'strategy_name' for domain compatibility
             timestamp=datetime.now(),
+            source_engine=self.name,  # Add source engine for tracking
             metadata={
                 'alignment_state': alignment_state,
                 'divergence_detected': divergence_detected,

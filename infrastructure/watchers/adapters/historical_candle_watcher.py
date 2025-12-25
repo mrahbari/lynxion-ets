@@ -275,6 +275,10 @@ class HistoricalCandleWatcherAdapter(WatcherPort):
         """Get the name of the watcher"""
         return self.name
 
+    def analyze(self, symbol: Symbol) -> Optional[Signal]:
+        """Analyze market conditions for the given symbol and return a signal if applicable"""
+        return self._analyze_impl(symbol)
+
     def _historical_loop(self):
         """Main historical data processing loop"""
         while self.running and self.current_index < len(self.historical_candles):

@@ -1,5 +1,7 @@
 from .base_watcher import BaseWatcher
-from shared.types import Signal, SignalType
+from domain.entities.trading_entities import Signal, SignalType
+from domain.value_objects import Percentage
+from decimal import Decimal
 from domain.value_objects import Symbol
 from shared.logger import logger
 from datetime import datetime
@@ -190,13 +192,17 @@ class LiquidityWatcher(BaseWatcher):
             confidence = 0.5
 
         # Score represents liquidity level (-1 for very low, +1 for very high)
+        # Convert confidence to Percentage object for domain compatibility
+        confidence_percentage = Percentage(Decimal(str(confidence)))
+
         signal = Signal(
             symbol=symbol,
             signal_type=signal_type,
-            confidence=confidence,
+            confidence=confidence_percentage,
             score=current_liquidity,
-            strategy=self.name,
+            strategy_name=self.name,  # Changed from 'strategy' to 'strategy_name' for domain compatibility
             timestamp=datetime.now(),
+            source_engine=self.name,  # Add source engine for tracking
             metadata={
                 'liquidity_regime': liquidity_regime,
                 'sweep_detected': sweep_detected,
