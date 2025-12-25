@@ -259,6 +259,7 @@ python run_trading_system.py --mode production --auto-detect --symbols BTCUSDT,E
 
 ```bash
 # Run with comprehensive logging for detailed background activity tracking
+python run_trading_system.py --mode production --auto-detect --comprehensive-logs
 python run_trading_system.py --mode production --auto-detect --symbols BTCUSDT,ETHUSDT --comprehensive-logs
 ```
 
