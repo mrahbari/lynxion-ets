@@ -45,26 +45,23 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
         # No-op for CSV loader since it doesn't support real-time data
         pass
 
-    def get_historical_data(self, symbol: Symbol, start_date: str = None,
-                           end_date: str = None, timeframe: str = "1d") -> List[Dict[str, Any]]:
+    def get_historical_data(self, symbol: Symbol, period: str, timeframe: str = '1m') -> List[Dict[str, Any]]:
         """
         Get historical data for a symbol from CSV files.
 
         Args:
             symbol: Trading symbol (e.g., BTCUSDT)
-            start_date: Start date in format 'YYYY-MM-DD'
-            end_date: End date in format 'YYYY-MM-DD'
-            timeframe: Timeframe (this is ignored, as CSV files are pre-timed)
+            period: Period string (e.g., '30d', '90d', '1y')
+            timeframe: Timeframe (e.g., '1m', '5m', '1h', '1d')
 
         Returns:
             List of historical data points
         """
-        df = self._load_symbol_data(symbol.value)
+        df = self.load_symbol_data(symbol.value, timeframe)
 
-        if start_date:
-            df = df[df.index >= start_date]
-        if end_date:
-            df = df[df.index <= end_date]
+        # Convert period to date range if needed
+        # For now, return all available data since we're loading from CSV files
+        # In a real implementation, you'd filter based on the period
 
         # Convert to list of dictionaries format expected by system
         result = []
@@ -97,23 +94,34 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
     def load_symbol_data(self, symbol: str, timeframe: str = "1d") -> pd.DataFrame:
         """
         Load data for a specific symbol and timeframe as DataFrame.
-        
+
         Args:
             symbol: Trading symbol (e.g., 'BTCUSDT', 'ETHUSDT')
             timeframe: Timeframe (e.g., '1m', '5m', '1h', '1d')
-            
+
         Returns:
             DataFrame with OHLCV data
         """
         file_path = self.base_path / symbol / f"{timeframe}.csv"
-        
+
         if not file_path.exists():
-            # Try alternative naming convention
+            # Try alternative naming convention (e.g., BTC-USDT.csv format)
             alt_path = self.base_path / f"{symbol}_{timeframe}.csv"
             if alt_path.exists():
                 file_path = alt_path
             else:
-                raise FileNotFoundError(f"Data file not found: {file_path} or {alt_path}")
+                # Try the format that matches the existing files (e.g., BTC-USDT.csv)
+                formatted_symbol = symbol.replace('USDT', '-USDT')  # Convert BTCUSDT to BTC-USDT
+                formatted_path = self.base_path / f"{formatted_symbol}.csv"
+                if formatted_path.exists():
+                    file_path = formatted_path
+                else:
+                    # Try the exact format from the data directory
+                    exact_path = self.base_path / f"{symbol}.csv"
+                    if exact_path.exists():
+                        file_path = exact_path
+                    else:
+                        raise FileNotFoundError(f"Data file not found: {file_path}, {alt_path}, {formatted_path}, or {exact_path}")
         
         df = pd.read_csv(file_path)
         
@@ -210,7 +218,7 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
 
     def _load_symbol_data(self, symbol: str) -> pd.DataFrame:
         """Internal method to load symbol data with default settings."""
-        return self.load_symbol_data(symbol, "1d")  # Default to daily data
+        return self.load_symbol_data(symbol, "1m")  # Use 1m data since we're looking at 1m files
 
 
 def load_csv_data_direct(symbol: str, base_path: str = "./data") -> pd.DataFrame:

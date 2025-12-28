@@ -407,6 +407,41 @@ class _BingXBroker:
         except Exception as e:
             return []
 
+    def get_available_symbols(self) -> set:
+        """Get set of available symbols on BingX."""
+        try:
+            # Get exchange info from BingX API
+            response = self._make_request('GET', '/openApi/quote/v1/ticker/24hr', signed=False)
+
+            if response.get('code') == 0:
+                symbols = set()
+                data = response.get('data', [])
+                if isinstance(data, list):
+                    for item in data:
+                        if 'symbol' in item:
+                            # Convert from BingX format (e.g., BTC-USDT) to our format (BTCUSDT)
+                            symbol = item['symbol'].replace('-', '')
+                            symbols.add(symbol)
+                return symbols
+            else:
+                # Fallback: try another endpoint
+                response2 = self._make_request('GET', '/openApi/quote/v1/ticker/price', signed=False)
+                if response2.get('code') == 0:
+                    symbols = set()
+                    data = response2.get('data', [])
+                    if isinstance(data, list):
+                        for item in data:
+                            if 'symbol' in item:
+                                symbol = item['symbol'].replace('-', '')
+                                symbols.add(symbol)
+                    return symbols
+        except Exception as e:
+            # If API call fails, return empty set
+            pass
+
+        # Return empty set if all attempts fail
+        return set()
+
     def get_open_positions(self, symbol: str=None) -> List[Dict]:
         """Get all open positions."""
         try:

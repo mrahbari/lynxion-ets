@@ -1110,6 +1110,12 @@ class MarketOpportunityWatcher:
             self.logger.warning(f"No market data repository available for {symbol.value}")
             return
 
+        # Check if symbol is available on exchange before processing
+        if hasattr(self.market_data_repo, 'is_symbol_available'):
+            if not self.market_data_repo.is_symbol_available(symbol.value):
+                self.logger.debug(f"Skipping unavailable symbol: {symbol.value}")
+                return
+
         try:
             # Fetch latest market data for the symbol
             # The market_data_repo should have a method to fetch data
@@ -1318,44 +1324,32 @@ class MarketOpportunityWatcher:
                             processed_signal = self.signal_fusion_service.process_multiple_signals(valid_signals)
 
                             if processed_signal:
-                                # Step 3: Update opportunities with the processed signal
+                                # Update opportunities with the processed signal regardless of type
+                                processed_confidence = float(processed_signal.confidence.value) if hasattr(
+                                    processed_signal.confidence, 'value') else float(processed_signal.confidence)
+
+                                # Update recommendation if this signal has higher confidence and is BUY/SELL
                                 if processed_signal.signal_type.name in ['BUY', 'SELL']:
-                                    # Update recommendation if this signal has higher confidence
-                                    processed_confidence = float(processed_signal.confidence.value) if hasattr(
-                                        processed_signal.confidence, 'value') else float(processed_signal.confidence)
                                     if processed_confidence > opportunities['confidence']:
                                         opportunities['recommendation'] = processed_signal.signal_type.name
                                         opportunities['confidence'] = processed_confidence
-                                        opportunities['strategy_suggestion'] = self._suggest_strategy_for_signal(
-                                            processed_signal)
 
-                                        # Log the complete isolated flow for this watcher
-                                        self.logger.log_full_flow(
-                                            symbol=symbol_str,
-                                            watcher=watcher_name,
-                                            engine="SignalProcessor",
-                                            fusion="SignalFusion",
-                                            strategy=opportunities['strategy_suggestion'],
-                                            broker="Binance",
-                                            decision="Signal Processed Successfully",
-                                            confidence=opportunities['confidence'],
-                                            reason=f"Signal from {watcher_name} processed through complete flow",
-                                        )
-                                else:
-                                    # Even if it's not a BUY/SELL signal, log the processing
-                                    processed_confidence = float(processed_signal.confidence.value) if hasattr(
-                                        processed_signal.confidence, 'value') else float(processed_signal.confidence)
-                                    self.logger.log_full_flow(
-                                        symbol=symbol_str,
-                                        watcher=watcher_name,
-                                        engine="SignalProcessor",
-                                        fusion="SignalFusion",
-                                        strategy=opportunities['strategy_suggestion'] or "HOLD/NEUTRAL Strategy",
-                                        broker="Binance",
-                                        decision=f"Signal Processed: {processed_signal.signal_type.name}",
-                                        confidence=processed_confidence,
-                                        reason=f"Signal from {watcher_name} processed through complete flow",
-                                    )
+                                # Always suggest a strategy for any processed signal
+                                opportunities['strategy_suggestion'] = self._suggest_strategy_for_signal(
+                                    processed_signal)
+
+                                # Log the complete isolated flow for this watcher
+                                self.logger.log_full_flow(
+                                    symbol=symbol_str,
+                                    watcher=watcher_name,
+                                    engine="SignalProcessor",
+                                    fusion="SignalFusion",
+                                    strategy=opportunities['strategy_suggestion'],
+                                    broker="Binance",
+                                    decision=f"Signal Processed: {processed_signal.signal_type.name}",
+                                    confidence=processed_confidence,
+                                    reason=f"Signal from {watcher_name} processed through complete flow",
+                                )
                             else:
                                 # Signal was valid but not fused (likely below threshold)
                                 signal_conf = float(signal.confidence.value) if hasattr(signal.confidence,
@@ -1465,15 +1459,19 @@ class MarketOpportunityWatcher:
     def _suggest_strategy_for_signal(self, signal: Signal) -> str:
         """Suggest the most appropriate strategy based on signal characteristics."""
         # Determine strategy based on signal source and characteristics
-        if 'momentum' in signal.metadata.get('indicator', '').lower():
+        # Check if signal has metadata and source_engine attributes
+        indicator = signal.metadata.get('indicator', '')
+        source_engine = getattr(signal, 'source_engine', None)
+
+        if indicator and 'momentum' in indicator.lower():
             return 'momentum_strategy'
         elif signal.metadata.get('volatility') and signal.metadata['volatility'] > 0.5:
             return 'volatility_strategy'
-        elif 'trend' in signal.source_engine.lower():
+        elif source_engine and 'trend' in source_engine.lower():
             return 'trend_following'
-        elif 'anomaly' in signal.source_engine.lower():
+        elif source_engine and 'anomaly' in source_engine.lower():
             return 'mean_reversion'
-        elif 'order_flow' in signal.source_engine.lower():
+        elif source_engine and 'order_flow' in source_engine.lower():
             return 'order_flow'
         else:
             return 'balanced_strategy'

@@ -329,5 +329,29 @@ class PhemexBrokerAdapter(BrokerPort):
                 return pos
         return None
 
+    def get_available_symbols(self) -> set:
+        """Get set of available symbols on Phemex."""
+        try:
+            # Get exchange info from Phemex API
+            path = "/cfg/v2/products"
+            response = self._make_request("GET", path)
+
+            if response and response.get('code') == 0:
+                symbols = set()
+                data = response.get('data', {}).get('products', [])
+
+                for product in data:
+                    if product.get('status') == 'Listed':  # Only include listed trading pairs
+                        # Ensure symbol is in the correct format (e.g., BTCUSDT)
+                        symbol = product['symbol']
+                        symbols.add(symbol.upper())  # Normalize to uppercase
+                return symbols
+        except Exception as e:
+            # If API call fails, return empty set
+            pass
+
+        # Return empty set if all attempts fail
+        return set()
+
     def get_all_positions(self) -> List[Position]:
         return self.get_positions()

@@ -22,6 +22,11 @@ class ExecutionPort(Protocol):
         """Get the status of an execution"""
         pass
 
+    @abstractmethod
+    def get_available_symbols(self) -> set:
+        """Get the set of available symbols on the broker"""
+        pass
+
 
 class ExecutionAlgorithmPort(Protocol):
     """Port for execution algorithms (TWAP, VWAP, etc.)"""

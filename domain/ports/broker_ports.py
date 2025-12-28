@@ -47,6 +47,11 @@ class BrokerPort(Protocol):
         """Get all positions"""
         pass
 
+    @abstractmethod
+    def get_available_symbols(self) -> set:
+        """Get set of available symbols on this broker"""
+        pass
+
 
 class BrokerAdapterManagerPort(Protocol):
     """Port for managing multiple brokers"""

@@ -70,6 +70,6 @@ class DataDownloader(ABC):
     """Port for downloading data from exchanges"""
     
     @abstractmethod
-    async def fetch_range(self, symbol: str, start_ts: int, end_ts: int) -> List[dict]:
+    async def fetch_range(self, symbol: str, start_ts: int, end_ts: int, exchange: Optional[str] = None) -> List[dict]:
         """Fetch OHLCV data for a symbol in a given time range"""
         pass

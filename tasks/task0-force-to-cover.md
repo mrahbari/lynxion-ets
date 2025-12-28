@@ -14,6 +14,7 @@
 
 ### **3. Quality & Validation**
 * [ ] Maintain Hexagonal Architecture integrity at all times.
+* [ ] Better architecture: Each component now has a single responsibility. SOLID principals must be followed for coding!
 * [ ] Prevent performance degradation or lag.
 * [ ] Avoid look-ahead issues and misalignment.
 * [ ] Validate all migrated features behave exactly as before.

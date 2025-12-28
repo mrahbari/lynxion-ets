@@ -161,7 +161,30 @@ class LiquidityWatcher(BaseWatcher):
             return None
 
         if len(self.liquidity_score_history) < 5:
-            return None
+            # If we don't have enough liquidity data, return a HOLD signal with low confidence
+            # rather than None to ensure the flow continues
+            from domain.entities.trading_entities import SignalType
+            from domain.value_objects import Percentage
+            from decimal import Decimal
+
+            confidence_percentage = Percentage(Decimal("0.1"))  # Low confidence
+
+            signal = Signal(
+                symbol=symbol,
+                signal_type=SignalType.HOLD,
+                confidence=confidence_percentage,
+                score=0.0,
+                strategy_name=self.name,
+                timestamp=datetime.now(),
+                source_engine=self.name,
+                metadata={
+                    'liquidity_regime': 'insufficient_data',
+                    'sweep_detected': False,
+                    'current_liquidity_score': 0.0,
+                    'explanation': 'Insufficient data to determine liquidity conditions'
+                }
+            )
+            return signal
 
         # Separate liquidity identification from sweep detection
         liquidity_regime = self.identify_liquidity_regime()

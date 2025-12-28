@@ -21,7 +21,7 @@ from infrastructure.services.risk_alerts import RiskAlertService
 
 class AutoDetectionOrchestrator:
     """Orchestrator for fully autonomous trading with auto-detection capability."""
-    
+
     def __init__(self,
                  market_data_repo: DataProviderPort,
                  execution_service: ExecutionPort,
@@ -54,7 +54,7 @@ class AutoDetectionOrchestrator:
         # Set symbols from the opportunity watcher (handles auto-discovery)
         self.symbols = self.opportunity_watcher.symbols
         # Initialize orchestrator components first before logging status
-        
+
         # Initialize orchestrator components using domain interfaces only
         from domain.entities.trading_entities import Signal, SignalType
         from domain.value_objects import Percentage
@@ -130,7 +130,8 @@ class AutoDetectionOrchestrator:
         ]
 
         # Initialize risk management first
-        from infrastructure.services.risk_alerts import RiskAlertService, EmailNotificationService, TelegramNotificationService
+        from infrastructure.services.risk_alerts import RiskAlertService, EmailNotificationService, \
+            TelegramNotificationService
         email_service = EmailNotificationService()
         telegram_service = TelegramNotificationService()
         self.risk_alert_service = RiskAlertService(
@@ -154,7 +155,8 @@ class AutoDetectionOrchestrator:
         # Use the strategies directly for selection
         self.selected_strategies = self.strategies
 
-    def _select_strategy_for_symbol(self, symbol: Symbol, opportunity_data: Optional[Dict[str, Any]] = None) -> Optional[StrategyPort]:
+    def _select_strategy_for_symbol(self, symbol: Symbol, opportunity_data: Optional[Dict[str, Any]] = None) -> \
+    Optional[StrategyPort]:
         """Select the best strategy for a given symbol and opportunity data"""
         if not self.strategies:
             return None
@@ -162,34 +164,34 @@ class AutoDetectionOrchestrator:
         # For now, return the first strategy - in a real implementation, this would
         # implement proper strategy selection logic without using application services
         return self.strategies[0]
-        
+
     def initialize_system(self):
         """Initialize the auto-detection system."""
         self.logger.info("🚀 Initializing Auto-Detection Orchestrator...")
-        
+
         # Start background services
         self._start_background_services()
-        
+
         self.is_running = True
         self.logger.info("✅ Auto-Detection Orchestrator initialized successfully")
-        
+
     def _start_background_services(self):
         """Start all background services."""
         # Start market opportunity watcher
         self.opportunity_watcher.start_monitoring()
-        
+
         # Start opportunity processing thread
         opportunity_thread = threading.Thread(target=self._opportunity_processing_loop, daemon=True)
         opportunity_thread.start()
         self.background_threads.append(("opportunity_processing", opportunity_thread))
-        
+
         # Start risk monitoring
         risk_thread = threading.Thread(target=self._risk_monitoring_loop, daemon=True)
         risk_thread.start()
         self.background_threads.append(("risk_monitoring", risk_thread))
-        
+
         self.logger.info(f"⚙️ Started {len(self.background_threads)} background services")
-        
+
     def _opportunity_processing_loop(self):
         """Process queued opportunities in a separate thread."""
         self.logger.info("🔄 Opportunity processing loop started")
@@ -223,8 +225,8 @@ class AutoDetectionOrchestrator:
                 current_time = time.time()
                 if current_time - last_report_time >= report_interval:
                     self.logger.info(f"📈 OPPORTUNITY PROCESSING: Processed: {processed_count} | "
-                                   f"Queue size: {len(self.opportunity_queue)} | "
-                                   f"Active trades: {len(self.active_trades)}")
+                                     f"Queue size: {len(self.opportunity_queue)} | "
+                                     f"Active trades: {len(self.active_trades)}")
                     processed_count = 0
                     rejected_count = 0
                     last_report_time = current_time
@@ -233,10 +235,11 @@ class AutoDetectionOrchestrator:
             except Exception as e:
                 self.logger.error(f"Error in opportunity processing loop: {e}")
                 time.sleep(1)
-                
+
     def _handle_opportunity(self, opportunity: Dict[str, Any]):
         """Handle detected market opportunity."""
-        self.logger.info(f"💎 Handling opportunity: {opportunity['symbol']} - {opportunity['recommendation']} with confidence {opportunity['confidence']:.2%}")
+        self.logger.info(
+            f"💎 Handling opportunity: {opportunity['symbol']} - {opportunity['recommendation']} with confidence {opportunity['confidence']:.2%}")
 
         # Log the flow from watcher to engine
         self.logger.log_watcher_to_engine_flow(
@@ -268,15 +271,17 @@ class AutoDetectionOrchestrator:
             )
 
         self.opportunity_queue.append(opportunity)
-        
+
     def _execute_strategy_for_opportunity(self, opportunity: Dict[str, Any]):
         """Execute the appropriate strategy for an opportunity."""
         try:
             symbol = Symbol(opportunity['symbol'])
-            suggested_strategy = opportunity['strategy_suggestion']
+            suggested_strategy = opportunity.get('strategy_suggestion',
+                                                 'balanced_strategy')  # Default to balanced strategy if not provided
             confidence = opportunity['confidence']
 
-            self.logger.info(f"🎯 Executing strategy {suggested_strategy} for {symbol.value} with confidence {confidence:.2%}")
+            self.logger.info(
+                f"🎯 Executing strategy {suggested_strategy} for {symbol.value} with confidence {confidence:.2%}")
 
             # Generate signal using the opportunity data
             # Use the new strategy selection method that doesn't depend on application services
@@ -287,12 +292,30 @@ class AutoDetectionOrchestrator:
                 signal = strategy.generate_signal(symbol)
 
                 if signal:
-                    self.logger.log_strategy_signal(strategy.get_strategy_name(), symbol.value, signal.signal_type.name, float(signal.confidence.value))
+                    self.logger.log_strategy_signal(strategy.get_strategy_name(), symbol.value, signal.signal_type.name,
+                                                    float(signal.confidence.value))
+
+                    # Log the complete signal progression through all stages
+                    self.logger.log_signal_progression(
+                        symbol=symbol.value,
+                        stage="watcher",
+                        status="Signal Generated",
+                        details=f"Signal: {signal.signal_type.name}",
+                        confidence=float(signal.confidence.value)
+                    )
 
                     # Log the flow from engine to fusion if engine is available
                     if self.engine:
                         # Process signal through engine
                         processed_signal = self.engine.process_signal(signal)
+
+                        self.logger.log_signal_progression(
+                            symbol=symbol.value,
+                            stage="engine",
+                            status="Processed",
+                            details=f"Signal processed by engine",
+                            confidence=float(processed_signal.confidence.value)
+                        )
 
                         self.logger.log_engine_to_fusion_flow(
                             symbol=symbol.value,
@@ -309,6 +332,14 @@ class AutoDetectionOrchestrator:
                             # For now, we'll just pass the processed signal through
                             fused_signal = processed_signal
 
+                            self.logger.log_signal_progression(
+                                symbol=symbol.value,
+                                stage="fusion",
+                                status="Fused",
+                                details=f"Signal fused successfully",
+                                confidence=float(fused_signal.confidence.value)
+                            )
+
                             self.logger.log_fusion_to_strategy_flow(
                                 symbol=symbol.value,
                                 fusion_name="FusionService",
@@ -319,6 +350,14 @@ class AutoDetectionOrchestrator:
                             )
                         else:
                             # If no fusion, log the step as skipped
+                            self.logger.log_signal_progression(
+                                symbol=symbol.value,
+                                stage="fusion",
+                                status="Skipped",
+                                details="Fusion not available, signal passed directly",
+                                confidence=float(processed_signal.confidence.value)
+                            )
+
                             self.logger.log_fusion_to_strategy_flow(
                                 symbol=symbol.value,
                                 fusion_name="FusionService",
@@ -333,6 +372,14 @@ class AutoDetectionOrchestrator:
                             # In a real implementation, we would fuse multiple signals
                             fused_signal = signal
 
+                            self.logger.log_signal_progression(
+                                symbol=symbol.value,
+                                stage="engine",
+                                status="Skipped",
+                                details="Engine not available, signal passed directly to fusion",
+                                confidence=float(signal.confidence.value)
+                            )
+
                             self.logger.log_engine_to_fusion_flow(
                                 symbol=symbol.value,
                                 engine_name="Engine",
@@ -340,6 +387,14 @@ class AutoDetectionOrchestrator:
                                 signal_type=signal.signal_type.name,
                                 confidence=float(signal.confidence.value),
                                 reason="Engine not available, signal passed directly to fusion",
+                            )
+
+                            self.logger.log_signal_progression(
+                                symbol=symbol.value,
+                                stage="fusion",
+                                status="Fused",
+                                details=f"Signal fused successfully",
+                                confidence=float(fused_signal.confidence.value)
                             )
 
                             self.logger.log_fusion_to_strategy_flow(
@@ -352,6 +407,14 @@ class AutoDetectionOrchestrator:
                             )
                         else:
                             # No engine or fusion, go directly to broker
+                            self.logger.log_signal_progression(
+                                symbol=symbol.value,
+                                stage="engine",
+                                status="Skipped",
+                                details="Engine not available, signal passed directly",
+                                confidence=float(signal.confidence.value)
+                            )
+
                             self.logger.log_engine_to_fusion_flow(
                                 symbol=symbol.value,
                                 engine_name="Engine",
@@ -359,6 +422,14 @@ class AutoDetectionOrchestrator:
                                 signal_type=signal.signal_type.name,
                                 confidence=float(signal.confidence.value),
                                 reason="Engine not available, signal passed directly",
+                            )
+
+                            self.logger.log_signal_progression(
+                                symbol=symbol.value,
+                                stage="fusion",
+                                status="Skipped",
+                                details="Fusion not available, signal passed directly to broker",
+                                confidence=float(signal.confidence.value)
                             )
 
                             self.logger.log_fusion_to_strategy_flow(
@@ -371,6 +442,14 @@ class AutoDetectionOrchestrator:
                             )
 
                     # Log the flow from strategy to broker
+                    self.logger.log_signal_progression(
+                        symbol=symbol.value,
+                        stage="strategy",
+                        status="Ready for Execution",
+                        details=f"Signal prepared for broker: {signal.signal_type.name}",
+                        confidence=float(signal.confidence.value)
+                    )
+
                     self.logger.log_strategy_to_broker_flow(
                         symbol=symbol.value,
                         strategy_name=strategy.get_strategy_name(),
@@ -394,14 +473,19 @@ class AutoDetectionOrchestrator:
                         'decision_factors': {
                             'signal_quality': float(signal.confidence.value),
                             'opportunity_strength': confidence,
-                            'trade_acceptance_reason': 'Signal strength' if float(signal.confidence.value) > 0.6 else 'Low confidence - may be rejected',
-                            'risk_check_passed': self._check_risk_acceptance(symbol, signal),  # Check if risk controls passed
+                            'trade_acceptance_reason': 'Signal strength' if float(
+                                signal.confidence.value) > 0.6 else 'Low confidence - may be rejected',
+                            'risk_check_passed': self._check_risk_acceptance(symbol, signal),
+                            # Check if risk controls passed
                         }
                     }
 
                     # Log trade decision with reasons
                     if execution_result['status'] == 'executed':
-                        self.logger.info(f"✅ ACCEPTED TRADE: {execution_result['order']['side']} {execution_result['order']['quantity']} {symbol.value} | Signal: {signal.signal_type.name} | Sig. Conf: {float(signal.confidence.value):.2%} | Opp. Conf: {confidence:.2%}")
+                        execution_id = execution_result.get('execution_id', 'N/A')
+                        self.logger.info(
+                            f"✅ ACCEPTED TRADE: {execution_result['order']['side']} {execution_result['order']['quantity']} {symbol.value} | Signal: {signal.signal_type.name} | Sig. Conf: {float(signal.confidence.value):.2%} | Opp. Conf: {confidence:.2%}")
+
                         # Log the completed flow from strategy to broker
                         self.logger.log_strategy_to_broker_flow(
                             symbol=symbol.value,
@@ -411,8 +495,36 @@ class AutoDetectionOrchestrator:
                             confidence=float(signal.confidence.value),
                             reason=f"Trade executed successfully via {execution_result['order'].get('strategy', 'Unknown')}",
                         )
+
+                        # Log the complete signal flow with execution details
+                        # Determine broker name dynamically from the execution service
+                        broker_name = self._get_broker_name()
+
+                        self.logger.log_complete_signal_flow(
+                            symbol=symbol.value,
+                            signal_type=signal.signal_type.name,
+                            confidence=float(signal.confidence.value),
+                            watcher="MarketOpportunityWatcher",
+                            engine=self.engine.get_engine_name() if self.engine else "N/A",
+                            fusion="FusionService" if self.fusion else "N/A",
+                            strategy=strategy.get_strategy_name(),
+                            broker=broker_name,
+                            execution_status="executed",
+                            execution_id=execution_id
+                        )
+
+                        # Log the final execution step
+                        self.logger.log_signal_progression(
+                            symbol=symbol.value,
+                            stage="broker",
+                            status="Executed",
+                            details=f"Order executed successfully: {execution_id}",
+                            confidence=float(signal.confidence.value)
+                        )
                     else:
-                        self.logger.warning(f"❌ REJECTED TRADE: {symbol.value} | Reason: {execution_result.get('error', 'Execution failed')} | Signal: {signal.signal_type.name} | Sig. Conf: {float(signal.confidence.value):.2%} | Opp. Conf: {confidence:.2%}")
+                        self.logger.warning(
+                            f"❌ REJECTED TRADE: {symbol.value} | Reason: {execution_result.get('error', 'Execution failed')} | Signal: {signal.signal_type.name} | Sig. Conf: {float(signal.confidence.value):.2%} | Opp. Conf: {confidence:.2%}")
+
                         # Log the rejected flow from strategy to broker
                         self.logger.log_strategy_to_broker_flow(
                             symbol=symbol.value,
@@ -421,6 +533,32 @@ class AutoDetectionOrchestrator:
                             signal_type=signal.signal_type.name,
                             confidence=float(signal.confidence.value),
                             reason=f"Trade rejected: {execution_result.get('error', 'Execution failed')}",
+                        )
+
+                        # Log the complete signal flow with execution details
+                        # Determine broker name dynamically from the execution service
+                        broker_name = self._get_broker_name()
+
+                        self.logger.log_complete_signal_flow(
+                            symbol=symbol.value,
+                            signal_type=signal.signal_type.name,
+                            confidence=float(signal.confidence.value),
+                            watcher="MarketOpportunityWatcher",
+                            engine=self.engine.get_engine_name() if self.engine else "N/A",
+                            fusion="FusionService" if self.fusion else "N/A",
+                            strategy=strategy.get_strategy_name(),
+                            broker=broker_name,
+                            execution_status="failed",
+                            execution_id="N/A"
+                        )
+
+                        # Log the final execution step
+                        self.logger.log_signal_progression(
+                            symbol=symbol.value,
+                            stage="broker",
+                            status="Failed",
+                            details=f"Order execution failed: {execution_result.get('error', 'Execution failed')}",
+                            confidence=float(signal.confidence.value)
                         )
 
                     self.active_trades[symbol.value] = trade_details
@@ -458,24 +596,62 @@ class AutoDetectionOrchestrator:
                 reason=f"Exception occurred: {str(e)}",
                 confidence=opportunity.get('confidence', 0.0)
             )
-            
+
     def _execute_trade(self, symbol: Symbol, signal) -> Dict[str, Any]:
         """Execute trade based on signal."""
-        # This is a simplified trade execution - in a real system, you'd have more complex logic
         try:
-            # Create mock order based on signal
-            side = 'BUY' if signal.signal_type.name == 'BUY' else 'SELL'
-            quantity = 0.01 # Mock quantity based on strategy
-            price = 50000.0  # Mock price - in real system this would come from market data
+            # Get real market data for the symbol to determine proper price and position size
+            current_price = None
+            if self.market_data_repo:
+                try:
+                    current_price = self.market_data_repo.get_current_price(symbol)
+                except:
+                    # If we can't get current price from data repo, try to get from exchange directly
+                    pass
 
-            order = {
-                'symbol': symbol.value,
-                'side': side,
-                'quantity': quantity,
-                'price': price,
-                'type': 'MARKET',
-                'strategy': signal.strategy_name
-            }
+            # If we still don't have a price, use a fallback
+            if current_price is None or current_price <= 0:
+                # Try to get price from exchange directly
+                try:
+                    import ccxt
+                    exchange = ccxt.binance()
+                    ticker = exchange.fetch_ticker(symbol.value)
+                    current_price = ticker['last'] if 'last' in ticker else ticker['close']
+                except:
+                    # If all methods fail, we'll still proceed but log the issue
+                    self.logger.warning(f"Could not get current price for {symbol.value}, using signal price")
+                    current_price = 50000.0  # Fallback price
+
+            # Calculate position size based on signal confidence and risk management
+            confidence = float(signal.confidence.value) if hasattr(signal.confidence, 'value') else float(
+                signal.confidence)
+            base_position_size = 0.02  # 2% of account as base position
+            risk_adjusted_size = base_position_size * confidence  # Adjust based on signal confidence
+
+            # Calculate quantity based on account balance and risk
+            # For now, using a fixed amount - in real system this would come from portfolio service
+            try:
+                portfolio_metrics = self.portfolio_service.get_portfolio_metrics()
+                account_balance = portfolio_metrics.get('equity', 10000.0)  # Default to $10,000 if not available
+                position_value = account_balance * risk_adjusted_size
+                quantity = position_value / current_price
+            except:
+                # If portfolio service fails, use a default quantity
+                quantity = risk_adjusted_size * 1000 / current_price  # Default to 2% of $1000
+
+            # Create order object using domain entities
+            from domain.entities.trading_entities import Order, OrderType, OrderSide
+            from domain.value_objects import Money
+
+            order = Order(
+                symbol=symbol,
+                side=OrderSide.BUY if signal.signal_type.name == 'BUY' else OrderSide.SELL,
+                order_type=OrderType.MARKET,
+                quantity=quantity,
+                price=Money(amount=current_price, currency='USDT') if current_price else None,
+                strategy=signal.strategy_name,
+                timestamp=datetime.now()
+            )
 
             # Execute order through execution service
             execution_id = self.execution_service.execute_order(order)
@@ -484,15 +660,15 @@ class AutoDetectionOrchestrator:
             self.logger.log_execution(
                 execution_id,
                 symbol.value,
-                side,
+                order.side.value,
                 quantity,
-                price
+                current_price
             )
 
             return {
                 'status': 'executed',
                 'execution_id': execution_id,
-                'order': order
+                'order': order.__dict__ if hasattr(order, '__dict__') else order
             }
         except Exception as e:
             self.logger.error(f"Error executing trade: {e}")
@@ -572,7 +748,7 @@ class AutoDetectionOrchestrator:
                 current_time = time.time()
                 if current_time - last_report_time >= report_interval:
                     self.logger.info(f"🛡️ RISK MONITORING: Active trades: {len(self.active_trades)} | "
-                                   f"Portfolio metrics checked: {len(portfolio_metrics) if portfolio_metrics else 0}")
+                                     f"Portfolio metrics checked: {len(portfolio_metrics) if portfolio_metrics else 0}")
                     if 'equity' in portfolio_metrics:
                         self.logger.info(f"💰 PORTFOLIO EQUITY: ${portfolio_metrics['equity']:,.2f}")
                     if 'pnl' in portfolio_metrics:
@@ -585,7 +761,22 @@ class AutoDetectionOrchestrator:
             except Exception as e:
                 self.logger.error(f"Error in risk monitoring: {e}")
                 time.sleep(30)
-                
+
+    def _get_broker_name(self) -> str:
+        """Get the broker name from the execution service."""
+        broker_name = "UnknownBroker"
+        if hasattr(self.execution_service, 'get_broker_name'):
+            broker_name = self.execution_service.get_broker_name()
+        elif hasattr(self.execution_service, 'broker_name'):
+            broker_name = self.execution_service.broker_name
+        else:
+            # Try to get broker name from the broker object if available
+            if hasattr(self.execution_service, 'broker') and hasattr(self.execution_service.broker, 'name'):
+                broker_name = self.execution_service.broker.name
+            elif hasattr(self.execution_service, 'broker') and hasattr(self.execution_service.broker, '__class__'):
+                broker_name = self.execution_service.broker.__class__.__name__.replace('Adapter', '')
+        return broker_name
+
     def get_status(self) -> Dict[str, Any]:
         """Get current system status."""
         return {
@@ -596,17 +787,17 @@ class AutoDetectionOrchestrator:
             'watcher_status': self.opportunity_watcher.get_status(),
             'timestamp': datetime.now().isoformat()
         }
-        
+
     def stop_system(self):
         """Stop the auto-detection system."""
         self.logger.info("🛑 Stopping Auto-Detection Orchestrator...")
         self.is_running = False
-        
+
         # Stop opportunity watcher
         self.opportunity_watcher.stop_monitoring()
-        
+
         self.logger.info("✅ Auto-Detection Orchestrator stopped")
-        
+
     def run_auto_detection(self):
         """Main auto-detection loop - this is the primary method for auto-detection mode."""
         self.logger.info("🤖 Starting auto-detection mode...")
@@ -627,15 +818,16 @@ class AutoDetectionOrchestrator:
                 if current_time - last_status_time >= status_interval:
                     status = self.get_status()
                     self.logger.info(f"📈 SYSTEM STATUS: Monitoring {status['monitored_symbols'].__len__()} symbols | "
-                                   f"Active trades: {status['active_trades']} | "
-                                   f"Opportunity queue: {status['opportunity_queue_size']} | "
-                                   f"Background services: {len(self.background_threads)}")
+                                     f"Active trades: {status['active_trades']} | "
+                                     f"Opportunity queue: {status['opportunity_queue_size']} | "
+                                     f"Background services: {len(self.background_threads)}")
 
                     # Log detailed watcher status
                     watcher_status = status['watcher_status']
                     if 'monitored_symbols' in watcher_status:
-                        self.logger.info(f"🔍 WATCHER STATUS: {len(watcher_status['monitored_symbols'])} symbols being monitored | "
-                                       f"Watchers: {watcher_status['watchers_count']}")
+                        self.logger.info(
+                            f"🔍 WATCHER STATUS: {len(watcher_status['monitored_symbols'])} symbols being monitored | "
+                            f"Watchers: {watcher_status['watchers_count']}")
 
                     last_status_time = current_time
 

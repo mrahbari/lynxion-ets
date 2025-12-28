@@ -266,6 +266,47 @@ class EnhancedLogger:
                  fusion=fusion, strategy=strategy, broker=broker, decision=decision,
                  confidence=confidence, reason=reason, **context)
 
+    def log_complete_signal_flow(self, symbol: str, signal_type: str, confidence: float,
+                               watcher: str, engine: str, fusion: str, strategy: str, broker: str,
+                               execution_status: str, execution_id: str = None, **context):
+        """Log the complete signal flow from detection to execution with detailed status tracking"""
+        flow_id = f"{symbol}_SIGNAL_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+
+        # Log the complete flow with visual indicators
+        status_emoji = "✅" if execution_status.lower() in ['executed', 'success', 'filled'] else \
+                      "❌" if execution_status.lower() in ['rejected', 'failed', 'cancelled', 'error'] else \
+                      "🔄"
+
+        self.info(f"{status_emoji} SIGNAL FLOW: {watcher} → {engine} → {fusion} → {strategy} → {broker} | "
+                 f"Signal: {signal_type} | Conf: {confidence:.2%} | Status: {execution_status} | "
+                 f"ID: {execution_id or 'N/A'}",
+                 flow_id=flow_id, symbol=symbol, signal_type=signal_type, confidence=confidence,
+                 watcher=watcher, engine=engine, fusion=fusion, strategy=strategy, broker=broker,
+                 execution_status=execution_status, execution_id=execution_id, **context)
+
+    def log_signal_progression(self, symbol: str, stage: str, status: str, details: str = "",
+                             confidence: float = None, **context):
+        """Log the progression of a signal through each stage with detailed information"""
+        stage_emoji = {
+            'watcher': '👁️',
+            'engine': '⚙️',
+            'fusion': '🔗',
+            'strategy': '🎯',
+            'broker': '⚡'
+        }.get(stage.lower(), '🔄')
+
+        status_emoji = "✅" if status.lower() in ['success', 'accepted', 'passed', 'completed'] else \
+                      "❌" if status.lower() in ['failed', 'rejected', 'error'] else \
+                      "🔄"
+
+        if confidence is not None:
+            self.info(f"  {stage_emoji} {stage.upper()}: {status_emoji} {status} | {details} | Conf: {confidence:.2%}",
+                     symbol=symbol, stage=stage, status=status, details=details,
+                     confidence=confidence, **context)
+        else:
+            self.info(f"  {stage_emoji} {stage.upper()}: {status_emoji} {status} | {details}",
+                     symbol=symbol, stage=stage, status=status, details=details, **context)
+
     def log_watcher_to_engine_flow(self, symbol: str, watcher_name: str, signal_generated: bool,
                                   signal_type: str, confidence: float, reason: str, **context):
         """Log the flow from watcher to engine with detailed information"""

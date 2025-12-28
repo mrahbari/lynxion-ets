@@ -292,5 +292,27 @@ class MEXCBrokerAdapter(BrokerPort):
                 return pos
         return None
 
+    def get_available_symbols(self) -> set:
+        """Get set of available symbols on MEXC."""
+        try:
+            # Get exchange info from MEXC API
+            path = "/api/v3/exchangeInfo"
+            response = self._make_request("GET", path)
+
+            if response and 'symbols' in response:
+                symbols = set()
+                for symbol_info in response['symbols']:
+                    if symbol_info.get('status') == 'ENABLED':  # Only include enabled trading pairs
+                        # Ensure symbol is in the correct format (e.g., BTCUSDT)
+                        symbol = symbol_info['symbol']
+                        symbols.add(symbol.upper())  # Normalize to uppercase
+                return symbols
+        except Exception as e:
+            # If API call fails, return empty set
+            pass
+
+        # Return empty set if all attempts fail
+        return set()
+
     def get_all_positions(self) -> List[Position]:
         return self.get_positions()

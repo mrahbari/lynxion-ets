@@ -297,8 +297,41 @@ python runner_backtest.py --strategy crypto_breakout --start 90d --end today --r
 ### Historical Data Download
 
 ```bash
+# Download historical data for all configured symbols
 python runner_history_download.py --start 365d --end today
+
+# Download historical data for a specific symbol
+python runner_history_download.py --start 90d --end today --symbols MATICUSDT
+
+# Download with custom timeframes (space-separated)
+python runner_history_download.py --start 30d --end today --symbols BTCUSDT --timeframes 5m 15m 1h
+
+# Download to custom directory
+python runner_history_download.py --start 180d --end today --symbols ETHUSDT --output ./custom_data
+
+# Download with specific date range
+python runner_history_download.py --start 2023-01-01 --end 2023-12-31 --symbols SOLUSDT
+
+# Download from specific exchange (default: binance)
+python runner_history_download.py --start 90d --end today --symbols MATICUSDT --exchange bingx
+
+# Download from different exchanges
+python runner_history_download.py --start 30d --end today --symbols BTCUSDT ETHUSDT --exchange mexc
+python runner_history_download.py --start 60d --end today --symbols ADAUSDT --exchange phemex
+
+# Multiple symbols and custom timeframes from specific exchange
+python runner_history_download.py --start 7d --end today --symbols BTCUSDT ETHUSDT SOLUSDT --timeframes 1m 5m 15m --exchange bingx
 ```
+
+**Command Options:**
+- `--start`: Start date (supports formats: 90d, 2023-01-01, today)
+- `--end`: End date (supports formats: today, 2023-12-31)
+- `--symbols`: Trading symbols to download (space-separated, e.g., BTCUSDT ETHUSDT)
+- `--timeframes`: Timeframes to download (space-separated, default: 1m 5m 15m 30m 1h 4h 1d)
+- `--output`: Output file to save results (JSON format)
+- `--exchange`: Exchange to download from (default: binance, options: binance,bingx,mexc,phemex)
+- `--validate`: Validate data integrity after download
+- `--verbose`: Enable verbose output
 
 ---
 

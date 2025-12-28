@@ -20,7 +20,8 @@ class BaseWatcher(ABC):
         self.broker_service = broker_service
         self.target_broker = target_broker or "bingx"  # Default to bingx if no target specified
         # Ensure target broker name is lowercase to match broker keys
-        self.target_broker = self.target_broker.lower()
+        if self.target_broker is not None:
+            self.target_broker = self.target_broker.lower()
 
         # Add health monitoring capabilities
         self._last_error_time = None
