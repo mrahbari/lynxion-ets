@@ -212,7 +212,7 @@ class MarketOpportunityWatcher:
         # If still no symbols found, use fallback symbols
         if not discovered_symbols:
             fallback_symbols_str = os.getenv("FALLBACK_WATCHLIST_SYMBOLS",
-                                             "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,AVAXUSDT,MATICUSDT,DOTUSDT,LINKUSDT")
+                                             "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,AVAXUSDT,TRXUSDT,DOTUSDT,LINKUSDT")
             fallback_symbols = [s.strip() for s in fallback_symbols_str.split(",")]
             discovered_symbols = fallback_symbols
 

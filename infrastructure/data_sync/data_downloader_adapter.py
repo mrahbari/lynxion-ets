@@ -88,19 +88,6 @@ class DataDownloaderAdapter(DataDownloader):
                     'adjustForTimeDifference': True,  # Helps with API time sync issues
                     'recvWindow': 60000,  # 60 seconds, increase if needed
                 }
-                # Explicitly set the API URLs to use the spot API endpoints
-                exchange_config['urls'] = {
-                    'api': {
-                        'rest': 'https://api.binance.com',
-                        'public': 'https://api.binance.com/api/v3',
-                        'private': 'https://api.binance.com/api/v3',
-                    },
-                    'test': {
-                        'rest': 'https://testnet.binance.vision',
-                        'public': 'https://testnet.binance.vision/api/v3',
-                        'private': 'https://testnet.binance.vision/api/v3',
-                    }
-                }
 
             self.exchange_instances[exchange_name] = exchange_class(exchange_config)
         return self.exchange_instances[exchange_name]
@@ -111,7 +98,7 @@ class DataDownloaderAdapter(DataDownloader):
         normalized_symbol = symbol.replace('-', '').replace('/', '').replace('_', '')
 
         # Valid exchanges that use slash format (BTC/USDT)
-        slash_format_exchanges = ['bingx', 'binance', 'bybit', 'kucoin', 'okx', 'gate', 'huobi', 'mexc', 'phemex']
+        slash_format_exchanges = ['binance', 'bingx', 'mexc', 'phemex']
 
         # Valid exchanges that use no separator format (BTCUSDT)
         no_separator_exchanges = []
@@ -119,48 +106,21 @@ class DataDownloaderAdapter(DataDownloader):
         # Different exchanges have different symbol formats
         if exchange_name.lower() in slash_format_exchanges:
             # These exchanges expect the format like BTC/USDT
-            # Extract base and quote currency
-            if 'USDT' in normalized_symbol:
-                base = normalized_symbol.replace('USDT', '')
-                quote = 'USDT'
-            elif 'USD' in normalized_symbol and len(normalized_symbol) > 6:
-                # Handle other USD formats like USDN, USDC, etc.
-                if normalized_symbol.endswith('USD'):
-                    base = normalized_symbol.replace('USD', '')
-                    quote = 'USD'
-                else:
-                    # Find where USD starts in the middle of the symbol
-                    usd_idx = normalized_symbol.find('USD')
-                    base = normalized_symbol[:usd_idx]
-                    quote = normalized_symbol[usd_idx:]
-            elif 'BTC' in normalized_symbol and normalized_symbol != 'BTCUSDT':
-                # Handle BTC quote pairs like ETHBTC
-                btc_idx = normalized_symbol.find('BTC')
-                base = normalized_symbol[:btc_idx]
-                quote = normalized_symbol[btc_idx:]
-            elif 'ETH' in normalized_symbol and normalized_symbol != 'ETHUSDT':
-                # Handle ETH quote pairs like LTCETH
-                eth_idx = normalized_symbol.find('ETH')
-                base = normalized_symbol[:eth_idx]
-                quote = normalized_symbol[eth_idx:]
-            else:
-                # For other quote currencies like EUR, GBP, etc.
-                # We'll try to identify common quote currencies
-                quote_currencies = ['EUR', 'GBP', 'JPY', 'USD', 'BTC', 'ETH', 'BNB', 'USDC', 'BUSD']
-                quote = None
-                base = normalized_symbol
-                for qc in quote_currencies:
-                    if normalized_symbol.endswith(qc) and len(normalized_symbol) > len(qc):
-                        quote = qc
-                        base = normalized_symbol[:-len(qc)]
-                        break
+            # Extract base and quote currency by looking for common quote currencies at the end
+            quote_currencies = ['USDT', 'USD', 'BTC', 'ETH', 'BNB', 'BUSD', 'USDC', 'DAI', 'TUSD', 'PAX', 'EUR', 'GBP', 'JPY', 'TRY', 'RUB', 'ZAR', 'UAH', 'NGN', 'BRL', 'AUD', 'CAD', 'CHF', 'CNY', 'HKD', 'IDR', 'INR', 'KRW', 'RUB', 'SGD', 'THB', 'VND']
 
-                if quote is None:
-                    # If we can't identify quote currency, return original format
-                    # This might happen for non-standard symbols
-                    return symbol.replace('-', '').replace('_', '')  # Default to no separator format
+            # Look for quote currency at the end of the symbol first (most common case)
+            for qc in quote_currencies:
+                if normalized_symbol.upper().endswith(qc.upper()):
+                    base = normalized_symbol[:-len(qc)]
+                    quote = qc
+                    return f"{base}/{quote}"
 
-            return f"{base}/{quote}"
+            # If not found at the end, try to find in the middle (for cases like BTCUSD where BTC is base)
+            # This is more complex and less common, so we'll use a simpler approach
+            # For most cases, quote currencies appear at the end
+            # If we still can't find it, return the normalized symbol as is
+            return normalized_symbol
         elif exchange_name.lower() in no_separator_exchanges:
             # These exchanges typically use no separator format like BTCUSDT
             return normalized_symbol
