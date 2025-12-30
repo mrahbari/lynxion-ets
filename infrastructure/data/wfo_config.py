@@ -21,7 +21,7 @@ class WFOConfigManager:
             'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'XRPUSDT',
             'SOLUSDT', 'DOTUSDT', 'DOGEUSDT', 'AVAXUSDT', 'SHIBUSDT',
             'MATICUSDT', 'LTCUSDT', 'UNIUSDT', 'LINKUSDT', 'LUNAUSDT',
-            'CROUSDT', 'ALGOUSDT', 'XLMUSDT', 'ETCUSDT', 'BCHUSDT',
+            'TONUSDT', 'ALGOUSDT', 'XLMUSDT', 'ETCUSDT', 'BCHUSDT',
             'NEARUSDT', 'FLOWUSDT', 'MANAUSDT', 'SANDUSDT', 'AAVEUSDT'
         ])
         self.data_dir = os.getenv('WFO_DATA_DIR', './data')

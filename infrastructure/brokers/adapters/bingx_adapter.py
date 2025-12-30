@@ -14,6 +14,7 @@ from domain.entities.trading_entities import Order, Fill, Position, Balance, Ord
 from domain.ports.broker_ports import BrokerPort
 from domain.value_objects import Symbol, Money
 from infrastructure.data.adapters.rest_client import RestClient
+from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 
 
 class BingXBrokerAdapter(BrokerPort):
@@ -21,9 +22,21 @@ class BingXBrokerAdapter(BrokerPort):
         self._broker = _BingXBroker(config)
         self.connected = False
 
-    def _format_symbol(self, symbol: Symbol) -> str:
-        """Formats the domain symbol to the broker's expected format."""
-        return f"{symbol.base_asset()}-{symbol.quote_asset()}"
+    def _format_symbol(self, symbol: Union[Symbol, str]) -> str:
+        """Formats the domain symbol to the broker's expected format using the helper."""
+        # Handle both string and Symbol object formats
+        if isinstance(symbol, str):
+            symbol_str = symbol
+        else:
+            # If it's a Symbol object, get its value
+            if hasattr(symbol, 'value'):
+                symbol_str = symbol.value
+            else:
+                # Fallback: convert to string
+                symbol_str = str(symbol)
+
+        # Use the symbol format helper to format for BingX
+        return SymbolFormatHelper.format_symbol_for_exchange(symbol_str, 'bingx')
 
     def _parse_symbol(self, symbol_str: str) -> Symbol:
         """Parses the broker's symbol string into a domain Symbol."""
@@ -46,10 +59,39 @@ class BingXBrokerAdapter(BrokerPort):
         if not self.connected:
             self.connect()
 
-        broker_order = order
-        broker_order.symbol = self._format_symbol(order.symbol)
+        # Instead of modifying the order, we'll modify the internal broker to handle symbol formatting
+        # For now, let's pass the original order and handle formatting inside the internal broker
+        # by monkey-patching the symbol temporarily
 
-        result = self._broker.execute_order(broker_order)
+        # Store original symbol
+        original_symbol = order.symbol
+
+        # Format the symbol for the API call
+        formatted_symbol = self._format_symbol(original_symbol)
+
+        # Temporarily modify the order's symbol for the API call
+        # We'll create a temporary order with the formatted symbol
+        from domain.entities.trading_entities import Order as DomainOrder
+        from datetime import datetime
+
+        # Create a temporary order with the formatted symbol but preserve all other attributes
+        temp_order = DomainOrder(
+            symbol=formatted_symbol,
+            side=order.side,
+            order_type=order.order_type,
+            quantity=order.quantity,
+            price=order.price,
+            strategy_name=getattr(order, 'strategy_name', 'unknown'),
+            timestamp=getattr(order, 'timestamp', datetime.now()),
+            position_side=getattr(order, 'position_side', 'BOTH'),
+            stop_price=getattr(order, 'stop_price', None),
+            time_in_force=getattr(order, 'time_in_force', 'GTC'),
+            client_order_id=getattr(order, 'client_order_id', None),
+            parent_signal=getattr(order, 'parent_signal', None),
+            risk_adjusted_quantity=getattr(order, 'risk_adjusted_quantity', None)
+        )
+
+        result = self._broker.execute_order(temp_order)
         if result['success']:
             return result['order_id']
         else:
@@ -117,6 +159,12 @@ class BingXBrokerAdapter(BrokerPort):
                 )
             )
         return positions
+
+    def get_available_symbols(self) -> set:
+        """Get set of available symbols on this broker."""
+        if not self.connected:
+            self.connect()
+        return self._broker.get_available_symbols()
 
 
 class _BingXBroker:
@@ -264,17 +312,46 @@ class _BingXBroker:
     def execute_order(self, order: Order) -> Dict[str, Any]:
         """Execute order on BingX."""
         try:
+            # Handle the symbol formatting here
+            # If symbol is a string, use it directly; if it's a Symbol object, get its value
+            if isinstance(order.symbol, str):
+                symbol_formatted = order.symbol
+            else:
+                # If it's a Symbol object, get its string representation
+                if hasattr(order.symbol, 'value'):
+                    symbol_formatted = order.symbol.value
+                else:
+                    symbol_formatted = str(order.symbol)
+
+            # Ensure side is handled properly
+            if hasattr(order.side, 'value'):
+                side_value = order.side.value
+            else:
+                side_value = str(order.side)
+
+            # Ensure order_type is handled properly
+            if hasattr(order.order_type, 'value'):
+                order_type_value = order.order_type.value
+            else:
+                order_type_value = str(order.order_type)
+
+            # Handle position_side similarly
+            if hasattr(order, 'position_side') and order.position_side:
+                if hasattr(order.position_side, 'value'):
+                    position_side_value = order.position_side.value
+                else:
+                    position_side_value = str(order.position_side)
+            else:
+                position_side_value = 'BOTH'
+
             order_data = {
-                'symbol': order.symbol,
-                'side': order.side.value.upper(),
-                'type': order.order_type.upper(),
+                'symbol': symbol_formatted,
+                'side': side_value.upper(),
+                'type': order_type_value.upper(),
                 'quantity': str(round(float(order.quantity), 6))
             }
 
-            if hasattr(order, 'position_side') and order.position_side:
-                order_data['positionSide'] = order.position_side.value
-            else:
-                order_data['positionSide'] = 'BOTH'
+            order_data['positionSide'] = position_side_value
 
             if order.price:
                 order_data['price'] = str(order.price.amount)

@@ -15,6 +15,7 @@ from infrastructure.data_sync.data_downloader_adapter import DataDownloaderAdapt
 from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
 from application.data_sync.sync_manager import SyncManager
 from shared.logger import EnhancedLogger
+from infrastructure.brokers.multi_broker_service import MultiBrokerExecutionService
 
 
 def _convert_period_to_ms(period: str) -> int:
@@ -152,9 +153,16 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                         except FileNotFoundError:
                             pass  # Data still not available after download attempt
 
-            # If all else fails, return minimal mock data to allow system to continue
-            # This prevents the watchers from completely failing when a symbol is not available
-            self.logger.warning(f"No historical data available for {symbol.value}, returning minimal data")
+            # If all else fails, try to get real data one more time before falling back to minimal data
+            # This is important to avoid using mock data which doesn't generate real signals
+            real_historical = self._get_real_historical_from_external_source(symbol.value, period, timeframe)
+            if real_historical and len(real_historical) > 0:
+                self.logger.info(f"Using {len(real_historical)} real historical data points as final fallback for {symbol.value}")
+                return real_historical
+
+            # If all else fails, return minimal data but log this as a warning
+            # This is better than completely failing, but we should be aware when this happens
+            self.logger.warning(f"No historical data available for {symbol.value}, using minimal data which may affect signal generation")
             return self._get_minimal_data_for_symbol(symbol.value)
 
         except Exception as e:
@@ -164,6 +172,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
             if real_historical and len(real_historical) > 0:
                 self.logger.info(f"Using {len(real_historical)} real historical data points as fallback for {symbol.value}")
                 return real_historical
+            self.logger.warning(f"Using minimal data for {symbol.value} after error: {e}")
             return self._get_minimal_data_for_symbol(symbol.value)
 
     def _get_real_historical_from_external_source(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
@@ -374,7 +383,16 @@ class EnhancedDataProviderAdapter(DataProviderPort):
         return None
 
     def is_symbol_available(self, symbol: str) -> bool:
-        """Check if a symbol is available on the exchange."""
+        """Check if a symbol is available on the exchange with exchange switching capability."""
+        # First, try to use the MultiBrokerExecutionService if available
+        if self.broker_service:
+            # Check if this is a MultiBrokerExecutionService that supports exchange switching
+            if hasattr(self.broker_service, 'is_symbol_available'):
+                try:
+                    return self.broker_service.is_symbol_available(symbol)
+                except Exception as e:
+                    self.logger.debug(f"MultiBroker service failed for symbol {symbol}, falling back: {e}")
+
         # Check if cache is still valid
         current_time = time.time()
         cache_valid = (self._cache_timestamp is not None and
@@ -483,7 +501,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
         return type(broker_obj).__name__ if broker_obj else "None"
 
     def _check_single_symbol(self, symbol: str) -> bool:
-        """Check a single symbol availability using direct API call."""
+        """Check a single symbol availability using direct API call with exchange switching."""
         # First check if the symbol is in the cached available symbols
         if symbol in self._available_symbols_cache:
             self.logger.debug(f"Symbol {symbol} found in cache")
@@ -491,6 +509,13 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
         # If not in cache, check if broker service is available to check symbol
         if self.broker_service:
+            # Check if this is a MultiBrokerExecutionService that supports exchange switching
+            if hasattr(self.broker_service, 'is_symbol_available'):
+                try:
+                    return self.broker_service.is_symbol_available(symbol)
+                except Exception as e:
+                    self.logger.debug(f"MultiBroker service failed for symbol {symbol}, falling back: {e}")
+
             # Log broker service type for debugging
             broker_service_type = self._get_broker_type(self.broker_service)
             self.logger.debug(f"Checking symbol {symbol} using broker service: {broker_service_type}")
@@ -546,19 +571,51 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                 import traceback
                 self.logger.error(f"Traceback: {traceback.format_exc()}")
 
-        # Fallback to direct API call
-        try:
-            import requests
-            # Use a generic approach - try Binance API as fallback
-            api_url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
-            self.logger.debug(f"Using fallback API call for symbol {symbol}: {api_url}")
-            response = requests.get(api_url, timeout=5)
-            is_available = response.status_code == 200
-            self.logger.debug(f"Direct API check for {symbol}: {'Available' if is_available else 'Not available'}")
-            return is_available
-        except Exception as e:
-            self.logger.debug(f"Could not check symbol availability for {symbol} via direct API: {e}")
-            return False
+        # Fallback to direct API call with exchange switching
+        return self._check_symbol_via_multiple_exchanges(symbol)
+
+    def _check_symbol_via_multiple_exchanges(self, symbol: str) -> bool:
+        """Check symbol availability across multiple exchanges with fallback."""
+        import requests
+
+        # Define exchange order for checking
+        exchange_configs = [
+            {
+                'name': 'binance',
+                'url': f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}",
+                'success_check': lambda resp: resp.status_code == 200
+            },
+            {
+                'name': 'bingx',
+                'url': f"https://open-api-vst.bingx.com/openApi/quote/v1/ticker/price?symbol={symbol}",
+                'success_check': lambda resp: resp.status_code == 200 and 'data' in resp.json()
+            },
+            {
+                'name': 'mexc',
+                'url': f"https://api.mexc.com/api/v3/ticker/price?symbol={symbol}",
+                'success_check': lambda resp: resp.status_code == 200
+            },
+            {
+                'name': 'phemex',
+                'url': f"https://api.phemex.com/md/ticker/24hr?symbol={symbol}",
+                'success_check': lambda resp: resp.status_code == 200
+            }
+        ]
+
+        for config in exchange_configs:
+            try:
+                self.logger.debug(f"Trying {config['name']} API for symbol {symbol}")
+                response = requests.get(config['url'], timeout=5)
+
+                if config['success_check'](response):
+                    self.logger.debug(f"Symbol {symbol} found on {config['name']}")
+                    return True
+            except Exception as e:
+                self.logger.debug(f"Failed to check {symbol} on {config['name']}: {e}")
+                continue
+
+        self.logger.debug(f"Symbol {symbol} not found on any exchange")
+        return False
 
     def _format_symbol_for_exchange(self, symbol: str) -> str:
         """Format symbol for exchange API (e.g., BTCUSDT -> BTC/USDT)."""

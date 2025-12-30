@@ -35,8 +35,8 @@ class AnomalyMLWatcher(BaseWatcher):
         self.contamination = contamination  # Expected proportion of anomalies
         self.price_history = []
         self.feature_history = []  # Store calculated features
-        self.anomaly_threshold = 0.7  # Higher threshold to reduce frequent triggers
-        self.suppression_threshold = 0.95  # Very high threshold for actual anomaly detection
+        self.anomaly_threshold = 0.6  # Lowered threshold to allow more signals (was 0.7)
+        self.suppression_threshold = 0.7  # Lowered threshold to allow more trading signals (was 0.95)
         self.model_fitted = False
         self.last_anomaly_timestamp = None
         self.anomaly_cooldown = 20  # Cooldown period after anomaly detection

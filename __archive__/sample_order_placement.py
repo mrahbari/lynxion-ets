@@ -113,7 +113,7 @@ def generate_market_data_for_coin(symbol_str: str, days: int = 7, timeframe: str
         "UNIUSDT": 7.0,
         "LINKUSDT": 15.0,
         "LUNAUSDT": 80.0,
-        "CROUSDT": 0.15,
+        "TONUSDT": 0.15,
         "ALGOUSDT": 0.18,
         "XLMUSDT": 0.12,
         "ETCUSDT": 20.0,

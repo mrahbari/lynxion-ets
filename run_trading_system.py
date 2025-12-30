@@ -332,7 +332,7 @@ def run_production_orchestrator(data_fetcher, strategy_name="crypto_breakout",
             self.logger.info(f"💾 SAVING OPTIMIZED PARAMETERS: {strategy_name} for {symbol}")
 
     # Create execution service first
-    execution_service = create_execution_service()  # Uses DEFAULT_BROKER environment variable
+    execution_service = create_execution_service(use_multi_broker=True, primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
 
     # Create enhanced data provider that uses real data and can download missing symbols
     # Use environment variable or default path for historical data
@@ -634,29 +634,6 @@ if __name__ == "__main__":
             from domain.ports.portfolio_ports import PortfolioManagementPort
             from domain.ports.optimization_ports import IOptimizationService
 
-            # Create mock implementations since the actual implementations may not exist yet
-            class MockExecutionService(ExecutionPort):
-                def __init__(self):
-                    from shared.logger import EnhancedLogger
-                    self.logger = EnhancedLogger("MockExecutionService")
-
-                def execute_order(self, order):
-                    print(f"Mock execution of order: {order}")
-                    return "mock_execution_id"
-
-                def cancel_order(self, order_id: str) -> bool:
-                    print(f"Mock cancellation of order: {order_id}")
-                    return True
-
-                def get_execution_status(self, execution_id: str) -> str:
-                    return "filled"
-
-                def get_available_symbols(self) -> set:
-                    """Get available symbols for mock service."""
-                    # Return an empty set since this is a mock service
-                    # In a real implementation, this would connect to the broker
-                    self.logger.debug("Mock execution service returning empty available symbols set")
-                    return set()
 
             class MockPortfolioService(PortfolioManagementPort):
                 def calculate_allocation(self, total_capital: float, symbols):
@@ -680,7 +657,8 @@ if __name__ == "__main__":
                     pass
 
             # Create execution service first
-            execution_service = MockExecutionService()
+            from infrastructure.services.broker_execution_service import create_execution_service
+            execution_service = create_execution_service(use_multi_broker=True, primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
 
             # Create enhanced data provider that uses real data and can download missing symbols
             # Use environment variable or default path for historical data

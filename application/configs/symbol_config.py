@@ -33,7 +33,8 @@ def _parse_wfo_symbols() -> List[SymbolSyncConfig]:
         wfo_coins_str = os.getenv("WFO_COINS", "")
         if not wfo_coins_str:
             # If neither coins.json nor WFO_COINS is set, try common default
-            print("⚠️  WARNING: WFO_COINS environment variable not set and coins.json not found. No symbols will be processed.")
+            print("⚠️  WARNING: WFO_COINS environment variable not set and coins.json not found. No symbols will be "
+                  "processed.")
             print("   Please set WFO_COINS in your .env file or create ./application/configs/coins.json")
             print("   Example coins.json format: {\"symbols\": [\"BTCUSDT\", \"ETHUSDT\", \"ZECUSDT\"]}")
             return []
@@ -55,7 +56,7 @@ def _parse_wfo_symbols() -> List[SymbolSyncConfig]:
             max_api_window_minutes=int(os.getenv("SYNC_MAX_WINDOW_MINUTES", "1440")),
             rate_limit_requests_per_minute=int(os.getenv("SYNC_RATE_LIMIT", "10")),
             enabled=True,
-            priority=max(10 - i//3, 1)  # Higher priority for first symbols
+            priority=max(10 - i // 3, 1)  # Higher priority for first symbols
         ))
 
     return symbol_configs

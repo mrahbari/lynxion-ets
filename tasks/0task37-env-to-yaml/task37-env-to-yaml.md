@@ -92,7 +92,7 @@ wfo:
       - UNIUSDT
       - LINKUSDT
       - LUNAUSDT
-      - CROUSDT
+      - TONUSDT
       - ALGOUSDT
       - XLMUSDT
       - ETCUSDT

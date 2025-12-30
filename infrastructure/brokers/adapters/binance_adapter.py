@@ -6,6 +6,7 @@ from domain.entities.trading_entities import Order, Position, Balance, OrderSide
 from domain.ports.broker_ports import BrokerPort
 from domain.value_objects import Symbol, Money
 from infrastructure.data.adapters.rest_client import RestClient
+from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 
 
 class BinanceBrokerAdapter(BrokerPort):

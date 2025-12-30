@@ -10,6 +10,7 @@ import logging
 from domain.entities.trading_entities import Order, Position, Balance, OrderSide
 from domain.ports.broker_ports import BrokerPort
 from domain.value_objects import Symbol, Money
+from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 
 
 class PhemexBrokerAdapter(BrokerPort):
@@ -188,9 +189,13 @@ class PhemexBrokerAdapter(BrokerPort):
         # Convert our order type to Phemex format
         side = "Buy" if order.side == OrderSide.BUY else "Sell"
 
+        # Format symbol for Phemex
+        symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
+        formatted_symbol = SymbolFormatHelper.format_symbol_for_exchange(symbol_str, 'phemex')
+
         # Prepare order parameters
         params = {
-            "symbol": order.symbol.value,
+            "symbol": formatted_symbol,
             "side": side,
             "ordType": order.order_type,
             "orderQty": int(order.quantity * 100000000) if order.quantity else 0,  # Convert to Phemex format
@@ -223,7 +228,12 @@ class PhemexBrokerAdapter(BrokerPort):
             return []
 
         path = "/orders/activeList"
-        query_params = {"symbol": symbol} if symbol else {}
+
+        # Format symbol for Phemex if provided
+        query_params = {}
+        if symbol:
+            formatted_symbol = SymbolFormatHelper.format_symbol_for_exchange(symbol, 'phemex')
+            query_params = {"symbol": formatted_symbol}
 
         response = self._make_request("GET", path, query_params=query_params)
         orders = []
@@ -254,8 +264,13 @@ class PhemexBrokerAdapter(BrokerPort):
             return False
 
         path = "/orders/cancel"
+
+        # Format symbol for Phemex
+        symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+        formatted_symbol = SymbolFormatHelper.format_symbol_for_exchange(symbol_str, 'phemex')
+
         params = {
-            "symbol": symbol.value,
+            "symbol": formatted_symbol,
             "orderID": order_id
         }
 
@@ -275,8 +290,13 @@ class PhemexBrokerAdapter(BrokerPort):
             return None
 
         path = "/orders"
+
+        # Format symbol for Phemex
+        symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+        formatted_symbol = SymbolFormatHelper.format_symbol_for_exchange(symbol_str, 'phemex')
+
         query_params = {
-            "symbol": symbol.value,
+            "symbol": formatted_symbol,
             "orderID": order_id
         }
 

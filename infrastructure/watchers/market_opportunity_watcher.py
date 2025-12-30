@@ -31,7 +31,8 @@ class MarketOpportunityWatcher:
                  opportunity_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
                  auto_discover_symbols: bool = False,
                  comprehensive_logging: bool = True,
-                 market_data_repo=None):
+                 market_data_repo=None,
+                 execution_service=None):
         self.auto_discover_symbols = auto_discover_symbols
         self.opportunity_callback = opportunity_callback
         self.logger = EnhancedLogger("MarketOpportunityWatcher", comprehensive_mode=comprehensive_logging)
@@ -46,6 +47,7 @@ class MarketOpportunityWatcher:
         self.signal_fusion_service = SignalFusionService()
 
         self.market_data_repo = market_data_repo
+        self.execution_service = execution_service
 
         # If no symbols provided and auto-discovery is enabled, discover symbols dynamically
         if auto_discover_symbols and not symbols:
@@ -1017,9 +1019,8 @@ class MarketOpportunityWatcher:
                             discovery_source="tick_watcher"
                         )
                 elif not symbol_to_primary_watcher:
-                    from infrastructure.brokers.broker_manager import BrokerManager
-                    broker_service = BrokerManager()
-                    symbol_watchers['tick_watcher'] = TickWatcherAdapter("TickWatcher", symbol.value, broker_service)
+                    # Use the execution service that's already available instead of creating a new BrokerManager
+                    symbol_watchers['tick_watcher'] = TickWatcherAdapter("TickWatcher", symbol.value, self.execution_service)
 
             self.watchers[symbol.value] = symbol_watchers
 
@@ -1095,6 +1096,9 @@ class MarketOpportunityWatcher:
         # First, fetch market data and update all watchers with fresh data
         for symbol in self.symbols:
             self._update_watchers_with_market_data(symbol)
+            # Add a small delay to ensure data is processed by watchers
+            import time
+            time.sleep(0.1)  # Small delay to allow data processing
 
         # Then analyze each symbol
         for symbol in self.symbols:
@@ -1339,43 +1343,86 @@ class MarketOpportunityWatcher:
                                     processed_signal)
 
                                 # Log the complete isolated flow for this watcher
+                                # Determine broker name dynamically from execution service if available
+                                broker_name = "UnknownBroker"
+                                if hasattr(self, 'execution_service') and self.execution_service:
+                                    if hasattr(self.execution_service, 'get_broker_name'):
+                                        broker_name = self.execution_service.get_broker_name()
+                                    elif hasattr(self.execution_service, 'broker_name'):
+                                        broker_name = self.execution_service.broker_name
+                                    elif hasattr(self.execution_service, 'broker') and hasattr(self.execution_service.broker, '__class__'):
+                                        broker_name = self.execution_service.broker.__class__.__name__.replace('Adapter', '')
+
                                 self.logger.log_full_flow(
                                     symbol=symbol_str,
                                     watcher=watcher_name,
                                     engine="SignalProcessor",
                                     fusion="SignalFusion",
                                     strategy=opportunities['strategy_suggestion'],
-                                    broker="Binance",
+                                    broker=broker_name,
                                     decision=f"Signal Processed: {processed_signal.signal_type.name}",
                                     confidence=processed_confidence,
                                     reason=f"Signal from {watcher_name} processed through complete flow",
                                 )
+
+                                # Execute trade if the signal is a BUY or SELL with sufficient confidence
+                                # Original threshold of 0.5 (50%) for proper risk management
+                                if processed_signal.signal_type.name in ['BUY', 'SELL'] and processed_confidence > 0.5:
+                                    self.logger.info(f"🎯 EXECUTING TRADE: {processed_signal.signal_type.name} for {processed_signal.symbol.value} with confidence {processed_confidence:.2%}")
+                                    self._execute_signal_trade(processed_signal, opportunities['strategy_suggestion'])
                             else:
                                 # Signal was valid but not fused (likely below threshold)
-                                signal_conf = float(signal.confidence.value) if hasattr(signal.confidence,
-                                                                                        'value') else float(
-                                    signal.confidence)
+                                # However, if the original signal was strong enough, we should still execute it
+                                original_confidence = float(signal.confidence.value) if hasattr(signal.confidence, 'value') else float(signal.confidence)
+                                original_signal_type = signal.signal_type.name if hasattr(signal, 'signal_type') else 'UNKNOWN'
+
+                                # If the original signal was strong enough, execute it directly
+                                # Original threshold of 0.5 (50%) for proper risk management
+                                if original_signal_type in ['BUY', 'SELL'] and original_confidence > 0.5:
+                                    self.logger.info(f"Executing unfused signal directly: {original_signal_type} for {symbol_str} with confidence {original_confidence:.2%}")
+                                    self._execute_signal_trade(signal, self._suggest_strategy_for_signal(signal))
+
+                                # Determine broker name dynamically from execution service if available
+                                broker_name = "No Broker Interaction"
+                                if hasattr(self, 'execution_service') and self.execution_service:
+                                    if hasattr(self.execution_service, 'get_broker_name'):
+                                        broker_name = self.execution_service.get_broker_name()
+                                    elif hasattr(self.execution_service, 'broker_name'):
+                                        broker_name = self.execution_service.broker_name
+                                    elif hasattr(self.execution_service, 'broker') and hasattr(self.execution_service.broker, '__class__'):
+                                        broker_name = self.execution_service.broker.__class__.__name__.replace('Adapter', '')
+
                                 self.logger.log_full_flow(
                                     symbol=symbol_str,
                                     watcher=watcher_name,
                                     engine="SignalProcessor",
                                     fusion="SignalFusion",
                                     strategy="No Strategy Selected",
-                                    broker="No Broker Interaction",
+                                    broker=broker_name,
                                     decision="Signal Below Threshold",
-                                    confidence=signal_conf,
+                                    confidence=original_confidence,
                                     reason=f"Valid signal from {watcher_name} but below fusion threshold",
                                 )
                         else:
                             # Signal was invalid
                             invalid_reason = invalid_signals[0][1] if invalid_signals else "Unknown validation error"
+                            # Determine broker name dynamically from execution service if available
+                            broker_name = "No Broker Interaction"
+                            if hasattr(self, 'execution_service') and self.execution_service:
+                                if hasattr(self.execution_service, 'get_broker_name'):
+                                    broker_name = self.execution_service.get_broker_name()
+                                elif hasattr(self.execution_service, 'broker_name'):
+                                    broker_name = self.execution_service.broker_name
+                                elif hasattr(self.execution_service, 'broker') and hasattr(self.execution_service.broker, '__class__'):
+                                    broker_name = self.execution_service.broker.__class__.__name__.replace('Adapter', '')
+
                             self.logger.log_full_flow(
                                 symbol=symbol_str,
                                 watcher=watcher_name,
                                 engine="SignalProcessor",
                                 fusion="SignalFusion",
                                 strategy="No Strategy Selected",
-                                broker="No Broker Interaction",
+                                broker=broker_name,
                                 decision="Signal Rejected by Processor",
                                 confidence=0.0,
                                 reason=f"Signal rejected by processor: {invalid_reason}",
@@ -1401,13 +1448,23 @@ class MarketOpportunityWatcher:
 
                         # Log the complete flow for this watcher showing no signal was generated
                         # This is important - even when no signal is generated, the watcher still went through the process
+                        # Determine broker name dynamically from execution service if available
+                        broker_name = "No Broker Interaction"
+                        if hasattr(self, 'execution_service') and self.execution_service:
+                            if hasattr(self.execution_service, 'get_broker_name'):
+                                broker_name = self.execution_service.get_broker_name()
+                            elif hasattr(self.execution_service, 'broker_name'):
+                                broker_name = self.execution_service.broker_name
+                            elif hasattr(self.execution_service, 'broker') and hasattr(self.execution_service.broker, '__class__'):
+                                broker_name = self.execution_service.broker.__class__.__name__.replace('Adapter', '')
+
                         self.logger.log_full_flow(
                             symbol=symbol_str,
                             watcher=watcher_name,
                             engine="SignalProcessor",
                             fusion="SignalFusion",
                             strategy="No Strategy Selected",
-                            broker="No Broker Interaction",
+                            broker=broker_name,
                             decision="No Signal Generated",
                             confidence=0.0,
                             reason=f"No signal generated by {watcher_name}",
@@ -1424,13 +1481,23 @@ class MarketOpportunityWatcher:
                     )
 
                     # Log the error in the full flow
+                    # Determine broker name dynamically from execution service if available
+                    broker_name = "No Broker Interaction"
+                    if hasattr(self, 'execution_service') and self.execution_service:
+                        if hasattr(self.execution_service, 'get_broker_name'):
+                            broker_name = self.execution_service.get_broker_name()
+                        elif hasattr(self.execution_service, 'broker_name'):
+                            broker_name = self.execution_service.broker_name
+                        elif hasattr(self.execution_service, 'broker') and hasattr(self.execution_service.broker, '__class__'):
+                            broker_name = self.execution_service.broker.__class__.__name__.replace('Adapter', '')
+
                     self.logger.log_full_flow(
                         symbol=symbol_str,
                         watcher=watcher_name,
                         engine="SignalProcessor",
                         fusion="SignalFusion",
                         strategy="No Strategy Selected",
-                        broker="No Broker Interaction",
+                        broker=broker_name,
                         decision="Error in Processing",
                         confidence=0.0,
                         reason=f"Error analyzing {watcher_name}: {str(e)}",
@@ -1511,6 +1578,123 @@ class MarketOpportunityWatcher:
                     self.opportunity_callback(opportunities)
                 except Exception as e:
                     self.logger.error(f"Error in opportunity callback: {e}")
+
+    def _execute_signal_trade(self, signal, strategy_name: str):
+        """Execute a trade based on the processed signal."""
+        if not self.execution_service:
+            self.logger.warning(f"No execution service available to execute {signal.signal_type.name} signal for {signal.symbol.value}")
+            return
+
+        try:
+            # Get current price for the symbol to determine position size
+            current_price = None
+            if self.market_data_repo:
+                try:
+                    current_price = self.market_data_repo.get_current_price(signal.symbol)
+                except:
+                    # If we can't get current price from data repo, try to get from exchange directly
+                    pass
+
+            # If we still don't have a price, use a fallback
+            if current_price is None or current_price <= 0:
+                # Try to get price from exchange directly
+                try:
+                    import ccxt
+                    exchange = ccxt.binance()
+                    ticker = exchange.fetch_ticker(signal.symbol.value)
+                    current_price = ticker['last'] if 'last' in ticker else ticker['close']
+                except:
+                    # If all methods fail, we'll still proceed but log the issue
+                    self.logger.warning(f"Could not get current price for {signal.symbol.value}, using default price")
+                    current_price = 50000.0  # Fallback price
+
+            # Calculate position size based on signal confidence and risk management
+            confidence = float(signal.confidence.value) if hasattr(signal.confidence, 'value') else float(
+                signal.confidence)
+            base_position_size = 0.02  # 2% of account as base position
+            risk_adjusted_size = base_position_size * confidence  # Adjust based on signal confidence
+
+            # Calculate quantity based on account balance and risk
+            # For now, using a fixed amount - in real system this would come from portfolio service
+            try:
+                # In a real implementation, we'd get portfolio metrics from portfolio service
+                # For now, using a default account balance
+                account_balance = 10000.0  # Default to $10,000 if not available
+                position_value = account_balance * risk_adjusted_size
+                quantity = position_value / current_price
+            except:
+                # If portfolio service fails, use a default quantity
+                quantity = risk_adjusted_size * 1000 / current_price  # Default to 2% of $1000
+
+            # Ensure minimum quantity to avoid issues with small trades
+            if quantity < 0.001:
+                quantity = 0.001  # Minimum trade size
+
+            # Create order object using domain entities
+            from domain.entities.trading_entities import Order, OrderSide
+            from domain.value_objects import Money
+
+            # Ensure the signal type is properly handled
+            signal_type_name = signal.signal_type.name if hasattr(signal.signal_type, 'name') else str(signal.signal_type)
+            order_side = OrderSide.BUY if signal_type_name == 'BUY' else OrderSide.SELL
+
+            # Determine position side based on order side for futures trading
+            position_side = "LONG" if signal_type_name == 'BUY' else "SHORT"
+
+            # Ensure symbol is properly formatted for the broker
+            symbol_value = signal.symbol.value if hasattr(signal.symbol, 'value') else str(signal.symbol)
+
+            order = Order(
+                symbol=symbol_value,  # Use string value instead of Symbol object
+                side=order_side,
+                order_type="MARKET",  # Using string instead of enum
+                quantity=quantity,
+                price=Money(amount=current_price, currency='USDT') if current_price else None,
+                strategy_name=strategy_name,
+                timestamp=datetime.now(),
+                position_side=position_side  # Add position side for futures trading
+            )
+
+            # Execute order through execution service
+            execution_id = self.execution_service.execute_order(order)
+
+            # Log the successful execution with detailed information
+            # Handle both string and object formats for symbol and side
+            symbol_log_value = signal.symbol.value if hasattr(signal.symbol, 'value') else str(signal.symbol)
+            side_log_value = order.side.value if hasattr(order.side, 'value') else str(order.side)
+
+            self.logger.info(
+                f"⚡ TRADE EXECUTED: {side_log_value} {quantity:.4f} {symbol_log_value} @ ${current_price:.4f} | Signal: {signal_type_name} | Conf: {confidence:.2%}",
+                order_id=execution_id,
+                symbol=symbol_log_value,
+                side=side_log_value,
+                quantity=quantity,
+                price=current_price,
+                signal_type=signal_type_name,
+                confidence=confidence
+            )
+
+            # Log the execution in the signal progression
+            self.logger.log_signal_progression(
+                symbol=symbol_log_value,
+                stage="broker",
+                status="Executed",
+                details=f"Order executed successfully: {execution_id}",
+                confidence=confidence
+            )
+
+        except Exception as e:
+            import traceback
+            self.logger.error(f"Error executing trade for signal: {e}")
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
+            # Log the execution failure
+            self.logger.log_signal_progression(
+                symbol=signal.symbol.value,
+                stage="broker",
+                status="Failed",
+                details=f"Order execution failed: {str(e)}",
+                confidence=float(signal.confidence.value) if hasattr(signal.confidence, 'value') else float(signal.confidence)
+            )
 
     def get_status(self) -> Dict[str, Any]:
         """Get current status of the watcher."""

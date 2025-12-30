@@ -39,7 +39,7 @@ import pandas as pd
 
 def get_wfo_coins() -> List[str]:
     """Get WFO_COINS from environment variable"""
-    wfo_coins_str = os.getenv("WFO_COINS", "BTCUSDT,ETHUSDT,SOLUSDT,ADAUSDT,AVAXUSDT,DOGEUSDT,TRXUSDT,ATOMUSDT,TONUSDT,LINKUSDT,TRXUSDT,NEARUSDT,EGLDUSDT,APTUSDT,AAVEUSDT,CROUSDT,UNIUSDT,INJUSDT,FILUSDT,ARBUSDT,PEPEUSDT,APTUSDT,GMXUSDT,ORDIUSDT,RUNEUSSDT")
+    wfo_coins_str = os.getenv("WFO_COINS", "BTCUSDT,ETHUSDT,SOLUSDT,ADAUSDT,AVAXUSDT,DOGEUSDT,TRXUSDT,ATOMUSDT,TONUSDT,LINKUSDT,TRXUSDT,NEARUSDT,EGLDUSDT,APTUSDT,AAVEUSDT,TONUSDT,UNIUSDT,INJUSDT,FILUSDT,ARBUSDT,PEPEUSDT,APTUSDT,GMXUSDT,ORDIUSDT,RUNEUSSDT")
     coins = [coin.strip() for coin in wfo_coins_str.split(",")]
     
     # Exclude HBARUSDT since it was manually ordered
@@ -70,7 +70,7 @@ def generate_market_data_for_coin(symbol_str: str, days: int = 7, timeframe: str
         "UNIUSDT": 7.0,
         "LINKUSDT": 15.0,
         "LUNAUSDT": 80.0,
-        "CROUSDT": 0.15,
+        "TONUSDT": 0.15,
         "ALGOUSDT": 0.18,
         "XLMUSDT": 0.12,
         "ETCUSDT": 20.0,
@@ -285,7 +285,7 @@ def place_orders_with_all_strategies():
                     'BTCUSDT': 0.0002, 'ETHUSDT': 0.001, 'BNBUSDT': 0.01, 'ADAUSDT': 4.0,
                     'XRPUSDT': 1.0, 'SOLUSDT': 1.0, 'DOTUSDT': 0.9, 'DOGEUSDT': 13.0,
                     'AVAXUSDT': 1.0, 'SHIBUSDT': 1000000.0, 'MATICUSDT': 1.0, 'LTCUSDT': 0.1,
-                    'UNIUSDT': 1.0, 'LINKUSDT': 0.1, 'LUNAUSDT': 16.0, 'CROUSDT': 10.0,
+                    'UNIUSDT': 1.0, 'LINKUSDT': 0.1, 'LUNAUSDT': 16.0, 'TONUSDT': 10.0,
                     'ALGOUSDT': 15.7, 'XLMUSDT': 8.0, 'ETCUSDT': 0.14, 'BCHUSDT': 0.1,
                     'NEARUSDT': 1.0, 'FLOWUSDT': 10.1, 'MANAUSDT': 13.0, 'SANDUSDT': 14.0,
                     'AAVEUSDT': 0.1

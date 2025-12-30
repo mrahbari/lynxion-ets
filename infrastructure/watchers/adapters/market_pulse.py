@@ -33,8 +33,8 @@ class MarketPulseWatcher(BaseWatcher):
         self.price_history = []
         self.volume_history = []
 
-        # Define clear thresholds for NO SIGNAL zone
-        self.signal_threshold = 0.15  # Increased threshold to avoid constant firing
+        # Define thresholds for signal generation - lowered to allow more trading opportunities
+        self.signal_threshold = 0.05  # Lowered threshold to allow more signals (was 0.15)
 
         # Initialize sub-components
         self.momentum_subscore = 0.0
