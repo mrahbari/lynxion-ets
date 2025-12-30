@@ -203,14 +203,54 @@ class LiquidityWatcher(BaseWatcher):
             confidence = 0.9  # High confidence in hold during low liquidity
         elif liquidity_regime == "high" and sweep_detected:
             # High liquidity with sweep detected - potential opportunity
-            signal_type = SignalType.HOLD  # Still HOLD as liquidity sweeps don't directly signal direction
-            confidence = 0.7
+            # Determine direction based on recent price action during sweep
+            recent_price_changes = []
+            if len(self.price_volatility_history) >= 2:
+                recent_price_changes = [self.price_volatility_history[-i][0] - self.price_volatility_history[-i-1][0]
+                                       for i in range(1, min(3, len(self.price_volatility_history)))]
+                avg_price_change = np.mean(recent_price_changes) if recent_price_changes else 0
+            else:
+                avg_price_change = 0
+
+            if avg_price_change > 0:
+                # Price rising during liquidity sweep - potential for continuation (BUY)
+                signal_type = SignalType.BUY
+                confidence = 0.8
+            else:
+                # Price falling during liquidity sweep - potential for bounce (SELL)
+                signal_type = SignalType.SELL
+                confidence = 0.8
         elif liquidity_regime == "high":
-            # High liquidity: generally favorable conditions
-            signal_type = SignalType.HOLD
-            confidence = 0.4  # Lower confidence as high liquidity alone doesn't signal direction
+            # High liquidity: generally favorable conditions for trading
+            # Use liquidity score to determine direction
+            if current_liquidity > 0.8:
+                # Very high liquidity - potential for large moves
+                signal_type = SignalType.BUY  # High liquidity often supports bullish moves
+                confidence = 0.6
+            elif current_liquidity < -0.8:
+                # Very low liquidity score (negative) - potential for bearish moves
+                signal_type = SignalType.SELL
+                confidence = 0.6
+            else:
+                # Moderate high liquidity - hold
+                signal_type = SignalType.HOLD
+                confidence = 0.4
+        elif liquidity_regime == "normal":
+            # Normal liquidity: check for subtle changes
+            if current_liquidity > 0.3:
+                # Increasing liquidity - potential for bullish move
+                signal_type = SignalType.BUY
+                confidence = 0.5
+            elif current_liquidity < -0.3:
+                # Decreasing liquidity - potential for bearish move
+                signal_type = SignalType.SELL
+                confidence = 0.5
+            else:
+                # Stable normal liquidity - hold
+                signal_type = SignalType.HOLD
+                confidence = 0.5
         else:
-            # Normal liquidity: hold
+            # Unknown liquidity: hold
             signal_type = SignalType.HOLD
             confidence = 0.5
 

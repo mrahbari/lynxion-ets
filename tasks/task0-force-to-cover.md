@@ -23,3 +23,4 @@
 * [ ] Verify that the project builds successfully.
 * [ ] Ensure all automated tests pass.
 * [ ] Perform a final full-system verification to guarantee 100% correctness.
+* [ ] The system must be fully functional and able to order placement via mentioned flow (Watcher → Engine → Fusion → Strategy → Broker)

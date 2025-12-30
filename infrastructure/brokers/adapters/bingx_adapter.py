@@ -342,7 +342,14 @@ class _BingXBroker:
                 else:
                     position_side_value = str(order.position_side)
             else:
-                position_side_value = 'BOTH'
+                # For BingX, if position_side is not specified, determine it based on order side
+                # For LONG positions with BUY orders or SHORT positions with SELL orders
+                if order.side == OrderSide.BUY:
+                    position_side_value = 'LONG'
+                elif order.side == OrderSide.SELL:
+                    position_side_value = 'SHORT'
+                else:
+                    position_side_value = 'BOTH'
 
             order_data = {
                 'symbol': symbol_formatted,
@@ -354,17 +361,34 @@ class _BingXBroker:
             order_data['positionSide'] = position_side_value
 
             if order.price:
-                order_data['price'] = str(order.price.amount)
+                # Handle both Money object and float/numeric values
+                if hasattr(order.price, 'amount'):
+                    # If it's a Money object, use the amount attribute
+                    price_value = order.price.amount
+                else:
+                    # If it's already a numeric value, use it directly
+                    price_value = order.price
+                order_data['price'] = str(price_value)
 
             # Add Stop Loss and Take Profit parameters if they exist in the order
             # According to the BingX API, these should be separate parameters in the same request
             if hasattr(order, 'stop_loss_price') and order.stop_loss_price:
                 # For stop loss, BingX expects stopLossPrice parameter
-                order_data['stopLossPrice'] = str(order.stop_loss_price.amount)
+                # Handle both Money object and float/numeric values
+                if hasattr(order.stop_loss_price, 'amount'):
+                    sl_price_value = order.stop_loss_price.amount
+                else:
+                    sl_price_value = order.stop_loss_price
+                order_data['stopLossPrice'] = str(sl_price_value)
 
             if hasattr(order, 'take_profit_price') and order.take_profit_price:
                 # For take profit, BingX expects takeProfitPrice parameter
-                order_data['takeProfitPrice'] = str(order.take_profit_price.amount)
+                # Handle both Money object and float/numeric values
+                if hasattr(order.take_profit_price, 'amount'):
+                    tp_price_value = order.take_profit_price.amount
+                else:
+                    tp_price_value = order.take_profit_price
+                order_data['takeProfitPrice'] = str(tp_price_value)
 
             endpoint = "/openApi/swap/v2/trade/order"
             response = self._make_request('POST', endpoint, data=order_data, signed=True)

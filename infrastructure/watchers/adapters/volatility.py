@@ -87,18 +87,15 @@ class VolatilityWatcher(BaseWatcher):
         # Update previous regime for next iteration
         self.previous_regime = current_regime
 
-        # Only emit signal if there's a regime change or if we're in a transition state
-        # This prevents constant firing during stable regimes
-        should_emit = self.regime_change_detected or self.is_regime_transition(current_regime, volatility_ratio)
+        # Generate signals based on current volatility regime, not just regime changes
+        # This allows for more actionable trading signals
+        should_emit = True  # Always emit a signal based on current conditions
 
         # Apply cooldown to prevent frequent signals
         if self.signal_cooldown > 0:
-            should_emit = False
             self.signal_cooldown -= 1
-
-        if not should_emit:
-            # Return HOLD with low confidence when no regime change detected
-            confidence_percentage = Percentage(Decimal(str(0.1)))  # Low confidence when no signal is generated
+            # Still return a signal but with lower confidence during cooldown
+            confidence_percentage = Percentage(Decimal(str(0.1)))  # Low confidence during cooldown
 
             signal = Signal(
                 symbol=symbol,
@@ -113,7 +110,7 @@ class VolatilityWatcher(BaseWatcher):
                     'volatility_ratio': volatility_ratio,
                     'current_volatility': current_volatility,
                     'average_volatility': avg_volatility,
-                    'explanation': f"Current volatility regime: {current_regime}, no significant transition detected"
+                    'explanation': f"Current volatility regime: {current_regime}, in cooldown period"
                 }
             )
             return signal
@@ -121,23 +118,37 @@ class VolatilityWatcher(BaseWatcher):
         # Calculate score based on volatility transition
         score = self.calculate_volatility_transition_score(current_volatility, avg_volatility, volatility_ratio)
 
-        # Determine signal type based on volatility transition
-        if current_regime == "expansion" and self.regime_change_detected:
-            # Volatility expansion detected - potential market movement
-            signal_type = SignalType.HOLD  # Not a direct buy/sell signal, just market awareness
-            confidence = min(1.0, abs(score) * 0.8)  # High confidence for expansion detection
-            # Activate cooldown to prevent repeated signals during sustained expansion
-            self.signal_cooldown = self.max_cooldown
-        elif current_regime == "compression" and self.regime_change_detected:
-            # Volatility compression detected - potential breakout setup
-            signal_type = SignalType.HOLD  # Not a direct buy/sell signal, just market awareness
-            confidence = min(1.0, abs(score) * 0.8)  # High confidence for compression detection
-            # Activate cooldown to prevent repeated signals during sustained compression
-            self.signal_cooldown = self.max_cooldown
-        else:
-            signal_type = SignalType.HOLD
-            confidence = 0.3
-            score = 0.0
+        # Determine signal type based on current volatility regime and transition
+        # Use volatility patterns to generate actionable trading signals
+        if current_regime == "expansion":
+            # High volatility expansion - potential for trend continuation or reversal
+            # If volatility is expanding significantly, it may indicate strong market movement
+            if volatility_ratio > self.volatility_expansion_threshold * 1.2:  # Even higher expansion
+                # Extreme volatility - potential for reversal, SELL in uptrend, BUY in downtrend
+                # For now, we'll use SELL as expansion often indicates potential reversal from highs
+                signal_type = SignalType.SELL
+                confidence = min(1.0, abs(score) * 0.9)  # High confidence for extreme expansion
+            else:
+                # Moderate expansion - potential for continuation
+                signal_type = SignalType.BUY  # Expansion can indicate bullish sentiment
+                confidence = min(0.7, abs(score) * 0.7)  # Moderate confidence
+        elif current_regime == "compression":
+            # Low volatility compression - potential breakout setup
+            # Compression often precedes significant price movements
+            signal_type = SignalType.BUY  # Breakout potential is generally positive
+            confidence = min(0.8, abs(score) * 0.8)  # High confidence for compression breakout potential
+        else:  # normal regime
+            # In normal volatility, look for subtle changes
+            if score > 0.1:
+                signal_type = SignalType.BUY  # Positive volatility trend
+                confidence = min(0.6, (score + 0.3) * 0.7)  # Moderate confidence
+            elif score < -0.1:
+                signal_type = SignalType.SELL  # Negative volatility trend
+                confidence = min(0.6, (abs(score) + 0.3) * 0.7)  # Moderate confidence
+            else:
+                signal_type = SignalType.HOLD
+                confidence = 0.3
+                score = 0.0
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))

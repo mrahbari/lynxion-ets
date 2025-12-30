@@ -150,7 +150,12 @@ class BrokerExecutionService(ExecutionPort):
         """Execute an order through the configured broker."""
         try:
             self.logger.info(f"🎯 EXECUTING ORDER ON {self.broker_name}: {order}")
-            order_id = self.broker.place_order(order)
+            # If using multi-broker service, use execute_order method
+            if self.use_multi_broker:
+                order_id = self.broker.execute_order(order)
+            else:
+                # For single broker, use place_order method
+                order_id = self.broker.place_order(order)
             self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {self.broker_name}: {order_id}")
             return order_id
         except Exception as e:
@@ -161,9 +166,14 @@ class BrokerExecutionService(ExecutionPort):
         """Cancel an order through the configured broker."""
         try:
             self.logger.info(f"🔄 CANCELLING ORDER ON {self.broker_name}: {order_id}")
-            # For now, we'll use a placeholder symbol - in real implementation, 
-            # the order_id should be sufficient or you'd pass the symbol
-            return self.broker.cancel_order(order_id, Symbol("BTCUSDT"))  # Placeholder
+            # If using multi-broker service, use cancel_order method directly
+            if self.use_multi_broker:
+                return self.broker.cancel_order(order_id)
+            else:
+                # For single broker, use cancel_order method with placeholder symbol
+                # For now, we'll use a placeholder symbol - in real implementation,
+                # the order_id should be sufficient or you'd pass the symbol
+                return self.broker.cancel_order(order_id, Symbol("BTCUSDT"))  # Placeholder
         except Exception as e:
             self.logger.error(f"❌ FAILED TO CANCEL ORDER ON {self.broker_name}: {e}")
             return False
@@ -171,10 +181,15 @@ class BrokerExecutionService(ExecutionPort):
     def get_execution_status(self, execution_id: str) -> str:
         """Get the status of an execution through the configured broker."""
         try:
-            # In a real implementation, you'd need the symbol as well
-            # For now, using placeholder - real implementation would track symbol with execution
-            status = self.broker.get_order_status(execution_id, Symbol("BTCUSDT"))  # Placeholder
-            return status
+            # If using multi-broker service, use get_execution_status method directly
+            if self.use_multi_broker:
+                return self.broker.get_execution_status(execution_id)
+            else:
+                # For single broker, use get_order_status method with placeholder symbol
+                # In a real implementation, you'd need the symbol as well
+                # For now, using placeholder - real implementation would track symbol with execution
+                status = self.broker.get_order_status(execution_id, Symbol("BTCUSDT"))  # Placeholder
+                return status
         except Exception as e:
             self.logger.error(f"❌ FAILED TO GET EXECUTION STATUS ON {self.broker_name}: {e}")
             return "error"

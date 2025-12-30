@@ -66,20 +66,24 @@ class TickWatcherAdapter(WatcherPort):
             if current_price is None:
                 return None
 
-            # Placeholder logic - in real implementation this would analyze tick data
-            tick_signal = Signal(
-                symbol=symbol or self.symbol,
-                signal_type=SignalType.NEUTRAL,
-                confidence=Percentage(Decimal('0.5')),
-                score=0.0,
-                strategy_name=f"TickWatcher_{self.name}",
-                timestamp=datetime.now(),
-                metadata={
-                    'tick_analysis': 'placeholder',
-                    'last_price': current_price,
-                    'tick_volume': len(self.tick_cache) if self.tick_cache else 0
-                }
-            )
+            # Analyze tick data for patterns and momentum shifts
+            tick_signal = self._analyze_tick_data(symbol or self.symbol, current_price)
+
+            if tick_signal is None:
+                # If no clear signal from tick analysis, return HOLD with low confidence
+                tick_signal = Signal(
+                    symbol=symbol or self.symbol,
+                    signal_type=SignalType.HOLD,
+                    confidence=Percentage(Decimal('0.2')),
+                    score=0.0,
+                    strategy_name=f"TickWatcher_{self.name}",
+                    timestamp=datetime.now(),
+                    metadata={
+                        'tick_analysis': 'insufficient_data',
+                        'last_price': current_price,
+                        'tick_volume': len(self.tick_cache) if self.tick_cache else 0
+                    }
+                )
 
             return tick_signal
         except Exception as e:
@@ -151,3 +155,93 @@ class TickWatcherAdapter(WatcherPort):
         except Exception as e:
             logger.error(f"Error getting price for {symbol.value}: {e}")
             return None
+
+    def _analyze_tick_data(self, symbol: Symbol, current_price: float) -> Optional[Signal]:
+        """Analyze tick data for momentum shifts, volume imbalances, and patterns"""
+        if len(self.tick_cache) < 10:  # Need sufficient tick data for analysis
+            return None
+
+        # Extract recent tick data
+        recent_ticks = self.tick_cache[-20:] if len(self.tick_cache) >= 20 else self.tick_cache
+
+        # Calculate price momentum from recent ticks
+        prices = [tick.get('price', tick.get('close', tick.get('last', current_price)))
+                  for tick in recent_ticks if 'price' in tick or 'close' in tick or 'last' in tick]
+
+        if len(prices) < 5:
+            return None
+
+        # Calculate recent momentum (direction and strength)
+        recent_momentum = (prices[-1] - prices[0]) / prices[0] if prices[0] != 0 else 0
+
+        # Calculate volatility from recent ticks
+        import numpy as np
+        price_changes = [abs(prices[i] - prices[i-1]) / prices[i-1] if prices[i-1] != 0 else 0
+                         for i in range(1, len(prices))]
+        volatility = np.mean(price_changes) if price_changes else 0
+
+        # Calculate volume metrics if available
+        volumes = [tick.get('volume', tick.get('qty', 0)) for tick in recent_ticks]
+        avg_volume = np.mean(volumes) if volumes else 0
+        current_volume = volumes[-1] if volumes else 0
+        volume_spike = current_volume / avg_volume if avg_volume > 0 else 0
+
+        # Determine signal based on momentum, volatility, and volume
+        signal_type = SignalType.HOLD
+        confidence = 0.3
+        score = 0.0
+
+        # Strong momentum with volume confirmation
+        if abs(recent_momentum) > 0.005 and volume_spike > 1.5:  # 0.5% momentum + 50% volume spike
+            if recent_momentum > 0:
+                signal_type = SignalType.BUY
+                confidence = min(0.9, abs(recent_momentum) * 100 + volume_spike * 0.1)
+            else:
+                signal_type = SignalType.SELL
+                confidence = min(0.9, abs(recent_momentum) * 100 + volume_spike * 0.1)
+        # Moderate momentum
+        elif abs(recent_momentum) > 0.002:  # 0.2% momentum
+            if recent_momentum > 0:
+                signal_type = SignalType.BUY
+                confidence = min(0.7, abs(recent_momentum) * 100)
+            else:
+                signal_type = SignalType.SELL
+                confidence = min(0.7, abs(recent_momentum) * 100)
+        # High volatility without clear direction (potential reversal zone)
+        elif volatility > 0.008:  # High volatility
+            # Look for signs of exhaustion or reversal
+            if recent_momentum > 0 and len(prices) > 10:
+                # Check if momentum is decreasing (sign of potential reversal)
+                earlier_momentum = (prices[5] - prices[0]) / prices[0] if prices[0] != 0 else 0
+                if earlier_momentum > abs(recent_momentum):  # Earlier momentum was stronger
+                    signal_type = SignalType.SELL  # Potential reversal from high momentum
+                    confidence = 0.6
+            elif recent_momentum < 0 and len(prices) > 10:
+                earlier_momentum = (prices[5] - prices[0]) / prices[0] if prices[0] != 0 else 0
+                if earlier_momentum < recent_momentum:  # Earlier momentum was stronger negative
+                    signal_type = SignalType.BUY  # Potential reversal from low momentum
+                    confidence = 0.6
+
+        if signal_type != SignalType.HOLD:
+            score = recent_momentum  # Use momentum as score
+            return Signal(
+                symbol=symbol,
+                signal_type=signal_type,
+                confidence=Percentage(Decimal(str(confidence))),
+                score=score,
+                strategy_name=f"TickWatcher_{self.name}",
+                timestamp=datetime.now(),
+                metadata={
+                    'tick_analysis': {
+                        'momentum': recent_momentum,
+                        'volatility': volatility,
+                        'volume_spike': volume_spike,
+                        'avg_volume': avg_volume,
+                        'ticks_analyzed': len(recent_ticks)
+                    },
+                    'last_price': current_price,
+                    'tick_volume': len(self.tick_cache)
+                }
+            )
+
+        return None  # No clear signal

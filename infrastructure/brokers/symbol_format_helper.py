@@ -24,15 +24,16 @@ class SymbolFormatHelper:
         normalized_symbol = symbol.replace('-', '').replace('/', '').replace('_', '')
 
         # Define exchange-specific formats
-        slash_format_exchanges = ['binance', 'bingx', 'mexc', 'phemex']
+        slash_format_exchanges = ['binance', 'mexc', 'phemex']
+        dash_format_exchanges = ['bingx']
 
         if exchange_name.lower() in slash_format_exchanges:
             # These exchanges expect the format like BTC/USDT
             # Extract base and quote currency by looking for common quote currencies at the end
             quote_currencies = [
-                'USDT', 'USD', 'BTC', 'ETH', 'BNB', 'BUSD', 'USDC', 'DAI', 'TUSD', 'PAX', 
+                'USDT', 'USD', 'BTC', 'ETH', 'BNB', 'BUSD', 'USDC', 'DAI', 'TUSD', 'PAX',
                 'USDD', 'FDUSD', 'TERRA', 'FRAX', 'LUSD', 'FEI', 'ALUSD', 'GUSD', 'HUSD',
-                'EUR', 'GBP', 'JPY', 'TRY', 'RUB', 'ZAR', 'UAH', 'NGN', 'BRL', 'AUD', 
+                'EUR', 'GBP', 'JPY', 'TRY', 'RUB', 'ZAR', 'UAH', 'NGN', 'BRL', 'AUD',
                 'CAD', 'CHF', 'CNY', 'HKD', 'IDR', 'INR', 'KRW', 'SGD', 'THB', 'VND'
             ]
 
@@ -42,6 +43,25 @@ class SymbolFormatHelper:
                     base = normalized_symbol[:-len(qc)]
                     quote = qc
                     return f"{base}/{quote}"
+
+            # If not found at the end, return the normalized symbol as is
+            return normalized_symbol
+        elif exchange_name.lower() in dash_format_exchanges:
+            # These exchanges expect the format like BTC-USDT
+            # Extract base and quote currency by looking for common quote currencies at the end
+            quote_currencies = [
+                'USDT', 'USD', 'BTC', 'ETH', 'BNB', 'BUSD', 'USDC', 'DAI', 'TUSD', 'PAX',
+                'USDD', 'FDUSD', 'TERRA', 'FRAX', 'LUSD', 'FEI', 'ALUSD', 'GUSD', 'HUSD',
+                'EUR', 'GBP', 'JPY', 'TRY', 'RUB', 'ZAR', 'UAH', 'NGN', 'BRL', 'AUD',
+                'CAD', 'CHF', 'CNY', 'HKD', 'IDR', 'INR', 'KRW', 'SGD', 'THB', 'VND'
+            ]
+
+            # Look for quote currency at the end of the symbol first (most common case)
+            for qc in quote_currencies:
+                if normalized_symbol.upper().endswith(qc.upper()):
+                    base = normalized_symbol[:-len(qc)]
+                    quote = qc
+                    return f"{base}-{quote}"
 
             # If not found at the end, return the normalized symbol as is
             return normalized_symbol

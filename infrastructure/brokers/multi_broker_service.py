@@ -192,14 +192,39 @@ class MultiBrokerExecutionService(ExecutionPort):
         Execute an order, trying different exchanges if the symbol is not available on the primary one.
         """
         symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
-        
-        # Find the best exchange for this symbol
-        best_exchange = self._find_best_exchange_for_symbol(symbol_str)
-        
-        if best_exchange:
+
+        # Check for broker-specific order placement settings
+        import os
+
+        # Check if any specific broker is enabled for exclusive order placement
+        bingx_order_placement_enabled = os.getenv('BINGX_ORDER_PLACEMENT_ENABLED', 'false').lower() == 'true'
+        binance_order_placement_enabled = os.getenv('BINANCE_ORDER_PLACEMENT_ENABLED', 'false').lower() == 'true'
+        mexc_order_placement_enabled = os.getenv('MEXC_ORDER_PLACEMENT_ENABLED', 'false').lower() == 'true'
+        phemex_order_placement_enabled = os.getenv('PHEMEX_ORDER_PLACEMENT_ENABLED', 'false').lower() == 'true'
+
+        # Determine which broker to use based on environment variables
+        # Priority: Check each broker in order, first one enabled gets priority
+        best_exchange = None
+        if bingx_order_placement_enabled and 'bingx' in self.brokers:
+            best_exchange = 'bingx'
+            self.logger.info(f"🎯 BINGX ORDER PLACEMENT ENABLED - EXECUTING ORDER ON BINGX: {order}")
+        elif binance_order_placement_enabled and 'binance' in self.brokers:
+            best_exchange = 'binance'
+            self.logger.info(f"🎯 BINANCE ORDER PLACEMENT ENABLED - EXECUTING ORDER ON BINANCE: {order}")
+        elif mexc_order_placement_enabled and 'mexc' in self.brokers:
+            best_exchange = 'mexc'
+            self.logger.info(f"🎯 MEXC ORDER PLACEMENT ENABLED - EXECUTING ORDER ON MEXC: {order}")
+        elif phemex_order_placement_enabled and 'phemex' in self.brokers:
+            best_exchange = 'phemex'
+            self.logger.info(f"🎯 PHEMEX ORDER PLACEMENT ENABLED - EXECUTING ORDER ON PHEMEX: {order}")
+        else:
+            # Find the best exchange for this symbol (original behavior)
+            best_exchange = self._find_best_exchange_for_symbol(symbol_str)
+
+        if best_exchange and best_exchange in self.brokers:
             broker = self.brokers[best_exchange]
             self.logger.info(f"🎯 EXECUTING ORDER ON {best_exchange.upper()}: {order}")
-            
+
             try:
                 order_id = broker.place_order(order)
                 self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {best_exchange.upper()}: {order_id}")

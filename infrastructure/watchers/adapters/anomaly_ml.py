@@ -192,9 +192,9 @@ class AnomalyMLWatcher(BaseWatcher):
             )
             return signal
 
-        # Determine signal based on strict anomaly detection
+        # Determine signal based on anomaly detection with more actionable thresholds
         if anomaly_score > self.suppression_threshold:
-            # Only very significant anomalies trigger signals
+            # Very significant anomalies trigger strong signals
             # Determine direction based on recent price action
             recent_returns = np.diff(self.price_history[-5:]) if len(self.price_history) >= 5 else [0]
             avg_return = np.mean(recent_returns) if recent_returns.size > 0 else 0
@@ -216,15 +216,38 @@ class AnomalyMLWatcher(BaseWatcher):
             self.data_point_counter = len(self.feature_history)
 
         elif anomaly_score > self.anomaly_threshold:
-            # Moderate anomalies - potential but not confirmed
-            signal_type = SignalType.HOLD
-            confidence = 0.4  # Low-medium confidence
-            anomaly_type = 'potential_anomaly'
+            # Moderate anomalies - generate trading signals instead of just HOLD
+            # Determine direction based on recent price action for more actionable signals
+            recent_returns = np.diff(self.price_history[-5:]) if len(self.price_history) >= 5 else [0]
+            avg_return = np.mean(recent_returns) if recent_returns.size > 0 else 0
+
+            if avg_return > 0:
+                # Positive momentum with moderate anomaly - potential continuation (BUY)
+                signal_type = SignalType.BUY
+                anomaly_type = 'momentum_continuation'
+            else:
+                # Negative momentum with moderate anomaly - potential continuation (SELL)
+                signal_type = SignalType.SELL
+                anomaly_type = 'momentum_continuation'
+
+            confidence = min(0.7, anomaly_score)  # Moderate-high confidence for actionable signals
         else:
-            # Normal conditions
-            signal_type = SignalType.HOLD
-            confidence = 0.9  # High confidence in normal conditions
-            anomaly_type = 'normal'
+            # Normal conditions - instead of always HOLD, consider subtle trends
+            recent_returns = np.diff(self.price_history[-5:]) if len(self.price_history) >= 5 else [0]
+            avg_return = np.mean(recent_returns) if recent_returns.size > 0 else 0
+
+            if avg_return > 0.001:  # Small positive trend
+                signal_type = SignalType.BUY
+                confidence = 0.4  # Lower confidence for normal conditions
+                anomaly_type = 'normal_trend_up'
+            elif avg_return < -0.001:  # Small negative trend
+                signal_type = SignalType.SELL
+                confidence = 0.4  # Lower confidence for normal conditions
+                anomaly_type = 'normal_trend_down'
+            else:
+                signal_type = SignalType.HOLD
+                confidence = 0.9  # High confidence in truly neutral conditions
+                anomaly_type = 'normal_neutral'
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))

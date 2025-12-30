@@ -1,4 +1,4 @@
-I want to have a detailed review of each watcher (All of them), and in the end, I also want you to give me an analysis WATCHER-ANNALYSIS.md file.
+I want to have a detailed review of each watcher (All of them), and in the end, I also want you to give me an analysis ./docs/WATCHER-ANNALYSIS.md file.
 
 There are a few important points:
 

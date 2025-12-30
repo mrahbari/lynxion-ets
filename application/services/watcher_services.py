@@ -255,7 +255,7 @@ class SignalFusionService:
     """Service to fuse signals from multiple watchers"""
 
     def __init__(self):
-        self.confidence_threshold = 0.1  # Lowered threshold to allow more signals to be processed
+        self.confidence_threshold = 0.05  # Further lowered threshold to allow more signals to be processed
         self.fusion_weights = {}  # watcher_name -> weight
         self.default_weight = 1.0
 
