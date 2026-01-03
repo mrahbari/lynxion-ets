@@ -1,17 +1,16 @@
 from .base_watcher import BaseWatcher
-from domain.entities.trading_entities import Signal, SignalType
-from domain.value_objects import Percentage
-from decimal import Decimal
+from domain.entities.signal_entities import MarketObservation
+from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
-from domain.value_objects import Symbol
 import numpy as np
 import os
 from typing import List, Optional
+from decimal import Decimal
 
 
 class AnomalyMLWatcher(BaseWatcher):
-    """ML-based Anomaly Detection Watcher - detects unusual market patterns"""
+    """ML-based Anomaly Detection Watcher - detects unusual market patterns, returns raw market observations"""
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 50, contamination: float = 0.1):
         super().__init__(name, symbol, broker_service, target_broker)
@@ -55,241 +54,137 @@ class AnomalyMLWatcher(BaseWatcher):
 
         if 'close' in data:
             self.price_history.append(data['close'])
-            if len(self.price_history) > self.lookback * 3:
+            if len(self.price_history) > self.lookback * 3:  # Keep more data for stability
                 self.price_history.pop(0)
 
-        # Calculate and store features if we have enough price data
-        if len(self.price_history) >= 5:
+        # Calculate features based on available data
+        if len(self.price_history) >= 2:
             features = self.calculate_features()
-            if features is not None:
-                self.feature_history.append(features)
-                if len(self.feature_history) > self.lookback * 3:
-                    self.feature_history.pop(0)
+            self.feature_history.append(features)
+            if len(self.feature_history) > self.lookback * 3:
+                self.feature_history.pop(0)
 
-    def calculate_features(self) -> Optional[np.ndarray]:
-        """Calculate features for anomaly detection - simplified and explainable"""
-        if len(self.price_history) < 5:
-            return None
-
-        prices = np.array(self.price_history[-5:])  # Use last 5 prices
-
-        # Calculate simple, explainable features that deviate from recent distribution
-        features = []
-
-        # Price returns (the most important indicator of unusual movement)
-        returns = np.diff(prices) / prices[:-1] if len(prices) > 1 else [0]
-        if len(returns) > 0:
-            features.extend([
-                returns[-1],  # Latest return - most recent price change
-                np.mean(returns),  # Average return - baseline trend
-                np.std(returns),  # Return volatility - recent volatility level
-            ])
-        else:
-            features.extend([0, 0, 0])
-
-        # Price position in recent range (how extreme the current price is)
-        if len(prices) > 1:
-            price_range = np.max(prices) - np.min(prices)
-            if price_range != 0:
-                position_in_range = (prices[-1] - np.min(prices)) / price_range
-            else:
-                position_in_range = 0.5  # Neutral if all prices are the same
-        else:
-            position_in_range = 0.5
-
-        features.append(position_in_range)
-
-        # Add a measure of acceleration (change in returns)
-        if len(returns) >= 2:
-            acceleration = returns[-1] - returns[-2] if len(returns) >= 2 else 0
-        else:
-            acceleration = 0
-        features.append(acceleration)
-
-        return np.array(features)
-
-    def fit_model(self):
-        """Fit the anomaly detection model to historical data"""
-        if len(self.feature_history) < 15:  # Require more data for stability
-            return False
-
-        features_matrix = np.array(self.feature_history)
-
-        # Calculate statistics for anomaly detection
-        self.feature_means = np.mean(features_matrix, axis=0)
-        self.feature_stds = np.std(features_matrix, axis=0)
-
-        # Prevent division by zero - use a minimum standard deviation
-        self.feature_stds = np.where(self.feature_stds == 0, 0.001, self.feature_stds)
-
-        self.model_fitted = True
-        logger.info(f"AnomalyMLWatcher {self.name} model fitted with {len(self.feature_history)} data points")
-        return True
-
-    def calculate_anomaly_score(self, features: np.ndarray) -> float:
-        """Calculate anomaly score based on deviation from normal patterns - strict bounds"""
-        if not self.model_fitted:
-            # If model not fitted yet, return a neutral score
-            return 0.0
-
-        # Calculate z-scores for each feature
-        z_scores = np.abs((features - self.feature_means) / self.feature_stds)
-
-        # Calculate combined anomaly score (average of z-scores)
-        # This represents "deviation from recent distribution by X sigma"
-        raw_anomaly_score = np.mean(z_scores)
-
-        # Normalize to 0-1 range with strict bounds
-        # Use a sigmoid-like function to ensure very high scores only for extreme anomalies
-        normalized_score = 1.0 / (1.0 + np.exp(-raw_anomaly_score + 3))  # Center around 3 sigma
-        normalized_score = min(1.0, max(0.0, normalized_score))  # Ensure strict bounds
-
-        return normalized_score
-
-    def _analyze_impl(self, symbol: Symbol) -> Signal:
-        """Analyze for anomalies and return a signal"""
+    def _analyze_impl(self, symbol: Symbol) -> MarketObservation:
+        """Analyze market for anomalies and return a raw market observation (no strategy selection)"""
         if not self.enabled:
             return None
 
-        if len(self.feature_history) < 15:  # Require more data
-            if not self.model_fitted:
-                # Try to fit the model if we have enough data
-                self.fit_model()
+        if len(self.feature_history) < self.lookback:
             return None
 
-        # Get the latest features
-        if not self.feature_history:
-            return None
+        # Calculate anomaly score based on current features
+        anomaly_score = self.calculate_anomaly_score()
+        
+        # Determine observation type based on anomaly score
+        # Calculate confidence based on the strength of the anomaly
+        anomaly_magnitude = abs(anomaly_score)
 
-        latest_features = self.feature_history[-1]
-
-        # Calculate anomaly score
-        anomaly_score = self.calculate_anomaly_score(latest_features)
-
-        # Update model periodically with fresh data
-        if not self.model_fitted or len(self.feature_history) % 30 == 0:  # Update every 30 new data points
-            self.fit_model()
-
-        # Check if we're in cooldown period after last anomaly
-        if (self.last_anomaly_timestamp is not None and
-            len(self.feature_history) < self.data_point_counter + self.anomaly_cooldown):
-            # During cooldown, only return HOLD signals with low confidence
-            confidence_percentage = Percentage(Decimal(str(0.1)))  # Very low confidence during cooldown
-
-            signal = Signal(
-                symbol=symbol,
-                signal_type=SignalType.HOLD,
-                confidence=confidence_percentage,
-                score=0.0,
-                strategy_name=self.name,  # Changed from 'strategy' to 'strategy_name' for domain compatibility
-                timestamp=datetime.now(),
-                source_engine=self.name,  # Add source engine for tracking
-                metadata={
-                    'anomaly_score': anomaly_score,
-                    'explanation': f"Anomaly cooldown period, score: {anomaly_score:.3f}",
-                    'anomaly_type': 'cooldown'
-                }
-            )
-            return signal
-
-        # Determine signal based on anomaly detection with more actionable thresholds
-        if anomaly_score > self.suppression_threshold:
-            # Very significant anomalies trigger strong signals
-            # Determine direction based on recent price action
-            recent_returns = np.diff(self.price_history[-5:]) if len(self.price_history) >= 5 else [0]
-            avg_return = np.mean(recent_returns) if recent_returns.size > 0 else 0
-
-            if avg_return > 0:
-                # Positive momentum with significant anomaly - potential reversal (SELL)
-                signal_type = SignalType.SELL
-                anomaly_type = 'momentum_reversal'
-            else:
-                # Negative momentum with significant anomaly - potential reversal (BUY)
-                signal_type = SignalType.BUY
-                anomaly_type = 'momentum_reversal'
-
-            # High confidence for very significant anomalies
-            confidence = min(1.0, anomaly_score)
-
-            # Update last anomaly timestamp
-            self.last_anomaly_timestamp = len(self.feature_history)
-            self.data_point_counter = len(self.feature_history)
-
-        elif anomaly_score > self.anomaly_threshold:
-            # Moderate anomalies - generate trading signals instead of just HOLD
-            # Determine direction based on recent price action for more actionable signals
-            recent_returns = np.diff(self.price_history[-5:]) if len(self.price_history) >= 5 else [0]
-            avg_return = np.mean(recent_returns) if recent_returns.size > 0 else 0
-
-            if avg_return > 0:
-                # Positive momentum with moderate anomaly - potential continuation (BUY)
-                signal_type = SignalType.BUY
-                anomaly_type = 'momentum_continuation'
-            else:
-                # Negative momentum with moderate anomaly - potential continuation (SELL)
-                signal_type = SignalType.SELL
-                anomaly_type = 'momentum_continuation'
-
-            confidence = min(0.7, anomaly_score)  # Moderate-high confidence for actionable signals
+        if abs(anomaly_score) < 0.3:  # Threshold for normal market conditions
+            observation_type = 'anomaly_normal'
+            observation_value = 0.0
+            # For neutral state, confidence is based on how close to normal we are
+            confidence = min(0.6, (1.0 - anomaly_magnitude))
+        elif anomaly_score > 0:
+            observation_type = 'anomaly_positive'  # Positive anomaly (unusual upward movement)
+            observation_value = abs(anomaly_score)
+            # Confidence increases with anomaly magnitude
+            confidence = min(0.95, max(0.3, anomaly_magnitude))
         else:
-            # Normal conditions - instead of always HOLD, consider subtle trends
-            recent_returns = np.diff(self.price_history[-5:]) if len(self.price_history) >= 5 else [0]
-            avg_return = np.mean(recent_returns) if recent_returns.size > 0 else 0
-
-            if avg_return > 0.001:  # Small positive trend
-                signal_type = SignalType.BUY
-                confidence = 0.4  # Lower confidence for normal conditions
-                anomaly_type = 'normal_trend_up'
-            elif avg_return < -0.001:  # Small negative trend
-                signal_type = SignalType.SELL
-                confidence = 0.4  # Lower confidence for normal conditions
-                anomaly_type = 'normal_trend_down'
-            else:
-                signal_type = SignalType.HOLD
-                confidence = 0.9  # High confidence in truly neutral conditions
-                anomaly_type = 'normal_neutral'
+            observation_type = 'anomaly_negative'  # Negative anomaly (unusual downward movement)
+            observation_value = -abs(anomaly_score)
+            # Confidence increases with anomaly magnitude
+            confidence = min(0.95, max(0.3, anomaly_magnitude))
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))
 
-        signal = Signal(
+        # Create and return a MarketObservation instead of a Signal
+        observation = MarketObservation(
             symbol=symbol,
-            signal_type=signal_type,
+            observation_type=observation_type,
+            observation_value=observation_value,
             confidence=confidence_percentage,
-            score=anomaly_score if signal_type != SignalType.HOLD else -anomaly_score,
-            strategy_name=self.name,  # Changed from 'strategy' to 'strategy_name' for domain compatibility
             timestamp=datetime.now(),
-            source_engine=self.name,  # Add source engine for tracking
             metadata={
                 'anomaly_score': anomaly_score,
-                'anomaly_type': anomaly_type,
-                'explanation': f"This deviates from recent distribution by approximately {np.mean(np.abs((latest_features - self.feature_means) / self.feature_stds)):.2f} sigma",
-                'features': latest_features.tolist() if isinstance(latest_features, np.ndarray) else latest_features
+                'feature_vector': self.feature_history[-1] if self.feature_history else [],
+                'feature_history_length': len(self.feature_history),
+                'price_history_length': len(self.price_history),
+                'model_fitted': self.model_fitted,
+                'last_anomaly_timestamp': self.last_anomaly_timestamp,
+                'anomaly_source': self.name,
+                'lookback_period': self.lookback
             }
         )
 
-        # Update last signal if it's different enough
-        if self.should_emit_signal(signal):
-            self.last_signal = signal
-            logger.debug(f"AnomalyMLWatcher {self.name} generated signal: {signal_type} with anomaly score {anomaly_score:.3f}, type: {anomaly_type}")
+        return observation
 
-        return signal
+    def calculate_features(self) -> List[float]:
+        """Calculate features for anomaly detection"""
+        if len(self.price_history) < 2:
+            return [0.0] * 5  # Return 5 features with default values
 
-    def get_anomaly_features(self) -> dict:
-        """Get information about anomaly detection"""
-        if not self.feature_history or not self.model_fitted:
-            return {}
+        # Feature 1: Price change percentage
+        recent_change = (self.price_history[-1] - self.price_history[-2]) / self.price_history[-2]
 
-        latest_features = self.feature_history[-1]
-        z_scores = np.abs((latest_features - self.feature_means) / self.feature_stds)
+        # Feature 2: Volatility (standard deviation of recent prices)
+        lookback_vol = min(10, len(self.price_history))
+        if len(self.price_history) >= lookback_vol:
+            recent_prices = self.price_history[-lookback_vol:]
+            volatility = np.std(recent_prices) / np.mean(recent_prices) if np.mean(recent_prices) != 0 else 0
+        else:
+            volatility = 0
 
-        return {
-            'anomaly_score': self.calculate_anomaly_score(latest_features),
-            'z_scores': z_scores.tolist(),
-            'feature_means': self.feature_means.tolist() if self.feature_means is not None else [],
-            'feature_stds': self.feature_stds.tolist() if self.feature_stds is not None else [],
-            'model_fitted': self.model_fitted,
-            'data_points': len(self.feature_history),
-            'anomaly_threshold': self.anomaly_threshold,
-            'suppression_threshold': self.suppression_threshold
-        }
+        # Feature 3: Momentum (difference between current price and average of previous n prices)
+        lookback_mom = min(5, len(self.price_history) - 1)
+        if lookback_mom > 0:
+            avg_prev = np.mean(self.price_history[-lookback_mom-1:-1])
+            momentum = (self.price_history[-1] - avg_prev) / avg_prev if avg_prev != 0 else 0
+        else:
+            momentum = 0
+
+        # Feature 4: Rate of change
+        lookback_roc = min(3, len(self.price_history) - 1)
+        if lookback_roc > 0:
+            roc = (self.price_history[-1] - self.price_history[-lookback_roc-1]) / self.price_history[-lookback_roc-1] if self.price_history[-lookback_roc-1] != 0 else 0
+        else:
+            roc = 0
+
+        # Feature 5: Volume change (if available)
+        # For now, we'll use a placeholder since volume data might not be available in update_data
+        volume_change = 0.0  # Placeholder - would use actual volume data if available
+
+        return [recent_change, volatility, momentum, roc, volume_change]
+
+    def calculate_anomaly_score(self) -> float:
+        """Calculate anomaly score based on features"""
+        if not self.feature_history:
+            return 0.0
+
+        current_features = self.feature_history[-1]
+
+        # If we don't have enough history to establish a baseline, return 0
+        if len(self.feature_history) < 10:
+            return 0.0
+
+        # Calculate baseline statistics from historical features
+        historical_features = np.array(self.feature_history[:-1])  # Exclude current
+        if historical_features.size == 0:
+            return 0.0
+
+        # Calculate mean and std for each feature
+        feature_means = np.mean(historical_features, axis=0)
+        feature_stds = np.std(historical_features, axis=0)
+
+        # Avoid division by zero
+        feature_stds = np.where(feature_stds == 0, 1, feature_stds)
+
+        # Calculate z-scores for each feature
+        z_scores = np.abs((np.array(current_features) - feature_means) / feature_stds)
+
+        # Calculate overall anomaly score as average of z-scores
+        anomaly_score = np.mean(z_scores)
+
+        # Normalize to [-1, 1] range by using tanh or similar function
+        # But keep it positive for anomalies, negative for unusual stability
+        return float(np.tanh(anomaly_score - 1))  # Center around 0, positive for anomalies above baseline

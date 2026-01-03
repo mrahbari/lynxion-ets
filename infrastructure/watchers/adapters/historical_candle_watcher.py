@@ -1,38 +1,25 @@
-"""
-Infrastructure implementation of historical candle watcher following hexagonal architecture.
-This is inspired by the temp-sample-features historical_candle_watcher but adapted to the current hexagonal architecture.
-"""
-from typing import List, Dict, Any, Optional
-import threading
-import time
-from datetime import datetime
-import os
-
-from domain.ports.watcher_ports import WatcherPort
-from domain.entities.trading_entities import Signal, SignalType
+from .base_watcher import BaseWatcher
+from domain.entities.signal_entities import MarketObservation
 from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
+from datetime import datetime
+import numpy as np
+import os
 from decimal import Decimal
 
 
-class HistoricalCandleWatcherAdapter(WatcherPort):
-    """
-    Infrastructure implementation of historical candle watcher following hexagonal architecture.
-    Useful for backtesting and analyzing historical data sequentially.
-    """
+class HistoricalCandleWatcherAdapter(BaseWatcher):
+    """Historical Candle Watcher - analyzes historical candlestick patterns, returns raw market observations"""
 
-    def __init__(self, name: str, symbol: str, data_provider, timeframe: str = "1m", speed: float = 1.0):
-        self.name = name
-        self.symbol = Symbol(symbol)
-        self.data_provider = data_provider  # Could be a CSV loader, API, etc.
+    def __init__(self, name: str, symbol: str, broker_service=None, lookback: int = 50):
+        super().__init__(name, symbol, broker_service, None)
 
-        # Configuration from environment with defaults - enabled by default
+        # Configuration from environment with defaults
         self.enabled = os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'true').lower() == 'true'
 
         # Only set logger if enabled, otherwise use mock logger
         if self.enabled:
-            from shared.logger import logger as self_logger
-            self.logger = self_logger
+            self.logger = logger
         else:
             # Create a mock logger that doesn't log anything when disabled
             class MockLogger:
@@ -42,254 +29,280 @@ class HistoricalCandleWatcherAdapter(WatcherPort):
                 def error(self, msg): pass
             self.logger = MockLogger()
 
-        self.timeframe = timeframe
-        self.speed = speed  # 1.0 = real-time, higher = faster
-        self.symbols = {symbol}
-        self.running = False
-        self.thread = None
-        self.current_index = 0
-        self.historical_candles = []
-        self.current_candle = None
+        self.lookback = lookback
+        self.candles = []  # Store candle data: [{'open': o, 'high': h, 'low': l, 'close': c, 'volume': v, 'timestamp': ts}, ...]
 
-        # Pattern detection parameters
-        self.min_pattern_confirmation_bars = 3  # Minimum bars for pattern confirmation
-        self.max_patterns_to_detect = 5  # Limit to justified set of patterns
-        self.pattern_history = []  # Track detected patterns for confirmation
+        # Pattern detection thresholds
+        self.doji_threshold = 0.001  # Max body size for doji pattern
+        self.engulfing_threshold = 0.005  # Min size for engulfing pattern
+        self.hammer_threshold = 0.01  # Min lower shadow for hammer pattern
 
-    def _analyze_impl(self, symbol: Symbol = None):
-        """Analyze current historical candle data with strict pattern detection rules"""
+    def update_data(self, data: dict):
+        """Update with new candle data"""
+        if not self.enabled:
+            return
+
+        if 'candle' in data:
+            candle = data['candle']
+            # Add candle data to history
+            self.candles.append({
+                'open': candle.get('open', 0),
+                'high': candle.get('high', 0),
+                'low': candle.get('low', 0),
+                'close': candle.get('close', 0),
+                'volume': candle.get('volume', 0),
+                'timestamp': candle.get('timestamp', datetime.now())
+            })
+
+            # Keep history within limits
+            if len(self.candles) > self.lookback * 3:
+                self.candles.pop(0)
+
+    def _analyze_impl(self, symbol: Symbol) -> MarketObservation:
+        """Analyze historical candles and return a raw market observation (no strategy selection)"""
         if not self.enabled:
             return None
 
-        if not self.historical_candles or self.current_index < self.min_pattern_confirmation_bars:
-            logger.debug(f"Not enough historical data for pattern confirmation in HistoricalCandleWatcher {self.name}")
+        if len(self.candles) < 3:  # Need at least 3 candles for pattern analysis
             return None
 
-        try:
-            # Get the current and previous candles for pattern analysis
-            if self.current_index >= len(self.historical_candles):
-                return None
+        # Analyze candlestick patterns
+        pattern_analysis = self._analyze_candlestick_patterns()
 
-            # Use multiple candles for pattern confirmation (no single-candle signals)
-            candles_to_analyze = self.get_candles_for_analysis(self.current_index)
+        # Calculate trend based on recent candles
+        trend_analysis = self._analyze_trend()
 
-            if len(candles_to_analyze) < self.min_pattern_confirmation_bars:
-                return None
+        # Calculate volatility based on historical candles
+        volatility_analysis = self._analyze_volatility()
 
-            # Detect only a small, justified set of patterns
-            pattern_detected, confidence, score, pattern_type = self.detect_justified_patterns(candles_to_analyze)
+        # Determine observation type based on pattern and trend
+        observation_type = self._determine_observation_type(pattern_analysis, trend_analysis)
+        observation_value = self._calculate_observation_value(pattern_analysis, trend_analysis, volatility_analysis)
+        confidence = self._calculate_confidence(pattern_analysis, volatility_analysis)
 
-            if not pattern_detected:
-                # Return HOLD when no confirmed pattern is detected
-                return Signal(
-                    symbol=symbol or self.symbol,
-                    signal_type=SignalType.HOLD,
-                    confidence=Percentage(Decimal('0.2')),
-                    score=0.0,
-                    strategy_name=f"HistoricalCandleWatcher_{self.name}",
-                    timestamp=datetime.now(),
-                    metadata={
-                        'candle_analysis': {
-                            'timeframe': self.timeframe,
-                            'candles_analyzed': len(candles_to_analyze),
-                            'pattern_detected': False,
-                            'explanation': 'No confirmed patterns detected in recent candles'
-                        }
-                    }
-                )
+        # Convert confidence to Percentage object for domain compatibility
+        confidence_percentage = Percentage(Decimal(str(confidence)))
 
-            # Determine signal based on confirmed pattern
-            signal_type = self.determine_signal_from_pattern(pattern_type)
+        # Create and return a MarketObservation instead of a Signal
+        observation = MarketObservation(
+            symbol=symbol,
+            observation_type=observation_type,
+            observation_value=observation_value,
+            confidence=confidence_percentage,
+            timestamp=datetime.now(),
+            metadata={
+                'pattern_analysis': pattern_analysis,
+                'trend_analysis': trend_analysis,
+                'volatility_analysis': volatility_analysis,
+                'candle_history_length': len(self.candles),
+                'latest_candle': self.candles[-1] if self.candles else None,
+                'candle_pattern_source': self.name,
+                'lookback_period': self.lookback
+            }
+        )
 
-            historical_signal = Signal(
-                symbol=symbol or self.symbol,
-                signal_type=signal_type,
-                confidence=Percentage(confidence),
-                score=score,
-                strategy_name=f"HistoricalCandleWatcher_{self.name}",
-                timestamp=datetime.now(),
-                metadata={
-                    'candle_analysis': {
-                        'timeframe': self.timeframe,
-                        'candles_analyzed': len(candles_to_analyze),
-                        'pattern_type': pattern_type,
-                        'pattern_detected': True,
-                        'explanation': f"Confirmed {pattern_type} pattern detected with strict confirmation rules"
-                    },
-                    'candle_data': candles_to_analyze[-1]  # Include the most recent candle data
-                }
-            )
+        return observation
 
-            return historical_signal
-        except Exception as e:
-            logger.error(f"Error in HistoricalCandleWatcher {self.name} analysis: {e}")
-            return None
+    def _analyze_candlestick_patterns(self):
+        """Analyze candlestick patterns in the historical data"""
+        if len(self.candles) < 2:
+            return {'patterns': [], 'strength': 0.0}
 
-    def get_candles_for_analysis(self, index: int) -> List[Dict]:
-        """Get candles for pattern analysis with lookback window"""
-        start_idx = max(0, index - self.min_pattern_confirmation_bars)
-        return self.historical_candles[start_idx:index]
+        patterns = []
+        strength = 0.0
 
-    def detect_justified_patterns(self, candles: List[Dict]) -> tuple:
-        """Detect only a small, justified set of patterns with strict confirmation rules"""
-        if len(candles) < self.min_pattern_confirmation_bars:
-            return False, Decimal('0.0'), 0.0, "none"
+        # Analyze recent candles for patterns
+        for i in range(1, len(self.candles)):
+            current = self.candles[i]
+            previous = self.candles[i-1]
 
-        # Pattern 1: Confirmed trend continuation (at least 3 candles in same direction)
-        trend_continuation = self.detect_trend_continuation(candles)
-        if trend_continuation[0]:
-            return trend_continuation
+            # Doji pattern detection
+            body_size = abs(current['close'] - current['open'])
+            candle_range = current['high'] - current['low']
+            if candle_range != 0:
+                body_ratio = body_size / candle_range
+                if body_ratio <= self.doji_threshold:
+                    patterns.append({
+                        'type': 'doji',
+                        'position': i,
+                        'strength': body_ratio
+                    })
+                    strength += body_ratio
 
-        # Pattern 2: Potential reversal after strong move (at least 3 candles with confirmation)
-        reversal_pattern = self.detect_reversal_pattern(candles)
-        if reversal_pattern[0]:
-            return reversal_pattern
+            # Bullish engulfing pattern
+            if (current['close'] > current['open'] and  # Current is bullish
+                previous['close'] < previous['open'] and  # Previous was bearish
+                current['close'] > previous['open'] and  # Current closes above previous open
+                current['open'] < previous['close']):  # Current opens below previous close
+                patterns.append({
+                    'type': 'bullish_engulfing',
+                    'position': i,
+                    'strength': 0.8
+                })
+                strength += 0.8
 
-        # Pattern 3: Range bound (at least 3 candles within tight range)
-        range_bound = self.detect_range_bound(candles)
-        if range_bound[0]:
-            return range_bound
+            # Bearish engulfing pattern
+            if (current['close'] < current['open'] and  # Current is bearish
+                previous['close'] > previous['open'] and  # Previous was bullish
+                current['open'] > previous['close'] and  # Current opens above previous close
+                current['close'] < previous['open']):  # Current closes below previous open
+                patterns.append({
+                    'type': 'bearish_engulfing',
+                    'position': i,
+                    'strength': 0.8
+                })
+                strength += 0.8
 
-        # No significant pattern detected
-        return False, Decimal('0.0'), 0.0, "none"
+            # Hammer pattern
+            if candle_range != 0:
+                lower_shadow = current['low'] - min(current['open'], current['close'])
+                upper_shadow = current['high'] - max(current['open'], current['close'])
+                body_size = abs(current['close'] - current['open'])
 
-    def detect_trend_continuation(self, candles: List[Dict]) -> tuple:
-        """Detect trend continuation with strict confirmation"""
-        if len(candles) < 3:
-            return False, Decimal('0.0'), 0.0, "none"
+                lower_shadow_ratio = lower_shadow / candle_range
+                upper_shadow_ratio = upper_shadow / candle_range
 
-        # Check if last 3 candles are in same direction with increasing momentum
-        closes = [float(candle.get('close', 0)) for candle in candles]
+                # Hammer (bullish reversal)
+                if lower_shadow_ratio >= self.hammer_threshold and upper_shadow_ratio <= lower_shadow_ratio * 0.2:
+                    patterns.append({
+                        'type': 'hammer',
+                        'position': i,
+                        'strength': lower_shadow_ratio
+                    })
+                    strength += lower_shadow_ratio
 
-        # Check if all closes are in the same direction (uptrend or downtrend)
-        uptrend = all(closes[i] > closes[i-1] for i in range(1, len(closes)))
-        downtrend = all(closes[i] < closes[i-1] for i in range(1, len(closes)))
+                # Shooting star (bearish reversal)
+                if upper_shadow_ratio >= self.hammer_threshold and lower_shadow_ratio <= upper_shadow_ratio * 0.2:
+                    patterns.append({
+                        'type': 'shooting_star',
+                        'position': i,
+                        'strength': upper_shadow_ratio
+                    })
+                    strength += upper_shadow_ratio
 
-        if uptrend:
-            return True, Decimal('0.7'), 0.6, "uptrend_continuation"
-        elif downtrend:
-            return True, Decimal('0.7'), -0.6, "downtrend_continuation"
+        return {
+            'patterns': patterns,
+            'total_strength': min(1.0, strength / len(self.candles)) if self.candles else 0.0
+        }
 
-        return False, Decimal('0.0'), 0.0, "none"
-
-    def detect_reversal_pattern(self, candles: List[Dict]) -> tuple:
-        """Detect potential reversal pattern with strict confirmation"""
-        if len(candles) < 3:
-            return False, Decimal('0.0'), 0.0, "none"
-
-        # Simple reversal detection: strong move followed by counter-move
-        closes = [float(candle.get('close', 0)) for candle in candles]
-
-        # Check for reversal: strong move in one direction followed by move in opposite direction
-        if len(candles) >= 3:
-            first_to_last_change = (closes[-1] - closes[0]) / closes[0] if closes[0] != 0 else 0
-            middle_change = (closes[1] - closes[0]) / closes[0] if closes[0] != 0 else 0
-
-            # If first two candles show strong move and last candle reverses
-            if abs(middle_change) > 0.02 and (middle_change > 0) != (first_to_last_change > 0):
-                direction = "reversal_to_down" if first_to_last_change < 0 else "reversal_to_up"
-                score = -0.5 if first_to_last_change < 0 else 0.5
-                return True, Decimal('0.6'), score, direction
-
-        return False, Decimal('0.0'), 0.0, "none"
-
-    def detect_range_bound(self, candles: List[Dict]) -> tuple:
-        """Detect range-bound conditions with strict confirmation"""
-        if len(candles) < 3:
-            return False, Decimal('0.0'), 0.0, "none"
-
-        highs = [float(candle.get('high', 0)) for candle in candles]
-        lows = [float(candle.get('low', 0)) for candle in candles]
-
-        # Calculate average range
-        avg_range = sum(h - l for h, l in zip(highs, lows)) / len(candles) if candles else 0
-        max_high = max(highs)
-        min_low = min(lows)
-        total_range = max_high - min_low
-
-        # Check if candles are relatively range-bound (total range not much larger than average individual range)
-        if total_range < avg_range * 2.5 and len(candles) >= 3:
-            # Range bound detected
-            return True, Decimal('0.5'), 0.0, "range_bound"
-
-        return False, Decimal('0.0'), 0.0, "none"
-
-    def determine_signal_from_pattern(self, pattern_type: str) -> SignalType:
-        """Determine signal type based on detected pattern"""
-        if pattern_type in ["uptrend_continuation"]:
-            return SignalType.BUY
-        elif pattern_type in ["downtrend_continuation"]:
-            return SignalType.SELL
-        elif pattern_type in ["reversal_to_up"]:
-            return SignalType.BUY
-        elif pattern_type in ["reversal_to_down"]:
-            return SignalType.SELL
+    def _analyze_trend(self):
+        """Analyze trend based on recent candles"""
+        if len(self.candles) < self.lookback:
+            recent_candles = self.candles
         else:
-            return SignalType.HOLD
+            recent_candles = self.candles[-self.lookback:]
 
-    def start(self):
-        """Start the historical candle watcher"""
-        if self.data_provider:
-            # Load historical data
-            try:
-                self.historical_candles = self.data_provider.load_candles(str(self.symbol), self.timeframe)
-            except AttributeError:
-                # If data_provider doesn't have load_candles method, try other approaches
-                try:
-                    # Assume it's a market data service
-                    self.historical_candles = self.data_provider.get_historical_data(self.symbol, '1d')  # Simplified
-                except:
-                    logger.warning(f"Could not load historical data in HistoricalCandleWatcher {self.name}")
-                    self.historical_candles = []
-        
-        self.running = True
-        self.thread = threading.Thread(target=self._historical_loop, daemon=True)
-        self.thread.start()
-        logger.info(f"HistoricalCandleWatcher {self.name} started for {self.symbol.value}")
+        if len(recent_candles) < 2:
+            return {'direction': 0, 'strength': 0}
 
-    def stop(self):
-        """Stop the historical candle watcher"""
-        self.running = False
-        if self.thread:
-            self.thread.join(timeout=1.0)
-        logger.info(f"HistoricalCandleWatcher {self.name} stopped")
+        # Calculate trend using closing prices
+        closes = [c['close'] for c in recent_candles]
+        x = np.arange(len(closes))
 
-    def is_running(self) -> bool:
-        """Check if the watcher is running"""
-        return self.running
+        if len(x) > 1:
+            slope = (len(x) * np.sum(x * closes) - np.sum(x) * np.sum(closes)) / \
+                    (len(x) * np.sum(x * x) - (np.sum(x)) ** 2)
 
-    def update_data(self, data: Dict[str, Any]):
-        """Update with new data (not typically used in historical backtesting)"""
-        # For historical watcher, this is less relevant since we're processing stored data
-        pass
+            avg_price = np.mean(closes)
+            if avg_price != 0:
+                normalized_slope = slope / avg_price
+            else:
+                normalized_slope = 0
 
-    def subscribe(self, symbol: Symbol):
-        """Subscribe to a symbol"""
-        self.symbols.add(str(symbol.value))
+            # Calculate trend strength (R-squared)
+            if len(closes) > 2:
+                y_pred = slope * x + (np.mean(closes) - slope * np.mean(x))
+                ss_res = np.sum((np.array(closes) - y_pred) ** 2)
+                ss_tot = np.sum((np.array(closes) - np.mean(closes)) ** 2)
+                if ss_tot != 0:
+                    r_squared = 1 - (ss_res / ss_tot)
+                    trend_strength = r_squared * abs(normalized_slope)
+                else:
+                    trend_strength = abs(normalized_slope)
+            else:
+                trend_strength = abs(normalized_slope)
 
-    def unsubscribe(self, symbol: Symbol):
-        """Unsubscribe from a symbol"""
-        self.symbols.discard(str(symbol.value))
+            return {
+                'direction': normalized_slope,
+                'strength': min(1.0, trend_strength)
+            }
 
-    def get_watcher_name(self) -> str:
-        """Get the name of the watcher"""
-        return self.name
+        return {'direction': 0, 'strength': 0}
 
-    def analyze(self, symbol: Symbol) -> Optional[Signal]:
-        """Analyze market conditions for the given symbol and return a signal if applicable"""
-        return self._analyze_impl(symbol)
+    def _analyze_volatility(self):
+        """Analyze volatility based on historical candles"""
+        if len(self.candles) < 2:
+            return {'volatility': 0, 'regime': 'normal'}
 
-    def _historical_loop(self):
-        """Main historical data processing loop"""
-        while self.running and self.current_index < len(self.historical_candles):
-            try:
-                # Process current candle
-                self.current_candle = self.historical_candles[self.current_index]
-                self.current_index += 1
-                
-                # Sleep based on configured speed
-                sleep_time = (1.0 / self.speed) if self.speed > 0 else 1.0
-                time.sleep(sleep_time)
-            except Exception as e:
-                logger.error(f"Error in HistoricalCandleWatcher loop: {e}")
-                time.sleep(1)  # Wait before continuing after error
+        # Calculate returns
+        closes = [c['close'] for c in self.candles]
+        returns = np.diff(closes) / np.array(closes[:-1])
+
+        # Calculate volatility
+        volatility = np.std(returns) if len(returns) > 0 else 0
+
+        # Determine volatility regime
+        if volatility > 0.02:  # High volatility threshold
+            regime = 'high'
+        elif volatility < 0.005:  # Low volatility threshold
+            regime = 'low'
+        else:
+            regime = 'normal'
+
+        return {
+            'volatility': volatility,
+            'regime': regime
+        }
+
+    def _determine_observation_type(self, pattern_analysis, trend_analysis):
+        """Determine observation type based on pattern and trend analysis"""
+        patterns = pattern_analysis['patterns']
+        trend_direction = trend_analysis['direction']
+
+        # Check for reversal patterns
+        reversal_patterns = [p for p in patterns if p['type'] in ['hammer', 'shooting_star', 'doji']]
+        bullish_patterns = [p for p in patterns if p['type'] in ['hammer', 'bullish_engulfing']]
+        bearish_patterns = [p for p in patterns if p['type'] in ['shooting_star', 'bearish_engulfing']]
+
+        if bullish_patterns and trend_direction < 0:  # Bullish patterns in downtrend
+            return 'candle_reversal_bullish'
+        elif bearish_patterns and trend_direction > 0:  # Bearish patterns in uptrend
+            return 'candle_reversal_bearish'
+        elif bullish_patterns and trend_direction >= 0:  # Bullish patterns in uptrend
+            return 'candle_continuation_bullish'
+        elif bearish_patterns and trend_direction <= 0:  # Bearish patterns in downtrend
+            return 'candle_continuation_bearish'
+        elif trend_direction > 0.001:  # Strong uptrend
+            return 'candle_trend_up'
+        elif trend_direction < -0.001:  # Strong downtrend
+            return 'candle_trend_down'
+        else:
+            return 'candle_neutral'
+
+    def _calculate_observation_value(self, pattern_analysis, trend_analysis, volatility_analysis):
+        """Calculate observation value based on analysis"""
+        pattern_strength = pattern_analysis['total_strength']
+        trend_direction = trend_analysis['direction']
+        trend_strength = trend_analysis['strength']
+
+        # Combine pattern and trend information
+        combined_value = (trend_direction * 0.7) + (pattern_strength * 0.3)
+
+        # Normalize to [-1, 1] range
+        return max(-1.0, min(1.0, combined_value))
+
+    def _calculate_confidence(self, pattern_analysis, volatility_analysis):
+        """Calculate confidence based on pattern and volatility analysis"""
+        pattern_strength = pattern_analysis['total_strength']
+        volatility_regime = volatility_analysis['regime']
+
+        # Base confidence on pattern strength (dynamic, no hardcoded base)
+        confidence = pattern_strength * 0.7  # 0.0 to 0.7 based on patterns
+
+        # Adjust for volatility regime
+        if volatility_regime == 'high':
+            confidence += 0.2  # High volatility can confirm patterns
+        elif volatility_regime == 'low':
+            confidence -= 0.1  # Low volatility may make patterns less reliable
+
+        return max(0.1, min(0.95, confidence))  # Clamp between 0.1 and 0.95

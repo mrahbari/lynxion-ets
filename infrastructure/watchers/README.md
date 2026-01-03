@@ -144,19 +144,6 @@ Watchers feed signals to the Strategy layer:
 
 ## Configuration
 
-### Environment Variables
-```bash
-# BingX API credentials for broker integration
-BINGX_API_KEY=your_api_key
-BINGX_SECRET_KEY=your_secret_key
-BINGX_TESTNET=true  # Set to true for testnet trading
-
-# Watcher-specific configurations
-DEFAULT_WATCHLIST_SYMBOLS="BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT"
-FALLBACK_WATCHLIST_SYMBOLS="BTCUSDT,ETHUSDT,SOLUSDT,..."
-CMC_API_KEY=your_coinmarketcap_api_key
-```
-
 ### Runtime Configuration
 Each watcher can be configured with:
 - Symbol-specific parameters

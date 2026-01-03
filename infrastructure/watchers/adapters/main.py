@@ -18,6 +18,7 @@ def main():
     from .funding_rate import FundingRateWatcher
     from .cmc_screener import CMCScreener
     from .historical_candle_watcher import HistoricalCandleWatcherAdapter
+    from .tick_watcher import TickWatcherAdapter
 
     # Create registry
     registry = WatcherRegistry()
@@ -32,12 +33,13 @@ def main():
     registry.register_watcher_type("FundingRate", FundingRateWatcher)
     registry.register_watcher_type("CMCScreener", CMCScreener)
     registry.register_watcher_type("HistoricalCandle", HistoricalCandleWatcherAdapter)
+    registry.register_watcher_type("TickWatcher", TickWatcherAdapter)
 
     # Create specific watchers
     # Example: Create a BTCUSDT watcher for each type
     # btc_watchers = [
     #     "MarketPulse", "Volatility", "TrendMTF", "AnomalyML",
-    #     "OrderFlowWS", "Liquidity", "FundingRate", "CMCScreener", "HistoricalCandle"
+    #     "OrderFlowWS", "Liquidity", "FundingRate", "CMCScreener", "HistoricalCandle", "TickWatcher"
     # ]
     #
     # for watcher_type in btc_watchers:
@@ -47,7 +49,7 @@ def main():
     # registry.start_all_watchers()
 
     logger.info("Watchers Service initialized successfully")
-    logger.info("Service ready to monitor markets")
+    logger.info("Service ready to monitor markets following correct architecture: Watcher → Engine → Fusion → Strategy → Broker")
 
 
 if __name__ == "__main__":

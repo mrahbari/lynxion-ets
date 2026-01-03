@@ -1,5 +1,5 @@
 from .base_watcher import BaseWatcher
-from domain.entities.trading_entities import Signal, SignalType
+from domain.entities.signal_entities import MarketObservation
 from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
@@ -9,7 +9,7 @@ from decimal import Decimal
 
 
 class MarketPulseWatcher(BaseWatcher):
-    """Market PulseWatcher - analyzes market sentiment and momentum"""
+    """Market PulseWatcher - analyzes market sentiment and momentum, returns raw market observations"""
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 20):
         super().__init__(name, symbol, broker_service, target_broker)
@@ -33,9 +33,6 @@ class MarketPulseWatcher(BaseWatcher):
         self.price_history = []
         self.volume_history = []
 
-        # Define thresholds for signal generation - lowered to allow more trading opportunities
-        self.signal_threshold = 0.05  # Lowered threshold to allow more signals (was 0.15)
-
         # Initialize sub-components
         self.momentum_subscore = 0.0
         self.trend_subscore = 0.0
@@ -56,8 +53,8 @@ class MarketPulseWatcher(BaseWatcher):
             if len(self.volume_history) > self.lookback * 3:
                 self.volume_history.pop(0)
 
-    def _analyze_impl(self, symbol: Symbol) -> Signal:
-        """Analyze market pulse and return a signal"""
+    def _analyze_impl(self, symbol: Symbol) -> MarketObservation:
+        """Analyze market pulse and return a raw market observation (no strategy selection)"""
         if not self.enabled:
             return None
 
@@ -69,118 +66,95 @@ class MarketPulseWatcher(BaseWatcher):
         self.trend_subscore = self.calculate_trend_subscore()
         self.volume_subscore = self.calculate_volume_subscore()
 
-        # Combine factors to get final score (monotonic and bounded)
-        score = self.combine_subscores(self.momentum_subscore, self.trend_subscore, self.volume_subscore)
+        # Combine factors to get final observation value (monotonic and bounded)
+        observation_value = self.combine_subscores(self.momentum_subscore, self.trend_subscore, self.volume_subscore)
 
-        # Apply NO SIGNAL zone to avoid constant firing
-        if abs(score) < self.signal_threshold:
-            signal_type = SignalType.HOLD
-            confidence = 0.1  # Low confidence for no-signal state
-        elif score > 0:
-            signal_type = SignalType.BUY
-            confidence = min(1.0, abs(score))  # Confidence based on signal strength
+        # Determine observation type based on the value
+        # Calculate confidence based on the strength of the signal
+        signal_strength = abs(observation_value)
+
+        if abs(observation_value) < 0.05:  # Threshold for low activity
+            observation_type = 'market_pulse_neutral'
+            # For neutral state, confidence is based on how close to zero we are
+            # (more certainty about neutrality when signal is very weak)
+            confidence = min(0.6, (1.0 - signal_strength))
+        elif observation_value > 0:
+            observation_type = 'market_pulse_positive'  # Positive momentum/sentiment
+            # Confidence increases with signal strength
+            confidence = min(0.95, max(0.3, signal_strength))
         else:
-            signal_type = SignalType.SELL
-            confidence = min(1.0, abs(score))  # Confidence based on signal strength
+            observation_type = 'market_pulse_negative'  # Negative momentum/sentiment
+            # Confidence increases with signal strength
+            confidence = min(0.95, max(0.3, signal_strength))
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))
 
-        signal = Signal(
+        # Create and return a MarketObservation instead of a Signal
+        observation = MarketObservation(
             symbol=symbol,
-            signal_type=signal_type,
+            observation_type=observation_type,
+            observation_value=observation_value,
             confidence=confidence_percentage,
-            score=score,
-            strategy_name=self.name,  # Changed from 'strategy' to 'strategy_name' for domain compatibility
             timestamp=datetime.now(),
-            source_engine=self.name,  # Add source engine for tracking
             metadata={
                 'subscores': {
                     'momentum': self.momentum_subscore,
                     'trend': self.trend_subscore,
                     'volume': self.volume_subscore
                 },
-                'explanation': f"Momentum: {self.momentum_subscore:.3f}, Trend: {self.trend_subscore:.3f}, Volume: {self.volume_subscore:.3f}, Combined: {score:.3f}"
+                'observation_source': self.name,
+                'lookback_period': self.lookback,
+                'price_history_length': len(self.price_history),
+                'volume_history_length': len(self.volume_history)
             }
         )
 
-        # Update last signal if it's different enough
-        if self.should_emit_signal(signal):
-            self.last_signal = signal
-            logger.debug(f"MarketPulseWatcher {self.name} generated signal: {signal_type} with score {score:.3f}, explanation: {signal.metadata['explanation']}")
-
-        return signal
+        return observation
 
     def calculate_momentum_subscore(self) -> float:
-        """Calculate momentum sub-score based on price changes - clearly explainable"""
+        """Calculate momentum subscore based on price changes"""
         if len(self.price_history) < 2:
             return 0.0
 
-        # Use a more stable momentum calculation
-        lookback_period = min(5, len(self.price_history) - 1)
-        if lookback_period < 1:
-            return 0.0
-
-        current_price = self.price_history[-1]
-        comparison_price = self.price_history[-lookback_period - 1]
-
-        if comparison_price == 0:
-            return 0.0
-
-        momentum = (current_price - comparison_price) / comparison_price
-        # Use tanh to create a smooth, bounded score between -1 and 1
-        return np.tanh(momentum * 10)  # Multiplier adjusts sensitivity
+        # Calculate recent momentum (short-term)
+        recent_change = (self.price_history[-1] - self.price_history[-2]) / self.price_history[-2]
+        return recent_change  # Return as is, will be normalized later
 
     def calculate_trend_subscore(self) -> float:
-        """Calculate trend sub-score using linear regression - clearly explainable"""
+        """Calculate trend subscore based on longer-term price movement"""
         if len(self.price_history) < self.lookback:
             return 0.0
 
+        # Calculate trend using linear regression
         prices = np.array(self.price_history[-self.lookback:])
         x = np.arange(len(prices))
 
-        # Calculate linear regression slope with robust calculation
-        n = len(x)
-        slope = (n * np.sum(x * prices) - np.sum(x) * np.sum(prices)) / \
-                (n * np.sum(x * x) - (np.sum(x)) ** 2) if n * np.sum(x * x) - (np.sum(x)) ** 2 != 0 else 0
+        if len(x) > 1:
+            slope = (len(x) * np.sum(x * prices) - np.sum(x) * np.sum(prices)) / \
+                    (len(x) * np.sum(x * x) - (np.sum(x)) ** 2)
 
-        # Normalize slope to be between -1 and 1 using tanh for smooth bounded output
-        return np.tanh(slope * 1000)  # Adjust multiplier based on typical price scale
+            # Normalize by average price
+            avg_price = np.mean(prices)
+            if avg_price != 0:
+                return slope / avg_price
+
+        return 0.0
 
     def calculate_volume_subscore(self) -> float:
-        """Calculate volume sub-score based on relative volume changes - clearly explainable"""
+        """Calculate volume subscore based on volume changes"""
         if len(self.volume_history) < 2:
             return 0.0
 
-        # Calculate average volume over the lookback period for reference
-        lookback_period = min(self.lookback, len(self.volume_history))
-        avg_volume = np.mean(self.volume_history[-lookback_period:])
-
-        if avg_volume == 0:
-            return 0.0
-
-        current_volume = self.volume_history[-1]
-        # Calculate relative volume expansion/compression
-        volume_ratio = (current_volume - avg_volume) / avg_volume
-
-        # Use tanh to create a smooth, bounded score between -1 and 1
-        return np.tanh(volume_ratio * 2)  # Multiplier adjusts sensitivity
+        # Calculate recent volume momentum
+        recent_vol_change = (self.volume_history[-1] - self.volume_history[-2]) / self.volume_history[-2]
+        return recent_vol_change  # Return as is, will be normalized later
 
     def combine_subscores(self, momentum: float, trend: float, volume: float) -> float:
-        """Combine subscores with fixed weights for deterministic behavior"""
-        # Use fixed weights to ensure deterministic behavior
-        # All weights sum to 1.0 to maintain bounded output
-        combined_score = (momentum * 0.4) + (trend * 0.4) + (volume * 0.2)
-
-        # Ensure final score is bounded between -1 and 1
-        return max(-1.0, min(1.0, combined_score))
-
-    def get_subscore_breakdown(self) -> dict:
-        """Get the current breakdown of subscores for explainability"""
-        return {
-            'momentum': self.momentum_subscore,
-            'trend': self.trend_subscore,
-            'volume': self.volume_subscore,
-            'combined': self.combine_subscores(self.momentum_subscore, self.trend_subscore, self.volume_subscore),
-            'explanation': f"Momentum + volume expansion exceeded baseline by {self.combine_subscores(self.momentum_subscore, self.trend_subscore, self.volume_subscore):.3f}"
-        }
+        """Combine subscores into a single observation value"""
+        # Normalize each subscore to [-1, 1] range if needed
+        # Weight each component (adjust weights as needed)
+        combined = (momentum * 0.4 + trend * 0.4 + volume * 0.2)
+        
+        # Clamp to reasonable range
+        return max(-1.0, min(1.0, combined))

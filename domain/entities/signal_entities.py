@@ -25,23 +25,81 @@ class PositionSide(Enum):
 
 
 @dataclass
-class Signal:
-    """Domain entity representing a trading signal"""
+class MarketObservation:
+    """Domain entity representing raw market observations from Watcher layer.
+    Should NOT contain strategy information or trading decisions."""
     symbol: Symbol
-    signal_type: SignalType
+    observation_type: str  # e.g., 'volatility_expansion', 'momentum_spike', 'liquidity_imbalance'
+    observation_value: float  # raw value of the observation
     confidence: Percentage  # 0.0 to 1.0
-    score: float  # -1.0 to 1.0
     timestamp: datetime
-    source_layer: Optional[str] = None  # Which layer generated this signal (watcher, engine, fusion, strategy)
     metadata: Optional[Dict[str, Any]] = None
-    fused_score: Optional[float] = None
-    fused_confidence: Optional[Percentage] = None
 
     def __post_init__(self):
         if not 0.0 <= float(self.confidence.value) <= 1.0:
             raise ValueError("Confidence must be between 0.0 and 1.0")
-        if not -1.0 <= self.score <= 1.0:
-            raise ValueError("Score must be between -1.0 and 1.0")
+
+
+@dataclass
+class InterpretedSignal:
+    """Domain entity representing interpreted signals from Engine layer.
+    Contains direction and strength but no strategy selection."""
+    symbol: Symbol
+    signal_type: SignalType  # Only direction (BUY/SELL/NEUTRAL/HOLD)
+    direction: float  # -1.0 to 1.0 (short to long)
+    strength: float  # 0.0 to 1.0
+    confidence: Percentage  # 0.0 to 1.0
+    timestamp: datetime
+    source_watcher: Optional[str] = None  # Which watcher generated the observation
+    metadata: Optional[Dict[str, Any]] = None
+
+    def __post_init__(self):
+        if not 0.0 <= float(self.confidence.value) <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        if not -1.0 <= self.direction <= 1.0:
+            raise ValueError("Direction must be between -1.0 and 1.0")
+        if not 0.0 <= self.strength <= 1.0:
+            raise ValueError("Strength must be between 0.0 and 1.0")
+
+
+@dataclass
+class FusedSignal:
+    """Domain entity representing fused signals from Fusion layer.
+    Contains dominant bias but no strategy selection."""
+    symbol: Symbol
+    dominant_bias: SignalType
+    direction: float  # -1.0 to 1.0 (short to long)
+    dominance_score: float  # 0.0 to 1.0
+    regime_context: str  # e.g., 'trending', 'volatile', 'normal'
+    confidence: Percentage  # 0.0 to 1.0
+    timestamp: datetime
+    metadata: Optional[Dict[str, Any]] = None
+
+    def __post_init__(self):
+        if not 0.0 <= float(self.confidence.value) <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        if not 0.0 <= self.dominance_score <= 1.0:
+            raise ValueError("Dominance score must be between 0.0 and 1.0")
+        if not -1.0 <= self.direction <= 1.0:
+            raise ValueError("Direction must be between -1.0 and 1.0")
+
+
+@dataclass
+class ExecutionIntent:
+    """Domain entity representing execution intent from Strategy layer.
+    This is where strategy selection occurs."""
+    symbol: Symbol
+    strategy_name: str  # Strategy selection happens HERE
+    side: OrderSide
+    intent_confidence: Percentage  # 0.0 to 1.0
+    risk_parameters: Dict[str, Any]  # SL, TP, position sizing parameters
+    timestamp: datetime
+    fused_signal: Optional[FusedSignal] = None  # Reference to the fused signal that triggered this
+    metadata: Optional[Dict[str, Any]] = None
+
+    def __post_init__(self):
+        if not 0.0 <= float(self.intent_confidence.value) <= 1.0:
+            raise ValueError("Intent confidence must be between 0.0 and 1.0")
 
 
 @dataclass
@@ -56,9 +114,9 @@ class Order:
     stop_price: Optional[Money] = None
     time_in_force: str = "GTC"
     client_order_id: Optional[str] = None
-    strategy_name: Optional[str] = None
+    strategy_name: Optional[str] = None  # Only set by Strategy layer
     timestamp: Optional[datetime] = None
-    parent_signal: Optional[Signal] = None
+    parent_execution_intent: Optional[ExecutionIntent] = None  # Reference to the intent that created this order
     risk_adjusted_quantity: Optional[Decimal] = None
     stop_loss_price: Optional[Money] = None
     take_profit_price: Optional[Money] = None
@@ -109,7 +167,7 @@ class Position:
             pnl_amount = (self.entry_price.amount - current_price.amount) * self.quantity
         else:  # FLAT
             pnl_amount = 0
-        
+
         return Money(pnl_amount, current_price.currency)
 
     def is_open(self) -> bool:
@@ -125,7 +183,7 @@ class Portfolio:
     total_value: Money
     timestamp: datetime
     strategy_weights: Optional[Dict[str, Percentage]] = None
-    
+
     def get_position(self, symbol: Symbol) -> Optional[Position]:
         """Get a specific position by symbol"""
         for pos in self.positions:

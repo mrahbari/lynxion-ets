@@ -1,38 +1,20 @@
-"""
-Infrastructure implementation of tick watcher following hexagonal architecture.
-This is inspired by the temp-sample-features tick_watcher but adapted to the current hexagonal architecture.
-"""
-from typing import List, Dict, Any, Optional
-import os
-import threading
-import time
-from datetime import datetime
-
-from domain.ports.watcher_ports import WatcherPort
-from domain.entities.trading_entities import Signal, SignalType
+from .base_watcher import BaseWatcher
+from domain.entities.signal_entities import MarketObservation
 from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
+from datetime import datetime
+import numpy as np
+import os
 from decimal import Decimal
 
 
-class TickWatcherAdapter(WatcherPort):
-    """
-    Infrastructure implementation of tick watcher following hexagonal architecture.
-    Processes tick-level data for high-frequency strategies.
-    """
-    
-    def __init__(self, name: str, symbol: str, broker_service, target_broker: str = None):
-        self.name = name
-        self.symbol = Symbol(symbol)
-        self.broker_service = broker_service
-        self.target_broker = target_broker
-        self.symbols = {symbol}
-        self.running = False
-        self.thread = None
-        self.last_tick_data = {}
-        self.tick_cache = []
+class TickWatcherAdapter(BaseWatcher):
+    """Tick Watcher - analyzes tick-by-tick market data, returns raw market observations"""
 
-        # Configuration from environment with defaults - enabled by default
+    def __init__(self, name: str, symbol: str, broker_service=None, lookback: int = 1000):
+        super().__init__(name, symbol, broker_service, None)
+
+        # Configuration from environment with defaults
         self.enabled = os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true'
 
         # Only set logger if enabled, otherwise use mock logger
@@ -47,201 +29,240 @@ class TickWatcherAdapter(WatcherPort):
                 def error(self, msg): pass
             self.logger = MockLogger()
 
-    def analyze(self, symbol: Symbol = None):
-        """Analyze tick data with proper enablement check"""
-        # Check if enabled first
+        self.lookback = lookback
+        self.tick_history = []  # [(price, volume, timestamp, side), ...]
+        self.price_changes = []
+        self.tick_sizes = []
+        self.tick_directions = []  # ['up', 'down', 'same']
+        self.volume_history = []
+
+        # Tick analysis metrics
+        self.tick_imbalance_ratio = 0.0
+        self.tick_intensity = 0.0
+        self.price_momentum = 0.0
+
+        # Thresholds for different market conditions
+        self.high_intensity_threshold = 50  # High tick intensity
+        self.low_intensity_threshold = 5   # Low tick intensity
+        self.momentum_threshold = 0.001    # Price momentum threshold
+
+    def update_data(self, data: dict):
+        """Update with new tick data"""
+        if not self.enabled:
+            return
+
+        if 'tick' in data:
+            tick = data['tick']
+            current_time = datetime.now()
+
+            # Add tick to history
+            tick_entry = {
+                'price': float(tick.get('price', 0)),
+                'volume': float(tick.get('volume', tick.get('size', 0))),
+                'timestamp': current_time,
+                'side': tick.get('side', 'unknown')
+            }
+
+            self.tick_history.append(tick_entry)
+            self.volume_history.append(tick_entry['volume'])
+
+            # Calculate price change if we have previous tick
+            if len(self.tick_history) > 1:
+                prev_price = self.tick_history[-2]['price']
+                current_price = tick_entry['price']
+                price_change = current_price - prev_price
+                self.price_changes.append(price_change)
+
+                # Calculate tick direction
+                if price_change > 0:
+                    self.tick_directions.append('up')
+                elif price_change < 0:
+                    self.tick_directions.append('down')
+                else:
+                    self.tick_directions.append('same')
+
+                # Calculate tick size
+                self.tick_sizes.append(abs(price_change))
+
+            # Keep history within limits
+            if len(self.tick_history) > self.lookback * 3:
+                self.tick_history.pop(0)
+                if len(self.price_changes) > self.lookback * 3:
+                    self.price_changes.pop(0)
+                if len(self.tick_sizes) > self.lookback * 3:
+                    self.tick_sizes.pop(0)
+                if len(self.tick_directions) > self.lookback * 3:
+                    self.tick_directions.pop(0)
+                if len(self.volume_history) > self.lookback * 3:
+                    self.volume_history.pop(0)
+
+    def _analyze_impl(self, symbol: Symbol) -> MarketObservation:
+        """Analyze tick data and return a raw market observation (no strategy selection)"""
         if not self.enabled:
             return None
 
-        if not self.running:
-            self.logger.warning(f"TickWatcher {self.name} not running, cannot analyze")
+        if len(self.tick_history) < 10:  # Need sufficient ticks for analysis
             return None
 
-        # In a real implementation, this would analyze tick data for patterns,
-        # momentum shifts, volume imbalances, etc.
+        # Calculate tick analysis metrics
+        tick_intensity = self._calculate_tick_intensity()
+        tick_imbalance = self._calculate_tick_imbalance()
+        price_momentum = self._calculate_price_momentum()
+        volatility = self._calculate_tick_volatility()
 
-        # For now, return a neutral signal as placeholder
-        try:
-            current_price = self._get_current_price(symbol or self.symbol)
-            if current_price is None:
-                return None
+        # Determine observation type based on tick analysis
+        observation_type = self._determine_observation_type(tick_intensity, tick_imbalance, price_momentum)
+        observation_value = self._calculate_observation_value(tick_imbalance, price_momentum, volatility)
+        confidence = self._calculate_confidence(tick_intensity, volatility)
 
-            # Analyze tick data for patterns and momentum shifts
-            tick_signal = self._analyze_tick_data(symbol or self.symbol, current_price)
+        # Convert confidence to Percentage object for domain compatibility
+        confidence_percentage = Percentage(Decimal(str(confidence)))
 
-            if tick_signal is None:
-                # If no clear signal from tick analysis, return HOLD with low confidence
-                tick_signal = Signal(
-                    symbol=symbol or self.symbol,
-                    signal_type=SignalType.HOLD,
-                    confidence=Percentage(Decimal('0.2')),
-                    score=0.0,
-                    strategy_name=f"TickWatcher_{self.name}",
-                    timestamp=datetime.now(),
-                    metadata={
-                        'tick_analysis': 'insufficient_data',
-                        'last_price': current_price,
-                        'tick_volume': len(self.tick_cache) if self.tick_cache else 0
-                    }
-                )
+        # Create and return a MarketObservation instead of a Signal
+        observation = MarketObservation(
+            symbol=symbol,
+            observation_type=observation_type,
+            observation_value=observation_value,
+            confidence=confidence_percentage,
+            timestamp=datetime.now(),
+            metadata={
+                'tick_intensity': tick_intensity,
+                'tick_imbalance': tick_imbalance,
+                'price_momentum': price_momentum,
+                'tick_volatility': volatility,
+                'total_ticks_analyzed': len(self.tick_history),
+                'tick_frequency': tick_intensity,
+                'tick_regime': self._get_tick_regime(tick_intensity),
+                'momentum_regime': self._get_momentum_regime(price_momentum),
+                'latest_tick_price': self.tick_history[-1]['price'] if self.tick_history else 0,
+                'latest_tick_volume': self.tick_history[-1]['volume'] if self.tick_history else 0,
+                'tick_source': self.name,
+                'lookback_period': self.lookback
+            }
+        )
 
-            return tick_signal
-        except Exception as e:
-            self.logger.error(f"Error in TickWatcher {self.name} analysis: {e}")
-            return None
+        return observation
 
-    def start(self):
-        """Start the tick watcher"""
-        self.running = True
-        self.thread = threading.Thread(target=self._tick_loop, daemon=True)
-        self.thread.start()
-        logger.info(f"TickWatcher {self.name} started for {self.symbol.value}")
+    def _calculate_tick_intensity(self) -> float:
+        """Calculate tick intensity (ticks per unit time)"""
+        if len(self.tick_history) < 2:
+            return 0.0
 
-    def stop(self):
-        """Stop the tick watcher"""
-        self.running = False
-        if self.thread:
-            self.thread.join(timeout=1.0)
-        logger.info(f"TickWatcher {self.name} stopped")
+        # Calculate time difference between first and last tick
+        first_time = self.tick_history[0]['timestamp']
+        last_time = self.tick_history[-1]['timestamp']
+        time_diff = (last_time - first_time).total_seconds()
 
-    def is_running(self) -> bool:
-        """Check if the watcher is running"""
-        return self.running
+        if time_diff > 0:
+            intensity = len(self.tick_history) / time_diff
+            return min(100.0, intensity)  # Cap at 100 ticks per second
+        else:
+            return 0.0
 
-    def update_data(self, data: Dict[str, Any]):
-        """Update with new tick data"""
-        if 'symbol' in data and data['symbol'] == self.symbol.value:
-            self.last_tick_data = data
-            self.tick_cache.append(data)
-            # Keep only recent ticks to avoid memory issues
-            if len(self.tick_cache) > 1000:
-                self.tick_cache = self.tick_cache[-500:]
+    def _calculate_tick_imbalance(self) -> float:
+        """Calculate tick imbalance (up ticks vs down ticks)"""
+        if not self.tick_directions:
+            return 0.0
 
-    def subscribe(self, symbol: Symbol):
-        """Subscribe to a symbol"""
-        self.symbols.add(str(symbol.value))
+        up_ticks = self.tick_directions.count('up')
+        down_ticks = self.tick_directions.count('down')
+        total_ticks = len(self.tick_directions)
 
-    def unsubscribe(self, symbol: Symbol):
-        """Unsubscribe from a symbol"""
-        self.symbols.discard(str(symbol.value))
+        if total_ticks == 0:
+            return 0.0
 
-    def get_watcher_name(self) -> str:
-        """Get the name of the watcher"""
-        return self.name
+        imbalance = (up_ticks - down_ticks) / total_ticks
+        return max(-1.0, min(1.0, imbalance))  # Clamp between -1 and 1
 
-    def _tick_loop(self):
-        """Main tick processing loop"""
-        while self.running:
-            try:
-                # In a real implementation, this would fetch tick data from broker
-                # and process it in real-time
-                time.sleep(0.1)  # Simulate tick processing interval
-            except Exception as e:
-                logger.error(f"Error in TickWatcher loop: {e}")
-                time.sleep(1)  # Wait before continuing after error
+    def _calculate_price_momentum(self) -> float:
+        """Calculate price momentum based on recent price changes"""
+        if len(self.price_changes) < 2:
+            return 0.0
 
-    def _get_current_price(self, symbol: Symbol) -> Optional[float]:
-        """Get current price for symbol from broker"""
-        try:
-            # Use broker service to get current market data
-            # This is a simplified approach - in real implementation, would use
-            # appropriate broker API methods
-            from infrastructure.brokers.broker_manager import BrokerManager
-            if hasattr(self.broker_service, 'get_price'):
-                return self.broker_service.get_price(symbol)
+        # Calculate average price change
+        avg_change = np.mean(self.price_changes[-20:]) if len(self.price_changes) >= 20 else np.mean(self.price_changes)
+        
+        # Calculate volatility of price changes for normalization
+        if len(self.price_changes) > 1:
+            vol_of_changes = np.std(self.price_changes[-20:]) if len(self.price_changes) >= 20 else np.std(self.price_changes)
+            if vol_of_changes != 0:
+                momentum = avg_change / vol_of_changes
             else:
-                # Fallback to a generic method
-                return None
-        except Exception as e:
-            logger.error(f"Error getting price for {symbol.value}: {e}")
-            return None
+                momentum = avg_change
+        else:
+            momentum = avg_change
 
-    def _analyze_tick_data(self, symbol: Symbol, current_price: float) -> Optional[Signal]:
-        """Analyze tick data for momentum shifts, volume imbalances, and patterns"""
-        if len(self.tick_cache) < 10:  # Need sufficient tick data for analysis
-            return None
+        return max(-1.0, min(1.0, momentum))  # Clamp between -1 and 1
 
-        # Extract recent tick data
-        recent_ticks = self.tick_cache[-20:] if len(self.tick_cache) >= 20 else self.tick_cache
+    def _calculate_tick_volatility(self) -> float:
+        """Calculate volatility based on tick sizes"""
+        if len(self.tick_sizes) < 2:
+            return 0.0
 
-        # Calculate price momentum from recent ticks
-        prices = [tick.get('price', tick.get('close', tick.get('last', current_price)))
-                  for tick in recent_ticks if 'price' in tick or 'close' in tick or 'last' in tick]
+        # Calculate volatility of tick sizes
+        vol = np.std(self.tick_sizes[-50:]) if len(self.tick_sizes) >= 50 else np.std(self.tick_sizes)
+        return min(1.0, vol * 1000)  # Scale appropriately
 
-        if len(prices) < 5:
-            return None
-
-        # Calculate recent momentum (direction and strength)
-        recent_momentum = (prices[-1] - prices[0]) / prices[0] if prices[0] != 0 else 0
-
-        # Calculate volatility from recent ticks
-        import numpy as np
-        price_changes = [abs(prices[i] - prices[i-1]) / prices[i-1] if prices[i-1] != 0 else 0
-                         for i in range(1, len(prices))]
-        volatility = np.mean(price_changes) if price_changes else 0
-
-        # Calculate volume metrics if available
-        volumes = [tick.get('volume', tick.get('qty', 0)) for tick in recent_ticks]
-        avg_volume = np.mean(volumes) if volumes else 0
-        current_volume = volumes[-1] if volumes else 0
-        volume_spike = current_volume / avg_volume if avg_volume > 0 else 0
-
-        # Determine signal based on momentum, volatility, and volume
-        signal_type = SignalType.HOLD
-        confidence = 0.3
-        score = 0.0
-
-        # Strong momentum with volume confirmation
-        if abs(recent_momentum) > 0.005 and volume_spike > 1.5:  # 0.5% momentum + 50% volume spike
-            if recent_momentum > 0:
-                signal_type = SignalType.BUY
-                confidence = min(0.9, abs(recent_momentum) * 100 + volume_spike * 0.1)
+    def _determine_observation_type(self, tick_intensity: float, tick_imbalance: float, price_momentum: float) -> str:
+        """Determine observation type based on tick analysis"""
+        if tick_intensity < self.low_intensity_threshold:
+            return 'tick_low_activity'
+        elif tick_intensity > self.high_intensity_threshold:
+            if tick_imbalance > 0.3:
+                return 'tick_high_activity_buy_pressure'
+            elif tick_imbalance < -0.3:
+                return 'tick_high_activity_sell_pressure'
             else:
-                signal_type = SignalType.SELL
-                confidence = min(0.9, abs(recent_momentum) * 100 + volume_spike * 0.1)
-        # Moderate momentum
-        elif abs(recent_momentum) > 0.002:  # 0.2% momentum
-            if recent_momentum > 0:
-                signal_type = SignalType.BUY
-                confidence = min(0.7, abs(recent_momentum) * 100)
+                return 'tick_high_activity_neutral'
+        else:
+            # Moderate tick intensity
+            if abs(price_momentum) > self.momentum_threshold:
+                if price_momentum > 0:
+                    return 'tick_momentum_up'
+                else:
+                    return 'tick_momentum_down'
+            elif tick_imbalance > 0.2:
+                return 'tick_buy_imbalance'
+            elif tick_imbalance < -0.2:
+                return 'tick_sell_imbalance'
             else:
-                signal_type = SignalType.SELL
-                confidence = min(0.7, abs(recent_momentum) * 100)
-        # High volatility without clear direction (potential reversal zone)
-        elif volatility > 0.008:  # High volatility
-            # Look for signs of exhaustion or reversal
-            if recent_momentum > 0 and len(prices) > 10:
-                # Check if momentum is decreasing (sign of potential reversal)
-                earlier_momentum = (prices[5] - prices[0]) / prices[0] if prices[0] != 0 else 0
-                if earlier_momentum > abs(recent_momentum):  # Earlier momentum was stronger
-                    signal_type = SignalType.SELL  # Potential reversal from high momentum
-                    confidence = 0.6
-            elif recent_momentum < 0 and len(prices) > 10:
-                earlier_momentum = (prices[5] - prices[0]) / prices[0] if prices[0] != 0 else 0
-                if earlier_momentum < recent_momentum:  # Earlier momentum was stronger negative
-                    signal_type = SignalType.BUY  # Potential reversal from low momentum
-                    confidence = 0.6
+                return 'tick_normal'
 
-        if signal_type != SignalType.HOLD:
-            score = recent_momentum  # Use momentum as score
-            return Signal(
-                symbol=symbol,
-                signal_type=signal_type,
-                confidence=Percentage(Decimal(str(confidence))),
-                score=score,
-                strategy_name=f"TickWatcher_{self.name}",
-                timestamp=datetime.now(),
-                metadata={
-                    'tick_analysis': {
-                        'momentum': recent_momentum,
-                        'volatility': volatility,
-                        'volume_spike': volume_spike,
-                        'avg_volume': avg_volume,
-                        'ticks_analyzed': len(recent_ticks)
-                    },
-                    'last_price': current_price,
-                    'tick_volume': len(self.tick_cache)
-                }
-            )
+    def _calculate_observation_value(self, tick_imbalance: float, price_momentum: float, volatility: float) -> float:
+        """Calculate observation value based on tick metrics"""
+        # Combine tick imbalance and price momentum with weights
+        combined_value = (tick_imbalance * 0.6 + price_momentum * 0.4)
+        
+        # Normalize to [-1, 1] range
+        return max(-1.0, min(1.0, combined_value))
 
-        return None  # No clear signal
+    def _calculate_confidence(self, tick_intensity: float, volatility: float) -> float:
+        """Calculate confidence based on tick metrics"""
+        # Base confidence on tick intensity (more ticks = more reliable)
+        intensity_factor = min(1.0, tick_intensity / 50.0)  # Normalize against 50 ticks/sec baseline
+
+        # Adjust for volatility (higher volatility can indicate stronger signals)
+        vol_factor = min(0.5, volatility * 2)  # Cap volatility contribution
+
+        # Combine factors (dynamic, no hardcoded base)
+        confidence = intensity_factor * 0.6 + vol_factor * 0.4
+
+        return max(0.1, min(0.95, confidence))  # Clamp between 0.1 and 0.95
+
+    def _get_tick_regime(self, tick_intensity: float) -> str:
+        """Get current tick regime"""
+        if tick_intensity > self.high_intensity_threshold:
+            return 'high'
+        elif tick_intensity < self.low_intensity_threshold:
+            return 'low'
+        else:
+            return 'normal'
+
+    def _get_momentum_regime(self, momentum: float) -> str:
+        """Get current momentum regime"""
+        if abs(momentum) > self.momentum_threshold * 3:
+            return 'strong'
+        elif abs(momentum) > self.momentum_threshold:
+            return 'moderate'
+        else:
+            return 'weak'

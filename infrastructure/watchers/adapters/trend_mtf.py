@@ -1,16 +1,15 @@
 from .base_watcher import BaseWatcher
-from domain.entities.trading_entities import Signal, SignalType
-from domain.value_objects import Percentage
-from decimal import Decimal
+from domain.entities.signal_entities import MarketObservation
+from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
-from domain.value_objects import Symbol
 import numpy as np
 import os
+from decimal import Decimal
 
 
 class TrendMTFWatcher(BaseWatcher):
-    """Multi-Timeframe Trend Watcher - analyzes trends across multiple timeframes"""
+    """Multi-Timeframe Trend Watcher - analyzes trends across multiple timeframes, returns raw market observations"""
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, short_period: int = 5, medium_period: int = 15, long_period: int = 30):
         super().__init__(name, symbol, broker_service, target_broker)
@@ -51,234 +50,151 @@ class TrendMTFWatcher(BaseWatcher):
 
         if 'close' in data:
             self.price_history.append(data['close'])
-            if len(self.price_history) > self.long_period * 3:  # Keep more than the longest period
+            if len(self.price_history) > self.long_period * 3:  # Keep more data for longer periods
                 self.price_history.pop(0)
 
-        # Update trends if we have enough data
-        if len(self.price_history) >= self.long_period:
-            self.update_trends()
-
-    def update_trends(self):
-        """Update trend values for different timeframes - each with independent state"""
-        if len(self.price_history) < self.long_period:
-            return
-
-        current_price = self.price_history[-1]
-        current_time = datetime.now()
-
-        # Calculate short-term trend independently
-        if len(self.price_history) >= self.short_period:
-            short_ma = np.mean(self.price_history[-self.short_period:])
-            short_deviation = (current_price - short_ma) / short_ma if short_ma != 0 else 0
-            self.short_trend_state = {
-                'direction': 1 if short_deviation > self.trend_threshold else (-1 if short_deviation < -self.trend_threshold else 0),
-                'strength': abs(short_deviation),
-                'timestamp': current_time
-            }
-
-        # Calculate medium-term trend independently
-        if len(self.price_history) >= self.medium_period:
-            medium_ma = np.mean(self.price_history[-self.medium_period:])
-            medium_deviation = (current_price - medium_ma) / medium_ma if medium_ma != 0 else 0
-            self.medium_trend_state = {
-                'direction': 1 if medium_deviation > self.trend_threshold else (-1 if medium_deviation < -self.trend_threshold else 0),
-                'strength': abs(medium_deviation),
-                'timestamp': current_time
-            }
-
-        # Calculate long-term trend independently
-        if len(self.price_history) >= self.long_period:
-            long_ma = np.mean(self.price_history[-self.long_period:])
-            long_deviation = (current_price - long_ma) / long_ma if long_ma != 0 else 0
-            self.long_trend_state = {
-                'direction': 1 if long_deviation > self.trend_threshold else (-1 if long_deviation < -self.trend_threshold else 0),
-                'strength': abs(long_deviation),
-                'timestamp': current_time
-            }
-
-    def _analyze_impl(self, symbol: Symbol) -> Signal:
-        """Analyze multi-timeframe trends and return a signal"""
+    def _analyze_impl(self, symbol: Symbol) -> MarketObservation:
+        """Analyze multi-timeframe trends and return a raw market observation (no strategy selection)"""
         if not self.enabled:
             return None
 
         if len(self.price_history) < self.long_period:
             return None
 
-        # Determine alignment state explicitly
-        alignment_state = self.determine_alignment_state()
+        # Calculate trends for each timeframe
+        short_trend = self.calculate_trend(self.price_history[-self.short_period:])
+        medium_trend = self.calculate_trend(self.price_history[-self.medium_period:])
+        long_trend = self.calculate_trend(self.price_history[-self.long_period:])
 
-        # Check for divergences explicitly
-        divergence_detected = self.check_divergence()
+        # Update trend states
+        self.short_trend_state = {'direction': short_trend[0], 'strength': short_trend[1], 'timestamp': datetime.now()}
+        self.medium_trend_state = {'direction': medium_trend[0], 'strength': medium_trend[1], 'timestamp': datetime.now()}
+        self.long_trend_state = {'direction': long_trend[0], 'strength': long_trend[1], 'timestamp': datetime.now()}
 
-        # Calculate score based on alignment and divergence
-        score = self.calculate_alignment_score()
+        # Calculate overall trend score (combination of all timeframes)
+        overall_trend_score = self.calculate_overall_trend_score(short_trend, medium_trend, long_trend)
 
-        # Determine signal based on explicit alignment state
-        signal_type = self.determine_signal_type_explicit(alignment_state, divergence_detected)
+        # Determine observation type based on trend alignment
+        # Calculate confidence based on trend alignment and strength
+        trend_alignment = self.calculate_trend_alignment(short_trend, medium_trend, long_trend)
+        trend_strength = max(abs(short_trend[1]), abs(medium_trend[1]), abs(long_trend[1]))
 
-        # Calculate confidence based on alignment clarity
-        confidence = self.calculate_alignment_confidence(alignment_state, divergence_detected)
+        # Base confidence on alignment and strength, with higher confidence for clearer signals
+        if abs(overall_trend_score) < self.trend_threshold:
+            observation_type = 'trend_neutral'
+            observation_value = 0.0
+            # For neutral trends, confidence is based on alignment (how consistent the neutral state is across timeframes)
+            confidence = min(0.8, trend_alignment * 0.8)  # Cap at 80% for neutral
+        elif overall_trend_score > 0:
+            observation_type = 'trend_positive'  # Bullish trend
+            observation_value = abs(overall_trend_score)
+            # For positive trends, confidence is based on both alignment and strength
+            confidence = min(0.95, (trend_alignment * 0.6 + trend_strength * 0.4))
+        else:
+            observation_type = 'trend_negative'  # Bearish trend
+            observation_value = -abs(overall_trend_score)
+            # For negative trends, confidence is based on both alignment and strength
+            confidence = min(0.95, (trend_alignment * 0.6 + trend_strength * 0.4))
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))
 
-        signal = Signal(
+        # Create and return a MarketObservation instead of a Signal
+        observation = MarketObservation(
             symbol=symbol,
-            signal_type=signal_type,
+            observation_type=observation_type,
+            observation_value=observation_value,
             confidence=confidence_percentage,
-            score=score,
-            strategy_name=self.name,  # Changed from 'strategy' to 'strategy_name' for domain compatibility
             timestamp=datetime.now(),
-            source_engine=self.name,  # Add source engine for tracking
             metadata={
-                'alignment_state': alignment_state,
-                'divergence_detected': divergence_detected,
-                'timeframe_states': {
-                    'long': self.long_trend_state,
-                    'medium': self.medium_trend_state,
-                    'short': self.short_trend_state
+                'short_trend': {
+                    'direction': short_trend[0],
+                    'strength': short_trend[1]
                 },
-                'explanation': f"Trend alignment: {alignment_state}, divergence: {divergence_detected}"
+                'medium_trend': {
+                    'direction': medium_trend[0],
+                    'strength': medium_trend[1]
+                },
+                'long_trend': {
+                    'direction': long_trend[0],
+                    'strength': long_trend[1]
+                },
+                'overall_trend_score': overall_trend_score,
+                'trend_alignment': self.calculate_trend_alignment(short_trend, medium_trend, long_trend),
+                'trend_source': self.name,
+                'price_history_length': len(self.price_history)
             }
         )
 
-        # Update last signal if it's different enough
-        if self.should_emit_signal(signal):
-            self.last_signal = signal
-            logger.debug(f"TrendMTFWatcher {self.name} generated signal: {signal_type} with alignment: {alignment_state}, divergence: {divergence_detected}")
+        return observation
 
-        return signal
+    def calculate_trend(self, prices):
+        """Calculate trend direction and strength using linear regression"""
+        if len(prices) < 2:
+            return (0, 0)  # No trend if not enough data
 
-    def determine_alignment_state(self) -> str:
-        """Explicitly determine the alignment state of all timeframes"""
-        long_dir = self.long_trend_state['direction']
-        medium_dir = self.medium_trend_state['direction']
-        short_dir = self.short_trend_state['direction']
+        # Convert to numpy array
+        prices = np.array(prices)
+        x = np.arange(len(prices))
 
-        # Count aligned directions
-        directions = [long_dir, medium_dir, short_dir]
-        bullish_count = sum(1 for d in directions if d == 1)
-        bearish_count = sum(1 for d in directions if d == -1)
-        neutral_count = sum(1 for d in directions if d == 0)
+        # Calculate linear regression
+        if len(x) > 1:
+            slope = (len(x) * np.sum(x * prices) - np.sum(x) * np.sum(prices)) / \
+                    (len(x) * np.sum(x * x) - (np.sum(x)) ** 2)
 
-        if bullish_count == 3:
-            return "ALIGNED_BULLISH"  # All aligned bullish
-        elif bearish_count == 3:
-            return "ALIGNED_BEARISH"  # All aligned bearish
-        elif bullish_count >= 2 and neutral_count <= 1:
-            return "MAINLY_BULLISH"  # At least 2 bullish
-        elif bearish_count >= 2 and neutral_count <= 1:
-            return "MAINLY_BEARISH"  # At least 2 bearish
-        elif long_dir != 0 and short_dir != 0 and long_dir != short_dir:
-            # Divergence between long and short term
-            return "DIVERGENT"
-        else:
-            return "MIXED"  # Mixed signals
-
-    def check_divergence(self) -> bool:
-        """Explicitly check for trend divergences"""
-        long_dir = self.long_trend_state['direction']
-        short_dir = self.short_trend_state['direction']
-
-        # Check for major divergence between long and short term
-        if long_dir != 0 and short_dir != 0 and long_dir != short_dir:
-            return True
-
-        # Check for medium-short divergence
-        medium_dir = self.medium_trend_state['direction']
-        if medium_dir != 0 and short_dir != 0 and medium_dir != short_dir:
-            return True
-
-        return False
-
-    def calculate_alignment_score(self) -> float:
-        """Calculate score based on explicit alignment - deterministic and explainable"""
-        long_dir = self.long_trend_state['direction']
-        medium_dir = self.medium_trend_state['direction']
-        short_dir = self.short_trend_state['direction']
-
-        # Calculate a score based on direction alignment
-        # All weights are fixed to ensure deterministic behavior
-        direction_alignment = 0
-        if long_dir == medium_dir == short_dir and long_dir != 0:
-            # Perfect alignment
-            direction_alignment = long_dir * 0.8  # Strong alignment
-        elif long_dir == medium_dir != 0 or medium_dir == short_dir != 0 or long_dir == short_dir != 0:
-            # Partial alignment
-            # Use the direction of the majority or long-term trend
-            if long_dir != 0:
-                direction_alignment = long_dir * 0.5
-            elif medium_dir != 0:
-                direction_alignment = medium_dir * 0.5
+            # Calculate average price for normalization
+            avg_price = np.mean(prices)
+            if avg_price != 0:
+                normalized_slope = slope / avg_price
             else:
-                direction_alignment = short_dir * 0.5
+                normalized_slope = 0
+
+            # Calculate trend strength (R-squared or similar measure)
+            if len(prices) > 2:
+                # Calculate R-squared as a measure of trend strength
+                y_pred = slope * x + (np.mean(prices) - slope * np.mean(x))
+                ss_res = np.sum((prices - y_pred) ** 2)
+                ss_tot = np.sum((prices - np.mean(prices)) ** 2)
+                if ss_tot != 0:
+                    r_squared = 1 - (ss_res / ss_tot)
+                    trend_strength = r_squared * abs(normalized_slope)
+                else:
+                    trend_strength = abs(normalized_slope)
+            else:
+                trend_strength = abs(normalized_slope)
+
+            return (normalized_slope, min(1.0, trend_strength))
         else:
-            # No clear alignment
-            direction_alignment = 0.0
+            return (0, 0)
 
-        # Add strength component (how strong the trends are)
-        avg_strength = (self.long_trend_state['strength'] +
-                       self.medium_trend_state['strength'] +
-                       self.short_trend_state['strength']) / 3
+    def calculate_overall_trend_score(self, short_trend, medium_trend, long_trend):
+        """Calculate an overall trend score combining all timeframes"""
+        # Weight different timeframes (longer timeframes might be more reliable)
+        short_weight = 0.2
+        medium_weight = 0.3
+        long_weight = 0.5
 
-        strength_component = avg_strength * 0.2  # Smaller weight for strength
+        overall_score = (short_trend[0] * short_weight + 
+                        medium_trend[0] * medium_weight + 
+                        long_trend[0] * long_weight)
 
-        # Final score bounded between -1 and 1
-        score = direction_alignment + strength_component
-        return max(-1.0, min(1.0, score))
+        return overall_score
 
-    def determine_signal_type_explicit(self, alignment_state: str, divergence_detected: bool) -> SignalType:
-        """Determine signal type based on explicit alignment state"""
-        if alignment_state == "ALIGNED_BULLISH" or alignment_state == "MAINLY_BULLISH":
-            return SignalType.BUY
-        elif alignment_state == "ALIGNED_BEARISH" or alignment_state == "MAINLY_BEARISH":
-            return SignalType.SELL
-        elif divergence_detected:
-            # When there's a divergence, the signal is less clear
-            # Often indicates potential reversal, so we return HOLD
-            return SignalType.HOLD
+    def calculate_trend_alignment(self, short_trend, medium_trend, long_trend):
+        """Calculate how aligned the trends are across timeframes"""
+        directions = [short_trend[0], medium_trend[0], long_trend[0]]
+        
+        # Count how many timeframes have the same direction
+        positive_count = sum(1 for d in directions if d > 0)
+        negative_count = sum(1 for d in directions if d < 0)
+        
+        # Alignment score (0-1, where 1 is perfect alignment)
+        if positive_count == 3 or negative_count == 3:
+            alignment = 1.0
+        elif positive_count == 0 or negative_count == 0:
+            alignment = 0.0
         else:
-            # Mixed signals or weak trends
-            return SignalType.HOLD
+            # Partial alignment
+            alignment = max(positive_count, negative_count) / 3.0
 
-    def calculate_alignment_confidence(self, alignment_state: str, divergence_detected: bool) -> float:
-        """Calculate confidence based on explicit alignment state"""
-        if divergence_detected:
-            # Lower confidence when there's divergence
-            return 0.3
-
-        if alignment_state in ["ALIGNED_BULLISH", "ALIGNED_BEARISH"]:
-            # Highest confidence when all timeframes align
-            return 0.9
-        elif alignment_state in ["MAINLY_BULLISH", "MAINLY_BEARISH"]:
-            # High confidence when at least 2 timeframes align
-            return 0.7
-        else:
-            # Lower confidence for mixed signals
-            return 0.4
-
-    def get_trend_alignment(self) -> dict:
-        """Get the current alignment of trends with explicit states"""
-        alignment_state = self.determine_alignment_state()
-        divergence_detected = self.check_divergence()
-
-        return {
-            'alignment_state': alignment_state,
-            'divergence_detected': divergence_detected,
-            'long': {
-                'direction': 'bullish' if self.long_trend_state['direction'] > 0 else ('bearish' if self.long_trend_state['direction'] < 0 else 'neutral'),
-                'strength': self.long_trend_state['strength']
-            },
-            'medium': {
-                'direction': 'bullish' if self.medium_trend_state['direction'] > 0 else ('bearish' if self.medium_trend_state['direction'] < 0 else 'neutral'),
-                'strength': self.medium_trend_state['strength']
-            },
-            'short': {
-                'direction': 'bullish' if self.short_trend_state['direction'] > 0 else ('bearish' if self.short_trend_state['direction'] < 0 else 'neutral'),
-                'strength': self.short_trend_state['strength']
-            },
-            'explanation': f"Long-term: {'bullish' if self.long_trend_state['direction'] > 0 else ('bearish' if self.long_trend_state['direction'] < 0 else 'neutral')}, " +
-                          f"Medium-term: {'bullish' if self.medium_trend_state['direction'] > 0 else ('bearish' if self.medium_trend_state['direction'] < 0 else 'neutral')}, " +
-                          f"Short-term: {'bullish' if self.short_trend_state['direction'] > 0 else ('bearish' if self.short_trend_state['direction'] < 0 else 'neutral')}, " +
-                          f"Alignment: {alignment_state}"
-        }
+        return alignment

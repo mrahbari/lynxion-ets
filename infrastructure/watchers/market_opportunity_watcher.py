@@ -1,14 +1,23 @@
 """
 Market Opportunity Watcher for auto-detection system.
 Monitors markets continuously and identifies opportunities based on technical conditions.
+Following correct architecture: Watchers only produce raw market observations.
 """
 import os
 import threading
 import time
 from datetime import datetime
 from typing import Dict, List, Optional, Callable, Any
-from domain.entities.trading_entities import Signal
+from domain.entities.signal_entities import MarketObservation, InterpretedSignal, FusedSignal, ExecutionIntent
 from domain.value_objects import Symbol
+from infrastructure.watchers.base_watcher import BaseWatcher
+from shared.logger import EnhancedLogger
+from domain.ports.engine_ports import SignalPort
+from domain.ports.engine_ports import FusionPort
+from shared.event_system import event_router
+
+
+# Import all watcher adapters that are used in the initialization
 from infrastructure.watchers.adapters.market_pulse import MarketPulseWatcher
 from infrastructure.watchers.adapters.volatility import VolatilityWatcher
 from infrastructure.watchers.adapters.trend_mtf import TrendMTFWatcher
@@ -19,35 +28,31 @@ from infrastructure.watchers.adapters.funding_rate import FundingRateWatcher
 from infrastructure.watchers.adapters.liquidity import LiquidityWatcher
 from infrastructure.watchers.adapters.historical_candle_watcher import HistoricalCandleWatcherAdapter
 from infrastructure.watchers.adapters.tick_watcher import TickWatcherAdapter
-from shared.logger import EnhancedLogger
-from infrastructure.strategies.signal_processor import SignalValidator
-from application.services.watcher_services import SignalFusionService
 
 
 class MarketOpportunityWatcher:
-    """Watches markets continuously to detect trading opportunities and trigger strategies."""
+    """Watches markets continuously to detect market observations and emit them to event system.
+    Correct architecture: Watcher only emits MarketObservation events to external processing system."""
 
     def __init__(self, symbols: Optional[List[str]] = None,
                  opportunity_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
                  auto_discover_symbols: bool = False,
                  comprehensive_logging: bool = True,
                  market_data_repo=None,
-                 execution_service=None):
+                 event_router=None):
         self.auto_discover_symbols = auto_discover_symbols
         self.opportunity_callback = opportunity_callback
         self.logger = EnhancedLogger("MarketOpportunityWatcher", comprehensive_mode=comprehensive_logging)
         self.comprehensive_logging = comprehensive_logging
         self.is_running = False
         self.watchers = {}
-        self.last_signals = {}
+        self.last_observations = {}
         self.monitoring_thread = None
 
-        # Initialize signal processing services
-        self.signal_validator = SignalValidator()
-        self.signal_fusion_service = SignalFusionService()
+        # Event router for proper architecture flow
+        self.event_router = event_router if event_router else globals().get('event_router')
 
         self.market_data_repo = market_data_repo
-        self.execution_service = execution_service
 
         # If no symbols provided and auto-discovery is enabled, discover symbols dynamically
         if auto_discover_symbols and not symbols:
@@ -1019,8 +1024,8 @@ class MarketOpportunityWatcher:
                             discovery_source="tick_watcher"
                         )
                 elif not symbol_to_primary_watcher:
-                    # Use the execution service that's already available instead of creating a new BrokerManager
-                    symbol_watchers['tick_watcher'] = TickWatcherAdapter("TickWatcher", symbol.value, self.execution_service)
+                    # Use the market data repo instead of execution service since we removed direct service access
+                    symbol_watchers['tick_watcher'] = TickWatcherAdapter("TickWatcher", symbol.value, self.market_data_repo)
 
             self.watchers[symbol.value] = symbol_watchers
 
@@ -1244,7 +1249,8 @@ class MarketOpportunityWatcher:
                     self.logger.warning(f"Error updating watcher {watcher_name} with historical data point: {e}")
 
     def _analyze_symbol(self, symbol: Symbol) -> Dict[str, Any]:
-        """Analyze a symbol using all available watchers - only if enabled."""
+        """Analyze a symbol using all available watchers - only if enabled.
+        Implements correct architecture: Watcher → Engine → Fusion → Strategy → Broker"""
         symbol_str = symbol.value
 
         # Log that the symbol analysis is starting
@@ -1258,14 +1264,14 @@ class MarketOpportunityWatcher:
         opportunities = {
             'symbol': symbol_str,
             'timestamp': datetime.now(),
-            'signals': {},
+            'observations': {},
             'indicators': {},
             'recommendation': None,
             'confidence': 0.0,
-            'strategy_suggestion': None
+            'execution_intent': None
         }
 
-        # Process each watcher individually with isolated flow: Watcher → Engine → Fusion → Strategy → Broker
+        # Process each watcher individually - only emit raw market observations
         for watcher_name, watcher in self.watchers[symbol_str].items():
             # Log that we're starting to analyze with this watcher
             if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
@@ -1286,188 +1292,65 @@ class MarketOpportunityWatcher:
             # Only call analyze if the watcher is enabled
             if watcher_is_enabled:
                 try:
-                    signal = watcher.analyze(symbol)
+                    # Step 1: Watcher generates raw market observation (no strategy selection)
+                    observation = watcher.analyze(symbol)
 
-                    # Log the complete flow for this watcher regardless of whether it generated a signal
-                    # This is important to track the full pipeline even when no signal is generated
-                    if signal:
-                        # Store raw signal from watcher
-                        raw_signal_data = {
-                            'signal_type': signal.signal_type.name,
-                            'confidence': float(signal.confidence.value) if hasattr(signal.confidence,
-                                                                                    'value') else float(
-                                signal.confidence),
-                            'score': signal.score,
-                            'timestamp': signal.timestamp.isoformat() if hasattr(signal,
-                                                                                 'timestamp') else datetime.now().isoformat(),
-                            'metadata': signal.metadata if hasattr(signal, 'metadata') else {},
+                    # Log the complete flow for this watcher regardless of whether it generated an observation
+                    if observation:
+                        # Store raw observation from watcher
+                        raw_observation_data = {
+                            'observation_type': observation.observation_type,
+                            'observation_value': observation.observation_value,
+                            'confidence': float(observation.confidence.value) if hasattr(observation.confidence,
+                                                                                        'value') else float(
+                                observation.confidence),
+                            'timestamp': observation.timestamp.isoformat() if hasattr(observation,
+                                                                                     'timestamp') else datetime.now().isoformat(),
+                            'metadata': observation.metadata if hasattr(observation, 'metadata') else {},
                             'watcher_name': watcher_name
                         }
-                        opportunities['signals'][watcher_name] = raw_signal_data
+                        opportunities['observations'][watcher_name] = raw_observation_data
 
-                        # Log the individual watcher signal
+                        # Log the individual watcher observation
                         self.logger.log_watcher_analysis(
                             watcher=watcher_name,
                             symbol=symbol_str,
-                            result=f"Signal Generated: {signal.signal_type.name}",
-                            confidence=float(signal.confidence.value) if hasattr(signal.confidence, 'value') else float(
-                                signal.confidence),
-                            signal_type=signal.signal_type.name
+                            result=f"Observation Generated: {observation.observation_type}",
+                            confidence=float(observation.confidence.value) if hasattr(observation.confidence, 'value') else float(
+                                observation.confidence),
+                            signal_type=observation.observation_type
                         )
 
-                        # Add watcher_name to signal metadata for tracking
-                        if not hasattr(signal, 'watcher_name'):
-                            signal.watcher_name = watcher_name
-
-                        # Process this signal through isolated flow: Watcher → Engine → Fusion → Strategy → Broker
-                        # Step 1: Validate signal through SignalProcessor (Engine)
-                        valid_signals, invalid_signals = self.signal_validator.validate_signals([signal])
-
-                        if valid_signals:
-                            # Step 2: Process valid signal through SignalFusion
-                            processed_signal = self.signal_fusion_service.process_multiple_signals(valid_signals)
-
-                            if processed_signal:
-                                # Update opportunities with the processed signal regardless of type
-                                processed_confidence = float(processed_signal.confidence.value) if hasattr(
-                                    processed_signal.confidence, 'value') else float(processed_signal.confidence)
-
-                                # Update recommendation if this signal has higher confidence and is BUY/SELL
-                                if processed_signal.signal_type.name in ['BUY', 'SELL']:
-                                    if processed_confidence > opportunities['confidence']:
-                                        opportunities['recommendation'] = processed_signal.signal_type.name
-                                        opportunities['confidence'] = processed_confidence
-
-                                # Always suggest a strategy for any processed signal
-                                opportunities['strategy_suggestion'] = self._suggest_strategy_for_signal(
-                                    processed_signal)
-
-                                # Log the complete isolated flow for this watcher
-                                # Determine broker name dynamically from execution service if available
-                                broker_name = "UnknownBroker"
-                                if hasattr(self, 'execution_service') and self.execution_service:
-                                    if hasattr(self.execution_service, 'get_broker_name'):
-                                        broker_name = self.execution_service.get_broker_name()
-                                    elif hasattr(self.execution_service, 'broker_name'):
-                                        broker_name = self.execution_service.broker_name
-                                    elif hasattr(self.execution_service, 'broker') and hasattr(self.execution_service.broker, '__class__'):
-                                        broker_name = self.execution_service.broker.__class__.__name__.replace('Adapter', '')
-
-                                self.logger.log_full_flow(
-                                    symbol=symbol_str,
-                                    watcher=watcher_name,
-                                    engine="SignalProcessor",
-                                    fusion="SignalFusion",
-                                    strategy=opportunities['strategy_suggestion'],
-                                    broker=broker_name,
-                                    decision=f"Signal Processed: {processed_signal.signal_type.name}",
-                                    confidence=processed_confidence,
-                                    reason=f"Signal from {watcher_name} processed through complete flow",
+                        # Emit the raw market observation to the event system for proper processing
+                        if self.event_router:
+                            try:
+                                from shared.event_system import EventType
+                                self.event_router.publish_observation(
+                                    observation=observation,
+                                    source=f"Watcher_{watcher_name}",
+                                    correlation_id=f"{symbol_str}_{datetime.now().timestamp()}"
                                 )
-
-                                # Execute trade if the signal is a BUY or SELL with sufficient confidence
-                                # Original threshold of 0.5 (50%) for proper risk management
-                                if processed_signal.signal_type.name in ['BUY', 'SELL'] and processed_confidence > 0.5:
-                                    self.logger.info(f"🎯 EXECUTING TRADE: {processed_signal.signal_type.name} for {processed_signal.symbol.value} with confidence {processed_confidence:.2%}")
-                                    self._execute_signal_trade(processed_signal, opportunities['strategy_suggestion'])
-                            else:
-                                # Signal was valid but not fused (likely below threshold)
-                                # However, if the original signal was strong enough, we should still execute it
-                                original_confidence = float(signal.confidence.value) if hasattr(signal.confidence, 'value') else float(signal.confidence)
-                                original_signal_type = signal.signal_type.name if hasattr(signal, 'signal_type') else 'UNKNOWN'
-
-                                # If the original signal was strong enough, execute it directly
-                                # Original threshold of 0.5 (50%) for proper risk management
-                                if original_signal_type in ['BUY', 'SELL'] and original_confidence > 0.5:
-                                    self.logger.info(f"Executing unfused signal directly: {original_signal_type} for {symbol_str} with confidence {original_confidence:.2%}")
-                                    self._execute_signal_trade(signal, self._suggest_strategy_for_signal(signal))
-
-                                # Determine broker name dynamically from execution service if available
-                                broker_name = "No Broker Interaction"
-                                if hasattr(self, 'execution_service') and self.execution_service:
-                                    if hasattr(self.execution_service, 'get_broker_name'):
-                                        broker_name = self.execution_service.get_broker_name()
-                                    elif hasattr(self.execution_service, 'broker_name'):
-                                        broker_name = self.execution_service.broker_name
-                                    elif hasattr(self.execution_service, 'broker') and hasattr(self.execution_service.broker, '__class__'):
-                                        broker_name = self.execution_service.broker.__class__.__name__.replace('Adapter', '')
-
-                                self.logger.log_full_flow(
-                                    symbol=symbol_str,
-                                    watcher=watcher_name,
-                                    engine="SignalProcessor",
-                                    fusion="SignalFusion",
-                                    strategy="No Strategy Selected",
-                                    broker=broker_name,
-                                    decision="Signal Below Threshold",
-                                    confidence=original_confidence,
-                                    reason=f"Valid signal from {watcher_name} but below fusion threshold",
-                                )
+                                self.logger.info(f"Emitting market observation to event system: {observation.observation_type} for {symbol_str}")
+                            except Exception as e:
+                                self.logger.error(f"Error emitting observation to event system: {e}")
                         else:
-                            # Signal was invalid
-                            invalid_reason = invalid_signals[0][1] if invalid_signals else "Unknown validation error"
-                            # Determine broker name dynamically from execution service if available
-                            broker_name = "No Broker Interaction"
-                            if hasattr(self, 'execution_service') and self.execution_service:
-                                if hasattr(self.execution_service, 'get_broker_name'):
-                                    broker_name = self.execution_service.get_broker_name()
-                                elif hasattr(self.execution_service, 'broker_name'):
-                                    broker_name = self.execution_service.broker_name
-                                elif hasattr(self.execution_service, 'broker') and hasattr(self.execution_service.broker, '__class__'):
-                                    broker_name = self.execution_service.broker.__class__.__name__.replace('Adapter', '')
+                            self.logger.warning("No event router available to emit observation")
 
-                            self.logger.log_full_flow(
-                                symbol=symbol_str,
-                                watcher=watcher_name,
-                                engine="SignalProcessor",
-                                fusion="SignalFusion",
-                                strategy="No Strategy Selected",
-                                broker=broker_name,
-                                decision="Signal Rejected by Processor",
-                                confidence=0.0,
-                                reason=f"Signal rejected by processor: {invalid_reason}",
-                            )
                     else:
-                        # No signal was generated by the watcher, but we should still track the flow
-                        # Log when no signal is generated by this watcher
+                        # No observation was generated by the watcher
                         if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
                             self.logger.log_background_activity(
-                                "Signal Analysis",
-                                f"No signal generated by {watcher_name} for {symbol_str}",
+                                "Observation Analysis",
+                                f"No observation generated by {watcher_name} for {symbol_str}",
                                 symbol=symbol_str,
                                 watcher=watcher_name
                             )
 
-                        # Log that the watcher didn't generate a signal (don't show confidence for no signal)
+                        # Log that the watcher didn't generate an observation
                         self.logger.log_watcher_analysis(
                             watcher=watcher_name,
                             symbol=symbol_str,
-                            result="No Signal Generated"
-                            # Don't pass confidence when there's no signal
-                        )
-
-                        # Log the complete flow for this watcher showing no signal was generated
-                        # This is important - even when no signal is generated, the watcher still went through the process
-                        # Determine broker name dynamically from execution service if available
-                        broker_name = "No Broker Interaction"
-                        if hasattr(self, 'execution_service') and self.execution_service:
-                            if hasattr(self.execution_service, 'get_broker_name'):
-                                broker_name = self.execution_service.get_broker_name()
-                            elif hasattr(self.execution_service, 'broker_name'):
-                                broker_name = self.execution_service.broker_name
-                            elif hasattr(self.execution_service, 'broker') and hasattr(self.execution_service.broker, '__class__'):
-                                broker_name = self.execution_service.broker.__class__.__name__.replace('Adapter', '')
-
-                        self.logger.log_full_flow(
-                            symbol=symbol_str,
-                            watcher=watcher_name,
-                            engine="SignalProcessor",
-                            fusion="SignalFusion",
-                            strategy="No Strategy Selected",
-                            broker=broker_name,
-                            decision="No Signal Generated",
-                            confidence=0.0,
-                            reason=f"No signal generated by {watcher_name}",
+                            result="No Observation Generated"
                         )
 
                 except Exception as e:
@@ -1478,29 +1361,6 @@ class MarketOpportunityWatcher:
                         symbol=symbol_str,
                         result=f"Error: {str(e)}"
                         # Don't pass confidence when there's an error
-                    )
-
-                    # Log the error in the full flow
-                    # Determine broker name dynamically from execution service if available
-                    broker_name = "No Broker Interaction"
-                    if hasattr(self, 'execution_service') and self.execution_service:
-                        if hasattr(self.execution_service, 'get_broker_name'):
-                            broker_name = self.execution_service.get_broker_name()
-                        elif hasattr(self.execution_service, 'broker_name'):
-                            broker_name = self.execution_service.broker_name
-                        elif hasattr(self.execution_service, 'broker') and hasattr(self.execution_service.broker, '__class__'):
-                            broker_name = self.execution_service.broker.__class__.__name__.replace('Adapter', '')
-
-                    self.logger.log_full_flow(
-                        symbol=symbol_str,
-                        watcher=watcher_name,
-                        engine="SignalProcessor",
-                        fusion="SignalFusion",
-                        strategy="No Strategy Selected",
-                        broker=broker_name,
-                        decision="Error in Processing",
-                        confidence=0.0,
-                        reason=f"Error analyzing {watcher_name}: {str(e)}",
                     )
                     continue
 
@@ -1522,26 +1382,6 @@ class MarketOpportunityWatcher:
                 )
 
         return opportunities
-
-    def _suggest_strategy_for_signal(self, signal: Signal) -> str:
-        """Suggest the most appropriate strategy based on signal characteristics."""
-        # Determine strategy based on signal source and characteristics
-        # Check if signal has metadata and source_engine attributes
-        indicator = signal.metadata.get('indicator', '')
-        source_engine = getattr(signal, 'source_engine', None)
-
-        if indicator and 'momentum' in indicator.lower():
-            return 'momentum_strategy'
-        elif signal.metadata.get('volatility') and signal.metadata['volatility'] > 0.5:
-            return 'volatility_strategy'
-        elif source_engine and 'trend' in source_engine.lower():
-            return 'trend_following'
-        elif source_engine and 'anomaly' in source_engine.lower():
-            return 'mean_reversion'
-        elif source_engine and 'order_flow' in source_engine.lower():
-            return 'order_flow'
-        else:
-            return 'balanced_strategy'
 
     def _process_opportunities(self, symbol: Symbol, opportunities: Dict[str, Any]):
         """Process detected opportunities and trigger callback if available."""
@@ -1579,18 +1419,18 @@ class MarketOpportunityWatcher:
                 except Exception as e:
                     self.logger.error(f"Error in opportunity callback: {e}")
 
-    def _execute_signal_trade(self, signal, strategy_name: str):
-        """Execute a trade based on the processed signal."""
+    def _execute_intent_trade(self, execution_intent):
+        """Execute a trade based on the execution intent from the Strategy layer."""
         if not self.execution_service:
-            self.logger.warning(f"No execution service available to execute {signal.signal_type.name} signal for {signal.symbol.value}")
-            return
+            self.logger.warning(f"No execution service available to execute intent for {execution_intent.symbol.value}")
+            return None
 
         try:
             # Get current price for the symbol to determine position size
             current_price = None
             if self.market_data_repo:
                 try:
-                    current_price = self.market_data_repo.get_current_price(signal.symbol)
+                    current_price = self.market_data_repo.get_current_price(execution_intent.symbol)
                 except:
                     # If we can't get current price from data repo, try to get from exchange directly
                     pass
@@ -1601,76 +1441,111 @@ class MarketOpportunityWatcher:
                 try:
                     import ccxt
                     exchange = ccxt.binance()
-                    ticker = exchange.fetch_ticker(signal.symbol.value)
+                    ticker = exchange.fetch_ticker(execution_intent.symbol.value)
                     current_price = ticker['last'] if 'last' in ticker else ticker['close']
                 except:
                     # If all methods fail, we'll still proceed but log the issue
-                    self.logger.warning(f"Could not get current price for {signal.symbol.value}, using default price")
+                    self.logger.warning(f"Could not get current price for {execution_intent.symbol.value}, using default price")
                     current_price = 50000.0  # Fallback price
 
-            # Calculate position size based on signal confidence and risk management
-            confidence = float(signal.confidence.value) if hasattr(signal.confidence, 'value') else float(
-                signal.confidence)
-            base_position_size = 0.02  # 2% of account as base position
-            risk_adjusted_size = base_position_size * confidence  # Adjust based on signal confidence
+            # Use risk parameters from the execution intent
+            risk_params = execution_intent.risk_parameters
+            position_size_pct = risk_params.get('max_position_size', 0.02)  # Default 2%
 
-            # Calculate quantity based on account balance and risk
-            # For now, using a fixed amount - in real system this would come from portfolio service
+            # Fixed Position Size Configuration (for testing purposes)
+            import os
+            fixed_position_size_enabled = os.getenv('FIXED_POSITION_SIZE_ENABLED', 'false').lower() == 'true'
+            fixed_position_amount = float(os.getenv('FIXED_POSITION_AMOUNT', '10.0'))  # Default to $10 for testing
+
+            # Calculate quantity based on risk parameters and account balance
             try:
-                # In a real implementation, we'd get portfolio metrics from portfolio service
-                # For now, using a default account balance
-                account_balance = 10000.0  # Default to $10,000 if not available
-                position_value = account_balance * risk_adjusted_size
-                quantity = position_value / current_price
+                if fixed_position_size_enabled:
+                    # Use fixed position size for testing
+                    quantity = fixed_position_amount / current_price
+                    self.logger.info(f"Using fixed position size: ${fixed_position_amount} at ${current_price} = {quantity} units")
+                else:
+                    # In a real implementation, we'd get portfolio metrics from portfolio service
+                    # For now, using a default account balance from environment variable
+                    import os
+                    account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))  # Default to $10,000 if not available
+                    position_value = account_balance * position_size_pct
+
+                    # Calculate quantity based on position value and current price
+                    quantity = position_value / current_price
+
+                    # Apply any quantity adjustments from risk parameters
+                    if 'position_quantity' in risk_params:
+                        quantity = risk_params['position_quantity']
+
             except:
                 # If portfolio service fails, use a default quantity
-                quantity = risk_adjusted_size * 1000 / current_price  # Default to 2% of $1000
+                if fixed_position_size_enabled:
+                    # Use fixed position size for testing
+                    quantity = fixed_position_amount / current_price
+                    self.logger.info(f"Using fixed position size (fallback): ${fixed_position_amount} at ${current_price} = {quantity} units")
+                else:
+                    # Use default account balance from environment variable
+                    import os
+                    default_account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '1000.0'))  # Default to $1,000 if not available
+                    quantity = position_size_pct * default_account_balance / current_price
 
             # Ensure minimum quantity to avoid issues with small trades
             if quantity < 0.001:
                 quantity = 0.001  # Minimum trade size
 
             # Create order object using domain entities
-            from domain.entities.trading_entities import Order, OrderSide
+            from domain.entities.signal_entities import Order, OrderSide
             from domain.value_objects import Money
 
-            # Ensure the signal type is properly handled
-            signal_type_name = signal.signal_type.name if hasattr(signal.signal_type, 'name') else str(signal.signal_type)
-            order_side = OrderSide.BUY if signal_type_name == 'BUY' else OrderSide.SELL
+            # Use the side from the execution intent
+            order_side = execution_intent.side
 
             # Determine position side based on order side for futures trading
-            position_side = "LONG" if signal_type_name == 'BUY' else "SHORT"
+            position_side = "LONG" if order_side.name == 'BUY' else "SHORT"
 
             # Ensure symbol is properly formatted for the broker
-            symbol_value = signal.symbol.value if hasattr(signal.symbol, 'value') else str(signal.symbol)
+            symbol_value = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
 
+            # Create order with proper risk parameters from the intent
             order = Order(
                 symbol=symbol_value,  # Use string value instead of Symbol object
                 side=order_side,
                 order_type="MARKET",  # Using string instead of enum
                 quantity=quantity,
                 price=Money(amount=current_price, currency='USDT') if current_price else None,
-                strategy_name=strategy_name,
+                strategy_name=execution_intent.strategy_name,  # Strategy name comes from intent
                 timestamp=datetime.now(),
-                position_side=position_side  # Add position side for futures trading
+                position_side=position_side,  # Add position side for futures trading
+                stop_loss_price=Money(amount=risk_params.get('stop_loss_price', current_price * 0.98), currency='USDT'),  # Default SL
+                take_profit_price=Money(amount=risk_params.get('take_profit_price', current_price * 1.03), currency='USDT'),  # Default TP
+                parent_execution_intent=execution_intent  # Link back to the execution intent
             )
+
+            # Validate symbol availability before executing order
+            if hasattr(self.execution_service, 'get_available_symbols'):
+                available_symbols = self.execution_service.get_available_symbols()
+                if symbol_value not in available_symbols:
+                    self.logger.warning(f"⚠️ Symbol {symbol_value} not available on any configured broker. Skipping order.")
+                    return None  # Skip execution if symbol is not available
 
             # Execute order through execution service
             execution_id = self.execution_service.execute_order(order)
 
             # Log the successful execution with detailed information
             # Handle both string and object formats for symbol and side
-            symbol_log_value = signal.symbol.value if hasattr(signal.symbol, 'value') else str(signal.symbol)
-            side_log_value = order.side.value if hasattr(order.side, 'value') else str(order.side)
+            symbol_log_value = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
+            side_log_value = order.side.name if hasattr(order.side, 'name') else str(order.side)
+
+            confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
 
             self.logger.info(
-                f"⚡ TRADE EXECUTED: {side_log_value} {quantity:.4f} {symbol_log_value} @ ${current_price:.4f} | Signal: {signal_type_name} | Conf: {confidence:.2%}",
+                f"⚡ TRADE EXECUTED: {side_log_value} {quantity:.4f} {symbol_log_value} @ ${current_price:.4f} | Strategy: {execution_intent.strategy_name} | Intent Conf: {confidence:.2%}",
                 order_id=execution_id,
                 symbol=symbol_log_value,
                 side=side_log_value,
                 quantity=quantity,
                 price=current_price,
-                signal_type=signal_type_name,
+                strategy=execution_intent.strategy_name,
                 confidence=confidence
             )
 
@@ -1679,22 +1554,24 @@ class MarketOpportunityWatcher:
                 symbol=symbol_log_value,
                 stage="broker",
                 status="Executed",
-                details=f"Order executed successfully: {execution_id}",
+                details=f"Order executed successfully from strategy intent: {execution_id}",
                 confidence=confidence
             )
 
+            return execution_id
         except Exception as e:
             import traceback
-            self.logger.error(f"Error executing trade for signal: {e}")
+            self.logger.error(f"Error executing trade from strategy intent: {e}")
             self.logger.error(f"Traceback: {traceback.format_exc()}")
             # Log the execution failure
             self.logger.log_signal_progression(
-                symbol=signal.symbol.value,
+                symbol=execution_intent.symbol.value,
                 stage="broker",
                 status="Failed",
-                details=f"Order execution failed: {str(e)}",
-                confidence=float(signal.confidence.value) if hasattr(signal.confidence, 'value') else float(signal.confidence)
+                details=f"Order execution from strategy intent failed: {str(e)}",
+                confidence=float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
             )
+            raise
 
     def get_status(self) -> Dict[str, Any]:
         """Get current status of the watcher."""
@@ -1702,6 +1579,6 @@ class MarketOpportunityWatcher:
             'is_running': self.is_running,
             'monitored_symbols': [s.value for s in self.symbols],
             'watchers_count': sum(len(watchers) for watchers in self.watchers.values()),
-            'last_signals': {k: list(v.keys()) for k, v in self.last_signals.items()},
+            'last_observations': {k: list(v.keys()) for k, v in self.last_observations.items()},  # Updated to observations
             'timestamp': datetime.now().isoformat()
         }

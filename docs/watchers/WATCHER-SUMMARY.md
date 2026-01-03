@@ -190,7 +190,7 @@
 - Potential for sophisticated HF strategies
 
 **Weaknesses:**
-- Currently implemented as placeholder
+- Currently, implemented as placeholder
 - Limited functionality
 - Requires high-quality tick data
 - Complex to implement effectively

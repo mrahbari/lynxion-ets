@@ -1,69 +1,14 @@
 """
-Infrastructure implementation of Base Strategy Adapter.
-This file provides the minimal base infrastructure adapter that implements domain StrategyPort interface.
+Infrastructure implementation of Strategy adapters for the enterprise hedge fund trading system.
+Following hexagonal architecture principles.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Signal, Order
+from domain.entities.signal_entities import FusedSignal, ExecutionIntent
 from domain.value_objects import Symbol, Percentage, Money
-from domain.ports.engine_ports import StrategyPort
-from shared.logger import logger
+from domain.ports.strategy_ports import StrategyPort
+from shared.logger import EnhancedLogger
 from datetime import datetime
 from decimal import Decimal
-import numpy as np
-import time
-import threading
-
-
-class StrategyHealthMonitor:
-    """Monitors strategy health metrics"""
-
-    def __init__(self, strategy_name: str):
-        self.strategy_name = strategy_name
-        self.last_signal_time = None
-        self.signal_count = 0
-        self.error_count = 0
-        self.last_error_time = None
-        self.performance_metrics = {}
-        self.health_status = "HEALTHY"  # HEALTHY, WARNING, ERROR
-        self.last_update = time.time()
-        self.lock = threading.Lock()
-
-    def record_signal(self):
-        """Record a successful signal generation"""
-        with self.lock:
-            self.last_signal_time = datetime.now()
-            self.signal_count += 1
-            self.health_status = "HEALTHY"
-            self.last_update = time.time()
-
-    def record_error(self, error: Exception):
-        """Record an error in strategy execution"""
-        with self.lock:
-            self.error_count += 1
-            self.last_error_time = datetime.now()
-            if self.health_status != "ERROR":
-                self.health_status = "WARNING"
-            self.last_update = time.time()
-
-    def update_performance(self, metrics: Dict[str, Any]):
-        """Update performance metrics"""
-        with self.lock:
-            self.performance_metrics.update(metrics)
-            self.last_update = time.time()
-
-    def get_health_status(self) -> Dict[str, Any]:
-        """Get current health status"""
-        with self.lock:
-            return {
-                'strategy_name': self.strategy_name,
-                'last_signal_time': self.last_signal_time,
-                'signal_count': self.signal_count,
-                'error_count': self.error_count,
-                'last_error_time': self.last_error_time,
-                'health_status': self.health_status,
-                'performance_metrics': self.performance_metrics,
-                'last_update': datetime.fromtimestamp(self.last_update)
-            }
 
 
 class BaseStrategyAdapter(StrategyPort):
@@ -71,146 +16,183 @@ class BaseStrategyAdapter(StrategyPort):
 
     def __init__(self, name: str):
         self.name = name
-        self.last_signal_time = None
-        self.logger = logger
-        # Initialize data buffer for market data storage
-        self.data_buffer = []
-        self.buffer_size_limit = 1000
-        # Add health monitoring
-        self.health_monitor = StrategyHealthMonitor(name)
-        self._last_error_time = None
+        self.logger = EnhancedLogger(f"Strategy_{name}")
+        self.active = True
+        self.risk_parameters = {
+            'max_position_size': 0.02,  # 2% of portfolio
+            'stop_loss_pct': 0.02,      # 2% stop loss
+            'take_profit_pct': 0.03     # 3% take profit
+        }
+
+    def evaluate_fused_signal(self, fused_signal: FusedSignal) -> Optional[ExecutionIntent]:
+        """Evaluate a fused signal and return execution intent if strategy accepts it"""
+        if not self.should_execute(fused_signal):
+            self.logger.info(f"Strategy {self.name} rejected fused signal for {fused_signal.symbol.value}")
+            return None
+
+        # Select appropriate strategy based on the fused signal
+        strategy_name = self.select_strategy(fused_signal)
+
+        # Create execution intent
+        execution_intent = ExecutionIntent(
+            symbol=fused_signal.symbol,
+            strategy_name=strategy_name,
+            side=self._determine_side(fused_signal),
+            intent_confidence=Percentage(min(Decimal('1.0'), 
+                                          max(Decimal('0.0'), 
+                                              Decimal(str(fused_signal.confidence.value * 0.8))))),  # Slightly reduce confidence
+            risk_parameters=self._calculate_risk_parameters(fused_signal),
+            timestamp=datetime.now(),
+            fused_signal=fused_signal,
+            metadata={
+                'strategy_reasoning': f'Signal aligned with {strategy_name} strategy criteria',
+                'dominant_bias': fused_signal.dominant_bias.value,
+                'regime_context': fused_signal.regime_context
+            }
+        )
+
+        self.logger.info(f"Strategy {self.name} accepted fused signal for {fused_signal.symbol.value} "
+                        f"with intent confidence {float(execution_intent.intent_confidence.value):.2%}")
+        
+        return execution_intent
+
+    def should_execute(self, fused_signal: FusedSignal) -> bool:
+        """Check if the strategy should execute based on the fused signal"""
+        # Default implementation: execute based on confidence and signal type with intelligent evaluation
+        import os
+
+        # Get configuration thresholds
+        min_confidence = float(os.getenv('STRATEGY_MIN_CONFIDENCE_THRESHOLD', '0.3'))  # Minimum confidence to consider
+        high_confidence_threshold = float(os.getenv('STRATEGY_HIGH_CONFIDENCE_THRESHOLD', '0.7'))  # High confidence threshold
+        neutral_buffer = float(os.getenv('STRATEGY_NEUTRAL_BUFFER', '0.1'))  # Buffer around neutral signals
+
+        confidence = float(fused_signal.confidence.value)
+
+        # Check if signal is not neutral
+        is_not_neutral = fused_signal.dominant_bias.value not in ['HOLD', 'NEUTRAL']
+
+        # For high confidence signals, execute regardless of other factors (within reason)
+        if confidence >= high_confidence_threshold and is_not_neutral:
+            return True
+
+        # For medium confidence signals, apply more nuanced evaluation
+        elif confidence >= min_confidence and is_not_neutral:
+            # Additional evaluation logic for medium confidence signals
+            # Consider the dominance score and regime context
+            dominance_score = getattr(fused_signal, 'dominance_score', 0.0)
+
+            # If the dominance score is strong relative to confidence, it's more reliable
+            if abs(dominance_score) > (confidence - neutral_buffer):
+                return True
+
+            # If the signal is in a favorable regime context, consider it
+            regime_context = getattr(fused_signal, 'regime_context', '').lower()
+            if any(favorable in regime_context for favorable in ['trend', 'breakout', 'momentum']):
+                return True
+
+            # Default to execute for medium confidence non-neutral signals
+            return True
+
+        # For low confidence signals, be more selective
+        elif confidence < min_confidence and is_not_neutral:
+            # Only execute if there are strong supporting factors
+            dominance_score = getattr(fused_signal, 'dominance_score', 0.0)
+            regime_context = getattr(fused_signal, 'regime_context', '').lower()
+
+            # Execute if dominance is very strong relative to confidence
+            if abs(dominance_score) > (min_confidence + 0.2) and any(favorable in regime_context for favorable in ['confirmed', 'strong']):
+                return True
+
+            return False
+
+        # Neutral signals should not be executed regardless of confidence
+        else:
+            return False
+
+    def select_strategy(self, fused_signal: FusedSignal) -> str:
+        """Select the appropriate strategy based on the fused signal and market conditions"""
+        # Default implementation - in real system this would be more sophisticated
+        regime = fused_signal.regime_context.lower()
+        
+        if 'trend' in regime:
+            return 'trend_following'
+        elif 'mean' in regime or 'revert' in regime:
+            return 'mean_reversion'
+        elif 'volatile' in regime:
+            return 'volatility_breakout'
+        elif 'momentum' in regime:
+            return 'momentum_strategy'
+        else:
+            return 'balanced_strategy'
+
+    def get_strategy_name(self) -> str:
+        """Get the name of this strategy"""
+        return self.name
 
     def update_with_market_data(self, data: Dict[str, Any]):
         """Update strategy with new market data"""
-        # Buffer recent market data for analysis
-        if isinstance(data, list):
-            self.data_buffer.extend(data)
-        elif isinstance(data, dict):
-            self.data_buffer.append(data)
+        # Base implementation - can be overridden by specific strategies
+        pass
 
-        # Limit buffer size to prevent memory issues
-        if len(self.data_buffer) > self.buffer_size_limit:
-            self.data_buffer = self.data_buffer[-self.buffer_size_limit:]
+    def _determine_side(self, fused_signal: FusedSignal):
+        """Determine order side based on fused signal direction"""
+        from domain.entities.signal_entities import OrderSide
+        
+        if fused_signal.direction > 0.1:  # Threshold to avoid neutral signals
+            return OrderSide.BUY
+        elif fused_signal.direction < -0.1:
+            return OrderSide.SELL
+        else:
+            # Use dominant bias as fallback
+            if fused_signal.dominant_bias.value in ['BUY', 'LONG']:
+                return OrderSide.BUY
+            else:
+                return OrderSide.SELL
 
-    def generate_signal(self, symbol: Symbol) -> Optional[Signal]:
-        """Generate signal - base implementation returns None"""
-        # Base implementation - should be overridden by specific strategies
-        try:
-            signal = self._generate_signal_impl(symbol)
-            if signal:
-                self.health_monitor.record_signal()
-            return signal
-        except Exception as e:
-            self.health_monitor.record_error(e)
-            self.logger.error(f"Error in strategy {self.name}: {e}")
-            return None
+    def _calculate_risk_parameters(self, fused_signal: FusedSignal) -> Dict[str, Any]:
+        """Calculate risk parameters based on the fused signal"""
+        base_risk_params = self.risk_parameters.copy()
+        
+        # Adjust risk based on signal confidence
+        confidence_factor = float(fused_signal.confidence.value)
+        base_risk_params['max_position_size'] *= confidence_factor
+        base_risk_params['stop_loss_pct'] *= (1.0 + (1.0 - confidence_factor))  # Tighter stops for lower confidence
+        
+        return base_risk_params
 
-    def _generate_signal_impl(self, symbol: Symbol) -> Optional[Signal]:
-        """Internal method for generating signals - to be overridden by specific strategies"""
-        # Base implementation - should be overridden by specific strategies
-        return None
 
-    def calculate_position_size(self, signal: Signal, account_balance: float) -> float:
-        """Calculate appropriate position size for a signal"""
-        # Base implementation - use a percentage of account balance based on signal confidence
-        risk_per_trade = 0.02  # Risk 2% of account per trade
-        position_risk = risk_per_trade * float(signal.confidence.value)
-        return account_balance * position_risk
+class TrendFollowingStrategy(BaseStrategyAdapter):
+    """Strategy for following market trends"""
 
-    def get_health_status(self) -> Dict[str, Any]:
-        """Get the health status of this strategy"""
-        return self.health_monitor.get_health_status()
+    def __init__(self):
+        super().__init__("TrendFollowingStrategy")
 
-    def track_performance(self, metrics: Dict[str, Any]):
-        """Track performance metrics for this strategy"""
-        self.health_monitor.update_performance(metrics)
+    def should_execute(self, fused_signal: FusedSignal) -> bool:
+        """Only execute in trending market conditions"""
+        return (super().should_execute(fused_signal) and 
+                'trend' in fused_signal.regime_context.lower())
 
-    def get_strategy_name(self) -> str:
-        """Get the name of the strategy"""
-        return self.name
 
-    def calculate_rsi(self, prices: List[float], period: int = 14) -> Optional[float]:
-        """Calculate RSI indicator"""
-        if len(prices) < period + 1:
-            return None
+class MeanReversionStrategy(BaseStrategyAdapter):
+    """Strategy for mean reversion opportunities"""
 
-        deltas = np.diff(prices)
-        gains = np.where(deltas > 0, deltas, 0)
-        losses = np.where(deltas < 0, -deltas, 0)
+    def __init__(self):
+        super().__init__("MeanReversionStrategy")
 
-        # Calculate initial average gain/loss
-        avg_gain = np.mean(gains[:period])
-        avg_loss = np.mean(losses[:period])
+    def should_execute(self, fused_signal: FusedSignal) -> bool:
+        """Only execute in mean-reverting market conditions"""
+        return (super().should_execute(fused_signal) and 
+                ('mean' in fused_signal.regime_context.lower() or 
+                 'revert' in fused_signal.regime_context.lower()))
 
-        # Calculate subsequent average gain/loss using Wilder's smoothing method
-        for i in range(period, len(gains)):
-            avg_gain = (avg_gain * (period - 1) + gains[i]) / period
-            avg_loss = (avg_loss * (period - 1) + losses[i]) / period
 
-        if avg_loss == 0:
-            return 100.0
+class VolatilityBreakoutStrategy(BaseStrategyAdapter):
+    """Strategy for volatility breakout opportunities"""
 
-        rs = avg_gain / avg_loss
-        rsi = 100 - (100 / (1 + rs))
+    def __init__(self):
+        super().__init__("VolatilityBreakoutStrategy")
 
-        return rsi
-
-    def calculate_ema(self, prices: List[float], period: int) -> Optional[float]:
-        """Calculate Exponential Moving Average"""
-        if len(prices) < period:
-            return None
-
-        multiplier = 2 / (period + 1)
-        ema = prices[0]
-
-        for price in prices[1:]:
-            ema = (price * multiplier) + (ema * (1 - multiplier))
-
-        return ema
-
-    def calculate_sma(self, prices: List[float], period: int) -> Optional[float]:
-        """Calculate Simple Moving Average"""
-        if len(prices) < period:
-            return None
-        return sum(prices[-period:]) / period
-
-    def calculate_bollinger_bands(self, prices: List[float], period: int = 20, std_dev: float = 2.0):
-        """Calculate Bollinger Bands"""
-        if len(prices) < period:
-            return None, None, None
-
-        sma = self.calculate_sma(prices, period)
-        if sma is None:
-            return None, None, None
-
-        std = np.std(prices[-period:])
-        upper_band = sma + (std * std_dev)
-        lower_band = sma - (std * std_dev)
-
-        return upper_band, sma, lower_band
-
-    def calculate_atr(self, data: List[Dict], period: int = 14) -> Optional[float]:
-        """Calculate Average True Range"""
-        if len(data) < period + 1:
-            return None
-
-        true_ranges = []
-        for i in range(1, min(len(data), period + 1)):
-            item = data[-i]
-            prev_item = data[-i-1] if i+1 < len(data) else data[-i]
-
-            high = item.get('high', item.get('close', 0))
-            low = item.get('low', item.get('close', 0))
-            prev_close = prev_item.get('close', item.get('close', 0))
-
-            tr = max(
-                abs(high - low),
-                abs(high - prev_close),
-                abs(low - prev_close)
-            )
-            true_ranges.append(tr)
-
-        if not true_ranges:
-            return None
-
-        return sum(true_ranges) / len(true_ranges)
+    def should_execute(self, fused_signal: FusedSignal) -> bool:
+        """Only execute in high volatility conditions"""
+        return (super().should_execute(fused_signal) and 
+                'volatile' in fused_signal.regime_context.lower())
