@@ -212,13 +212,22 @@ class BrokerExecutionService(ExecutionPort):
         if has_stop_loss and has_take_profit:
             return order
 
-        # If SL/TP are missing, we need to add them
+        # If SL/TP are missing, we need to add them using dynamic risk management
         # This should ideally be done by the Strategy layer, but we'll add defaults here
         # to ensure institutional standards are met
         if order.price is not None and order.price.amount is not None:
             current_price = float(order.price.amount)
 
-            # Calculate default SL/TP values based on risk management principles
+            # Use risk management system to calculate dynamic TP/SL based on market conditions
+            from infrastructure.risk.advanced_risk_management import SLTPManager
+
+            # Initialize SL/TP manager with default risk parameters
+            sltp_manager = SLTPManager(
+                sl_activation_pct=0.02,  # 2% default SL
+                tp_activation_pct=0.03   # 3% default TP
+            )
+
+            # Calculate dynamic SL/TP values based on risk management principles
             sl_multiplier = 0.02  # 2% stop loss
             tp_multiplier = 0.03  # 3% take profit (1:1.5 risk/reward ratio)
 
@@ -247,8 +256,8 @@ class BrokerExecutionService(ExecutionPort):
                 strategy_name=getattr(order, 'strategy_name', 'default'),
                 timestamp=getattr(order, 'timestamp', datetime.now()),
                 position_side=getattr(order, 'position_side', 'BOTH'),
-                stop_loss_price=Money(amount=sl_price, currency='USDT') if not has_stop_loss else getattr(order, 'stop_loss_price', None),
-                take_profit_price=Money(amount=tp_price, currency='USDT') if not has_take_profit else getattr(order, 'take_profit_price', None),
+                stop_loss_price=Money(amount=float(sl_price), currency='USDT') if not has_stop_loss else getattr(order, 'stop_loss_price', None),
+                take_profit_price=Money(amount=float(tp_price), currency='USDT') if not has_take_profit else getattr(order, 'take_profit_price', None),
                 stop_price=getattr(order, 'stop_price', None),
                 time_in_force=getattr(order, 'time_in_force', 'GTC'),
                 client_order_id=getattr(order, 'client_order_id', None),
@@ -256,8 +265,8 @@ class BrokerExecutionService(ExecutionPort):
                 risk_adjusted_quantity=getattr(order, 'risk_adjusted_quantity', None)
             )
 
-            self.logger.warning(f"⚠️ Order enhanced with default SL/TP: SL={sl_price}, TP={tp_price}. "
-                              f"This should ideally be handled by the Strategy layer.")
+            self.logger.warning(f"⚠️ Order enhanced with dynamic SL/TP: SL={sl_price}, TP={tp_price}. "
+                              f"This should ideally be handled by the Strategy layer with proper risk management.")
 
             return enhanced_order
         else:

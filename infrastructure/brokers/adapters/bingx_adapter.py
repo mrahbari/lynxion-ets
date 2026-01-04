@@ -15,6 +15,7 @@ from domain.ports.broker_ports import BrokerPort
 from domain.value_objects import Symbol, Money
 from infrastructure.data.adapters.rest_client import RestClient
 from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
+from shared.rate_limiter import global_rate_limiter
 
 
 class BingXBrokerAdapter(BrokerPort):
@@ -99,12 +100,12 @@ class BingXBrokerAdapter(BrokerPort):
         else:
             error_msg = result['error']
             # Make error messages more readable
-            if 'error code:109400' in error_msg:
+            if 'error code:109400' in error_msg or 'Rate Limit' in error_msg or 'rate limit' in error_msg:
                 readable_error = "API Rate Limit Exceeded: Too many requests to BingX API. Please reduce request frequency."
             elif 'over 20' in error_msg and 'requests within' in error_msg:
                 readable_error = "Rate Limit Exceeded: Exceeded BingX API request limits. Consider implementing request throttling."
-            elif 'TriggerClose' in error_msg:
-                readable_error = "API Parameter Error: Invalid parameter format for stop loss/take profit. Check parameter formatting."
+            elif 'TriggerClose' in error_msg or 'stop loss' in error_msg.lower() or 'take profit' in error_msg.lower() or 'stopLoss' in error_msg or 'takeProfit' in error_msg:
+                readable_error = "API Parameter Error: Invalid parameter format for stop loss/take profit. Check parameter formatting. Ensure SL/TP prices are properly formatted as strings with appropriate decimal precision."
             else:
                 readable_error = f"Order placement failed: {error_msg}"
 
@@ -199,8 +200,8 @@ class _BingXBroker:
         self.logger = logging.getLogger(__name__)
 
         # Rate limiting settings - more conservative to avoid rate limits
-        self.requests_per_minute = 20  # Reduced from 1200 to avoid rate limits
-        self.min_request_interval = 3.0  # 3 seconds between requests (more conservative)
+        self.requests_per_minute = 10  # Reduced to avoid rate limits
+        self.min_request_interval = 6.0  # 6 seconds between requests (more conservative)
         self.last_request_time = 0
         self.request_count = 0
         self.request_window_start = time.time()
@@ -225,38 +226,15 @@ class _BingXBroker:
         return signature
 
     def _rate_limit(self) -> None:
-        """Implement rate limiting for API requests."""
-        current_time = time.time()
-
-        # Reset counter if window has passed
-        if current_time - self.request_window_start >= 60:
-            self.request_count = 0
-            self.request_window_start = current_time
-
-        # Check if we've hit the rate limit
-        if self.request_count >= self.requests_per_minute:
-            sleep_time = 60 - (current_time - self.request_window_start)
-            if sleep_time > 0:
-                self.logger.info(f"Rate limit reached. Waiting {sleep_time:.2f}s before next request...")
-                time.sleep(sleep_time)
-            self.request_count = 0
-            self.request_window_start = time.time()
-
-        # Ensure minimum interval between requests
-        time_since_last = current_time - self.last_request_time
-        if time_since_last < self.min_request_interval:
-            sleep_time = self.min_request_interval - time_since_last
-            if sleep_time > 0:
-                time.sleep(sleep_time)
-
-        self.last_request_time = time.time()
-        self.request_count += 1
+        """Implement rate limiting for API requests using global rate limiter."""
+        # Wait for a token from the global rate limiter for BingX
+        global_rate_limiter.wait_for_tokens('bingx', 1)
 
     def _make_request(self, method: str, endpoint: str, params: Dict = None, data: Dict = None,
                       signed: bool = False) -> Dict:
         """Make authenticated request to BingX API."""
         try:
-            self._rate_limit()
+            self._rate_limit()  # Apply rate limiting before making the request
             url = f"{self.base_url}{endpoint}"
             headers = {
                 'X-BX-APIKEY': self.api_key
@@ -383,7 +361,8 @@ class _BingXBroker:
                 else:
                     # If it's already a numeric value, use it directly
                     price_value = order.price
-                order_data['price'] = str(price_value)
+                # Format price with 2 decimal places for consistency
+                order_data['price'] = f"{float(price_value):.2f}"
 
             # Add Stop Loss and Take Profit parameters if they exist in the order
             # According to the BingX API documentation, these should be separate parameters in the same request
@@ -400,7 +379,10 @@ class _BingXBroker:
                 # Ensure the value is properly formatted as a string to avoid type mismatch
                 if sl_price_value is not None:
                     # Format as string to ensure proper type handling by the API
-                    order_data['stopLoss'] = f"{float(sl_price_value):.8f}"
+                    # Use 2 decimal places for price values to avoid precision issues
+                    # Convert to float first to handle Decimal objects properly
+                    sl_float = float(sl_price_value)
+                    order_data['stopLoss'] = f"{sl_float:.2f}"
 
             if hasattr(order, 'take_profit_price') and order.take_profit_price:
                 # For take profit, use takeProfit parameter (according to API docs)
@@ -413,7 +395,10 @@ class _BingXBroker:
                 # Ensure the value is properly formatted as a string to avoid type mismatch
                 if tp_price_value is not None:
                     # Format as string to ensure proper type handling by the API
-                    order_data['takeProfit'] = f"{float(tp_price_value):.8f}"
+                    # Use 2 decimal places for price values to avoid precision issues
+                    # Convert to float first to handle Decimal objects properly
+                    tp_float = float(tp_price_value)
+                    order_data['takeProfit'] = f"{tp_float:.2f}"
 
             endpoint = "/openApi/swap/v2/trade/order"
             response = self._make_request('POST', endpoint, data=order_data, signed=True)
