@@ -6,6 +6,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Callable
 import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from shared.logger import EnhancedLogger
 from domain.ports.data_ports import DataProviderPort
@@ -279,49 +283,61 @@ class ProductionTradingOrchestrator:
 def run_production_orchestrator(data_fetcher, strategy_name="crypto_breakout",
                                risk_config=None, retune_interval_hours=6):
     """Standalone function to run the production orchestrator."""
-    # Create mock implementations for standalone execution
-    from infrastructure.data.data_adapters import MockDataProviderAdapter
+    # Create real implementations for standalone execution
+    from infrastructure.data.enhanced_data_provider import create_enhanced_data_provider
     from domain.ports.execution_ports import ExecutionPort
     from domain.ports.portfolio_ports import PortfolioManagementPort
     from domain.ports.optimization_ports import IOptimizationService
 
-    # Create mock implementations since the actual implementations may not exist yet
-    class MockExecutionService(ExecutionPort):
-        def execute_order(self, order):
-            print(f"Mock execution of order: {order}")
-            return "mock_execution_id"
-
-        def cancel_order(self, order_id: str) -> bool:
-            print(f"Mock cancellation of order: {order_id}")
-            return True
-
-        def get_execution_status(self, execution_id: str) -> str:
-            return "filled"
+    # Import the broker execution service that handles broker configuration
+    from infrastructure.services.broker_execution_service import create_execution_service
 
     class MockPortfolioService(PortfolioManagementPort):
+        def __init__(self):
+            from shared.logger import EnhancedLogger
+            self.logger = EnhancedLogger("MockPortfolioService")
+
         def calculate_allocation(self, total_capital: float, symbols):
             from domain.value_objects import Symbol, Percentage
-            return {sym: total_capital/len(symbols) if symbols else 0 for sym in symbols}
+            allocations = {}
+            if symbols:
+                # Simple equal allocation for all symbols
+                allocation_per_symbol = total_capital / len(symbols)
+                for sym in symbols:
+                    allocations[sym] = allocation_per_symbol
+            return allocations
 
         def rebalance_portfolio(self, target_allocations):
+            self.logger.info(f"🔄 REBALANCING PORTFOLIO: {target_allocations}")
             return []
 
         def get_portfolio_metrics(self):
-            return {"sharpe_ratio": 1.0, "max_drawdown": -0.05, "total_return": 0.1}
+            self.logger.info("📊 FETCHING PORTFOLIO METRICS")
+            return {"sharpe_ratio": 1.0, "max_drawdown": -0.05, "total_return": 0.1, "equity": 10000.0, "pnl": 500.0}
 
     class MockOptimizationService(IOptimizationService):
+        def __init__(self):
+            from shared.logger import EnhancedLogger
+            self.logger = EnhancedLogger("MockOptimizationService")
+
         def optimize_strategy(self, strategy_name, data, parameters):
+            self.logger.info(f"⚙️ OPTIMIZING STRATEGY: {strategy_name}")
             return {"status": "success", "best_params": {}}
 
         def get_optimized_parameters(self, strategy_name, symbol):
+            self.logger.info(f"🔍 GETTING OPTIMIZED PARAMETERS: {strategy_name} for {symbol}")
             return {}
 
         def save_optimized_parameters(self, strategy_name, symbol, parameters):
-            pass
+            self.logger.info(f"💾 SAVING OPTIMIZED PARAMETERS: {strategy_name} for {symbol}")
 
-    # Create mock implementations for standalone execution
-    market_data_repo = MockDataProviderAdapter()
-    execution_service = MockExecutionService()
+    # Create execution service first
+    execution_service = create_execution_service(use_multi_broker=True, primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
+
+    # Create enhanced data provider that uses real data and can download missing symbols
+    # Use environment variable or default path for historical data
+    # For now, pass the execution service as the broker service (it has access to the broker)
+    market_data_repo = create_enhanced_data_provider(csv_base_path=None, download_enabled=True, broker_service=execution_service)
     portfolio_service = MockPortfolioService()
     optimization_service = MockOptimizationService()
 
@@ -450,6 +466,12 @@ Examples:
         "--auto-detect",
         action="store_true",
         help="Run in auto-detection mode (watcher detects opportunities and triggers strategies automatically)"
+    )
+
+    parser.add_argument(
+        "--comprehensive-logs",
+        action="store_true",
+        help="Enable comprehensive logging with detailed background activity tracking"
     )
 
     return parser
@@ -606,24 +628,12 @@ if __name__ == "__main__":
             # Import required components for auto-detection
             from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator
 
-            # Create mock implementations for standalone execution (same as in the orchestrator class)
-            from infrastructure.data.data_adapters import MockDataProviderAdapter
+            # Create real implementations for standalone execution (same as in the orchestrator class)
+            from infrastructure.data.enhanced_data_provider import create_enhanced_data_provider
             from domain.ports.execution_ports import ExecutionPort
             from domain.ports.portfolio_ports import PortfolioManagementPort
             from domain.ports.optimization_ports import IOptimizationService
 
-            # Create mock implementations since the actual implementations may not exist yet
-            class MockExecutionService(ExecutionPort):
-                def execute_order(self, order):
-                    print(f"Mock execution of order: {order}")
-                    return "mock_execution_id"
-
-                def cancel_order(self, order_id: str) -> bool:
-                    print(f"Mock cancellation of order: {order_id}")
-                    return True
-
-                def get_execution_status(self, execution_id: str) -> str:
-                    return "filled"
 
             class MockPortfolioService(PortfolioManagementPort):
                 def calculate_allocation(self, total_capital: float, symbols):
@@ -646,9 +656,14 @@ if __name__ == "__main__":
                 def save_optimized_parameters(self, strategy_name, symbol, parameters):
                     pass
 
-            # Create mock implementations for standalone execution
-            market_data_repo = MockDataProviderAdapter()
-            execution_service = MockExecutionService()
+            # Create execution service first
+            from infrastructure.services.broker_execution_service import create_execution_service
+            execution_service = create_execution_service(use_multi_broker=True, primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
+
+            # Create enhanced data provider that uses real data and can download missing symbols
+            # Use environment variable or default path for historical data
+            # For now, pass the execution service as the broker service (it has access to the broker)
+            market_data_repo = create_enhanced_data_provider(csv_base_path=None, download_enabled=True, broker_service=execution_service)
             portfolio_service = MockPortfolioService()
             optimization_service = MockOptimizationService()
 
@@ -674,7 +689,8 @@ if __name__ == "__main__":
                 portfolio_service=portfolio_service,
                 optimization_service=optimization_service,
                 symbols=symbols if symbols else None,  # Pass None if no symbols specified
-                risk_config=risk_config
+                risk_config=risk_config,
+                comprehensive_logging=args.comprehensive_logs
             )
 
             try:

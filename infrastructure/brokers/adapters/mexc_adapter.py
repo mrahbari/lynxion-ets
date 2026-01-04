@@ -176,8 +176,12 @@ class MEXCBrokerAdapter(BrokerPort):
         # Convert our order type to MEXC format
         side = "BUY" if order.side == OrderSide.BUY else "SELL"
 
+        # Format symbol for MEXC
+        symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
+        formatted_symbol = SymbolFormatHelper.format_symbol_for_exchange(symbol_str, 'mexc')
+
         params = {
-            "symbol": order.symbol.value,
+            "symbol": formatted_symbol,
             "side": side,
             "type": order.order_type,
             "quantity": str(order.quantity),
@@ -212,7 +216,12 @@ class MEXCBrokerAdapter(BrokerPort):
             return []
 
         path = "/api/v3/openOrders"
-        params = {"symbol": symbol} if symbol else {}
+
+        # Format symbol for MEXC if provided
+        params = {}
+        if symbol:
+            formatted_symbol = SymbolFormatHelper.format_symbol_for_exchange(symbol, 'mexc')
+            params = {"symbol": formatted_symbol}
 
         response = self._make_request("GET", path, params)
         orders = []
@@ -240,8 +249,13 @@ class MEXCBrokerAdapter(BrokerPort):
             return False
 
         path = "/api/v3/order"
+
+        # Format symbol for MEXC
+        symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+        formatted_symbol = SymbolFormatHelper.format_symbol_for_exchange(symbol_str, 'mexc')
+
         params = {
-            "symbol": symbol.value,
+            "symbol": formatted_symbol,
             "orderId": order_id
         }
 
@@ -261,8 +275,13 @@ class MEXCBrokerAdapter(BrokerPort):
             return None
 
         path = "/api/v3/order"
+
+        # Format symbol for MEXC
+        symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+        formatted_symbol = SymbolFormatHelper.format_symbol_for_exchange(symbol_str, 'mexc')
+
         params = {
-            "symbol": symbol.value,
+            "symbol": formatted_symbol,
             "orderId": order_id
         }
 
@@ -291,6 +310,28 @@ class MEXCBrokerAdapter(BrokerPort):
             if pos.symbol == symbol:
                 return pos
         return None
+
+    def get_available_symbols(self) -> set:
+        """Get set of available symbols on MEXC."""
+        try:
+            # Get exchange info from MEXC API
+            path = "/api/v3/exchangeInfo"
+            response = self._make_request("GET", path)
+
+            if response and 'symbols' in response:
+                symbols = set()
+                for symbol_info in response['symbols']:
+                    if symbol_info.get('status') == 'ENABLED':  # Only include enabled trading pairs
+                        # Ensure symbol is in the correct format (e.g., BTCUSDT)
+                        symbol = symbol_info['symbol']
+                        symbols.add(symbol.upper())  # Normalize to uppercase
+                return symbols
+        except Exception as e:
+            # If API call fails, return empty set
+            pass
+
+        # Return empty set if all attempts fail
+        return set()
 
     def get_all_positions(self) -> List[Position]:
         return self.get_positions()

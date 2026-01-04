@@ -65,10 +65,13 @@ class ColoredFormatter(logging.Formatter):
 class EnhancedLogger:
     """Enhanced logger with structured logging and metrics collection"""
 
-    def __init__(self, name: str = 'HedgeFund', log_file: Optional[str] = "logs/trading_system.log"):
+    def __init__(self, name: str = 'HedgeFund', log_file: Optional[str] = "logs/trading_system.log",
+                 comprehensive_mode: bool = False):
         self.logger = create_logger(name)
         self.metrics = {}
         self.name = name
+        self.flow_tracker = {}  # Track flow IDs and their status
+        self.comprehensive_mode = comprehensive_mode  # Enable comprehensive logging
 
     def info(self, message: str, **context):
         """Log an info message with optional context"""
@@ -186,6 +189,214 @@ class EnhancedLogger:
         """Log auto-detection system status"""
         self.info(f"🤖 AUTO-DETECTION STATUS: Monitoring {symbols_monitored} symbols | Active strategies: {active_strategies} | Opportunities: {opportunities_found}",
                  symbols_monitored=symbols_monitored, active_strategies=active_strategies, opportunities_found=opportunities_found, **context)
+
+    def log_flow_start(self, flow_id: str, symbol: str, initial_source: str, **context):
+        """Log the start of a trading flow"""
+        flow_info = {
+            'symbol': symbol,
+            'source': initial_source,
+            'start_time': datetime.now().isoformat(),
+            'status': 'started',
+            'steps': []
+        }
+        self.flow_tracker[flow_id] = flow_info
+
+        self.info(f"🚀 FLOW STARTED: {initial_source} → {symbol} | Flow ID: {flow_id}",
+                 flow_id=flow_id, symbol=symbol, source=initial_source, **context)
+
+    def log_flow_step(self, flow_id: str, step: str, result: str, reason: str = "", **context):
+        """Log a step in the trading flow with decision reason"""
+        if flow_id in self.flow_tracker:
+            step_info = {
+                'step': step,
+                'result': result,
+                'reason': reason,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.flow_tracker[flow_id]['steps'].append(step_info)
+
+            # Determine emoji based on result
+            result_emoji = "✅" if result.lower() in ['accepted', 'passed', 'success', 'approved'] else \
+                          "❌" if result.lower() in ['rejected', 'failed', 'denied', 'error'] else \
+                          "🔄"
+
+            self.info(f"  {result_emoji} FLOW STEP: {step} → {result} | Reason: {reason}",
+                     flow_id=flow_id, step=step, result=result, reason=reason, **context)
+        else:
+            # Log without flow tracking if flow ID not found
+            result_emoji = "✅" if result.lower() in ['accepted', 'passed', 'success', 'approved'] else \
+                          "❌" if result.lower() in ['rejected', 'failed', 'denied', 'error'] else \
+                          "🔄"
+
+            self.info(f"  {result_emoji} FLOW STEP: {step} → {result} | Reason: {reason}",
+                     flow_id=flow_id, step=step, result=result, reason=reason, **context)
+
+    def log_flow_complete(self, flow_id: str, final_result: str, **context):
+        """Log the completion of a trading flow"""
+        if flow_id in self.flow_tracker:
+            self.flow_tracker[flow_id]['status'] = 'completed'
+            self.flow_tracker[flow_id]['end_time'] = datetime.now().isoformat()
+            self.flow_tracker[flow_id]['final_result'] = final_result
+
+            # Determine emoji based on final result
+            result_emoji = "✅" if final_result.lower() in ['executed', 'success', 'completed'] else \
+                          "❌" if final_result.lower() in ['rejected', 'failed', 'cancelled'] else \
+                          "🔄"
+
+            self.info(f"🏁 FLOW COMPLETED: {final_result} | Flow ID: {flow_id}",
+                     flow_id=flow_id, final_result=final_result, **context)
+        else:
+            # Log without flow tracking if flow ID not found
+            result_emoji = "✅" if final_result.lower() in ['executed', 'success', 'completed'] else \
+                          "❌" if final_result.lower() in ['rejected', 'failed', 'cancelled'] else \
+                          "🔄"
+
+            self.info(f"🏁 FLOW COMPLETED: {final_result} | Flow ID: {flow_id}",
+                     flow_id=flow_id, final_result=final_result, **context)
+
+    def log_full_flow(self, symbol: str, watcher: str, engine: str, fusion: str, strategy: str,
+                     broker: str, decision: str, confidence: float, reason: str, **context):
+        """Log the complete flow from watcher to broker with all details"""
+        flow_id = f"{symbol}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+
+        # Log the full flow in a single comprehensive message
+        self.info(f"📊 FULL FLOW: {watcher} → {engine} → {fusion} → {strategy} → {broker} | "
+                 f"Decision: {decision} | Conf: {confidence:.2%} | Reason: {reason}",
+                 flow_id=flow_id, symbol=symbol, watcher=watcher, engine=engine,
+                 fusion=fusion, strategy=strategy, broker=broker, decision=decision,
+                 confidence=confidence, reason=reason, **context)
+
+    def log_complete_signal_flow(self, symbol: str, signal_type: str, confidence: float,
+                               watcher: str, engine: str, fusion: str, strategy: str, broker: str,
+                               execution_status: str, execution_id: str = None, **context):
+        """Log the complete signal flow from detection to execution with detailed status tracking"""
+        flow_id = f"{symbol}_SIGNAL_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+
+        # Log the complete flow with visual indicators
+        status_emoji = "✅" if execution_status.lower() in ['executed', 'success', 'filled'] else \
+                      "❌" if execution_status.lower() in ['rejected', 'failed', 'cancelled', 'error'] else \
+                      "🔄"
+
+        self.info(f"{status_emoji} SIGNAL FLOW: {watcher} → {engine} → {fusion} → {strategy} → {broker} | "
+                 f"Signal: {signal_type} | Conf: {confidence:.2%} | Status: {execution_status} | "
+                 f"ID: {execution_id or 'N/A'}",
+                 flow_id=flow_id, symbol=symbol, signal_type=signal_type, confidence=confidence,
+                 watcher=watcher, engine=engine, fusion=fusion, strategy=strategy, broker=broker,
+                 execution_status=execution_status, execution_id=execution_id, **context)
+
+    def log_signal_progression(self, symbol: str, stage: str, status: str, details: str = "",
+                             confidence: float = None, **context):
+        """Log the progression of a signal through each stage with detailed information"""
+        stage_emoji = {
+            'watcher': '👁️',
+            'engine': '⚙️',
+            'fusion': '🔗',
+            'strategy': '🎯',
+            'broker': '⚡'
+        }.get(stage.lower(), '🔄')
+
+        status_emoji = "✅" if status.lower() in ['success', 'accepted', 'passed', 'completed'] else \
+                      "❌" if status.lower() in ['failed', 'rejected', 'error'] else \
+                      "🔄"
+
+        if confidence is not None:
+            self.info(f"  {stage_emoji} {stage.upper()}: {status_emoji} {status} | {details} | Conf: {confidence:.2%}",
+                     symbol=symbol, stage=stage, status=status, details=details,
+                     confidence=confidence, **context)
+        else:
+            self.info(f"  {stage_emoji} {stage.upper()}: {status_emoji} {status} | {details}",
+                     symbol=symbol, stage=stage, status=status, details=details, **context)
+
+    def log_watcher_to_engine_flow(self, symbol: str, watcher_name: str, signal_generated: bool,
+                                  signal_type: str, confidence: float, reason: str, **context):
+        """Log the flow from watcher to engine with detailed information"""
+        flow_id = f"{symbol}_W2E_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+
+        self.log_flow_start(flow_id, symbol, f"Watcher({watcher_name})", **context)
+
+        if signal_generated:
+            self.log_flow_step(flow_id, "Watcher", "Signal Generated", f"Signal: {signal_type}, Conf: {confidence:.2%}", **context)
+            self.log_flow_step(flow_id, "Engine", "Accepted", reason, **context)
+        else:
+            self.log_flow_step(flow_id, "Watcher", "No Signal", reason, **context)
+            self.log_flow_step(flow_id, "Engine", "Rejected", "No signal from watcher", **context)
+
+        final_status = "Accepted" if signal_generated else "Rejected"
+        self.log_flow_complete(flow_id, final_status, **context)
+
+    def log_engine_to_fusion_flow(self, symbol: str, engine_name: str, signal_processed: bool,
+                                 signal_type: str, confidence: float, reason: str, **context):
+        """Log the flow from engine to fusion with detailed information"""
+        flow_id = f"{symbol}_E2F_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+
+        self.log_flow_start(flow_id, symbol, f"Engine({engine_name})", **context)
+
+        if signal_processed:
+            self.log_flow_step(flow_id, "Engine", "Signal Processed", f"Signal: {signal_type}, Conf: {confidence:.2%}", **context)
+            self.log_flow_step(flow_id, "Fusion", "Accepted", reason, **context)
+        else:
+            self.log_flow_step(flow_id, "Engine", "Signal Rejected", reason, **context)
+            self.log_flow_step(flow_id, "Fusion", "Skipped", "No valid signal from engine", **context)
+
+        final_status = "Processed" if signal_processed else "Rejected"
+        self.log_flow_complete(flow_id, final_status, **context)
+
+    def log_fusion_to_strategy_flow(self, symbol: str, fusion_name: str, fused_signal: bool,
+                                   signal_type: str, confidence: float, reason: str, **context):
+        """Log the flow from fusion to strategy with detailed information"""
+        flow_id = f"{symbol}_F2S_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+
+        self.log_flow_start(flow_id, symbol, f"Fusion({fusion_name})", **context)
+
+        if fused_signal:
+            self.log_flow_step(flow_id, "Fusion", "Signal Fused", f"Signal: {signal_type}, Conf: {confidence:.2%}", **context)
+            self.log_flow_step(flow_id, "Strategy", "Accepted", reason, **context)
+        else:
+            self.log_flow_step(flow_id, "Fusion", "No Fusion", reason, **context)
+            self.log_flow_step(flow_id, "Strategy", "Rejected", "No fused signal from fusion", **context)
+
+        final_status = "Fused" if fused_signal else "Rejected"
+        self.log_flow_complete(flow_id, final_status, **context)
+
+    def log_strategy_to_broker_flow(self, symbol: str, strategy_name: str, trade_executed: bool,
+                                   signal_type: str, confidence: float, reason: str, **context):
+        """Log the flow from strategy to broker with detailed information"""
+        flow_id = f"{symbol}_S2B_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+
+        self.log_flow_start(flow_id, symbol, f"Strategy({strategy_name})", **context)
+
+        if trade_executed:
+            self.log_flow_step(flow_id, "Strategy", "Trade Approved", f"Signal: {signal_type}, Conf: {confidence:.2%}", **context)
+            self.log_flow_step(flow_id, "Broker", "Executed", reason, **context)
+        else:
+            self.log_flow_step(flow_id, "Strategy", "Trade Rejected", reason, **context)
+            self.log_flow_step(flow_id, "Broker", "Skipped", "No trade approved by strategy", **context)
+
+        final_status = "Executed" if trade_executed else "Rejected"
+        self.log_flow_complete(flow_id, final_status, **context)
+
+    def log_decision_reason(self, component: str, symbol: str, decision: str, reason: str,
+                          confidence: float = None, **context):
+        """Log detailed decision reasons at each component"""
+        if confidence is not None:
+            self.info(f"🧠 {component.upper()} DECISION: {decision} for {symbol} | Reason: {reason} | Conf: {confidence:.2%}",
+                     component=component, symbol=symbol, decision=decision, reason=reason,
+                     confidence=confidence, **context)
+        else:
+            self.info(f"🧠 {component.upper()} DECISION: {decision} for {symbol} | Reason: {reason}",
+                     component=component, symbol=symbol, decision=decision, reason=reason, **context)
+
+    def set_comprehensive_mode(self, enabled: bool):
+        """Enable or disable comprehensive logging mode"""
+        self.comprehensive_mode = enabled
+        status = "ENABLED" if enabled else "DISABLED"
+        self.info(f"📋 COMPREHENSIVE LOGGING: {status}")
+
+    def log_background_activity(self, activity_type: str, details: str, **context):
+        """Log background activities with comprehensive mode support"""
+        if self.comprehensive_mode:
+            self.info(f"🔄 BACKGROUND ACTIVITY: {activity_type} | Details: {details}",
+                     activity_type=activity_type, details=details, **context)
 
 
 # Global logger instance

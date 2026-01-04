@@ -31,9 +31,8 @@ class Signal:
     signal_type: SignalType
     confidence: Percentage  # 0.0 to 1.0
     score: float  # -1.0 to 1.0
-    strategy_name: str
     timestamp: datetime
-    source_engine: Optional[str] = None
+    source_layer: Optional[str] = None  # Which layer generated this signal (watcher, engine, fusion, strategy)
     metadata: Optional[Dict[str, Any]] = None
     fused_score: Optional[float] = None
     fused_confidence: Optional[Percentage] = None
@@ -61,6 +60,8 @@ class Order:
     timestamp: Optional[datetime] = None
     parent_signal: Optional[Signal] = None
     risk_adjusted_quantity: Optional[Decimal] = None
+    stop_loss_price: Optional[Money] = None
+    take_profit_price: Optional[Money] = None
 
     def is_market_order(self) -> bool:
         return self.order_type.upper() == "MARKET"

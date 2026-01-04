@@ -1,8 +1,7 @@
 """
-Auto-Detection Orchestrator for fully autonomous trading system.
+Auto-Detection Orchestrator for fully autonomous trading system following correct architecture.
 Monitors markets continuously, identifies opportunities, and triggers appropriate strategies.
-This orchestrator follows hexagonal architecture by only depending on domain interfaces,
-not directly on application services.
+Following correct architecture: Watcher → Engine → Fusion → Strategy → Broker
 """
 import threading
 import time
@@ -12,23 +11,22 @@ from domain.ports.data_ports import DataProviderPort
 from domain.ports.execution_ports import ExecutionPort
 from domain.ports.portfolio_ports import PortfolioManagementPort
 from domain.ports.optimization_ports import IOptimizationService
-from domain.ports.engine_ports import StrategyPort, RiskManagementPort
 from domain.value_objects import Symbol
-from infrastructure.watchers.market_opportunity_watcher import MarketOpportunityWatcher
 from shared.logger import EnhancedLogger
 from infrastructure.services.risk_alerts import RiskAlertService
 
 
 class AutoDetectionOrchestrator:
-    """Orchestrator for fully autonomous trading with auto-detection capability."""
-    
+    """Orchestrator for fully autonomous trading with auto-detection capability following correct architecture."""
+
     def __init__(self,
                  market_data_repo: DataProviderPort,
                  execution_service: ExecutionPort,
                  portfolio_service: PortfolioManagementPort,
                  optimization_service: IOptimizationService,
                  symbols: List[str],
-                 risk_config: Optional[Dict[str, Any]] = None):
+                 risk_config: Optional[Dict[str, Any]] = None,
+                 comprehensive_logging: bool = True):
         self.market_data_repo = market_data_repo
         self.execution_service = execution_service
         self.portfolio_service = portfolio_service
@@ -38,77 +36,42 @@ class AutoDetectionOrchestrator:
             "atr_multiplier": 1.5,
             "use_dynamic_position": True
         }
-        self.logger = EnhancedLogger("AutoDetectionOrchestrator")
+        self.logger = EnhancedLogger("AutoDetectionOrchestrator", comprehensive_mode=comprehensive_logging)
+        self.comprehensive_logging = comprehensive_logging
 
-        # Initialize components
+        # Import new architecture components
+        from infrastructure.engines.engine_service import engine_service
+        from infrastructure.fusion.fusion_service import fusion_service
+        from infrastructure.strategies.strategy_manager import strategy_manager
+        from shared.event_system import event_router, signal_processor
+
+        self.engine_service = engine_service
+        self.fusion_service = fusion_service
+        self.strategy_manager = strategy_manager
+
+        # Initialize the architecture orchestrator to handle proper flow
+        from infrastructure.orchestrators.architecture_orchestrator import architecture_orchestrator
+        # Pass the execution service to the architecture orchestrator
+        architecture_orchestrator.execution_service = self.execution_service
+        architecture_orchestrator.start()
+
+        # Initialize the market opportunity watcher with the event router (no internal flow processing)
+        from infrastructure.watchers.market_opportunity_watcher import MarketOpportunityWatcher
         self.opportunity_watcher = MarketOpportunityWatcher(
             symbols=symbols if symbols else None,
             opportunity_callback=self._handle_opportunity,
-            auto_discover_symbols=not bool(symbols)  # Auto-discover if no symbols provided
+            auto_discover_symbols=not bool(symbols),  # Auto-discover if no symbols provided
+            comprehensive_logging=comprehensive_logging,
+            market_data_repo=market_data_repo,
+            event_router=event_router  # Use event router instead of direct services
         )
 
         # Set symbols from the opportunity watcher (handles auto-discovery)
         self.symbols = self.opportunity_watcher.symbols
-        # Initialize orchestrator components first before logging status
-        
-        # Initialize orchestrator components using domain interfaces only
-        from domain.entities.trading_entities import Signal, SignalType
-        from domain.value_objects import Percentage
-        from decimal import Decimal
 
-        # Create more realistic strategies that use opportunity data
-        class DynamicStrategy(StrategyPort):
-            def __init__(self, name: str, signal_type: SignalType = None):
-                self.name = name
-                self.signal_type = signal_type or SignalType.NEUTRAL
-                self.performance_tracker = {}  # Track performance metrics
-
-            def generate_signal(self, symbol: Symbol):
-                """Generate signal based on opportunity data if available"""
-                from datetime import datetime
-
-                # In hexagonal architecture, we can't directly access opportunity data here
-                # Instead, this would be handled by the orchestrator passing contextual data
-                # For now, return a neutral signal - in a real system, this would be
-                # enhanced with market data passed via update_with_market_data
-
-                return Signal(
-                    symbol=symbol,
-                    signal_type=self.signal_type,
-                    confidence=Percentage(Decimal('0.6')),
-                    score=0.0,
-                    strategy_name=self.name,
-                    timestamp=datetime.now(),
-                    source_engine="AutoDetection",
-                    metadata={}
-                )
-
-            def get_strategy_name(self) -> str:
-                return self.name
-
-            def calculate_position_size(self, signal: Signal, account_balance: float) -> float:
-                # Calculate position size based on signal confidence and risk settings
-                confidence_factor = float(signal.confidence.value)
-                # Max 2% of account per trade
-                return account_balance * 0.02 * confidence_factor
-
-            def update_with_market_data(self, data: Dict[str, Any]):
-                # Update strategy with latest market data for performance tracking
-                pass
-
-        # Create strategies that align with the opportunity detection
-        self.strategies = [
-            DynamicStrategy("momentum_strategy", SignalType.NEUTRAL),
-            DynamicStrategy("trend_following", SignalType.NEUTRAL),
-            DynamicStrategy("mean_reversion", SignalType.NEUTRAL),
-            DynamicStrategy("volatility_strategy", SignalType.NEUTRAL),
-            DynamicStrategy("order_flow", SignalType.NEUTRAL),
-            DynamicStrategy("balanced_strategy", SignalType.NEUTRAL),
-            DynamicStrategy("cmc_sentiment_strategy", SignalType.NEUTRAL)
-        ]
-
-        # Initialize risk management first
-        from infrastructure.services.risk_alerts import RiskAlertService, EmailNotificationService, TelegramNotificationService
+        # Initialize risk management
+        from infrastructure.services.risk_alerts import RiskAlertService, EmailNotificationService, \
+            TelegramNotificationService
         email_service = EmailNotificationService()
         telegram_service = TelegramNotificationService()
         self.risk_alert_service = RiskAlertService(
@@ -117,223 +80,379 @@ class AutoDetectionOrchestrator:
             drawdown_threshold=-0.1
         )
 
-        # Initialize with domain-level strategy selection (not application service)
-        self._initialize_strategy_selection()
-
         # Initialize state
         self.is_running = False
         self.active_trades = {}
         self.opportunity_queue = []
         self.background_threads = []
 
-    def _initialize_strategy_selection(self):
-        """Initialize strategy selection without depending on application services"""
-        self.strategy_selection_service = None  # Will be set by orchestration logic
-        # Use the strategies directly for selection
-        self.selected_strategies = self.strategies
-
-    def _select_strategy_for_symbol(self, symbol: Symbol, opportunity_data: Optional[Dict[str, Any]] = None) -> Optional[StrategyPort]:
-        """Select the best strategy for a given symbol and opportunity data"""
-        if not self.strategies:
-            return None
-
-        # For now, return the first strategy - in a real implementation, this would
-        # implement proper strategy selection logic without using application services
-        return self.strategies[0]
-        
     def initialize_system(self):
         """Initialize the auto-detection system."""
-        self.logger.info("🚀 Initializing Auto-Detection Orchestrator...")
-        
+        self.logger.info("🚀 Initializing Auto-Detection Orchestrator with correct architecture...")
+
         # Start background services
         self._start_background_services()
-        
+
         self.is_running = True
-        self.logger.info("✅ Auto-Detection Orchestrator initialized successfully")
-        
+        self.logger.info("✅ Auto-Detection Orchestrator initialized successfully with correct architecture")
+
     def _start_background_services(self):
         """Start all background services."""
         # Start market opportunity watcher
         self.opportunity_watcher.start_monitoring()
-        
+
         # Start opportunity processing thread
         opportunity_thread = threading.Thread(target=self._opportunity_processing_loop, daemon=True)
         opportunity_thread.start()
         self.background_threads.append(("opportunity_processing", opportunity_thread))
-        
+
         # Start risk monitoring
         risk_thread = threading.Thread(target=self._risk_monitoring_loop, daemon=True)
         risk_thread.start()
         self.background_threads.append(("risk_monitoring", risk_thread))
-        
+
         self.logger.info(f"⚙️ Started {len(self.background_threads)} background services")
-        
+
     def _opportunity_processing_loop(self):
         """Process queued opportunities in a separate thread."""
         self.logger.info("🔄 Opportunity processing loop started")
-        
+
+        # Track statistics for periodic reporting
+        last_report_time = time.time()
+        report_interval = 60  # seconds between detailed reports
+        processed_count = 0
+        rejected_count = 0
+
         while self.is_running:
             try:
                 if self.opportunity_queue:
                     opportunity = self.opportunity_queue.pop(0)  # Get oldest opportunity
                     self._execute_strategy_for_opportunity(opportunity)
-                    
+                    processed_count += 1
+                else:
+                    # Log when no opportunities are in the queue to show system is still active
+                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                        current_time = time.time()
+                        if current_time - last_report_time >= 10:  # Log every 10 seconds if no opportunities
+                            self.logger.log_background_activity(
+                                "Opportunity Monitoring",
+                                f"No opportunities in queue, system monitoring {len(self.active_trades)} active trades",
+                                queue_size=len(self.opportunity_queue),
+                                active_trades=len(self.active_trades)
+                            )
+                            last_report_time = current_time
+
+                # Log periodic detailed reports
+                current_time = time.time()
+                if current_time - last_report_time >= report_interval:
+                    self.logger.info(f"📈 OPPORTUNITY PROCESSING: Processed: {processed_count} | "
+                                     f"Queue size: {len(self.opportunity_queue)} | "
+                                     f"Active trades: {len(self.active_trades)}")
+                    processed_count = 0
+                    rejected_count = 0
+                    last_report_time = current_time
+
                 time.sleep(1)  # Check queue every second
             except Exception as e:
                 self.logger.error(f"Error in opportunity processing loop: {e}")
                 time.sleep(1)
-                
+
     def _handle_opportunity(self, opportunity: Dict[str, Any]):
         """Handle detected market opportunity."""
-        self.logger.info(f"💎 Handling opportunity: {opportunity['symbol']} - {opportunity['recommendation']} with confidence {opportunity['confidence']:.2%}")
+        self.logger.info(
+            f"💎 Handling opportunity: {opportunity['symbol']} - Execution Intent: {opportunity.get('execution_intent', 'None')} with confidence {opportunity.get('confidence', 0):.2%}")
+
+        # Log the flow from watcher to engine
+        self.logger.log_watcher_to_engine_flow(
+            symbol=opportunity['symbol'],
+            watcher_name="MarketOpportunityWatcher",
+            signal_generated=bool(opportunity.get('execution_intent')),
+            signal_type=opportunity.get('execution_intent', {}).get('side', 'N/A') if opportunity.get('execution_intent') else 'N/A',
+            confidence=opportunity.get('confidence', 0),
+            reason=f"Opportunity detected with execution intent",
+        )
+
+        # Log the decision at the orchestrator level
+        self.logger.log_decision_reason(
+            component="Orchestrator",
+            symbol=opportunity['symbol'],
+            decision="Opportunity Queued",
+            reason=f"Opportunity detected by watcher with execution intent",
+            confidence=opportunity.get('confidence', 0)
+        )
+
+        # Log background activity in comprehensive mode
+        if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+            self.logger.log_background_activity(
+                "Opportunity Detection",
+                f"Detected opportunity for {opportunity['symbol']} with confidence {opportunity.get('confidence', 0):.2%}",
+                symbol=opportunity['symbol'],
+                execution_intent=bool(opportunity.get('execution_intent')),
+                confidence=opportunity.get('confidence', 0)
+            )
+
         self.opportunity_queue.append(opportunity)
-        
+
     def _execute_strategy_for_opportunity(self, opportunity: Dict[str, Any]):
-        """Execute the appropriate strategy for an opportunity."""
+        """Execute the appropriate strategy for an opportunity following correct architecture."""
         try:
-            symbol = Symbol(opportunity['symbol'])
-            suggested_strategy = opportunity['strategy_suggestion']
-            confidence = opportunity['confidence']
+            # The opportunity should contain an execution intent from the strategy layer
+            execution_intent = opportunity.get('execution_intent')
+            if not execution_intent:
+                self.logger.warning(f"No execution intent found in opportunity: {opportunity}")
+                return
 
-            self.logger.info(f"🎯 Executing strategy {suggested_strategy} for {symbol.value} with confidence {confidence:.2%}")
+            symbol = execution_intent.symbol
+            strategy_name = execution_intent.strategy_name
+            confidence = float(execution_intent.intent_confidence.value)
 
-            # Generate signal using the opportunity data
-            # Use the new strategy selection method that doesn't depend on application services
-            strategy = self._select_strategy_for_symbol(symbol, opportunity)
-            if strategy:
-                # Generate signal with the opportunity-specific data
-                # For now, use just the symbol as the standard strategy interface only accepts symbol
-                signal = strategy.generate_signal(symbol)
+            self.logger.info(
+                f"🎯 Executing trade for {strategy_name} on {symbol.value} with intent confidence {confidence:.2%}")
 
-                if signal:
-                    self.logger.log_strategy_signal(strategy.get_strategy_name(), symbol.value, signal.signal_type.name, float(signal.confidence.value))
+            # Log the flow from strategy to broker
+            self.logger.log_signal_progression(
+                symbol=symbol.value,
+                stage="strategy",
+                status="Ready for Execution",
+                details=f"Execution intent prepared for broker: {execution_intent.side.name}",
+                confidence=confidence
+            )
 
-                    # Execute trade through execution service
-                    execution_result = self._execute_trade(symbol, signal)
+            self.logger.log_strategy_to_broker_flow(
+                symbol=symbol.value,
+                strategy_name=strategy_name,
+                trade_executed=False,  # We don't know yet, so we'll log the execution separately
+                signal_type=execution_intent.side.name,
+                confidence=confidence,
+                reason=f"Execution intent generated with confidence {confidence:.2%}",
+            )
 
-                    # Track active trade with detailed decision data
-                    trade_details = {
-                        'strategy': suggested_strategy,
-                        'signal': signal.signal_type.name,
-                        'timestamp': datetime.now().isoformat(),
-                        'execution_result': execution_result,
-                        'confidence': float(signal.confidence.value),
-                        'opportunity_confidence': confidence,
-                        'decision_factors': {
-                            'signal_quality': float(signal.confidence.value),
-                            'opportunity_strength': confidence,
-                            'trade_acceptance_reason': 'Signal strength' if float(signal.confidence.value) > 0.6 else 'Low confidence - may be rejected',
-                            'risk_check_passed': self._check_risk_acceptance(symbol, signal),  # Check if risk controls passed
-                        }
-                    }
+            # Execute trade through execution service using the execution intent
+            execution_result = self._execute_trade_from_intent(execution_intent)
 
-                    # Log trade decision with reasons
-                    if execution_result['status'] == 'executed':
-                        self.logger.info(f"✅ ACCEPTED TRADE: {execution_result['order']['side']} {execution_result['order']['quantity']} {symbol.value} | Signal: {signal.signal_type.name} | Sig. Conf: {float(signal.confidence.value):.2%} | Opp. Conf: {confidence:.2%}")
-                    else:
-                        self.logger.warning(f"❌ REJECTED TRADE: {symbol.value} | Reason: {execution_result.get('error', 'Execution failed')} | Signal: {signal.signal_type.name} | Sig. Conf: {float(signal.confidence.value):.2%} | Opp. Conf: {confidence:.2%}")
+            # Track active trade with detailed decision data
+            trade_details = {
+                'strategy': strategy_name,
+                'side': execution_intent.side.name,
+                'timestamp': datetime.now().isoformat(),
+                'execution_result': execution_result,
+                'intent_confidence': confidence,
+                'opportunity_confidence': opportunity.get('confidence', 0),
+                'decision_factors': {
+                    'intent_quality': confidence,
+                    'opportunity_strength': opportunity.get('confidence', 0),
+                    'trade_acceptance_reason': 'Intent strength' if confidence > 0.6 else 'Low confidence - may be rejected',
+                    'risk_check_passed': self._check_risk_acceptance_from_intent(execution_intent),
+                }
+            }
 
-                    self.active_trades[symbol.value] = trade_details
+            # Log trade decision with reasons
+            if execution_result['status'] == 'executed':
+                execution_id = execution_result.get('execution_id', 'N/A')
+                self.logger.info(
+                    f"✅ ACCEPTED TRADE: {execution_result['order']['side']} {execution_result['order']['quantity']} {symbol.value} | Strategy: {strategy_name} | Intent Confidence: {confidence:.2%}")
+                
+                # Log the successful execution
+                self.logger.log_signal_progression(
+                    symbol=symbol.value,
+                    stage="broker",
+                    status="Executed",
+                    details=f"Order executed successfully: {execution_id}",
+                    confidence=confidence
+                )
 
-                    # NOTE: Performance tracking would need to be implemented at domain/infrastructure level
-                    # without depending on application services
-                else:
-                    self.logger.warning(f"No signal generated for {symbol.value}")
+                self.logger.log_strategy_to_broker_flow(
+                    symbol=symbol.value,
+                    strategy_name=strategy_name,
+                    trade_executed=True,
+                    signal_type=execution_intent.side.name,
+                    confidence=confidence,
+                    reason=f"Trade executed successfully with ID: {execution_id}",
+                )
+
+                # Add to active trades
+                self.active_trades[execution_id] = trade_details
             else:
-                self.logger.warning(f"No strategy selected for {symbol.value}")
+                self.logger.warning(
+                    f"❌ REJECTED TRADE: {execution_result.get('error', 'Unknown error')} | Strategy: {strategy_name} | Intent Confidence: {confidence:.2%}")
+                
+                # Log the failed execution
+                self.logger.log_signal_progression(
+                    symbol=symbol.value,
+                    stage="broker",
+                    status="Failed",
+                    details=f"Order execution failed: {execution_result.get('error', 'Unknown error')}",
+                    confidence=confidence
+                )
+
+                self.logger.log_strategy_to_broker_flow(
+                    symbol=symbol.value,
+                    strategy_name=strategy_name,
+                    trade_executed=False,
+                    signal_type=execution_intent.side.name,
+                    confidence=confidence,
+                    reason=f"Trade execution failed: {execution_result.get('error', 'Unknown error')}",
+                )
 
         except Exception as e:
             self.logger.error(f"Error executing strategy for opportunity: {e}")
-            
-    def _execute_trade(self, symbol: Symbol, signal) -> Dict[str, Any]:
-        """Execute trade based on signal."""
-        # This is a simplified trade execution - in a real system, you'd have more complex logic
-        try:
-            # Create mock order based on signal
-            side = 'BUY' if signal.signal_type.name == 'BUY' else 'SELL'
-            quantity = 0.01 # Mock quantity based on strategy
-            price = 50000.0  # Mock price - in real system this would come from market data
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
 
-            order = {
-                'symbol': symbol.value,
-                'side': side,
-                'quantity': quantity,
-                'price': price,
-                'type': 'MARKET',
-                'strategy': signal.strategy_name
-            }
+    def _execute_trade_from_intent(self, execution_intent):
+        """Execute trade based on execution intent from strategy layer."""
+        try:
+            # Create order from execution intent
+            from domain.entities.signal_entities import Order, OrderSide
+            from domain.value_objects import Money
+            from decimal import Decimal
+
+            # Get current price for the symbol to determine position size
+            current_price = None
+            if self.market_data_repo:
+                try:
+                    current_price = self.market_data_repo.get_current_price(execution_intent.symbol)
+                except:
+                    # If we can't get current price from data repo, try to get from exchange directly
+                    pass
+
+            # If we still don't have a price, use a fallback
+            if current_price is None or current_price <= 0:
+                # Try to get price from exchange directly
+                try:
+                    import ccxt
+                    exchange = ccxt.binance()
+                    ticker = exchange.fetch_ticker(execution_intent.symbol.value)
+                    current_price = ticker['last'] if 'last' in ticker else ticker['close']
+                except:
+                    # If all methods fail, we'll still proceed but log the issue
+                    self.logger.warning(f"Could not get current price for {execution_intent.symbol.value}, using default price")
+                    current_price = 50000.0  # Fallback price
+
+            # Use risk parameters from the execution intent
+            risk_params = execution_intent.risk_parameters
+            position_size_pct = risk_params.get('max_position_size', 0.02)  # Default 2%
+
+            # Fixed Position Size Configuration (for testing purposes)
+            import os
+            fixed_position_size_enabled = os.getenv('FIXED_POSITION_SIZE_ENABLED', 'false').lower() == 'true'
+            fixed_position_amount = float(os.getenv('FIXED_POSITION_AMOUNT', '10.0'))  # Default to $10 for testing
+
+            # Calculate quantity based on risk parameters and account balance
+            try:
+                if fixed_position_size_enabled:
+                    # Use fixed position size for testing
+                    quantity = fixed_position_amount / current_price
+                    self.logger.info(f"Using fixed position size: ${fixed_position_amount} at ${current_price} = {quantity} units")
+                else:
+                    # In a real implementation, we'd get portfolio metrics from portfolio service
+                    # For now, using a default account balance from environment variable
+                    import os
+                    account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))  # Default to $10,000 if not available
+                    position_value = account_balance * position_size_pct
+
+                    # Calculate quantity based on position value and current price
+                    quantity = position_value / current_price
+
+                    # Apply any quantity adjustments from risk parameters
+                    if 'position_quantity' in risk_params:
+                        quantity = risk_params['position_quantity']
+
+            except:
+                # If portfolio service fails, use a default quantity
+                if fixed_position_size_enabled:
+                    # Use fixed position size for testing
+                    quantity = fixed_position_amount / current_price
+                    self.logger.info(f"Using fixed position size (fallback): ${fixed_position_amount} at ${current_price} = {quantity} units")
+                else:
+                    # Use default account balance from environment variable
+                    import os
+                    default_account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '1000.0'))  # Default to $1,000 if not available
+                    quantity = position_size_pct * default_account_balance / current_price
+
+            # Ensure minimum quantity to avoid issues with small trades
+            if quantity < 0.001:
+                quantity = 0.001  # Minimum trade size
+
+            # Create order object using domain entities
+            from domain.entities.signal_entities import Order, OrderSide
+            from domain.value_objects import Money
+
+            # Use the side from the execution intent
+            order_side = execution_intent.side
+
+            # Determine position side based on order side for futures trading
+            position_side = "LONG" if order_side.name == 'BUY' else "SHORT"
+
+            # Ensure symbol is properly formatted for the broker
+            symbol_value = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
+
+            # Create order with proper risk parameters from the intent
+            order = Order(
+                symbol=symbol_value,  # Use string value instead of Symbol object
+                side=order_side,
+                order_type="MARKET",  # Using string instead of enum
+                quantity=quantity,
+                price=Money(amount=current_price, currency='USDT') if current_price else None,
+                strategy_name=execution_intent.strategy_name,  # Strategy name comes from intent
+                timestamp=datetime.now(),
+                position_side=position_side,  # Add position side for futures trading
+                stop_loss_price=Money(amount=risk_params.get('stop_loss_price', current_price * 0.98), currency='USDT'),  # Default SL
+                take_profit_price=Money(amount=risk_params.get('take_profit_price', current_price * 1.03), currency='USDT'),  # Default TP
+                parent_execution_intent=execution_intent  # Link back to the execution intent
+            )
+
+            # Validate symbol availability before executing order
+            if hasattr(self.execution_service, 'get_available_symbols'):
+                available_symbols = self.execution_service.get_available_symbols()
+                if symbol_value not in available_symbols:
+                    self.logger.warning(f"⚠️ Symbol {symbol_value} not available on any configured broker. Skipping order.")
+                    return {
+                        'status': 'failed',
+                        'error': f"Symbol {symbol_value} not available on broker"
+                    }
 
             # Execute order through execution service
             execution_id = self.execution_service.execute_order(order)
 
-            # Log the successful execution with detailed information
-            self.logger.log_execution(
-                execution_id,
-                symbol.value,
-                side,
-                quantity,
-                price
-            )
-
             return {
                 'status': 'executed',
                 'execution_id': execution_id,
-                'order': order
+                'order': {
+                    'side': execution_intent.side.name,
+                    'quantity': quantity,
+                    'symbol': execution_intent.symbol.value
+                }
             }
         except Exception as e:
-            self.logger.error(f"Error executing trade: {e}")
-            return {'status': 'error', 'error': str(e)}
+            return {
+                'status': 'failed',
+                'error': str(e)
+            }
 
-    def _check_risk_acceptance(self, symbol: Symbol, signal) -> bool:
-        """Check if risk controls allow the trade to proceed."""
+    def _check_risk_acceptance_from_intent(self, execution_intent) -> bool:
+        """Check if trade should be accepted based on risk parameters."""
         try:
-            # This would integrate with real risk management in a production system
-            # For now, we'll return True to allow execution
-            return True
+            # Check if the intent's risk parameters are within acceptable limits
+            risk_params = execution_intent.risk_parameters
+            max_position_size = risk_params.get('max_position_size', 0.02)  # Default 2%
+            
+            # Check against configured risk limits
+            configured_max_risk = self.risk_config.get('max_risk', 0.02)
+            
+            return max_position_size <= configured_max_risk
         except Exception:
-            return False  # If there's an error checking risk, default to rejection
-
-    def _assess_trade_risk(self, symbol: Symbol, signal) -> str:
-        """Assess the risk level of the trade."""
-        try:
-            confidence = float(signal.confidence.value)
-            if confidence > 0.8:
-                return "LOW"
-            elif confidence > 0.6:
-                return "MODERATE"
-            else:
-                return "HIGH"
-        except:
-            return "UNKNOWN"
-
-    def _calculate_position_size(self, signal, strategy_name: str) -> float:
-        """Calculate position size based on signal confidence and risk."""
-        try:
-            confidence = float(signal.confidence.value)
-            # Base position size on confidence (higher confidence = larger position)
-            base_size = 0.01  # 1% default
-            position_size = base_size * (0.5 + confidence)  # Range 0.5% to 1.3%
-            return round(position_size, 4)
-        except:
-            return 0.01  # Default 1% if calculation fails
-
-    def _get_market_conditions(self, symbol: Symbol) -> str:
-        """Get current market conditions for the symbol."""
-        # This would normally get real market data
-        # For now we'll return a mock condition
-        import random
-        conditions = ["VOLATILE", "RANGING", "TRENDING_UP", "TRENDING_DOWN", "NORMAL"]
-        return random.choice(conditions)
+            return False
 
     def _risk_monitoring_loop(self):
         """Background risk monitoring loop."""
-        self.logger.info("🛡️ Risk monitoring started")
-        
+        self.logger.info("Risk monitoring started")
+
         while self.is_running:
             try:
                 # Get current positions and performance
                 portfolio_metrics = self.portfolio_service.get_portfolio_metrics()
-                
+
                 # Check for risk violations
                 if 'drawdown' in portfolio_metrics and portfolio_metrics['drawdown'] < -0.15:
                     self.logger.warning(f"Portfolio drawdown exceeded threshold: {portfolio_metrics['drawdown']}")
@@ -341,7 +460,7 @@ class AutoDetectionOrchestrator:
                         message=f"Portfolio drawdown exceeded threshold: {portfolio_metrics['drawdown']}",
                         alert_type="critical"
                     )
-                    
+
                 # Check leverage limits
                 if 'leverage' in portfolio_metrics and portfolio_metrics['leverage'] > 10.0:
                     self.logger.warning(f"Leverage exceeded threshold: {portfolio_metrics['leverage']}")
@@ -349,45 +468,31 @@ class AutoDetectionOrchestrator:
                         message=f"Leverage exceeded threshold: {portfolio_metrics['leverage']}",
                         alert_type="critical"
                     )
-                    
+
                 time.sleep(30)  # Check every 30 seconds
             except Exception as e:
                 self.logger.error(f"Error in risk monitoring: {e}")
                 time.sleep(30)
-                
-    def get_status(self) -> Dict[str, Any]:
-        """Get current system status."""
-        return {
-            'is_running': self.is_running,
-            'monitored_symbols': self.symbols,
-            'active_trades': len(self.active_trades),
-            'opportunity_queue_size': len(self.opportunity_queue),
-            'watcher_status': self.opportunity_watcher.get_status(),
-            'timestamp': datetime.now().isoformat()
-        }
-        
-    def stop_system(self):
-        """Stop the auto-detection system."""
-        self.logger.info("🛑 Stopping Auto-Detection Orchestrator...")
-        self.is_running = False
-        
-        # Stop opportunity watcher
-        self.opportunity_watcher.stop_monitoring()
-        
-        self.logger.info("✅ Auto-Detection Orchestrator stopped")
-        
+
     def run_auto_detection(self):
-        """Main auto-detection loop - this is the primary method for auto-detection mode."""
-        self.logger.info("🤖 Starting auto-detection mode...")
-        
-        # Initialize the system
+        """Main method to run the auto-detection system."""
         self.initialize_system()
         
-        # The system runs in background threads, so we just keep the main thread alive
         try:
+            # Keep the main thread alive to allow background services to run
             while self.is_running:
-                time.sleep(10)  # Keep main thread alive
+                time.sleep(1)
         except KeyboardInterrupt:
-            self.logger.info("🛑 Shutdown signal received")
+            self.logger.info("🛑 Auto-detection mode stopped by user")
         finally:
             self.stop_system()
+
+    def stop_system(self):
+        """Stop the auto-detection system."""
+        self.logger.info("Stopping Auto-Detection Orchestrator...")
+        self.is_running = False
+
+        # The background threads are daemon threads, so they will stop automatically
+        # when the main program exits
+
+        self.logger.info("Auto-Detection Orchestrator stopped")

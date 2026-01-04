@@ -1,198 +1,208 @@
 from .base_watcher import BaseWatcher
-from shared.types import Signal, SignalType
+from domain.entities.signal_entities import MarketObservation
+from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
-from domain.value_objects import Symbol
 import numpy as np
-from typing import Dict, List, Optional
-import threading
-import queue
+import os
+from decimal import Decimal
 
 
 class OrderFlowWSWatcher(BaseWatcher):
-    """Order Flow Watcher using WebSocket - analyzes order book dynamics"""
+    """Order Flow Watcher - analyzes order flow data from WebSocket streams, returns raw market observations"""
 
-    def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, depth_levels: int = 10):
+    def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 100):
         super().__init__(name, symbol, broker_service, target_broker)
-        self.depth_levels = depth_levels
 
-        # Order book data
-        self.bids = {}  # price -> quantity
-        self.asks = {}  # price -> quantity
-        self.bid_volume_total = 0
-        self.ask_volume_total = 0
+        # Configuration from environment with defaults
+        self.enabled = os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'true').lower() == 'true'
 
-        # Order flow metrics
-        self.order_flow_imbalance = 0
+        # Only set logger if enabled, otherwise use mock logger
+        if self.enabled:
+            self.logger = logger
+        else:
+            # Create a mock logger that doesn't log anything when disabled
+            class MockLogger:
+                def debug(self, msg): pass
+                def info(self, msg): pass
+                def warning(self, msg): pass
+                def error(self, msg): pass
+            self.logger = MockLogger()
+
+        self.lookback = lookback
+        self.order_book_bids = []  # [(price, volume, timestamp), ...]
+        self.order_book_asks = []  # [(price, volume, timestamp), ...]
+        self.trade_history = []  # [(price, volume, side, timestamp), ...]
         self.aggressive_buy_volume = 0
         self.aggressive_sell_volume = 0
-        self.order_flow_history = []
-        self.max_history = 100
+        self.tick_history = []  # [(price, volume, direction), ...]
 
-        # Signal thresholds
-        self.imbalance_threshold = 0.1
-        self.volume_spike_threshold = 2.0  # 2x average volume
+        # Order flow metrics
+        self.bid_volume_history = []
+        self.ask_volume_history = []
+        self.order_flow_imbalance_history = []
 
-        # WebSocket connection (simulated)
-        self.ws_connected = False
-        self.data_queue = queue.Queue()
-        
-    def update_data(self, data: Dict):
-        """Update with new market data (order book updates)"""
-        # Update order book if new data is provided
-        if 'bids' in data and 'asks' in data:
-            self.bids = {float(price): float(vol) for price, vol in data['bids']}
-            self.asks = {float(price): float(vol) for price, vol in data['asks']}
-            
-            # Calculate totals
-            self.bid_volume_total = sum(self.bids.values())
-            self.ask_volume_total = sum(self.asks.values())
-            
-            # Calculate order flow metrics
-            self.calculate_order_flow_metrics()
-            
-        # Process any queued WebSocket updates
-        self.process_websocket_queue()
-        
-    def calculate_order_flow_metrics(self):
-        """Calculate order flow metrics"""
-        if self.bid_volume_total + self.ask_volume_total == 0:
-            self.order_flow_imbalance = 0
+        # Thresholds for different market conditions
+        self.high_imbalance_threshold = 0.3
+        self.low_imbalance_threshold = -0.3
+
+    def update_data(self, data: dict):
+        """Update with new order flow data"""
+        if not self.enabled:
             return
-            
-        # Calculate order flow imbalance (bids vs asks)
-        self.order_flow_imbalance = (self.bid_volume_total - self.ask_volume_total) / (self.bid_volume_total + self.ask_volume_total)
-        
-        # Add to history
-        self.order_flow_history.append({
-            'timestamp': datetime.now(),
-            'imbalance': self.order_flow_imbalance,
-            'bid_total': self.bid_volume_total,
-            'ask_total': self.ask_volume_total
-        })
-        
-        # Keep history to max length
-        if len(self.order_flow_history) > self.max_history:
-            self.order_flow_history.pop(0)
-            
-    def process_websocket_queue(self):
-        """Process any WebSocket data in the queue"""
-        # This would handle actual WebSocket messages in a real implementation
-        while not self.data_queue.empty():
-            try:
-                data = self.data_queue.get_nowait()
-                # Process the WebSocket data
-                self.update_data(data)
-            except queue.Empty:
-                break
-                
-    def analyze(self, symbol: Symbol) -> Signal:
-        """Analyze order flow and return a signal"""
-        if not self.order_flow_history or len(self.order_flow_history) < 5:
+
+        # Update order book if available
+        if 'bids' in data and 'asks' in data:
+            current_time = datetime.now()
+            self.order_book_bids = [(float(price), float(vol), current_time) for price, vol in data['bids']]
+            self.order_book_asks = [(float(price), float(vol), current_time) for price, vol in data['asks']]
+
+        # Update trade history if available
+        if 'trades' in data:
+            for trade in data['trades']:
+                self.trade_history.append({
+                    'price': float(trade.get('price', 0)),
+                    'volume': float(trade.get('amount', trade.get('quantity', 0))),
+                    'side': trade.get('side', 'buy').lower(),
+                    'timestamp': datetime.now()
+                })
+
+            # Keep trade history within limits
+            if len(self.trade_history) > self.lookback * 3:
+                self.trade_history = self.trade_history[-self.lookback * 3:]
+
+        # Calculate order flow metrics
+        self._calculate_order_flow_metrics()
+
+    def _analyze_impl(self, symbol: Symbol) -> MarketObservation:
+        """Analyze order flow and return a raw market observation (no strategy selection)"""
+        if not self.enabled:
             return None
 
-        # Get recent order flow data
-        recent_data = self.order_flow_history[-5:]
+        if not self.order_flow_imbalance_history:
+            return None
 
-        # Calculate average recent imbalance
-        avg_imbalance = np.mean([d['imbalance'] for d in recent_data])
+        # Calculate order flow metrics
+        current_imbalance = self.order_flow_imbalance_history[-1] if self.order_flow_imbalance_history else 0
+        avg_imbalance = np.mean(self.order_flow_imbalance_history) if self.order_flow_imbalance_history else 0
+        imbalance_trend = self._calculate_imbalance_trend()
 
-        # Calculate volume metrics
-        recent_bid_avg = np.mean([d['bid_total'] for d in recent_data])
-        recent_ask_avg = np.mean([d['ask_total'] for d in recent_data])
+        # Determine observation type based on order flow conditions
+        # Calculate confidence based on the strength of the signal
+        imbalance_magnitude = abs(current_imbalance)
 
-        # Determine signal based on order flow metrics
-        if avg_imbalance > self.imbalance_threshold:
-            # Significant bid imbalance - potential bullish signal
-            signal_type = SignalType.BUY
-            confidence = min(1.0, abs(avg_imbalance) / self.imbalance_threshold)
-        elif avg_imbalance < -self.imbalance_threshold:
-            # Significant ask imbalance - potential bearish signal
-            signal_type = SignalType.SELL
-            confidence = min(1.0, abs(avg_imbalance) / self.imbalance_threshold)
+        if abs(current_imbalance) < 0.1:  # Low imbalance
+            observation_type = 'order_flow_neutral'
+            observation_value = 0.0
+            # For neutral state, confidence is based on how close to neutral we are
+            confidence = min(0.6, (1.0 - imbalance_magnitude))
+        elif current_imbalance > self.high_imbalance_threshold:
+            observation_type = 'order_flow_buy_pressure'  # Significant buy pressure
+            observation_value = abs(current_imbalance)
+            confidence = min(0.95, max(0.3, imbalance_magnitude))
+        elif current_imbalance < self.low_imbalance_threshold:
+            observation_type = 'order_flow_sell_pressure'  # Significant sell pressure
+            observation_value = -abs(current_imbalance)
+            confidence = min(0.95, max(0.3, imbalance_magnitude))
         else:
-            # Balanced market - hold
-            signal_type = SignalType.HOLD
-            confidence = 0.6  # Medium confidence in hold during balanced conditions
+            # Moderate imbalance
+            if current_imbalance > 0:
+                observation_type = 'order_flow_moderate_buy'
+                observation_value = abs(current_imbalance)
+            else:
+                observation_type = 'order_flow_moderate_sell'
+                observation_value = -abs(current_imbalance)
+            confidence = min(0.85, max(0.3, imbalance_magnitude))
 
-        # Adjust confidence based on volume confirmation
-        volume_confirmation = self.check_volume_confirmation()
-        if volume_confirmation > 0:
-            # Positive volume confirmation increases confidence
-            confidence = min(1.0, confidence + 0.2)
-        elif volume_confirmation < 0:
-            # Negative volume confirmation decreases confidence
-            confidence = max(0.1, confidence - 0.2)
+        # Adjust confidence based on trend and consistency
+        if abs(imbalance_trend) > 0.1:  # Strong trend in imbalance
+            confidence = min(0.9, confidence + 0.2)
+        if abs(current_imbalance - avg_imbalance) > 0.1:  # Significantly different from average
+            confidence = min(0.9, confidence + 0.1)
 
-        signal = Signal(
+        # Convert confidence to Percentage object for domain compatibility
+        confidence_percentage = Percentage(Decimal(str(confidence)))
+
+        # Create and return a MarketObservation instead of a Signal
+        observation = MarketObservation(
             symbol=symbol,
-            signal_type=signal_type,
-            confidence=confidence,
-            score=avg_imbalance,
-            strategy=self.name,
-            timestamp=datetime.now()
+            observation_type=observation_type,
+            observation_value=observation_value,
+            confidence=confidence_percentage,
+            timestamp=datetime.now(),
+            metadata={
+                'current_order_flow_imbalance': current_imbalance,
+                'average_order_flow_imbalance': avg_imbalance,
+                'imbalance_trend': imbalance_trend,
+                'aggressive_buy_volume': self.aggressive_buy_volume,
+                'aggressive_sell_volume': self.aggressive_sell_volume,
+                'total_bid_volume': sum(vol for _, vol, _ in self.order_book_bids) if self.order_book_bids else 0,
+                'total_ask_volume': sum(vol for _, vol, _ in self.order_book_asks) if self.order_book_asks else 0,
+                'order_flow_regime': self._get_order_flow_regime(current_imbalance),
+                'order_flow_history_length': len(self.order_flow_imbalance_history),
+                'latest_order_flow_timestamp': datetime.now().isoformat(),
+                'order_flow_source': self.name,
+                'lookback_period': self.lookback
+            }
         )
 
-        # Update last signal if it's different enough
-        if self.should_emit_signal(signal):
-            self.last_signal = signal
-            logger.debug(f"OrderFlowWSWatcher {self.name} generated signal: {signal_type} with imbalance {avg_imbalance:.3f}")
+        return observation
 
-        return signal
-        
-    def check_volume_confirmation(self) -> int:
-        """Check if volume confirms the directional bias"""
-        if not self.order_flow_history or len(self.order_flow_history) < 10:
-            return 0
-            
-        # Compare recent volumes to historical average
-        recent_data = self.order_flow_history[-5:]
-        
-        # Calculate historical average (excluding recent)
-        historical_data = self.order_flow_history[:-5] if len(self.order_flow_history) > 5 else self.order_flow_history
-        if not historical_data:
-            return 0
-            
-        historical_avg_bid = np.mean([d['bid_total'] for d in historical_data])
-        historical_avg_ask = np.mean([d['ask_total'] for d in historical_data])
-        
-        recent_avg_bid = np.mean([d['bid_total'] for d in recent_data])
-        recent_avg_ask = np.mean([d['ask_total'] for d in recent_data])
-        
-        # Check which side has increased volume relative to average
-        bid_volume_spike = recent_avg_bid / historical_avg_bid if historical_avg_bid > 0 else 1
-        ask_volume_spike = recent_avg_ask / historical_avg_ask if historical_avg_ask > 0 else 1
-        
-        # Return +1 for bullish confirmation, -1 for bearish, 0 for none
-        imbalance = self.order_flow_history[-1]['imbalance'] if self.order_flow_history else 0
-        
-        if imbalance > 0 and bid_volume_spike > self.volume_spike_threshold:
-            return 1  # Bullish confirmation
-        elif imbalance < 0 and ask_volume_spike > self.volume_spike_threshold:
-            return -1  # Bearish confirmation
+    def _calculate_order_flow_metrics(self):
+        """Calculate order flow metrics from trade and order book data"""
+        if not self.trade_history:
+            return
+
+        # Calculate aggressive buy/sell volumes
+        recent_trades = self.trade_history[-self.lookback:] if len(self.trade_history) > self.lookback else self.trade_history
+
+        buy_volume = sum(trade['volume'] for trade in recent_trades if trade['side'] == 'buy')
+        sell_volume = sum(trade['volume'] for trade in recent_trades if trade['side'] == 'sell')
+
+        self.aggressive_buy_volume = buy_volume
+        self.aggressive_sell_volume = sell_volume
+
+        # Calculate order flow imbalance
+        total_volume = buy_volume + sell_volume
+        if total_volume > 0:
+            imbalance = (buy_volume - sell_volume) / total_volume
         else:
-            return 0  # No strong confirmation
-            
-    def get_order_book_snapshot(self) -> Dict:
-        """Get current order book snapshot"""
-        return {
-            'bids': dict(self.bids),
-            'asks': dict(self.asks),
-            'bid_total': self.bid_volume_total,
-            'ask_total': self.ask_volume_total,
-            'spread': min(self.asks.keys()) - max(self.bids.keys()) if self.bids and self.asks else 0,
-            'imbalance': self.order_flow_imbalance
-        }
-        
-    def get_order_flow_metrics(self) -> Dict:
-        """Get current order flow metrics"""
-        if not self.order_flow_history:
-            return {}
-            
-        recent = self.order_flow_history[-1]
-        return {
-            'current_imbalance': self.order_flow_imbalance,
-            'bid_volume': recent['bid_total'],
-            'ask_volume': recent['ask_total'],
-            'timestamp': recent['timestamp']
-        }
+            imbalance = 0
+
+        self.order_flow_imbalance_history.append(imbalance)
+
+        # Keep history within limits
+        if len(self.order_flow_imbalance_history) > self.lookback * 3:
+            self.order_flow_imbalance_history.pop(0)
+
+    def _calculate_imbalance_trend(self) -> float:
+        """Calculate the trend in order flow imbalance"""
+        if len(self.order_flow_imbalance_history) < 3:
+            return 0.0
+
+        recent_imbalances = self.order_flow_imbalance_history[-10:] if len(self.order_flow_imbalance_history) >= 10 else self.order_flow_imbalance_history
+        x = np.arange(len(recent_imbalances))
+
+        if len(x) > 1:
+            slope = (len(x) * np.sum(x * recent_imbalances) - np.sum(x) * np.sum(recent_imbalances)) / \
+                    (len(x) * np.sum(x * x) - (np.sum(x)) ** 2)
+
+            # Normalize by average imbalance
+            avg_imbalance = np.mean(recent_imbalances)
+            if avg_imbalance != 0:
+                return slope / avg_imbalance
+            else:
+                return slope
+
+        return 0.0
+
+    def _get_order_flow_regime(self, imbalance: float) -> str:
+        """Get current order flow regime"""
+        if abs(imbalance) > self.high_imbalance_threshold:
+            return "extreme"
+        elif imbalance > 0.1:
+            return "buy_pressure"
+        elif imbalance < -0.1:
+            return "sell_pressure"
+        else:
+            return "neutral"

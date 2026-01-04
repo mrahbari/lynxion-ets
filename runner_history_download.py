@@ -83,39 +83,84 @@ async def run_history_download(
             print(f"\n🔍 Downloading data for {symbol} ({formatted_symbol})...")
 
             try:
-                # For each symbol, download all specified timeframes
+                # Download 1-minute data once, then generate all timeframes from it
+                print(f"   🕐 Downloading 1m timeframe (base data)...")
+
+                # Calculate the date range for 1-minute data
+                actual_start = start_date
+                # For 1-minute data, we can use the full range
+                download_result = await sync_manager.sync_symbol_data(
+                    symbol=formatted_symbol,
+                    timeframes=['1m'],  # Download 1-minute as base
+                    start_time=int(actual_start.timestamp()),
+                    end_time=int(end_date.timestamp()),
+                    exchange=exchange
+                )
+
+                # Now check the actual count for each timeframe from the generated files
                 symbol_results = {}
 
-                for timeframe in timeframes:
-                    print(f"   🕐 Downloading {timeframe} timeframe...")
+                # Count 1m candles within the requested date range
+                raw_file_path = file_repo.get_raw_file_path(formatted_symbol)
+                one_minute_count = 0
+                if os.path.exists(raw_file_path):
+                    import csv
+                    with open(raw_file_path, 'r') as f:
+                        reader = csv.DictReader(f)
+                        for row in reader:
+                            try:
+                                timestamp = int(row['timestamp'])
+                                # Only count candles within the requested date range
+                                if int(actual_start.timestamp()) <= timestamp <= int(end_date.timestamp()):
+                                    one_minute_count += 1
+                            except (ValueError, KeyError):
+                                continue  # Skip invalid rows
+
+                symbol_results['1m'] = {
+                    'status': 'success',
+                    'candles_count': one_minute_count,
+                    'start_time': actual_start.isoformat(),
+                    'end_time': end_date.isoformat(),
+                    'timestamp': datetime.now().isoformat()
+                }
+
+                results['summary']['total_candles'] += one_minute_count
+                print(f"      ✅ 1m: {one_minute_count} candles")
+
+                # For other timeframes, check the generated files within the requested date range
+                other_timeframes = [tf for tf in timeframes if tf != '1m']
+                for timeframe in other_timeframes:
+                    print(f"   🕐 Processing {timeframe} timeframe from 1m base data...")
 
                     try:
-                        # Calculate the date range for this specific timeframe
-                        # For higher timeframes, we might want to limit the date range to improve performance
-                        actual_start = start_date
-                        if timeframe in ['1d', '4h']:
-                            # For daily and 4-hour data, might have different limits or sources
-                            actual_start = max(start_date, datetime.now() - timedelta(days=365*2))  # Max 2 years for daily
+                        # Get the processed file path for this timeframe
+                        processed_file_path = file_repo.get_processed_file_path(formatted_symbol, timeframe)
 
-                        # Attempt to download data for the symbol and timeframe
-                        # This would use the sync manager's capabilities
-                        download_result = await sync_manager.sync_symbol_data(
-                            symbol=formatted_symbol,
-                            timeframes=[timeframe],
-                            start_time=int(actual_start.timestamp()),
-                            end_time=int(end_date.timestamp())
-                        )
+                        candles_count = 0
+                        if os.path.exists(processed_file_path):
+                            # Count only the rows within the requested date range
+                            import csv
+                            with open(processed_file_path, 'r') as f:
+                                reader = csv.DictReader(f)
+                                for row in reader:
+                                    try:
+                                        timestamp = int(row['timestamp'])
+                                        # Only count candles within the requested date range
+                                        if int(actual_start.timestamp()) <= timestamp <= int(end_date.timestamp()):
+                                            candles_count += 1
+                                    except (ValueError, KeyError):
+                                        continue  # Skip invalid rows
 
                         symbol_results[timeframe] = {
                             'status': 'success',
-                            'candles_count': download_result.get('rows_written', 0) if download_result else 0,
+                            'candles_count': candles_count,
                             'start_time': actual_start.isoformat(),
                             'end_time': end_date.isoformat(),
                             'timestamp': datetime.now().isoformat()
                         }
 
-                        results['summary']['total_candles'] += download_result.get('rows_written', 0) if download_result else 0
-                        print(f"      ✅ {timeframe}: {download_result.get('rows_written', 0) if download_result else 0} candles")
+                        results['summary']['total_candles'] += candles_count
+                        print(f"      ✅ {timeframe}: {candles_count} candles")
 
                     except Exception as tf_error:
                         symbol_results[timeframe] = {

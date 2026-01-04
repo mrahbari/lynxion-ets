@@ -14,6 +14,7 @@ from domain.entities.trading_entities import Order, Fill, Position, Balance, Ord
 from domain.ports.broker_ports import BrokerPort
 from domain.value_objects import Symbol, Money
 from infrastructure.data.adapters.rest_client import RestClient
+from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 
 
 class BingXBrokerAdapter(BrokerPort):
@@ -21,9 +22,21 @@ class BingXBrokerAdapter(BrokerPort):
         self._broker = _BingXBroker(config)
         self.connected = False
 
-    def _format_symbol(self, symbol: Symbol) -> str:
-        """Formats the domain symbol to the broker's expected format."""
-        return f"{symbol.base_asset()}-{symbol.quote_asset()}"
+    def _format_symbol(self, symbol: Union[Symbol, str]) -> str:
+        """Formats the domain symbol to the broker's expected format using the helper."""
+        # Handle both string and Symbol object formats
+        if isinstance(symbol, str):
+            symbol_str = symbol
+        else:
+            # If it's a Symbol object, get its value
+            if hasattr(symbol, 'value'):
+                symbol_str = symbol.value
+            else:
+                # Fallback: convert to string
+                symbol_str = str(symbol)
+
+        # Use the symbol format helper to format for BingX
+        return SymbolFormatHelper.format_symbol_for_exchange(symbol_str, 'bingx')
 
     def _parse_symbol(self, symbol_str: str) -> Symbol:
         """Parses the broker's symbol string into a domain Symbol."""
@@ -46,14 +59,56 @@ class BingXBrokerAdapter(BrokerPort):
         if not self.connected:
             self.connect()
 
-        broker_order = order
-        broker_order.symbol = self._format_symbol(order.symbol)
+        # Instead of modifying the order, we'll modify the internal broker to handle symbol formatting
+        # For now, let's pass the original order and handle formatting inside the internal broker
+        # by monkey-patching the symbol temporarily
 
-        result = self._broker.execute_order(broker_order)
+        # Store original symbol
+        original_symbol = order.symbol
+
+        # Format the symbol for the API call
+        formatted_symbol = self._format_symbol(original_symbol)
+
+        # Temporarily modify the order's symbol for the API call
+        # We'll create a temporary order with the formatted symbol
+        from domain.entities.trading_entities import Order as DomainOrder
+        from datetime import datetime
+
+        # Create a temporary order with the formatted symbol but preserve all other attributes
+        temp_order = DomainOrder(
+            symbol=formatted_symbol,
+            side=order.side,
+            order_type=order.order_type,
+            quantity=order.quantity,
+            price=order.price,
+            strategy_name=getattr(order, 'strategy_name', 'unknown'),
+            timestamp=getattr(order, 'timestamp', datetime.now()),
+            position_side=getattr(order, 'position_side', 'BOTH'),
+            stop_price=getattr(order, 'stop_price', None),
+            time_in_force=getattr(order, 'time_in_force', 'GTC'),
+            client_order_id=getattr(order, 'client_order_id', None),
+            parent_signal=getattr(order, 'parent_signal', None),
+            risk_adjusted_quantity=getattr(order, 'risk_adjusted_quantity', None),
+            stop_loss_price=getattr(order, 'stop_loss_price', None),  # Add stop loss price
+            take_profit_price=getattr(order, 'take_profit_price', None)  # Add take profit price
+        )
+
+        result = self._broker.execute_order(temp_order)
         if result['success']:
             return result['order_id']
         else:
-            raise Exception(f"Failed to place order: {result['error']}")
+            error_msg = result['error']
+            # Make error messages more readable
+            if 'error code:109400' in error_msg:
+                readable_error = "API Rate Limit Exceeded: Too many requests to BingX API. Please reduce request frequency."
+            elif 'over 20' in error_msg and 'requests within' in error_msg:
+                readable_error = "Rate Limit Exceeded: Exceeded BingX API request limits. Consider implementing request throttling."
+            elif 'TriggerClose' in error_msg:
+                readable_error = "API Parameter Error: Invalid parameter format for stop loss/take profit. Check parameter formatting."
+            else:
+                readable_error = f"Order placement failed: {error_msg}"
+
+            raise Exception(f"Failed to place order: {readable_error}")
 
     def cancel_order(self, order_id: str, symbol: Symbol) -> bool:
         if not self.connected:
@@ -118,6 +173,12 @@ class BingXBrokerAdapter(BrokerPort):
             )
         return positions
 
+    def get_available_symbols(self) -> set:
+        """Get set of available symbols on this broker."""
+        if not self.connected:
+            self.connect()
+        return self._broker.get_available_symbols()
+
 
 class _BingXBroker:
     """BingX broker implementation with full API coverage."""
@@ -137,9 +198,9 @@ class _BingXBroker:
 
         self.logger = logging.getLogger(__name__)
 
-        # Rate limiting settings
-        self.requests_per_minute = 1200
-        self.min_request_interval = 0.05  # 50ms between requests
+        # Rate limiting settings - more conservative to avoid rate limits
+        self.requests_per_minute = 20  # Reduced from 1200 to avoid rate limits
+        self.min_request_interval = 3.0  # 3 seconds between requests (more conservative)
         self.last_request_time = 0
         self.request_count = 0
         self.request_window_start = time.time()
@@ -176,6 +237,7 @@ class _BingXBroker:
         if self.request_count >= self.requests_per_minute:
             sleep_time = 60 - (current_time - self.request_window_start)
             if sleep_time > 0:
+                self.logger.info(f"Rate limit reached. Waiting {sleep_time:.2f}s before next request...")
                 time.sleep(sleep_time)
             self.request_count = 0
             self.request_window_start = time.time()
@@ -183,7 +245,9 @@ class _BingXBroker:
         # Ensure minimum interval between requests
         time_since_last = current_time - self.last_request_time
         if time_since_last < self.min_request_interval:
-            time.sleep(self.min_request_interval - time_since_last)
+            sleep_time = self.min_request_interval - time_since_last
+            if sleep_time > 0:
+                time.sleep(sleep_time)
 
         self.last_request_time = time.time()
         self.request_count += 1
@@ -264,20 +328,92 @@ class _BingXBroker:
     def execute_order(self, order: Order) -> Dict[str, Any]:
         """Execute order on BingX."""
         try:
+            # Handle the symbol formatting here
+            # If symbol is a string, use it directly; if it's a Symbol object, get its value
+            if isinstance(order.symbol, str):
+                symbol_formatted = order.symbol
+            else:
+                # If it's a Symbol object, get its string representation
+                if hasattr(order.symbol, 'value'):
+                    symbol_formatted = order.symbol.value
+                else:
+                    symbol_formatted = str(order.symbol)
+
+            # Ensure side is handled properly
+            if hasattr(order.side, 'value'):
+                side_value = order.side.value
+            else:
+                side_value = str(order.side)
+
+            # Ensure order_type is handled properly
+            if hasattr(order.order_type, 'value'):
+                order_type_value = order.order_type.value
+            else:
+                order_type_value = str(order.order_type)
+
+            # Handle position_side similarly
+            if hasattr(order, 'position_side') and order.position_side:
+                if hasattr(order.position_side, 'value'):
+                    position_side_value = order.position_side.value
+                else:
+                    position_side_value = str(order.position_side)
+            else:
+                # For BingX, if position_side is not specified, determine it based on order side
+                # For LONG positions with BUY orders or SHORT positions with SELL orders
+                if order.side == OrderSide.BUY:
+                    position_side_value = 'LONG'
+                elif order.side == OrderSide.SELL:
+                    position_side_value = 'SHORT'
+                else:
+                    position_side_value = 'BOTH'
+
             order_data = {
-                'symbol': order.symbol,
-                'side': order.side.value.upper(),
-                'type': order.order_type.upper(),
-                'quantity': str(round(float(order.quantity), 6))
+                'symbol': symbol_formatted,
+                'side': side_value.upper(),
+                'type': order_type_value.upper(),
+                'quantity': str(round(float(order.quantity), 6)),
+                'positionSide': position_side_value
             }
 
-            if hasattr(order, 'position_side') and order.position_side:
-                order_data['positionSide'] = order.position_side.value
-            else:
-                order_data['positionSide'] = 'BOTH'
-
             if order.price:
-                order_data['price'] = str(order.price.amount)
+                # Handle both Money object and float/numeric values
+                if hasattr(order.price, 'amount'):
+                    # If it's a Money object, use the amount attribute
+                    price_value = order.price.amount
+                else:
+                    # If it's already a numeric value, use it directly
+                    price_value = order.price
+                order_data['price'] = str(price_value)
+
+            # Add Stop Loss and Take Profit parameters if they exist in the order
+            # According to the BingX API documentation, these should be separate parameters in the same request
+            # For setting SL/TP with market orders, use stopLoss and takeProfit (not stopLossPrice/takeProfitPrice)
+            # The error suggests that the API expects different parameter names or format
+            if hasattr(order, 'stop_loss_price') and order.stop_loss_price:
+                # For stop loss, use stopLoss parameter (according to API docs)
+                # Handle both Money object and float/numeric values
+                if hasattr(order.stop_loss_price, 'amount'):
+                    sl_price_value = order.stop_loss_price.amount
+                else:
+                    sl_price_value = order.stop_loss_price
+                # Format as string with appropriate precision to avoid type issues
+                # Ensure the value is properly formatted as a string to avoid type mismatch
+                if sl_price_value is not None:
+                    # Format as string to ensure proper type handling by the API
+                    order_data['stopLoss'] = f"{float(sl_price_value):.8f}"
+
+            if hasattr(order, 'take_profit_price') and order.take_profit_price:
+                # For take profit, use takeProfit parameter (according to API docs)
+                # Handle both Money object and float/numeric values
+                if hasattr(order.take_profit_price, 'amount'):
+                    tp_price_value = order.take_profit_price.amount
+                else:
+                    tp_price_value = order.take_profit_price
+                # Format as string with appropriate precision to avoid type issues
+                # Ensure the value is properly formatted as a string to avoid type mismatch
+                if tp_price_value is not None:
+                    # Format as string to ensure proper type handling by the API
+                    order_data['takeProfit'] = f"{float(tp_price_value):.8f}"
 
             endpoint = "/openApi/swap/v2/trade/order"
             response = self._make_request('POST', endpoint, data=order_data, signed=True)
@@ -396,6 +532,41 @@ class _BingXBroker:
                 return []
         except Exception as e:
             return []
+
+    def get_available_symbols(self) -> set:
+        """Get set of available symbols on BingX."""
+        try:
+            # Get exchange info from BingX API
+            response = self._make_request('GET', '/openApi/quote/v1/ticker/24hr', signed=False)
+
+            if response.get('code') == 0:
+                symbols = set()
+                data = response.get('data', [])
+                if isinstance(data, list):
+                    for item in data:
+                        if 'symbol' in item:
+                            # Convert from BingX format (e.g., BTC-USDT) to our format (BTCUSDT)
+                            symbol = item['symbol'].replace('-', '')
+                            symbols.add(symbol)
+                return symbols
+            else:
+                # Fallback: try another endpoint
+                response2 = self._make_request('GET', '/openApi/quote/v1/ticker/price', signed=False)
+                if response2.get('code') == 0:
+                    symbols = set()
+                    data = response2.get('data', [])
+                    if isinstance(data, list):
+                        for item in data:
+                            if 'symbol' in item:
+                                symbol = item['symbol'].replace('-', '')
+                                symbols.add(symbol)
+                    return symbols
+        except Exception as e:
+            # If API call fails, return empty set
+            pass
+
+        # Return empty set if all attempts fail
+        return set()
 
     def get_open_positions(self, symbol: str=None) -> List[Dict]:
         """Get all open positions."""

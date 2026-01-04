@@ -142,7 +142,6 @@ class EnhancedWatcherOrchestrationService:
         self.signal_cooldown = 30  # seconds between signals per symbol
 
     def add_symbol(self, symbol: Symbol):
-        try:
         """Add a symbol to be monitored by watchers"""
         if symbol.value not in self.active_symbols:
             self.active_symbols.add(symbol.value)
@@ -256,7 +255,7 @@ class SignalFusionService:
     """Service to fuse signals from multiple watchers"""
 
     def __init__(self):
-        self.confidence_threshold = 0.6  # Minimum confidence to consider a signal
+        self.confidence_threshold = 0.05  # Further lowered threshold to allow more signals to be processed
         self.fusion_weights = {}  # watcher_name -> weight
         self.default_weight = 1.0
 
@@ -273,15 +272,9 @@ class SignalFusionService:
         if not signals:
             return None
 
-        # Filter out low-confidence signals
-        valid_signals = [s for s in signals if float(s.confidence.value) >= self.confidence_threshold]
-
-        if not valid_signals:
-            return None
-
-        # Group signals by symbol
+        # Group signals by symbol first to handle multi-symbol scenarios
         symbol_signals = {}
-        for signal in valid_signals:
+        for signal in signals:
             symbol_str = signal.symbol.value
             if symbol_str not in symbol_signals:
                 symbol_signals[symbol_str] = []
@@ -292,54 +285,94 @@ class SignalFusionService:
             if not symbol_signals_list:
                 continue
 
-            # Count BUY vs SELL signals
-            buy_signals = [s for s in symbol_signals_list if s.signal_type.name == 'BUY']
-            sell_signals = [s for s in symbol_signals_list if s.signal_type.name == 'SELL']
+            # Instead of filtering out low-confidence signals immediately,
+            # we'll use all signals but weight them appropriately
+            # This allows even low-confidence signals to contribute to the final result
+            all_signals = symbol_signals_list
 
-            # Calculate weighted confidence for each type
-            buy_confidence = sum(float(s.confidence.value) for s in buy_signals) / len(buy_signals) if buy_signals else 0
-            sell_confidence = sum(float(s.confidence.value) for s in sell_signals) / len(sell_signals) if sell_signals else 0
+            # Count BUY vs SELL signals (including low-confidence ones)
+            buy_signals = [s for s in all_signals if s.signal_type.name == 'BUY']
+            sell_signals = [s for s in all_signals if s.signal_type.name == 'SELL']
+            hold_signals = [s for s in all_signals if s.signal_type.name in ['HOLD', 'NEUTRAL']]
 
-            # Determine final signal type based on majority/vote
-            if buy_confidence > sell_confidence:
-                # Create unified BUY signal with average confidence
-                avg_confidence = (buy_confidence + sell_confidence) / 2
-                return Signal(
-                    symbol=symbol_signals_list[0].symbol,
-                    signal_type=signal.signal_type.__class__.BUY,  # Use the enum type
-                    confidence=Percentage(avg_confidence),
-                    score=max(s.score for s in buy_signals),  # Use highest score of BUY signals
-                    strategy_name="FusedSignal",
-                    timestamp=datetime.now(),
-                    metadata={
-                        'fused_from': [s.strategy_name for s in symbol_signals_list],
-                        'buy_signals': len(buy_signals),
-                        'sell_signals': len(sell_signals),
-                        'buy_confidence': buy_confidence,
-                        'sell_confidence': sell_confidence
-                    }
-                )
-            elif sell_confidence > buy_confidence:
-                # Create unified SELL signal
-                avg_confidence = (buy_confidence + sell_confidence) / 2
-                from domain.entities.trading_entities import SignalType
-                return Signal(
-                    symbol=symbol_signals_list[0].symbol,
-                    signal_type=SignalType.SELL,  # Use the enum type
-                    confidence=Percentage(avg_confidence),
-                    score=min(s.score for s in sell_signals),  # Use lowest score of SELL signals
-                    strategy_name="FusedSignal",
-                    timestamp=datetime.now(),
-                    metadata={
-                        'fused_from': [s.strategy_name for s in symbol_signals_list],
-                        'buy_signals': len(buy_signals),
-                        'sell_signals': len(sell_signals),
-                        'buy_confidence': buy_confidence,
-                        'sell_confidence': sell_confidence
-                    }
-                )
+            # Calculate total confidence for each type
+            total_buy_confidence = sum(float(s.confidence.value) for s in buy_signals)
+            total_sell_confidence = sum(float(s.confidence.value) for s in sell_signals)
+            total_hold_confidence = sum(float(s.confidence.value) for s in hold_signals)
 
-        return None  # No clear direction from signals
+            # Determine final signal type based on total confidence
+            max_confidence = max(total_buy_confidence, total_sell_confidence, total_hold_confidence)
+
+            # Only return a signal if the max confidence exceeds the threshold
+            if max_confidence >= self.confidence_threshold:
+                if total_buy_confidence >= total_sell_confidence and total_buy_confidence >= total_hold_confidence:
+                    # BUY signal wins
+                    avg_confidence = total_buy_confidence / len(buy_signals) if buy_signals else 0
+                    from domain.entities.trading_entities import SignalType
+                    return Signal(
+                        symbol=symbol_signals_list[0].symbol,
+                        signal_type=SignalType.BUY,
+                        confidence=Percentage(avg_confidence),
+                        score=sum(s.score for s in buy_signals) / len(buy_signals) if buy_signals else 0,  # Average score
+                        strategy_name="FusedSignal",
+                        timestamp=datetime.now(),
+                        metadata={
+                            'fused_from': [s.strategy_name for s in symbol_signals_list],
+                            'buy_signals': len(buy_signals),
+                            'sell_signals': len(sell_signals),
+                            'hold_signals': len(hold_signals),
+                            'total_buy_confidence': total_buy_confidence,
+                            'total_sell_confidence': total_sell_confidence,
+                            'total_hold_confidence': total_hold_confidence,
+                            'avg_confidence': avg_confidence
+                        }
+                    )
+                elif total_sell_confidence >= total_hold_confidence:
+                    # SELL signal wins
+                    avg_confidence = total_sell_confidence / len(sell_signals) if sell_signals else 0
+                    from domain.entities.trading_entities import SignalType
+                    return Signal(
+                        symbol=symbol_signals_list[0].symbol,
+                        signal_type=SignalType.SELL,
+                        confidence=Percentage(avg_confidence),
+                        score=sum(s.score for s in sell_signals) / len(sell_signals) if sell_signals else 0,  # Average score
+                        strategy_name="FusedSignal",
+                        timestamp=datetime.now(),
+                        metadata={
+                            'fused_from': [s.strategy_name for s in symbol_signals_list],
+                            'buy_signals': len(buy_signals),
+                            'sell_signals': len(sell_signals),
+                            'hold_signals': len(hold_signals),
+                            'total_buy_confidence': total_buy_confidence,
+                            'total_sell_confidence': total_sell_confidence,
+                            'total_hold_confidence': total_hold_confidence,
+                            'avg_confidence': avg_confidence
+                        }
+                    )
+                else:
+                    # HOLD/NEUTRAL signal wins
+                    avg_confidence = total_hold_confidence / len(hold_signals) if hold_signals else 0
+                    from domain.entities.trading_entities import SignalType
+                    return Signal(
+                        symbol=symbol_signals_list[0].symbol,
+                        signal_type=SignalType.HOLD,
+                        confidence=Percentage(avg_confidence),
+                        score=sum(s.score for s in hold_signals) / len(hold_signals) if hold_signals else 0,  # Average score
+                        strategy_name="FusedSignal",
+                        timestamp=datetime.now(),
+                        metadata={
+                            'fused_from': [s.strategy_name for s in symbol_signals_list],
+                            'buy_signals': len(buy_signals),
+                            'sell_signals': len(sell_signals),
+                            'hold_signals': len(hold_signals),
+                            'total_buy_confidence': total_buy_confidence,
+                            'total_sell_confidence': total_sell_confidence,
+                            'total_hold_confidence': total_hold_confidence,
+                            'avg_confidence': avg_confidence
+                        }
+                    )
+
+        return None  # No clear direction from signals that meets threshold
 
 
 class RiskAwareTradingService:

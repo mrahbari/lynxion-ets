@@ -309,14 +309,18 @@ class SyncManager:
             'duration_ms': duration_ms
         }
 
-    async def sync_symbol_data(self, symbol: str, timeframes: List[str], start_time: int, end_time: int) -> Dict[str, any]:
+    async def sync_symbol_data(self, symbol: str, timeframes: List[str], start_time: int, end_time: int, exchange: Optional[str] = None) -> Dict[str, any]:
         """Synchronize data for a specific symbol and timeframes within the given time range"""
         # Get raw file path using the file repository
         file_path = self.file_repo.get_raw_file_path(symbol)
 
         # First, download the data for the specified time range
         try:
-            data = await self.data_downloader.fetch_range(symbol, start_time, end_time)
+            # Pass exchange information if provided
+            if exchange:
+                data = await self.data_downloader.fetch_range(symbol, start_time, end_time, exchange)
+            else:
+                data = await self.data_downloader.fetch_range(symbol, start_time, end_time)
 
             if not data:
                 # No data returned, return with appropriate structure
@@ -326,6 +330,9 @@ class SyncManager:
                     'rows_written': 0,
                     'message': f'No data available for {symbol} in range {start_time} to {end_time}'
                 }
+
+            # Count the original data length before processing
+            original_data_length = len(data)
 
             # Format data as CSV rows
             csv_rows = [['timestamp', 'open', 'high', 'low', 'close', 'volume']]
@@ -357,7 +364,8 @@ class SyncManager:
             except Exception as e:
                 logger.error(f"Error generating aggregations for {symbol}: {e}")
 
-            rows_written = len(data)
+            # Return the original number of rows downloaded
+            rows_written = original_data_length
 
             return {
                 'success': True,

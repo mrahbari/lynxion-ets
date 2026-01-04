@@ -1,0 +1,360 @@
+"""
+Broker Execution Service - Handles broker configuration and execution logic
+This service provides a clean interface for broker execution while keeping
+the main runner files clean and focused.
+"""
+from typing import Dict, Any, Optional
+from domain.ports.execution_ports import ExecutionPort
+from domain.entities.trading_entities import Order
+from domain.value_objects import Symbol
+from domain.enums.broker_enum import BrokerType
+from shared.logger import EnhancedLogger
+import os
+
+
+class BrokerExecutionService(ExecutionPort):
+    """
+    A configurable execution service that can work with multiple brokers.
+    This service handles broker configuration and execution logic.
+    """
+
+    def __init__(self, broker_type: Optional[str] = None, config: Optional[Dict[str, Any]] = None, use_multi_broker: bool = False, primary_broker: Optional[str] = None):
+        """
+        Initialize the broker execution service.
+
+        Args:
+            broker_type: Type of broker ('bingx', 'binance', 'mexc', 'phemex').
+                        If None, will use DEFAULT_BROKER environment variable.
+            config: Optional configuration dictionary. If None, will load from environment.
+            use_multi_broker: Whether to use multi-broker service with exchange switching
+            primary_broker: Primary broker to use when using multi-broker service (e.g., 'bingx', 'binance')
+        """
+        from infrastructure.brokers.broker_adapters import (
+            BingXBrokerAdapter, BinanceBrokerAdapter, MEXCBrokerAdapter, PhemexBrokerAdapter
+        )
+        from infrastructure.brokers.multi_broker_service import MultiBrokerExecutionService
+
+        # Determine if we should use multi-broker service
+        self.use_multi_broker = use_multi_broker
+
+        if self.use_multi_broker:
+            # Initialize multi-broker service for exchange switching
+            # Allow specifying primary broker for the multi-broker service
+            self.multi_broker_service = MultiBrokerExecutionService(primary_broker=primary_broker)
+            self.logger = EnhancedLogger("BrokerExecutionService")
+            self.broker_name = "MultiBroker"
+            self.broker_type = "multi"
+            self.broker = self.multi_broker_service
+            self.logger.info("✅ Multi-Broker service initialized with exchange switching capability")
+        else:
+            # Determine broker type
+            if broker_type is None:
+                broker_type_str = os.getenv('DEFAULT_BROKER', 'bingx').lower()  # Changed to 'bingx' as default
+            else:
+                broker_type_str = broker_type.lower()
+
+            # Convert to enum
+            try:
+                self.broker_type_enum = BrokerType.from_string(broker_type_str)
+                self.broker_type = self.broker_type_enum.value
+            except ValueError:
+                raise ValueError(
+                    f"Unsupported broker type: {broker_type_str}. "
+                    f"Supported types: {BrokerType.get_supported_types()}"
+                )
+
+            # Load configuration
+            if config is None:
+                config = self._load_config_from_env(self.broker_type)
+
+            self.logger = EnhancedLogger("BrokerExecutionService")
+
+            # Initialize the appropriate broker adapter
+            # Since we don't know the exact constructor signatures, we'll pass the config as a dict
+            # and let the adapter handle the parameters internally
+            if self.broker_type == BrokerType.BINGX.value:
+                self.broker = BingXBrokerAdapter(config)
+                self.broker_name = self.broker_type_enum.get_display_name()
+            elif self.broker_type == BrokerType.BINANCE.value:
+                self.broker = BinanceBrokerAdapter(config)
+                self.broker_name = self.broker_type_enum.get_display_name()
+            elif self.broker_type == BrokerType.MEXC.value:
+                self.broker = MEXCBrokerAdapter(config)
+                self.broker_name = self.broker_type_enum.get_display_name()
+            elif self.broker_type == BrokerType.PHEMEX.value:
+                self.broker = PhemexBrokerAdapter(config)
+                self.broker_name = self.broker_type_enum.get_display_name()
+            else:
+                raise ValueError(
+                    f"Unsupported broker type: {self.broker_type}. "
+                    f"Supported types: {BrokerType.get_supported_types()}"
+                )
+
+            # Try to connect the broker during initialization
+            try:
+                if hasattr(self.broker, 'connect'):
+                    self.broker.connect()
+                self.logger.info(f"✅ Successfully connected to {self.broker_name} broker")
+            except Exception as e:
+                self.logger.error(f"❌ Could not connect broker {self.broker_name} during initialization: {e}")
+                # Instead of just warning, let's try to use a fallback broker if binance is not configured
+                if broker_type_str == 'binance':
+                    # If binance is not configured properly, warn user but continue
+                    self.logger.warning("⚠️  Binance broker not properly configured. Please check your BINANCE_API_KEY and BINANCE_SECRET_KEY in environment variables.")
+                # Don't raise the exception here as the broker might still be functional for other operations
+                # Just log the connection issue
+    
+    def _load_config_from_env(self, broker_type: str) -> Dict[str, Any]:
+        """Load broker configuration from environment variables."""
+        broker_enum = BrokerType.from_string(broker_type)
+
+        if broker_enum == BrokerType.BINGX:
+            config = {
+                'api_key': os.getenv('BINGX_API_KEY'),
+                'secret_key': os.getenv('BINGX_SECRET_KEY'),
+                'passphrase': os.getenv('BINGX_PASSPHRASE', ''),
+                'testnet': os.getenv('BINGX_TESTNET', 'true').lower() == 'true'
+            }
+        elif broker_enum == BrokerType.BINANCE:
+            config = {
+                'api_key': os.getenv('BINANCE_API_KEY'),
+                'secret_key': os.getenv('BINANCE_SECRET_KEY'),
+                'testnet': os.getenv('BINANCE_TESTNET', 'true').lower() == 'true'
+            }
+        elif broker_enum == BrokerType.MEXC:
+            config = {
+                'api_key': os.getenv('MEXC_API_KEY'),
+                'secret_key': os.getenv('MEXC_SECRET_KEY'),
+                'testnet': os.getenv('MEXC_TESTNET', 'true').lower() == 'true'
+            }
+        elif broker_enum == BrokerType.PHEMEX:
+            config = {
+                'api_key': os.getenv('PHEMEX_API_KEY'),
+                'secret_key': os.getenv('PHEMEX_SECRET_KEY'),
+                'testnet': os.getenv('PHEMEX_TESTNET', 'true').lower() == 'true'
+            }
+        else:
+            raise ValueError(f"Unsupported broker type: {broker_type}")
+
+        # Validate required configuration
+        required_keys = ['api_key', 'secret_key']
+        for key in required_keys:
+            if not config.get(key):
+                raise ValueError(
+                    f"{broker_type.upper()}_{key.upper()} must be set in environment variables"
+                )
+
+        return config
+
+    def execute_order(self, order: Order) -> str:
+        """Execute an order through the configured broker."""
+        try:
+            # Enhance order with risk parameters if they're missing
+            # This ensures institutional standards are met even if the Strategy layer didn't add them
+            # In a properly architected system, the Strategy layer should add these parameters
+            order = self._enhance_order_with_risk_parameters(order)
+
+            # Validate the order against risk management standards
+            # This should ideally be done by the Risk Management layer before reaching broker
+            is_valid = self._validate_order_risk(order)
+            if not is_valid:
+                self.logger.error(f"❌ ORDER REJECTED: Risk validation failed for order: {order}")
+                raise ValueError(f"Order failed risk validation: {order}")
+
+            self.logger.info(f"🎯 EXECUTING ORDER ON {self.broker_name}: {order}")
+            # If using multi-broker service, use execute_order method
+            if self.use_multi_broker:
+                order_id = self.broker.execute_order(order)
+            else:
+                # For single broker, use place_order method
+                order_id = self.broker.place_order(order)
+            self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {self.broker_name}: {order_id}")
+            return order_id
+        except Exception as e:
+            self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {self.broker_name}: {e}")
+            raise
+
+    def _validate_order_risk(self, order: Order) -> bool:
+        """Validate order against risk management standards."""
+        # Import the risk management service to validate the order
+        try:
+            from infrastructure.risk.advanced_risk_management import AdvancedRiskManagementService
+
+            # Create a temporary risk management instance for validation
+            # In a proper architecture, this would be injected as a dependency
+            risk_service = AdvancedRiskManagementService()
+
+            # Validate the order against risk parameters
+            is_valid = risk_service.validate_order_risk(order)
+
+            if not is_valid:
+                if hasattr(self, 'logger') and self.logger:
+                    self.logger.warning(f"Order failed risk validation: {risk_service.violations}")
+
+            return is_valid
+        except ImportError:
+            # If risk management service is not available, log warning but allow order to proceed
+            if hasattr(self, 'logger') and self.logger:
+                self.logger.warning("Risk management service not available for validation")
+            return True  # Allow order to proceed if risk service unavailable
+        except Exception as e:
+            if hasattr(self, 'logger') and self.logger:
+                self.logger.warning(f"Risk validation error: {e}, allowing order to proceed")
+            return True  # Allow order to proceed if validation fails
+
+    def _enhance_order_with_risk_parameters(self, order: Order) -> Order:
+        """Enhance order with risk parameters if they're missing."""
+        # Check if the order already has SL/TP parameters
+        has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
+        has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
+
+        # If both SL and TP are already present, return the order as is
+        if has_stop_loss and has_take_profit:
+            return order
+
+        # If SL/TP are missing, we need to add them
+        # This should ideally be done by the Strategy layer, but we'll add defaults here
+        # to ensure institutional standards are met
+        if order.price is not None and order.price.amount is not None:
+            current_price = float(order.price.amount)
+
+            # Calculate default SL/TP values based on risk management principles
+            sl_multiplier = 0.02  # 2% stop loss
+            tp_multiplier = 0.03  # 3% take profit (1:1.5 risk/reward ratio)
+
+            # Calculate SL and TP prices based on order side
+            if hasattr(order, 'side') and order.side.name == 'BUY':
+                # For BUY orders: SL below entry, TP above entry
+                sl_price = current_price * (1 - sl_multiplier)
+                tp_price = current_price * (1 + tp_multiplier)
+            else:  # SELL
+                # For SELL orders: SL above entry, TP below entry
+                sl_price = current_price * (1 + sl_multiplier)  # SL above for SELL (stop loss if price rises)
+                tp_price = current_price * (1 - tp_multiplier)  # TP below for SELL (take profit when price falls)
+
+            # Create enhanced order with SL/TP if they were missing
+            from domain.entities.trading_entities import Order as DomainOrder
+            from domain.value_objects import Money
+            from datetime import datetime
+
+            # Create a new order with the missing risk parameters
+            enhanced_order = DomainOrder(
+                symbol=getattr(order, 'symbol', 'UNKNOWN'),
+                side=getattr(order, 'side', None),
+                order_type=getattr(order, 'order_type', 'MARKET'),
+                quantity=getattr(order, 'quantity', 1.0),
+                price=getattr(order, 'price', None),
+                strategy_name=getattr(order, 'strategy_name', 'default'),
+                timestamp=getattr(order, 'timestamp', datetime.now()),
+                position_side=getattr(order, 'position_side', 'BOTH'),
+                stop_loss_price=Money(amount=sl_price, currency='USDT') if not has_stop_loss else getattr(order, 'stop_loss_price', None),
+                take_profit_price=Money(amount=tp_price, currency='USDT') if not has_take_profit else getattr(order, 'take_profit_price', None),
+                stop_price=getattr(order, 'stop_price', None),
+                time_in_force=getattr(order, 'time_in_force', 'GTC'),
+                client_order_id=getattr(order, 'client_order_id', None),
+                parent_signal=getattr(order, 'parent_signal', None),
+                risk_adjusted_quantity=getattr(order, 'risk_adjusted_quantity', None)
+            )
+
+            self.logger.warning(f"⚠️ Order enhanced with default SL/TP: SL={sl_price}, TP={tp_price}. "
+                              f"This should ideally be handled by the Strategy layer.")
+
+            return enhanced_order
+        else:
+            # If we don't have a price to calculate SL/TP, we can't enhance the order
+            # In this case, we'll log a warning but still proceed (though this is not ideal)
+            self.logger.warning(f"⚠️ Cannot enhance order with SL/TP: no price available: {order}")
+            return order
+
+    def cancel_order(self, order_id: str) -> bool:
+        """Cancel an order through the configured broker."""
+        try:
+            self.logger.info(f"🔄 CANCELLING ORDER ON {self.broker_name}: {order_id}")
+            # If using multi-broker service, use cancel_order method directly
+            if self.use_multi_broker:
+                return self.broker.cancel_order(order_id)
+            else:
+                # For single broker, use cancel_order method with placeholder symbol
+                # For now, we'll use a placeholder symbol - in real implementation,
+                # the order_id should be sufficient or you'd pass the symbol
+                return self.broker.cancel_order(order_id, Symbol("BTCUSDT"))  # Placeholder
+        except Exception as e:
+            self.logger.error(f"❌ FAILED TO CANCEL ORDER ON {self.broker_name}: {e}")
+            return False
+
+    def get_execution_status(self, execution_id: str) -> str:
+        """Get the status of an execution through the configured broker."""
+        try:
+            # If using multi-broker service, use get_execution_status method directly
+            if self.use_multi_broker:
+                return self.broker.get_execution_status(execution_id)
+            else:
+                # For single broker, use get_order_status method with placeholder symbol
+                # In a real implementation, you'd need the symbol as well
+                # For now, using placeholder - real implementation would track symbol with execution
+                status = self.broker.get_order_status(execution_id, Symbol("BTCUSDT"))  # Placeholder
+                return status
+        except Exception as e:
+            self.logger.error(f"❌ FAILED TO GET EXECUTION STATUS ON {self.broker_name}: {e}")
+            return "error"
+
+    def get_broker_name(self) -> str:
+        """Get the name of the configured broker."""
+        return self.broker_name
+
+    def get_broker_type(self) -> str:
+        """Get the type of the configured broker."""
+        return self.broker_type
+
+    def get_available_symbols(self) -> set:
+        """Get available symbols from the configured broker."""
+        # If using multi-broker service, delegate to it
+        if self.use_multi_broker and hasattr(self.broker, 'get_available_symbols'):
+            return self.broker.get_available_symbols()
+
+        # Otherwise, use the single broker approach
+        # Ensure broker is connected before calling the method
+        if hasattr(self.broker, 'connect') and not getattr(self.broker, 'connected', False):
+            try:
+                self.broker.connect()
+            except Exception as e:
+                self.logger.warning(f"Could not connect broker {self.broker_name} before getting available symbols: {e}")
+                return set()
+
+        if hasattr(self.broker, 'get_available_symbols'):
+            return self.broker.get_available_symbols()
+        else:
+            # If the internal broker doesn't have this method, return empty set
+            self.logger.warning(f"Broker {self.broker_name} does not support get_available_symbols method")
+            return set()
+
+
+def create_execution_service(broker_type: Optional[str] = None, use_multi_broker: bool = True, primary_broker: Optional[str] = None) -> ExecutionPort:
+    """
+    Factory function to create a broker execution service.
+
+    Args:
+        broker_type: Type of broker ('bingx', 'binance', 'mexc', 'phemex').
+                    If None, will use DEFAULT_BROKER environment variable.
+        use_multi_broker: Whether to use multi-broker service with exchange switching (default: True)
+        primary_broker: Primary broker to use when using multi-broker service (e.g., 'bingx', 'binance')
+
+    Returns:
+        Configured execution service instance
+    """
+    return BrokerExecutionService(broker_type=broker_type, use_multi_broker=use_multi_broker, primary_broker=primary_broker)
+
+
+def create_execution_service_from_enum(broker_type_enum: Optional['BrokerType'] = None) -> ExecutionPort:
+    """
+    Factory function to create a broker execution service from BrokerType enum.
+
+    Args:
+        broker_type_enum: BrokerType enum value.
+                         If None, will use DEFAULT_BROKER environment variable.
+
+    Returns:
+        Configured execution service instance
+    """
+    broker_type_str = broker_type_enum.value if broker_type_enum else None
+    return BrokerExecutionService(broker_type=broker_type_str)

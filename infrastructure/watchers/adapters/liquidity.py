@@ -1,195 +1,205 @@
 from .base_watcher import BaseWatcher
-from shared.types import Signal, SignalType
-from domain.value_objects import Symbol
+from domain.entities.signal_entities import MarketObservation
+from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
 import numpy as np
 from typing import Dict, List
+import os
+from decimal import Decimal
 
 
 class LiquidityWatcher(BaseWatcher):
-    """Liquidity Watcher - analyzes market liquidity conditions"""
-    
+    """Liquidity Watcher - analyzes market liquidity conditions, returns raw market observations"""
+
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 20):
         super().__init__(name, symbol, broker_service, target_broker)
+
+        # Configuration from environment with defaults
+        self.enabled = os.getenv('LIQUIDITY_WATCHER_ENABLED', 'true').lower() == 'true'
+
+        # Only set logger if enabled, otherwise use mock logger
+        if self.enabled:
+            self.logger = logger
+        else:
+            # Create a mock logger that doesn't log anything when disabled
+            class MockLogger:
+                def debug(self, msg): pass
+                def info(self, msg): pass
+                def warning(self, msg): pass
+                def error(self, msg): pass
+            self.logger = MockLogger()
+
         self.lookback = lookback
-        
-        # Order book data
-        self.bids = []
-        self.asks = []
-        self.spread_history = []
-        self.depth_history = []
-        self.liquidity_score_history = []
-        
+
+        # Order book data - with timestamped liquidity levels
+        self.bids = []  # [(price, volume, timestamp), ...]
+        self.asks = []  # [(price, volume, timestamp), ...]
+        self.spread_history = []  # [(spread_pct, timestamp), ...]
+        self.depth_history = []  # [(depth_score, timestamp), ...]
+        self.liquidity_score_history = []  # [(liquidity_score, timestamp), ...]
+
         # Liquidity metrics
         self.avg_spread = 0
         self.liquidity_ratio = 0  # Ratio of bid/ask volume
         self.depth_score = 0  # Measure of order book depth
-        
+
         # Thresholds
         self.low_liquidity_threshold = 0.3
         self.high_liquidity_threshold = 0.7
-        self.spread_threshold_factor = 2.0  # Factor to determine abnormal spreads
-        
+
     def update_data(self, data: Dict):
         """Update with new market data (order book)"""
+        if not self.enabled:
+            return
+
         if 'bids' in data and 'asks' in data:
-            # Store bid and ask levels
-            self.bids = [(float(price), float(vol)) for price, vol in data['bids']]
-            self.asks = [(float(price), float(vol)) for price, vol in data['asks']]
-            
-            # Calculate spread
-            if self.bids and self.asks:
-                best_bid = self.bids[0][0]
-                best_ask = self.asks[0][0]
-                spread = best_ask - best_bid
-                spread_pct = spread / best_bid if best_bid != 0 else 0
-                
-                self.spread_history.append(spread_pct)
-                if len(self.spread_history) > self.lookback * 2:
-                    self.spread_history.pop(0)
-                    
-                # Calculate average spread
-                if self.spread_history:
-                    self.avg_spread = np.mean(self.spread_history)
-                    
-            # Calculate order book depth
-            depth_score = self.calculate_depth_score()
-            self.depth_history.append(depth_score)
-            if len(self.depth_history) > self.lookback * 2:
-                self.depth_history.pop(0)
-                
-            # Calculate liquidity score
+            # Update order book with timestamp
+            current_time = datetime.now()
+            self.bids = [(float(price), float(vol), current_time) for price, vol in data['bids']]
+            self.asks = [(float(price), float(vol), current_time) for price, vol in data['asks']]
+
+            # Calculate liquidity metrics
+            spread = self.calculate_spread()
+            depth = self.calculate_depth()
             liquidity_score = self.calculate_liquidity_score()
-            self.liquidity_score_history.append(liquidity_score)
-            if len(self.liquidity_score_history) > self.lookback * 2:
-                self.liquidity_score_history.pop(0)
-                
-    def calculate_depth_score(self) -> float:
-        """Calculate a score based on order book depth"""
+
+            # Add to history with timestamp
+            self.spread_history.append((spread, current_time))
+            self.depth_history.append((depth, current_time))
+            self.liquidity_score_history.append((liquidity_score, current_time))
+
+            # Keep history within limits
+            max_history = self.lookback * 3
+            if len(self.spread_history) > max_history:
+                self.spread_history = self.spread_history[-max_history:]
+            if len(self.depth_history) > max_history:
+                self.depth_history = self.depth_history[-max_history:]
+            if len(self.liquidity_score_history) > max_history:
+                self.liquidity_score_history = self.liquidity_score_history[-max_history:]
+
+    def _analyze_impl(self, symbol: Symbol) -> MarketObservation:
+        """Analyze market liquidity and return a raw market observation (no strategy selection)"""
+        if not self.enabled:
+            return None
+
+        if not self.liquidity_score_history:
+            return None
+
+        # Get current liquidity metrics
+        current_liquidity_score = self.liquidity_score_history[-1][0] if self.liquidity_score_history else 0
+        current_spread = self.spread_history[-1][0] if self.spread_history else 0
+        current_depth = self.depth_history[-1][0] if self.depth_history else 0
+
+        # Calculate average liquidity for comparison
+        avg_liquidity = np.mean([score for score, _ in self.liquidity_score_history]) if self.liquidity_score_history else 0
+
+        # Determine observation type based on liquidity conditions
+        if current_liquidity_score < self.low_liquidity_threshold:
+            observation_type = 'liquidity_low'
+            observation_value = -abs(current_liquidity_score)  # Negative for low liquidity
+            confidence = min(0.9, abs(current_liquidity_score))
+        elif current_liquidity_score > self.high_liquidity_threshold:
+            observation_type = 'liquidity_high'
+            observation_value = current_liquidity_score  # Positive for high liquidity
+            confidence = min(0.9, current_liquidity_score)
+        else:
+            observation_type = 'liquidity_normal'
+            observation_value = 0.0
+            # For neutral state, confidence is based on how close to normal we are
+            liquidity_magnitude = abs(current_liquidity_score)
+            confidence = min(0.6, (1.0 - liquidity_magnitude))
+
+        # Adjust confidence based on how different from average
+        if avg_liquidity != 0:
+            deviation = abs(current_liquidity_score - avg_liquidity) / avg_liquidity
+            confidence = min(0.9, confidence + deviation * 0.2)
+
+        # Convert confidence to Percentage object for domain compatibility
+        confidence_percentage = Percentage(Decimal(str(confidence)))
+
+        # Create and return a MarketObservation instead of a Signal
+        observation = MarketObservation(
+            symbol=symbol,
+            observation_type=observation_type,
+            observation_value=observation_value,
+            confidence=confidence_percentage,
+            timestamp=datetime.now(),
+            metadata={
+                'current_liquidity_score': current_liquidity_score,
+                'current_spread': current_spread,
+                'current_depth': current_depth,
+                'average_liquidity': avg_liquidity,
+                'liquidity_regime': self.get_liquidity_regime(current_liquidity_score),
+                'bid_volume_top5': sum(vol for _, vol, _ in self.bids[:5]) if self.bids else 0,
+                'ask_volume_top5': sum(vol for _, vol, _ in self.asks[:5]) if self.asks else 0,
+                'best_bid': self.bids[0][0] if self.bids else 0,
+                'best_ask': self.asks[0][0] if self.asks else 0,
+                'liquidity_source': self.name,
+                'liquidity_score_history_length': len(self.liquidity_score_history)
+            }
+        )
+
+        return observation
+
+    def calculate_spread(self) -> float:
+        """Calculate bid-ask spread as percentage"""
         if not self.bids or not self.asks:
             return 0.0
-            
+
+        best_bid = self.bids[0][0]
+        best_ask = self.asks[0][0]
+
+        if best_bid == 0:
+            return 0.0
+
+        spread = (best_ask - best_bid) / best_bid
+        return spread
+
+    def calculate_depth(self) -> float:
+        """Calculate order book depth score"""
+        if not self.bids or not self.asks:
+            return 0.0
+
         # Calculate total volume in top levels
-        top_bid_volume = sum(vol for _, vol in self.bids[:5])  # Top 5 bid levels
-        top_ask_volume = sum(vol for _, vol in self.asks[:5])  # Top 5 ask levels
-        
-        # Calculate depth score based on available liquidity
-        total_top_volume = top_bid_volume + top_ask_volume
-        
-        if total_top_volume == 0:
+        top_bid_vol = sum(vol for _, vol, _ in self.bids[:5])  # Top 5 bid levels
+        top_ask_vol = sum(vol for _, vol, _ in self.asks[:5])  # Top 5 ask levels
+
+        # Calculate average price for normalization
+        avg_price = ((self.bids[0][0] if self.bids else 0) + (self.asks[0][0] if self.asks else 0)) / 2
+        if avg_price == 0:
             return 0.0
-            
-        # Calculate average price level to normalize volume
-        avg_price = (self.bids[0][0] + self.asks[0][0]) / 2 if self.bids and self.asks else 1.0
-        
-        # Normalize the volume by price (to get dollar value)
-        total_dollar_depth = (top_bid_volume + top_ask_volume) * avg_price
-        
-        # Return a score proportional to the depth (capped to reasonable range)
-        # Using logarithmic scaling to prevent extreme scores for very deep books
-        depth_score = min(1.0, np.log1p(total_dollar_depth / 10000) / 5.0)  # Adjust scaling factor as needed
-        
+
+        # Calculate dollar depth
+        dollar_depth = (top_bid_vol + top_ask_vol) * avg_price
+
+        # Normalize depth score (logarithmic to handle wide range)
+        depth_score = min(1.0, np.log1p(dollar_depth / 10000) / 5)  # Adjust divisor as needed
         return depth_score
-        
+
     def calculate_liquidity_score(self) -> float:
-        """Calculate overall liquidity score"""
-        if not self.spread_history or not self.depth_history:
+        """Calculate overall liquidity score from 0 to 1"""
+        if not self.bids or not self.asks:
             return 0.0
-            
-        # Calculate spread-based liquidity (inverse - lower spread = higher liquidity)
-        current_spread = self.spread_history[-1] if self.spread_history else 0
-        avg_spread = np.mean(self.spread_history) if self.spread_history else 0.001  # Default to 0.1%
-        
-        if avg_spread == 0:
-            avg_spread = 0.001
-            
-        spread_liquidity = max(0, 1 - (current_spread / avg_spread))
-        
-        # Calculate depth-based liquidity
-        current_depth = self.depth_history[-1] if self.depth_history else 0
-        avg_depth = np.mean(self.depth_history) if self.depth_history else 0.1
-        
-        # Combine spread and depth liquidity scores
-        combined_liquidity = (spread_liquidity * 0.6) + (current_depth * 0.4)
-        
-        # Normalize to -1 to 1 range
-        return combined_liquidity * 2 - 1  # Convert from 0-1 to -1-1 range
-        
-    def analyze(self, symbol: Symbol) -> Signal:
-        """Analyze liquidity conditions and return a signal"""
-        if len(self.liquidity_score_history) < 5:
-            return None
-            
-        current_liquidity = self.liquidity_score_history[-1]
-        avg_liquidity = np.mean(self.liquidity_score_history)
-        
-        # Determine if liquidity is low, normal, or high
-        is_low_liquidity = current_liquidity < self.low_liquidity_threshold
-        is_high_liquidity = current_liquidity > self.high_liquidity_threshold
-        
-        # Calculate signal based on liquidity conditions
-        if is_low_liquidity:
-            # Low liquidity: potentially dangerous to trade, suggest hold
-            signal_type = SignalType.HOLD
-            confidence = 0.8  # High confidence in hold during low liquidity
-        elif is_high_liquidity:
-            # High liquidity: favorable conditions, but don't signal direction
-            # without other factors
-            signal_type = SignalType.HOLD
-            confidence = 0.3  # Lower confidence in hold during high liquidity (other factors may apply)
-        else:
-            # Normal liquidity: hold, unless other factors suggest otherwise
-            signal_type = SignalType.HOLD
-            confidence = 0.5  # Medium confidence
-            
-        # Score represents liquidity level (-1 for very low, +1 for very high)
-        signal = Signal(
-            symbol=symbol,
-            signal_type=signal_type,
-            confidence=confidence,
-            score=current_liquidity,
-            strategy=self.name,
-            timestamp=datetime.now()
-        )
-        
-        # Update last signal if it's different enough
-        if self.should_emit_signal(signal):
-            self.last_signal = signal
-            logger.debug(f"LiquidityWatcher {self.name} generated signal: {signal_type} with liquidity score {current_liquidity:.3f}")
-            
-        return signal
-        
-    def get_liquidity_regime(self) -> str:
+
+        # Calculate spread factor (lower spread = higher liquidity)
+        spread = self.calculate_spread()
+        spread_factor = max(0, 1 - spread * 100)  # Assuming max spread of 1% = 0.01
+
+        # Calculate depth factor (higher depth = higher liquidity)
+        depth_factor = self.calculate_depth()
+
+        # Combine factors with weights
+        liquidity_score = (spread_factor * 0.4) + (depth_factor * 0.6)
+
+        # Clamp between 0 and 1
+        return max(0.0, min(1.0, liquidity_score))
+
+    def get_liquidity_regime(self, liquidity_score: float) -> str:
         """Get current liquidity regime"""
-        if not self.liquidity_score_history:
-            return "unknown"
-            
-        current_liquidity = self.liquidity_score_history[-1]
-        
-        if current_liquidity < self.low_liquidity_threshold:
+        if liquidity_score < self.low_liquidity_threshold:
             return "low"
-        elif current_liquidity > self.high_liquidity_threshold:
+        elif liquidity_score > self.high_liquidity_threshold:
             return "high"
         else:
             return "normal"
-            
-    def get_liquidity_metrics(self) -> Dict:
-        """Get current liquidity metrics"""
-        if not self.liquidity_score_history:
-            return {}
-            
-        current = self.liquidity_score_history[-1]
-        avg_liquidity = np.mean(self.liquidity_score_history) if self.liquidity_score_history else 0
-        current_spread = self.spread_history[-1] if self.spread_history else 0
-        avg_spread = np.mean(self.spread_history) if self.spread_history else 0
-        
-        return {
-            'current_liquidity_score': current,
-            'average_liquidity_score': avg_liquidity,
-            'current_spread_pct': current_spread,
-            'average_spread_pct': avg_spread,
-            'current_depth_score': self.depth_history[-1] if self.depth_history else 0,
-            'regime': self.get_liquidity_regime(),
-            'data_points': len(self.liquidity_score_history)
-        }

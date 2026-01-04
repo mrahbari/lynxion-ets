@@ -6,6 +6,7 @@ from domain.entities.trading_entities import Order, Position, Balance, OrderSide
 from domain.ports.broker_ports import BrokerPort
 from domain.value_objects import Symbol, Money
 from infrastructure.data.adapters.rest_client import RestClient
+from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 
 
 class BinanceBrokerAdapter(BrokerPort):
@@ -192,6 +193,31 @@ class BinanceBrokerAdapter(BrokerPort):
             if pos.symbol == symbol:
                 return pos
         return None
+
+    def get_available_symbols(self) -> set:
+        """Get set of available symbols on Binance."""
+        try:
+            import requests
+            # Use direct API call to get exchange info from Binance
+            response = requests.get('https://api.binance.com/api/v3/exchangeInfo', timeout=10)
+
+            if response.status_code == 200:
+                data = response.json()
+                if 'symbols' in data:
+                    symbols = set()
+                    for symbol_info in data['symbols']:
+                        if symbol_info.get('status') == 'TRADING':  # Only include active trading pairs
+                            # Ensure symbol is in the correct format (e.g., BTCUSDT)
+                            symbol = symbol_info['symbol']
+                            # Binance symbols are already in format like BTCUSDT, but normalize just in case
+                            symbols.add(symbol.upper())
+                    return symbols
+        except Exception as e:
+            # If API call fails, return empty set
+            pass
+
+        # Return empty set if all attempts fail
+        return set()
 
     def get_all_positions(self) -> List[Position]:
         return self.get_positions()
