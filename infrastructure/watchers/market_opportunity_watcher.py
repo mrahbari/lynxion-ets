@@ -118,6 +118,16 @@ class MarketOpportunityWatcher:
         if len(enabled_watchers) == 0:
             # If no watchers are enabled, use default discovery
             discovered_symbols = self._discover_by_market_cap()
+            # Create watcher_specific_symbols with cmc_screener containing the discovered symbols
+            watcher_specific_symbols = {'cmc_screener': discovered_symbols}
+
+            # Log what symbols were discovered
+            if discovered_symbols:
+                self.logger.info(
+                    f"🔍 CMC SCREENER DISCOVERED: {len(discovered_symbols)} symbols (no watchers enabled) - {discovered_symbols[:5]}{'...' if len(discovered_symbols) > 5 else ''}",
+                    watcher_type='cmc_screener',
+                    symbols_discovered=len(discovered_symbols),
+                    sample_symbols=discovered_symbols[:5])
         elif len(enabled_watchers) == 1:
             # If only one watcher is enabled, use its specific discovery method
             watcher_type = enabled_watchers[0]
@@ -187,9 +197,29 @@ class MarketOpportunityWatcher:
                         symbols_discovered=len(symbols),
                         sample_symbols=symbols[:5])
 
+            # Store the original set of discovered symbols before adding general symbols
+            original_discovered_symbols = set(all_discovered_symbols)
+
             # Also add symbols from general market discovery to ensure comprehensive coverage
             general_symbols = self._discover_by_market_cap()
             all_discovered_symbols.update(general_symbols)
+
+            # Add general symbols to an appropriate watcher category for tracking and logging
+            # Use 'cmc_screener' as the general discovery method since it uses CMC API
+            if general_symbols:
+                if 'cmc_screener' not in watcher_specific_symbols:
+                    watcher_specific_symbols['cmc_screener'] = []
+                # Add only new symbols that weren't already discovered by other watchers
+                new_general_symbols = [sym for sym in general_symbols if sym not in original_discovered_symbols]
+                watcher_specific_symbols['cmc_screener'].extend(new_general_symbols)
+
+                # Log the general discovery symbols that were added
+                if new_general_symbols:
+                    self.logger.info(
+                        f"🔍 CMC SCREENER DISCOVERED: {len(new_general_symbols)} additional symbols from general market discovery - {new_general_symbols[:5]}{'...' if len(new_general_symbols) > 5 else ''}",
+                        watcher_type='cmc_screener',
+                        symbols_discovered=len(new_general_symbols),
+                        sample_symbols=new_general_symbols[:5])
 
             discovered_symbols = list(all_discovered_symbols)
 
@@ -209,12 +239,38 @@ class MarketOpportunityWatcher:
         if len(discovered_symbols) < 10 and len(enabled_watchers) > 0:
             # If we have enabled watchers but not enough symbols discovered, expand the discovery
             additional_symbols = self._discover_by_market_cap()
+            original_discovered_count = len(discovered_symbols)
             all_symbols = list(set(discovered_symbols + additional_symbols))
+            new_symbols = [sym for sym in all_symbols if sym not in discovered_symbols]  # New symbols added
             discovered_symbols = all_symbols[:15]  # Limit to 15 symbols max
+
+            # Add these additional symbols to the cmc_screener category and log them
+            if new_symbols and 'cmc_screener' in self._watcher_specific_symbols:
+                self._watcher_specific_symbols['cmc_screener'].extend(new_symbols)
+
+                # Log the additional symbols that were added
+                self.logger.info(
+                    f"🔍 CMC SCREENER DISCOVERED: {len(new_symbols)} additional symbols (expansion) - {new_symbols[:5]}{'...' if len(new_symbols) > 5 else ''}",
+                    watcher_type='cmc_screener',
+                    symbols_discovered=len(new_symbols),
+                    sample_symbols=new_symbols[:5])
 
         # If no specific discovery method worked, fall back to price activity
         if not discovered_symbols:
-            discovered_symbols = self._discover_by_price_activity()
+            price_activity_symbols = self._discover_by_price_activity()
+            if price_activity_symbols:
+                discovered_symbols = price_activity_symbols
+
+                # Add price activity symbols to the cmc_screener category and log them
+                if hasattr(self, '_watcher_specific_symbols') and 'cmc_screener' in self._watcher_specific_symbols:
+                    self._watcher_specific_symbols['cmc_screener'].extend(price_activity_symbols)
+
+                    # Log the price activity symbols that were added
+                    self.logger.info(
+                        f"🔍 CMC SCREENER DISCOVERED: {len(price_activity_symbols)} price activity symbols - {price_activity_symbols[:5]}{'...' if len(price_activity_symbols) > 5 else ''}",
+                        watcher_type='cmc_screener',
+                        symbols_discovered=len(price_activity_symbols),
+                        sample_symbols=price_activity_symbols[:5])
 
         # If still no symbols found, use fallback symbols
         if not discovered_symbols:
@@ -222,6 +278,17 @@ class MarketOpportunityWatcher:
                                              "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,AVAXUSDT,TRXUSDT,DOTUSDT,LINKUSDT")
             fallback_symbols = [s.strip() for s in fallback_symbols_str.split(",")]
             discovered_symbols = fallback_symbols
+
+            # Add fallback symbols to the cmc_screener category and log them
+            if fallback_symbols and hasattr(self, '_watcher_specific_symbols') and 'cmc_screener' in self._watcher_specific_symbols:
+                self._watcher_specific_symbols['cmc_screener'].extend(fallback_symbols)
+
+                # Log the fallback symbols that were added
+                self.logger.info(
+                    f"🔍 CMC SCREENER DISCOVERED: {len(fallback_symbols)} fallback symbols - {fallback_symbols[:5]}{'...' if len(fallback_symbols) > 5 else ''}",
+                    watcher_type='cmc_screener',
+                    symbols_discovered=len(fallback_symbols),
+                    sample_symbols=fallback_symbols[:5])
 
         # Filter out stablecoin-to-stablecoin pairs (e.g., USDTUSDT, USDCUSDT, etc.)
         filtered_symbols = self._filter_stablecoin_pairs(discovered_symbols)
@@ -1268,6 +1335,7 @@ class MarketOpportunityWatcher:
             'indicators': {},
             'recommendation': None,
             'confidence': 0.0,
+            'strategy_suggestion': 'PENDING',  # Strategy selection happens in Strategy layer
             'execution_intent': None
         }
 
@@ -1390,7 +1458,7 @@ class MarketOpportunityWatcher:
                 symbol.value,
                 opportunities['recommendation'],
                 opportunities['confidence'],
-                opportunities['strategy_suggestion']
+                "PENDING"  # Strategy selection happens in Strategy layer, not watcher
             )
 
             # Log the flow from watcher to the next component (engine)

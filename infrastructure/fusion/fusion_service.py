@@ -74,12 +74,15 @@ class FusionService:
         if len(interpreted_signals) == 1:
             # If only one signal, convert it directly to a fused signal
             single_signal = interpreted_signals[0]
+            # Determine regime context based on the single signal
+            signal_types = {single_signal.signal_type}
+            regime_context = self._determine_regime_context(signal_types, single_signal.strength)
             return FusedSignal(
                 symbol=single_signal.symbol,
                 dominant_bias=single_signal.signal_type,
                 direction=single_signal.direction,
                 dominance_score=float(single_signal.confidence.value) * single_signal.strength,
-                regime_context="normal",  # Default regime when only one signal
+                regime_context=regime_context,
                 confidence=single_signal.confidence,
                 timestamp=single_signal.timestamp,
                 metadata=single_signal.metadata or {}
@@ -160,8 +163,10 @@ class FusionService:
         """Determine market regime context based on signal characteristics"""
         if len(unique_signal_types) == 1:
             # Consensus among signals
-            if 'BUY' in unique_signal_types or 'SELL' in unique_signal_types:
-                return "trending" if avg_strength > 0.5 else "weak_trend"
+            signal = list(unique_signal_types)[0]
+            signal_str = signal.value if hasattr(signal, 'value') else str(signal)
+            if signal_str in ['BUY', 'SELL']:
+                return "trending" if avg_strength > 0.3 else "weak_trend"  # Lowered threshold for trending
             else:
                 return "stable"
         elif len(unique_signal_types) > 2:
@@ -169,7 +174,7 @@ class FusionService:
             return "volatile" if avg_strength > 0.3 else "uncertain"
         else:
             # Mixed signals
-            return "reverting" if avg_strength < 0.4 else "transitional"
+            return "transitional"  # Changed from "reverting" to "transitional" for mixed signals
 
     def fuse_observations_hierarchically(self, observations_with_watchers: List[Dict[str, Any]], symbol: Symbol) -> Optional[FusedSignal]:
         """New method to fuse observations using hierarchical approach"""

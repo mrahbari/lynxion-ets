@@ -43,7 +43,7 @@ class AutoDetectionOrchestrator:
         from infrastructure.engines.engine_service import engine_service
         from infrastructure.fusion.fusion_service import fusion_service
         from infrastructure.strategies.strategy_manager import strategy_manager
-        from shared.event_system import event_router
+        from shared.event_system import event_router, signal_processor
 
         self.engine_service = engine_service
         self.fusion_service = fusion_service
@@ -51,6 +51,8 @@ class AutoDetectionOrchestrator:
 
         # Initialize the architecture orchestrator to handle proper flow
         from infrastructure.orchestrators.architecture_orchestrator import architecture_orchestrator
+        # Pass the execution service to the architecture orchestrator
+        architecture_orchestrator.execution_service = self.execution_service
         architecture_orchestrator.start()
 
         # Initialize the market opportunity watcher with the event router (no internal flow processing)

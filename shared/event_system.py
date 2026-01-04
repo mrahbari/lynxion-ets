@@ -232,7 +232,7 @@ class SignalProcessor:
             execution_intent = event.data
             if self.logger:
                 self.logger.info(f"Processing execution intent from {event.source_component} for {execution_intent.symbol.value}")
-            
+
             # Execute the trade through the execution service
             # This would need to be implemented based on the execution service interface
             if hasattr(execution_service, 'execute_intent_trade'):
@@ -244,25 +244,111 @@ class SignalProcessor:
                 from domain.entities.signal_entities import Order, OrderSide
                 from domain.value_objects import Money
                 from decimal import Decimal
-                
+
                 # Create order from execution intent
+                # Get current price for the symbol to determine position size
+                current_price = None
+                if hasattr(execution_service, 'get_current_price'):
+                    try:
+                        current_price = execution_service.get_current_price(execution_intent.symbol)
+                    except:
+                        pass  # Fallback to default price below
+
+                # If we still don't have a price, use a fallback
+                if current_price is None or current_price <= 0:
+                    # Try to get price from exchange directly
+                    try:
+                        import ccxt
+                        exchange = ccxt.binance()
+                        ticker = exchange.fetch_ticker(execution_intent.symbol.value)
+                        current_price = ticker['last'] if 'last' in ticker else ticker['close']
+                    except:
+                        # If all methods fail, use a default price
+                        current_price = 50000.0  # Fallback price
+
+                # Calculate quantity based on risk parameters
+                risk_params = execution_intent.risk_parameters
+                position_size_pct = risk_params.get('max_position_size', 0.02)  # Default 2%
+
+                # Fixed Position Size Configuration (for testing purposes)
+                import os
+                fixed_position_size_enabled = os.getenv('FIXED_POSITION_SIZE_ENABLED', 'false').lower() == 'true'
+                fixed_position_amount = float(os.getenv('FIXED_POSITION_AMOUNT', '10.0'))  # Default to $10 for testing
+
+                # Calculate quantity based on risk parameters and account balance
+                try:
+                    if fixed_position_size_enabled:
+                        # Use fixed position size for testing
+                        quantity = fixed_position_amount / current_price
+                        if self.logger:
+                            self.logger.info(f"Using fixed position size: ${fixed_position_amount} at ${current_price} = {quantity} units")
+                    else:
+                        # In a real implementation, we'd get portfolio metrics from portfolio service
+                        # For now, using a default account balance from environment variable
+                        import os
+                        account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))  # Default to $10,000 if not available
+                        position_value = account_balance * position_size_pct
+
+                        # Calculate quantity based on position value and current price
+                        quantity = position_value / current_price
+
+                        # Apply any quantity adjustments from risk parameters
+                        if 'position_quantity' in risk_params:
+                            quantity = risk_params['position_quantity']
+
+                except:
+                    # If portfolio service fails, use a default quantity
+                    if fixed_position_size_enabled:
+                        # Use fixed position size for testing
+                        quantity = fixed_position_amount / current_price
+                        if self.logger:
+                            self.logger.info(f"Using fixed position size (fallback): ${fixed_position_amount} at ${current_price} = {quantity} units")
+                    else:
+                        # Use default account balance from environment variable
+                        import os
+                        default_account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '1000.0'))  # Default to $1,000 if not available
+                        quantity = position_size_pct * default_account_balance / current_price
+
+                # Ensure minimum quantity to avoid issues with small trades
+                if quantity < 0.001:
+                    quantity = 0.001  # Minimum trade size
+
+                # Use the side from the execution intent
+                order_side = execution_intent.side
+
+                # Determine position side based on order side for futures trading
+                position_side = "LONG" if order_side.name == 'BUY' else "SHORT"
+
+                # Create order with proper risk parameters from the intent
                 order = Order(
                     symbol=execution_intent.symbol,
-                    side=execution_intent.side,
-                    quantity=Decimal('0.001'),  # Default small quantity for testing
-                    price=Money(amount=0, currency='USDT'),  # Will be set by market price
-                    strategy_name=execution_intent.strategy_name,
-                    risk_parameters=execution_intent.risk_parameters
+                    side=order_side,
+                    order_type="MARKET",  # Using string instead of enum
+                    quantity=Decimal(str(quantity)),
+                    price=Money(amount=current_price, currency='USDT') if current_price else None,
+                    strategy_name=execution_intent.strategy_name,  # Strategy name comes from intent
+                    timestamp=execution_intent.timestamp,
+                    position_side=position_side,  # Add position side for futures trading
+                    stop_loss_price=Money(amount=risk_params.get('stop_loss_price', current_price * 0.98), currency='USDT'),  # Default SL
+                    take_profit_price=Money(amount=risk_params.get('take_profit_price', current_price * 1.03), currency='USDT'),  # Default TP
+                    parent_execution_intent=execution_intent  # Link back to the execution intent
                 )
-                
+
                 # Execute order through execution service
                 if hasattr(execution_service, 'execute_order'):
                     order_id = execution_service.execute_order(order)
                     if self.logger:
                         self.logger.info(f"Executed order with ID: {order_id}")
+                    return order_id
+                else:
+                    if self.logger:
+                        self.logger.error("Execution service does not have execute_order method")
         except Exception as e:
             if self.logger:
                 self.logger.error(f"Error processing execution intent: {e}")
+            import traceback
+            if self.logger:
+                self.logger.error(f"Traceback: {traceback.format_exc()}")
 
 
 # Global event router instance

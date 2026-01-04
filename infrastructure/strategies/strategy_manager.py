@@ -7,7 +7,7 @@ import time
 from typing import Dict, List, Optional, Callable, Any
 from domain.value_objects import Symbol
 from domain.entities.signal_entities import FusedSignal, ExecutionIntent
-from infrastructure.strategies.strategy_adapters import BaseStrategyAdapter
+from infrastructure.strategies.strategy_adapters import BaseStrategyAdapter, TrendFollowingStrategy, MeanReversionStrategy, VolatilityBreakoutStrategy
 from shared.logger import EnhancedLogger
 
 
@@ -27,6 +27,23 @@ class StrategyManager:
         self.logger = EnhancedLogger("StrategyManager")
         self.monitoring_active = False
         self.monitoring_thread = None
+
+        # Automatically register default strategies
+        self._register_default_strategies()
+
+    def _register_default_strategies(self):
+        """Register default strategies with the manager."""
+        # Create and register the default strategies
+        strategies_to_register = [
+            TrendFollowingStrategy(),
+            MeanReversionStrategy(),
+            VolatilityBreakoutStrategy()
+        ]
+
+        for strategy in strategies_to_register:
+            name = strategy.get_strategy_name()
+            self.register_strategy(name, strategy)
+            self.logger.info(f"Registered default strategy: {name}")
 
     def register_strategy(self, name: str, strategy: BaseStrategyAdapter,
                          factory: Optional[Callable[[], BaseStrategyAdapter]] = None):

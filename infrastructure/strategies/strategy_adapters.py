@@ -38,9 +38,9 @@ class BaseStrategyAdapter(StrategyPort):
             symbol=fused_signal.symbol,
             strategy_name=strategy_name,
             side=self._determine_side(fused_signal),
-            intent_confidence=Percentage(min(Decimal('1.0'), 
-                                          max(Decimal('0.0'), 
-                                              Decimal(str(fused_signal.confidence.value * 0.8))))),  # Slightly reduce confidence
+            intent_confidence=Percentage(min(Decimal('1.0'),
+                                          max(Decimal('0.0'),
+                                              fused_signal.confidence.value * Decimal('0.8')))),  # Slightly reduce confidence
             risk_parameters=self._calculate_risk_parameters(fused_signal),
             timestamp=datetime.now(),
             fused_signal=fused_signal,
@@ -129,6 +129,10 @@ class BaseStrategyAdapter(StrategyPort):
         """Get the name of this strategy"""
         return self.name
 
+    def get_strategy_type(self) -> str:
+        """Get the type of this strategy for classification"""
+        return self.__class__.__name__
+
     def update_with_market_data(self, data: Dict[str, Any]):
         """Update strategy with new market data"""
         # Base implementation - can be overridden by specific strategies
@@ -165,11 +169,11 @@ class TrendFollowingStrategy(BaseStrategyAdapter):
     """Strategy for following market trends"""
 
     def __init__(self):
-        super().__init__("TrendFollowingStrategy")
+        super().__init__("trend_following")
 
     def should_execute(self, fused_signal: FusedSignal) -> bool:
         """Only execute in trending market conditions"""
-        return (super().should_execute(fused_signal) and 
+        return (super().should_execute(fused_signal) and
                 'trend' in fused_signal.regime_context.lower())
 
 
@@ -177,12 +181,12 @@ class MeanReversionStrategy(BaseStrategyAdapter):
     """Strategy for mean reversion opportunities"""
 
     def __init__(self):
-        super().__init__("MeanReversionStrategy")
+        super().__init__("mean_reversion")
 
     def should_execute(self, fused_signal: FusedSignal) -> bool:
         """Only execute in mean-reverting market conditions"""
-        return (super().should_execute(fused_signal) and 
-                ('mean' in fused_signal.regime_context.lower() or 
+        return (super().should_execute(fused_signal) and
+                ('mean' in fused_signal.regime_context.lower() or
                  'revert' in fused_signal.regime_context.lower()))
 
 
@@ -190,9 +194,9 @@ class VolatilityBreakoutStrategy(BaseStrategyAdapter):
     """Strategy for volatility breakout opportunities"""
 
     def __init__(self):
-        super().__init__("VolatilityBreakoutStrategy")
+        super().__init__("volatility_breakout")
 
     def should_execute(self, fused_signal: FusedSignal) -> bool:
         """Only execute in high volatility conditions"""
-        return (super().should_execute(fused_signal) and 
+        return (super().should_execute(fused_signal) and
                 'volatile' in fused_signal.regime_context.lower())

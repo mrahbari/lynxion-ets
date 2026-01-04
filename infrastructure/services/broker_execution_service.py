@@ -229,8 +229,8 @@ class BrokerExecutionService(ExecutionPort):
                 tp_price = current_price * (1 + tp_multiplier)
             else:  # SELL
                 # For SELL orders: SL above entry, TP below entry
-                sl_price = current_price * (1 + sl_multiplier)
-                tp_price = current_price * (1 - tp_multiplier)
+                sl_price = current_price * (1 + sl_multiplier)  # SL above for SELL (stop loss if price rises)
+                tp_price = current_price * (1 - tp_multiplier)  # TP below for SELL (take profit when price falls)
 
             # Create enhanced order with SL/TP if they were missing
             from domain.entities.trading_entities import Order as DomainOrder

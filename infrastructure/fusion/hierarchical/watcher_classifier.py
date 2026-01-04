@@ -186,37 +186,41 @@ class ObservationClassifier:
     def _validate_observation_for_role(observation: MarketObservation, role: WatcherRole, watcher_name: str) -> bool:
         """Validate if an observation is appropriate for the watcher's role"""
         observation_type = observation.observation_type.lower()
-        
+
         # Regime watchers should produce regime-related observations
         if role == WatcherRole.REGIME:
             regime_indicators = [
-                'market_pulse', 'volatility', 'funding_rate', 
+                'market_pulse', 'volatility', 'funding_rate',
                 'regime', 'macro', 'sentiment', 'risk'
             ]
+            # Check if any regime indicator is in the observation type
             return any(indicator in observation_type for indicator in regime_indicators)
-        
+
         # Discovery watchers should produce discovery-related observations
         elif role == WatcherRole.DISCOVERY:
             discovery_indicators = [
                 'discovery', 'opportunity', 'anomaly', 'screener',
                 'new', 'potential', 'candidate'
             ]
+            # Check if any discovery indicator is in the observation type
             return any(indicator in observation_type for indicator in discovery_indicators)
-        
+
         # Direction watchers should produce directional observations
         elif role == WatcherRole.DIRECTION:
             direction_indicators = [
                 'trend', 'direction', 'bias', 'momentum', 'signal',
                 'bullish', 'bearish', 'positive', 'negative'
             ]
+            # Check if any direction indicator is in the observation type
             return any(indicator in observation_type for indicator in direction_indicators)
-        
+
         # Execution watchers should produce execution-related observations
         elif role == WatcherRole.EXECUTION:
             execution_indicators = [
                 'entry', 'exit', 'timing', 'flow', 'tick', 'execution',
                 'confirm', 'reject', 'wait', 'trigger'
             ]
+            # Check if any execution indicator is in the observation type
             return any(indicator in observation_type for indicator in execution_indicators)
-        
+
         return True  # Default to valid if role is unknown

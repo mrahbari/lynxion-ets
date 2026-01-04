@@ -53,6 +53,14 @@ class ArchitectureOrchestrator:
             # The signal processor is already set up to handle the flow
             # Watcher emits -> Event Router -> Signal Processor -> Proper Layer Processing
 
+            # Ensure the signal processor has access to all required services
+            signal_processor.setup_signal_processing(
+                self.engine_service,
+                self.fusion_service,
+                self.strategy_manager,
+                self.execution_service
+            )
+
             self.logger.info("Architecture Orchestrator started successfully")
             self.logger.info("Proper flow established: Watcher → Engine → Fusion → Strategy → Broker")
 

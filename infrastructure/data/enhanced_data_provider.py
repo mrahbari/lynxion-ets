@@ -5,6 +5,7 @@ This version uses a more practical approach for the existing architecture.
 import os
 import threading
 import time
+import traceback
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from domain.ports.data_ports import DataProviderPort
@@ -645,7 +646,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
         import asyncio
         import concurrent.futures
         import threading
-        
+
         # Use a thread pool to run the async operation safely
         def run_download():
             try:
@@ -667,11 +668,13 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                     # Default to 30 days if format is unknown
                     end_time = int(datetime.now().timestamp())
                     start_time = int((datetime.now() - timedelta(days=30)).timestamp())
-                
-                # Create a new event loop for this thread
+
+                # Create a new event loop for this thread and run the async operation
+                import asyncio
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 try:
+                    # Run the async operation within the new loop
                     result = loop.run_until_complete(
                         self.sync_manager.sync_symbol_data(
                             symbol=symbol,
@@ -682,25 +685,37 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                     )
                     return result
                 finally:
-                    loop.close()
+                    # Properly close the loop
+                    if not loop.is_closed():
+                        loop.close()
             except Exception as e:
                 self.logger.error(f"Error in download thread for {symbol}: {e}")
+                import traceback
+                self.logger.error(f"Traceback: {traceback.format_exc()}")
                 return None
-        
+
         # Run the async download in a separate thread
         try:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(run_download)
-                result = future.result(timeout=60)  # Timeout after 60 seconds
-                
+                result = future.result(timeout=120)  # Increase timeout to 120 seconds
+
                 if result and result.get('rows_written', 0) > 0:
                     self.logger.info(f"Successfully downloaded {result['rows_written']} data points for {symbol}")
                     return True
+                elif result and result.get('success', False):
+                    self.logger.info(f"Successfully downloaded data for {symbol} (success flag)")
+                    return True
                 else:
-                    self.logger.warning(f"Download returned no data for {symbol}")
+                    self.logger.warning(f"Download returned no data for {symbol}: {result}")
                     return False
+        except concurrent.futures.TimeoutError:
+            self.logger.error(f"Download timeout for {symbol}")
+            return False
         except Exception as e:
             self.logger.error(f"Error downloading data for {symbol}: {e}")
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
             return False
 
     def subscribe_to_market_data(self, symbol: Symbol, callback) -> str:

@@ -51,35 +51,63 @@ class EngineService:
     def _determine_signal_type(self, observation: MarketObservation):
         """Determine signal type based on observation type"""
         from domain.entities.signal_entities import SignalType
-        
+
         obs_type = observation.observation_type.lower()
-        
-        if 'momentum' in obs_type or 'trend' in obs_type:
-            # For positive momentum/trend observations
-            if observation.observation_value > 0:
+
+        # Handle market pulse observations (e.g., market_pulse_positive, market_pulse_negative)
+        if 'market_pulse' in obs_type:
+            if 'positive' in obs_type or observation.observation_value > 0.1:
                 return SignalType.BUY
-            else:
+            elif 'negative' in obs_type or observation.observation_value < -0.1:
                 return SignalType.SELL
-        elif 'volatility' in obs_type:
-            # High volatility could indicate breakout opportunities
-            if observation.observation_value > 0.5:  # threshold for high volatility
-                return SignalType.BUY  # Assuming breakout to the upside
             else:
                 return SignalType.NEUTRAL
+
+        # Handle trend observations (e.g., trend_neutral, trend_bullish, trend_bearish)
+        elif 'trend' in obs_type:
+            if 'bullish' in obs_type or 'positive' in obs_type or observation.observation_value > 0.1:
+                return SignalType.BUY
+            elif 'bearish' in obs_type or 'negative' in obs_type or observation.observation_value < -0.1:
+                return SignalType.SELL
+            else:
+                return SignalType.NEUTRAL
+
+        # Handle momentum observations
+        elif 'momentum' in obs_type:
+            if observation.observation_value > 0.1:
+                return SignalType.BUY
+            elif observation.observation_value < -0.1:
+                return SignalType.SELL
+            else:
+                return SignalType.NEUTRAL
+
+        # Handle volatility observations (e.g., volatility_normal, volatility_high, volatility_low)
+        elif 'volatility' in obs_type:
+            if 'high' in obs_type or observation.observation_value > 0.7:  # High volatility breakout
+                return SignalType.BUY  # Assuming breakout opportunity
+            elif 'low' in obs_type or observation.observation_value < 0.3:  # Low volatility
+                return SignalType.HOLD  # Wait for higher volatility
+            else:
+                return SignalType.NEUTRAL  # Normal volatility
+
+        # Handle liquidity observations
         elif 'liquidity' in obs_type:
-            # High liquidity could indicate good entry/exit opportunities
-            if observation.observation_value > 0.7:  # threshold for high liquidity
-                return SignalType.NEUTRAL  # High liquidity is generally neutral but good for execution
+            if observation.observation_value > 0.7:  # High liquidity
+                return SignalType.NEUTRAL  # Good for execution but not directional
             else:
                 return SignalType.HOLD  # Low liquidity might be risky
+
+        # Handle anomaly observations
         elif 'anomaly' in obs_type:
-            # Anomalies might indicate mean reversion opportunities
-            if observation.observation_value > 0:
-                return SignalType.SELL  # If value is high, might revert down
+            if 'positive' in obs_type or observation.observation_value > 0.1:
+                return SignalType.SELL  # Positive anomaly might revert down
+            elif 'negative' in obs_type or observation.observation_value < -0.1:
+                return SignalType.BUY   # Negative anomaly might revert up
             else:
-                return SignalType.BUY   # If value is low, might revert up
+                return SignalType.NEUTRAL
+
+        # Default to neutral for unknown observation types
         else:
-            # Default to neutral for unknown observation types
             return SignalType.NEUTRAL
 
     def _calculate_direction(self, observation: MarketObservation) -> float:

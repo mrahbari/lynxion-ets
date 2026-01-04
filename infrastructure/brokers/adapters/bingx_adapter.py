@@ -97,7 +97,18 @@ class BingXBrokerAdapter(BrokerPort):
         if result['success']:
             return result['order_id']
         else:
-            raise Exception(f"Failed to place order: {result['error']}")
+            error_msg = result['error']
+            # Make error messages more readable
+            if 'error code:109400' in error_msg:
+                readable_error = "API Rate Limit Exceeded: Too many requests to BingX API. Please reduce request frequency."
+            elif 'over 20' in error_msg and 'requests within' in error_msg:
+                readable_error = "Rate Limit Exceeded: Exceeded BingX API request limits. Consider implementing request throttling."
+            elif 'TriggerClose' in error_msg:
+                readable_error = "API Parameter Error: Invalid parameter format for stop loss/take profit. Check parameter formatting."
+            else:
+                readable_error = f"Order placement failed: {error_msg}"
+
+            raise Exception(f"Failed to place order: {readable_error}")
 
     def cancel_order(self, order_id: str, symbol: Symbol) -> bool:
         if not self.connected:
@@ -187,9 +198,9 @@ class _BingXBroker:
 
         self.logger = logging.getLogger(__name__)
 
-        # Rate limiting settings
-        self.requests_per_minute = 1200
-        self.min_request_interval = 0.05  # 50ms between requests
+        # Rate limiting settings - more conservative to avoid rate limits
+        self.requests_per_minute = 20  # Reduced from 1200 to avoid rate limits
+        self.min_request_interval = 3.0  # 3 seconds between requests (more conservative)
         self.last_request_time = 0
         self.request_count = 0
         self.request_window_start = time.time()
@@ -226,6 +237,7 @@ class _BingXBroker:
         if self.request_count >= self.requests_per_minute:
             sleep_time = 60 - (current_time - self.request_window_start)
             if sleep_time > 0:
+                self.logger.info(f"Rate limit reached. Waiting {sleep_time:.2f}s before next request...")
                 time.sleep(sleep_time)
             self.request_count = 0
             self.request_window_start = time.time()
@@ -233,7 +245,9 @@ class _BingXBroker:
         # Ensure minimum interval between requests
         time_since_last = current_time - self.last_request_time
         if time_since_last < self.min_request_interval:
-            time.sleep(self.min_request_interval - time_since_last)
+            sleep_time = self.min_request_interval - time_since_last
+            if sleep_time > 0:
+                time.sleep(sleep_time)
 
         self.last_request_time = time.time()
         self.request_count += 1
@@ -373,7 +387,8 @@ class _BingXBroker:
 
             # Add Stop Loss and Take Profit parameters if they exist in the order
             # According to the BingX API documentation, these should be separate parameters in the same request
-            # For setting SL/TP with market orders, use stopLoss and takeProfit (not Price variants)
+            # For setting SL/TP with market orders, use stopLoss and takeProfit (not stopLossPrice/takeProfitPrice)
+            # The error suggests that the API expects different parameter names or format
             if hasattr(order, 'stop_loss_price') and order.stop_loss_price:
                 # For stop loss, use stopLoss parameter (according to API docs)
                 # Handle both Money object and float/numeric values
@@ -382,7 +397,10 @@ class _BingXBroker:
                 else:
                     sl_price_value = order.stop_loss_price
                 # Format as string with appropriate precision to avoid type issues
-                order_data['stopLoss'] = f"{float(sl_price_value):.8f}"
+                # Ensure the value is properly formatted as a string to avoid type mismatch
+                if sl_price_value is not None:
+                    # Format as string to ensure proper type handling by the API
+                    order_data['stopLoss'] = f"{float(sl_price_value):.8f}"
 
             if hasattr(order, 'take_profit_price') and order.take_profit_price:
                 # For take profit, use takeProfit parameter (according to API docs)
@@ -392,7 +410,10 @@ class _BingXBroker:
                 else:
                     tp_price_value = order.take_profit_price
                 # Format as string with appropriate precision to avoid type issues
-                order_data['takeProfit'] = f"{float(tp_price_value):.8f}"
+                # Ensure the value is properly formatted as a string to avoid type mismatch
+                if tp_price_value is not None:
+                    # Format as string to ensure proper type handling by the API
+                    order_data['takeProfit'] = f"{float(tp_price_value):.8f}"
 
             endpoint = "/openApi/swap/v2/trade/order"
             response = self._make_request('POST', endpoint, data=order_data, signed=True)
