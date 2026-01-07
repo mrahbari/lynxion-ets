@@ -79,10 +79,20 @@ class BrokerExecutionService(ExecutionPort):
                 self.broker = BinanceBrokerAdapter(config)
                 self.broker_name = self.broker_type_enum.get_display_name()
             elif self.broker_type == BrokerType.MEXC.value:
-                self.broker = MEXCBrokerAdapter(config)
+                # MEXC adapter expects individual parameters
+                self.broker = MEXCBrokerAdapter(
+                    api_key=config['api_key'],
+                    secret_key=config['secret_key'],
+                    base_url="https://api-testnet.mexc.com" if config['testnet'] else "https://api.mexc.com"
+                )
                 self.broker_name = self.broker_type_enum.get_display_name()
             elif self.broker_type == BrokerType.PHEMEX.value:
-                self.broker = PhemexBrokerAdapter(config)
+                # Phemex adapter expects individual parameters
+                self.broker = PhemexBrokerAdapter(
+                    api_key=config['api_key'],
+                    secret_key=config['secret_key'],
+                    base_url="https://testnet-api.phemex.com" if config['testnet'] else "https://api.phemex.com"
+                )
                 self.broker_name = self.broker_type_enum.get_display_name()
             else:
                 raise ValueError(

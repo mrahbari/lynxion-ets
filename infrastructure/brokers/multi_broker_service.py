@@ -87,30 +87,38 @@ class MultiBrokerExecutionService(ExecutionPort):
         
         # Initialize MEXC
         try:
-            mexc_config = {
-                'api_key': os.getenv('MEXC_API_KEY'),
-                'secret_key': os.getenv('MEXC_SECRET_KEY'),
-                'testnet': os.getenv('MEXC_TESTNET', 'true').lower() == 'true'
-            }
-            required_keys = ['api_key', 'secret_key']
-            if all(mexc_config.get(key) for key in required_keys):
-                self.brokers['mexc'] = MEXCBrokerAdapter(mexc_config)
+            mexc_api_key = os.getenv('MEXC_API_KEY')
+            mexc_secret_key = os.getenv('MEXC_SECRET_KEY')
+            mexc_testnet = os.getenv('MEXC_TESTNET', 'true').lower() == 'true'
+
+            if mexc_api_key and mexc_secret_key:
+                # Use testnet URL if testnet is enabled
+                base_url = "https://api-testnet.mexc.com" if mexc_testnet else "https://api.mexc.com"
+                self.brokers['mexc'] = MEXCBrokerAdapter(
+                    api_key=mexc_api_key,
+                    secret_key=mexc_secret_key,
+                    base_url=base_url
+                )
                 self.logger.info("✅ MEXC broker initialized")
             else:
                 self.logger.warning("⚠️ MEXC broker not configured (missing API keys)")
         except Exception as e:
             self.logger.warning(f"⚠️ Could not initialize MEXC broker: {e}")
-        
+
         # Initialize Phemex
         try:
-            phemex_config = {
-                'api_key': os.getenv('PHEMEX_API_KEY'),
-                'secret_key': os.getenv('PHEMEX_SECRET_KEY'),
-                'testnet': os.getenv('PHEMEX_TESTNET', 'true').lower() == 'true'
-            }
-            required_keys = ['api_key', 'secret_key']
-            if all(phemex_config.get(key) for key in required_keys):
-                self.brokers['phemex'] = PhemexBrokerAdapter(phemex_config)
+            phemex_api_key = os.getenv('PHEMEX_API_KEY')
+            phemex_secret_key = os.getenv('PHEMEX_SECRET_KEY')
+            phemex_testnet = os.getenv('PHEMEX_TESTNET', 'true').lower() == 'true'
+
+            if phemex_api_key and phemex_secret_key:
+                # Use testnet URL if testnet is enabled
+                base_url = "https://testnet-api.phemex.com" if phemex_testnet else "https://api.phemex.com"
+                self.brokers['phemex'] = PhemexBrokerAdapter(
+                    api_key=phemex_api_key,
+                    secret_key=phemex_secret_key,
+                    base_url=base_url
+                )
                 self.logger.info("✅ Phemex broker initialized")
             else:
                 self.logger.warning("⚠️ Phemex broker not configured (missing API keys)")

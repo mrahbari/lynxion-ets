@@ -36,7 +36,18 @@ from infrastructure.optimization import BacktestMetricCalculator
 from infrastructure.optimization import OptimizationRepository
 from infrastructure.data.coin_history_service import CoinHistoryService
 from infrastructure.backtest.realistic_backtester import RealisticBacktester
-from shared.auto_drop_engine import AutoDropEngine
+try:
+    from shared.auto_drop_engine import AutoDropEngine
+except ImportError:
+    # AutoDropEngine is optional, define a mock class if not available
+    class AutoDropEngine:
+        def __init__(self, *args, **kwargs):
+            pass
+        def __getattr__(self, name):
+            # Return a mock function for any method called
+            def mock_method(*args, **kwargs):
+                return None
+            return mock_method
 
 # Import new architecture components
 from infrastructure.engines.engine_service import engine_service

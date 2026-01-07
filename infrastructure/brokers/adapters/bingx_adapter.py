@@ -16,12 +16,16 @@ from domain.value_objects import Symbol, Money
 from infrastructure.data.adapters.rest_client import RestClient
 from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 from shared.rate_limiter import global_rate_limiter
+from shared.utils import format_price_for_api
 
 
 class BingXBrokerAdapter(BrokerPort):
     def __init__(self, config: Dict):
         self._broker = _BingXBroker(config)
         self.connected = False
+        # Initialize logger for the adapter
+        import logging
+        self.logger = logging.getLogger(__name__)
 
     def _format_symbol(self, symbol: Union[Symbol, str]) -> str:
         """Formats the domain symbol to the broker's expected format using the helper."""
@@ -96,6 +100,11 @@ class BingXBrokerAdapter(BrokerPort):
 
         result = self._broker.execute_order(temp_order)
         if result['success']:
+            # Check if there were any conditional order errors
+            if 'conditional_orders_errors' in result and result['conditional_orders_errors']:
+                # Log the conditional order errors but still return the main order ID
+                self.logger.warning(f"BingX order placed successfully but had conditional order errors: {result['conditional_orders_errors']}")
+
             return result['order_id']
         else:
             error_msg = result['error']
@@ -104,7 +113,7 @@ class BingXBrokerAdapter(BrokerPort):
                 readable_error = "API Rate Limit Exceeded: Too many requests to BingX API. Please reduce request frequency."
             elif 'over 20' in error_msg and 'requests within' in error_msg:
                 readable_error = "Rate Limit Exceeded: Exceeded BingX API request limits. Consider implementing request throttling."
-            elif 'TriggerClose' in error_msg or 'stop loss' in error_msg.lower() or 'take profit' in error_msg.lower() or 'stopLoss' in error_msg or 'takeProfit' in error_msg:
+            elif 'TriggerClose' in error_msg or 'stop loss' in error_msg.lower() or 'take profit' in error_msg.lower() or 'stopLoss' in error_msg or 'takeProfit' in error_msg or 'stopLossPrice' in error_msg or 'takeProfitPrice' in error_msg:
                 readable_error = "API Parameter Error: Invalid parameter format for stop loss/take profit. Check parameter formatting. Ensure SL/TP prices are properly formatted as strings with appropriate decimal precision."
             else:
                 readable_error = f"Order placement failed: {error_msg}"
@@ -361,15 +370,19 @@ class _BingXBroker:
                 else:
                     # If it's already a numeric value, use it directly
                     price_value = order.price
-                # Format price with 2 decimal places for consistency
-                order_data['price'] = f"{float(price_value):.2f}"
+                # Format price using the new API-compliant formatting function
+                formatted_price = format_price_for_api(float(price_value))
+                order_data['price'] = formatted_price
 
             # Add Stop Loss and Take Profit parameters if they exist in the order
             # According to the BingX API documentation, these should be separate parameters in the same request
-            # For setting SL/TP with market orders, use stopLoss and takeProfit (not stopLossPrice/takeProfitPrice)
+            # For setting SL/TP with market orders, use stopLossPrice and takeProfitPrice (not stopLoss/takeProfit)
             # The error suggests that the API expects different parameter names or format
-            if hasattr(order, 'stop_loss_price') and order.stop_loss_price:
-                # For stop loss, use stopLoss parameter (according to API docs)
+            has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
+            has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
+
+            if has_stop_loss:
+                # For stop loss, use stopLossPrice parameter (according to API docs)
                 # Handle both Money object and float/numeric values
                 if hasattr(order.stop_loss_price, 'amount'):
                     sl_price_value = order.stop_loss_price.amount
@@ -379,13 +392,19 @@ class _BingXBroker:
                 # Ensure the value is properly formatted as a string to avoid type mismatch
                 if sl_price_value is not None:
                     # Format as string to ensure proper type handling by the API
-                    # Use 2 decimal places for price values to avoid precision issues
+                    # Use the new API-compliant formatting function to avoid precision issues
                     # Convert to float first to handle Decimal objects properly
                     sl_float = float(sl_price_value)
-                    order_data['stopLoss'] = f"{sl_float:.2f}"
+                    # Validate that the stop loss price is a valid positive number
+                    if sl_float <= 0:
+                        self.logger.warning(f"Invalid stop loss price: {sl_float}, skipping...")
+                    else:
+                        formatted_sl_price = format_price_for_api(sl_float)
+                        order_data['stopLossPrice'] = formatted_sl_price  # Changed from 'stopLoss' to 'stopLossPrice'
+                        self.logger.debug(f"Added stop loss price: {formatted_sl_price}")
 
-            if hasattr(order, 'take_profit_price') and order.take_profit_price:
-                # For take profit, use takeProfit parameter (according to API docs)
+            if has_take_profit:
+                # For take profit, use takeProfitPrice parameter (according to API docs)
                 # Handle both Money object and float/numeric values
                 if hasattr(order.take_profit_price, 'amount'):
                     tp_price_value = order.take_profit_price.amount
@@ -395,13 +414,180 @@ class _BingXBroker:
                 # Ensure the value is properly formatted as a string to avoid type mismatch
                 if tp_price_value is not None:
                     # Format as string to ensure proper type handling by the API
-                    # Use 2 decimal places for price values to avoid precision issues
+                    # Use the new API-compliant formatting function to avoid precision issues
                     # Convert to float first to handle Decimal objects properly
                     tp_float = float(tp_price_value)
-                    order_data['takeProfit'] = f"{tp_float:.2f}"
+                    # Validate that the take profit price is a valid positive number
+                    if tp_float <= 0:
+                        self.logger.warning(f"Invalid take profit price: {tp_float}, skipping...")
+                    else:
+                        formatted_tp_price = format_price_for_api(tp_float)
+                        order_data['takeProfitPrice'] = formatted_tp_price  # Changed from 'takeProfit' to 'takeProfitPrice'
+                        self.logger.debug(f"Added take profit price: {formatted_tp_price}")
+
+            # When stop loss or take profit is specified, we may need to set additional parameters
+            # depending on the order type and API requirements
+            # For market orders with SL/TP, we might need to place them as separate conditional orders
+            # This is a common pattern in many exchanges
+            if has_stop_loss or has_take_profit:
+                # Check if this is a market order with SL/TP attached
+                if order_type_value.upper() == 'MARKET':
+                    # For market orders with SL/TP, we might need to place the main order first,
+                    # then place separate conditional orders for SL/TP
+                    # This is often the correct approach for many exchanges
+                    self.logger.debug(f"Processing market order with SL/TP - attempting to place main order with attached SL/TP: SL={has_stop_loss}, TP={has_take_profit}")
+
+                    # For now, let's continue with the current approach but add better error handling
+                    # If the single order approach fails, we'll need to implement the separate order approach
+                else:
+                    # For LIMIT orders with SL/TP, the attachment should work directly
+                    self.logger.debug(f"Processing limit order with SL/TP attached: SL={has_stop_loss}, TP={has_take_profit}")
+
+            # Check if we have SL/TP and it's a market order - we might need to handle this differently
+            if (has_stop_loss or has_take_profit) and order_type_value.upper() == 'MARKET':
+                # For market orders with SL/TP, we may need to place the main order first,
+                # then place separate conditional orders for SL/TP
+                # This is a common pattern in many exchanges
+                self.logger.info(f"Placing market order with separate SL/TP handling for {symbol_formatted}")
+
+                # First, create the main market order without SL/TP
+                main_order_data = {
+                    'symbol': symbol_formatted,
+                    'side': side_value.upper(),
+                    'type': order_type_value.upper(),
+                    'quantity': str(round(float(order.quantity), 6)),
+                    'positionSide': position_side_value
+                }
+
+                if order.price:
+                    if hasattr(order.price, 'amount'):
+                        price_value = order.price.amount
+                    else:
+                        price_value = order.price
+                    formatted_price = format_price_for_api(float(price_value))
+                    main_order_data['price'] = formatted_price
+
+                # Place the main market order
+                endpoint = "/openApi/swap/v2/trade/order"
+                response = self._make_request('POST', endpoint, data=main_order_data, signed=True)
+
+                if response.get('code') == 0:
+                    order_info = response.get('data', {}).get('order', {})
+                    main_order_id = order_info.get('orderId')
+
+                    # If main order was successful, now place separate conditional orders for SL/TP
+                    conditional_errors = []
+
+                    # Place stop loss order if needed
+                    # For stop loss: if we're long (BUY), we want to SELL to close when price goes down
+                    # For stop loss: if we're short (SELL), we want to BUY to close when price goes up
+                    sl_side = 'SELL' if side_value.upper() == 'BUY' else 'BUY'
+                    if side_value.upper() == 'BUY':
+                        # For long positions, stop loss triggers when price goes BELOW the stop price
+                        # So for a BUY order, we place a STOP_MARKET order to SELL when price drops
+                        sl_order_type = 'STOP_MARKET'
+                    else:
+                        # For short positions, stop loss triggers when price goes ABOVE the stop price
+                        # So for a SELL order, we place a STOP_MARKET order to BUY when price rises
+                        sl_order_type = 'STOP_MARKET'
+
+                    if has_stop_loss:
+                        sl_response = self._place_conditional_order(
+                            symbol=symbol_formatted,
+                            side=sl_side,
+                            quantity=str(round(float(order.quantity), 6)),
+                            stop_price=order_data.get('stopLossPrice'),
+                            order_type=sl_order_type,
+                            position_side=position_side_value
+                        )
+
+                        if not sl_response['success']:
+                            conditional_errors.append(f"SL order failed: {sl_response['error']}")
+
+                    # Place take profit order if needed
+                    # For take profit: if we're long (BUY), we want to SELL to close when price goes up
+                    # For take profit: if we're short (SELL), we want to BUY to close when price goes down
+                    tp_side = 'SELL' if side_value.upper() == 'BUY' else 'BUY'
+                    if side_value.upper() == 'BUY':
+                        # For long positions, take profit triggers when price goes ABOVE the take profit price
+                        # So for a BUY order, we place a TAKE_PROFIT_MARKET order to SELL when price rises
+                        tp_order_type = 'TAKE_PROFIT_MARKET'
+                    else:
+                        # For short positions, take profit triggers when price goes BELOW the take profit price
+                        # So for a SELL order, we place a TAKE_PROFIT_MARKET order to BUY when price drops
+                        tp_order_type = 'TAKE_PROFIT_MARKET'
+
+                    if has_take_profit:
+                        tp_response = self._place_conditional_order(
+                            symbol=symbol_formatted,
+                            side=tp_side,
+                            quantity=str(round(float(order.quantity), 6)),
+                            stop_price=order_data.get('takeProfitPrice'),
+                            order_type=tp_order_type,
+                            position_side=position_side_value
+                        )
+
+                        if not tp_response['success']:
+                            conditional_errors.append(f"TP order failed: {tp_response['error']}")
+
+                    # Return success if main order succeeded, even if conditional orders had issues
+                    result = {
+                        'success': True,
+                        'order_id': main_order_id,
+                        'response': response['data'],
+                        'conditional_orders_errors': conditional_errors if conditional_errors else None
+                    }
+
+                    if conditional_errors:
+                        self.logger.warning(f"Main order placed successfully ({main_order_id}), but conditional orders had errors: {conditional_errors}")
+                    else:
+                        self.logger.info(f"Main order and conditional orders placed successfully ({main_order_id})")
+
+                    return result
+                else:
+                    return {
+                        'success': False,
+                        'error': response.get('msg', 'Unknown error from main order')
+                    }
+            else:
+                # For orders without SL/TP or non-market orders with SL/TP, use the original approach
+                endpoint = "/openApi/swap/v2/trade/order"
+                response = self._make_request('POST', endpoint, data=order_data, signed=True)
+
+                if response.get('code') == 0:
+                    order_info = response.get('data', {}).get('order', {})
+                    return {
+                        'success': True,
+                        'order_id': order_info.get('orderId'),
+                        'response': response['data']
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'error': response.get('msg', 'Unknown error')
+                    }
+        except Exception as e:
+            self.logger.error(f"Failed to execute order: {e}")
+            return {'success': False, 'error': str(e)}
+
+    def _place_conditional_order(self, symbol: str, side: str, quantity: str, stop_price: str,
+                               order_type: str, position_side: str) -> Dict[str, Any]:
+        """Place a conditional order (stop loss or take profit)."""
+        try:
+            # For conditional orders on BingX, the parameters depend on the order type
+            # STOP_MARKET and TAKE_PROFIT_MARKET orders use 'stopPrice' parameter
+            conditional_order_data = {
+                'symbol': symbol,
+                'side': side,
+                'type': order_type,
+                'quantity': quantity,
+                'stopPrice': stop_price,
+                'positionSide': position_side,
+                'timeInForce': 'GTC'  # Good till cancelled for conditional orders
+            }
 
             endpoint = "/openApi/swap/v2/trade/order"
-            response = self._make_request('POST', endpoint, data=order_data, signed=True)
+            response = self._make_request('POST', endpoint, data=conditional_order_data, signed=True)
 
             if response.get('code') == 0:
                 order_info = response.get('data', {}).get('order', {})
@@ -411,12 +597,15 @@ class _BingXBroker:
                     'response': response['data']
                 }
             else:
+                # Return the error message from the API
+                error_msg = response.get('msg', 'Unknown error from conditional order')
+                self.logger.error(f"Conditional order failed: {error_msg}")
                 return {
                     'success': False,
-                    'error': response.get('msg', 'Unknown error')
+                    'error': error_msg
                 }
         except Exception as e:
-            self.logger.error(f"Failed to execute order: {e}")
+            self.logger.error(f"Failed to place conditional order: {e}")
             return {'success': False, 'error': str(e)}
 
     def get_account_balance(self) -> List[Dict[str, Any]]:
