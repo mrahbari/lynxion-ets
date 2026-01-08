@@ -17,7 +17,7 @@ from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapt
 from application.data_sync.sync_manager import SyncManager
 from shared.logger import EnhancedLogger
 from infrastructure.brokers.multi_broker_service import MultiBrokerExecutionService
-from infrastructure.data.data_cache import data_cache
+from infrastructure.data.improved_data_cache import improved_data_cache as data_cache
 from infrastructure.data.configurable_historical_data_provider import ConfigurableHistoricalDataProvider
 
 
@@ -78,6 +78,11 @@ class EnhancedDataProviderAdapter(DataProviderPort):
         self.csv_provider = CSVHistoryLoaderAdapter(base_path=csv_base_path)
 
         # Initialize download components if enabled
+
+        # Add caching and synchronization for symbol availability checks
+        self._symbol_availability_cache = {}
+        self._cache_lock = threading.Lock()
+        self._cache_timeout = timedelta(minutes=2)  # Cache timeout of 2 minutes for symbol availability
         if self.download_enabled:
             self.file_repo = FileRepositoryAdapter()
             self.data_downloader = DataDownloaderAdapter()
@@ -566,9 +571,24 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
     def _check_single_symbol(self, symbol: str) -> bool:
         """Check a single symbol availability using direct API call with exchange switching."""
+        # Check if we have a recent result for this symbol in our cache
+        cache_key = f"symbol_check_{symbol}"
+        current_time = datetime.now()
+        with self._cache_lock:
+            if cache_key in self._symbol_availability_cache:
+                timestamp, result = self._symbol_availability_cache[cache_key]
+                if current_time - timestamp < self._cache_timeout:
+                    self.logger.debug(f"Symbol {symbol} availability found in cache: {result}")
+                    return result
+
         # First check if the symbol is in the cached available symbols
         if symbol in self._available_symbols_cache:
             self.logger.debug(f"Symbol {symbol} found in cache")
+
+            # Cache this positive result
+            with self._cache_lock:
+                self._symbol_availability_cache[cache_key] = (current_time, True)
+
             return True
 
         # If not in cache, check if broker service is available to check symbol
@@ -636,7 +656,14 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                 self.logger.error(f"Traceback: {traceback.format_exc()}")
 
         # Fallback to direct API call with exchange switching
-        return self._check_symbol_via_multiple_exchanges(symbol)
+        result = self._check_symbol_via_multiple_exchanges(symbol)
+
+        # Cache the result
+        current_time = datetime.now()
+        with self._cache_lock:
+            self._symbol_availability_cache[cache_key] = (current_time, result)
+
+        return result
 
     def _check_symbol_via_multiple_exchanges(self, symbol: str) -> bool:
         """Check symbol availability across multiple exchanges with fallback."""

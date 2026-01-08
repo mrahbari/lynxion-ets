@@ -299,6 +299,22 @@ class EnterpriseRiskManager:
             'equity': self.starting_equity + self.total_pnl if self.equity_curve else self.starting_equity + self.total_pnl
         }
 
+    def has_active_position_in_direction(self, symbol: str, direction: PositionDirection) -> bool:
+        """
+        Check if there is already an active position in the same direction for the given symbol.
+
+        Args:
+            symbol: The trading symbol
+            direction: The position direction (LONG or SHORT)
+
+        Returns:
+            True if there is already an active position in the same direction, False otherwise
+        """
+        position = self.positions.get(symbol)
+        if position and position.direction == direction:
+            return True
+        return False
+
     def get_optimizable_params(self) -> Dict[str, Any]:
         """Get the current risk parameters that can be optimized."""
         return {

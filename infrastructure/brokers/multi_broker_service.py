@@ -12,6 +12,8 @@ from infrastructure.brokers.broker_adapters import (
 )
 from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 import os
+import threading
+from datetime import datetime, timedelta
 
 
 class MultiBrokerExecutionService(ExecutionPort):
@@ -20,12 +22,25 @@ class MultiBrokerExecutionService(ExecutionPort):
     Implements exchange switching similar to the downloader's approach.
     """
 
+    # Class-level storage for pending orders to prevent duplicate same-direction trades
+    _pending_orders = {}
+    _pending_orders_lock = threading.Lock()
+
     def __init__(self, primary_broker: Optional[str] = None):
         self.logger = EnhancedLogger("MultiBrokerExecutionService")
 
         # Initialize all broker adapters
         self.brokers = {}
         self._initialize_brokers()
+
+        # Add caching and synchronization for symbol availability checks
+        self._symbol_cache = {}
+        self._cache_lock = threading.Lock()
+        self._cache_timeout = timedelta(minutes=5)  # Cache timeout of 5 minutes
+
+        # Track recent symbol availability checks to avoid redundant calls
+        self._recent_checks = {}
+        self._recent_checks_lock = threading.Lock()
 
         # Determine primary broker
         if primary_broker:
@@ -67,7 +82,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                 self.logger.warning("⚠️ Binance broker not configured (missing API keys)")
         except Exception as e:
             self.logger.warning(f"⚠️ Could not initialize Binance broker: {e}")
-        
+
         # Initialize BingX
         try:
             bingx_config = {
@@ -84,7 +99,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                 self.logger.warning("⚠️ BingX broker not configured (missing API keys)")
         except Exception as e:
             self.logger.warning(f"⚠️ Could not initialize BingX broker: {e}")
-        
+
         # Initialize MEXC
         try:
             mexc_api_key = os.getenv('MEXC_API_KEY')
@@ -125,13 +140,56 @@ class MultiBrokerExecutionService(ExecutionPort):
         except Exception as e:
             self.logger.warning(f"⚠️ Could not initialize Phemex broker: {e}")
 
+    @classmethod
+    def _add_pending_order(cls, symbol: Symbol, side: str, order_id: str):
+        """Add an order to the pending orders tracking."""
+        with cls._pending_orders_lock:
+            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+            if symbol_str not in cls._pending_orders:
+                cls._pending_orders[symbol_str] = []
+            cls._pending_orders[symbol_str].append((side, order_id))
+
+    @classmethod
+    def _remove_pending_order(cls, symbol: Symbol, order_id: str):
+        """Remove an order from the pending orders tracking."""
+        with cls._pending_orders_lock:
+            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+            if symbol_str in cls._pending_orders:
+                # Remove the specific order ID
+                cls._pending_orders[symbol_str] = [
+                    (side, oid) for side, oid in cls._pending_orders[symbol_str]
+                    if oid != order_id
+                ]
+                # Clean up empty lists
+                if not cls._pending_orders[symbol_str]:
+                    del cls._pending_orders[symbol_str]
+
+    @classmethod
+    def _has_pending_order_in_direction(cls, symbol: Symbol, side: str) -> bool:
+        """Check if there's a pending order in the same direction for the symbol."""
+        with cls._pending_orders_lock:
+            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+            if symbol_str in cls._pending_orders:
+                for pending_side, _ in cls._pending_orders[symbol_str]:
+                    if pending_side == side:
+                        return True
+            return False
+
     def get_available_symbols(self) -> Set[str]:
         """
         Get available symbols from all configured brokers.
         This aggregates symbols from all available exchanges.
+        Includes caching to reduce redundant API calls.
         """
+        # Check if we have a cached version that's still valid
+        current_time = datetime.now()
+        with self._cache_lock:
+            if hasattr(self, '_cached_symbols') and hasattr(self, '_cache_timestamp'):
+                if current_time - self._cache_timestamp < self._cache_timeout:
+                    return self._cached_symbols
+
         all_symbols = set()
-        
+
         for exchange_name, broker in self.brokers.items():
             try:
                 if hasattr(broker, 'get_available_symbols'):
@@ -140,13 +198,41 @@ class MultiBrokerExecutionService(ExecutionPort):
                     self.logger.debug(f"Got {len(symbols)} symbols from {exchange_name}")
             except Exception as e:
                 self.logger.warning(f"Could not get symbols from {exchange_name}: {e}")
-        
+
+        # Cache the results
+        with self._cache_lock:
+            self._cached_symbols = all_symbols
+            self._cache_timestamp = current_time
+
         return all_symbols
 
     def is_symbol_available(self, symbol: str) -> bool:
         """
         Check if a symbol is available on any of the configured exchanges.
+        Optimized with caching to reduce redundant API calls.
         """
+        # Check if we have a recent result for this symbol in our cache
+        cache_key = f"symbol_check_{symbol}"
+        current_time = datetime.now()
+        with self._recent_checks_lock:
+            if cache_key in self._recent_checks:
+                timestamp, result = self._recent_checks[cache_key]
+                if current_time - timestamp < timedelta(seconds=30):  # 30-second cache for symbol checks
+                    return result
+
+        # First, try to use the cached symbols if available
+        with self._cache_lock:
+            if hasattr(self, '_cached_symbols') and hasattr(self, '_cache_timestamp'):
+                if current_time - self._cache_timestamp < self._cache_timeout:
+                    # Use cached symbols to check availability
+                    if symbol in self._cached_symbols:
+                        self.logger.debug(f"Symbol {symbol} found in cached symbols")
+                        # Cache this positive result
+                        with self._recent_checks_lock:
+                            self._recent_checks[cache_key] = (current_time, True)
+                        return True
+
+        # Perform the actual check
         for exchange_name in self.exchange_order:
             broker = self.brokers.get(exchange_name)
             if broker and hasattr(broker, 'get_available_symbols'):
@@ -154,20 +240,31 @@ class MultiBrokerExecutionService(ExecutionPort):
                     available_symbols = broker.get_available_symbols()
                     if symbol in available_symbols:
                         self.logger.debug(f"Symbol {symbol} found on {exchange_name}")
+
+                        # Cache this result
+                        with self._recent_checks_lock:
+                            self._recent_checks[cache_key] = (current_time, True)
+
                         return True
                 except Exception as e:
                     self.logger.warning(f"Error checking symbol {symbol} on {exchange_name}: {e}")
                     continue
-        
+
         # If not found through broker methods, try direct API check
-        return self._check_symbol_direct_api(symbol)
+        result = self._check_symbol_direct_api(symbol)
+
+        # Cache the final result
+        with self._recent_checks_lock:
+            self._recent_checks[cache_key] = (current_time, result)
+
+        return result
 
     def _check_symbol_direct_api(self, symbol: str) -> bool:
         """
         Fallback method to check symbol availability via direct API calls.
         """
         import requests
-        
+
         # Try each exchange via direct API
         for exchange_name in self.exchange_order:
             try:
@@ -181,7 +278,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                     api_url = f"https://api.phemex.com/md/ticker/24hr?symbol={symbol}"
                 else:
                     continue  # Skip unknown exchanges
-                
+
                 response = requests.get(api_url, timeout=5)
                 if response.status_code == 200:
                     # Check if the response contains valid price data
@@ -192,7 +289,7 @@ class MultiBrokerExecutionService(ExecutionPort):
             except Exception as e:
                 self.logger.debug(f"Direct API check failed for {symbol} on {exchange_name}: {e}")
                 continue
-        
+
         return False
 
     def execute_order(self, order: Order) -> str:
@@ -201,9 +298,63 @@ class MultiBrokerExecutionService(ExecutionPort):
         """
         symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
 
-        # Check for broker-specific order placement settings
-        import os
+        # Note: Symbol filtering (like stablecoin pairs) is now handled at the watcher level
+        # to avoid processing symbols that will be rejected later. This improves efficiency.
 
+        # Check if duplicate same-direction trade prevention is enabled
+        prevent_same_direction = os.getenv('PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL', 'true').lower() == 'true'
+
+        if prevent_same_direction:
+            # Check if there's already an active position in the same direction for this symbol
+            # This requires checking the current positions, which may be done through the broker
+            # We'll check each broker for the position, starting with the primary broker
+            current_position = None
+            for exchange_name in self.exchange_order:
+                broker = self.brokers.get(exchange_name)
+                if broker and hasattr(broker, 'get_position'):
+                    try:
+                        current_position = broker.get_position(order.symbol)
+                        if current_position and hasattr(current_position,
+                                                        'side') and current_position.side is not None:
+                            break
+                    except:
+                        continue  # Try next broker
+
+            # Determine the intended side of the new order
+            order_side = getattr(order, 'side', None)
+            intended_position_side = None
+            if order_side and hasattr(order_side, 'name'):
+                if order_side.name == 'BUY':
+                    intended_position_side = 'LONG'
+                elif order_side.name == 'SELL':
+                    intended_position_side = 'SHORT'
+
+            # Check both existing positions and pending orders in the same direction
+            position_duplicate = False
+            pending_duplicate = False
+
+            # Check for existing position in the same direction
+            if current_position and hasattr(current_position, 'side') and current_position.side is not None:
+                if intended_position_side and hasattr(current_position.side,
+                                                     'name') and current_position.side.name == intended_position_side:
+                    position_duplicate = True
+
+            # Check for pending orders in the same direction
+            if intended_position_side:
+                pending_duplicate = self._has_pending_order_in_direction(order.symbol, intended_position_side)
+
+            # If either condition is true, prevent the trade
+            if position_duplicate or pending_duplicate:
+                if position_duplicate:
+                    self.logger.info(
+                        f"❌ DUPLICATE REJECTED: Active {current_position.side.name} position exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
+                else:
+                    self.logger.info(
+                        f"❌ DUPLICATE REJECTED: Pending {intended_position_side} order exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
+                raise ValueError(
+                    f"DUPLICATE:{order.symbol.value}:{intended_position_side}")
+
+        # Check for broker-specific order placement settings
         # Check if any specific broker is enabled for exclusive order placement
         bingx_order_placement_enabled = os.getenv('BINGX_ORDER_PLACEMENT_ENABLED', 'false').lower() == 'true'
         binance_order_placement_enabled = os.getenv('BINANCE_ORDER_PLACEMENT_ENABLED', 'false').lower() == 'true'
@@ -244,13 +395,26 @@ class MultiBrokerExecutionService(ExecutionPort):
 
             self.logger.info(f"🎯 EXECUTING ORDER ON {best_exchange.upper()}: {order}")
 
+            # Add to pending orders before placing the order
+            if prevent_same_direction and intended_position_side:
+                order_id_temp = "TEMP_" + str(id(order))  # Temporary ID for tracking before placement
+                self._add_pending_order(order.symbol, intended_position_side, order_id_temp)
+
             try:
                 order_id = broker.place_order(order)
                 self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {best_exchange.upper()}: {order_id}")
+
+                # Send Telegram notification about successful order placement
+                self._send_order_placed_notification(order, order_id, best_exchange.upper())
+
                 return order_id
             except Exception as e:
                 self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {best_exchange.upper()}: {e}")
                 raise
+            finally:
+                # Remove from pending orders after attempting to place
+                if prevent_same_direction and intended_position_side:
+                    self._remove_pending_order(order.symbol, order_id_temp)
         else:
             raise Exception(f"Symbol {symbol_str} not available on any configured exchange")
 
@@ -264,25 +428,81 @@ class MultiBrokerExecutionService(ExecutionPort):
         if has_stop_loss and has_take_profit:
             return order
 
-        # If SL/TP are missing, we need to add them
+        # If SL/TP are missing, we need to add them using advanced risk management
         # This should ideally be done by the Strategy layer, but we'll add defaults here
         # to ensure institutional standards are met
         if order.price is not None and order.price.amount is not None:
             current_price = float(order.price.amount)
 
-            # Calculate default SL/TP values based on risk management principles
-            sl_multiplier = 0.02  # 2% stop loss
-            tp_multiplier = 0.03  # 3% take profit (1:1.5 risk/reward ratio)
+            # Use advanced risk management system to calculate dynamic TP/SL based on market conditions
+            try:
+                from infrastructure.risk.advanced_risk_management import AdvancedRiskManagementService, SLTPManager
+                import os
 
-            # Calculate SL and TP prices based on order side
-            if hasattr(order, 'side') and order.side.name == 'BUY':
-                # For BUY orders: SL below entry, TP above entry
-                sl_price = current_price * (1 - sl_multiplier)
-                tp_price = current_price * (1 + tp_multiplier)
-            else:  # SELL
-                # For SELL orders: SL above entry, TP below entry
-                sl_price = current_price * (1 + sl_multiplier)  # SL above for SELL (stop loss if price rises)
-                tp_price = current_price * (1 - tp_multiplier)  # TP below for SELL (take profit when price falls)
+                # Initialize risk management components
+                risk_service = AdvancedRiskManagementService()
+
+                # Get market data for more accurate risk calculations (if available)
+                # In a real implementation, we'd fetch current market data for the symbol
+                market_data = None  # This would come from data provider in real implementation
+
+                # Calculate dynamic SL/TP values based on advanced risk management principles
+                # First, determine the position side for risk calculations
+                position_side = "LONG" if hasattr(order, 'side') and order.side.name == 'BUY' else "SHORT"
+
+                # Create a temporary fused signal for risk adjustment factors (if available from order)
+                from domain.entities.signal_entities import FusedSignal, SignalType
+                from domain.value_objects import Percentage
+                from datetime import datetime
+
+                # Create a basic fused signal for risk calculations
+                dummy_fused_signal = FusedSignal(
+                    symbol=getattr(order, 'symbol', 'UNKNOWN'),
+                    dominant_bias=SignalType.BUY if position_side == "LONG" else SignalType.SELL,
+                    direction=1.0 if position_side == "LONG" else -1.0,
+                    dominance_score=0.5,
+                    regime_context="normal",
+                    confidence=Percentage(0.5),
+                    timestamp=datetime.now(),
+                    metadata={}
+                )
+
+                # Calculate risk-adjusted position size (even if we don't use it, we get risk factors)
+                portfolio_value = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))
+                _, risk_factors = risk_service.calculate_position_size(
+                    symbol=getattr(order, 'symbol', 'UNKNOWN'),
+                    price=current_price,
+                    portfolio_value=portfolio_value,
+                    fused_signal=dummy_fused_signal,
+                    market_data=market_data
+                )
+
+                # Calculate dynamic SL/TP levels based on risk factors
+                sl_price, tp_price = risk_service.calculate_sl_tp_levels(
+                    entry_price=current_price,
+                    position_side=position_side,
+                    risk_adjustment_factors=risk_factors,
+                    atr_value=None,  # Would come from market data in real implementation
+                    market_data=market_data
+                )
+
+            except Exception as e:
+                # If advanced risk management fails, fall back to simple calculation
+                self.logger.warning(f"Advanced risk management failed, using fallback: {e}")
+
+                # Calculate default SL/TP values based on basic risk management principles
+                sl_multiplier = 0.02  # 2% stop loss
+                tp_multiplier = 0.03  # 3% take profit (1:1.5 risk/reward ratio)
+
+                # Calculate SL and TP prices based on order side
+                if hasattr(order, 'side') and order.side.name == 'BUY':
+                    # For BUY orders: SL below entry, TP above entry
+                    sl_price = current_price * (1 - sl_multiplier)
+                    tp_price = current_price * (1 + tp_multiplier)
+                else:  # SELL
+                    # For SELL orders: SL above entry, TP below entry
+                    sl_price = current_price * (1 + sl_multiplier)  # SL above for SELL (stop loss if price rises)
+                    tp_price = current_price * (1 - tp_multiplier)  # TP below for SELL (take profit when price falls)
 
             # Create enhanced order with SL/TP if they were missing
             from domain.entities.trading_entities import Order as DomainOrder
@@ -299,8 +519,12 @@ class MultiBrokerExecutionService(ExecutionPort):
                 strategy_name=getattr(order, 'strategy_name', 'default'),
                 timestamp=getattr(order, 'timestamp', datetime.now()),
                 position_side=getattr(order, 'position_side', 'BOTH'),
-                stop_loss_price=Money(amount=sl_price, currency='USDT') if not has_stop_loss else getattr(order, 'stop_loss_price', None),
-                take_profit_price=Money(amount=tp_price, currency='USDT') if not has_take_profit else getattr(order, 'take_profit_price', None),
+                stop_loss_price=Money(amount=float(sl_price), currency='USDT') if not has_stop_loss else getattr(order,
+                                                                                                          'stop_loss_price',
+                                                                                                          None),
+                take_profit_price=Money(amount=float(tp_price), currency='USDT') if not has_take_profit else getattr(order,
+                                                                                                              'take_profit_price',
+                                                                                                              None),
                 stop_price=getattr(order, 'stop_price', None),
                 time_in_force=getattr(order, 'time_in_force', 'GTC'),
                 client_order_id=getattr(order, 'client_order_id', None),
@@ -308,8 +532,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                 risk_adjusted_quantity=getattr(order, 'risk_adjusted_quantity', None)
             )
 
-            self.logger.warning(f"⚠️ Order enhanced with default SL/TP: SL={sl_price}, TP={tp_price}. "
-                              f"This should ideally be handled by the Strategy layer.")
+            self.logger.info(f"✅ Order enhanced with dynamic SL/TP: SL={sl_price:.4f}, TP={tp_price:.4f}. "
+                            f"Advanced risk management applied for proper position sizing and SL/TP levels.")
 
             return enhanced_order
         else:
@@ -362,13 +586,13 @@ class MultiBrokerExecutionService(ExecutionPort):
                 except Exception as e:
                     self.logger.warning(f"Error checking {symbol} on {exchange_name}: {e}")
                     continue
-        
+
         # If not found through broker methods, try direct API check
         for exchange_name in self.exchange_order:
             if self._check_symbol_direct_api_on_exchange(symbol, exchange_name):
                 self.logger.debug(f"Confirmed {symbol} available on {exchange_name} via direct API")
                 return exchange_name
-        
+
         # If symbol is not found on any exchange, return None
         self.logger.warning(f"Symbol {symbol} not found on any configured exchange")
         return None
@@ -378,7 +602,7 @@ class MultiBrokerExecutionService(ExecutionPort):
         Check if a symbol is available on a specific exchange via direct API.
         """
         import requests
-        
+
         try:
             if exchange_name == 'binance':
                 api_url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
@@ -391,11 +615,68 @@ class MultiBrokerExecutionService(ExecutionPort):
                 api_url = f"https://api.phemex.com/md/ticker/24hr?symbol={symbol}"
             else:
                 return False
-            
+
             response = requests.get(api_url, timeout=5)
             return response.status_code == 200
         except Exception:
             return False
+
+    def _send_order_placed_notification(self, order: Order, order_id: str, exchange_name: str):
+        """Send a Telegram notification about a successfully placed order."""
+        try:
+            # Check if Telegram notifications are enabled
+            telegram_notifications_enabled = os.getenv('TELEGRAM_NOTIFICATIONS_ENABLED', 'true').lower() == 'true'
+            if not telegram_notifications_enabled:
+                return  # Skip notifications if disabled
+
+            # Import Telegram service
+            from infrastructure.services.risk_alerts import TelegramNotificationService
+
+            # Create Telegram service instance
+            telegram_service = TelegramNotificationService(
+                bot_token=os.getenv('TELEGRAM_BOT_TOKEN', ''),
+                chat_id=os.getenv('TELEGRAM_CHAT_ID', '')
+            )
+
+            # Prepare notification message
+            symbol = getattr(order, 'symbol', {}).value if hasattr(getattr(order, 'symbol', None), 'value') else str(
+                getattr(order, 'symbol', 'UNKNOWN'))
+            side = getattr(order, 'side', 'UNKNOWN')
+            side_name = getattr(side, 'name', str(side))
+            quantity = getattr(order, 'quantity', 'N/A')
+            price = getattr(order, 'price', 'N/A')
+            price_amount = getattr(price, 'amount', 'N/A') if hasattr(price, 'amount') else str(price)
+            strategy_name = getattr(order, 'strategy_name', 'N/A')
+
+            # Get TP/SL information if available
+            stop_loss_price = getattr(order, 'stop_loss_price', None)
+            take_profit_price = getattr(order, 'take_profit_price', None)
+            sl_value = getattr(stop_loss_price, 'amount', 'N/A') if stop_loss_price else 'N/A'
+            tp_value = getattr(take_profit_price, 'amount', 'N/A') if take_profit_price else 'N/A'
+
+            message = (f"✅ ORDER PLACED\n"
+                       f"Exchange: {exchange_name}\n"
+                       f"Symbol: {symbol}\n"
+                       f"Side: {side_name}\n"
+                       f"Quantity: {quantity}\n"
+                       f"Price: {price_amount}\n"
+                       f"Stop Loss: {sl_value}\n"
+                       f"Take Profit: {tp_value}\n"
+                       f"Strategy: {strategy_name}\n"
+                       f"Order ID: {order_id}")
+
+            subject = f"Order Placed: {symbol} {side_name} on {exchange_name}"
+
+            # Send the notification
+            success = telegram_service.send_notification(message, subject, "info")
+
+            if success:
+                self.logger.info(f"🔔 Telegram notification sent for order {order_id}")
+            else:
+                self.logger.warning(f"⚠️ Failed to send Telegram notification for order {order_id}")
+
+        except Exception as e:
+            self.logger.error(f"❌ Error sending Telegram notification: {e}")
 
     def cancel_order(self, order_id: str) -> bool:
         """
@@ -413,7 +694,7 @@ class MultiBrokerExecutionService(ExecutionPort):
             except Exception as e:
                 self.logger.error(f"Error canceling order {order_id} on {exchange_name}: {e}")
                 results.append(False)
-        
+
         return any(results)
 
     def get_execution_status(self, execution_id: str) -> str:

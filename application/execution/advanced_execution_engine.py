@@ -64,7 +64,8 @@ class AdvancedExecutionEngine:
     def execute_entry(self, symbol: str, entry_price: float, direction: PositionDirection,
                      signal_strength: float = 1.0, volatility: float = 1.0,
                      position_size_model: str = 'fixed_risk',
-                     portfolio_equity: float = 100000, risk_per_trade: float = 0.01) -> bool:
+                     portfolio_equity: float = 100000, risk_per_trade: float = 0.01,
+                     prevent_same_direction: bool = True) -> bool:
         """
         Execute a position entry with full risk management
         """
@@ -72,6 +73,12 @@ class AdvancedExecutionEngine:
         if not self.risk_manager.is_trading_allowed():
             print(f"Execution blocked: Risk limits exceeded")
             return False
+
+        # Check if duplicate same-direction trade prevention is enabled
+        if prevent_same_direction and hasattr(self.risk_manager, 'has_active_position_in_direction'):
+            if self.risk_manager.has_active_position_in_direction(symbol, direction):
+                print(f"Execution blocked: Already have an active {direction.value} position for {symbol}")
+                return False
 
         # Calculate stop loss and take profit
         sl, tp = self.calculate_stop_loss_take_profit(entry_price, direction, signal_strength, volatility)
@@ -110,9 +117,9 @@ class AdvancedExecutionEngine:
                 'signal_strength': signal_strength,
                 'volatility': volatility
             })
-            
+
             print(f"Position entered: {symbol} {direction.value} at {entry_price}, size: {size:.2f}")
-        
+
         return success
 
     def process_candle(self, symbol: str, candle_high: float, candle_low: float, 
@@ -162,7 +169,8 @@ class AdvancedExecutionEngine:
         return self.risk_manager.positions.get(symbol)
 
     def process_signal(self, symbol: str, signal_direction: PositionDirection, signal_confidence: float,
-                      market_data: Dict[str, float], position_size_model: str = 'fixed_risk') -> bool:
+                      market_data: Dict[str, float], position_size_model: str = 'fixed_risk',
+                      prevent_same_direction: bool = True) -> bool:
         """
         Process a trading signal and execute if conditions are met
         """
@@ -175,23 +183,18 @@ class AdvancedExecutionEngine:
         portfolio_equity = market_data.get('portfolio_equity', self.risk_manager.starting_equity)
         risk_per_trade = market_data.get('risk_per_trade', self.risk_manager.max_risk_per_trade)
 
-        # Execute entry if no position exists for this symbol
-        if symbol not in self.risk_manager.positions:
-            return self.execute_entry(
-                symbol=symbol,
-                entry_price=current_price,
-                direction=signal_direction,
-                signal_strength=signal_confidence,
-                volatility=volatility,
-                position_size_model=position_size_model,
-                portfolio_equity=portfolio_equity,
-                risk_per_trade=risk_per_trade
-            )
-        else:
-            # Position already exists, could implement additional logic here
-            # such as position adding or modification
-            print(f"Position already exists for {symbol}, skipping entry")
-            return False
+        # Execute entry with duplicate prevention
+        return self.execute_entry(
+            symbol=symbol,
+            entry_price=current_price,
+            direction=signal_direction,
+            signal_strength=signal_confidence,
+            volatility=volatility,
+            position_size_model=position_size_model,
+            portfolio_equity=portfolio_equity,
+            risk_per_trade=risk_per_trade,
+            prevent_same_direction=prevent_same_direction
+        )
 
     def get_execution_metrics(self) -> Dict[str, any]:
         """
