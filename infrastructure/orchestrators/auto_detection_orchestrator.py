@@ -387,18 +387,41 @@ class AutoDetectionOrchestrator:
             # Ensure symbol is properly formatted for the broker
             symbol_value = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
 
+            # Use risk management system to calculate dynamic TP/SL based on market conditions
+            from infrastructure.risk.advanced_risk_management import AdvancedPositionSizingService, SLTPManager
+
+            # Initialize risk management components
+            position_sizing_service = AdvancedPositionSizingService(
+                portfolio_equity=float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))
+            )
+
+            sltp_manager = SLTPManager(
+                sl_activation_pct=risk_params.get('stop_loss_pct', 0.02),  # 2% default SL
+                tp_activation_pct=risk_params.get('take_profit_pct', 0.03)  # 3% default TP
+            )
+
+            # Calculate dynamic stop loss and take profit prices based on risk parameters
+            if order_side.name == 'BUY':
+                # For long positions: SL below entry, TP above entry
+                sl_price = current_price * (1 - risk_params.get('stop_loss_pct', 0.02))
+                tp_price = current_price * (1 + risk_params.get('take_profit_pct', 0.03))
+            else:  # SELL
+                # For short positions: SL above entry, TP below entry
+                sl_price = current_price * (1 + risk_params.get('stop_loss_pct', 0.02))  # SL above for SELL
+                tp_price = current_price * (1 - risk_params.get('take_profit_pct', 0.03))  # TP below for SELL
+
             # Create order with proper risk parameters from the intent
             order = Order(
                 symbol=symbol_value,  # Use string value instead of Symbol object
                 side=order_side,
                 order_type="MARKET",  # Using string instead of enum
                 quantity=quantity,
-                price=Money(amount=current_price, currency='USDT') if current_price else None,
+                price=Money(amount=float(current_price), currency='USDT') if current_price else None,
                 strategy_name=execution_intent.strategy_name,  # Strategy name comes from intent
                 timestamp=datetime.now(),
                 position_side=position_side,  # Add position side for futures trading
-                stop_loss_price=Money(amount=risk_params.get('stop_loss_price', current_price * 0.98), currency='USDT'),  # Default SL
-                take_profit_price=Money(amount=risk_params.get('take_profit_price', current_price * 1.03), currency='USDT'),  # Default TP
+                stop_loss_price=Money(amount=float(sl_price), currency='USDT'),  # Dynamic SL based on risk
+                take_profit_price=Money(amount=float(tp_price), currency='USDT'),  # Dynamic TP based on risk
                 parent_execution_intent=execution_intent  # Link back to the execution intent
             )
 

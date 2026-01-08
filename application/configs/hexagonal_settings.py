@@ -80,6 +80,7 @@ class HexagonalConfig:
     enable_vwap: bool = True
     smart_order_routing: bool = True
     min_order_quantity: float = 0.001
+    prevent_same_direction_trade_per_symbol: bool = True
     
     # Broker settings
     enabled_brokers: List[str] = field(default_factory=lambda: ["BingX"])
@@ -155,6 +156,7 @@ class HexagonalConfig:
         self.enable_vwap = os.getenv("ENABLE_VWAP", str(self.enable_vwap)).lower() == "true"
         self.smart_order_routing = os.getenv("SMART_ORDER_ROUTING", str(self.smart_order_routing)).lower() == "true"
         self.min_order_quantity = float(os.getenv("MIN_ORDER_QUANTITY", str(self.min_order_quantity)))
+        self.prevent_same_direction_trade_per_symbol = os.getenv("PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL", str(self.prevent_same_direction_trade_per_symbol)).lower() == "true"
 
         # Broker settings
         self.enabled_brokers = os.getenv("ENABLED_BROKERS", ",".join(self.enabled_brokers)).split(",")

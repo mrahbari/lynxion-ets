@@ -337,7 +337,14 @@ def run_production_orchestrator(data_fetcher, strategy_name="crypto_breakout",
     # Create enhanced data provider that uses real data and can download missing symbols
     # Use environment variable or default path for historical data
     # For now, pass the execution service as the broker service (it has access to the broker)
-    market_data_repo = create_enhanced_data_provider(csv_base_path=None, download_enabled=True, broker_service=execution_service)
+    # Configure to use binance as primary source for historical data to avoid BingX rate limits
+    market_data_repo = create_enhanced_data_provider(
+        csv_base_path=None,
+        download_enabled=True,
+        broker_service=execution_service,
+        historical_data_source=os.getenv('PREFERRED_HISTORICAL_DATA_SOURCE', 'binance'),  # Use binance by default to avoid BingX rate limits
+        fallback_sources=['mexc', 'phemex', 'bingx']  # Fallback order to avoid rate limits
+    )
     portfolio_service = MockPortfolioService()
     optimization_service = MockOptimizationService()
 
@@ -364,6 +371,7 @@ def run_production_orchestrator(data_fetcher, strategy_name="crypto_breakout",
 
 import sys
 import argparse
+import os
 
 
 def create_parser():
@@ -663,7 +671,14 @@ if __name__ == "__main__":
             # Create enhanced data provider that uses real data and can download missing symbols
             # Use environment variable or default path for historical data
             # For now, pass the execution service as the broker service (it has access to the broker)
-            market_data_repo = create_enhanced_data_provider(csv_base_path=None, download_enabled=True, broker_service=execution_service)
+            # Configure to use binance as primary source for historical data to avoid BingX rate limits
+            market_data_repo = create_enhanced_data_provider(
+                csv_base_path=None,
+                download_enabled=True,
+                broker_service=execution_service,
+                historical_data_source=os.getenv('PREFERRED_HISTORICAL_DATA_SOURCE', 'binance'),  # Use binance by default to avoid BingX rate limits
+                fallback_sources=['mexc', 'phemex', 'bingx']  # Fallback order to avoid rate limits
+            )
             portfolio_service = MockPortfolioService()
             optimization_service = MockOptimizationService()
 

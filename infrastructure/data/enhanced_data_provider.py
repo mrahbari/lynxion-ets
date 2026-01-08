@@ -17,6 +17,8 @@ from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapt
 from application.data_sync.sync_manager import SyncManager
 from shared.logger import EnhancedLogger
 from infrastructure.brokers.multi_broker_service import MultiBrokerExecutionService
+from infrastructure.data.improved_data_cache import improved_data_cache as data_cache
+from infrastructure.data.configurable_historical_data_provider import ConfigurableHistoricalDataProvider
 
 
 def _convert_period_to_ms(period: str) -> int:
@@ -41,11 +43,12 @@ def _convert_period_to_ms(period: str) -> int:
 
 class EnhancedDataProviderAdapter(DataProviderPort):
     """
-    Enhanced data provider that can automatically download historical data 
+    Enhanced data provider that can automatically download historical data
     for new symbols that are not found in the local data directory.
     """
-    
-    def __init__(self, csv_base_path: str = None, download_enabled: bool = True, broker_service=None):
+
+    def __init__(self, csv_base_path: str = None, download_enabled: bool = True, broker_service=None,
+                 historical_data_source: str = None, fallback_sources: list = None):
         """
         Initialize the enhanced data provider.
 
@@ -53,6 +56,8 @@ class EnhancedDataProviderAdapter(DataProviderPort):
             csv_base_path: Path to CSV historical data files
             download_enabled: Whether to enable automatic downloading of missing data
             broker_service: Broker service to use for symbol availability checks
+            historical_data_source: Preferred data source for historical data ('bingx', 'binance', 'mexc', 'phemex', 'multi')
+            fallback_sources: List of fallback data sources in order of preference
         """
         # Use environment variable or default for base path
         if csv_base_path is None:
@@ -63,10 +68,21 @@ class EnhancedDataProviderAdapter(DataProviderPort):
         self.broker_service = broker_service
         self.logger = EnhancedLogger("EnhancedDataProvider")
 
+        # Initialize configurable historical data provider for fetching data from multiple sources
+        self.historical_data_provider = ConfigurableHistoricalDataProvider(
+            preferred_data_source=historical_data_source,
+            fallback_sources=fallback_sources
+        )
+
         # Initialize the base CSV provider
         self.csv_provider = CSVHistoryLoaderAdapter(base_path=csv_base_path)
 
         # Initialize download components if enabled
+
+        # Add caching and synchronization for symbol availability checks
+        self._symbol_availability_cache = {}
+        self._cache_lock = threading.Lock()
+        self._cache_timeout = timedelta(minutes=2)  # Cache timeout of 2 minutes for symbol availability
         if self.download_enabled:
             self.file_repo = FileRepositoryAdapter()
             self.data_downloader = DataDownloaderAdapter()
@@ -177,46 +193,86 @@ class EnhancedDataProviderAdapter(DataProviderPort):
             return self._get_minimal_data_for_symbol(symbol.value)
 
     def _get_real_historical_from_external_source(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
-        """Fetch real historical data from external sources like exchanges."""
-        # This method should be implemented to fetch from real exchanges
-        # For now, we'll try to use the existing binance_client as an external source
-        # but in a proper implementation, this would be handled by broker adapters
+        """Fetch real historical data from external sources like exchanges with caching."""
+        # Try to get data from cache first
+        broker_name = self._get_broker_name()
+        cached_data = data_cache.get(broker_name, symbol, timeframe)
+        if cached_data:
+            self.logger.debug(f"Using cached data for {symbol} {timeframe} from {broker_name}")
+            return cached_data
 
-        # Try to get data from the existing binance client
+        # Use the configurable historical data provider to fetch data from multiple sources
         try:
-            from .binance_client import BinanceClient
-            client = BinanceClient()
+            # Convert Symbol if needed
+            from domain.value_objects import Symbol as DomainSymbol
+            if not isinstance(symbol, DomainSymbol):
+                symbol_obj = DomainSymbol(symbol)
+            else:
+                symbol_obj = symbol
 
-            # Convert period to milliseconds for Binance API
-            start_time_ms = _convert_period_to_ms(period)
-            end_time_ms = int(datetime.now().timestamp() * 1000)
+            # Fetch historical data using the configurable provider
+            historical_data = self.historical_data_provider.get_historical_data(
+                symbol=symbol_obj,
+                period=period,
+                timeframe=timeframe
+            )
 
-            # Convert timeframe to Binance format (1m, 5m, 1h, etc.)
-            binance_timeframe = self._convert_timeframe_to_binance(timeframe)
+            if historical_data and len(historical_data) > 0:
+                self.logger.info(f"Fetched {len(historical_data)} historical data points from configurable source for {symbol}")
 
-            # Fetch klines from Binance
-            klines = client.get_klines(symbol, binance_timeframe, start_time_ms, end_time_ms)
-
-            if klines:
-                # Convert Binance kline format to our expected format
-                converted_data = []
-                for kline in klines:
-                    # Binance kline format: [open_time, open, high, low, close, volume, ...]
-                    converted_data.append({
-                        'timestamp': kline[0] // 1000,  # Convert ms to seconds
-                        'open': float(kline[1]),
-                        'high': float(kline[2]),
-                        'low': float(kline[3]),
-                        'close': float(kline[4]),
-                        'volume': float(kline[5])
-                    })
-                self.logger.info(f"Fetched {len(converted_data)} historical data points from external source for {symbol}")
-                return converted_data
+                # Cache the data to prevent duplicate requests
+                data_cache.set(broker_name, symbol, timeframe, historical_data, ttl=60)  # Cache for 60 seconds
+                return historical_data
         except Exception as e:
-            self.logger.debug(f"Could not fetch real historical data for {symbol} from external source: {e}")
-            pass
+            self.logger.debug(f"Could not fetch real historical data for {symbol} from configurable source: {e}")
+            # Fallback to the original method if configurable provider fails
+            try:
+                from .binance_client import BinanceClient
+                client = BinanceClient()
+
+                # Convert period to milliseconds for Binance API
+                start_time_ms = _convert_period_to_ms(period)
+                end_time_ms = int(datetime.now().timestamp() * 1000)
+
+                # Convert timeframe to Binance format (1m, 5m, 1h, etc.)
+                binance_timeframe = self._convert_timeframe_to_binance(timeframe)
+
+                # Fetch klines from Binance
+                klines = client.get_klines(symbol, binance_timeframe, start_time_ms, end_time_ms)
+
+                if klines:
+                    # Convert Binance kline format to our expected format
+                    converted_data = []
+                    for kline in klines:
+                        # Binance kline format: [open_time, open, high, low, close, volume, ...]
+                        converted_data.append({
+                            'timestamp': kline[0] // 1000,  # Convert ms to seconds
+                            'open': float(kline[1]),
+                            'high': float(kline[2]),
+                            'low': float(kline[3]),
+                            'close': float(kline[4]),
+                            'volume': float(kline[5])
+                        })
+                    self.logger.info(f"Fetched {len(converted_data)} historical data points from external source for {symbol}")
+
+                    # Cache the data to prevent duplicate requests
+                    data_cache.set(broker_name, symbol, timeframe, converted_data, ttl=60)  # Cache for 60 seconds
+                    return converted_data
+            except Exception as fallback_e:
+                self.logger.debug(f"Fallback method also failed for {symbol}: {fallback_e}")
+                pass
 
         return []
+
+    def _get_broker_name(self) -> str:
+        """Get the name of the broker being used."""
+        if self.broker_service:
+            if hasattr(self.broker_service, 'get_broker_name'):
+                return self.broker_service.get_broker_name()
+            elif hasattr(self.broker_service, 'broker'):
+                if hasattr(self.broker_service.broker, 'get_broker_name'):
+                    return self.broker_service.broker.get_broker_name()
+        return "unknown"
 
     def _convert_timeframe_to_binance(self, timeframe: str) -> str:
         """Convert internal timeframe to Binance format."""
@@ -303,7 +359,16 @@ class EnhancedDataProviderAdapter(DataProviderPort):
             return max(0.0001, (base_hash % 10000) / 10000.0)  # $0.0001 to $1
 
     def _get_real_price_from_exchange(self, symbol: str) -> Optional[float]:
-        """Fetch real price from exchange API."""
+        """Fetch real price from exchange API with caching."""
+        # Try to get price from cache first (use a short TTL for prices)
+        broker_name = self._get_broker_name()
+        cache_key = f"{broker_name}_price_{symbol}"
+        cached_price = data_cache.get(broker_name, f"price_{symbol}", "tick")  # Use "tick" as timeframe for prices
+        if cached_price and len(cached_price) > 0:
+            price = cached_price[0].get('price')
+            self.logger.debug(f"Using cached price {price} for {symbol} from {broker_name}")
+            return price
+
         # Try to get price via broker service if available
         if self.broker_service:
             try:
@@ -372,6 +437,9 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                 if 'price' in data:
                     price = float(data['price'])
                     self.logger.debug(f"Successfully fetched price {price} for {symbol} from direct API")
+
+                    # Cache the price with a short TTL (30 seconds for price data)
+                    data_cache.set(broker_name, f"price_{symbol}", "tick", [{'price': price}], ttl=30)
                     return price
             elif response.status_code == 400:
                 # Symbol not found on exchange
@@ -503,9 +571,24 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
     def _check_single_symbol(self, symbol: str) -> bool:
         """Check a single symbol availability using direct API call with exchange switching."""
+        # Check if we have a recent result for this symbol in our cache
+        cache_key = f"symbol_check_{symbol}"
+        current_time = datetime.now()
+        with self._cache_lock:
+            if cache_key in self._symbol_availability_cache:
+                timestamp, result = self._symbol_availability_cache[cache_key]
+                if current_time - timestamp < self._cache_timeout:
+                    self.logger.debug(f"Symbol {symbol} availability found in cache: {result}")
+                    return result
+
         # First check if the symbol is in the cached available symbols
         if symbol in self._available_symbols_cache:
             self.logger.debug(f"Symbol {symbol} found in cache")
+
+            # Cache this positive result
+            with self._cache_lock:
+                self._symbol_availability_cache[cache_key] = (current_time, True)
+
             return True
 
         # If not in cache, check if broker service is available to check symbol
@@ -573,7 +656,14 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                 self.logger.error(f"Traceback: {traceback.format_exc()}")
 
         # Fallback to direct API call with exchange switching
-        return self._check_symbol_via_multiple_exchanges(symbol)
+        result = self._check_symbol_via_multiple_exchanges(symbol)
+
+        # Cache the result
+        current_time = datetime.now()
+        with self._cache_lock:
+            self._symbol_availability_cache[cache_key] = (current_time, result)
+
+        return result
 
     def _check_symbol_via_multiple_exchanges(self, symbol: str) -> bool:
         """Check symbol availability across multiple exchanges with fallback."""
@@ -729,7 +819,8 @@ class EnhancedDataProviderAdapter(DataProviderPort):
         return self.csv_provider.unsubscribe_from_market_data(subscription_id)
 
 
-def create_enhanced_data_provider(csv_base_path: str = None, download_enabled: bool = True, broker_service=None) -> DataProviderPort:
+def create_enhanced_data_provider(csv_base_path: str = None, download_enabled: bool = True, broker_service=None,
+                                 historical_data_source: str = None, fallback_sources: list = None) -> DataProviderPort:
     """
     Factory function to create the enhanced data provider.
 
@@ -737,8 +828,16 @@ def create_enhanced_data_provider(csv_base_path: str = None, download_enabled: b
         csv_base_path: Path to CSV historical data files
         download_enabled: Whether to enable automatic downloading of missing data
         broker_service: Broker service to use for symbol availability checks
+        historical_data_source: Preferred data source for historical data ('bingx', 'binance', 'mexc', 'phemex', 'multi')
+        fallback_sources: List of fallback data sources in order of preference
 
     Returns:
         Configured enhanced data provider instance
     """
-    return EnhancedDataProviderAdapter(csv_base_path=csv_base_path, download_enabled=download_enabled, broker_service=broker_service)
+    return EnhancedDataProviderAdapter(
+        csv_base_path=csv_base_path,
+        download_enabled=download_enabled,
+        broker_service=broker_service,
+        historical_data_source=historical_data_source,
+        fallback_sources=fallback_sources
+    )

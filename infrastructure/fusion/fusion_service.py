@@ -166,15 +166,25 @@ class FusionService:
             signal = list(unique_signal_types)[0]
             signal_str = signal.value if hasattr(signal, 'value') else str(signal)
             if signal_str in ['BUY', 'SELL']:
-                return "trending" if avg_strength > 0.3 else "weak_trend"  # Lowered threshold for trending
+                # For single signal type, determine regime based on additional signal characteristics
+                # that would suggest different market conditions
+                if avg_strength > 0.5:
+                    # Strong signals could be trending or volatile depending on other factors
+                    # In a real system, we'd incorporate more market data like volatility, volume, etc.
+                    # For now, we'll make it dependent on the strength and diversity of signals
+                    return "trending"
+                else:
+                    return "weak_trend"
             else:
                 return "stable"
         elif len(unique_signal_types) > 2:
-            # Divergence among signals
+            # Divergence among signals - likely volatile market
             return "volatile" if avg_strength > 0.3 else "uncertain"
         else:
-            # Mixed signals
-            return "transitional"  # Changed from "reverting" to "transitional" for mixed signals
+            # Mixed signals - could be transitional or mean-reverting
+            # In a real system, we'd analyze more factors like price oscillation, RSI, etc.
+            # to determine if it's mean-reverting vs transitional
+            return "mean_reverting"  # Changed to mean_reverting for mixed signals
 
     def fuse_observations_hierarchically(self, observations_with_watchers: List[Dict[str, Any]], symbol: Symbol) -> Optional[FusedSignal]:
         """New method to fuse observations using hierarchical approach"""

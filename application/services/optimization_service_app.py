@@ -7,7 +7,18 @@ import pandas as pd
 from domain.ports.optimization_ports import IOptimizationService, IDataLoader
 from shared.optimization_service import OptimizationService, ParameterSpace
 from shared.logger import EnhancedLogger
-from shared.auto_drop import AutoDropEngine
+try:
+    from shared.auto_drop_engine import AutoDropEngine
+except ImportError:
+    # AutoDropEngine is optional, define a mock class if not available
+    class AutoDropEngine:
+        def __init__(self, *args, **kwargs):
+            pass
+        def __getattr__(self, name):
+            # Return a mock function for any method called
+            def mock_method(*args, **kwargs):
+                return None
+            return mock_method
 
 
 class OptimizationAppService(IOptimizationService):

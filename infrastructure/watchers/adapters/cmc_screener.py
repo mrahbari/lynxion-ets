@@ -101,8 +101,8 @@ class CMCScreener(WatcherPort):
             # Analyze market conditions
             market_observation = self._analyze_market_conditions(symbol)
 
-            # Update last observation if it's different enough
-            if self._should_emit_observation(market_observation):
+            # Update last observation if it's different enough and not None
+            if market_observation and self._should_emit_observation(market_observation):
                 self.last_observation = market_observation
                 self.logger.debug(f"CMCScreener generated observation: {market_observation.observation_type} for {symbol.value}")
 
@@ -293,9 +293,9 @@ class CMCScreener(WatcherPort):
         else:
             return 'neutral'
 
-    def _should_emit_observation(self, current_observation: MarketObservation) -> bool:
+    def _should_emit_observation(self, current_observation: Optional[MarketObservation]) -> bool:
         """Determine if a new observation should be emitted"""
-        if not self.last_observation:
+        if not current_observation or not self.last_observation:
             return True
 
         # Don't emit if the same observation type was generated recently with similar confidence
