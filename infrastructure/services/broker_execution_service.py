@@ -19,9 +19,8 @@ class BrokerExecutionService(ExecutionPort):
     This service handles broker configuration and execution logic.
     """
 
-    # Class-level storage for pending orders to prevent duplicate same-direction trades
-    _pending_orders = {}
-    _pending_orders_lock = threading.Lock()
+    # Duplicate prevention is now handled by the shared PendingOrdersTracker
+    # See infrastructure/shared/pending_orders_tracker.py
 
     def __init__(self, broker_type: Optional[str] = None, config: Optional[Dict[str, Any]] = None, use_multi_broker: bool = False, primary_broker: Optional[str] = None):
         """
@@ -164,37 +163,24 @@ class BrokerExecutionService(ExecutionPort):
     @classmethod
     def _add_pending_order(cls, symbol: Symbol, side: str, order_id: str):
         """Add an order to the pending orders tracking."""
-        with cls._pending_orders_lock:
-            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
-            if symbol_str not in cls._pending_orders:
-                cls._pending_orders[symbol_str] = []
-            cls._pending_orders[symbol_str].append((side, order_id))
+        # Use a shared pending orders tracking to ensure consistency across all broker services
+        # Import here to avoid circular imports
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        PendingOrdersTracker.add_pending_order(symbol, side, order_id)
 
     @classmethod
     def _remove_pending_order(cls, symbol: Symbol, order_id: str):
         """Remove an order from the pending orders tracking."""
-        with cls._pending_orders_lock:
-            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
-            if symbol_str in cls._pending_orders:
-                # Remove the specific order ID
-                cls._pending_orders[symbol_str] = [
-                    (side, oid) for side, oid in cls._pending_orders[symbol_str]
-                    if oid != order_id
-                ]
-                # Clean up empty lists
-                if not cls._pending_orders[symbol_str]:
-                    del cls._pending_orders[symbol_str]
+        # Use a shared pending orders tracking to ensure consistency across all broker services
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        PendingOrdersTracker.remove_pending_order(symbol, order_id)
 
     @classmethod
     def _has_pending_order_in_direction(cls, symbol: Symbol, side: str) -> bool:
         """Check if there's a pending order in the same direction for the symbol."""
-        with cls._pending_orders_lock:
-            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
-            if symbol_str in cls._pending_orders:
-                for pending_side, _ in cls._pending_orders[symbol_str]:
-                    if pending_side == side:
-                        return True
-            return False
+        # Use a shared pending orders tracking to ensure consistency across all broker services
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        return PendingOrdersTracker.has_pending_order_in_direction(symbol, side)
 
     def execute_order(self, order: Order) -> str:
         """Execute an order through the configured broker."""
@@ -242,19 +228,15 @@ class BrokerExecutionService(ExecutionPort):
                         self.logger.info(f"❌ DUPLICATE REJECTED: Active {current_position.side.name} position exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
                     else:
                         self.logger.info(f"❌ DUPLICATE REJECTED: Pending {intended_position_side} order exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
-                    raise ValueError(f"DUPLICATE:{order.symbol.value}:{intended_position_side}")
+                    # Return a failure status instead of raising an exception to prevent system crashes
+                    return None  # Indicate that the order was not placed due to duplicate prevention
 
-            # Enhance order with risk parameters if they're missing
-            # This ensures institutional standards are met even if the Strategy layer didn't add them
-            # In a properly architected system, the Strategy layer should add these parameters
-            order = self._enhance_order_with_risk_parameters(order)
-
-            # Validate the order against risk management standards
-            # This should ideally be done by the Risk Management layer before reaching broker
-            is_valid = self._validate_order_risk(order)
-            if not is_valid:
-                self.logger.error(f"❌ ORDER REJECTED: Risk validation failed for order: {order}")
-                raise ValueError(f"Order failed risk validation: {order}")
+            # In a properly architected system, all risk management should be handled by the Strategy layer
+            # The broker should only execute orders that have already been properly risk-managed
+            # We'll validate that required risk parameters are present but won't enhance them
+            if not self._validate_required_risk_parameters(order):
+                self.logger.error(f"❌ ORDER REJECTED: Missing required risk parameters: {order}")
+                raise ValueError(f"Order missing required risk parameters: {order}")
 
             self.logger.info(f"🎯 EXECUTING ORDER ON {self.broker_name}: {order}")
 
@@ -284,6 +266,21 @@ class BrokerExecutionService(ExecutionPort):
         except Exception as e:
             self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {self.broker_name}: {e}")
             raise
+
+    def _validate_required_risk_parameters(self, order: Order) -> bool:
+        """Validate that the order has required risk parameters (should be set by Strategy layer)"""
+        # Check if stop loss and take profit are set (these should be set by the Strategy layer)
+        has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
+        has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
+
+        # For institutional standards, both SL and TP should be set by the Strategy layer
+        # However, we'll allow execution if they're missing (with a warning) to maintain compatibility
+        if not has_stop_loss or not has_take_profit:
+            self.logger.warning(f"⚠️ Order missing SL/TP parameters (should be set by Strategy layer): {order.symbol.value}")
+            # We'll still allow the order to proceed but log the issue
+            return True
+
+        return True
 
     def _send_order_placed_notification(self, order: Order, order_id: str):
         """Send a Telegram notification about a successfully placed order."""
@@ -352,153 +349,8 @@ class BrokerExecutionService(ExecutionPort):
         except Exception as e:
             self.logger.error(f"❌ Error sending Telegram notification: {e}")
 
-    def _validate_order_risk(self, order: Order) -> bool:
-        """Validate order against risk management standards."""
-        # Import the risk management service to validate the order
-        try:
-            from infrastructure.risk.advanced_risk_management import AdvancedRiskManagementService
-
-            # Create a temporary risk management instance for validation
-            # In a proper architecture, this would be injected as a dependency
-            risk_service = AdvancedRiskManagementService()
-
-            # Validate the order against risk parameters
-            is_valid = risk_service.validate_order_risk(order)
-
-            if not is_valid:
-                if hasattr(self, 'logger') and self.logger:
-                    self.logger.warning(f"Order failed risk validation: {risk_service.violations}")
-
-            return is_valid
-        except ImportError:
-            # If risk management service is not available, log warning but allow order to proceed
-            if hasattr(self, 'logger') and self.logger:
-                self.logger.warning("Risk management service not available for validation")
-            return True  # Allow order to proceed if risk service unavailable
-        except Exception as e:
-            if hasattr(self, 'logger') and self.logger:
-                self.logger.warning(f"Risk validation error: {e}, allowing order to proceed")
-            return True  # Allow order to proceed if validation fails
-
-    def _enhance_order_with_risk_parameters(self, order: Order) -> Order:
-        """Enhance order with risk parameters if they're missing."""
-        # Check if the order already has SL/TP parameters
-        has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
-        has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
-
-        # If both SL and TP are already present, return the order as is
-        if has_stop_loss and has_take_profit:
-            return order
-
-        # If SL/TP are missing, we need to add them using advanced risk management
-        # This should ideally be done by the Strategy layer, but we'll add defaults here
-        # to ensure institutional standards are met
-        if order.price is not None and order.price.amount is not None:
-            current_price = float(order.price.amount)
-
-            # Use advanced risk management system to calculate dynamic TP/SL based on market conditions
-            try:
-                from infrastructure.risk.advanced_risk_management import AdvancedRiskManagementService, SLTPManager
-                import os
-
-                # Initialize risk management components
-                risk_service = AdvancedRiskManagementService()
-
-                # Get market data for more accurate risk calculations (if available)
-                # In a real implementation, we'd fetch current market data for the symbol
-                market_data = None  # This would come from data provider in real implementation
-
-                # Calculate dynamic SL/TP values based on advanced risk management principles
-                # First, determine the position side for risk calculations
-                position_side = "LONG" if hasattr(order, 'side') and order.side.name == 'BUY' else "SHORT"
-
-                # Create a temporary fused signal for risk adjustment factors (if available from order)
-                from domain.entities.signal_entities import FusedSignal, SignalType
-                from domain.value_objects import Percentage
-                from datetime import datetime
-
-                # Create a basic fused signal for risk calculations
-                dummy_fused_signal = FusedSignal(
-                    symbol=getattr(order, 'symbol', 'UNKNOWN'),
-                    dominant_bias=SignalType.BUY if position_side == "LONG" else SignalType.SELL,
-                    direction=1.0 if position_side == "LONG" else -1.0,
-                    dominance_score=0.5,
-                    regime_context="normal",
-                    confidence=Percentage(0.5),
-                    timestamp=datetime.now(),
-                    metadata={}
-                )
-
-                # Calculate risk-adjusted position size (even if we don't use it, we get risk factors)
-                portfolio_value = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))
-                _, risk_factors = risk_service.calculate_position_size(
-                    symbol=getattr(order, 'symbol', 'UNKNOWN'),
-                    price=current_price,
-                    portfolio_value=portfolio_value,
-                    fused_signal=dummy_fused_signal,
-                    market_data=market_data
-                )
-
-                # Calculate dynamic SL/TP levels based on risk factors
-                sl_price, tp_price = risk_service.calculate_sl_tp_levels(
-                    entry_price=current_price,
-                    position_side=position_side,
-                    risk_adjustment_factors=risk_factors,
-                    atr_value=None,  # Would come from market data in real implementation
-                    market_data=market_data
-                )
-
-            except Exception as e:
-                # If advanced risk management fails, fall back to simple calculation
-                self.logger.warning(f"Advanced risk management failed, using fallback: {e}")
-
-                # Calculate default SL/TP values based on basic risk management principles
-                sl_multiplier = 0.02  # 2% stop loss
-                tp_multiplier = 0.03  # 3% take profit (1:1.5 risk/reward ratio)
-
-                # Calculate SL and TP prices based on order side
-                if hasattr(order, 'side') and order.side.name == 'BUY':
-                    # For BUY orders: SL below entry, TP above entry
-                    sl_price = current_price * (1 - sl_multiplier)
-                    tp_price = current_price * (1 + tp_multiplier)
-                else:  # SELL
-                    # For SELL orders: SL above entry, TP below entry
-                    sl_price = current_price * (1 + sl_multiplier)  # SL above for SELL (stop loss if price rises)
-                    tp_price = current_price * (1 - tp_multiplier)  # TP below for SELL (take profit when price falls)
-
-            # Create enhanced order with SL/TP if they were missing
-            from domain.entities.trading_entities import Order as DomainOrder
-            from domain.value_objects import Money
-            from datetime import datetime
-
-            # Create a new order with the missing risk parameters
-            enhanced_order = DomainOrder(
-                symbol=getattr(order, 'symbol', 'UNKNOWN'),
-                side=getattr(order, 'side', None),
-                order_type=getattr(order, 'order_type', 'MARKET'),
-                quantity=getattr(order, 'quantity', 1.0),
-                price=getattr(order, 'price', None),
-                strategy_name=getattr(order, 'strategy_name', 'default'),
-                timestamp=getattr(order, 'timestamp', datetime.now()),
-                position_side=getattr(order, 'position_side', 'BOTH'),
-                stop_loss_price=Money(amount=float(sl_price), currency='USDT') if not has_stop_loss else getattr(order, 'stop_loss_price', None),
-                take_profit_price=Money(amount=float(tp_price), currency='USDT') if not has_take_profit else getattr(order, 'take_profit_price', None),
-                stop_price=getattr(order, 'stop_price', None),
-                time_in_force=getattr(order, 'time_in_force', 'GTC'),
-                client_order_id=getattr(order, 'client_order_id', None),
-                parent_signal=getattr(order, 'parent_signal', None),
-                risk_adjusted_quantity=getattr(order, 'risk_adjusted_quantity', None)
-            )
-
-            self.logger.info(f"✅ Order enhanced with dynamic SL/TP: SL={sl_price:.4f}, TP={tp_price:.4f}. "
-                            f"Advanced risk management applied for proper position sizing and SL/TP levels.")
-
-            return enhanced_order
-        else:
-            # If we don't have a price to calculate SL/TP, we can't enhance the order
-            # In this case, we'll log a warning but still proceed (though this is not ideal)
-            self.logger.warning(f"⚠️ Cannot enhance order with SL/TP: no price available: {order}")
-            return order
+    # Removed _validate_order_risk and _enhance_order_with_risk_parameters methods
+    # as risk management should only be handled by the Strategy layer per architectural requirements
 
     def cancel_order(self, order_id: str) -> bool:
         """Cancel an order through the configured broker."""

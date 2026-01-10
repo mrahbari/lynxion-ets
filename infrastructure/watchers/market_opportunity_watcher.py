@@ -1867,40 +1867,19 @@ class MarketOpportunityWatcher:
         return opportunities
 
     def _process_opportunities(self, symbol: Symbol, opportunities: Dict[str, Any]):
-        """Process detected opportunities and trigger callback if available."""
-        if opportunities['recommendation'] and opportunities['confidence'] > 0.6:  # Only if confidence is high enough
-            self.logger.log_opportunity_detected(
-                symbol.value,
-                opportunities['recommendation'],
-                opportunities['confidence'],
-                "PENDING"  # Strategy selection happens in Strategy layer, not watcher
+        """Process detected opportunities - but in the correct architecture,
+        the watcher should only emit observations and not handle callbacks directly."""
+
+        # The watcher should only emit raw market observations to the event system
+        # The actual processing should happen through the event-driven flow
+
+        # Log that we're processing opportunities
+        if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+            self.logger.log_background_activity(
+                "Opportunity Processing",
+                f"Processing opportunities for {symbol.value}",
+                symbol=symbol.value
             )
-
-            # Log the flow from watcher to the next component (engine)
-            self.logger.log_watcher_to_engine_flow(
-                symbol=symbol.value,
-                watcher_name="MarketOpportunityWatcher",
-                signal_generated=bool(opportunities['recommendation']),
-                signal_type=opportunities['recommendation'],
-                confidence=opportunities['confidence'],
-                reason=f"Opportunity detected with confidence {opportunities['confidence']:.2%}",
-            )
-
-            # Log background activity in comprehensive mode
-            if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                self.logger.log_background_activity(
-                    "Opportunity Processing",
-                    f"Processing opportunity for {symbol.value} - {opportunities['recommendation']} with confidence {opportunities['confidence']:.2%}",
-                    symbol=symbol.value,
-                    recommendation=opportunities['recommendation'],
-                    confidence=opportunities['confidence']
-                )
-
-            if self.opportunity_callback:
-                try:
-                    self.opportunity_callback(opportunities)
-                except Exception as e:
-                    self.logger.error(f"Error in opportunity callback: {e}")
 
     def _execute_intent_trade(self, execution_intent):
         """Execute a trade based on the execution intent from the Strategy layer."""

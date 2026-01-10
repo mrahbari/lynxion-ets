@@ -18,13 +18,20 @@ class EngineService:
     def process_observation(self, observation: MarketObservation) -> Optional[InterpretedSignal]:
         """Convert a raw market observation into an interpreted signal"""
         try:
+            # Log the incoming observation
+            symbol = observation.symbol.value if hasattr(observation.symbol, 'value') else str(observation.symbol)
+            if self.logger:
+                self.logger.info(f"Engine processing observation: {observation.observation_type} for {symbol}, "
+                               f"value: {observation.observation_value:.3f}, "
+                               f"confidence: {float(observation.confidence.value):.3f}")
+
             # Determine signal type based on observation type
             signal_type = self._determine_signal_type(observation)
-            
+
             # Calculate direction and strength based on observation value and confidence
             direction = self._calculate_direction(observation)
             strength = self._calculate_strength(observation)
-            
+
             # Create interpreted signal
             interpreted_signal = InterpretedSignal(
                 symbol=observation.symbol,
@@ -36,13 +43,14 @@ class EngineService:
                 source_watcher=observation.metadata.get('watcher_name') if observation.metadata else None,
                 metadata=observation.metadata or {}
             )
-            
+
             if self.logger:
                 self.logger.info(f"Engine processed observation: {observation.observation_type} -> {signal_type.value}, "
-                               f"strength: {strength:.2f}, confidence: {float(interpreted_signal.confidence.value):.2%}")
-            
+                               f"direction: {direction:.3f}, strength: {strength:.3f}, "
+                               f"confidence: {float(interpreted_signal.confidence.value):.3f}")
+
             return interpreted_signal
-            
+
         except Exception as e:
             if self.logger:
                 self.logger.error(f"Error processing observation in engine: {e}")

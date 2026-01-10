@@ -22,9 +22,8 @@ class MultiBrokerExecutionService(ExecutionPort):
     Implements exchange switching similar to the downloader's approach.
     """
 
-    # Class-level storage for pending orders to prevent duplicate same-direction trades
-    _pending_orders = {}
-    _pending_orders_lock = threading.Lock()
+    # Duplicate prevention is now handled by the shared PendingOrdersTracker
+    # See infrastructure/shared/pending_orders_tracker.py
 
     def __init__(self, primary_broker: Optional[str] = None):
         self.logger = EnhancedLogger("MultiBrokerExecutionService")
@@ -143,37 +142,23 @@ class MultiBrokerExecutionService(ExecutionPort):
     @classmethod
     def _add_pending_order(cls, symbol: Symbol, side: str, order_id: str):
         """Add an order to the pending orders tracking."""
-        with cls._pending_orders_lock:
-            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
-            if symbol_str not in cls._pending_orders:
-                cls._pending_orders[symbol_str] = []
-            cls._pending_orders[symbol_str].append((side, order_id))
+        # Use the shared pending orders tracker to ensure consistency across all broker services
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        PendingOrdersTracker.add_pending_order(symbol, side, order_id)
 
     @classmethod
     def _remove_pending_order(cls, symbol: Symbol, order_id: str):
         """Remove an order from the pending orders tracking."""
-        with cls._pending_orders_lock:
-            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
-            if symbol_str in cls._pending_orders:
-                # Remove the specific order ID
-                cls._pending_orders[symbol_str] = [
-                    (side, oid) for side, oid in cls._pending_orders[symbol_str]
-                    if oid != order_id
-                ]
-                # Clean up empty lists
-                if not cls._pending_orders[symbol_str]:
-                    del cls._pending_orders[symbol_str]
+        # Use the shared pending orders tracker to ensure consistency across all broker services
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        PendingOrdersTracker.remove_pending_order(symbol, order_id)
 
     @classmethod
     def _has_pending_order_in_direction(cls, symbol: Symbol, side: str) -> bool:
         """Check if there's a pending order in the same direction for the symbol."""
-        with cls._pending_orders_lock:
-            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
-            if symbol_str in cls._pending_orders:
-                for pending_side, _ in cls._pending_orders[symbol_str]:
-                    if pending_side == side:
-                        return True
-            return False
+        # Use the shared pending orders tracker to ensure consistency across all broker services
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        return PendingOrdersTracker.has_pending_order_in_direction(symbol, side)
 
     def get_available_symbols(self) -> Set[str]:
         """
@@ -351,8 +336,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                 else:
                     self.logger.info(
                         f"❌ DUPLICATE REJECTED: Pending {intended_position_side} order exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
-                raise ValueError(
-                    f"DUPLICATE:{order.symbol.value}:{intended_position_side}")
+                # Return None instead of raising an exception to prevent system crashes
+                return None  # Indicate that the order was not placed due to duplicate prevention
 
         # Check for broker-specific order placement settings
         # Check if any specific broker is enabled for exclusive order placement

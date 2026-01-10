@@ -77,6 +77,12 @@ class FusionService:
             # Determine regime context based on the single signal
             signal_types = {single_signal.signal_type}
             regime_context = self._determine_regime_context(signal_types, single_signal.strength)
+
+            if self.logger:
+                symbol = single_signal.symbol.value if hasattr(single_signal.symbol, 'value') else str(single_signal.symbol)
+                self.logger.info(f"Fusion: Single signal for {symbol} - Type: {single_signal.signal_type.value}, "
+                               f"Direction: {single_signal.direction:.3f}, Confidence: {float(single_signal.confidence.value):.3f}")
+
             return FusedSignal(
                 symbol=single_signal.symbol,
                 dominant_bias=single_signal.signal_type,
@@ -92,12 +98,23 @@ class FusionService:
         try:
             # Calculate aggregated values
             symbol = interpreted_signals[0].symbol  # All signals should be for the same symbol
+            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
             timestamp = datetime.now()
 
             # Calculate weighted average direction based on confidence and strength
             total_weight = 0.0
             weighted_direction = 0.0
             weighted_strength = 0.0
+
+            # Log individual signals before fusion
+            if self.logger:
+                self.logger.info(f"Fusion: Processing {len(interpreted_signals)} signals for {symbol_str}:")
+                for i, signal in enumerate(interpreted_signals):
+                    self.logger.info(f"  Signal {i+1}: Type={signal.signal_type.value}, "
+                                   f"Direction={signal.direction:.3f}, "
+                                   f"Strength={signal.strength:.3f}, "
+                                   f"Confidence={float(signal.confidence.value):.3f}, "
+                                   f"Source={getattr(signal, 'source_watcher', 'unknown')}")
 
             for signal in interpreted_signals:
                 weight = float(signal.confidence.value) * signal.strength
@@ -147,10 +164,13 @@ class FusionService:
             )
 
             if self.logger:
-                self.logger.info(f"Fusion service processed {len(interpreted_signals)} signals: "
-                               f"dominant_bias={dominant_bias.value}, "
-                               f"direction={avg_direction:.2f}, "
-                               f"confidence={avg_confidence:.2%}")
+                self.logger.info(f"Fusion complete for {symbol_str}: "
+                               f"Count={len(interpreted_signals)}, "
+                               f"Dominant Bias={dominant_bias.value}, "
+                               f"Direction={avg_direction:.3f}, "
+                               f"Strength={avg_strength:.3f}, "
+                               f"Confidence={avg_confidence:.3f}, "
+                               f"Regime={regime_context}")
 
             return fused_signal
 

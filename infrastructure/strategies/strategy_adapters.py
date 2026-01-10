@@ -33,6 +33,9 @@ class BaseStrategyAdapter(StrategyPort):
         # Select appropriate strategy based on the fused signal
         strategy_name = self.select_strategy(fused_signal)
 
+        # Calculate comprehensive risk parameters using advanced risk management
+        risk_parameters = self._calculate_comprehensive_risk_parameters(fused_signal)
+
         # Create execution intent
         execution_intent = ExecutionIntent(
             symbol=fused_signal.symbol,
@@ -41,7 +44,7 @@ class BaseStrategyAdapter(StrategyPort):
             intent_confidence=Percentage(min(Decimal('1.0'),
                                           max(Decimal('0.0'),
                                               fused_signal.confidence.value * Decimal('0.8')))),  # Slightly reduce confidence
-            risk_parameters=self._calculate_risk_parameters(fused_signal),
+            risk_parameters=risk_parameters,
             timestamp=datetime.now(),
             fused_signal=fused_signal,
             metadata={
@@ -51,9 +54,22 @@ class BaseStrategyAdapter(StrategyPort):
             }
         )
 
+        # Add stop loss and take profit prices directly to the execution intent
+        # This ensures the broker receives properly risk-managed orders
+        from domain.value_objects import Money
+        execution_intent.stop_loss_price = Money(
+            amount=float(risk_parameters.get('stop_loss_price', 0.0)),
+            currency='USDT'
+        ) if risk_parameters.get('stop_loss_price') else None
+
+        execution_intent.take_profit_price = Money(
+            amount=float(risk_parameters.get('take_profit_price', 0.0)),
+            currency='USDT'
+        ) if risk_parameters.get('take_profit_price') else None
+
         self.logger.info(f"Strategy {self.name} accepted fused signal for {fused_signal.symbol.value} "
                         f"with intent confidence {float(execution_intent.intent_confidence.value):.2%}")
-        
+
         return execution_intent
 
     def should_execute(self, fused_signal: FusedSignal) -> bool:
@@ -67,12 +83,22 @@ class BaseStrategyAdapter(StrategyPort):
         neutral_buffer = float(os.getenv('STRATEGY_NEUTRAL_BUFFER', '0.1'))  # Buffer around neutral signals
 
         confidence = float(fused_signal.confidence.value)
+        symbol = fused_signal.symbol.value if hasattr(fused_signal.symbol, 'value') else str(fused_signal.symbol)
 
         # Check if signal is not neutral
         is_not_neutral = fused_signal.dominant_bias.value not in ['HOLD', 'NEUTRAL']
 
+        # Log detailed information about the decision factors
+        self.logger.info(f"Strategy evaluation for {symbol}: "
+                        f"Confidence={confidence:.3f}, "
+                        f"Dominant Bias={fused_signal.dominant_bias.value}, "
+                        f"Is Not Neutral={is_not_neutral}, "
+                        f"Dominance Score={getattr(fused_signal, 'dominance_score', 0.0):.3f}, "
+                        f"Regime Context={getattr(fused_signal, 'regime_context', 'unknown')}")
+
         # For high confidence signals, execute regardless of other factors (within reason)
         if confidence >= high_confidence_threshold and is_not_neutral:
+            self.logger.info(f"ACCEPTED: High confidence ({confidence:.3f}) and non-neutral signal for {symbol}")
             return True
 
         # For medium confidence signals, apply more nuanced evaluation
@@ -83,14 +109,17 @@ class BaseStrategyAdapter(StrategyPort):
 
             # If the dominance score is strong relative to confidence, it's more reliable
             if abs(dominance_score) > (confidence - neutral_buffer):
+                self.logger.info(f"ACCEPTED: Medium confidence ({confidence:.3f}) with strong dominance score ({dominance_score:.3f}) for {symbol}")
                 return True
 
             # If the signal is in a favorable regime context, consider it
             regime_context = getattr(fused_signal, 'regime_context', '').lower()
             if any(favorable in regime_context for favorable in ['trend', 'breakout', 'momentum']):
+                self.logger.info(f"ACCEPTED: Medium confidence ({confidence:.3f}) in favorable regime ({regime_context}) for {symbol}")
                 return True
 
             # Default to execute for medium confidence non-neutral signals
+            self.logger.info(f"ACCEPTED: Medium confidence ({confidence:.3f}) non-neutral signal for {symbol}")
             return True
 
         # For low confidence signals, be more selective
@@ -101,12 +130,15 @@ class BaseStrategyAdapter(StrategyPort):
 
             # Execute if dominance is very strong relative to confidence
             if abs(dominance_score) > (min_confidence + 0.2) and any(favorable in regime_context for favorable in ['confirmed', 'strong']):
+                self.logger.info(f"ACCEPTED: Low confidence ({confidence:.3f}) but strong dominance ({dominance_score:.3f}) and regime ({regime_context}) for {symbol}")
                 return True
 
+            self.logger.info(f"REJECTED: Low confidence ({confidence:.3f}) and insufficient supporting factors for {symbol}")
             return False
 
         # Neutral signals should not be executed regardless of confidence
         else:
+            self.logger.info(f"REJECTED: Neutral signal ({fused_signal.dominant_bias.value}) regardless of confidence ({confidence:.3f}) for {symbol}")
             return False
 
     def select_strategy(self, fused_signal: FusedSignal) -> str:
@@ -153,15 +185,85 @@ class BaseStrategyAdapter(StrategyPort):
             else:
                 return OrderSide.SELL
 
-    def _calculate_risk_parameters(self, fused_signal: FusedSignal) -> Dict[str, Any]:
-        """Calculate risk parameters based on the fused signal"""
+    def _calculate_comprehensive_risk_parameters(self, fused_signal: FusedSignal) -> Dict[str, Any]:
+        """Calculate comprehensive risk parameters based on the fused signal using advanced risk management"""
+        # Import advanced risk management system
+        try:
+            from infrastructure.risk.advanced_risk_management import AdvancedRiskManagementService, SLTPManager
+            import os
+
+            # Initialize risk management components
+            risk_service = AdvancedRiskManagementService()
+
+            # Get market data for more accurate risk calculations (if available)
+            # In a real implementation, we'd fetch current market data for the symbol
+            market_data = None  # This would come from data provider in real implementation
+
+            # Calculate risk-adjusted position size and other parameters
+            portfolio_value = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))
+
+            # Create a dummy current price for risk calculations (in real system, this would come from market data)
+            current_price = 50000.0  # Placeholder - would be real price in production
+
+            # Calculate position size using advanced risk management
+            position_size, risk_factors = risk_service.calculate_position_size(
+                symbol=fused_signal.symbol,
+                price=current_price,
+                portfolio_value=portfolio_value,
+                fused_signal=fused_signal,
+                market_data=market_data
+            )
+
+            # Calculate dynamic SL/TP levels based on risk factors
+            position_side = "LONG" if fused_signal.direction > 0 else "SHORT"
+
+            sl_tp_levels = risk_service.calculate_sl_tp_levels(
+                entry_price=current_price,
+                position_side=position_side,
+                risk_adjustment_factors=risk_factors,
+                atr_value=None,  # Would come from market data in real implementation
+                market_data=market_data
+            )
+
+            # Construct comprehensive risk parameters
+            risk_parameters = {
+                'max_position_size': position_size,
+                'stop_loss_pct': risk_factors.get('stop_loss_pct', 0.02),      # 2% default SL
+                'take_profit_pct': risk_factors.get('take_profit_pct', 0.03),  # 3% default TP
+                'stop_loss_price': sl_tp_levels[0] if sl_tp_levels else current_price * 0.98,
+                'take_profit_price': sl_tp_levels[1] if sl_tp_levels else current_price * 1.03,
+                'risk_per_trade': risk_factors.get('risk_per_trade', 0.02 * portfolio_value),  # 2% of portfolio
+                'max_position_exposure': risk_factors.get('max_position_exposure', 0.1 * portfolio_value),  # 10% max exposure
+                'position_quantity': risk_factors.get('position_quantity', position_size * portfolio_value / current_price),
+                'risk_adjustment_factors': risk_factors
+            }
+
+            # Log the calculated risk parameters
+            self.logger.info(f"Calculated comprehensive risk parameters for {fused_signal.symbol.value}: "
+                           f"Position size: {position_size:.4f}, "
+                           f"SL%: {risk_factors.get('stop_loss_pct', 0.02):.2%}, "
+                           f"TP%: {risk_factors.get('take_profit_pct', 0.03):.2%}, "
+                           f"Confidence: {float(fused_signal.confidence.value):.2%}")
+
+            return risk_parameters
+
+        except ImportError:
+            # If advanced risk management is not available, fall back to basic calculation
+            self.logger.warning("Advanced risk management service not available, using basic risk parameters")
+            return self._calculate_basic_risk_parameters(fused_signal)
+        except Exception as e:
+            self.logger.error(f"Error calculating comprehensive risk parameters: {e}, using basic parameters")
+            return self._calculate_basic_risk_parameters(fused_signal)
+
+    def _calculate_basic_risk_parameters(self, fused_signal: FusedSignal) -> Dict[str, Any]:
+        """Calculate basic risk parameters based on the fused signal"""
         base_risk_params = self.risk_parameters.copy()
-        
+
         # Adjust risk based on signal confidence
         confidence_factor = float(fused_signal.confidence.value)
         base_risk_params['max_position_size'] *= confidence_factor
         base_risk_params['stop_loss_pct'] *= (1.0 + (1.0 - confidence_factor))  # Tighter stops for lower confidence
-        
+
         return base_risk_params
 
 

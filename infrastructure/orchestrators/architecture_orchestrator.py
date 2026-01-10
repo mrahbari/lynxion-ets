@@ -61,6 +61,9 @@ class ArchitectureOrchestrator:
                 self.execution_service
             )
 
+            # Store the execution service globally so it can be accessed by the event system
+            architecture_orchestrator.execution_service = self.execution_service
+
             self.logger.info("Architecture Orchestrator started successfully")
             self.logger.info("Proper flow established: Watcher → Engine → Fusion → Strategy → Broker")
 
