@@ -12,6 +12,7 @@ from shared.event_system import event_router, signal_processor
 from infrastructure.engines.engine_service import engine_service
 from infrastructure.fusion.fusion_service import fusion_service
 from infrastructure.strategies.strategy_manager import strategy_manager
+from infrastructure.aggregators.signal_aggregator import signal_aggregator
 
 
 class ArchitectureOrchestrator:
@@ -50,6 +51,11 @@ class ArchitectureOrchestrator:
             # Subscribe to events and set up the proper processing chain
             self.logger.info("Starting Architecture Orchestrator...")
 
+            # Initialize the signal aggregator
+            if self.execution_service:
+                signal_aggregator.set_execution_service(self.execution_service)
+            signal_aggregator.start_aggregation()
+
             # The signal processor is already set up to handle the flow
             # Watcher emits -> Event Router -> Signal Processor -> Proper Layer Processing
 
@@ -65,7 +71,7 @@ class ArchitectureOrchestrator:
             architecture_orchestrator.execution_service = self.execution_service
 
             self.logger.info("Architecture Orchestrator started successfully")
-            self.logger.info("Proper flow established: Watcher → Engine → Fusion → Strategy → Broker")
+            self.logger.info("Proper flow established: Watcher → Engine → Fusion → Strategy → Aggregator → Broker")
 
     def stop(self):
         """Stop the architecture orchestrator."""

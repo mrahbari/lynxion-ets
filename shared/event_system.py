@@ -209,23 +209,16 @@ class SignalProcessor:
         try:
             fused_signal = event.data
             if self.logger:
-                self.logger.info(f"Processing fused signal from {event.source_component} for {fused_signal.symbol.value}")
-            
-            # Process signal through strategy manager
-            execution_intent = strategy_manager.evaluate_fused_signal(fused_signal)
-            
-            if execution_intent:
-                # Publish execution intent for final layer
-                self.event_router.publish_execution_intent(
-                    execution_intent,
-                    source="StrategyManager",
-                    correlation_id=event.correlation_id
-                )
-                if self.logger:
-                    self.logger.info(f"Published execution intent: {execution_intent.side.name} for {execution_intent.symbol.value}")
+                self.logger.info(f"Forwarding fused signal from {event.source_component} for {fused_signal.symbol.value} to aggregator")
+
+            # The signal aggregator is already subscribed to FUSED_SIGNAL events
+            # and will handle batch collection and evaluation of signals
+            # This ensures we compare opportunities across all symbols before executing
+            # The aggregator will handle the strategy evaluation and execution intent generation
+
         except Exception as e:
             if self.logger:
-                self.logger.error(f"Error processing fused signal: {e}")
+                self.logger.error(f"Error forwarding fused signal to aggregator: {e}")
 
     def _process_execution_intent(self, event: SignalEvent, execution_service):
         """Process execution intent through broker layer"""
@@ -389,7 +382,14 @@ class SignalProcessor:
                         return None  # Return None to indicate the trade was prevented
                     else:
                         # Re-raise other ValueErrors
+                        if self.logger:
+                            self.logger.error(f"Non-duplicate ValueError occurred: {ve}")
                         raise
+                except Exception as e:
+                    # Handle any other exceptions that might occur
+                    if self.logger:
+                        self.logger.error(f"Unexpected error during order execution: {e}")
+                    return None  # Return None to prevent system crashes
             else:
                 if self.logger:
                     self.logger.error("Execution service does not have execute_order method")

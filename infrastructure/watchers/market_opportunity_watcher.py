@@ -1551,22 +1551,46 @@ class MarketOpportunityWatcher:
         analysis_count = 0
         signals_found = 0
 
+        # Track symbol-specific analytics to ensure balanced processing
+        symbol_analysis_count = {symbol.value: 0 for symbol in self.symbols}
+        symbol_signal_count = {symbol.value: 0 for symbol in self.symbols}
+
         while self.is_running:
             try:
                 opportunities = self._check_market_opportunities()
                 analysis_count += len(self.symbols)
 
-                # Count signals found
+                # Update symbol-specific counts
+                for symbol in self.symbols:
+                    symbol_analysis_count[symbol.value] += 1
+
+                # Count signals found and track which symbols generated them
                 for opportunity in opportunities:
                     if opportunity.get('recommendation') and opportunity['confidence'] > 0.6:
                         signals_found += 1
+                        # Track which symbol generated the signal
+                        symbol_val = opportunity.get('symbol')
+                        if symbol_val and symbol_val in symbol_signal_count:
+                            symbol_signal_count[symbol_val] += 1
 
                 # Log periodic detailed reports
                 current_time = time.time()
                 if current_time - last_report_time >= report_interval:
+                    # Create a summary of signal distribution across symbols
+                    active_symbols = {sym: cnt for sym, cnt in symbol_signal_count.items() if cnt > 0}
+
                     self.logger.info(
                         f"📊 WATCHER ANALYTICS: Analyzed {analysis_count} symbol checks in last {report_interval}s | "
                         f"Signals found: {signals_found} | Monitored symbols: {len(self.symbols)}")
+
+                    if active_symbols:
+                        self.logger.info(f"📈 SIGNAL DISTRIBUTION: {active_symbols}")
+
+                    # Log analysis distribution to ensure all symbols are being processed
+                    analysis_distribution = {sym: cnt for sym, cnt in symbol_analysis_count.items() if cnt > 0}
+                    if analysis_distribution:
+                        self.logger.debug(f"🔍 ANALYSIS DISTRIBUTION: {analysis_distribution}")
+
                     analysis_count = 0
                     signals_found = 0
                     last_report_time = current_time
@@ -1587,12 +1611,29 @@ class MarketOpportunityWatcher:
             import time
             time.sleep(0.1)  # Small delay to allow data processing
 
-        # Then analyze each symbol
+        # Then analyze each symbol with a time limit to ensure fair processing
+        total_start_time = time.time()
+
+        # Process symbols in their original order to ensure systematic processing
         for symbol in self.symbols:
+            # Add logging to track which symbol is being processed
+            self.logger.debug(f"🔍 Processing symbol: {symbol.value}")
+
+            start_time = time.time()
             opportunities = self._analyze_symbol(symbol)
+
+            # Log processing time for this symbol
+            processing_time = time.time() - start_time
+            self.logger.debug(f"⏱️ Symbol {symbol.value} processed in {processing_time:.2f}s")
+
             if opportunities:
                 self._process_opportunities(symbol, opportunities)
                 all_opportunities.append(opportunities)
+
+        # Log the total processing time for all symbols
+        total_processing_time = time.time() - total_start_time
+        self.logger.info(f"📊 Total processing for {len(self.symbols)} symbols completed in {total_processing_time:.2f}s")
+
         return all_opportunities
 
     def _update_watchers_with_market_data(self, symbol: Symbol):
@@ -1882,158 +1923,23 @@ class MarketOpportunityWatcher:
             )
 
     def _execute_intent_trade(self, execution_intent):
-        """Execute a trade based on the execution intent from the Strategy layer."""
-        if not self.execution_service:
-            self.logger.warning(f"No execution service available to execute intent for {execution_intent.symbol.value}")
-            return None
+        """This method should not exist in the Watcher layer.
+        The Watcher should only emit market observations, never execute trades directly.
+        This is a violation of the architectural pattern: Watcher → Engine → Fusion → Strategy → Broker.
+        The execution should happen only in the Broker layer after going through all intermediate layers."""
 
-        try:
-            # Get current price for the symbol to determine position size
-            current_price = None
-            if self.market_data_repo:
-                try:
-                    current_price = self.market_data_repo.get_current_price(execution_intent.symbol)
-                except:
-                    # If we can't get current price from data repo, try to get from exchange directly
-                    pass
+        # Log an error that this method is being called, which indicates an architectural violation
+        self.logger.error(
+            f"❌ ARCHITECTURE VIOLATION: Watcher layer attempted to execute trade directly for {execution_intent.symbol.value}. "
+            f"This violates the intended architecture: Watcher → Engine → Fusion → Strategy → Broker. "
+            f"The Watcher should only emit market observations, not execute trades."
+        )
 
-            # If we still don't have a price, use a fallback
-            if current_price is None or current_price <= 0:
-                # Try to get price from exchange directly
-                try:
-                    import ccxt
-                    exchange = ccxt.binance()
-                    ticker = exchange.fetch_ticker(execution_intent.symbol.value)
-                    current_price = ticker['last'] if 'last' in ticker else ticker['close']
-                except:
-                    # If all methods fail, we'll still proceed but log the issue
-                    self.logger.warning(f"Could not get current price for {execution_intent.symbol.value}, using default price")
-                    current_price = 50000.0  # Fallback price
-
-            # Use risk parameters from the execution intent
-            risk_params = execution_intent.risk_parameters
-            position_size_pct = risk_params.get('max_position_size', 0.02)  # Default 2%
-
-            # Fixed Position Size Configuration (for testing purposes)
-            import os
-            fixed_position_size_enabled = os.getenv('FIXED_POSITION_SIZE_ENABLED', 'false').lower() == 'true'
-            fixed_position_amount = float(os.getenv('FIXED_POSITION_AMOUNT', '10.0'))  # Default to $10 for testing
-
-            # Calculate quantity based on risk parameters and account balance
-            try:
-                if fixed_position_size_enabled:
-                    # Use fixed position size for testing
-                    quantity = fixed_position_amount / current_price
-                    self.logger.info(f"Using fixed position size: ${fixed_position_amount} at ${current_price} = {quantity} units")
-                else:
-                    # In a real implementation, we'd get portfolio metrics from portfolio service
-                    # For now, using a default account balance from environment variable
-                    import os
-                    account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))  # Default to $10,000 if not available
-                    position_value = account_balance * position_size_pct
-
-                    # Calculate quantity based on position value and current price
-                    quantity = position_value / current_price
-
-                    # Apply any quantity adjustments from risk parameters
-                    if 'position_quantity' in risk_params:
-                        quantity = risk_params['position_quantity']
-
-            except:
-                # If portfolio service fails, use a default quantity
-                if fixed_position_size_enabled:
-                    # Use fixed position size for testing
-                    quantity = fixed_position_amount / current_price
-                    self.logger.info(f"Using fixed position size (fallback): ${fixed_position_amount} at ${current_price} = {quantity} units")
-                else:
-                    # Use default account balance from environment variable
-                    import os
-                    default_account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '1000.0'))  # Default to $1,000 if not available
-                    quantity = position_size_pct * default_account_balance / current_price
-
-            # Ensure minimum quantity to avoid issues with small trades
-            if quantity < 0.001:
-                quantity = 0.001  # Minimum trade size
-
-            # Create order object using domain entities
-            from domain.entities.signal_entities import Order, OrderSide
-            from domain.value_objects import Money
-
-            # Use the side from the execution intent
-            order_side = execution_intent.side
-
-            # Determine position side based on order side for futures trading
-            position_side = "LONG" if order_side.name == 'BUY' else "SHORT"
-
-            # Ensure symbol is properly formatted for the broker
-            symbol_value = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
-
-            # Create order with proper risk parameters from the intent
-            order = Order(
-                symbol=symbol_value,  # Use string value instead of Symbol object
-                side=order_side,
-                order_type="MARKET",  # Using string instead of enum
-                quantity=quantity,
-                price=Money(amount=current_price, currency='USDT') if current_price else None,
-                strategy_name=execution_intent.strategy_name,  # Strategy name comes from intent
-                timestamp=datetime.now(),
-                position_side=position_side,  # Add position side for futures trading
-                stop_loss_price=Money(amount=risk_params.get('stop_loss_price', current_price * 0.98), currency='USDT'),  # Default SL
-                take_profit_price=Money(amount=risk_params.get('take_profit_price', current_price * 1.03), currency='USDT'),  # Default TP
-                parent_execution_intent=execution_intent  # Link back to the execution intent
-            )
-
-            # Validate symbol availability before executing order
-            if hasattr(self.execution_service, 'get_available_symbols'):
-                available_symbols = self.execution_service.get_available_symbols()
-                if symbol_value not in available_symbols:
-                    self.logger.warning(f"⚠️ Symbol {symbol_value} not available on any configured broker. Skipping order.")
-                    return None  # Skip execution if symbol is not available
-
-            # Execute order through execution service
-            execution_id = self.execution_service.execute_order(order)
-
-            # Log the successful execution with detailed information
-            # Handle both string and object formats for symbol and side
-            symbol_log_value = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
-            side_log_value = order.side.name if hasattr(order.side, 'name') else str(order.side)
-
-            confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
-
-            self.logger.info(
-                f"⚡ TRADE EXECUTED: {side_log_value} {quantity:.4f} {symbol_log_value} @ ${current_price:.4f} | Strategy: {execution_intent.strategy_name} | Intent Conf: {confidence:.2%}",
-                order_id=execution_id,
-                symbol=symbol_log_value,
-                side=side_log_value,
-                quantity=quantity,
-                price=current_price,
-                strategy=execution_intent.strategy_name,
-                confidence=confidence
-            )
-
-            # Log the execution in the signal progression
-            self.logger.log_signal_progression(
-                symbol=symbol_log_value,
-                stage="broker",
-                status="Executed",
-                details=f"Order executed successfully from strategy intent: {execution_id}",
-                confidence=confidence
-            )
-
-            return execution_id
-        except Exception as e:
-            import traceback
-            self.logger.error(f"Error executing trade from strategy intent: {e}")
-            self.logger.error(f"Traceback: {traceback.format_exc()}")
-            # Log the execution failure
-            self.logger.log_signal_progression(
-                symbol=execution_intent.symbol.value,
-                stage="broker",
-                status="Failed",
-                details=f"Order execution from strategy intent failed: {str(e)}",
-                confidence=float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
-            )
-            raise
+        # Raise an exception to prevent this architectural violation
+        raise RuntimeError(
+            f"Watcher layer attempted to execute trade directly for {execution_intent.symbol.value}. "
+            f"This is an architectural violation. The Watcher should only emit market observations."
+        )
 
     def get_status(self) -> Dict[str, Any]:
         """Get current status of the watcher."""

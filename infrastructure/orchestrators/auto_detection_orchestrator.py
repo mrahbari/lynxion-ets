@@ -5,6 +5,7 @@ Following correct architecture: Watcher → Engine → Fusion → Strategy → B
 """
 import threading
 import time
+import traceback
 from datetime import datetime
 from typing import Dict, List, Any, Callable, Optional
 from domain.ports.data_ports import DataProviderPort
@@ -93,8 +94,16 @@ class AutoDetectionOrchestrator:
         self.background_threads = []
 
         # Initialize duplicate prevention tracking
-        self._pending_intents_lock = threading.Lock()
+        self._pending_intents_lock = threading.RLock()  # Use RLock for recursive locking if needed
         self._pending_intents = {}  # symbol -> {direction: timestamp}
+        self._pending_intent_temp_ids = {}  # execution_intent_id -> temp_order_id
+
+        # Initialize opportunity queue lock for thread-safe operations
+        self._opportunity_queue_lock = threading.RLock()
+
+        # Also use the shared PendingOrdersTracker for consistency with execution services
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        self._pending_orders_tracker = PendingOrdersTracker
 
     def initialize_system(self):
         """Initialize the auto-detection system."""
@@ -133,38 +142,141 @@ class AutoDetectionOrchestrator:
         processed_count = 0
         rejected_count = 0
 
+        # Track recently processed symbols to ensure diversity
+        recent_symbols = []  # Track symbols processed in the last few iterations
+        max_recent_symbols = 5  # Maximum number of recent symbols to track
+
+        # Track symbol processing statistics to ensure even distribution
+        symbol_processing_stats = {}  # symbol -> count of processed opportunities
+        last_symbol_processing_reset = time.time()
+        symbol_processing_reset_interval = 300  # Reset stats every 5 minutes
+
         while self.is_running:
             try:
-                if self.opportunity_queue:
-                    opportunity = self.opportunity_queue.pop(0)  # Get oldest opportunity
-                    self._execute_strategy_for_opportunity(opportunity)
-                    processed_count += 1
-                else:
-                    # Log when no opportunities are in the queue to show system is still active
-                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                        current_time = time.time()
-                        if current_time - last_report_time >= 10:  # Log every 10 seconds if no opportunities
-                            self.logger.log_background_activity(
-                                "Opportunity Monitoring",
-                                f"No opportunities in queue, system monitoring {len(self.active_trades)} active trades",
-                                queue_size=len(self.opportunity_queue),
-                                active_trades=len(self.active_trades)
-                            )
-                            last_report_time = current_time
+                with self._opportunity_queue_lock:
+                    if self.opportunity_queue:
+                        # Look for an opportunity that's not from a recently processed symbol
+                        opportunity = None
+                        opportunity_idx = 0
+
+                        # First, try to find an opportunity from a symbol that hasn't been processed recently
+                        # and hasn't been processed as much as others (to ensure even distribution)
+                        for idx, queued_opportunity in enumerate(self.opportunity_queue):
+                            symbol = getattr(queued_opportunity, 'symbol', None)
+                            if symbol:
+                                symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+
+                                # Check if this symbol hasn't been processed recently
+                                not_recent = symbol_str not in recent_symbols
+
+                                # Check if this symbol has been processed less than others (for even distribution)
+                                symbol_count = symbol_processing_stats.get(symbol_str, 0)
+                                max_processed_count = max(symbol_processing_stats.values()) if symbol_processing_stats else 0
+                                below_average = symbol_count < max_processed_count * 0.7  # Allow up to 70% of max
+
+                                # Use this opportunity if it's not recent and below average processing
+                                if not_recent and below_average:
+                                    opportunity = self.opportunity_queue.pop(idx)
+                                    break
+
+                        # If no non-recent symbol found that's below average, try to find any non-recent symbol
+                        if opportunity is None:
+                            for idx, queued_opportunity in enumerate(self.opportunity_queue):
+                                symbol = getattr(queued_opportunity, 'symbol', None)
+                                if symbol:
+                                    symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+
+                                    # If this symbol hasn't been processed recently, use it
+                                    if symbol_str not in recent_symbols:
+                                        opportunity = self.opportunity_queue.pop(idx)
+                                        break
+
+                        # If no non-recent symbol found, try to find a symbol that's been processed less
+                        if opportunity is None:
+                            # Find the symbol with the lowest processing count
+                            min_count = float('inf')
+                            min_idx = 0
+                            for idx, queued_opportunity in enumerate(self.opportunity_queue):
+                                symbol = getattr(queued_opportunity, 'symbol', None)
+                                if symbol:
+                                    symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+                                    symbol_count = symbol_processing_stats.get(symbol_str, 0)
+                                    if symbol_count < min_count:
+                                        min_count = symbol_count
+                                        min_idx = idx
+                                        opportunity = self.opportunity_queue.pop(idx)
+                                        break
+
+                        # If still no opportunity found, just take the first one
+                        if opportunity is None:
+                            opportunity = self.opportunity_queue.pop(0)
+                            opportunity_idx = 0
+
+                    # Only process if we found an opportunity
+                    if opportunity:
+                        # Track which symbol was processed
+                        symbol = getattr(opportunity, 'symbol', None)
+                        if symbol:
+                            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+
+                            # Add to recent symbols and maintain the list size
+                            recent_symbols.append(symbol_str)
+                            if len(recent_symbols) > max_recent_symbols:
+                                recent_symbols.pop(0)  # Remove oldest
+
+                            # Update processing statistics
+                            symbol_processing_stats[symbol_str] = symbol_processing_stats.get(symbol_str, 0) + 1
+
+                            self.logger.debug(f"Processing opportunity for symbol: {symbol_str}, Recent symbols: {recent_symbols}")
+
+                        self._execute_strategy_for_opportunity(opportunity)
+                        processed_count += 1
+                # End of with self._opportunity_queue_lock block
+                # Log when no opportunities are in the queue to show system is still active
+                if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+                    current_time = time.time()
+                    if current_time - last_report_time >= 10:  # Log every 10 seconds if no opportunities
+                        # Need to access queue size inside the lock
+                        with self._opportunity_queue_lock:
+                            queue_size = len(self.opportunity_queue)
+
+                        self.logger.log_background_activity(
+                            "Opportunity Monitoring",
+                            f"No opportunities in queue, system monitoring {len(self.active_trades)} active trades",
+                            queue_size=queue_size,
+                            active_trades=len(self.active_trades)
+                        )
+                        last_report_time = current_time
 
                 # Log periodic detailed reports
                 current_time = time.time()
                 if current_time - last_report_time >= report_interval:
+                    # Reset symbol processing stats periodically to prevent long-term bias
+                    if current_time - last_symbol_processing_reset >= symbol_processing_reset_interval:
+                        self.logger.info(f"🔄 Resetting symbol processing statistics to ensure even distribution")
+                        symbol_processing_stats.clear()
+                        last_symbol_processing_reset = current_time
+
+                    # Create a summary of symbol processing distribution
+                    symbol_summary = {symbol: count for symbol, count in symbol_processing_stats.items() if count > 0}
+
+                    # Access queue size inside the lock
+                    with self._opportunity_queue_lock:
+                        queue_size = len(self.opportunity_queue)
+
                     self.logger.info(f"📈 OPPORTUNITY PROCESSING: Processed: {processed_count} | "
-                                     f"Queue size: {len(self.opportunity_queue)} | "
-                                     f"Active trades: {len(self.active_trades)}")
+                                     f"Queue size: {queue_size} | "
+                                     f"Active trades: {len(self.active_trades)} | "
+                                     f"Symbol distribution: {symbol_summary}")
                     processed_count = 0
                     rejected_count = 0
                     last_report_time = current_time
 
-                time.sleep(1)  # Check queue every second
+                time.sleep(0.1)  # Check queue more frequently to improve responsiveness
             except Exception as e:
                 self.logger.error(f"Error in opportunity processing loop: {e}")
+                import traceback
+                self.logger.error(f"Traceback: {traceback.format_exc()}")
                 time.sleep(1)
 
     def _handle_opportunity(self, opportunity: Dict[str, Any]):
@@ -203,12 +315,38 @@ class AutoDetectionOrchestrator:
             confidence=confidence
         )
 
+        # Track and log symbol distribution statistics
+        total_queue_size = len(self.opportunity_queue)
+        symbol_in_queue_count = sum(1 for item in self.opportunity_queue
+                                  if hasattr(item, 'symbol') and item.symbol.value == symbol)
+
+        # Log symbol distribution for monitoring
+        self.logger.debug(f"📊 SYMBOL DISTRIBUTION: {symbol} appears {symbol_in_queue_count}/{total_queue_size} in queue ({symbol_in_queue_count/total_queue_size*100:.1f}% if present) | Total symbols in queue: {len(set(getattr(item, 'symbol', None).value if hasattr(getattr(item, 'symbol', None), 'value') else 'UNKNOWN' for item in self.opportunity_queue if hasattr(item, 'symbol', None))) if self.opportunity_queue else 0}")
+
+        # Check for active orders on the broker before processing the intent
+        if hasattr(execution_intent, 'side') and hasattr(execution_intent, 'symbol'):
+            if not self._check_broker_active_orders_for_duplicate(execution_intent):
+                confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
+                self.logger.info(f"Broker active orders check failed for {symbol} {execution_intent.side.name} | Intent Confidence: {confidence:.2%}")
+                return  # Don't add to queue if broker already has active order in same direction
+
         # Check for duplicate execution intent before adding to queue
         if hasattr(execution_intent, 'side') and hasattr(execution_intent, 'symbol'):
             if self._check_duplicate_execution_intent(execution_intent):
                 confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
                 self.logger.info(f"Duplicate execution intent rejected for {symbol} {execution_intent.side.name} | Intent Confidence: {confidence:.2%}")
                 return  # Don't add duplicate to queue
+
+        # Add some protection against one symbol dominating the queue
+        # Count how many opportunities are already in the queue for this symbol
+        same_symbol_count = sum(1 for item in self.opportunity_queue
+                              if hasattr(item, 'symbol') and item.symbol.value == symbol)
+
+        # Limit the number of opportunities for the same symbol in the queue
+        max_same_symbol_in_queue = 10  # Adjust as needed
+        if same_symbol_count >= max_same_symbol_in_queue:
+            self.logger.warning(f"Queue limit reached for {symbol}, not adding more opportunities for this symbol")
+            return  # Don't add to queue if too many for same symbol
 
         # Log background activity in comprehensive mode
         if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
@@ -221,7 +359,8 @@ class AutoDetectionOrchestrator:
             )
 
         # Add the execution intent directly to the queue instead of the opportunity dict
-        self.opportunity_queue.append(execution_intent)
+        with self._opportunity_queue_lock:
+            self.opportunity_queue.append(execution_intent)
 
     def _execute_strategy_for_opportunity(self, execution_intent):
         """Execute the appropriate strategy for an execution intent following correct architecture."""
@@ -352,8 +491,8 @@ class AutoDetectionOrchestrator:
             # Remove from pending intents in case of exception
             try:
                 self._remove_pending_execution_intent(execution_intent)
-            except:
-                pass  # Ignore errors during cleanup
+            except Exception as cleanup_error:
+                self.logger.warning(f"Warning: Error during pending intent cleanup: {cleanup_error}")
             self.logger.error(f"Error executing strategy for execution intent: {e}")
             import traceback
             self.logger.error(f"Traceback: {traceback.format_exc()}")
@@ -364,11 +503,29 @@ class AutoDetectionOrchestrator:
             execution_intent = event.data
             self.logger.info(f"Received execution intent event for {execution_intent.symbol.value}")
 
+            # Check for active orders on the broker before processing the intent
+            if not self._check_broker_active_orders_for_duplicate(execution_intent):
+                confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
+                self.logger.info(f"Broker active orders check failed for {execution_intent.symbol.value} {execution_intent.side.name} | Intent Confidence: {confidence:.2%}")
+                return  # Don't add to queue if broker already has active order in same direction
+
             # Check for duplicate execution intent before adding to queue
             if self._check_duplicate_execution_intent(execution_intent):
                 confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
                 self.logger.info(f"Duplicate execution intent rejected for {execution_intent.symbol.value} {execution_intent.side.name} | Intent Confidence: {confidence:.2%}")
                 return  # Don't add duplicate to queue
+
+            # Add some protection against one symbol dominating the queue
+            # Count how many opportunities are already in the queue for this symbol
+            symbol = execution_intent.symbol.value
+            same_symbol_count = sum(1 for item in self.opportunity_queue
+                                  if hasattr(item, 'symbol') and item.symbol.value == symbol)
+
+            # Limit the number of opportunities for the same symbol in the queue
+            max_same_symbol_in_queue = 10  # Adjust as needed
+            if same_symbol_count >= max_same_symbol_in_queue:
+                self.logger.warning(f"Queue limit reached for {symbol}, not adding more opportunities for this symbol")
+                return  # Don't add to queue if too many for same symbol
 
             # Add the execution intent to the opportunity queue for processing
             self.opportunity_queue.append(execution_intent)
@@ -398,19 +555,115 @@ class AutoDetectionOrchestrator:
         direction = execution_intent.side.name if hasattr(execution_intent.side, 'name') else str(execution_intent.side)
 
         with self._pending_intents_lock:
-            # Check if there's already a pending intent for this symbol and direction
+            # Check if there's already a pending intent for this symbol and direction in orchestrator tracking
             if symbol in self._pending_intents:
                 if direction in self._pending_intents[symbol]:
                     confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
                     self.logger.info(f"❌ DUPLICATE REJECTED: Pending {direction} intent exists for {symbol}. Preventing duplicate same-direction intent. | Intent Confidence: {confidence:.2%}")
                     return True  # Duplicate found
 
-            # Add this intent to the pending list
+            # Also check the shared tracker used by execution services to ensure consistency
+            from domain.value_objects import Symbol
+            symbol_obj = Symbol(symbol)
+            if self._pending_orders_tracker.has_pending_order_in_direction(symbol_obj, direction):
+                confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
+                self.logger.info(f"❌ DUPLICATE REJECTED: Pending {direction} order exists in shared tracker for {symbol}. Preventing duplicate same-direction intent. | Intent Confidence: {confidence:.2%}")
+                return True  # Duplicate found in shared tracker
+
+            # Add this intent to BOTH the orchestrator tracking AND the shared tracker
             if symbol not in self._pending_intents:
                 self._pending_intents[symbol] = {}
             self._pending_intents[symbol][direction] = datetime.now()
 
+            # Also add to shared tracker to prevent conflicts with execution services
+            temp_order_id = f"orch_intent_{id(execution_intent)}_{int(datetime.now().timestamp())}"
+            self._pending_orders_tracker.add_pending_order(symbol_obj, direction, temp_order_id)
+
+            # Store the temp order ID for later removal
+            self._pending_intent_temp_ids[id(execution_intent)] = temp_order_id
+
         return False  # Not a duplicate
+
+    def _check_broker_active_orders_for_duplicate(self, execution_intent) -> bool:
+        """Check if there are active orders on the broker that would conflict with this execution intent."""
+        # Check if duplicate prevention is enabled
+        prevent_same_direction = os.getenv('PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL', 'true').lower() == 'true'
+
+        if not prevent_same_direction:
+            return True  # No duplicate prevention needed, allow the intent
+
+        symbol = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
+        direction = execution_intent.side.name if hasattr(execution_intent.side, 'name') else str(execution_intent.side)
+
+        try:
+            # Determine the intended position side based on the order side
+            intended_position_side = None
+            if direction == 'BUY':
+                intended_position_side = 'LONG'
+            elif direction == 'SELL':
+                intended_position_side = 'SHORT'
+            else:
+                # If it's not a standard BUY/SELL, we'll use the direction as-is
+                intended_position_side = direction
+
+            # Check if the execution service has access to broker methods
+            # For BrokerExecutionService, check if it has the underlying broker with get_open_orders
+            if hasattr(self.execution_service, 'broker'):
+                # Check if the broker has get_open_orders method
+                if hasattr(self.execution_service.broker, 'get_open_orders'):
+                    try:
+                        # Get open orders for this symbol
+                        open_orders = self.execution_service.broker.get_open_orders(symbol)
+
+                        # Check if there are any open orders in the same direction
+                        for order in open_orders:
+                            # Check if the order is for the same symbol and in the same direction
+                            if (hasattr(order, 'symbol') and
+                                (order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)) == symbol and
+                                hasattr(order, 'side')):
+
+                                order_side = order.side.name if hasattr(order.side, 'name') else str(order.side)
+                                order_position_side = 'LONG' if order_side == 'BUY' else 'SHORT'
+
+                                if order_position_side == intended_position_side:
+                                    confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
+                                    self.logger.info(f"❌ DUPLICATE REJECTED: Active {order_side} order already exists on broker for {symbol}. Preventing duplicate same-direction intent. | Intent Confidence: {confidence:.2%}")
+                                    return False  # Found duplicate, don't allow this intent
+                    except Exception as e:
+                        # If we can't check open orders, log the error but continue
+                        self.logger.warning(f"⚠️ Could not check open orders on broker for {symbol}: {e}. Continuing with execution attempt.")
+                else:
+                    # For MultiBrokerExecutionService, check if it has get_open_orders
+                    if hasattr(self.execution_service, 'get_open_orders'):
+                        try:
+                            # Get open orders for this symbol
+                            open_orders = self.execution_service.get_open_orders(symbol)
+
+                            # Check if there are any open orders in the same direction
+                            for order in open_orders:
+                                # Check if the order is for the same symbol and in the same direction
+                                if (hasattr(order, 'symbol') and
+                                    (order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)) == symbol and
+                                    hasattr(order, 'side')):
+
+                                    order_side = order.side.name if hasattr(order.side, 'name') else str(order.side)
+                                    order_position_side = 'LONG' if order_side == 'BUY' else 'SHORT'
+
+                                    if order_position_side == intended_position_side:
+                                        confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
+                                        self.logger.info(f"❌ DUPLICATE REJECTED: Active {order_side} order already exists on broker for {symbol}. Preventing duplicate same-direction intent. | Intent Confidence: {confidence:.2%}")
+                                        return False  # Found duplicate, don't allow this intent
+                        except Exception as e:
+                            # If we can't check open orders, log the error but continue
+                            self.logger.warning(f"⚠️ Could not check open orders on broker for {symbol}: {e}. Continuing with execution attempt.")
+
+            # If we couldn't check open orders or no duplicates found, allow the intent
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error checking broker active orders for duplicate: {e}")
+            # In case of error, we'll allow the intent to proceed to avoid blocking the system
+            return True
 
     def _remove_pending_execution_intent(self, execution_intent):
         """Remove an execution intent from the pending tracking."""
@@ -424,15 +677,70 @@ class AutoDetectionOrchestrator:
                 if not self._pending_intents[symbol]:
                     del self._pending_intents[symbol]
 
+            # Also remove from shared tracker
+            from domain.value_objects import Symbol
+            symbol_obj = Symbol(symbol)
+            # Use the stored temp order ID
+            execution_intent_id = id(execution_intent)
+            if execution_intent_id in self._pending_intent_temp_ids:
+                temp_order_id = self._pending_intent_temp_ids[execution_intent_id]
+                self._pending_orders_tracker.remove_pending_order(symbol_obj, temp_order_id)
+                # Clean up the stored temp ID
+                del self._pending_intent_temp_ids[execution_intent_id]
+
     def _execute_trade_from_intent(self, execution_intent):
         """Execute trade based on execution intent from strategy layer."""
         try:
-            # Check if this is a stablecoin pair that should be filtered out
-            symbol_str = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
+            # Check if the system is still running - if not, reject the execution
+            if not self.is_running:
+                self.logger.warning(f"System is shutting down, rejecting execution intent for {execution_intent.symbol.value}")
+                # Remove from pending intents since we're not executing
+                self._remove_pending_execution_intent(execution_intent)
+                return {
+                    'status': 'failed',
+                    'error': f"SYSTEM_SHUTDOWN: Execution rejected as system is shutting down"
+                }
 
-            # Check if stablecoin pair filtering is enabled
+            # Check for active orders on the broker before processing the intent
+            # This prevents duplicate orders when the system doesn't have full awareness of broker state
+            if not self._check_broker_active_orders_for_duplicate(execution_intent):
+                # Remove from pending intents since we're not executing
+                self._remove_pending_execution_intent(execution_intent)
+                symbol = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
+                direction = execution_intent.side.name if hasattr(execution_intent.side, 'name') else str(execution_intent.side)
+                confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
+                return {
+                    'status': 'failed',
+                    'error': f"DUPLICATE:{symbol}:{direction} - Active order already exists on broker"
+                }
+
+            # Double-check for duplicates right before execution to prevent race conditions
+            # This catches cases where multiple threads might have passed the initial check
+            # but are now trying to execute simultaneously
+            prevent_same_direction = os.getenv('PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL', 'true').lower() == 'true'
+            if prevent_same_direction:
+                symbol = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
+                direction = execution_intent.side.name if hasattr(execution_intent.side, 'name') else str(execution_intent.side)
+
+                # Check the shared tracker again right before execution
+                from domain.value_objects import Symbol
+                symbol_obj = Symbol(symbol)
+                if self._pending_orders_tracker.has_pending_order_in_direction(symbol_obj, direction):
+                    confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
+                    self.logger.info(f"❌ DUPLICATE REJECTED AT EXECUTION: Pending {direction} order exists in shared tracker for {symbol}. Preventing duplicate same-direction intent. | Intent Confidence: {confidence:.2%}")
+
+                    # Remove from pending intents since we're not executing
+                    self._remove_pending_execution_intent(execution_intent)
+                    return {
+                        'status': 'failed',
+                        'error': f"DUPLICATE:{symbol}:{direction}"
+                    }
+
+        # Check if this is a stablecoin pair that should be filtered out
             filter_stablecoin_pairs = os.getenv('FILTER_OUT_STABLECOIN_PAIRS', 'true').lower() == 'true'
             allowed_stablecoins = os.getenv('ALLOWED_STABLECOINS', 'USDT,BUSD,USDC,DAI,PAX,TUSD,USDD,FDUSD').split(',')
+
+            symbol_str = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
 
             if filter_stablecoin_pairs:
                 # Check if both parts of the symbol are stablecoins (e.g., USDCUSDT)
@@ -532,6 +840,9 @@ class AutoDetectionOrchestrator:
             # Ensure symbol is properly formatted for the broker
             symbol_value = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
 
+            # Determine position side based on order side for futures trading
+            position_side = "LONG" if order_side.name == 'BUY' else "SHORT"
+
             # Create order with risk parameters from the execution intent (set by Strategy layer)
             # The Strategy layer should have already calculated all risk parameters including SL/TP
             order = Order(
@@ -572,10 +883,6 @@ class AutoDetectionOrchestrator:
                 # If the execution service doesn't have get_available_symbols method, log this
                 self.logger.debug(f"Execution service doesn't have get_available_symbols method. Proceeding with execution attempt for {symbol_value}")
 
-            # Determine position side based on order side for futures trading
-            order_side = execution_intent.side
-            position_side = "LONG" if order_side.name == 'BUY' else "SHORT"
-
             # Execute order through execution service
             execution_id = self.execution_service.execute_order(order)
 
@@ -610,8 +917,8 @@ class AutoDetectionOrchestrator:
             # Remove from pending intents in case of exception
             try:
                 self._remove_pending_execution_intent(execution_intent)
-            except:
-                pass  # Ignore errors during cleanup
+            except Exception as cleanup_error:
+                self.logger.warning(f"Warning: Error during pending intent cleanup: {cleanup_error}")
             return {
                 'status': 'failed',
                 'error': str(e)
@@ -676,10 +983,57 @@ class AutoDetectionOrchestrator:
 
     def stop_system(self):
         """Stop the auto-detection system."""
-        self.logger.info("Stopping Auto-Detection Orchestrator...")
+        self.logger.info("🛑 Stopping Auto-Detection Orchestrator...")
+
+        # Set the flag to stop main loops
         self.is_running = False
 
-        # The background threads are daemon threads, so they will stop automatically
-        # when the main program exits
+        # Stop the opportunity watcher
+        if hasattr(self, 'opportunity_watcher') and self.opportunity_watcher:
+            try:
+                self.opportunity_watcher.stop_monitoring()
+                self.logger.info("Market opportunity watcher stopped")
+            except Exception as e:
+                self.logger.error(f"Error stopping opportunity watcher: {e}")
 
-        self.logger.info("Auto-Detection Orchestrator stopped")
+        # Clear the opportunity queue to prevent any remaining executions
+        with self._pending_intents_lock:
+            self.opportunity_queue.clear()
+            self.logger.info("Opportunity queue cleared")
+
+        # Clear pending intents tracking
+        with self._pending_intents_lock:
+            self._pending_intents.clear()
+            self._pending_intent_temp_ids.clear()
+            self.logger.info("Pending intents tracking cleared")
+
+        # Stop all background threads gracefully
+        for thread_name, thread in self.background_threads:
+            try:
+                # Threads are daemon threads, but we should still wait for them to finish
+                thread.join(timeout=2.0)  # Wait up to 2 seconds for each thread to finish
+                self.logger.info(f"Background thread '{thread_name}' stopped")
+            except Exception as e:
+                self.logger.error(f"Error stopping background thread '{thread_name}': {e}")
+
+        # Clear the background threads list
+        self.background_threads.clear()
+
+        # Stop the architecture orchestrator if it exists
+        try:
+            from infrastructure.orchestrators.architecture_orchestrator import architecture_orchestrator
+            if hasattr(architecture_orchestrator, 'stop'):
+                architecture_orchestrator.stop()
+                self.logger.info("Architecture orchestrator stopped")
+        except Exception as e:
+            self.logger.error(f"Error stopping architecture orchestrator: {e}")
+
+        # Clear any remaining pending orders from the shared tracker
+        try:
+            from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+            PendingOrdersTracker.clear_all_pending_orders()
+            self.logger.info("Shared pending orders tracker cleared")
+        except Exception as e:
+            self.logger.error(f"Error clearing pending orders tracker: {e}")
+
+        self.logger.info("✅ Auto-Detection Orchestrator stopped successfully")
