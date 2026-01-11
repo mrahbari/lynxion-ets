@@ -375,7 +375,7 @@ class AutoDetectionOrchestrator:
             confidence = float(getattr(execution_intent.intent_confidence, 'value', 0.5))
 
             self.logger.info(
-                f"🎯 Executing trade for {strategy_name} on {symbol.value} with intent confidence {confidence:.2%}")
+                f"🎯 EXECUTING TRADE: {strategy_name} on {symbol.value} | Side: {execution_intent.side.name if hasattr(execution_intent, 'side') and hasattr(execution_intent.side, 'name') else str(execution_intent.side)} | Confidence: {confidence:.2%}")
 
             # Log the flow from strategy to broker
             self.logger.log_signal_progression(
@@ -394,6 +394,23 @@ class AutoDetectionOrchestrator:
                 signal_type=signal_type,
                 confidence=confidence,
                 reason=f"Execution intent generated with confidence {confidence:.2%}",
+            )
+
+            # Log the decision point with comprehensive details before execution
+            self.logger.log_decision_reason(
+                component="Orchestrator",
+                symbol=symbol.value,
+                decision="Trade Execution Attempt",
+                reason=f"Attempting to execute trade based on execution intent from strategy layer",
+                confidence=confidence,
+                details={
+                    'strategy': strategy_name,
+                    'side': signal_type,
+                    'regime_context': getattr(execution_intent.fused_signal, 'regime_context', 'unknown') if hasattr(execution_intent, 'fused_signal') else 'unknown',
+                    'dominant_bias': getattr(execution_intent.fused_signal, 'dominant_bias', 'unknown').value if hasattr(execution_intent, 'fused_signal') and hasattr(getattr(execution_intent, 'fused_signal', None), 'dominant_bias') else 'unknown',
+                    'dominance_score': getattr(execution_intent.fused_signal, 'dominance_score', 0.0) if hasattr(execution_intent, 'fused_signal') else 0.0,
+                    'risk_parameters': execution_intent.risk_parameters if hasattr(execution_intent, 'risk_parameters') else 'N/A'
+                }
             )
 
             # Execute trade through execution service using the execution intent
@@ -417,7 +434,7 @@ class AutoDetectionOrchestrator:
             if execution_result['status'] == 'executed':
                 execution_id = execution_result.get('execution_id', 'N/A')
                 self.logger.info(
-                    f"✅ ACCEPTED TRADE: {execution_result['order']['side']} {execution_result['order']['quantity']} {symbol.value} | Strategy: {strategy_name} | Intent Confidence: {confidence:.2%}")
+                    f"✅ TRADE EXECUTED: {execution_result['order']['side']} {execution_result['order']['quantity']} {symbol.value} | ID: {execution_id} | Strategy: {strategy_name} | Confidence: {confidence:.2%}")
 
                 # Log the successful execution
                 self.logger.log_signal_progression(
@@ -437,6 +454,20 @@ class AutoDetectionOrchestrator:
                     reason=f"Trade executed successfully with ID: {execution_id}",
                 )
 
+                # Log the successful execution decision
+                self.logger.log_decision_reason(
+                    component="Orchestrator",
+                    symbol=symbol.value,
+                    decision="Trade Executed Successfully",
+                    reason=f"Order executed successfully with ID: {execution_id}",
+                    confidence=confidence,
+                    details={
+                        'execution_id': execution_id,
+                        'quantity': execution_result['order']['quantity'],
+                        'side': execution_result['order']['side']
+                    }
+                )
+
                 # Add to active trades
                 self.active_trades[execution_id] = trade_details
             else:
@@ -445,7 +476,7 @@ class AutoDetectionOrchestrator:
 
                 # Log the failed execution with more detail
                 self.logger.warning(
-                    f"❌ REJECTED TRADE: {error_msg} | Symbol: {symbol.value} | Strategy: {strategy_name} | Intent Confidence: {confidence:.2%}")
+                    f"❌ TRADE REJECTED: {error_msg} | Symbol: {symbol.value} | Strategy: {strategy_name} | Intent Confidence: {confidence:.2%}")
 
                 # Log the failed execution
                 self.logger.log_signal_progression(
@@ -463,6 +494,16 @@ class AutoDetectionOrchestrator:
                     signal_type=signal_type,
                     confidence=confidence,
                     reason=f"Trade execution failed: {error_msg}",
+                )
+
+                # Log the rejection decision
+                self.logger.log_decision_reason(
+                    component="Orchestrator",
+                    symbol=symbol.value,
+                    decision="Trade Rejected",
+                    reason=f"Trade execution failed: {error_msg}",
+                    confidence=confidence,
+                    details={'error_message': str(error_msg)}
                 )
 
                 # Log specific rejection reason for observability
@@ -501,18 +542,61 @@ class AutoDetectionOrchestrator:
         """Handle execution intent events from the event system."""
         try:
             execution_intent = event.data
-            self.logger.info(f"Received execution intent event for {execution_intent.symbol.value}")
+            confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
+
+            # Calculate opportunity score based on multiple factors
+            opportunity_score = self._calculate_opportunity_score(execution_intent)
+
+            self.logger.info(f"📥 RECEIVED EXECUTION INTENT: {execution_intent.symbol.value} | Side: {execution_intent.side.name} | Confidence: {confidence:.2%} | Score: {opportunity_score:.2f} | Strategy: {execution_intent.strategy_name}")
+
+            # Log the decision point with comprehensive details
+            self.logger.log_decision_reason(
+                component="Orchestrator",
+                symbol=execution_intent.symbol.value,
+                decision="Intent Processing Started",
+                reason=f"Received execution intent from strategy layer",
+                confidence=confidence,
+                score=opportunity_score,  # Add opportunity score
+                details={
+                    'strategy': execution_intent.strategy_name,
+                    'side': execution_intent.side.name,
+                    'regime_context': getattr(execution_intent.fused_signal, 'regime_context', 'unknown') if hasattr(execution_intent, 'fused_signal') else 'unknown',
+                    'dominant_bias': getattr(execution_intent.fused_signal, 'dominant_bias', 'unknown').value if hasattr(execution_intent, 'fused_signal') and hasattr(getattr(execution_intent, 'fused_signal', None), 'dominant_bias') else 'unknown',
+                    'dominance_score': getattr(execution_intent.fused_signal, 'dominance_score', 0.0) if hasattr(execution_intent, 'fused_signal') else 0.0,
+                    'opportunity_score': opportunity_score
+                }
+            )
 
             # Check for active orders on the broker before processing the intent
             if not self._check_broker_active_orders_for_duplicate(execution_intent):
                 confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
-                self.logger.info(f"Broker active orders check failed for {execution_intent.symbol.value} {execution_intent.side.name} | Intent Confidence: {confidence:.2%}")
+                self.logger.info(f"❌ BROKER DUPLICATE CHECK FAILED: {execution_intent.symbol.value} {execution_intent.side.name} | Intent Confidence: {confidence:.2%}")
+
+                # Log the rejection reason
+                self.logger.log_decision_reason(
+                    component="Orchestrator",
+                    symbol=execution_intent.symbol.value,
+                    decision="Intent Rejected - Broker Duplicate",
+                    reason="Active order already exists on broker in same direction",
+                    confidence=confidence,
+                    score=opportunity_score
+                )
                 return  # Don't add to queue if broker already has active order in same direction
 
             # Check for duplicate execution intent before adding to queue
             if self._check_duplicate_execution_intent(execution_intent):
                 confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
-                self.logger.info(f"Duplicate execution intent rejected for {execution_intent.symbol.value} {execution_intent.side.name} | Intent Confidence: {confidence:.2%}")
+                self.logger.info(f"❌ DUPLICATE INTENT REJECTED: {execution_intent.symbol.value} {execution_intent.side.name} | Intent Confidence: {confidence:.2%}")
+
+                # Log the rejection reason
+                self.logger.log_decision_reason(
+                    component="Orchestrator",
+                    symbol=execution_intent.symbol.value,
+                    decision="Intent Rejected - Duplicate Prevention",
+                    reason="Duplicate execution intent detected",
+                    confidence=confidence,
+                    score=opportunity_score
+                )
                 return  # Don't add duplicate to queue
 
             # Add some protection against one symbol dominating the queue
@@ -525,23 +609,120 @@ class AutoDetectionOrchestrator:
             max_same_symbol_in_queue = 10  # Adjust as needed
             if same_symbol_count >= max_same_symbol_in_queue:
                 self.logger.warning(f"Queue limit reached for {symbol}, not adding more opportunities for this symbol")
+
+                # Log the rejection reason
+                self.logger.log_decision_reason(
+                    component="Orchestrator",
+                    symbol=execution_intent.symbol.value,
+                    decision="Intent Rejected - Queue Limit",
+                    reason=f"Queue limit reached for symbol ({max_same_symbol_in_queue} items)",
+                    confidence=confidence,
+                    score=opportunity_score
+                )
                 return  # Don't add to queue if too many for same symbol
 
             # Add the execution intent to the opportunity queue for processing
             self.opportunity_queue.append(execution_intent)
 
+            # Log the successful addition to queue
+            queue_size = len(self.opportunity_queue)
+            self.logger.info(f"✅ EXECUTION INTENT QUEUED: {execution_intent.symbol.value} | Queue Size: {queue_size} | Confidence: {confidence:.2%} | Score: {opportunity_score:.2f}")
+
             # Log the receipt of the execution intent
+            self.logger.log_decision_reason(
+                component="Orchestrator",
+                symbol=execution_intent.symbol.value,
+                decision="Intent Queued for Execution",
+                reason="Execution intent successfully added to processing queue",
+                confidence=confidence,
+                score=opportunity_score,
+                details={
+                    'queue_size': queue_size,
+                    'strategy': execution_intent.strategy_name,
+                    'side': execution_intent.side.name,
+                    'opportunity_score': opportunity_score
+                }
+            )
+
             self.logger.log_background_activity(
                 "Execution Intent Received",
                 f"Received execution intent for {execution_intent.symbol.value} from event system",
                 symbol=execution_intent.symbol.value,
                 strategy=execution_intent.strategy_name,
-                confidence=float(execution_intent.intent_confidence.value)
+                confidence=float(execution_intent.intent_confidence.value),
+                score=opportunity_score
             )
         except Exception as e:
             self.logger.error(f"Error handling execution intent event: {e}")
             import traceback
             self.logger.error(f"Traceback: {traceback.format_exc()}")
+
+    def _calculate_opportunity_score(self, execution_intent) -> float:
+        """Calculate a comprehensive opportunity score based on multiple factors."""
+        try:
+            # Base confidence score
+            base_confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
+
+            # Get fused signal information if available
+            fused_signal = getattr(execution_intent, 'fused_signal', None)
+            if fused_signal:
+                dominance_score = getattr(fused_signal, 'dominance_score', 0.0)
+                regime_context = getattr(fused_signal, 'regime_context', 'normal')
+            else:
+                dominance_score = 0.0
+                regime_context = 'normal'
+
+            # Risk parameters
+            risk_params = getattr(execution_intent, 'risk_parameters', {})
+            position_size = risk_params.get('max_position_size', 0.02)
+            stop_loss_pct = risk_params.get('stop_loss_pct', 0.02)
+            take_profit_pct = risk_params.get('take_profit_pct', 0.03)
+
+            # Calculate reward-to-risk ratio
+            reward_risk_ratio = take_profit_pct / stop_loss_pct if stop_loss_pct > 0 else 1.0
+
+            # Calculate opportunity score based on multiple factors
+            # Weighted combination of confidence, dominance, position size, and reward-to-risk ratio
+            import os
+            confidence_weight = float(os.getenv('OPPORTUNITY_SCORE_CONFIDENCE_WEIGHT', '0.4'))
+            dominance_weight = float(os.getenv('OPPORTUNITY_SCORE_DOMINANCE_WEIGHT', '0.2'))
+            position_size_weight = float(os.getenv('OPPORTUNITY_SCORE_POSITION_SIZE_WEIGHT', '0.15'))
+            reward_risk_weight = float(os.getenv('OPPORTUNITY_SCORE_REWARD_RISK_WEIGHT', '0.15'))
+            regime_bonus = float(os.getenv('OPPORTUNITY_SCORE_REGIME_BONUS', '0.1'))  # Bonus for favorable market regimes
+
+            # Normalize values to 0-1 scale
+            normalized_confidence = min(1.0, base_confidence)
+            normalized_dominance = min(1.0, max(0.0, dominance_score))
+            normalized_position_size = min(1.0, position_size / 0.1)  # Assuming max position size of 10%
+            normalized_reward_risk = min(1.0, reward_risk_ratio / 3.0)  # Assuming max R/R of 3:1
+
+            # Calculate base score
+            base_score = (
+                confidence_weight * normalized_confidence +
+                dominance_weight * normalized_dominance +
+                position_size_weight * normalized_position_size +
+                reward_risk_weight * normalized_reward_risk
+            )
+
+            # Add regime bonus for favorable market conditions
+            regime_bonus_factor = 0.0
+            if regime_context.lower() in ['trending', 'breakout', 'momentum']:
+                regime_bonus_factor = regime_bonus
+            elif regime_context.lower() in ['volatile', 'high_volatility']:
+                # Slightly reduce score for high volatility
+                regime_bonus_factor = -0.05
+
+            final_score = base_score + regime_bonus_factor
+
+            # Ensure score is within reasonable bounds
+            final_score = max(0.0, min(2.0, final_score))
+
+            return final_score
+
+        except Exception as e:
+            self.logger.error(f"Error calculating opportunity score: {e}")
+            # Return a default score in case of error
+            return 0.5
 
     def _check_duplicate_execution_intent(self, execution_intent) -> bool:
         """Check if an execution intent is a duplicate based on symbol and direction."""
@@ -859,6 +1040,26 @@ class AutoDetectionOrchestrator:
                 parent_execution_intent=execution_intent  # Link back to the execution intent
             )
 
+            # Log the order creation with comprehensive details
+            confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
+            self.logger.info(f"📝 ORDER CREATED: {symbol_value} | Side: {order_side.name} | Quantity: {quantity:.6f} | Price: ${current_price:.4f} | Strategy: {execution_intent.strategy_name} | Confidence: {confidence:.2%}")
+
+            # Log the decision to proceed with order execution
+            self.logger.log_decision_reason(
+                component="Orchestrator",
+                symbol=symbol_value,
+                decision="Order Created - Ready for Execution",
+                reason="Order created with all required parameters from execution intent",
+                confidence=confidence,
+                details={
+                    'quantity': quantity,
+                    'price': current_price,
+                    'position_side': position_side,
+                    'stop_loss': getattr(execution_intent, 'stop_loss_price', 'N/A'),
+                    'take_profit': getattr(execution_intent, 'take_profit_price', 'N/A')
+                }
+            )
+
             # Validate symbol availability before executing order
             if hasattr(self.execution_service, 'get_available_symbols'):
                 try:
@@ -903,6 +1104,24 @@ class AutoDetectionOrchestrator:
             # If execution_id is valid, continue with successful execution
             # Remove from pending intents after successful execution
             self._remove_pending_execution_intent(execution_intent)
+
+            # Log successful execution
+            confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
+            self.logger.info(f"✅ ORDER EXECUTED: {symbol_value} | ID: {execution_id} | Strategy: {execution_intent.strategy_name} | Confidence: {confidence:.2%}")
+
+            # Log the successful execution decision
+            self.logger.log_decision_reason(
+                component="Orchestrator",
+                symbol=symbol_value,
+                decision="Order Executed Successfully",
+                reason=f"Order executed successfully with ID: {execution_id}",
+                confidence=confidence,
+                details={
+                    'execution_id': execution_id,
+                    'quantity': quantity,
+                    'side': execution_intent.side.name
+                }
+            )
 
             return {
                 'status': 'executed',
@@ -987,6 +1206,14 @@ class AutoDetectionOrchestrator:
 
         # Set the flag to stop main loops
         self.is_running = False
+
+        # Notify the execution service that the system is shutting down to prevent new orders
+        if hasattr(self, 'execution_service') and self.execution_service:
+            try:
+                self.execution_service.set_system_running_state(False)
+                self.logger.info("Execution service notified of system shutdown")
+            except Exception as e:
+                self.logger.error(f"Error notifying execution service of shutdown: {e}")
 
         # Stop the opportunity watcher
         if hasattr(self, 'opportunity_watcher') and self.opportunity_watcher:

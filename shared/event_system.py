@@ -225,7 +225,7 @@ class SignalProcessor:
         try:
             execution_intent = event.data
             if self.logger:
-                self.logger.info(f"Processing execution intent from {event.source_component} for {execution_intent.symbol.value}")
+                self.logger.info(f"📥 RECEIVED EXECUTION INTENT: Processing execution intent from {event.source_component} for {execution_intent.symbol.value} with confidence {float(execution_intent.intent_confidence.value):.2%}")
 
             # Check if we have access to the orchestrator to queue the execution intent
             # The orchestrator should be accessible through the global architecture orchestrator
@@ -235,8 +235,12 @@ class SignalProcessor:
             # Otherwise, use the execution service passed as a parameter
             if hasattr(architecture_orchestrator, 'execution_service') and architecture_orchestrator.execution_service:
                 execution_service_to_use = architecture_orchestrator.execution_service
+                if self.logger:
+                    self.logger.info(f"Using execution service from architecture orchestrator for {execution_intent.symbol.value}")
             else:
                 execution_service_to_use = execution_service
+                if self.logger:
+                    self.logger.info(f"Using execution service from parameter for {execution_intent.symbol.value}")
 
             # Use the execution service directly to execute the order
             from domain.entities.signal_entities import Order, OrderSide

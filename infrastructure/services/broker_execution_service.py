@@ -185,6 +185,11 @@ class BrokerExecutionService(ExecutionPort):
     def execute_order(self, order: Order) -> str:
         """Execute an order through the configured broker."""
         try:
+            # Check if the system is still running - if not, reject the execution
+            if hasattr(self, '_is_system_running') and not self._is_system_running:
+                self.logger.warning(f"System is shutting down, rejecting order execution for {order.symbol.value if hasattr(order, 'symbol') and hasattr(getattr(order, 'symbol', None), 'value') else 'UNKNOWN'}")
+                return None
+
             # Note: Symbol filtering (like stablecoin pairs) is now handled at the watcher level
             # to avoid processing symbols that will be rejected later. This improves efficiency.
 
@@ -348,6 +353,10 @@ class BrokerExecutionService(ExecutionPort):
             self.logger.error(f"❌ ImportError sending Telegram notification: {e}")
         except Exception as e:
             self.logger.error(f"❌ Error sending Telegram notification: {e}")
+
+    def set_system_running_state(self, is_running: bool):
+        """Set the system running state to prevent order execution during shutdown."""
+        self._is_system_running = is_running
 
     # Removed _validate_order_risk and _enhance_order_with_risk_parameters methods
     # as risk management should only be handled by the Strategy layer per architectural requirements

@@ -77,16 +77,16 @@ class BaseStrategyAdapter(StrategyPort):
         # Default implementation: execute based on confidence and signal type with intelligent evaluation
         import os
 
-        # Get configuration thresholds
-        min_confidence = float(os.getenv('STRATEGY_MIN_CONFIDENCE_THRESHOLD', '0.3'))  # Minimum confidence to consider
-        high_confidence_threshold = float(os.getenv('STRATEGY_HIGH_CONFIDENCE_THRESHOLD', '0.7'))  # High confidence threshold
-        neutral_buffer = float(os.getenv('STRATEGY_NEUTRAL_BUFFER', '0.1'))  # Buffer around neutral signals
+        # Get configuration thresholds - Further lowered to allow more trades
+        min_confidence = float(os.getenv('STRATEGY_MIN_CONFIDENCE_THRESHOLD', '0.10'))  # Lowered from 0.15 to 0.10
+        high_confidence_threshold = float(os.getenv('STRATEGY_HIGH_CONFIDENCE_THRESHOLD', '0.4'))  # Lowered from 0.5 to 0.4
+        neutral_buffer = float(os.getenv('STRATEGY_NEUTRAL_BUFFER', '0.02'))  # Reduced from 0.03 to 0.02
 
         confidence = float(fused_signal.confidence.value)
         symbol = fused_signal.symbol.value if hasattr(fused_signal.symbol, 'value') else str(fused_signal.symbol)
 
         # Check if signal is not neutral
-        is_not_neutral = fused_signal.dominant_bias.value not in ['HOLD', 'NEUTRAL']
+        is_not_neutral = fused_signal.dominant_bias.value not in ['HOLD', 'NEUTRAL', 'FLAT']
 
         # Log detailed information about the decision factors
         self.logger.info(f"Strategy evaluation for {symbol}: "
@@ -114,7 +114,7 @@ class BaseStrategyAdapter(StrategyPort):
 
             # If the signal is in a favorable regime context, consider it
             regime_context = getattr(fused_signal, 'regime_context', '').lower()
-            if any(favorable in regime_context for favorable in ['trend', 'breakout', 'momentum']):
+            if any(favorable in regime_context for favorable in ['trend', 'breakout', 'momentum', 'bullish', 'bearish']):
                 self.logger.info(f"ACCEPTED: Medium confidence ({confidence:.3f}) in favorable regime ({regime_context}) for {symbol}")
                 return True
 
@@ -122,15 +122,27 @@ class BaseStrategyAdapter(StrategyPort):
             self.logger.info(f"ACCEPTED: Medium confidence ({confidence:.3f}) non-neutral signal for {symbol}")
             return True
 
-        # For low confidence signals, be more selective
+        # For low confidence signals, be more selective but allow some execution
         elif confidence < min_confidence and is_not_neutral:
             # Only execute if there are strong supporting factors
             dominance_score = getattr(fused_signal, 'dominance_score', 0.0)
             regime_context = getattr(fused_signal, 'regime_context', '').lower()
 
             # Execute if dominance is very strong relative to confidence
-            if abs(dominance_score) > (min_confidence + 0.2) and any(favorable in regime_context for favorable in ['confirmed', 'strong']):
+            if abs(dominance_score) > (min_confidence + 0.10) and any(favorable in regime_context for favorable in ['confirmed', 'strong', 'trend']):
                 self.logger.info(f"ACCEPTED: Low confidence ({confidence:.3f}) but strong dominance ({dominance_score:.3f}) and regime ({regime_context}) for {symbol}")
+                return True
+
+            # Even with low confidence, if there's strong directional bias, consider executing
+            import os
+            strong_directional_bias_threshold = float(os.getenv('STRATEGY_STRONG_DIRECTIONAL_BIAS_THRESHOLD', '0.25'))
+            if abs(dominance_score) > strong_directional_bias_threshold:  # Strong directional bias
+                self.logger.info(f"ACCEPTED: Low confidence ({confidence:.3f}) but strong directional bias ({dominance_score:.3f}) for {symbol}")
+                return True
+
+            # For very low confidence, still allow execution if there's any directional bias
+            if abs(dominance_score) > 0.1:
+                self.logger.info(f"ACCEPTED: Very low confidence ({confidence:.3f}) but some directional bias ({dominance_score:.3f}) for {symbol}")
                 return True
 
             self.logger.info(f"REJECTED: Low confidence ({confidence:.3f}) and insufficient supporting factors for {symbol}")
@@ -228,21 +240,21 @@ class BaseStrategyAdapter(StrategyPort):
             # Construct comprehensive risk parameters
             risk_parameters = {
                 'max_position_size': position_size,
-                'stop_loss_pct': risk_factors.get('stop_loss_pct', 0.02),      # 2% default SL
-                'take_profit_pct': risk_factors.get('take_profit_pct', 0.03),  # 3% default TP
-                'stop_loss_price': sl_tp_levels[0] if sl_tp_levels else current_price * 0.98,
-                'take_profit_price': sl_tp_levels[1] if sl_tp_levels else current_price * 1.03,
-                'risk_per_trade': risk_factors.get('risk_per_trade', 0.02 * portfolio_value),  # 2% of portfolio
-                'max_position_exposure': risk_factors.get('max_position_exposure', 0.1 * portfolio_value),  # 10% max exposure
-                'position_quantity': risk_factors.get('position_quantity', position_size * portfolio_value / current_price),
+                'stop_loss_pct': getattr(risk_factors, 'stop_loss_multiplier', 0.02),      # 2% default SL
+                'take_profit_pct': getattr(risk_factors, 'take_profit_multiplier', 0.03),  # 3% default TP
+                'stop_loss_price': sl_tp_levels[0],
+                'take_profit_price': sl_tp_levels[1],
+                'risk_per_trade': 0.02 * portfolio_value,  # 2% of portfolio
+                'max_position_exposure': 0.1 * portfolio_value,  # 10% max exposure
+                'position_quantity': position_size * portfolio_value / current_price,
                 'risk_adjustment_factors': risk_factors
             }
 
             # Log the calculated risk parameters
             self.logger.info(f"Calculated comprehensive risk parameters for {fused_signal.symbol.value}: "
                            f"Position size: {position_size:.4f}, "
-                           f"SL%: {risk_factors.get('stop_loss_pct', 0.02):.2%}, "
-                           f"TP%: {risk_factors.get('take_profit_pct', 0.03):.2%}, "
+                           f"SL%: {getattr(risk_factors, 'stop_loss_multiplier', 0.02):.2%}, "
+                           f"TP%: {getattr(risk_factors, 'take_profit_multiplier', 0.03):.2%}, "
                            f"Confidence: {float(fused_signal.confidence.value):.2%}")
 
             return risk_parameters
@@ -274,9 +286,23 @@ class TrendFollowingStrategy(BaseStrategyAdapter):
         super().__init__("trend_following")
 
     def should_execute(self, fused_signal: FusedSignal) -> bool:
-        """Only execute in trending market conditions"""
-        return (super().should_execute(fused_signal) and
-                'trend' in fused_signal.regime_context.lower())
+        """Execute in trending market conditions, but also allow other conditions with lower thresholds"""
+        # First check the base strategy execution criteria
+        base_should_execute = super().should_execute(fused_signal)
+
+        # Check if it's a trending market condition
+        is_trending = 'trend' in fused_signal.regime_context.lower()
+
+        # If it's trending, execute normally
+        if is_trending:
+            return base_should_execute
+
+        # If it's not trending, we can still execute if the signal is strong enough
+        # This allows the strategy to participate in other market conditions too
+        confidence = float(fused_signal.confidence.value)
+        strong_signal = confidence > 0.4  # Lower threshold for non-trending markets
+
+        return base_should_execute or strong_signal
 
 
 class MeanReversionStrategy(BaseStrategyAdapter):
@@ -286,10 +312,24 @@ class MeanReversionStrategy(BaseStrategyAdapter):
         super().__init__("mean_reversion")
 
     def should_execute(self, fused_signal: FusedSignal) -> bool:
-        """Only execute in mean-reverting market conditions"""
-        return (super().should_execute(fused_signal) and
-                ('mean' in fused_signal.regime_context.lower() or
-                 'revert' in fused_signal.regime_context.lower()))
+        """Execute in mean-reverting market conditions, but also allow other conditions with lower thresholds"""
+        # First check the base strategy execution criteria
+        base_should_execute = super().should_execute(fused_signal)
+
+        # Check if it's a mean-reverting market condition
+        is_mean_reverting = ('mean' in fused_signal.regime_context.lower() or
+                             'revert' in fused_signal.regime_context.lower())
+
+        # If it's mean-reverting, execute normally
+        if is_mean_reverting:
+            return base_should_execute
+
+        # If it's not mean-reverting, we can still execute if the signal is strong enough
+        # This allows the strategy to participate in other market conditions too
+        confidence = float(fused_signal.confidence.value)
+        strong_signal = confidence > 0.4  # Lower threshold for non-mean-reverting markets
+
+        return base_should_execute or strong_signal
 
 
 class VolatilityBreakoutStrategy(BaseStrategyAdapter):
@@ -299,6 +339,20 @@ class VolatilityBreakoutStrategy(BaseStrategyAdapter):
         super().__init__("volatility_breakout")
 
     def should_execute(self, fused_signal: FusedSignal) -> bool:
-        """Only execute in high volatility conditions"""
-        return (super().should_execute(fused_signal) and
-                'volatile' in fused_signal.regime_context.lower())
+        """Execute in high volatility conditions, but also allow other conditions with lower thresholds"""
+        # First check the base strategy execution criteria
+        base_should_execute = super().should_execute(fused_signal)
+
+        # Check if it's a volatile market condition
+        is_volatile = 'volatile' in fused_signal.regime_context.lower()
+
+        # If it's volatile, execute normally
+        if is_volatile:
+            return base_should_execute
+
+        # If it's not volatile, we can still execute if the signal is strong enough
+        # This allows the strategy to participate in other market conditions too
+        confidence = float(fused_signal.confidence.value)
+        strong_signal = confidence > 0.4  # Lower threshold for non-volatile markets
+
+        return base_should_execute or strong_signal

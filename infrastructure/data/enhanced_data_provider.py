@@ -424,27 +424,73 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                 import traceback
                 self.logger.error(f"Traceback: {traceback.format_exc()}")
 
-        # Try alternative method using requests
+        # Try alternative method using requests with exponential backoff
         try:
             import requests
+            import time
+            import random
 
-            # Use a generic approach - try Binance API as fallback
+            # Use a generic approach - try Binance API as fallback with exponential backoff
             api_url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
-            self.logger.debug(f"Using fallback API call for price of {symbol}: {api_url}")
-            response = requests.get(api_url, timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                if 'price' in data:
-                    price = float(data['price'])
-                    self.logger.debug(f"Successfully fetched price {price} for {symbol} from direct API")
 
-                    # Cache the price with a short TTL (30 seconds for price data)
-                    data_cache.set(broker_name, f"price_{symbol}", "tick", [{'price': price}], ttl=30)
-                    return price
-            elif response.status_code == 400:
-                # Symbol not found on exchange
-                self.logger.debug(f"Symbol {symbol} not found on exchange: {response.text}")
-                return None
+            # Exponential backoff parameters
+            max_retries = 3
+            base_delay = 1  # Start with 1 second
+
+            for attempt in range(max_retries):
+                try:
+                    self.logger.debug(f"Attempt {attempt + 1}/{max_retries} - Using fallback API call for price of {symbol}: {api_url}")
+                    response = requests.get(api_url, timeout=10)  # Increased timeout
+
+                    if response.status_code == 200:
+                        data = response.json()
+                        if 'price' in data:
+                            price = float(data['price'])
+                            self.logger.debug(f"Successfully fetched price {price} for {symbol} from direct API")
+
+                            # Cache the price with a short TTL (30 seconds for price data)
+                            data_cache.set(broker_name, f"price_{symbol}", "tick", [{'price': price}], ttl=30)
+                            return price
+                    elif response.status_code == 400:
+                        # Symbol not found on exchange - don't retry
+                        self.logger.debug(f"Symbol {symbol} not found on exchange: {response.text}")
+                        return None
+                    elif response.status_code in [429, 502, 503, 504]:  # Rate limiting or server errors
+                        if attempt < max_retries - 1:  # Don't sleep on the last attempt
+                            # Calculate delay with exponential backoff and jitter
+                            delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                            self.logger.warning(f"API call failed with status {response.status_code}, retrying in {delay:.2f}s (attempt {attempt + 1})")
+                            time.sleep(delay)
+                        else:
+                            self.logger.warning(f"API call failed after {max_retries} attempts with status {response.status_code}")
+                    else:
+                        # Other HTTP errors - don't retry
+                        self.logger.debug(f"API call failed with status {response.status_code}: {response.text}")
+                        return None
+
+                except requests.exceptions.Timeout:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                        self.logger.warning(f"API call timed out, retrying in {delay:.2f}s (attempt {attempt + 1})")
+                        time.sleep(delay)
+                    else:
+                        self.logger.warning(f"API call timed out after {max_retries} attempts")
+                except requests.exceptions.ConnectionError:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                        self.logger.warning(f"Connection error, retrying in {delay:.2f}s (attempt {attempt + 1})")
+                        time.sleep(delay)
+                    else:
+                        self.logger.warning(f"Connection error after {max_retries} attempts")
+                except Exception as api_error:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                        self.logger.warning(f"API error: {api_error}, retrying in {delay:.2f}s (attempt {attempt + 1})")
+                        time.sleep(delay)
+                    else:
+                        self.logger.warning(f"API error after {max_retries} attempts: {api_error}")
+                        break
+
         except Exception as e:
             self.logger.debug(f"Could not fetch real price for {symbol} from direct API: {e}")
             pass

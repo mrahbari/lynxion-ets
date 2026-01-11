@@ -226,10 +226,16 @@ class CMCScreener(WatcherPort):
         volume_confidence = min(1.0, max(0.1, volume_ratio * 0.5))  # Higher volume = higher confidence
         change_confidence = min(1.0, abs(change_24h) / 10.0)  # Larger changes = higher confidence
         
-        # Combine with weights
-        confidence = (vol_confidence * 0.3 + volume_confidence * 0.4 + change_confidence * 0.3)
-        
-        return max(0.1, min(1.0, confidence))  # Ensure minimum confidence
+        # Combine with configurable weights
+        import os
+        vol_weight = float(os.getenv('CMC_VOL_CONFIDENCE_WEIGHT', '0.3'))
+        volume_weight = float(os.getenv('CMC_VOLUME_CONFIDENCE_WEIGHT', '0.4'))
+        change_weight = float(os.getenv('CMC_CHANGE_CONFIDENCE_WEIGHT', '0.3'))
+
+        confidence = (vol_confidence * vol_weight + volume_confidence * volume_weight + change_confidence * change_weight)
+
+        min_cmc_confidence = float(os.getenv('CMC_MIN_CONFIDENCE_THRESHOLD', '0.1'))
+        return max(min_cmc_confidence, min(1.0, confidence))  # Ensure minimum confidence based on config
 
     def _calculate_volatility(self, symbol: str) -> float:
         """Calculate volatility for a specific symbol based on historical prices"""

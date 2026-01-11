@@ -61,7 +61,8 @@ class MarketOpportunityWatcher:
         # If no symbols provided and auto-discovery is enabled, discover symbols dynamically
         if auto_discover_symbols and not symbols:
             discovered_symbols = self._discover_symbols_automatically()
-            self.symbols = self._filter_stablecoin_pairs(discovered_symbols)
+            filtered_symbols = self._filter_stablecoin_pairs(discovered_symbols)
+            self.symbols = self._validate_symbol_data_availability(filtered_symbols)
         elif symbols:
             # Convert symbol format if needed (e.g., BTC/USDT -> BTCUSDT)
             converted_symbols = []
@@ -77,12 +78,14 @@ class MarketOpportunityWatcher:
                     symbol_str = symbol_str.replace('/', '')
 
                 converted_symbols.append(Symbol(symbol_str))
-            self.symbols = self._filter_stablecoin_pairs(converted_symbols)
+            filtered_symbols = self._filter_stablecoin_pairs(converted_symbols)
+            self.symbols = self._validate_symbol_data_availability(filtered_symbols)
         else:
             # Use default symbols from environment variables or fallback to hard-coded defaults
             default_symbols = os.getenv("DEFAULT_WATCHLIST_SYMBOLS", "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT").split(",")
             unfiltered_symbols = [Symbol(s.strip()) for s in default_symbols]
-            self.symbols = self._filter_stablecoin_pairs(unfiltered_symbols)
+            filtered_symbols = self._filter_stablecoin_pairs(unfiltered_symbols)
+            self.symbols = self._validate_symbol_data_availability(filtered_symbols)
 
         # Initialize watcher adapters for each symbol
         self._initialize_watchers()
@@ -165,6 +168,58 @@ class MarketOpportunityWatcher:
             self.logger.info(f"📊 SYMBOL FILTERING: {original_count} -> {filtered_count} symbols after stablecoin filtering")
 
         return filtered_symbols
+
+    def _validate_symbol_data_availability(self, symbols):
+        """Validate that symbols have data available on exchanges before processing."""
+        validated_symbols = []
+
+        # Check if data validation is enabled
+        validate_data_availability = os.getenv('VALIDATE_SYMBOL_DATA_AVAILABILITY', 'true').lower() == 'true'
+
+        if not validate_data_availability:
+            return symbols
+
+        self.logger.info(f"🔍 Validating data availability for {len(symbols)} symbols...")
+
+        for symbol in symbols:
+            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+
+            try:
+                # Check if the symbol is available in the market data repository
+                if self.market_data_repo and hasattr(self.market_data_repo, 'is_symbol_available'):
+                    is_available = self.market_data_repo.is_symbol_available(symbol_str)
+
+                    if is_available:
+                        validated_symbols.append(symbol)
+                        self.logger.debug(f"✅ Data available for {symbol_str}")
+                    else:
+                        self.logger.warning(f"⚠️ Data not available for {symbol_str}, skipping...")
+                else:
+                    # If no market data repo is available, try to validate using broker service
+                    if hasattr(self, 'broker_service') and self.broker_service:
+                        available_symbols = self.broker_service.get_available_symbols()
+
+                        if symbol_str in available_symbols:
+                            validated_symbols.append(symbol)
+                            self.logger.debug(f"✅ Symbol available on broker: {symbol_str}")
+                        else:
+                            self.logger.warning(f"⚠️ Symbol not available on broker: {symbol_str}, skipping...")
+                    else:
+                        # If no validation method is available, assume symbol is valid
+                        validated_symbols.append(symbol)
+                        self.logger.warning(f"⚠️ No validation method available for {symbol_str}, assuming valid...")
+
+            except Exception as e:
+                self.logger.warning(f"⚠️ Error validating data for {symbol_str}: {e}, skipping...")
+                continue
+
+        original_count = len(symbols)
+        validated_count = len(validated_symbols)
+
+        if original_count != validated_count:
+            self.logger.info(f"📊 DATA AVAILABILITY VALIDATION: {original_count} -> {validated_count} symbols after validation")
+
+        return validated_symbols
 
     def _discover_symbols_automatically(self) -> List[Symbol]:
         """Dynamically discover symbols to monitor based on market conditions or other criteria."""
@@ -1658,7 +1713,7 @@ class MarketOpportunityWatcher:
             if hasattr(self.market_data_repo, 'get_historical_data'):
                 # Get historical data for initializing watchers with sufficient history
                 try:
-                    historical_data = self.market_data_repo.get_historical_data(Symbol(symbol.value), "30m", "1m")
+                    historical_data = self.market_data_repo.get_historical_data(symbol=Symbol(symbol.value), period="30m", timeframe="1m")
                     if historical_data:
                         # Use the most recent data point to initialize, but the historical data will help populate history
                         market_data = historical_data[0] if historical_data else None
@@ -1795,8 +1850,18 @@ class MarketOpportunityWatcher:
             'execution_intent': None
         }
 
+        # Get priority order for watchers based on their predictive power
+        # This allows us to implement early exit logic if initial key indicators show no opportunity
+        watcher_priority_order = self._get_watcher_priority_order()
+
         # Process each watcher individually - only emit raw market observations
-        for watcher_name, watcher in self.watchers[symbol_str].items():
+        for watcher_name in watcher_priority_order:
+            # Check if this watcher exists for this symbol
+            if watcher_name not in self.watchers[symbol_str]:
+                continue
+
+            watcher = self.watchers[symbol_str][watcher_name]
+
             # Log that we're starting to analyze with this watcher
             if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
                 self.logger.log_background_activity(
@@ -1860,6 +1925,12 @@ class MarketOpportunityWatcher:
                         else:
                             self.logger.warning("No event router available to emit observation")
 
+                        # Implement early exit logic: if this is an early watcher and it indicates no opportunity,
+                        # we might want to skip remaining watchers for efficiency
+                        if self._should_skip_remaining_watchers(observation, watcher_name):
+                            self.logger.info(f"Early exit triggered for {symbol_str} after {watcher_name} - no profitable opportunity detected")
+                            break
+
                     else:
                         # No observation was generated by the watcher
                         if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
@@ -1906,6 +1977,32 @@ class MarketOpportunityWatcher:
                 )
 
         return opportunities
+
+    def _get_watcher_priority_order(self) -> List[str]:
+        """Get the priority order for watchers based on their predictive power."""
+        # Define priority order - most predictive watchers first
+        # This allows for early exit if initial key indicators show no opportunity
+        priority_order = [
+            'market_pulse',      # Market pulse often indicates immediate opportunities
+            'trend_mtf',         # Multi-timeframe trend is fundamental
+            'volatility',        # Volatility can indicate trade viability
+            'anomaly_ml',        # ML anomalies can be predictive
+            'liquidity',         # Liquidity affects trade execution
+            'funding_rate',      # Funding rates affect perpetual positions
+            'cmc_screener',      # General market conditions
+            'orderflow_ws',      # Order flow for execution timing
+            'historical_candle', # Historical patterns
+            'tick_watcher'       # Tick-level analysis (usually confirmatory)
+        ]
+
+        return priority_order
+
+    def _should_skip_remaining_watchers(self, observation, watcher_name: str) -> bool:
+        """Determine if remaining watchers should be skipped based on early indicators."""
+        # DISABLED: Never skip remaining watchers to ensure all observations flow through the system
+        # The architectural flow should be: Watcher → Engine → Fusion → Strategy → Broker
+        # Watchers should only emit observations, not make trading decisions
+        return False  # Always return False to ensure all watchers run
 
     def _process_opportunities(self, symbol: Symbol, opportunities: Dict[str, Any]):
         """Process detected opportunities - but in the correct architecture,

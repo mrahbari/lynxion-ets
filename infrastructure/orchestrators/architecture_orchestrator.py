@@ -54,6 +54,9 @@ class ArchitectureOrchestrator:
             # Initialize the signal aggregator
             if self.execution_service:
                 signal_aggregator.set_execution_service(self.execution_service)
+                self.logger.info("Signal aggregator configured with execution service")
+            else:
+                self.logger.warning("No execution service provided to signal aggregator")
             signal_aggregator.start_aggregation()
 
             # The signal processor is already set up to handle the flow
