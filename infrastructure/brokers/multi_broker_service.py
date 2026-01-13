@@ -378,6 +378,11 @@ class MultiBrokerExecutionService(ExecutionPort):
                 self.logger.error(f"❌ ORDER REJECTED: Risk validation failed for order: {order}")
                 raise ValueError(f"Order failed risk validation: {order}")
 
+            # Perform final validation to ensure the order parameters are reasonable before sending to broker
+            if not self._validate_order_parameters_before_broker(order):
+                self.logger.error(f"❌ ORDER REJECTED: Order parameters are invalid or unreasonable: {order}")
+                raise ValueError(f"Order parameters failed final validation: {order}")
+
             self.logger.info(f"🎯 EXECUTING ORDER ON {best_exchange.upper()}: {order}")
 
             # Add to pending orders before placing the order
@@ -511,50 +516,12 @@ class MultiBrokerExecutionService(ExecutionPort):
                     sl_price = current_price * (1 + sl_multiplier)  # SL above for SELL (stop loss if price rises)
                     tp_price = current_price * (1 - tp_multiplier)  # TP below for SELL (take profit when price falls)
 
-            # Validate calculated SL/TP values to ensure they're reasonable
-            # For a symbol with price around 0.058, SL/TP should be in similar range
-            entry_price = float(order.price.amount) if order.price and hasattr(order.price, 'amount') else None
-            if entry_price:
-                # Validate SL price
-                if not has_stop_loss:
-                    # For BUY orders: SL should be below entry price
-                    # For SELL orders: SL should be above entry price (for short positions)
-                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
-
-                    if is_buy_order:
-                        # For BUY orders, SL should be below entry price
-                        if sl_price >= entry_price * 2 or sl_price <= entry_price * 0.1:
-                            self.logger.warning(f"Invalid SL price calculated ({sl_price}) for entry price {entry_price}, disabling SL")
-                            sl_price = None
-                    else:
-                        # For SELL orders, SL should be above entry price (for stop loss on short)
-                        if sl_price <= entry_price * 0.5 or sl_price >= entry_price * 2:
-                            self.logger.warning(f"Invalid SL price calculated ({sl_price}) for entry price {entry_price}, disabling SL")
-                            sl_price = None
-
-                # Validate TP price
-                if not has_take_profit:
-                    # For BUY orders: TP should be above entry price
-                    # For SELL orders: TP should be below entry price (for short positions)
-                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
-
-                    if is_buy_order:
-                        # For BUY orders, TP should be above entry price
-                        if tp_price <= entry_price * 0.8 or tp_price >= entry_price * 3:
-                            self.logger.warning(f"Invalid TP price calculated ({tp_price}) for entry price {entry_price}, disabling TP")
-                            tp_price = None
-                    else:
-                        # For SELL orders, TP should be below entry price (for profit on short)
-                        if tp_price >= entry_price * 1.2 or tp_price <= entry_price * 0.1:
-                            self.logger.warning(f"Invalid TP price calculated ({tp_price}) for entry price {entry_price}, disabling TP")
-                            tp_price = None
-
-            # Create enhanced order with SL/TP if they were missing and are valid
+            # Create enhanced order with SL/TP if they were missing
             from domain.entities.trading_entities import Order as DomainOrder
             from domain.value_objects import Money
             from datetime import datetime
 
-            # Create a new order with the missing risk parameters (only if valid)
+            # Create a new order with the missing risk parameters
             enhanced_order = DomainOrder(
                 symbol=getattr(order, 'symbol', 'UNKNOWN'),
                 side=getattr(order, 'side', None),
@@ -564,10 +531,10 @@ class MultiBrokerExecutionService(ExecutionPort):
                 strategy_name=getattr(order, 'strategy_name', 'default'),
                 timestamp=getattr(order, 'timestamp', datetime.now()),
                 position_side=getattr(order, 'position_side', 'BOTH'),
-                stop_loss_price=Money(amount=float(sl_price), currency='USDT') if (not has_stop_loss and sl_price is not None) else getattr(order,
+                stop_loss_price=Money(amount=float(sl_price), currency='USDT') if not has_stop_loss else getattr(order,
                                                                                                           'stop_loss_price',
                                                                                                           None),
-                take_profit_price=Money(amount=float(tp_price), currency='USDT') if (not has_take_profit and tp_price is not None) else getattr(order,
+                take_profit_price=Money(amount=float(tp_price), currency='USDT') if not has_take_profit else getattr(order,
                                                                                                               'take_profit_price',
                                                                                                               None),
                 stop_price=getattr(order, 'stop_price', None),
@@ -577,11 +544,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                 risk_adjusted_quantity=getattr(order, 'risk_adjusted_quantity', None)
             )
 
-            if sl_price is not None or tp_price is not None:
-                self.logger.info(f"✅ Order enhanced with dynamic SL/TP: SL={sl_price if sl_price is not None else 'DISABLED'}, TP={tp_price if tp_price is not None else 'DISABLED'}. "
-                                f"Advanced risk management applied for proper position sizing and SL/TP levels.")
-            else:
-                self.logger.info(f"ℹ️ Order enhancement skipped due to invalid SL/TP values. Proceeding with order without SL/TP.")
+            self.logger.info(f"✅ Order enhanced with dynamic SL/TP: SL={sl_price:.4f}, TP={tp_price:.4f}. "
+                            f"Advanced risk management applied for proper position sizing and SL/TP levels.")
 
             return enhanced_order
         else:
@@ -616,6 +580,80 @@ class MultiBrokerExecutionService(ExecutionPort):
         except Exception as e:
             if hasattr(self, 'logger') and self.logger:
                 self.logger.warning(f"Risk validation error: {e}, allowing order to proceed")
+            return True  # Allow order to proceed if validation fails
+
+    def _validate_order_parameters_before_broker(self, order: Order) -> bool:
+        """Final validation to ensure order parameters are reasonable before sending to broker."""
+        try:
+            # Check if we have a valid price
+            if order.price and hasattr(order.price, 'amount') and order.price.amount:
+                entry_price = float(order.price.amount)
+
+                # Check if stop loss price is reasonable
+                if hasattr(order, 'stop_loss_price') and order.stop_loss_price:
+                    sl_price = float(order.stop_loss_price.amount) if hasattr(order.stop_loss_price, 'amount') else float(order.stop_loss_price)
+
+                    # For BUY orders: SL should be below entry price
+                    # For SELL orders: SL should be above entry price (for short positions)
+                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+
+                    if is_buy_order:
+                        # For BUY orders, SL should be below entry price (but not too far below)
+                        if sl_price >= entry_price and entry_price > 0:  # SL should be below for long positions
+                            self.logger.warning(f"Invalid SL for BUY order: SL ({sl_price}) >= Entry ({entry_price})")
+                            return False
+                        elif sl_price <= 0:
+                            self.logger.warning(f"Invalid SL for BUY order: SL ({sl_price}) <= 0")
+                            return False
+                        elif entry_price > 0 and sl_price < entry_price * 0.01:  # SL not more than 99% below entry
+                            self.logger.warning(f"SL too far from entry for BUY order: SL ({sl_price}) vs Entry ({entry_price})")
+                            return False
+                    else:
+                        # For SELL orders, SL should be above entry price (for stop loss on short)
+                        if sl_price <= entry_price and entry_price > 0:  # SL should be above for short positions
+                            self.logger.warning(f"Invalid SL for SELL order: SL ({sl_price}) <= Entry ({entry_price})")
+                            return False
+                        elif sl_price <= 0:
+                            self.logger.warning(f"Invalid SL for SELL order: SL ({sl_price}) <= 0")
+                            return False
+                        elif entry_price > 0 and sl_price > entry_price * 100:  # SL not more than 100x above entry
+                            self.logger.warning(f"SL too far from entry for SELL order: SL ({sl_price}) vs Entry ({entry_price})")
+                            return False
+
+                # Check if take profit price is reasonable
+                if hasattr(order, 'take_profit_price') and order.take_profit_price:
+                    tp_price = float(order.take_profit_price.amount) if hasattr(order.take_profit_price, 'amount') else float(order.take_profit_price)
+
+                    # For BUY orders: TP should be above entry price
+                    # For SELL orders: TP should be below entry price (for short positions)
+                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+
+                    if is_buy_order:
+                        # For BUY orders, TP should be above entry price (but not too far above)
+                        if tp_price <= entry_price and entry_price > 0:  # TP should be above for long positions
+                            self.logger.warning(f"Invalid TP for BUY order: TP ({tp_price}) <= Entry ({entry_price})")
+                            return False
+                        elif tp_price <= 0:
+                            self.logger.warning(f"Invalid TP for BUY order: TP ({tp_price}) <= 0")
+                            return False
+                        elif entry_price > 0 and tp_price > entry_price * 100:  # TP not more than 100x above entry
+                            self.logger.warning(f"TP too far from entry for BUY order: TP ({tp_price}) vs Entry ({entry_price})")
+                            return False
+                    else:
+                        # For SELL orders, TP should be below entry price (for profit on short)
+                        if tp_price >= entry_price and entry_price > 0:  # TP should be below for short positions
+                            self.logger.warning(f"Invalid TP for SELL order: TP ({tp_price}) >= Entry ({entry_price})")
+                            return False
+                        elif tp_price <= 0:
+                            self.logger.warning(f"Invalid TP for SELL order: TP ({tp_price}) <= 0")
+                            return False
+                        elif entry_price > 0 and tp_price < entry_price * 0.01:  # TP not more than 99% below entry
+                            self.logger.warning(f"TP too far from entry for SELL order: TP ({tp_price}) vs Entry ({entry_price})")
+                            return False
+
+            return True
+        except Exception as e:
+            self.logger.warning(f"Parameter validation error: {e}, allowing order to proceed")
             return True  # Allow order to proceed if validation fails
 
     def _find_best_exchange_for_symbol(self, symbol: str) -> Optional[str]:

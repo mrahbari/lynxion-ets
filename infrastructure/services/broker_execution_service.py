@@ -243,6 +243,11 @@ class BrokerExecutionService(ExecutionPort):
                 self.logger.error(f"❌ ORDER REJECTED: Missing required risk parameters: {order}")
                 raise ValueError(f"Order missing required risk parameters: {order}")
 
+            # Perform final validation to ensure the order parameters are reasonable before sending to broker
+            if not self._validate_order_parameters_before_broker(order):
+                self.logger.error(f"❌ ORDER REJECTED: Order parameters are invalid or unreasonable: {order}")
+                raise ValueError(f"Order parameters failed final validation: {order}")
+
             self.logger.info(f"🎯 EXECUTING ORDER ON {self.broker_name}: {order}")
 
             # Add to pending orders before placing the order
@@ -295,6 +300,80 @@ class BrokerExecutionService(ExecutionPort):
             return True
 
         return True
+
+    def _validate_order_parameters_before_broker(self, order: Order) -> bool:
+        """Final validation to ensure order parameters are reasonable before sending to broker."""
+        try:
+            # Check if we have a valid price
+            if order.price and hasattr(order.price, 'amount') and order.price.amount:
+                entry_price = float(order.price.amount)
+
+                # Check if stop loss price is reasonable
+                if hasattr(order, 'stop_loss_price') and order.stop_loss_price:
+                    sl_price = float(order.stop_loss_price.amount) if hasattr(order.stop_loss_price, 'amount') else float(order.stop_loss_price)
+
+                    # For BUY orders: SL should be below entry price
+                    # For SELL orders: SL should be above entry price (for short positions)
+                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+
+                    if is_buy_order:
+                        # For BUY orders, SL should be below entry price (but not too far below)
+                        if sl_price >= entry_price > 0:  # SL should be below for long positions
+                            self.logger.warning(f"Invalid SL for BUY order: SL ({sl_price}) >= Entry ({entry_price})")
+                            return False
+                        elif sl_price <= 0:
+                            self.logger.warning(f"Invalid SL for BUY order: SL ({sl_price}) <= 0")
+                            return False
+                        elif entry_price > 0 and sl_price < entry_price * 0.01:  # SL not more than 99% below entry
+                            self.logger.warning(f"SL too far from entry for BUY order: SL ({sl_price}) vs Entry ({entry_price})")
+                            return False
+                    else:
+                        # For SELL orders, SL should be above entry price (for stop loss on short)
+                        if sl_price <= entry_price and entry_price > 0:  # SL should be above for short positions
+                            self.logger.warning(f"Invalid SL for SELL order: SL ({sl_price}) <= Entry ({entry_price})")
+                            return False
+                        elif sl_price <= 0:
+                            self.logger.warning(f"Invalid SL for SELL order: SL ({sl_price}) <= 0")
+                            return False
+                        elif entry_price > 0 and sl_price > entry_price * 100:  # SL not more than 100x above entry
+                            self.logger.warning(f"SL too far from entry for SELL order: SL ({sl_price}) vs Entry ({entry_price})")
+                            return False
+
+                # Check if take profit price is reasonable
+                if hasattr(order, 'take_profit_price') and order.take_profit_price:
+                    tp_price = float(order.take_profit_price.amount) if hasattr(order.take_profit_price, 'amount') else float(order.take_profit_price)
+
+                    # For BUY orders: TP should be above entry price
+                    # For SELL orders: TP should be below entry price (for short positions)
+                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+
+                    if is_buy_order:
+                        # For BUY orders, TP should be above entry price (but not too far above)
+                        if tp_price <= entry_price and entry_price > 0:  # TP should be above for long positions
+                            self.logger.warning(f"Invalid TP for BUY order: TP ({tp_price}) <= Entry ({entry_price})")
+                            return False
+                        elif tp_price <= 0:
+                            self.logger.warning(f"Invalid TP for BUY order: TP ({tp_price}) <= 0")
+                            return False
+                        elif entry_price > 0 and tp_price > entry_price * 100:  # TP not more than 100x above entry
+                            self.logger.warning(f"TP too far from entry for BUY order: TP ({tp_price}) vs Entry ({entry_price})")
+                            return False
+                    else:
+                        # For SELL orders, TP should be below entry price (for profit on short)
+                        if tp_price >= entry_price and entry_price > 0:  # TP should be below for short positions
+                            self.logger.warning(f"Invalid TP for SELL order: TP ({tp_price}) >= Entry ({entry_price})")
+                            return False
+                        elif tp_price <= 0:
+                            self.logger.warning(f"Invalid TP for SELL order: TP ({tp_price}) <= 0")
+                            return False
+                        elif entry_price > 0 and tp_price < entry_price * 0.01:  # TP not more than 99% below entry
+                            self.logger.warning(f"TP too far from entry for SELL order: TP ({tp_price}) vs Entry ({entry_price})")
+                            return False
+
+            return True
+        except Exception as e:
+            self.logger.warning(f"Parameter validation error: {e}, allowing order to proceed")
+            return True  # Allow order to proceed if validation fails
 
     def _send_order_placed_notification(self, order: Order, order_id: str):
         """Send a Telegram notification about a successfully placed order."""
