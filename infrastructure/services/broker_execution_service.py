@@ -246,6 +246,7 @@ class BrokerExecutionService(ExecutionPort):
             self.logger.info(f"🎯 EXECUTING ORDER ON {self.broker_name}: {order}")
 
             # Add to pending orders before placing the order
+            order_id_temp = None
             if prevent_same_direction and intended_position_side:
                 order_id_temp = "TEMP_" + str(id(order))  # Temporary ID for tracking before placement
                 self._add_pending_order(order.symbol, intended_position_side, order_id_temp)
@@ -258,15 +259,23 @@ class BrokerExecutionService(ExecutionPort):
                     # For single broker, use place_order method
                     order_id = self.broker.place_order(order)
 
+                # Check if order_id is valid before proceeding
+                if order_id is None or order_id == "":
+                    self.logger.error(f"❌ ORDER PLACEMENT FAILED: Broker returned invalid order ID: {order_id}")
+                    return None
+
                 self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {self.broker_name}: {order_id}")
 
                 # Send Telegram notification about successful order placement
                 self._send_order_placed_notification(order, order_id)
 
                 return order_id
+            except Exception as e:
+                self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {self.broker_name}: {e}")
+                raise
             finally:
                 # Remove from pending orders after attempting to place
-                if prevent_same_direction and intended_position_side:
+                if prevent_same_direction and intended_position_side and order_id_temp:
                     self._remove_pending_order(order.symbol, order_id_temp)
         except Exception as e:
             self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {self.broker_name}: {e}")

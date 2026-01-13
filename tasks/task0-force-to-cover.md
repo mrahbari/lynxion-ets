@@ -1,5 +1,59 @@
 ## All Critical Rules Implemented - FINAL VERIFICATION CHECKLIST
 
+## CRITICAL EXECUTION REALITY RULE
+
+This task must be treated as a production hedge fund system investigation.
+
+You are strictly forbidden to:
+
+- Assume any component is correct by default
+- Assume configuration changes will solve execution problems
+- Conclude that architecture is sound without execution proof
+- Use optimistic, hypothetical, or expectation-based reasoning
+
+### Mandatory Mindset
+
+You must operate under this principle:
+
+> If an action is not proven by logs or execution traces, it did NOT happen.
+
+### Evidence-Based Requirement
+
+For every claim you make, you must provide:
+
+- The exact log evidence OR
+- The exact execution path in code that proves it
+
+If neither exists, you must explicitly declare the component or assumption as FAILED or UNVERIFIED.
+
+### Execution Priority
+
+System success is defined ONLY by:
+
+> A confirmed, successful broker order execution.
+
+Anything before that is considered incomplete.
+
+### Configuration Rule
+
+Configuration changes are NOT considered valid solutions unless:
+
+- The execution path is proven reachable
+- The component is proven to consume that configuration
+- The configuration change produces a verifiable execution difference in logs
+
+### Final Principle
+
+This is not a design review.
+This is not a configuration review.
+This is not a theoretical analysis.
+
+This is an execution failure investigation in a real hedge fund trading system.
+
+Your responsibility is to expose the truth, not to preserve optimism.
+
+
+
 ### **1. Architectural Compliance**
 
 * [x] Ensure full compatibility with the current Hexagonal Architecture.

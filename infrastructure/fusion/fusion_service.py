@@ -140,9 +140,9 @@ class FusionService:
 
             # Determine dominant bias based on average direction
             from domain.entities.signal_entities import SignalType
-            if avg_direction > 0.1:  # Threshold to avoid neutral signals
+            if avg_direction > 0.01:  # Lowered threshold from 0.1 to 0.01 to avoid neutral signals
                 dominant_bias = SignalType.BUY
-            elif avg_direction < -0.1:
+            elif avg_direction < -0.01:  # Lowered threshold from -0.1 to -0.01
                 dominant_bias = SignalType.SELL
             else:
                 dominant_bias = SignalType.NEUTRAL
@@ -299,9 +299,9 @@ class FusionService:
 
             # Determine dominant bias based on average direction
             from domain.entities.signal_entities import SignalType
-            if avg_direction > 0.1:  # Threshold to avoid neutral signals
+            if avg_direction > 0.01:  # Lowered threshold from 0.1 to 0.01 to avoid neutral signals
                 dominant_bias = SignalType.BUY
-            elif avg_direction < -0.1:
+            elif avg_direction < -0.01:  # Lowered threshold from -0.1 to -0.01
                 dominant_bias = SignalType.SELL
             else:
                 dominant_bias = SignalType.NEUTRAL

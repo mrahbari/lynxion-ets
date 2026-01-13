@@ -69,7 +69,7 @@ class AnomalyMLWatcher(BaseWatcher):
         if not self.enabled:
             return None
 
-        if len(self.feature_history) < self.lookback:
+        if len(self.feature_history) < 2:  # Require only 2 data points to start generating observations
             return None
 
         # Calculate anomaly score based on current features
@@ -79,21 +79,21 @@ class AnomalyMLWatcher(BaseWatcher):
         # Calculate confidence based on the strength of the anomaly
         anomaly_magnitude = abs(anomaly_score)
 
-        if abs(anomaly_score) < 0.3:  # Threshold for normal market conditions
+        if abs(anomaly_score) < 0.1:  # Lowered threshold for normal market conditions
             observation_type = 'anomaly_normal'
             observation_value = 0.0
             # For neutral state, confidence is based on how close to normal we are
-            confidence = min(0.6, (1.0 - anomaly_magnitude))
+            confidence = min(0.5, (1.0 - anomaly_magnitude))  # Lowered neutral confidence
         elif anomaly_score > 0:
             observation_type = 'anomaly_positive'  # Positive anomaly (unusual upward movement)
             observation_value = abs(anomaly_score)
             # Confidence increases with anomaly magnitude
-            confidence = min(0.95, max(0.3, anomaly_magnitude))
+            confidence = min(0.95, max(0.15, anomaly_magnitude))  # Lowered minimum confidence
         else:
             observation_type = 'anomaly_negative'  # Negative anomaly (unusual downward movement)
             observation_value = -abs(anomaly_score)
             # Confidence increases with anomaly magnitude
-            confidence = min(0.95, max(0.3, anomaly_magnitude))
+            confidence = min(0.95, max(0.15, anomaly_magnitude))  # Lowered minimum confidence
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))

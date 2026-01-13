@@ -58,7 +58,7 @@ class MarketPulseWatcher(BaseWatcher):
         if not self.enabled:
             return None
 
-        if len(self.price_history) < self.lookback:
+        if len(self.price_history) < 2:  # Require only 2 data points to start generating observations
             return None
 
         # Calculate clearly separated sub-scores
@@ -73,19 +73,19 @@ class MarketPulseWatcher(BaseWatcher):
         # Calculate confidence based on the strength of the signal
         signal_strength = abs(observation_value)
 
-        if abs(observation_value) < 0.05:  # Threshold for low activity
+        if abs(observation_value) < 0.02:  # Lowered threshold for low activity
             observation_type = 'market_pulse_neutral'
             # For neutral state, confidence is based on how close to zero we are
             # (more certainty about neutrality when signal is very weak)
-            confidence = min(0.6, (1.0 - signal_strength))
+            confidence = min(0.5, (1.0 - signal_strength))  # Lowered neutral confidence threshold
         elif observation_value > 0:
             observation_type = 'market_pulse_positive'  # Positive momentum/sentiment
             # Confidence increases with signal strength
-            confidence = min(0.95, max(0.3, signal_strength))
+            confidence = min(0.95, max(0.15, signal_strength))  # Lowered minimum confidence
         else:
             observation_type = 'market_pulse_negative'  # Negative momentum/sentiment
             # Confidence increases with signal strength
-            confidence = min(0.95, max(0.3, signal_strength))
+            confidence = min(0.95, max(0.15, signal_strength))  # Lowered minimum confidence
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))

@@ -78,9 +78,9 @@ class BaseStrategyAdapter(StrategyPort):
         import os
 
         # Get configuration thresholds - Further lowered to allow more trades
-        min_confidence = float(os.getenv('STRATEGY_MIN_CONFIDENCE_THRESHOLD', '0.10'))  # Lowered from 0.15 to 0.10
-        high_confidence_threshold = float(os.getenv('STRATEGY_HIGH_CONFIDENCE_THRESHOLD', '0.4'))  # Lowered from 0.5 to 0.4
-        neutral_buffer = float(os.getenv('STRATEGY_NEUTRAL_BUFFER', '0.02'))  # Reduced from 0.03 to 0.02
+        min_confidence = float(os.getenv('STRATEGY_MIN_CONFIDENCE_THRESHOLD', '0.05'))  # Further lowered from 0.10 to 0.05
+        high_confidence_threshold = float(os.getenv('STRATEGY_HIGH_CONFIDENCE_THRESHOLD', '0.3'))  # Lowered from 0.4 to 0.3
+        neutral_buffer = float(os.getenv('STRATEGY_NEUTRAL_BUFFER', '0.01'))  # Reduced from 0.02 to 0.01
 
         confidence = float(fused_signal.confidence.value)
         symbol = fused_signal.symbol.value if hasattr(fused_signal.symbol, 'value') else str(fused_signal.symbol)
@@ -135,13 +135,13 @@ class BaseStrategyAdapter(StrategyPort):
 
             # Even with low confidence, if there's strong directional bias, consider executing
             import os
-            strong_directional_bias_threshold = float(os.getenv('STRATEGY_STRONG_DIRECTIONAL_BIAS_THRESHOLD', '0.25'))
+            strong_directional_bias_threshold = float(os.getenv('STRATEGY_STRONG_DIRECTIONAL_BIAS_THRESHOLD', '0.15'))  # Lowered from 0.25 to 0.15
             if abs(dominance_score) > strong_directional_bias_threshold:  # Strong directional bias
                 self.logger.info(f"ACCEPTED: Low confidence ({confidence:.3f}) but strong directional bias ({dominance_score:.3f}) for {symbol}")
                 return True
 
             # For very low confidence, still allow execution if there's any directional bias
-            if abs(dominance_score) > 0.1:
+            if abs(dominance_score) > 0.05:  # Lowered threshold from 0.1 to 0.05
                 self.logger.info(f"ACCEPTED: Very low confidence ({confidence:.3f}) but some directional bias ({dominance_score:.3f}) for {symbol}")
                 return True
 

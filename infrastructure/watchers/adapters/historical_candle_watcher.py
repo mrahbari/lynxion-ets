@@ -63,7 +63,7 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
         if not self.enabled:
             return None
 
-        if len(self.candles) < 2:  # Need at least 2 candles to calculate any form of change
+        if len(self.candles) < 1:  # Need at least 1 candle to generate any observation
             return None
 
         # Analyze candlestick patterns
@@ -78,18 +78,26 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
         # Calculate momentum
         momentum_analysis = self._analyze_momentum()
 
-        # Calculate confidence with fallback for when no patterns are detected
-        confidence = self._calculate_confidence(pattern_analysis, volatility_analysis, momentum_analysis)
-
         # Determine initial observation type based on pattern, trend, and momentum
-        observation_type = self._determine_observation_type(pattern_analysis, trend_analysis, momentum_analysis)
-        observation_value = self._calculate_observation_value(pattern_analysis, trend_analysis, volatility_analysis, momentum_analysis)
+        # Only call these if we have enough data for meaningful analysis
+        if len(self.candles) >= 2:  # Need at least 2 candles for meaningful analysis
+            # Calculate confidence with fallback for when no patterns are detected
+            confidence = self._calculate_confidence(pattern_analysis, volatility_analysis, momentum_analysis)
+
+            # Determine initial observation type based on pattern, trend, and momentum
+            observation_type = self._determine_observation_type(pattern_analysis, trend_analysis)
+            observation_value = self._calculate_observation_value(pattern_analysis, trend_analysis, volatility_analysis)
+        else:
+            # For single candle, use fallback logic
+            observation_type = 'single_candle_observation'
+            observation_value = self.candles[0]['close'] if self.candles else 0.0
+            confidence = max(float(os.getenv('WATCHER_MIN_CONFIDENCE_THRESHOLD', '0.05')), float(os.getenv('WATCHER_NEUTRAL_CONFIDENCE', '0.05')))
 
         # If confidence is too low (meaning no significant patterns detected),
         # but we have trend or momentum, still generate an observation with lower confidence
-        min_confidence_threshold = float(os.getenv('WATCHER_MIN_CONFIDENCE_THRESHOLD', '0.15'))
+        min_confidence_threshold = float(os.getenv('WATCHER_MIN_CONFIDENCE_THRESHOLD', '0.05'))  # Lowered from 0.15 to 0.05
         max_confidence_with_patterns = float(os.getenv('WATCHER_MAX_CONFIDENCE_WITH_PATTERNS', '0.3'))
-        min_price_change_threshold = float(os.getenv('WATCHER_MIN_PRICE_CHANGE_THRESHOLD', '0.0005'))
+        min_price_change_threshold = float(os.getenv('WATCHER_MIN_PRICE_CHANGE_THRESHOLD', '0.0001'))  # Lowered from 0.0005 to 0.0001
         max_confidence_with_movement = float(os.getenv('WATCHER_MAX_CONFIDENCE_WITH_MOVEMENT', '0.35'))
 
         if confidence < min_confidence_threshold and (abs(trend_analysis.get('direction', 0)) > 0.0001 or abs(momentum_analysis.get('momentum', 0)) > 0.0001):
@@ -104,20 +112,26 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
                 confidence = max(min_confidence_threshold, min(max_confidence_with_patterns, abs(momentum_analysis['momentum']) * 5))  # Scale confidence with momentum strength
 
         # If we still have no observation type or very low confidence, create a basic one based on price movement
-        if (not observation_type or confidence < min_confidence_threshold) and len(self.candles) >= 2:
+        if (not observation_type or confidence < min_confidence_threshold) and len(self.candles) >= 1:  # Changed from >= 2 to >= 1
             # Generate basic trend observation based on simple price movement
             recent_closes = [c['close'] for c in self.candles[-5:]]  # Last 5 candles
-            if len(recent_closes) >= 2:
-                price_change = (recent_closes[-1] - recent_closes[0]) / recent_closes[0] if recent_closes[0] != 0 else 0
-                if abs(price_change) > min_price_change_threshold:  # Configurable change threshold
-                    observation_type = 'price_trend_basic'
-                    observation_value = price_change
-                    confidence = max(min_confidence_threshold, min(max_confidence_with_movement, abs(price_change) * 10))  # Scale confidence with change magnitude
+            if len(recent_closes) >= 1:  # Changed from >= 2 to >= 1
+                if len(recent_closes) >= 2:  # Need at least 2 for price change calculation
+                    price_change = (recent_closes[-1] - recent_closes[0]) / recent_closes[0] if recent_closes[0] != 0 else 0
+                    if abs(price_change) > min_price_change_threshold:  # Configurable change threshold
+                        observation_type = 'price_trend_basic'
+                        observation_value = price_change
+                        confidence = max(min_confidence_threshold, min(max_confidence_with_movement, abs(price_change) * 10))  # Scale confidence with change magnitude
+                    else:
+                        # Even if no significant movement, we can still generate a neutral observation
+                        observation_type = 'market_neutral'
+                        observation_value = 0.0
+                        confidence = max(min_confidence_threshold, float(os.getenv('WATCHER_NEUTRAL_CONFIDENCE', '0.05')))  # Use min threshold as fallback
                 else:
-                    # Even if no significant movement, we can still generate a neutral observation
-                    observation_type = 'market_neutral'
-                    observation_value = 0.0
-                    confidence = float(os.getenv('WATCHER_NEUTRAL_CONFIDENCE', '0.1'))  # Configurable low confidence for neutral conditions
+                    # If we only have 1 candle, we can still generate a basic observation
+                    observation_type = 'single_candle_observation'
+                    observation_value = recent_closes[0]  # Use the single price value
+                    confidence = max(min_confidence_threshold, float(os.getenv('WATCHER_NEUTRAL_CONFIDENCE', '0.05')))  # Use min threshold as fallback
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))

@@ -381,12 +381,19 @@ class MultiBrokerExecutionService(ExecutionPort):
             self.logger.info(f"🎯 EXECUTING ORDER ON {best_exchange.upper()}: {order}")
 
             # Add to pending orders before placing the order
+            order_id_temp = None
             if prevent_same_direction and intended_position_side:
                 order_id_temp = "TEMP_" + str(id(order))  # Temporary ID for tracking before placement
                 self._add_pending_order(order.symbol, intended_position_side, order_id_temp)
 
             try:
                 order_id = broker.place_order(order)
+
+                # Check if order_id is valid before proceeding
+                if order_id is None or order_id == "":
+                    self.logger.error(f"❌ ORDER PLACEMENT FAILED ON {best_exchange.upper()}: Broker returned invalid order ID: {order_id}")
+                    return None
+
                 self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {best_exchange.upper()}: {order_id}")
 
                 # Send Telegram notification about successful order placement
@@ -398,7 +405,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                 raise
             finally:
                 # Remove from pending orders after attempting to place
-                if prevent_same_direction and intended_position_side:
+                if prevent_same_direction and intended_position_side and order_id_temp:
                     self._remove_pending_order(order.symbol, order_id_temp)
         else:
             raise Exception(f"Symbol {symbol_str} not available on any configured exchange")
@@ -463,13 +470,28 @@ class MultiBrokerExecutionService(ExecutionPort):
                 )
 
                 # Calculate dynamic SL/TP levels based on risk factors
-                sl_price, tp_price = risk_service.calculate_sl_tp_levels(
-                    entry_price=current_price,
-                    position_side=position_side,
-                    risk_adjustment_factors=risk_factors,
-                    atr_value=None,  # Would come from market data in real implementation
-                    market_data=market_data
-                )
+                try:
+                    sl_price, tp_price = risk_service.calculate_sl_tp_levels(
+                        entry_price=current_price,
+                        position_side=position_side,
+                        risk_adjustment_factors=risk_factors,
+                        atr_value=None,  # Would come from market data in real implementation
+                        market_data=market_data
+                    )
+                except Exception as risk_calc_error:
+                    self.logger.warning(f"Risk calculation failed: {risk_calc_error}, using fallback SL/TP")
+                    # Fallback to simple percentage-based calculation
+                    sl_multiplier = 0.02  # 2% stop loss
+                    tp_multiplier = 0.03  # 3% take profit
+
+                    if hasattr(order, 'side') and order.side.name == 'BUY':
+                        # For BUY orders: SL below entry, TP above entry
+                        sl_price = current_price * (1 - sl_multiplier)
+                        tp_price = current_price * (1 + tp_multiplier)
+                    else:  # SELL
+                        # For SELL orders: SL above entry, TP below entry
+                        sl_price = current_price * (1 + sl_multiplier)  # SL above for SELL (stop loss if price rises)
+                        tp_price = current_price * (1 - tp_multiplier)  # TP below for SELL (take profit when price falls)
 
             except Exception as e:
                 # If advanced risk management fails, fall back to simple calculation
@@ -489,12 +511,50 @@ class MultiBrokerExecutionService(ExecutionPort):
                     sl_price = current_price * (1 + sl_multiplier)  # SL above for SELL (stop loss if price rises)
                     tp_price = current_price * (1 - tp_multiplier)  # TP below for SELL (take profit when price falls)
 
-            # Create enhanced order with SL/TP if they were missing
+            # Validate calculated SL/TP values to ensure they're reasonable
+            # For a symbol with price around 0.058, SL/TP should be in similar range
+            entry_price = float(order.price.amount) if order.price and hasattr(order.price, 'amount') else None
+            if entry_price:
+                # Validate SL price
+                if not has_stop_loss:
+                    # For BUY orders: SL should be below entry price
+                    # For SELL orders: SL should be above entry price (for short positions)
+                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+
+                    if is_buy_order:
+                        # For BUY orders, SL should be below entry price
+                        if sl_price >= entry_price * 2 or sl_price <= entry_price * 0.1:
+                            self.logger.warning(f"Invalid SL price calculated ({sl_price}) for entry price {entry_price}, disabling SL")
+                            sl_price = None
+                    else:
+                        # For SELL orders, SL should be above entry price (for stop loss on short)
+                        if sl_price <= entry_price * 0.5 or sl_price >= entry_price * 2:
+                            self.logger.warning(f"Invalid SL price calculated ({sl_price}) for entry price {entry_price}, disabling SL")
+                            sl_price = None
+
+                # Validate TP price
+                if not has_take_profit:
+                    # For BUY orders: TP should be above entry price
+                    # For SELL orders: TP should be below entry price (for short positions)
+                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+
+                    if is_buy_order:
+                        # For BUY orders, TP should be above entry price
+                        if tp_price <= entry_price * 0.8 or tp_price >= entry_price * 3:
+                            self.logger.warning(f"Invalid TP price calculated ({tp_price}) for entry price {entry_price}, disabling TP")
+                            tp_price = None
+                    else:
+                        # For SELL orders, TP should be below entry price (for profit on short)
+                        if tp_price >= entry_price * 1.2 or tp_price <= entry_price * 0.1:
+                            self.logger.warning(f"Invalid TP price calculated ({tp_price}) for entry price {entry_price}, disabling TP")
+                            tp_price = None
+
+            # Create enhanced order with SL/TP if they were missing and are valid
             from domain.entities.trading_entities import Order as DomainOrder
             from domain.value_objects import Money
             from datetime import datetime
 
-            # Create a new order with the missing risk parameters
+            # Create a new order with the missing risk parameters (only if valid)
             enhanced_order = DomainOrder(
                 symbol=getattr(order, 'symbol', 'UNKNOWN'),
                 side=getattr(order, 'side', None),
@@ -504,10 +564,10 @@ class MultiBrokerExecutionService(ExecutionPort):
                 strategy_name=getattr(order, 'strategy_name', 'default'),
                 timestamp=getattr(order, 'timestamp', datetime.now()),
                 position_side=getattr(order, 'position_side', 'BOTH'),
-                stop_loss_price=Money(amount=float(sl_price), currency='USDT') if not has_stop_loss else getattr(order,
+                stop_loss_price=Money(amount=float(sl_price), currency='USDT') if (not has_stop_loss and sl_price is not None) else getattr(order,
                                                                                                           'stop_loss_price',
                                                                                                           None),
-                take_profit_price=Money(amount=float(tp_price), currency='USDT') if not has_take_profit else getattr(order,
+                take_profit_price=Money(amount=float(tp_price), currency='USDT') if (not has_take_profit and tp_price is not None) else getattr(order,
                                                                                                               'take_profit_price',
                                                                                                               None),
                 stop_price=getattr(order, 'stop_price', None),
@@ -517,8 +577,11 @@ class MultiBrokerExecutionService(ExecutionPort):
                 risk_adjusted_quantity=getattr(order, 'risk_adjusted_quantity', None)
             )
 
-            self.logger.info(f"✅ Order enhanced with dynamic SL/TP: SL={sl_price:.4f}, TP={tp_price:.4f}. "
-                            f"Advanced risk management applied for proper position sizing and SL/TP levels.")
+            if sl_price is not None or tp_price is not None:
+                self.logger.info(f"✅ Order enhanced with dynamic SL/TP: SL={sl_price if sl_price is not None else 'DISABLED'}, TP={tp_price if tp_price is not None else 'DISABLED'}. "
+                                f"Advanced risk management applied for proper position sizing and SL/TP levels.")
+            else:
+                self.logger.info(f"ℹ️ Order enhancement skipped due to invalid SL/TP values. Proceeding with order without SL/TP.")
 
             return enhanced_order
         else:

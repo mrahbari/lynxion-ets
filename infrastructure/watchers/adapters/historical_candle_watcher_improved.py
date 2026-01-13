@@ -65,9 +65,11 @@ class HistoricalCandleWatcherImprovedAdapter(BaseWatcher):
         if not self.enabled:
             return None
 
-        if len(self.candles) < 3:  # Need at least 3 candles for pattern analysis
+        if len(self.candles) < 1:  # Need at least 1 candle to generate any observation
+            return None
+        elif len(self.candles) < 3:  # Need at least 3 candles for pattern analysis
             # Even with limited data, we can still generate trend observations
-            if len(self.candles) >= 2:
+            if len(self.candles) >= 1:  # Changed from >= 2 to >= 1
                 return self._generate_basic_trend_observation(symbol)
             return None
 
@@ -114,47 +116,71 @@ class HistoricalCandleWatcherImprovedAdapter(BaseWatcher):
 
     def _generate_basic_trend_observation(self, symbol: Symbol) -> MarketObservation:
         """Generate a basic trend observation when we have limited data"""
-        if len(self.candles) < 2:
+        if len(self.candles) < 1:
             return None
 
-        # Calculate basic trend from just 2 candles
-        prev_close = self.candles[-2]['close']
-        curr_close = self.candles[-1]['close']
-        
-        if prev_close != 0:
-            change = (curr_close - prev_close) / prev_close
+        # If we have only 1 candle, we can't calculate trend, but we can still generate an observation
+        if len(self.candles) < 2:
+            # Generate a basic observation with neutral trend but with some confidence
+            obs_type = 'single_candle_observation'
+            obs_value = self.candles[-1]['close']  # Use the single price value
+            confidence = Percentage(Decimal('0.15'))  # Minimum confidence with single candle
+
+            observation = MarketObservation(
+                symbol=symbol,
+                observation_type=obs_type,
+                observation_value=obs_value,
+                confidence=confidence,
+                timestamp=datetime.now(),
+                metadata={
+                    'basic_trend': False,
+                    'change_percent': 0,
+                    'candle_history_length': len(self.candles),
+                    'latest_candle': self.candles[-1] if self.candles else None,
+                    'candle_pattern_source': self.name
+                }
+            )
+
+            return observation
         else:
-            change = 0
-            
-        # Determine basic trend
-        if change > 0.001:  # 0.1% increase
-            obs_type = 'trend_bullish_weak'
-            obs_value = min(0.3, abs(change) * 10)  # Scale the value
-        elif change < -0.001:  # 0.1% decrease
-            obs_type = 'trend_bearish_weak'
-            obs_value = max(-0.3, abs(change) * -10)  # Scale the value
-        else:
-            obs_type = 'trend_neutral'
-            obs_value = 0.0
+            # Calculate basic trend from just 2 candles
+            prev_close = self.candles[-2]['close']
+            curr_close = self.candles[-1]['close']
 
-        confidence = Percentage(Decimal('0.2'))  # Lower confidence with limited data
+            if prev_close != 0:
+                change = (curr_close - prev_close) / prev_close
+            else:
+                change = 0
 
-        observation = MarketObservation(
-            symbol=symbol,
-            observation_type=obs_type,
-            observation_value=obs_value,
-            confidence=confidence,
-            timestamp=datetime.now(),
-            metadata={
-                'basic_trend': True,
-                'change_percent': change,
-                'candle_history_length': len(self.candles),
-                'latest_candle': self.candles[-1] if self.candles else None,
-                'candle_pattern_source': self.name
-            }
-        )
+            # Determine basic trend
+            if change > 0.001:  # 0.1% increase
+                obs_type = 'trend_bullish_weak'
+                obs_value = min(0.3, abs(change) * 10)  # Scale the value
+            elif change < -0.001:  # 0.1% decrease
+                obs_type = 'trend_bearish_weak'
+                obs_value = max(-0.3, abs(change) * -10)  # Scale the value
+            else:
+                obs_type = 'trend_neutral'
+                obs_value = 0.0
 
-        return observation
+            confidence = Percentage(Decimal('0.2'))  # Lower confidence with limited data
+
+            observation = MarketObservation(
+                symbol=symbol,
+                observation_type=obs_type,
+                observation_value=obs_value,
+                confidence=confidence,
+                timestamp=datetime.now(),
+                metadata={
+                    'basic_trend': True,
+                    'change_percent': change,
+                    'candle_history_length': len(self.candles),
+                    'latest_candle': self.candles[-1] if self.candles else None,
+                    'candle_pattern_source': self.name
+                }
+            )
+
+            return observation
 
     def _analyze_candlestick_patterns(self):
         """Analyze candlestick patterns in the historical data with more sensitivity"""

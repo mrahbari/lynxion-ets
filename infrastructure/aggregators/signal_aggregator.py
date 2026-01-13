@@ -21,7 +21,7 @@ class SignalAggregator:
     based on comprehensive evaluation criteria.
     """
 
-    def __init__(self, aggregation_window_seconds: int = 3, max_signals_to_evaluate: int = 1):
+    def __init__(self, aggregation_window_seconds: int = 1, max_signals_to_evaluate: int = 1):  # Reduced aggregation window to 1 second
         self.aggregation_window_seconds = aggregation_window_seconds
         self.max_signals_to_evaluate = max_signals_to_evaluate
         self.logger = EnhancedLogger("SignalAggregator")

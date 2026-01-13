@@ -71,7 +71,7 @@ class VolatilityWatcher(BaseWatcher):
         if not self.enabled:
             return None
 
-        if len(self.price_history) < self.lookback:
+        if len(self.price_history) < 2:  # Require only 2 data points to start generating observations
             return None
 
         # Calculate volatility metrics
@@ -86,18 +86,18 @@ class VolatilityWatcher(BaseWatcher):
             observation_type = 'volatility_expansion'
             observation_value = abs(volatility_score)  # Positive for expansion
             # Confidence increases with volatility magnitude
-            confidence = min(0.95, max(0.4, volatility_magnitude))
+            confidence = min(0.95, max(0.2, volatility_magnitude))  # Lowered minimum confidence
         elif regime == "low":
             observation_type = 'volatility_compression'
             observation_value = -abs(volatility_score)  # Negative for compression
             # Confidence increases with volatility magnitude
-            confidence = min(0.95, max(0.4, volatility_magnitude))
+            confidence = min(0.95, max(0.2, volatility_magnitude))  # Lowered minimum confidence
         else:
             observation_type = 'volatility_normal'
             observation_value = 0.0
             # For neutral state, confidence is lower but not fixed at 0.3
             # It's based on how close to neutral we are (smaller deviations = higher confidence in neutrality)
-            confidence = min(0.6, (1.0 - volatility_magnitude))
+            confidence = min(0.4, (1.0 - volatility_magnitude))  # Lowered neutral confidence
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))
@@ -158,9 +158,9 @@ class VolatilityWatcher(BaseWatcher):
 
     def get_current_regime(self, volatility_score: float) -> str:
         """Get current volatility regime"""
-        if volatility_score > 0.5:
+        if volatility_score > 0.2:  # Lowered threshold for high volatility
             return "high"
-        elif volatility_score < -0.5:
+        elif volatility_score < -0.2:  # Lowered threshold for low volatility
             return "low"
         else:
             return "normal"
