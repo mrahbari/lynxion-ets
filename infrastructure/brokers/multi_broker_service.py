@@ -196,6 +196,23 @@ class MultiBrokerExecutionService(ExecutionPort):
         Check if a symbol is available on any of the configured exchanges.
         Optimized with caching to reduce redundant API calls.
         """
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        from domain.value_objects import Symbol as DomainSymbol
+
+        # Create a domain symbol object for validation
+        domain_symbol = DomainSymbol(symbol)
+        if not symbol_validator.is_symbol_approved(domain_symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
+            # Cache this negative result
+            cache_key = f"symbol_check_{symbol}"
+            current_time = datetime.now()
+            with self._recent_checks_lock:
+                self._recent_checks[cache_key] = (current_time, False)
+            return False
+
         # Check if we have a recent result for this symbol in our cache
         cache_key = f"symbol_check_{symbol}"
         current_time = datetime.now()
@@ -248,6 +265,18 @@ class MultiBrokerExecutionService(ExecutionPort):
         """
         Fallback method to check symbol availability via direct API calls.
         """
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        from domain.value_objects import Symbol as DomainSymbol
+
+        # Create a domain symbol object for validation
+        domain_symbol = DomainSymbol(symbol)
+        if not symbol_validator.is_symbol_approved(domain_symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
+            return False
+
         import requests
 
         # Try each exchange via direct API
@@ -282,6 +311,13 @@ class MultiBrokerExecutionService(ExecutionPort):
         Execute an order, trying different exchanges if the symbol is not available on the primary one.
         """
         symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available for trading
+        from utils.symbol_validator import symbol_validator
+        if not symbol_validator.is_symbol_approved(order.symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order execution denied.")
+            return None
 
         # Note: Symbol filtering (like stablecoin pairs) is now handled at the watcher level
         # to avoid processing symbols that will be rejected later. This improves efficiency.
@@ -417,6 +453,15 @@ class MultiBrokerExecutionService(ExecutionPort):
 
     def _enhance_order_with_risk_parameters(self, order: Order) -> Order:
         """Enhance order with risk parameters if they're missing."""
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available for trading
+        from utils.symbol_validator import symbol_validator
+        if not symbol_validator.is_symbol_approved(order.symbol):
+            symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order enhancement skipped.")
+            return order
+
         # Check if the order already has SL/TP parameters
         has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
         has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
@@ -660,6 +705,18 @@ class MultiBrokerExecutionService(ExecutionPort):
         """
         Find the best exchange for a given symbol by checking availability.
         """
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        from domain.value_objects import Symbol as DomainSymbol
+
+        # Create a domain symbol object for validation
+        domain_symbol = DomainSymbol(symbol)
+        if not symbol_validator.is_symbol_approved(domain_symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
+            return None
+
         # First, try to find an exchange where the symbol is available
         for exchange_name in self.exchange_order:
             broker = self.brokers.get(exchange_name)

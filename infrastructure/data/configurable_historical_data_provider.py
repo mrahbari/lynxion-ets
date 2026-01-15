@@ -142,21 +142,28 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
     def get_historical_data(self, symbol: Symbol, period: str, timeframe: str = '1m') -> List[Dict[str, Any]]:
         """
         Get historical data using the preferred data source with fallback options.
-        
+
         Args:
             symbol: Trading symbol
             period: Historical period (e.g., '7d', '30d', '1h')
             timeframe: Candlestick timeframe (e.g., '1m', '5m', '1h')
-            
+
         Returns:
             List of historical data points
         """
         symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
-        
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        if not symbol_validator.is_symbol_approved(symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Not available for trading.")
+            return []  # Return empty list to indicate no data available
+
         # Create ordered list of data sources to try
-        data_sources = [self.preferred_data_source] + [source for source in self.fallback_sources 
+        data_sources = [self.preferred_data_source] + [source for source in self.fallback_sources
                                                        if source != self.preferred_data_source]
-        
+
         self.logger.info(f"Fetching historical data for {symbol_str} from sources: {data_sources}")
         
         for source in data_sources:

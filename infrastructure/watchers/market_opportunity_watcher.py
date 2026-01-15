@@ -33,6 +33,9 @@ from infrastructure.watchers.adapters.tick_watcher import TickWatcherAdapter
 from infrastructure.watchers.adapters.historical_candle_watcher_improved import HistoricalCandleWatcherImprovedAdapter
 from infrastructure.watchers.adapters.market_pulse_watcher_improved import MarketPulseWatcherImprovedAdapter
 
+# Import the symbol validator
+from utils.symbol_validator import symbol_validator
+
 
 class MarketOpportunityWatcher:
     """Watches markets continuously to detect market observations and emit them to event system.
@@ -177,12 +180,24 @@ class MarketOpportunityWatcher:
         validate_data_availability = os.getenv('VALIDATE_SYMBOL_DATA_AVAILABILITY', 'true').lower() == 'true'
 
         if not validate_data_availability:
-            return symbols
+            # Still apply approved symbol validation even if data availability validation is disabled
+            for symbol in symbols:
+                symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+                if symbol_validator.is_symbol_approved(symbol):
+                    validated_symbols.append(symbol)
+                else:
+                    self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Skipping...")
+            return validated_symbols
 
-        self.logger.info(f"🔍 Validating data availability for {len(symbols)} symbols...")
+        self.logger.info(f"🔍 Validating data availability and approved status for {len(symbols)} symbols...")
 
         for symbol in symbols:
             symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+
+            # First check if symbol is in approved list
+            if not symbol_validator.is_symbol_approved(symbol):
+                self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Skipping...")
+                continue
 
             try:
                 # Check if the symbol is available in the market data repository
@@ -217,7 +232,7 @@ class MarketOpportunityWatcher:
         validated_count = len(validated_symbols)
 
         if original_count != validated_count:
-            self.logger.info(f"📊 DATA AVAILABILITY VALIDATION: {original_count} -> {validated_count} symbols after validation")
+            self.logger.info(f"📊 DATA AVAILABILITY & APPROVAL VALIDATION: {original_count} -> {validated_count} symbols after validation")
 
         return validated_symbols
 
@@ -1830,6 +1845,20 @@ class MarketOpportunityWatcher:
         """Analyze a symbol using all available watchers - only if enabled.
         Implements correct architecture: Watcher → Engine → Fusion → Strategy → Broker"""
         symbol_str = symbol.value
+
+        # Validate symbol against approved list before processing
+        if not symbol_validator.is_symbol_approved(symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Skipping processing.")
+            return {
+                'symbol': symbol_str,
+                'timestamp': datetime.now(),
+                'observations': {},
+                'indicators': {},
+                'recommendation': None,
+                'confidence': 0.0,
+                'strategy_suggestion': 'SKIPPED',  # Mark as skipped due to validation
+                'execution_intent': None
+            }
 
         # Log that the symbol analysis is starting
         if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:

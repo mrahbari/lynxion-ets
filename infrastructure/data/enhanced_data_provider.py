@@ -499,6 +499,19 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
     def is_symbol_available(self, symbol: str) -> bool:
         """Check if a symbol is available on the exchange with exchange switching capability."""
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        from domain.value_objects import Symbol as DomainSymbol
+
+        # Create a domain symbol object for validation
+        domain_symbol = DomainSymbol(symbol)
+        if not symbol_validator.is_symbol_approved(domain_symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
+            return False
+
+        # If symbol is approved, then check if it's available on the exchange
         # First, try to use the MultiBrokerExecutionService if available
         if self.broker_service:
             # Check if this is a MultiBrokerExecutionService that supports exchange switching
@@ -617,6 +630,25 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
     def _check_single_symbol(self, symbol: str) -> bool:
         """Check a single symbol availability using direct API call with exchange switching."""
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        from domain.value_objects import Symbol as DomainSymbol
+
+        # Create a domain symbol object for validation
+        domain_symbol = DomainSymbol(symbol)
+        if not symbol_validator.is_symbol_approved(domain_symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
+
+            # Cache this negative result
+            cache_key = f"symbol_check_{symbol}"
+            current_time = datetime.now()
+            with self._cache_lock:
+                self._symbol_availability_cache[cache_key] = (current_time, False)
+
+            return False
+
         # Check if we have a recent result for this symbol in our cache
         cache_key = f"symbol_check_{symbol}"
         current_time = datetime.now()
@@ -713,6 +745,18 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
     def _check_symbol_via_multiple_exchanges(self, symbol: str) -> bool:
         """Check symbol availability across multiple exchanges with fallback."""
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        from domain.value_objects import Symbol as DomainSymbol
+
+        # Create a domain symbol object for validation
+        domain_symbol = DomainSymbol(symbol)
+        if not symbol_validator.is_symbol_approved(domain_symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
+            return False
+
         import requests
 
         # Define exchange order for checking

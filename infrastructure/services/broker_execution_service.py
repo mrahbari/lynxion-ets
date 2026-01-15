@@ -190,6 +190,14 @@ class BrokerExecutionService(ExecutionPort):
                 self.logger.warning(f"System is shutting down, rejecting order execution for {order.symbol.value if hasattr(order, 'symbol') and hasattr(getattr(order, 'symbol', None), 'value') else 'UNKNOWN'}")
                 return None
 
+            # First, check if the symbol is in the approved symbols list
+            # This is the primary validation - if a symbol is not approved, it's not available for trading
+            from utils.symbol_validator import symbol_validator
+            if not symbol_validator.is_symbol_approved(order.symbol):
+                symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
+                self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order execution denied.")
+                return None
+
             # Note: Symbol filtering (like stablecoin pairs) is now handled at the watcher level
             # to avoid processing symbols that will be rejected later. This improves efficiency.
 

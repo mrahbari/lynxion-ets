@@ -52,10 +52,7 @@ The system is suitable for both **research/backtesting** and **live trading**.
 * **Multi-Asset Support**: Simultaneous trading across multiple cryptocurrencies
 * **Configurable Strategies**: Modular strategy system with easy customization
 * **Strategy Health Monitoring**: Comprehensive health monitoring with performance tracking
-* **Automatic Strategy Restart**: Self-healing capabilities with auto-restart on failure
-* **Signal Conflict Resolution**: Advanced algorithms for resolving conflicting signals
-* **Adaptive Signal Weighting**: Reliability-based weighting for signal fusion
-* **Engine Performance Tracking**: Detailed performance metrics for signal processing engines
+* **Approved Symbol Validation**: Automatic filtering of trading symbols against approved list to ensure only supported and listed symbols are processed
 * **Advanced Fusion System**: Adaptive weights with diversity metrics and explainability
 * **Watcher Health Management**: Comprehensive monitoring and auto-restart for watchers
 * **Dynamic Registration**: Runtime registration for strategies and watchers
@@ -101,6 +98,7 @@ Lynxion ETS follows **Hexagonal Architecture**, separating core business logic f
 * **Fusion Intelligence**: Adaptive weights with diversity metrics and explainability
 * **Watcher Orchestration**: Health monitoring, auto-restart, dynamic registration
 * **Resource Optimization**: Instance pooling and limitation systems
+* **Symbol Validation**: Automatic filtering against approved symbol lists to ensure only supported and listed symbols are processed through the system
 
 ### Layers
 
@@ -130,11 +128,31 @@ The system implements a complete automated trading workflow with proper validati
 
 ### Workflow Components
 
-* **Watcher Layer**: Health monitoring, auto-restart, signal validation, error isolation
+* **Watcher Layer**: Health monitoring, auto-restart, signal validation, error isolation, symbol filtering
 * **Engine Layer**: Performance tracking, validation, optimization, processing metrics
 * **Fusion Layer**: Adaptive weights, diversity metrics, explainability, conflict resolution
 * **Strategy Layer**: Health monitoring, auto-restart, performance tracking, resource optimization
 * **Broker Layer**: Order execution, risk management, performance monitoring
+
+### Symbol Validation System
+
+The system includes an advanced symbol validation mechanism that ensures only approved and supported symbols are processed:
+
+* **Approved Symbol Lists**: Configurable JSON files containing approved trading symbols
+* **Early Filtering**: Symbols are validated at the watcher level before entering the processing pipeline
+* **Multi-Level Validation**: Validation occurs at data provider, broker service, and execution levels
+* **Automatic Rejection**: Non-approved symbols are automatically rejected with clear logging
+* **Configuration Flexibility**: Easy to update approved symbol lists without code changes
+* **Performance Optimization**: Prevents system resources from being wasted on unsupported symbols
+
+### Symbol Management Utilities
+
+The system includes utilities to manage approved symbols:
+
+* **Symbol Updater**: `runner_sync_approved_symbols.py` - Fetches the latest available symbols from exchange APIs and updates the approved symbols list
+* **Automatic Backups**: The updater creates timestamped backups of the previous symbol list before updates
+* **Multi-Source Fallback**: Tries BingX API first, falls back to Binance API, and uses existing symbols as final fallback
+* **Change Tracking**: Reports added and removed symbols during updates for transparency
 
 ---
 
