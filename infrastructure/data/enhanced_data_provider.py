@@ -371,6 +371,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
         # Try to get price via broker service if available
         if self.broker_service:
+            broker = None  # Initialize broker variable to avoid UnboundLocalError
             try:
                 broker_service_type = self._get_broker_type(self.broker_service)
                 self.logger.debug(f"Fetching price for {symbol} using broker service: {broker_service_type}")
@@ -384,6 +385,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                         return None
                     else:
                         self.logger.debug(f"Symbol {symbol} found in broker service available symbols")
+                    broker = self.broker_service  # Set broker for later use
                 # Check if it's a BrokerExecutionService and try to access its internal broker
                 elif hasattr(self.broker_service, 'broker'):
                     # Access the internal broker directly

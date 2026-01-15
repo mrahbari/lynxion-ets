@@ -12,7 +12,12 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
     """Historical Candle Watcher - analyzes historical candlestick patterns, returns raw market observations"""
 
     def __init__(self, name: str, symbol: str, broker_service=None, lookback: int = 50):
-        super().__init__(name, symbol, broker_service, None)
+        # Convert symbol string to Symbol object if needed
+        symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
+        super().__init__(name, symbol_obj)
+
+        # Store broker service and other parameters separately
+        self.broker_service = broker_service
 
         # Configuration from environment with defaults
         self.enabled = os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'true').lower() == 'true'
@@ -32,10 +37,12 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
         self.lookback = lookback
         self.candles = []  # Store candle data: [{'open': o, 'high': h, 'low': l, 'close': c, 'volume': v, 'timestamp': ts}, ...]
 
-        # Pattern detection thresholds
-        self.doji_threshold = 0.001  # Max body size for doji pattern
-        self.engulfing_threshold = 0.005  # Min size for engulfing pattern
-        self.hammer_threshold = 0.01  # Min lower shadow for hammer pattern
+        # Pattern detection thresholds (more sensitive for improved detection)
+        self.doji_threshold = 0.003  # Increased threshold for more doji detection
+        self.engulfing_threshold = 0.002  # Reduced threshold for more engulfing detection
+        self.hammer_threshold = 0.005  # Reduced threshold for more hammer detection
+        self.small_body_threshold = 0.002  # For detecting indecision patterns
+        self.spinning_top_threshold = 0.004  # For detecting spinning tops
 
     def update_data(self, data: dict):
         """Update with new candle data"""
@@ -157,6 +164,10 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
 
         return observation
 
+    def analyze(self, symbol: Symbol) -> MarketObservation:
+        """Analyze market conditions and return a raw market observation"""
+        return self._analyze_impl(symbol)
+
     def _analyze_candlestick_patterns(self):
         """Analyze candlestick patterns in the historical data"""
         if len(self.candles) < 2:
@@ -207,17 +218,17 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
                 })
                 strength += 0.8
 
-            # Hammer pattern
+            # Hammer pattern (more sensitive)
             if candle_range != 0:
-                lower_shadow = current['low'] - min(current['open'], current['close'])
+                lower_shadow = min(current['open'], current['close']) - current['low']
                 upper_shadow = current['high'] - max(current['open'], current['close'])
                 body_size = abs(current['close'] - current['open'])
 
-                lower_shadow_ratio = lower_shadow / candle_range
-                upper_shadow_ratio = upper_shadow / candle_range
+                lower_shadow_ratio = lower_shadow / candle_range if candle_range != 0 else 0
+                upper_shadow_ratio = upper_shadow / candle_range if candle_range != 0 else 0
 
-                # Hammer (bullish reversal)
-                if lower_shadow_ratio >= self.hammer_threshold and upper_shadow_ratio <= lower_shadow_ratio * 0.2:
+                # Hammer (bullish reversal) - more sensitive
+                if lower_shadow_ratio >= self.hammer_threshold and upper_shadow_ratio <= lower_shadow_ratio * 0.3:
                     patterns.append({
                         'type': 'hammer',
                         'position': i,
@@ -225,8 +236,8 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
                     })
                     strength += lower_shadow_ratio
 
-                # Shooting star (bearish reversal)
-                if upper_shadow_ratio >= self.hammer_threshold and lower_shadow_ratio <= upper_shadow_ratio * 0.2:
+                # Shooting star (bearish reversal) - more sensitive
+                if upper_shadow_ratio >= self.hammer_threshold and lower_shadow_ratio <= upper_shadow_ratio * 0.3:
                     patterns.append({
                         'type': 'shooting_star',
                         'position': i,
@@ -234,17 +245,54 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
                     })
                     strength += upper_shadow_ratio
 
+            # Spinning top detection (sign of indecision)
+            if candle_range != 0:
+                body_ratio = body_size / candle_range
+                if body_ratio <= self.spinning_top_threshold and body_size > 0:
+                    patterns.append({
+                        'type': 'spinning_top',
+                        'position': i,
+                        'strength': body_ratio
+                    })
+                    strength += body_ratio * 0.5  # Lower weight for indecision patterns
+
+            # Marubozu (long day without shadows - strong trend)
+            if candle_range != 0:
+                upper_shadow = current['high'] - max(current['open'], current['close'])
+                lower_shadow = min(current['open'], current['close']) - current['low']
+
+                total_shadows = upper_shadow + lower_shadow
+                shadow_ratio = total_shadows / candle_range if candle_range != 0 else 0
+
+                if shadow_ratio <= 0.1:  # Very small shadows
+                    if current['close'] > current['open']:  # Bullish marubozu
+                        patterns.append({
+                            'type': 'marubozu_bullish',
+                            'position': i,
+                            'strength': 0.8
+                        })
+                        strength += 0.8
+                    elif current['close'] < current['open']:  # Bearish marubozu
+                        patterns.append({
+                            'type': 'marubozu_bearish',
+                            'position': i,
+                            'strength': 0.8
+                        })
+                        strength += 0.8
+
         return {
             'patterns': patterns,
             'total_strength': min(1.0, strength / len(self.candles)) if self.candles else 0.0
         }
 
     def _analyze_trend(self):
-        """Analyze trend based on recent candles"""
-        if len(self.candles) < self.lookback:
-            recent_candles = self.candles
-        else:
-            recent_candles = self.candles[-self.lookback:]
+        """Analyze trend based on recent candles with more sensitivity"""
+        if len(self.candles) < 2:
+            return {'direction': 0, 'strength': 0}
+
+        # Use shorter lookback for more responsive trend detection
+        lookback = min(self.lookback, len(self.candles))
+        recent_candles = self.candles[-lookback:] if len(self.candles) >= lookback else self.candles
 
         if len(recent_candles) < 2:
             return {'direction': 0, 'strength': 0}
@@ -263,7 +311,7 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
             else:
                 normalized_slope = 0
 
-            # Calculate trend strength (R-squared)
+            # Calculate trend strength (R-squared) - more sensitive calculation
             if len(closes) > 2:
                 y_pred = slope * x + (np.mean(closes) - slope * np.mean(x))
                 ss_res = np.sum((np.array(closes) - y_pred) ** 2)
@@ -278,14 +326,14 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
 
             return {
                 'direction': normalized_slope,
-                'strength': min(1.0, trend_strength)
+                'strength': min(1.0, abs(trend_strength))  # Use absolute value for strength
             }
 
         return {'direction': 0, 'strength': 0}
 
     def _analyze_volatility(self):
-        """Analyze volatility based on historical candles"""
-        if len(self.candles) < 2:
+        """Analyze volatility based on historical candles with more sensitivity"""
+        if len(self.candles) < 3:  # Need at least 3 for meaningful volatility
             return {'volatility': 0, 'regime': 'normal'}
 
         # Calculate returns
@@ -295,10 +343,10 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
         # Calculate volatility
         volatility = np.std(returns) if len(returns) > 0 else 0
 
-        # Determine volatility regime
-        if volatility > 0.02:  # High volatility threshold
+        # Determine volatility regime (more sensitive thresholds)
+        if volatility > 0.015:  # Reduced threshold for more sensitivity
             regime = 'high'
-        elif volatility < 0.005:  # Low volatility threshold
+        elif volatility < 0.003:  # Reduced threshold for more sensitivity
             regime = 'low'
         else:
             regime = 'normal'
@@ -398,68 +446,66 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
         return min(max_confidence_cap, confidence)  # Configurable clamp upper bound
 
     def _determine_observation_type(self, pattern_analysis, trend_analysis, momentum_analysis=None):
-        """Determine observation type based on pattern, trend, and momentum analysis"""
+        """Determine observation type based on pattern, trend and momentum analysis with more variety"""
         patterns = pattern_analysis.get('patterns', [])
         trend_direction = trend_analysis.get('direction', 0)
         momentum_value = momentum_analysis.get('momentum', 0) if momentum_analysis else 0
 
         # Count different pattern types
-        bullish_patterns = [p for p in patterns if p['type'] in ['doji', 'bullish_engulfing', 'hammer', 'morning_star']]
-        bearish_patterns = [p for p in patterns if p['type'] in ['bearish_engulfing', 'shooting_star', 'evening_star']]
-        reversal_patterns = [p for p in patterns if p['type'] in ['doji', 'hammer', 'shooting_star', 'morning_star', 'evening_star']]
+        reversal_patterns = [p for p in patterns if p['type'] in ['hammer', 'shooting_star', 'doji']]
+        bullish_patterns = [p for p in patterns if p['type'] in ['hammer', 'bullish_engulfing', 'marubozu_bullish']]
+        bearish_patterns = [p for p in patterns if p['type'] in ['shooting_star', 'bearish_engulfing', 'marubozu_bearish']]
 
-        # Determine observation type based on analysis
-        if len(bullish_patterns) > 0 and trend_direction > 0:
-            return 'bullish_pattern_trend_aligned'
-        elif len(bearish_patterns) > 0 and trend_direction < 0:
-            return 'bearish_pattern_trend_aligned'
-        elif len(reversal_patterns) > 0 and ((trend_direction < 0 and momentum_value > 0) or (trend_direction > 0 and momentum_value < 0)):
-            return 'potential_reversal_detected'
-        elif abs(trend_direction) > 0.001:  # Significant trend
-            return 'trend_following_signal'
-        elif abs(momentum_value) > 0.001:  # Significant momentum
-            return 'momentum_signal'
-        elif len(patterns) > 0:  # Any pattern detected
-            return 'pattern_detected'
+        # Enhanced logic with more observation types
+        if len(bullish_patterns) > 0 and trend_direction <= 0:  # Bullish patterns in neutral/down trend
+            return 'candle_reversal_bullish_emerging'
+        elif len(bearish_patterns) > 0 and trend_direction >= 0:  # Bearish patterns in neutral/up trend
+            return 'candle_reversal_bearish_emerging'
+        elif len(bullish_patterns) > 0 and trend_direction > 0:  # Bullish patterns in up trend
+            return 'candle_confirmation_bullish'
+        elif len(bearish_patterns) > 0 and trend_direction < 0:  # Bearish patterns in down trend
+            return 'candle_confirmation_bearish'
+        elif trend_direction > 0.0005:  # Mild uptrend
+            return 'trend_bullish_weak'
+        elif trend_direction < -0.0005:  # Mild downtrend
+            return 'trend_bearish_weak'
+        elif abs(trend_direction) < 0.0005 and len(reversal_patterns) > 0:  # Neutral trend with reversal patterns
+            return 'candle_indecision_reversal_signals'
+        elif abs(trend_direction) < 0.0005 and len(patterns) == 0:  # Truly neutral
+            return 'market_neutral_no_signals'
+        elif abs(trend_direction) < 0.0005 and len(patterns) > 0:  # Neutral with patterns
+            return 'candle_pattern_signals_only'
+        elif momentum_value > 0.002:  # Positive momentum
+            return 'momentum_bullish'
+        elif momentum_value < -0.002:  # Negative momentum
+            return 'momentum_bearish'
         else:
-            # If no specific patterns but we have data, return a basic trend observation
-            if abs(trend_direction) > 0.0001:
-                return 'basic_trend_signal'
-            else:
-                return 'market_condition_neutral'
+            return 'market_pulse_subtle'
 
     def _analyze_momentum(self):
         """Analyze momentum based on recent price movements"""
-        if len(self.candles) < 3:
-            return {'momentum': 0.0, 'strength': 0.0}
+        if len(self.candles) < 5:
+            return {'momentum': 0, 'strength': 0}
 
-        # Get configuration from environment variables
-        momentum_lookback_period = int(os.getenv('WATCHER_MOMENTUM_LOOKBACK_PERIOD', '10'))
-        momentum_sensitivity_factor = float(os.getenv('WATCHER_MOMENTUM_SENSITIVITY_FACTOR', '10'))
+        # Calculate momentum using last few candles
+        lookback = min(5, len(self.candles))
+        recent_closes = [c['close'] for c in self.candles[-lookback:]]
 
-        # Calculate momentum using configurable number of recent candles
-        recent_closes = [c['close'] for c in self.candles[-momentum_lookback_period:]]  # Configurable lookback for momentum
         if len(recent_closes) < 2:
-            return {'momentum': 0.0, 'strength': 0.0}
+            return {'momentum': 0, 'strength': 0}
 
-        # Calculate rate of change over the period
-        initial_price = recent_closes[0]
-        final_price = recent_closes[-1]
+        # Calculate rate of change
+        roc = (recent_closes[-1] - recent_closes[0]) / recent_closes[0] if recent_closes[0] != 0 else 0
 
-        if initial_price != 0:
-            roc = (final_price - initial_price) / initial_price
-        else:
-            roc = 0.0
-
-        # Calculate momentum strength based on consistency of movement
+        # Calculate momentum strength based on consistency
         momentum_changes = []
         for i in range(1, len(recent_closes)):
             if recent_closes[i-1] != 0:
                 change = (recent_closes[i] - recent_closes[i-1]) / recent_closes[i-1]
                 momentum_changes.append(change)
 
-        avg_change = sum(momentum_changes) / len(momentum_changes) if momentum_changes else 0.0
-        momentum_strength = min(1.0, abs(avg_change) * momentum_sensitivity_factor)  # Configurable amplification for sensitivity
+        avg_change = np.mean(momentum_changes) if momentum_changes else 0
+        momentum_strength = min(1.0, abs(avg_change) * 10)  # Amplify for sensitivity
 
         return {
             'momentum': roc,
@@ -472,22 +518,31 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
         volatility_regime = volatility_analysis.get('regime', 'normal')
         momentum_strength = momentum_analysis.get('strength', 0.0)
 
+        # Get configuration from environment variables
+        pattern_weight = float(os.getenv('WATCHER_PATTERN_WEIGHT', '0.4'))
+        momentum_weight = float(os.getenv('WATCHER_MOMENTUM_WEIGHT', '0.3'))
+        high_volatility_boost = float(os.getenv('WATCHER_HIGH_VOLATILITY_BOOST', '0.2'))
+        low_volatility_boost = float(os.getenv('WATCHER_LOW_VOLATILITY_BOOST', '0.05'))
+        normal_volatility_boost = float(os.getenv('WATCHER_NORMAL_VOLATILITY_BOOST', '0.1'))
+        min_confidence_when_signals_detected = float(os.getenv('WATCHER_MIN_CONFIDENCE_WHEN_SIGNALS_DETECTED', '0.25'))  # Increased for more responsive signals
+        max_confidence_cap = float(os.getenv('WATCHER_MAX_CONFIDENCE_CAP', '0.95'))
+
         # Base confidence on pattern strength
-        confidence = pattern_strength * 0.4  # Reduced weight to allow other factors to contribute
+        confidence = pattern_strength * pattern_weight  # Configurable weight to allow other factors to contribute
 
         # Add momentum contribution
-        confidence += momentum_strength * 0.3
+        confidence += momentum_strength * momentum_weight
 
         # Adjust for volatility regime
         if volatility_regime == 'high':
-            confidence += 0.2  # High volatility can confirm patterns and momentum
+            confidence += high_volatility_boost  # Configurable boost for high volatility
         elif volatility_regime == 'low':
-            confidence += 0.05  # Low volatility is still informative
+            confidence += low_volatility_boost  # Configurable boost for low volatility
         else:  # normal
-            confidence += 0.1
+            confidence += normal_volatility_boost  # Configurable boost for normal volatility
 
         # Ensure minimum confidence for any detected signal
         if pattern_strength > 0 or momentum_strength > 0:
-            confidence = max(0.15, confidence)  # Minimum confidence when signals are detected
+            confidence = max(min_confidence_when_signals_detected, confidence)  # Configurable minimum when signals are detected
 
-        return min(0.95, confidence)  # Clamp upper bound
+        return min(max_confidence_cap, confidence)  # Configurable clamp upper bound

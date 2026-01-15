@@ -357,6 +357,46 @@ class SignalProcessor:
 
             # Create order with risk parameters from the execution intent (set by Strategy layer)
             # The Strategy layer should have already calculated all risk parameters
+            # However, if the strategy layer set incorrect SL/TP prices, we'll recalculate them
+            stop_loss_price = getattr(execution_intent, 'stop_loss_price', None)
+            take_profit_price = getattr(execution_intent, 'take_profit_price', None)
+
+            # Check if the strategy layer set incorrect SL/TP prices and recalculate if needed
+            # For BUY orders: SL should be below entry price, TP should be above entry price
+            # For SELL orders: SL should be above entry price, TP should be below entry price
+            entry_price = float(current_price) if current_price else 50000.0  # fallback
+
+            if order_side.name == 'BUY':
+                # For BUY orders, SL should be below entry, TP should be above entry
+                if (stop_loss_price is None or
+                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) <= 0) or
+                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) >= entry_price)):
+                    # Recalculate SL if not set or invalid (above entry for BUY)
+                    from domain.value_objects import Money
+                    stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+
+                if (take_profit_price is None or
+                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= 0) or
+                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= entry_price)):
+                    # Recalculate TP if not set or invalid (below entry for BUY)
+                    from domain.value_objects import Money
+                    take_profit_price = Money(amount=float(tp_price), currency='USDT')
+            else:  # SELL
+                # For SELL orders, SL should be above entry, TP should be below entry
+                if (stop_loss_price is None or
+                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) <= 0) or
+                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) <= entry_price)):
+                    # Recalculate SL if not set or invalid (below entry for SELL)
+                    from domain.value_objects import Money
+                    stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+
+                if (take_profit_price is None or
+                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= 0) or
+                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) >= entry_price)):
+                    # Recalculate TP if not set or invalid (above entry for SELL)
+                    from domain.value_objects import Money
+                    take_profit_price = Money(amount=float(tp_price), currency='USDT')
+
             order = Order(
                 symbol=execution_intent.symbol,
                 side=order_side,
@@ -366,8 +406,8 @@ class SignalProcessor:
                 strategy_name=execution_intent.strategy_name,  # Strategy name comes from intent
                 timestamp=execution_intent.timestamp,
                 position_side=position_side,  # Add position side for futures trading
-                stop_loss_price=getattr(execution_intent, 'stop_loss_price', None),  # SL from strategy
-                take_profit_price=getattr(execution_intent, 'take_profit_price', None),  # TP from strategy
+                stop_loss_price=stop_loss_price,  # SL from strategy or recalculated
+                take_profit_price=take_profit_price,  # TP from strategy or recalculated
                 parent_execution_intent=execution_intent  # Link back to the execution intent
             )
 

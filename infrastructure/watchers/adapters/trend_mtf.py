@@ -12,7 +12,13 @@ class TrendMTFWatcher(BaseWatcher):
     """Multi-Timeframe Trend Watcher - analyzes trends across multiple timeframes, returns raw market observations"""
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, short_period: int = 5, medium_period: int = 15, long_period: int = 30):
-        super().__init__(name, symbol, broker_service, target_broker)
+        # Convert symbol string to Symbol object if needed
+        symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
+        super().__init__(name, symbol_obj)
+
+        # Store broker service and other parameters separately
+        self.broker_service = broker_service
+        self.target_broker = target_broker
 
         # Configuration from environment with defaults
         self.enabled = os.getenv('TREND_MTF_WATCHER_ENABLED', 'true').lower() == 'true'
@@ -130,6 +136,10 @@ class TrendMTFWatcher(BaseWatcher):
         )
 
         return observation
+
+    def analyze(self, symbol: Symbol) -> MarketObservation:
+        """Analyze market conditions and return a raw market observation"""
+        return self._analyze_impl(symbol)
 
     def calculate_trend(self, prices):
         """Calculate trend direction and strength using linear regression"""

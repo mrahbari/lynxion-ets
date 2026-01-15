@@ -79,6 +79,15 @@ class ArchitectureOrchestrator:
     def stop(self):
         """Stop the architecture orchestrator."""
         self.is_running = False
+
+        # Clear any pending orders in the shared tracker to prevent resource leaks
+        try:
+            from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+            PendingOrdersTracker.clear_all_pending_orders()
+            self.logger.info("Cleared pending orders in shared tracker")
+        except Exception as e:
+            self.logger.error(f"Error clearing pending orders tracker: {e}")
+
         self.logger.info("Architecture Orchestrator stopped")
 
     def get_status(self) -> Dict[str, Any]:

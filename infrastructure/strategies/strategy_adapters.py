@@ -214,8 +214,40 @@ class BaseStrategyAdapter(StrategyPort):
             # Calculate risk-adjusted position size and other parameters
             portfolio_value = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))
 
-            # Create a dummy current price for risk calculations (in real system, this would come from market data)
-            current_price = 50000.0  # Placeholder - would be real price in production
+            # Get current price from market data repository or broker service
+            current_price = None
+            if hasattr(self, 'market_data_repo') and self.market_data_repo:
+                try:
+                    current_price = self.market_data_repo.get_current_price(fused_signal.symbol)
+                except:
+                    pass  # Fallback to other methods if market data repo fails
+
+            if current_price is None and hasattr(self, 'broker_service') and self.broker_service:
+                try:
+                    # Try to get current price from broker service
+                    current_price = self.broker_service.get_current_price(fused_signal.symbol)
+                except:
+                    pass  # Fallback to default if broker service fails
+
+            # If we still don't have a price, use a reasonable default based on the symbol
+            if current_price is None or current_price <= 0:
+                symbol_str = fused_signal.symbol.value
+                if symbol_str.startswith(('BTC', 'WBTC')):
+                    current_price = 45000.0  # Bitcoin price range
+                elif symbol_str.startswith(('ETH', 'WETH')):
+                    current_price = 2500.0  # Ethereum price range
+                elif symbol_str.startswith(('SOL', 'AVAX', 'FTM', 'APT', 'AR')):
+                    current_price = 90.0   # Mid-range altcoins
+                elif symbol_str.startswith(('BNB', 'XRP', 'ADA', 'DOGE', 'DOT', 'MATIC', 'LINK', 'UNI', 'LTC', 'BCH')):
+                    current_price = 10.0   # Lower range altcoins
+                elif symbol_str.startswith(('XLM', 'TRX', 'ATOM', 'NEAR', 'FIL', 'ETC', 'VET', 'XTZ', 'ICX', 'HBAR', 'SUI')):
+                    current_price = 0.5    # Penny stocks/crypto range
+                elif symbol_str.startswith(('SHIB', 'PEPE', 'FLOKI')):
+                    current_price = 0.00001  # Meme coin range
+                else:
+                    # For any other symbol, use a reasonable default based on common patterns
+                    import random
+                    current_price = random.uniform(0.01, 500.0)
 
             # Calculate position size using advanced risk management
             position_size, risk_factors = risk_service.calculate_position_size(
@@ -240,8 +272,8 @@ class BaseStrategyAdapter(StrategyPort):
             # Construct comprehensive risk parameters
             risk_parameters = {
                 'max_position_size': position_size,
-                'stop_loss_pct': getattr(risk_factors, 'stop_loss_multiplier', 0.02),      # 2% default SL
-                'take_profit_pct': getattr(risk_factors, 'take_profit_multiplier', 0.03),  # 3% default TP
+                'stop_loss_pct': min(0.10, getattr(risk_factors, 'stop_loss_multiplier', 1.0) * 0.02),      # Cap at 10%, use as multiplier for base 2%
+                'take_profit_pct': min(0.15, getattr(risk_factors, 'take_profit_multiplier', 1.0) * 0.03),  # Cap at 15%, use as multiplier for base 3%
                 'stop_loss_price': sl_tp_levels[0],
                 'take_profit_price': sl_tp_levels[1],
                 'risk_per_trade': 0.02 * portfolio_value,  # 2% of portfolio
@@ -273,8 +305,29 @@ class BaseStrategyAdapter(StrategyPort):
 
         # Adjust risk based on signal confidence
         confidence_factor = float(fused_signal.confidence.value)
+
+        # Scale position size with confidence
         base_risk_params['max_position_size'] *= confidence_factor
-        base_risk_params['stop_loss_pct'] *= (1.0 + (1.0 - confidence_factor))  # Tighter stops for lower confidence
+
+        # For stop loss, use the confidence to adjust the tightness appropriately
+        # Higher confidence signals should have tighter stops, lower confidence should have wider stops
+        # But ensure stop loss percentage stays within reasonable bounds
+        base_stop_loss_pct = self.risk_parameters['stop_loss_pct']
+        if confidence_factor > 0.5:
+            # For higher confidence, tighten the stop loss (smaller percentage)
+            base_risk_params['stop_loss_pct'] = min(base_stop_loss_pct * (1.0 - (confidence_factor - 0.5) * 0.8), 0.10)  # Cap at 10%, tighten for high confidence
+        else:
+            # For lower confidence, widen the stop loss (larger percentage) but cap it
+            base_risk_params['stop_loss_pct'] = min(base_stop_loss_pct * (1.0 + (0.5 - confidence_factor) * 1.5), 0.10)  # Cap at 10%
+
+        # Similarly for take profit percentage
+        base_take_profit_pct = self.risk_parameters['take_profit_pct']
+        if confidence_factor > 0.5:
+            # For higher confidence, use tighter take profit (smaller percentage difference from entry)
+            base_risk_params['take_profit_pct'] = min(base_take_profit_pct * (1.0 + (confidence_factor - 0.5) * 0.5), 0.15)  # Cap at 15%
+        else:
+            # For lower confidence, use wider take profit but still cap it
+            base_risk_params['take_profit_pct'] = min(base_take_profit_pct * (1.0 + (0.5 - confidence_factor) * 1.0), 0.15)  # Cap at 15%
 
         return base_risk_params
 

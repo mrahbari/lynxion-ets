@@ -254,7 +254,8 @@ class BrokerExecutionService(ExecutionPort):
             # Perform final validation to ensure the order parameters are reasonable before sending to broker
             if not self._validate_order_parameters_before_broker(order):
                 self.logger.error(f"❌ ORDER REJECTED: Order parameters are invalid or unreasonable: {order}")
-                raise ValueError(f"Order parameters failed final validation: {order}")
+                # Return None instead of raising an exception to prevent system crashes
+                return None
 
             self.logger.info(f"🎯 EXECUTING ORDER ON {self.broker_name}: {order}")
 
@@ -265,6 +266,20 @@ class BrokerExecutionService(ExecutionPort):
                 self._add_pending_order(order.symbol, intended_position_side, order_id_temp)
 
             try:
+                # Check if broker is connected before attempting to place order
+                if hasattr(self.broker, 'connected'):
+                    if not self.broker.connected:
+                        self.logger.error(f"❌ BROKER NOT CONNECTED: Cannot place order on {self.broker_name}")
+                        return None
+                elif hasattr(self.broker, 'connect') and callable(getattr(self.broker, 'connect')):
+                    # Try to connect if not connected
+                    try:
+                        if not getattr(self.broker, 'connected', False):
+                            self.broker.connect()
+                    except Exception as conn_error:
+                        self.logger.error(f"❌ FAILED TO CONNECT TO BROKER {self.broker_name}: {conn_error}")
+                        return None
+
                 # If using multi-broker service, use execute_order method
                 if self.use_multi_broker:
                     order_id = self.broker.execute_order(order)
@@ -287,9 +302,14 @@ class BrokerExecutionService(ExecutionPort):
                 self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {self.broker_name}: {e}")
                 raise
             finally:
-                # Remove from pending orders after attempting to place
+                # Remove from pending orders after attempting to place (whether successful or failed)
+                # This is important to prevent stuck pending orders when order placement fails
                 if prevent_same_direction and intended_position_side and order_id_temp:
-                    self._remove_pending_order(order.symbol, order_id_temp)
+                    try:
+                        self._remove_pending_order(order.symbol, order_id_temp)
+                    except Exception as cleanup_error:
+                        self.logger.error(f"❌ ERROR DURING PENDING ORDER CLEANUP: {cleanup_error}")
+                        # Don't raise the exception here as it would mask the original error
         except Exception as e:
             self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {self.broker_name}: {e}")
             raise
@@ -315,33 +335,36 @@ class BrokerExecutionService(ExecutionPort):
             # Check if we have a valid price
             if order.price and hasattr(order.price, 'amount') and order.price.amount:
                 entry_price = float(order.price.amount)
+                self.logger.debug(f"Validating order parameters - Entry price: {entry_price}")
 
                 # Check if stop loss price is reasonable
                 if hasattr(order, 'stop_loss_price') and order.stop_loss_price:
                     sl_price = float(order.stop_loss_price.amount) if hasattr(order.stop_loss_price, 'amount') else float(order.stop_loss_price)
+                    self.logger.debug(f"Stop loss price: {sl_price}")
 
                     # For BUY orders: SL should be below entry price
                     # For SELL orders: SL should be above entry price (for short positions)
                     is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+                    self.logger.debug(f"Order side: {'BUY' if is_buy_order else 'SELL'}")
 
                     if is_buy_order:
                         # For BUY orders, SL should be below entry price (but not too far below)
-                        if sl_price >= entry_price > 0:  # SL should be below for long positions
-                            self.logger.warning(f"Invalid SL for BUY order: SL ({sl_price}) >= Entry ({entry_price})")
-                            return False
-                        elif sl_price <= 0:
+                        if sl_price <= 0:
                             self.logger.warning(f"Invalid SL for BUY order: SL ({sl_price}) <= 0")
+                            return False
+                        elif sl_price >= entry_price:
+                            self.logger.warning(f"Invalid SL for BUY order: SL ({sl_price}) >= Entry ({entry_price})")
                             return False
                         elif entry_price > 0 and sl_price < entry_price * 0.01:  # SL not more than 99% below entry
                             self.logger.warning(f"SL too far from entry for BUY order: SL ({sl_price}) vs Entry ({entry_price})")
                             return False
                     else:
                         # For SELL orders, SL should be above entry price (for stop loss on short)
-                        if sl_price <= entry_price and entry_price > 0:  # SL should be above for short positions
-                            self.logger.warning(f"Invalid SL for SELL order: SL ({sl_price}) <= Entry ({entry_price})")
-                            return False
-                        elif sl_price <= 0:
+                        if sl_price <= 0:
                             self.logger.warning(f"Invalid SL for SELL order: SL ({sl_price}) <= 0")
+                            return False
+                        elif sl_price <= entry_price:
+                            self.logger.warning(f"Invalid SL for SELL order: SL ({sl_price}) <= Entry price ({entry_price})")
                             return False
                         elif entry_price > 0 and sl_price > entry_price * 100:  # SL not more than 100x above entry
                             self.logger.warning(f"SL too far from entry for SELL order: SL ({sl_price}) vs Entry ({entry_price})")
@@ -350,6 +373,7 @@ class BrokerExecutionService(ExecutionPort):
                 # Check if take profit price is reasonable
                 if hasattr(order, 'take_profit_price') and order.take_profit_price:
                     tp_price = float(order.take_profit_price.amount) if hasattr(order.take_profit_price, 'amount') else float(order.take_profit_price)
+                    self.logger.debug(f"Take profit price: {tp_price}")
 
                     # For BUY orders: TP should be above entry price
                     # For SELL orders: TP should be below entry price (for short positions)
@@ -357,22 +381,22 @@ class BrokerExecutionService(ExecutionPort):
 
                     if is_buy_order:
                         # For BUY orders, TP should be above entry price (but not too far above)
-                        if tp_price <= entry_price and entry_price > 0:  # TP should be above for long positions
-                            self.logger.warning(f"Invalid TP for BUY order: TP ({tp_price}) <= Entry ({entry_price})")
-                            return False
-                        elif tp_price <= 0:
+                        if tp_price <= 0:
                             self.logger.warning(f"Invalid TP for BUY order: TP ({tp_price}) <= 0")
+                            return False
+                        elif tp_price <= entry_price:
+                            self.logger.warning(f"Invalid TP for BUY order: TP ({tp_price}) <= Entry ({entry_price})")
                             return False
                         elif entry_price > 0 and tp_price > entry_price * 100:  # TP not more than 100x above entry
                             self.logger.warning(f"TP too far from entry for BUY order: TP ({tp_price}) vs Entry ({entry_price})")
                             return False
                     else:
                         # For SELL orders, TP should be below entry price (for profit on short)
-                        if tp_price >= entry_price and entry_price > 0:  # TP should be below for short positions
-                            self.logger.warning(f"Invalid TP for SELL order: TP ({tp_price}) >= Entry ({entry_price})")
-                            return False
-                        elif tp_price <= 0:
+                        if tp_price <= 0:
                             self.logger.warning(f"Invalid TP for SELL order: TP ({tp_price}) <= 0")
+                            return False
+                        elif tp_price >= entry_price:
+                            self.logger.warning(f"Invalid TP for SELL order: TP ({tp_price}) >= Entry ({entry_price})")
                             return False
                         elif entry_price > 0 and tp_price < entry_price * 0.01:  # TP not more than 99% below entry
                             self.logger.warning(f"TP too far from entry for SELL order: TP ({tp_price}) vs Entry ({entry_price})")

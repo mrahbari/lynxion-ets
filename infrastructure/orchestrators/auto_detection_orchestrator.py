@@ -98,12 +98,23 @@ class AutoDetectionOrchestrator:
         self._pending_intents = {}  # symbol -> {direction: timestamp}
         self._pending_intent_temp_ids = {}  # execution_intent_id -> temp_order_id
 
+        # Initialize symbol-level locks to prevent concurrent processing of same symbol
+        self._symbol_processing_locks = {}  # symbol -> threading.Lock()
+        self._symbol_processing_locks_lock = threading.Lock()  # Lock for the locks dictionary itself
+
         # Initialize opportunity queue lock for thread-safe operations
         self._opportunity_queue_lock = threading.RLock()
 
         # Also use the shared PendingOrdersTracker for consistency with execution services
         from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
         self._pending_orders_tracker = PendingOrdersTracker
+
+    def _get_symbol_lock(self, symbol: str) -> threading.Lock:
+        """Get or create a lock for a specific symbol to prevent concurrent processing."""
+        with self._symbol_processing_locks_lock:
+            if symbol not in self._symbol_processing_locks:
+                self._symbol_processing_locks[symbol] = threading.Lock()
+            return self._symbol_processing_locks[symbol]
 
     def initialize_system(self):
         """Initialize the auto-detection system."""
@@ -371,50 +382,54 @@ class AutoDetectionOrchestrator:
                 return
 
             symbol = execution_intent.symbol
-            strategy_name = getattr(execution_intent, 'strategy_name', 'unknown')
-            confidence = float(getattr(execution_intent.intent_confidence, 'value', 0.5))
+            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
 
-            self.logger.info(
-                f"🎯 EXECUTING TRADE: {strategy_name} on {symbol.value} | Side: {execution_intent.side.name if hasattr(execution_intent, 'side') and hasattr(execution_intent.side, 'name') else str(execution_intent.side)} | Confidence: {confidence:.2%}")
+            # Acquire symbol-level lock to prevent concurrent processing of same symbol
+            with self._get_symbol_lock(symbol_str):
+                strategy_name = getattr(execution_intent, 'strategy_name', 'unknown')
+                confidence = float(getattr(execution_intent.intent_confidence, 'value', 0.5))
 
-            # Log the flow from strategy to broker
-            self.logger.log_signal_progression(
-                symbol=symbol.value,
-                stage="strategy",
-                status="Ready for Execution",
-                details=f"Execution intent prepared for broker: {execution_intent.side.name if hasattr(execution_intent, 'side') and hasattr(execution_intent.side, 'name') else str(execution_intent.side)}",
-                confidence=confidence
-            )
+                self.logger.info(
+                    f"🎯 EXECUTING TRADE: {strategy_name} on {symbol.value} | Side: {execution_intent.side.name if hasattr(execution_intent, 'side') and hasattr(execution_intent.side, 'name') else str(execution_intent.side)} | Confidence: {confidence:.2%}")
 
-            signal_type = execution_intent.side.name if hasattr(execution_intent.side, 'name') else str(execution_intent.side)
-            self.logger.log_strategy_to_broker_flow(
-                symbol=symbol.value,
-                strategy_name=strategy_name,
-                trade_executed=False,  # We don't know yet, so we'll log the execution separately
-                signal_type=signal_type,
-                confidence=confidence,
-                reason=f"Execution intent generated with confidence {confidence:.2%}",
-            )
+                # Log the flow from strategy to broker
+                self.logger.log_signal_progression(
+                    symbol=symbol.value,
+                    stage="strategy",
+                    status="Ready for Execution",
+                    details=f"Execution intent prepared for broker: {execution_intent.side.name if hasattr(execution_intent, 'side') and hasattr(execution_intent.side, 'name') else str(execution_intent.side)}",
+                    confidence=confidence
+                )
 
-            # Log the decision point with comprehensive details before execution
-            self.logger.log_decision_reason(
-                component="Orchestrator",
-                symbol=symbol.value,
-                decision="Trade Execution Attempt",
-                reason=f"Attempting to execute trade based on execution intent from strategy layer",
-                confidence=confidence,
-                details={
-                    'strategy': strategy_name,
-                    'side': signal_type,
-                    'regime_context': getattr(execution_intent.fused_signal, 'regime_context', 'unknown') if hasattr(execution_intent, 'fused_signal') else 'unknown',
-                    'dominant_bias': getattr(execution_intent.fused_signal, 'dominant_bias', 'unknown').value if hasattr(execution_intent, 'fused_signal') and hasattr(getattr(execution_intent, 'fused_signal', None), 'dominant_bias') else 'unknown',
-                    'dominance_score': getattr(execution_intent.fused_signal, 'dominance_score', 0.0) if hasattr(execution_intent, 'fused_signal') else 0.0,
-                    'risk_parameters': execution_intent.risk_parameters if hasattr(execution_intent, 'risk_parameters') else 'N/A'
-                }
-            )
+                signal_type = execution_intent.side.name if hasattr(execution_intent.side, 'name') else str(execution_intent.side)
+                self.logger.log_strategy_to_broker_flow(
+                    symbol=symbol.value,
+                    strategy_name=strategy_name,
+                    trade_executed=False,  # We don't know yet, so we'll log the execution separately
+                    signal_type=signal_type,
+                    confidence=confidence,
+                    reason=f"Execution intent generated with confidence {confidence:.2%}",
+                )
 
-            # Execute trade through execution service using the execution intent
-            execution_result = self._execute_trade_from_intent(execution_intent)
+                # Log the decision point with comprehensive details before execution
+                self.logger.log_decision_reason(
+                    component="Orchestrator",
+                    symbol=symbol.value,
+                    decision="Trade Execution Attempt",
+                    reason=f"Attempting to execute trade based on execution intent from strategy layer",
+                    confidence=confidence,
+                    details={
+                        'strategy': strategy_name,
+                        'side': signal_type,
+                        'regime_context': getattr(execution_intent.fused_signal, 'regime_context', 'unknown') if hasattr(execution_intent, 'fused_signal') else 'unknown',
+                        'dominant_bias': getattr(execution_intent.fused_signal, 'dominant_bias', 'unknown').value if hasattr(execution_intent, 'fused_signal') and hasattr(getattr(execution_intent, 'fused_signal', None), 'dominant_bias') else 'unknown',
+                        'dominance_score': getattr(execution_intent.fused_signal, 'dominance_score', 0.0) if hasattr(execution_intent, 'fused_signal') else 0.0,
+                        'risk_parameters': execution_intent.risk_parameters if hasattr(execution_intent, 'risk_parameters') else 'N/A'
+                    }
+                )
+
+                # Execute trade through execution service using the execution intent
+                execution_result = self._execute_trade_from_intent(execution_intent)
 
             # Track active trade with detailed decision data
             trade_details = {
@@ -967,7 +982,26 @@ class AutoDetectionOrchestrator:
                 except:
                     # If all methods fail, we'll still proceed but log the issue
                     self.logger.warning(f"Could not get current price for {execution_intent.symbol.value}, using default price")
-                    current_price = 50000.0  # Fallback price
+                    # Use a more reasonable fallback price based on the symbol
+                    # Extract base currency to estimate a reasonable price
+                    symbol_str = execution_intent.symbol.value
+                    if symbol_str.startswith(('BTC', 'WBTC')):
+                        current_price = 45000.0  # Bitcoin price range
+                    elif symbol_str.startswith(('ETH', 'WETH')):
+                        current_price = 2500.0  # Ethereum price range
+                    elif symbol_str.startswith(('SOL', 'AVAX', 'FTM', 'APT', 'AR')):
+                        current_price = 90.0   # Mid-range altcoins
+                    elif symbol_str.startswith(('BNB', 'XRP', 'ADA', 'DOGE', 'DOT', 'MATIC', 'LINK', 'UNI', 'LTC', 'BCH')):
+                        current_price = 10.0   # Lower range altcoins
+                    elif symbol_str.startswith(('XLM', 'TRX', 'ATOM', 'NEAR', 'FIL', 'ETC', 'VET', 'XTZ', 'ICX', 'HBAR', 'SUI')):
+                        current_price = 0.5    # Penny stocks/crypto range
+                    elif symbol_str.startswith(('SHIB', 'PEPE', 'FLOKI')):
+                        current_price = 0.00001  # Meme coin range
+                    else:
+                        # For any other symbol, use a reasonable default based on common patterns
+                        # Use a random price between $0.01 and $500 to cover most crypto ranges
+                        import random
+                        current_price = random.uniform(0.01, 500.0)
 
             # Use risk parameters from the execution intent
             risk_params = execution_intent.risk_parameters

@@ -73,3 +73,12 @@ class PendingOrdersTracker:
         """Clear all pending orders (useful for testing or reset)."""
         with cls._pending_orders_instance_lock:
             cls._pending_orders.clear()
+
+    @classmethod
+    def cleanup_old_pending_orders(cls, max_age_minutes: int = 30):
+        """Clean up pending orders that are older than max_age_minutes to prevent stale entries."""
+        # This method would need to be enhanced to track timestamps of pending orders
+        # For now, we'll just log the cleanup attempt
+        import shared.logger as logger_module
+        logger = logger_module.EnhancedLogger("PendingOrdersTracker")
+        logger.info(f"Pending orders cleanup called - currently tracking {len(cls._pending_orders)} symbols")

@@ -47,6 +47,97 @@ class MockDataProviderAdapter(BaseDataProviderAdapter):
             "ETHUSDT": 2567.89,
             "BNBUSDT": 312.56,
             "SOLUSDT": 98.76,
+            "XRPUSDT": 0.55,
+            "ADAUSDT": 0.42,
+            "DOGEUSDT": 0.08,
+            "AVAXUSDT": 32.45,
+            "MATICUSDT": 0.68,
+            "DOTUSDT": 5.89,
+            "LTCUSDT": 72.34,
+            "LINKUSDT": 14.56,
+            "XLMUSDT": 0.15,
+            "TRXUSDT": 0.11,
+            "UNIUSDT": 6.78,
+            "ATOMUSDT": 7.89,
+            "ETCUSDT": 23.45,
+            "BCHUSDT": 512.34,
+            "NEOUSDT": 12.34,
+            "XTZUSDT": 0.89,
+            "EOSUSDT": 0.67,
+            "XMRUSDT": 156.78,
+            "ZECUSDT": 31.23,
+            "DASHUSDT": 45.67,
+            "ZILUSDT": 0.02,
+            "VETUSDT": 0.005,
+            "ONTUSDT": 0.23,
+            "QTUMUSDT": 2.34,
+            "IOTAUSDT": 0.18,
+            "THETAUSDT": 1.45,
+            "ALGOUSDT": 0.12,
+            "ZRXUSDT": 0.34,
+            "MKRUSDT": 1234.56,
+            "COMPUSDT": 189.78,
+            "BATUSDT": 0.23,
+            "XEMUSDT": 0.05,
+            "OMGUSDT": 1.67,
+            "WAVESUSDT": 2.34,
+            "ICXUSDT": 0.23,
+            "STEEMUSDT": 0.98,
+            "STORJUSDT": 0.67,
+            "BTGUSDT": 23.45,
+            "ADAUSDT": 0.42,
+            "NEOUSDT": 12.34,
+            "XLMUSDT": 0.15,
+            "TRXUSDT": 0.11,
+            "ETCUSDT": 23.45,
+            "ZECUSDT": 31.23,
+            "DASHUSDT": 45.67,
+            "XRPUSDT": 0.55,
+            "DOGEUSDT": 0.08,
+            "AVAXUSDT": 32.45,
+            "MATICUSDT": 0.68,
+            "DOTUSDT": 5.89,
+            "LINKUSDT": 14.56,
+            "BCHUSDT": 512.34,
+            "ZILUSDT": 0.02,
+            "VETUSDT": 0.005,
+            "QTUMUSDT": 2.34,
+            "IOTAUSDT": 0.18,
+            "HBARUSDT": 0.05,
+            "SUIUSDT": 2.34,
+            "TAOUSDT": 1.23,
+            "GIGGLEUSDT": 0.01,
+            "BIFIUSDT": 1234.56,
+            "PAXGUSDT": 1890.12,
+            "WBTCUSDT": 45000.78,
+            "YFIUSDT": 15432.98,
+            "DCRUSDT": 23.45,
+            "HOTUSDT": 0.001,
+            "ZILUSDT": 0.02,
+            "ETCUSDT": 23.45,
+            "DOGEUSDT": 0.08,
+            "AVAXUSDT": 32.45,
+            "MATICUSDT": 0.68,
+            "DOTUSDT": 5.89,
+            "LINKUSDT": 14.56,
+            "BCHUSDT": 512.34,
+            "XLMUSDT": 0.15,
+            "TRXUSDT": 0.11,
+            "XMRUSDT": 156.78,
+            "HBARUSDT": 0.05,
+            "SUIUSDT": 2.34,
+            "TAOUSDT": 1.23,
+            "GIGGLEUSDT": 0.01,
+            "BIFIUSDT": 1234.56,
+            "PAXGUSDT": 1890.12,
+            "WBTCUSDT": 45000.78,
+            "YFIUSDT": 15432.98,
+            "DCRUSDT": 23.45,
+            "HOTUSDT": 0.001,
+            "NEOUSDT": 12.34,
+            "LTCUSDT": 72.34,
+            "BNBUSDT": 312.56,
+            "SOLUSDT": 98.76
         }
         self.mock_historical = {
             "BTCUSDT": [
@@ -58,13 +149,197 @@ class MockDataProviderAdapter(BaseDataProviderAdapter):
                 {"timestamp": (datetime.now().timestamp() - i * 60), "open": 2500 + i * 5,
                  "high": 2505 + i * 5, "low": 2495 + i * 5, "close": 2502 + i * 5, "volume": 500 + i * 2}
                 for i in range(100)
+            ],
+            "SOLUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 98 + i * 0.1,
+                 "high": 98.5 + i * 0.1, "low": 97.5 + i * 0.1, "close": 98.2 + i * 0.1, "volume": 1000 + i * 10}
+                for i in range(100)
+            ],
+            "XRPUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 0.5 + i * 0.001,
+                 "high": 0.505 + i * 0.001, "low": 0.495 + i * 0.001, "close": 0.502 + i * 0.001, "volume": 2000 + i * 20}
+                for i in range(100)
+            ],
+            "ADAUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 0.4 + i * 0.0005,
+                 "high": 0.405 + i * 0.0005, "low": 0.395 + i * 0.0005, "close": 0.402 + i * 0.0005, "volume": 1500 + i * 15}
+                for i in range(100)
+            ],
+            "DOGEUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 0.08 + i * 0.0001,
+                 "high": 0.081 + i * 0.0001, "low": 0.079 + i * 0.0001, "close": 0.0805 + i * 0.0001, "volume": 5000 + i * 50}
+                for i in range(100)
+            ],
+            "AVAXUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 32 + i * 0.05,
+                 "high": 32.5 + i * 0.05, "low": 31.5 + i * 0.05, "close": 32.2 + i * 0.05, "volume": 800 + i * 8}
+                for i in range(100)
+            ],
+            "MATICUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 0.65 + i * 0.001,
+                 "high": 0.66 + i * 0.001, "low": 0.64 + i * 0.001, "close": 0.655 + i * 0.001, "volume": 1200 + i * 12}
+                for i in range(100)
+            ],
+            "DOTUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 5.8 + i * 0.01,
+                 "high": 5.9 + i * 0.01, "low": 5.7 + i * 0.01, "close": 5.85 + i * 0.01, "volume": 600 + i * 6}
+                for i in range(100)
+            ],
+            "LTCUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 70 + i * 0.1,
+                 "high": 71 + i * 0.1, "low": 69 + i * 0.1, "close": 70.5 + i * 0.1, "volume": 300 + i * 3}
+                for i in range(100)
+            ],
+            "LINKUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 14 + i * 0.02,
+                 "high": 14.5 + i * 0.02, "low": 13.5 + i * 0.02, "close": 14.2 + i * 0.02, "volume": 700 + i * 7}
+                for i in range(100)
+            ],
+            "XLMUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 0.14 + i * 0.0002,
+                 "high": 0.15 + i * 0.0002, "low": 0.13 + i * 0.0002, "close": 0.145 + i * 0.0002, "volume": 3000 + i * 30}
+                for i in range(100)
+            ],
+            "TRXUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 0.10 + i * 0.0001,
+                 "high": 0.11 + i * 0.0001, "low": 0.09 + i * 0.0001, "close": 0.105 + i * 0.0001, "volume": 4000 + i * 40}
+                for i in range(100)
+            ],
+            "ETCUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 23 + i * 0.05,
+                 "high": 24 + i * 0.05, "low": 22 + i * 0.05, "close": 23.5 + i * 0.05, "volume": 400 + i * 4}
+                for i in range(100)
+            ],
+            "BNBUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 310 + i * 0.1,
+                 "high": 315 + i * 0.1, "low": 305 + i * 0.1, "close": 312 + i * 0.1, "volume": 200 + i * 2}
+                for i in range(100)
+            ],
+            "NEOUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 12 + i * 0.02,
+                 "high": 12.5 + i * 0.02, "low": 11.5 + i * 0.02, "close": 12.2 + i * 0.02, "volume": 500 + i * 5}
+                for i in range(100)
+            ],
+            "XMRUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 155 + i * 0.2,
+                 "high": 160 + i * 0.2, "low": 150 + i * 0.2, "close": 156 + i * 0.2, "volume": 150 + i * 1}
+                for i in range(100)
+            ],
+            "HBARUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 0.05 + i * 0.0001,
+                 "high": 0.06 + i * 0.0001, "low": 0.04 + i * 0.0001, "close": 0.055 + i * 0.0001, "volume": 2500 + i * 25}
+                for i in range(100)
+            ],
+            "SUIUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 2.3 + i * 0.005,
+                 "high": 2.4 + i * 0.005, "low": 2.2 + i * 0.005, "close": 2.35 + i * 0.005, "volume": 900 + i * 9}
+                for i in range(100)
+            ],
+            "TAOUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 1.2 + i * 0.002,
+                 "high": 1.3 + i * 0.002, "low": 1.1 + i * 0.002, "close": 1.25 + i * 0.002, "volume": 100 + i * 1}
+                for i in range(100)
+            ],
+            "GIGGLEUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 0.01 + i * 0.00005,
+                 "high": 0.02 + i * 0.00005, "low": 0.005 + i * 0.00005, "close": 0.012 + i * 0.00005, "volume": 10000 + i * 100}
+                for i in range(100)
+            ],
+            "BIFIUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 1200 + i * 2,
+                 "high": 1300 + i * 2, "low": 1100 + i * 2, "close": 1250 + i * 2, "volume": 50 + i * 0.5}
+                for i in range(100)
+            ],
+            "PAXGUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 1800 + i * 5,
+                 "high": 1900 + i * 5, "low": 1700 + i * 5, "close": 1850 + i * 5, "volume": 20 + i * 0.2}
+                for i in range(100)
+            ],
+            "WBTCUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 44000 + i * 50,
+                 "high": 46000 + i * 50, "low": 42000 + i * 50, "close": 45000 + i * 50, "volume": 10 + i * 0.1}
+                for i in range(100)
+            ],
+            "YFIUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 15000 + i * 20,
+                 "high": 16000 + i * 20, "low": 14000 + i * 20, "close": 15500 + i * 20, "volume": 5 + i * 0.05}
+                for i in range(100)
+            ],
+            "DCRUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 23 + i * 0.05,
+                 "high": 25 + i * 0.05, "low": 21 + i * 0.05, "close": 24 + i * 0.05, "volume": 100 + i * 1}
+                for i in range(100)
+            ],
+            "HOTUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 0.001 + i * 0.00001,
+                 "high": 0.002 + i * 0.00001, "low": 0.0005 + i * 0.00001, "close": 0.0012 + i * 0.00001, "volume": 50000 + i * 500}
+                for i in range(100)
+            ],
+            "ZECUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 30 + i * 0.05,
+                 "high": 32 + i * 0.05, "low": 28 + i * 0.05, "close": 31 + i * 0.05, "volume": 200 + i * 2}
+                for i in range(100)
+            ],
+            "DASHUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 45 + i * 0.08,
+                 "high": 47 + i * 0.08, "low": 43 + i * 0.08, "close": 46 + i * 0.08, "volume": 150 + i * 1.5}
+                for i in range(100)
+            ],
+            "ZILUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 0.02 + i * 0.0001,
+                 "high": 0.03 + i * 0.0001, "low": 0.01 + i * 0.0001, "close": 0.022 + i * 0.0001, "volume": 8000 + i * 80}
+                for i in range(100)
+            ],
+            "VETUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 0.005 + i * 0.00002,
+                 "high": 0.006 + i * 0.00002, "low": 0.004 + i * 0.00002, "close": 0.0052 + i * 0.00002, "volume": 15000 + i * 150}
+                for i in range(100)
+            ],
+            "QTUMUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 2.3 + i * 0.005,
+                 "high": 2.5 + i * 0.005, "low": 2.1 + i * 0.005, "close": 2.4 + i * 0.005, "volume": 300 + i * 3}
+                for i in range(100)
+            ],
+            "IOTAUSDT": [
+                {"timestamp": (datetime.now().timestamp() - i * 60), "open": 0.18 + i * 0.0003,
+                 "high": 0.20 + i * 0.0003, "low": 0.16 + i * 0.0003, "close": 0.19 + i * 0.0003, "volume": 2000 + i * 20}
+                for i in range(100)
             ]
         }
 
     def get_current_price(self, symbol: Symbol) -> Optional[float]:
         """Get current price for a symbol"""
-        price = self.mock_prices.get(symbol.value)
-        logger.info(f"Mock data provider: Current price for {symbol.value}: {price}")
+        symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+        price = self.mock_prices.get(symbol_str)
+
+        # If symbol not found in mock prices, generate a reasonable default price
+        # based on the symbol name to avoid the $50000.00 default issue
+        if price is None:
+            # Generate a reasonable price based on common cryptocurrency price ranges
+            # Use the base currency to determine typical price range
+            base_currency = symbol_str.replace('USDT', '').replace('USDC', '').replace('BUSD', '')
+
+            # Common cryptocurrencies and their typical price ranges
+            if base_currency in ['BTC', 'WBTC']:
+                price = 45000.0 + random.uniform(-1000, 1000)  # Bitcoin range
+            elif base_currency in ['ETH', 'WETH']:
+                price = 2500.0 + random.uniform(-100, 100)    # Ethereum range
+            elif base_currency in ['SOL', 'AVAX', 'FTM', 'APT', 'AR']:
+                price = 90.0 + random.uniform(-10, 10)        # Mid-range altcoins
+            elif base_currency in ['BNB', 'XRP', 'ADA', 'DOGE', 'DOT', 'MATIC', 'LINK', 'UNI', 'LTC', 'BCH']:
+                price = 10.0 + random.uniform(-5, 5)          # Lower range altcoins
+            elif base_currency in ['XLM', 'TRX', 'ATOM', 'NEAR', 'FIL', 'ETC', 'VET', 'XTZ', 'ICX', 'HBAR', 'SUI', 'APT']:
+                price = 0.5 + random.uniform(-0.2, 0.2)       # Penny stocks/crypto range
+            elif base_currency in ['SHIB', 'PEPE', 'DOGE', 'FLOKI', 'SAFEMOON']:
+                price = 0.00001 + random.uniform(-0.000005, 0.000005)  # Meme coin range
+            elif base_currency in ['XMR', 'ZEC', 'DASH', 'DCR']:
+                price = 30.0 + random.uniform(-10, 10)        # Privacy coins range
+            else:
+                # For any other symbol, use a reasonable default based on common patterns
+                # Use a random price between $0.01 and $500 to cover most crypto ranges
+                price = random.uniform(0.01, 500.0)
+
+        logger.info(f"Mock data provider: Current price for {symbol_str}: {price}")
         return price
 
     def get_historical_data(self, symbol: Symbol, period: str, timeframe: str = '1m') -> List[Dict[str, Any]]:

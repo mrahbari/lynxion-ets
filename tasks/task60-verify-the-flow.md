@@ -1,3 +1,4 @@
+First, Always you must cover the rules and requirements that written in ./tasks/task0-force-to-cover.md
 
 ### **Task Description – Architecture & Flow Correction**
 

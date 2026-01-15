@@ -417,7 +417,8 @@ class MultiBrokerExecutionService(ExecutionPort):
             # Perform final validation to ensure the order parameters are reasonable before sending to broker
             if not self._validate_order_parameters_before_broker(order):
                 self.logger.error(f"❌ ORDER REJECTED: Order parameters are invalid or unreasonable: {order}")
-                raise ValueError(f"Order parameters failed final validation: {order}")
+                # Return None instead of raising an exception to prevent system crashes
+                return None
 
             self.logger.info(f"🎯 EXECUTING ORDER ON {best_exchange.upper()}: {order}")
 
@@ -428,6 +429,20 @@ class MultiBrokerExecutionService(ExecutionPort):
                 self._add_pending_order(order.symbol, intended_position_side, order_id_temp)
 
             try:
+                # Check if broker is connected before attempting to place order
+                if hasattr(broker, 'connected'):
+                    if not broker.connected:
+                        self.logger.error(f"❌ BROKER NOT CONNECTED: Cannot place order on {best_exchange.upper()}")
+                        return None
+                elif hasattr(broker, 'connect') and callable(getattr(broker, 'connect')):
+                    # Try to connect if not connected
+                    try:
+                        if not getattr(broker, 'connected', False):
+                            broker.connect()
+                    except Exception as conn_error:
+                        self.logger.error(f"❌ FAILED TO CONNECT TO BROKER {best_exchange.upper()}: {conn_error}")
+                        return None
+
                 order_id = broker.place_order(order)
 
                 # Check if order_id is valid before proceeding
@@ -445,9 +460,14 @@ class MultiBrokerExecutionService(ExecutionPort):
                 self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {best_exchange.upper()}: {e}")
                 raise
             finally:
-                # Remove from pending orders after attempting to place
+                # Remove from pending orders after attempting to place (whether successful or failed)
+                # This is important to prevent stuck pending orders when order placement fails
                 if prevent_same_direction and intended_position_side and order_id_temp:
-                    self._remove_pending_order(order.symbol, order_id_temp)
+                    try:
+                        self._remove_pending_order(order.symbol, order_id_temp)
+                    except Exception as cleanup_error:
+                        self.logger.error(f"❌ ERROR DURING PENDING ORDER CLEANUP: {cleanup_error}")
+                        # Don't raise the exception here as it would mask the original error
         else:
             raise Exception(f"Symbol {symbol_str} not available on any configured exchange")
 

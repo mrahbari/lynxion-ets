@@ -45,6 +45,8 @@ class RiskAdjustmentFactors:
     regime_factor: float = 1.0
     market_condition_factor: float = 1.0
     position_size_multiplier: float = 1.0
+    # These are multipliers for base risk percentages (not raw percentages)
+    # Default 1.0 means use base percentage without adjustment
     stop_loss_multiplier: float = 1.0
     take_profit_multiplier: float = 1.0
 
@@ -147,7 +149,35 @@ class AdvancedRiskManagementService:
         
         # Calculate position size multiplier based on confidence
         factors.position_size_multiplier = min(2.0, max(0.5, float(fused_signal.confidence.value) * 2))
-        
+
+        # Calculate stop loss and take profit multipliers based on market conditions and signal strength
+        # These multipliers will be applied to base percentages to determine actual SL/TP percentages
+        signal_strength = abs(fused_signal.direction) if hasattr(fused_signal, 'direction') else 0.5
+        confidence_level = float(fused_signal.confidence.value) if fused_signal.confidence else 0.5
+
+        # For stop loss multiplier: higher confidence and stronger signals may warrant tighter stops
+        # Lower confidence and weaker signals may warrant wider stops to avoid premature exits
+        if confidence_level > 0.7 and signal_strength > 0.5:
+            # High confidence strong signal: tighter stop loss (smaller multiplier)
+            factors.stop_loss_multiplier = max(0.5, min(1.5, 1.0 - (confidence_level - 0.5) * 0.3))
+        elif confidence_level < 0.3 or signal_strength < 0.2:
+            # Low confidence weak signal: wider stop loss (larger multiplier)
+            factors.stop_loss_multiplier = min(2.0, 1.0 + (1.0 - confidence_level) * 0.5)
+        else:
+            # Medium confidence: standard stop loss
+            factors.stop_loss_multiplier = 1.0
+
+        # For take profit multiplier: higher confidence may warrant more aggressive targets
+        if confidence_level > 0.7 and signal_strength > 0.5:
+            # High confidence strong signal: more aggressive take profit (larger multiplier)
+            factors.take_profit_multiplier = min(2.0, 1.0 + (confidence_level - 0.5) * 0.4)
+        elif confidence_level < 0.3 or signal_strength < 0.2:
+            # Low confidence weak signal: more conservative take profit (smaller multiplier)
+            factors.take_profit_multiplier = max(0.5, 1.0 - (1.0 - confidence_level) * 0.3)
+        else:
+            # Medium confidence: standard take profit
+            factors.take_profit_multiplier = 1.0
+
         return factors
 
     def _calculate_volatility_factor(self, market_data: pd.DataFrame) -> float:

@@ -17,8 +17,8 @@ def main():
     from .liquidity import LiquidityWatcher
     from .funding_rate import FundingRateWatcher
     from .cmc_screener import CMCScreener
-    from .historical_candle_watcher import HistoricalCandleWatcherAdapter
-    from .tick_watcher import TickWatcherAdapter
+    from .historical_candle import HistoricalCandleWatcherAdapter
+    from .tick import TickWatcherAdapter
 
     # Create registry
     registry = WatcherRegistry()

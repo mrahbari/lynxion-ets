@@ -13,7 +13,13 @@ class AnomalyMLWatcher(BaseWatcher):
     """ML-based Anomaly Detection Watcher - detects unusual market patterns, returns raw market observations"""
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 50, contamination: float = 0.1):
-        super().__init__(name, symbol, broker_service, target_broker)
+        # Convert symbol string to Symbol object if needed
+        symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
+        super().__init__(name, symbol_obj)
+
+        # Store broker service and other parameters separately
+        self.broker_service = broker_service
+        self.target_broker = target_broker
 
         # Configuration from environment with defaults
         self.enabled = os.getenv('ANOMALY_ML_WATCHER_ENABLED', 'true').lower() == 'true'
@@ -118,6 +124,10 @@ class AnomalyMLWatcher(BaseWatcher):
         )
 
         return observation
+
+    def analyze(self, symbol: Symbol) -> MarketObservation:
+        """Analyze market conditions and return a raw market observation"""
+        return self._analyze_impl(symbol)
 
     def calculate_features(self) -> List[float]:
         """Calculate features for anomaly detection"""
