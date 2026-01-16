@@ -13,10 +13,14 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import json
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 # Add project root to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from application.configs.symbol_config import get_symbols
+from application.symbol_management.centralized_symbol_manager import get_unified_symbols, get_formatted_symbol_for_exchange
 from application.configs.sync_settings import settings
 from application.data_sync.sync_manager import SyncManager
 from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
@@ -25,14 +29,13 @@ from shared.logger import EnhancedLogger
 
 
 def load_symbols_from_env() -> List[str]:
-    """Load symbols from environment variable."""
-    symbols_str = os.getenv("WFO_COINS", "BTCUSDT,ETHUSDT")
-    return [s.strip() for s in symbols_str.split(',') if s.strip()]
+    """Load symbols from the centralized symbol manager."""
+    return get_unified_symbols()
 
 
 def format_symbol_for_exchange(symbol: str) -> str:
     """Format symbol for exchange API (e.g., BTC-USDT to BTCUSDT)."""
-    return symbol.replace('-', '')
+    return get_formatted_symbol_for_exchange(symbol)
 
 
 async def run_history_download(
@@ -109,11 +112,11 @@ async def run_history_download(
                         reader = csv.DictReader(f)
                         for row in reader:
                             try:
-                                timestamp = int(row['timestamp'])
+                                timestamp = int(float(row['timestamp']))  # Ensure timestamp is converted to int
                                 # Only count candles within the requested date range
                                 if int(actual_start.timestamp()) <= timestamp <= int(end_date.timestamp()):
                                     one_minute_count += 1
-                            except (ValueError, KeyError):
+                            except (ValueError, KeyError, TypeError):
                                 continue  # Skip invalid rows
 
                 symbol_results['1m'] = {
@@ -144,11 +147,11 @@ async def run_history_download(
                                 reader = csv.DictReader(f)
                                 for row in reader:
                                     try:
-                                        timestamp = int(row['timestamp'])
+                                        timestamp = int(float(row['timestamp']))  # Ensure timestamp is converted to int
                                         # Only count candles within the requested date range
                                         if int(actual_start.timestamp()) <= timestamp <= int(end_date.timestamp()):
                                             candles_count += 1
-                                    except (ValueError, KeyError):
+                                    except (ValueError, KeyError, TypeError):
                                         continue  # Skip invalid rows
 
                         symbol_results[timeframe] = {

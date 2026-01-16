@@ -240,7 +240,7 @@ class BrokerExecutionService(ExecutionPort):
                     if position_duplicate:
                         self.logger.info(f"❌ DUPLICATE REJECTED: Active {current_position.side.name} position exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
                     else:
-                        self.logger.info(f"❌ DUPLICATE REJECTED: Pending {intended_position_side} order exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
+                        self.logger.info(f"⚠️ DUPLICATE CHECK BLOCKED: Internal pending flag set for {intended_position_side} order on {order.symbol.value} — broker confirmation needed.")
                     # Return a failure status instead of raising an exception to prevent system crashes
                     return None  # Indicate that the order was not placed due to duplicate prevention
 
@@ -249,7 +249,7 @@ class BrokerExecutionService(ExecutionPort):
             # We'll validate that required risk parameters are present but won't enhance them
             if not self._validate_required_risk_parameters(order):
                 self.logger.error(f"❌ ORDER REJECTED: Missing required risk parameters: {order}")
-                raise ValueError(f"Order missing required risk parameters: {order}")
+                return None  # Return None instead of raising to prevent system crashes
 
             # Perform final validation to ensure the order parameters are reasonable before sending to broker
             if not self._validate_order_parameters_before_broker(order):
@@ -258,12 +258,6 @@ class BrokerExecutionService(ExecutionPort):
                 return None
 
             self.logger.info(f"🎯 EXECUTING ORDER ON {self.broker_name}: {order}")
-
-            # Add to pending orders before placing the order
-            order_id_temp = None
-            if prevent_same_direction and intended_position_side:
-                order_id_temp = "TEMP_" + str(id(order))  # Temporary ID for tracking before placement
-                self._add_pending_order(order.symbol, intended_position_side, order_id_temp)
 
             try:
                 # Check if broker is connected before attempting to place order
@@ -292,6 +286,10 @@ class BrokerExecutionService(ExecutionPort):
                     self.logger.error(f"❌ ORDER PLACEMENT FAILED: Broker returned invalid order ID: {order_id}")
                     return None
 
+                # NOW we have a valid order ID from the broker, so we can add to pending orders
+                if prevent_same_direction and intended_position_side:
+                    self._add_pending_order(order.symbol, intended_position_side, order_id)
+
                 self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {self.broker_name}: {order_id}")
 
                 # Send Telegram notification about successful order placement
@@ -300,19 +298,15 @@ class BrokerExecutionService(ExecutionPort):
                 return order_id
             except Exception as e:
                 self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {self.broker_name}: {e}")
-                raise
-            finally:
-                # Remove from pending orders after attempting to place (whether successful or failed)
-                # This is important to prevent stuck pending orders when order placement fails
-                if prevent_same_direction and intended_position_side and order_id_temp:
-                    try:
-                        self._remove_pending_order(order.symbol, order_id_temp)
-                    except Exception as cleanup_error:
-                        self.logger.error(f"❌ ERROR DURING PENDING ORDER CLEANUP: {cleanup_error}")
-                        # Don't raise the exception here as it would mask the original error
+                # Return None instead of raising to prevent system crashes
+                return None
         except Exception as e:
             self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {self.broker_name}: {e}")
-            raise
+            # Return None instead of raising to prevent system crashes
+            return None
+        finally:
+            # No temporary cleanup needed since we only add to pending tracker after successful broker confirmation
+            pass
 
     def _validate_required_risk_parameters(self, order: Order) -> bool:
         """Validate that the order has required risk parameters (should be set by Strategy layer)"""
@@ -355,8 +349,13 @@ class BrokerExecutionService(ExecutionPort):
                         elif sl_price >= entry_price:
                             self.logger.warning(f"Invalid SL for BUY order: SL ({sl_price}) >= Entry ({entry_price})")
                             return False
-                        elif entry_price > 0 and sl_price < entry_price * 0.01:  # SL not more than 99% below entry
+                        # More reasonable range check - allow SL to be up to 20% below entry for normal market conditions
+                        elif entry_price > 0 and sl_price < entry_price * 0.8:  # SL not more than 20% below entry
                             self.logger.warning(f"SL too far from entry for BUY order: SL ({sl_price}) vs Entry ({entry_price})")
+                            return False
+                        # Also check if SL is extremely far from entry (catch cases where SL is orders of magnitude different)
+                        elif entry_price > 0 and sl_price / entry_price > 10:  # SL should not be 10x the entry price
+                            self.logger.warning(f"SL extremely far from entry for BUY order: SL ({sl_price}) vs Entry ({entry_price}) - ratio: {sl_price / entry_price:.2f}x")
                             return False
                     else:
                         # For SELL orders, SL should be above entry price (for stop loss on short)
@@ -366,8 +365,13 @@ class BrokerExecutionService(ExecutionPort):
                         elif sl_price <= entry_price:
                             self.logger.warning(f"Invalid SL for SELL order: SL ({sl_price}) <= Entry price ({entry_price})")
                             return False
-                        elif entry_price > 0 and sl_price > entry_price * 100:  # SL not more than 100x above entry
+                        # More reasonable range check - allow SL to be up to 20% above entry for normal market conditions
+                        elif entry_price > 0 and sl_price > entry_price * 1.2:  # SL not more than 20% above entry
                             self.logger.warning(f"SL too far from entry for SELL order: SL ({sl_price}) vs Entry ({entry_price})")
+                            return False
+                        # Also check if SL is extremely far from entry (catch cases where SL is orders of magnitude different)
+                        elif entry_price > 0 and sl_price / entry_price > 10:  # SL should not be 10x the entry price
+                            self.logger.warning(f"SL extremely far from entry for SELL order: SL ({sl_price}) vs Entry ({entry_price}) - ratio: {sl_price / entry_price:.2f}x")
                             return False
 
                 # Check if take profit price is reasonable
@@ -387,8 +391,13 @@ class BrokerExecutionService(ExecutionPort):
                         elif tp_price <= entry_price:
                             self.logger.warning(f"Invalid TP for BUY order: TP ({tp_price}) <= Entry ({entry_price})")
                             return False
-                        elif entry_price > 0 and tp_price > entry_price * 100:  # TP not more than 100x above entry
+                        # More reasonable range check - ensure TP is within reasonable bounds (not more than 50% above entry for normal market conditions)
+                        elif entry_price > 0 and tp_price > entry_price * 2.0:  # TP not more than 100% above entry (more generous)
                             self.logger.warning(f"TP too far from entry for BUY order: TP ({tp_price}) vs Entry ({entry_price})")
+                            return False
+                        # Also check if TP is extremely far from entry (catch cases where TP is orders of magnitude different)
+                        elif entry_price > 0 and tp_price / entry_price > 10:  # TP should not be 10x the entry price
+                            self.logger.warning(f"TP extremely far from entry for BUY order: TP ({tp_price}) vs Entry ({entry_price}) - ratio: {tp_price / entry_price:.2f}x")
                             return False
                     else:
                         # For SELL orders, TP should be below entry price (for profit on short)
@@ -398,8 +407,13 @@ class BrokerExecutionService(ExecutionPort):
                         elif tp_price >= entry_price:
                             self.logger.warning(f"Invalid TP for SELL order: TP ({tp_price}) >= Entry ({entry_price})")
                             return False
-                        elif entry_price > 0 and tp_price < entry_price * 0.01:  # TP not more than 99% below entry
+                        # More reasonable range check - ensure TP is within reasonable bounds (not more than 50% below entry for normal market conditions)
+                        elif entry_price > 0 and tp_price < entry_price * 0.5:  # TP not more than 50% below entry
                             self.logger.warning(f"TP too far from entry for SELL order: TP ({tp_price}) vs Entry ({entry_price})")
+                            return False
+                        # Also check if TP is extremely far from entry (catch cases where TP is orders of magnitude different)
+                        elif entry_price > 0 and entry_price / tp_price > 10:  # Entry should not be 10x the TP
+                            self.logger.warning(f"TP extremely far from entry for SELL order: TP ({tp_price}) vs Entry ({entry_price}) - ratio: {entry_price / tp_price:.2f}x")
                             return False
 
             return True

@@ -98,13 +98,22 @@ class BrokerRegistry:
         with self._lock:
             # Close connections before clearing to free up resources
             for service in self._broker_services.values():
-                if hasattr(service, 'broker') and hasattr(service.broker, 'disconnect'):
-                    try:
-                        service.broker.disconnect()
-                    except Exception as e:
-                        import shared.logger as logger_module
-                        logger = logger_module.EnhancedLogger("BrokerRegistry")
-                        logger.warning(f"Error disconnecting broker service: {e}")
+                if hasattr(service, 'broker'):
+                    if hasattr(service.broker, 'disconnect'):
+                        try:
+                            service.broker.disconnect()
+                        except Exception as e:
+                            import shared.logger as logger_module
+                            logger = logger_module.EnhancedLogger("BrokerRegistry")
+                            logger.warning(f"Error disconnecting broker service: {e}")
+                    elif hasattr(service.broker, 'session') and hasattr(service.broker.session, 'close'):
+                        # Close session if available (for HTTP-based brokers)
+                        try:
+                            service.broker.session.close()
+                        except Exception as e:
+                            import shared.logger as logger_module
+                            logger = logger_module.EnhancedLogger("BrokerRegistry")
+                            logger.warning(f"Error closing broker session: {e}")
 
             self._broker_services.clear()
             self._historical_data_providers.clear()

@@ -442,7 +442,9 @@ class EnhancedDataProviderAdapter(DataProviderPort):
             for attempt in range(max_retries):
                 try:
                     self.logger.debug(f"Attempt {attempt + 1}/{max_retries} - Using fallback API call for price of {symbol}: {api_url}")
-                    response = requests.get(api_url, timeout=10)  # Increased timeout
+                    # Use session with proper connection management
+                    with requests.Session() as session:
+                        response = session.get(api_url, timeout=10)  # Increased timeout
 
                     if response.status_code == 200:
                         data = response.json()
@@ -770,7 +772,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
             },
             {
                 'name': 'bingx',
-                'url': f"https://open-api-vst.bingx.com/openApi/quote/v1/ticker/price?symbol={symbol}",
+                'url': f"https://open-api.bingx.com/openApi/quote/v1/ticker/price?symbol={symbol}",
                 'success_check': lambda resp: resp.status_code == 200 and 'data' in resp.json()
             },
             {
@@ -788,7 +790,9 @@ class EnhancedDataProviderAdapter(DataProviderPort):
         for config in exchange_configs:
             try:
                 self.logger.debug(f"Trying {config['name']} API for symbol {symbol}")
-                response = requests.get(config['url'], timeout=5)
+                # Use session with proper connection management
+                with requests.Session() as session:
+                    response = session.get(config['url'], timeout=5)
 
                 if config['success_check'](response):
                     self.logger.debug(f"Symbol {symbol} found on {config['name']}")

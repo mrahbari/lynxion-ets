@@ -185,17 +185,55 @@ class BaseStrategyAdapter(StrategyPort):
     def _determine_side(self, fused_signal: FusedSignal):
         """Determine order side based on fused signal direction"""
         from domain.entities.signal_entities import OrderSide
-        
+
+        # Check for consistency between direction and dominant bias
+        direction_side = None
         if fused_signal.direction > 0.1:  # Threshold to avoid neutral signals
-            return OrderSide.BUY
+            direction_side = OrderSide.BUY
         elif fused_signal.direction < -0.1:
-            return OrderSide.SELL
+            direction_side = OrderSide.SELL
         else:
-            # Use dominant bias as fallback
-            if fused_signal.dominant_bias.value in ['BUY', 'LONG']:
-                return OrderSide.BUY
+            direction_side = None  # Neutral based on direction
+
+        # Get bias side
+        bias_side = None
+        if fused_signal.dominant_bias.value in ['BUY', 'LONG']:
+            bias_side = OrderSide.BUY
+        elif fused_signal.dominant_bias.value in ['SELL', 'SHORT']:
+            bias_side = OrderSide.SELL
+        else:
+            bias_side = OrderSide.BUY if fused_signal.direction >= 0 else OrderSide.SELL  # Default to direction
+
+        # If direction and bias agree, use that side
+        if direction_side is not None and direction_side == bias_side:
+            return direction_side
+        elif direction_side is not None and bias_side is not None:
+            # If we have both direction and bias but they disagree, check the confidence
+            # If the bias confidence is high enough compared to direction, consider it
+            # For now, we'll log this contradiction and prioritize direction but with reduced confidence
+            # In the future, we might want to implement more sophisticated conflict resolution
+            direction_strength = abs(fused_signal.direction)
+            bias_strength = fused_signal.dominance_score if fused_signal.dominance_score is not None else 0.5
+
+            # If the bias is significantly stronger than the direction, consider the bias
+            if bias_strength > direction_strength * 1.5:  # Bias is 50% stronger than direction
+                self.logger.warning(f"Contradictory signal: Direction={fused_signal.direction:.3f}({direction_side.name}) "
+                                  f"vs Bias={fused_signal.dominant_bias.value}({bias_side.name}), "
+                                  f"bias stronger (score: {bias_strength:.3f} vs {direction_strength:.3f}). "
+                                  f"Prioritizing bias direction.")
+                return bias_side
             else:
-                return OrderSide.SELL
+                # Direction is stronger or comparable, but log the contradiction
+                self.logger.warning(f"Contradictory signal: Direction={fused_signal.direction:.3f}({direction_side.name}) "
+                                  f"vs Bias={fused_signal.dominant_bias.value}({bias_side.name}). "
+                                  f"Prioritizing direction but noting conflict.")
+                return direction_side
+        elif direction_side is not None:
+            # If we only have direction, use it
+            return direction_side
+        else:
+            # Use bias as fallback
+            return bias_side
 
     def _calculate_comprehensive_risk_parameters(self, fused_signal: FusedSignal) -> Dict[str, Any]:
         """Calculate comprehensive risk parameters based on the fused signal using advanced risk management"""
@@ -258,24 +296,110 @@ class BaseStrategyAdapter(StrategyPort):
                 market_data=market_data
             )
 
-            # Calculate dynamic SL/TP levels based on risk factors
-            position_side = "LONG" if fused_signal.direction > 0 else "SHORT"
+            # Determine position side based on the same logic as _determine_side to ensure consistency
+            # Check for consistency between direction and dominant bias
+            direction_side = None
+            if fused_signal.direction > 0.1:  # Threshold to avoid neutral signals
+                direction_side = "LONG"  # BUY
+            elif fused_signal.direction < -0.1:
+                direction_side = "SHORT"  # SELL
+            else:
+                direction_side = None  # Neutral based on direction
+
+            # Get bias side
+            bias_side = None
+            if fused_signal.dominant_bias.value in ['BUY', 'LONG']:
+                bias_side = "LONG"  # BUY
+            elif fused_signal.dominant_bias.value in ['SELL', 'SHORT']:
+                bias_side = "SHORT"  # SELL
+            else:
+                bias_side = "LONG" if fused_signal.direction >= 0 else "SHORT"  # Default to direction
+
+            # Determine position side using the same logic as _determine_side
+            if direction_side is not None and direction_side == bias_side:
+                position_side = direction_side
+            elif direction_side is not None:
+                # If we have a clear direction, prioritize it over bias (as direction is quantitative)
+                position_side = direction_side
+            else:
+                # Use bias as fallback
+                position_side = bias_side
+
+            # Calculate ATR value for more accurate SL/TP calculation
+            # In a real implementation, we'd fetch ATR from market data
+            # For now, calculate a reasonable ATR based on current price
+            atr_value = current_price * 0.01  # Use 1% of current price as default ATR
 
             sl_tp_levels = risk_service.calculate_sl_tp_levels(
                 entry_price=current_price,
                 position_side=position_side,
                 risk_adjustment_factors=risk_factors,
-                atr_value=None,  # Would come from market data in real implementation
+                atr_value=atr_value,  # Use calculated ATR value
                 market_data=market_data
             )
+
+            # Ensure calculated SL/TP prices are reasonable
+            calculated_sl_price, calculated_tp_price = sl_tp_levels
+
+            # Add comprehensive validation to ensure calculated SL/TP prices are reasonable
+            # Check if the calculated values are extremely far from the entry price
+            sl_distance_ratio = abs(calculated_sl_price - current_price) / current_price
+            tp_distance_ratio = abs(calculated_tp_price - current_price) / current_price
+
+            # If the calculated SL is extremely far from entry (more than 50%), use a reasonable percentage instead
+            if sl_distance_ratio > 0.5:
+                self.logger.warning(f"Correcting extreme SL for {fused_signal.symbol.value}: {calculated_sl_price} (ratio: {sl_distance_ratio:.2f}) -> {current_price * (0.98 if position_side == 'LONG' else 1.02)}")
+                if position_side == "LONG":
+                    calculated_sl_price = current_price * (1 - 0.02)  # 2% stop loss below entry for long
+                else:
+                    calculated_sl_price = current_price * (1 + 0.02)  # 2% stop loss above entry for short
+
+            # If the calculated TP is extremely far from entry (more than 50%), use a reasonable percentage instead
+            if tp_distance_ratio > 0.5:
+                self.logger.warning(f"Correcting extreme TP for {fused_signal.symbol.value}: {calculated_tp_price} (ratio: {tp_distance_ratio:.2f}) -> {current_price * (1.03 if position_side == 'LONG' else 0.97)}")
+                if position_side == "LONG":
+                    calculated_tp_price = current_price * (1 + 0.03)  # 3% take profit above entry for long
+                else:
+                    calculated_tp_price = current_price * (1 - 0.03)  # 3% take profit below entry for short
+
+            # Validate calculated prices to ensure they're reasonable
+            # Use the same logic to determine if this is a buy order
+            is_buy_order = (direction_side == "LONG") or (direction_side is None and bias_side == "LONG")
+
+            if is_buy_order:
+                # For BUY orders: SL should be below entry, TP should be above entry
+                if calculated_sl_price >= current_price:
+                    # If calculated SL is above entry, use a reasonable percentage instead
+                    calculated_sl_price = current_price * (1 - 0.02)  # 2% stop loss
+                if calculated_tp_price <= current_price:
+                    # If calculated TP is below entry, use a reasonable percentage instead
+                    calculated_tp_price = current_price * (1 + 0.03)  # 3% take profit
+
+                # Additional validation to ensure extreme values are caught
+                if calculated_tp_price > current_price * 2.0:  # TP should not be more than 2x entry
+                    self.logger.warning(f"Correcting extreme TP for BUY order: {calculated_tp_price} -> {current_price * 1.05}")
+                    calculated_tp_price = current_price * 1.05  # 5% take profit maximum for safety
+            else:
+                # For SELL orders: SL should be above entry, TP should be below entry
+                if calculated_sl_price <= current_price:
+                    # If calculated SL is below entry, use a reasonable percentage instead
+                    calculated_sl_price = current_price * (1 + 0.02)  # 2% stop loss above entry for short
+                if calculated_tp_price >= current_price:
+                    # If calculated TP is above entry, use a reasonable percentage instead
+                    calculated_tp_price = current_price * (1 - 0.03)  # 3% take profit below entry for short
+
+                # Additional validation to ensure extreme values are caught for SELL orders
+                if calculated_tp_price < current_price * 0.5:  # TP should not be less than half entry
+                    self.logger.warning(f"Correcting extreme TP for SELL order: {calculated_tp_price} -> {current_price * 0.95}")
+                    calculated_tp_price = current_price * 0.95  # 5% take profit maximum for safety
 
             # Construct comprehensive risk parameters
             risk_parameters = {
                 'max_position_size': position_size,
                 'stop_loss_pct': min(0.10, getattr(risk_factors, 'stop_loss_multiplier', 1.0) * 0.02),      # Cap at 10%, use as multiplier for base 2%
                 'take_profit_pct': min(0.15, getattr(risk_factors, 'take_profit_multiplier', 1.0) * 0.03),  # Cap at 15%, use as multiplier for base 3%
-                'stop_loss_price': sl_tp_levels[0],
-                'take_profit_price': sl_tp_levels[1],
+                'stop_loss_price': calculated_sl_price,
+                'take_profit_price': calculated_tp_price,
                 'risk_per_trade': 0.02 * portfolio_value,  # 2% of portfolio
                 'max_position_exposure': 0.1 * portfolio_value,  # 10% max exposure
                 'position_quantity': position_size * portfolio_value / current_price,

@@ -344,40 +344,83 @@ class AdvancedRiskManagementService:
         base_sl_multiplier = 2.0  # 2 ATRs for stop loss
         base_tp_multiplier = 3.0  # 3 ATRs for take profit (1:1.5 risk/reward ratio)
         
-        # Apply risk adjustment factors
+        # Apply risk adjustment factors to the base multipliers
         sl_multiplier = base_sl_multiplier * risk_adjustment_factors.stop_loss_multiplier
         tp_multiplier = base_tp_multiplier * risk_adjustment_factors.take_profit_multiplier
-        
+
         if position_side.upper() == 'LONG':
             # For long positions: SL below entry, TP above entry
-            stop_loss_price = entry_price - (atr_value * sl_multiplier)
-            take_profit_price = entry_price + (atr_value * tp_multiplier)
-            
-            # Ensure stop loss is not too close to entry (minimum 1% away)
-            min_sl_distance = entry_price * 0.01
+            # Use ATR value multiplied by the multiplier to determine distance from entry
+            sl_distance = atr_value * sl_multiplier
+            tp_distance = atr_value * tp_multiplier
+
+            stop_loss_price = entry_price - sl_distance
+            take_profit_price = entry_price + tp_distance
+
+            # Ensure stop loss is not too close to entry (minimum 0.1% away to avoid invalid values)
+            min_sl_distance = entry_price * 0.001  # 0.1% minimum
             stop_loss_price = max(stop_loss_price, entry_price - min_sl_distance)
-            
+
             # Ensure take profit is above entry
             take_profit_price = max(take_profit_price, entry_price + min_sl_distance)
-            
+
         elif position_side.upper() == 'SHORT':
             # For short positions: SL above entry, TP below entry
-            stop_loss_price = entry_price + (atr_value * sl_multiplier)
-            take_profit_price = entry_price - (atr_value * tp_multiplier)
-            
-            # Ensure stop loss is not too close to entry (minimum 1% away)
-            min_sl_distance = entry_price * 0.01
+            # Use ATR value multiplied by the multiplier to determine distance from entry
+            sl_distance = atr_value * sl_multiplier
+            tp_distance = atr_value * tp_multiplier
+
+            stop_loss_price = entry_price + sl_distance  # SL above for short (stop loss if price rises)
+            take_profit_price = entry_price - tp_distance  # TP below for short (profit when price falls)
+
+            # Ensure stop loss is not too close to entry (minimum 0.1% away)
+            min_sl_distance = entry_price * 0.001  # 0.1% minimum
             stop_loss_price = min(stop_loss_price, entry_price + min_sl_distance)
-            
-            # Ensure take profit is below entry
+
+            # Ensure take profit is below entry for short positions
             take_profit_price = min(take_profit_price, entry_price - min_sl_distance)
         else:
             raise ValueError(f"Invalid position side: {position_side}. Must be 'LONG' or 'SHORT'")
-        
+
+        # Apply sanity checks to ensure calculated SL/TP values are reasonable
+        # Prevent extremely wide stops or targets that are far from entry
+        max_sl_distance_ratio = 0.5  # Maximum 50% from entry for stop loss
+        max_tp_distance_ratio = 0.5  # Maximum 50% from entry for take profit
+
+        if position_side.upper() == 'LONG':
+            # For long positions
+            max_sl_price = entry_price * (1 - max_sl_distance_ratio)
+            min_tp_price = entry_price * (1 + max_sl_distance_ratio)  # Note: this is a large gain
+
+            # Cap stop loss to be within reasonable distance from entry
+            stop_loss_price = max(stop_loss_price, max_sl_price)
+
+            # Cap take profit to be within reasonable distance from entry
+            take_profit_price = min(take_profit_price, min_tp_price)
+
+        elif position_side.upper() == 'SHORT':
+            # For short positions
+            min_sl_price = entry_price * (1 + max_sl_distance_ratio)
+            max_tp_price = entry_price * (1 - max_sl_distance_ratio)
+
+            # Cap stop loss to be within reasonable distance from entry
+            stop_loss_price = min(stop_loss_price, min_sl_price)
+
+            # Cap take profit to be within reasonable distance from entry
+            take_profit_price = max(take_profit_price, max_tp_price)
+
+        # Additional check to ensure SL and TP are on the correct sides of entry
+        if position_side.upper() == 'LONG':
+            stop_loss_price = min(stop_loss_price, entry_price * 0.99)  # SL must be below entry (with small buffer)
+            take_profit_price = max(take_profit_price, entry_price * 1.01)  # TP must be above entry (with small buffer)
+        elif position_side.upper() == 'SHORT':
+            stop_loss_price = max(stop_loss_price, entry_price * 1.01)  # SL must be above entry (with small buffer)
+            take_profit_price = min(take_profit_price, entry_price * 0.99)  # TP must be below entry (with small buffer)
+
         self.logger.info(f"SL/TP calculation for {position_side} position at ${entry_price:.4f}: "
                         f"SL=${stop_loss_price:.4f}, TP=${take_profit_price:.4f}, "
                         f"ATR=${atr_value:.4f}, SL_mult={sl_multiplier:.2f}, TP_mult={tp_multiplier:.2f}")
-        
+
         return stop_loss_price, take_profit_price
 
     def update_trailing_stop(self, 

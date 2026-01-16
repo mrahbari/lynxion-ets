@@ -348,3 +348,11 @@ If strategy selection happens in the Watcher:
 
 > **Even if the system “works”, it is structurally unsafe.**
 
+
+ Path Structure Implemented:
+   - Environment Variable: CSV_DATA_PATH=./data/history/raw/1m
+   - Actual Storage Path: data/history/raw/[timeframe]/[symbol]/[timeframe].csv
+   - Example: data/history/raw/1m/BTCUSDT/1m.csv
+
+
+Curre

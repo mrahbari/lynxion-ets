@@ -10,6 +10,10 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 
 def fetch_available_symbols():
     """Fetch available symbols from exchange APIs with multiple fallbacks"""

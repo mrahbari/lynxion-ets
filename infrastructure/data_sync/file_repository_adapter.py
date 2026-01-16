@@ -439,33 +439,25 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
         # Read raw data
         df = pd.read_csv(raw_file_path)
 
-        # Handle timestamp conversion - check if timestamps are in milliseconds or seconds
-        if len(df) > 0:
-            # Get the first value and convert to int to handle float cases
-            first_val = df.iloc[0]['timestamp']
-            if pd.isna(first_val):
-                print(f'Warning: First timestamp is NaN for {symbol}, skipping')
-                return
-
-            sample_timestamp = int(float(first_val))  # Handle both int and float values
-
-            # Check if timestamps are in milliseconds format (typically > 10^10 for ms vs < 10^10 for seconds)
-            if sample_timestamp > 10**10:  # If timestamp is in milliseconds (10+ digits vs 9 digits for seconds)
-                # Convert all timestamps that appear to be in milliseconds to seconds
-                def convert_timestamp_if_milliseconds(x):
+        # Ensure timestamp column is integer Unix timestamp
+        if 'timestamp' in df.columns:
+            # Convert timestamp to integer Unix timestamp if it's not already
+            if df['timestamp'].dtype in ['object', 'float64']:
+                try:
+                    # If it's a datetime string, convert to Unix timestamp
+                    df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True).astype('int64')
+                except:
+                    # If it's numeric but not int64, convert directly
                     try:
-                        val = float(x) if not pd.isna(x) else x
-                        if not pd.isna(val) and val > 10**10:  # Likely milliseconds
-                            return int(val / 1000)
-                        else:
-                            return int(val) if not pd.isna(val) else val
-                    except (ValueError, TypeError):
-                        return x  # Return original if conversion fails
-
-                df['timestamp'] = df['timestamp'].apply(convert_timestamp_if_milliseconds)
-
-        # Ensure timestamp column is integer type after conversion
-        df['timestamp'] = pd.to_numeric(df['timestamp'], errors='coerce').astype('Int64')
+                        df['timestamp'] = df['timestamp'].astype('int64')
+                    except:
+                        # If it's still not working, try to interpret as float seconds
+                        df['timestamp'] = df['timestamp'].astype(float).astype('int64')
+            elif df['timestamp'].dtype == 'int64':
+                # Already integer, ensure it's a Unix timestamp (not milliseconds)
+                max_timestamp = df['timestamp'].max() if len(df) > 0 else 0
+                if max_timestamp > 1e10:  # Likely milliseconds, convert to seconds
+                    df['timestamp'] = df['timestamp'].astype('int64') // 1000
 
         # Remove any rows with NaN timestamps after conversion
         df = df.dropna(subset=['timestamp'])
@@ -474,8 +466,8 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
             print(f'Warning: No valid timestamps after conversion for {symbol}, skipping')
             return
 
-        # Now convert to datetime
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', errors='coerce')
+        # Now convert to datetime for processing
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)
 
         # Remove any remaining NaT (Not a Time) values
         df = df.dropna(subset=['timestamp'])
@@ -526,30 +518,25 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
             # Read the file and remove old entries
             df = pd.read_csv(raw_file_path)
 
-            # Handle timestamp conversion - check if timestamps are in milliseconds or seconds
-            if len(df) > 0:
-                # Get the first value and convert to int to handle float cases
-                first_val = df.iloc[0]['timestamp']
-                if not pd.isna(first_val):
-                    sample_timestamp = int(float(first_val))  # Handle both int and float values
-
-                    # Check if timestamps are in milliseconds format (typically > 10^10 for ms vs < 10^10 for seconds)
-                    if sample_timestamp > 10**10:  # If timestamp is in milliseconds
-                        # Convert all timestamps that appear to be in milliseconds to seconds
-                        def convert_timestamp_if_milliseconds(x):
-                            try:
-                                val = float(x) if not pd.isna(x) else x
-                                if not pd.isna(val) and val > 10**10:  # Likely milliseconds
-                                    return int(val / 1000)
-                                else:
-                                    return int(val) if not pd.isna(val) else val
-                            except (ValueError, TypeError):
-                                return x  # Return original if conversion fails
-
-                        df['timestamp'] = df['timestamp'].apply(convert_timestamp_if_milliseconds)
-
-            # Ensure timestamp column is integer type after conversion
-            df['timestamp'] = pd.to_numeric(df['timestamp'], errors='coerce').astype('Int64')
+            # Ensure timestamp column is integer Unix timestamp
+            if 'timestamp' in df.columns:
+                # Convert timestamp to integer Unix timestamp if it's not already
+                if df['timestamp'].dtype in ['object', 'float64']:
+                    try:
+                        # If it's a datetime string, convert to Unix timestamp
+                        df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True).astype('int64')
+                    except:
+                        # If it's numeric but not int64, convert directly
+                        try:
+                            df['timestamp'] = df['timestamp'].astype('int64')
+                        except:
+                            # If it's still not working, try to interpret as float seconds
+                            df['timestamp'] = df['timestamp'].astype(float).astype('int64')
+                elif df['timestamp'].dtype == 'int64':
+                    # Already integer, ensure it's a Unix timestamp (not milliseconds)
+                    max_timestamp = df['timestamp'].max() if len(df) > 0 else 0
+                    if max_timestamp > 1e10:  # Likely milliseconds, convert to seconds
+                        df['timestamp'] = df['timestamp'].astype('int64') // 1000
 
             # Remove any rows with NaN timestamps after conversion
             df = df.dropna(subset=['timestamp'])
@@ -557,8 +544,8 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
             if df.empty:
                 return
 
-            # Now convert to datetime
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', errors='coerce')
+            # Now convert to datetime for processing
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)
 
             # Remove any remaining NaT (Not a Time) values
             df = df.dropna(subset=['timestamp'])
@@ -570,8 +557,10 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
             df_filtered = df[df['timestamp'] >= cutoff_date]
 
             if len(df_filtered) != len(df):
-                df_filtered['timestamp'] = df_filtered['timestamp'].apply(lambda x: int(x.timestamp()))
-                df_filtered.to_csv(raw_file_path, index=False)
+                # Convert back to Unix timestamp integers for saving
+                df_filtered_reset = df_filtered.reset_index()
+                df_filtered_reset['timestamp'] = df_filtered_reset['timestamp'].astype('int64') // 10**9
+                df_filtered_reset.to_csv(raw_file_path, index=False)
     
     def validate_continuous_range(self, symbol: str, start_ts: int, end_ts: int) -> bool:
         """

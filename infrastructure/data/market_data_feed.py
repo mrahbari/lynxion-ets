@@ -100,7 +100,7 @@ class MarketDataFeed:
             api_symbol = symbol.replace('-', '')  # BTC-USDT -> BTCUSDT
             
             # Try BingX testnet first
-            url = f"https://open-api-vst.bingx.com/openApi/quote/v1/ticker/price?symbol={api_symbol}"
+            url = f"https://open-api.bingx.com/openApi/quote/v1/ticker/price?symbol={api_symbol}"
             response = requests.get(url, timeout=5)
             
             if response.status_code == 200:
@@ -189,7 +189,7 @@ class WebSocketMarketDataFeed:
     
     async def _ws_handler(self, symbol: str):
         """WebSocket handler for a specific symbol"""
-        uri = f"wss://open-api-vst.bingx.com/openApi/ws-market-snapshot?symbol={symbol.replace('-', '')}"
+        uri = f"wss://open-api.bingx.com/openApi/ws-market-snapshot?symbol={symbol.replace('-', '')}"
         
         try:
             async with websockets.connect(uri) as websocket:

@@ -2,7 +2,7 @@
 """
 Multi-timeframe Update Runner - Aggregates 1-minute data to higher timeframes.
 
-This script processes raw 1-minute data and creates aggregated files for 
+This script processes raw 1-minute data and creates aggregated files for
 higher timeframes (5m, 15m, 30m, 1h, etc.) following the proper MTF sync pattern:
 downsample → ffill → shift → align
 """
@@ -14,18 +14,21 @@ from typing import List, Dict, Any
 import json
 import pandas as pd
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 # Add project root to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
-from application.configs.symbol_config import get_symbols
+from application.symbol_management.centralized_symbol_manager import get_unified_symbols
 from shared.logger import EnhancedLogger
 
 
 def load_symbols_from_env() -> List[str]:
-    """Load symbols from environment variable."""
-    symbols_str = os.getenv("WFO_COINS", "BTCUSDT,ETHUSDT")
-    return [s.strip() for s in symbols_str.split(',') if s.strip()]
+    """Load symbols from the centralized symbol manager."""
+    return get_unified_symbols()
 
 
 def run_multitimeframe_update(symbols: List[str], 
@@ -169,15 +172,29 @@ def validate_mtf_data(results: Dict[str, Any], file_repo: FileRepositoryAdapter)
                             # Check if file is not empty and has proper OHLCV columns
                             try:
                                 df = pd.read_csv(tf_file_path)
-                                
-                                required_cols = ['open', 'high', 'low', 'close', 'volume']
+
+                                required_cols = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
                                 missing_cols = [col for col in required_cols if col not in df.columns]
-                                
+
                                 if missing_cols:
                                     issues.append(f"{timeframe}: Missing required columns {missing_cols}")
                                 elif len(df) == 0:
                                     issues.append(f"{timeframe}: File is empty")
                                 else:
+                                    # Validate timestamp format - ensure it's Unix timestamp (integer)
+                                    if 'timestamp' in df.columns:
+                                        try:
+                                            # Check if timestamp values look like Unix timestamps
+                                            sample_timestamp = df['timestamp'].iloc[0] if len(df) > 0 else None
+                                            if sample_timestamp is not None:
+                                                # Convert to int to ensure it's in the right format
+                                                int_timestamp = int(float(sample_timestamp))
+                                                # Verify it looks like a Unix timestamp (after year 2000)
+                                                if int_timestamp < 946684800:  # Jan 1, 2000 timestamp
+                                                    issues.append(f"{timeframe}: Timestamp format may be incorrect - values seem too small to be Unix timestamps")
+                                        except (ValueError, TypeError):
+                                            issues.append(f"{timeframe}: Timestamp format error - cannot convert to integer")
+
                                     # Basic OHLCV validation
                                     if not (df['high'] >= df['low']).all():
                                         issues.append(f"{timeframe}: Invalid OHLC relationship (high < low)")

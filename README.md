@@ -315,30 +315,30 @@ python runner_backtest.py --strategy crypto_breakout --start 90d --end today --r
 ### Historical Data Download
 
 ```bash
-# Download historical data for all configured symbols
-python runner_history_download.py --start 365d --end today
+# Download historical data for all configured symbols (downloads only 1m as base)
+python runner_history_download.py --start 365d --end today --timeframes 1m
 
-# Download historical data for a specific symbol
-python runner_history_download.py --start 90d --end today --symbols MATICUSDT
+# Download historical data for a specific symbol (downloads only 1m as base)
+python runner_history_download.py --start 90d --end today --symbols MATICUSDT --timeframes 1m
 
-# Download with custom timeframes (space-separated)
-python runner_history_download.py --start 30d --end today --symbols BTCUSDT --timeframes 5m 15m 1h
+# Download with custom timeframes (space-separated) - NOTE: downloads only 1m as base, use multitimeframe_update to generate others
+python runner_history_download.py --start 30d --end today --symbols BTCUSDT --timeframes 1m
 
-# Download to custom directory
-python runner_history_download.py --start 180d --end today --symbols ETHUSDT --output ./custom_data
+# Download to custom directory (downloads only 1m as base)
+python runner_history_download.py --start 180d --end today --symbols ETHUSDT --timeframes 1m --output ./custom_data
 
-# Download with specific date range
-python runner_history_download.py --start 2023-01-01 --end 2023-12-31 --symbols SOLUSDT
+# Download with specific date range (downloads only 1m as base)
+python runner_history_download.py --start 2023-01-01 --end 2023-12-31 --symbols SOLUSDT --timeframes 1m
 
-# Download from specific exchange (default: binance)
-python runner_history_download.py --start 90d --end today --symbols MATICUSDT --exchange bingx
+# Download from specific exchange (default: binance) - downloads only 1m as base
+python runner_history_download.py --start 90d --end today --symbols MATICUSDT --exchange bingx --timeframes 1m
 
-# Download from different exchanges
-python runner_history_download.py --start 30d --end today --symbols BTCUSDT ETHUSDT --exchange mexc
-python runner_history_download.py --start 60d --end today --symbols ADAUSDT --exchange phemex
+# Download from different exchanges - downloads only 1m as base
+python runner_history_download.py --start 30d --end today --symbols BTCUSDT ETHUSDT --exchange mexc --timeframes 1m
+python runner_history_download.py --start 60d --end today --symbols ADAUSDT --exchange phemex --timeframes 1m
 
-# Multiple symbols and custom timeframes from specific exchange
-python runner_history_download.py --start 7d --end today --symbols BTCUSDT ETHUSDT SOLUSDT --timeframes 1m 5m 15m --exchange bingx
+# Multiple symbols and 1m timeframe from specific exchange (other timeframes should be generated separately)
+python runner_history_download.py --start 7d --end today --symbols BTCUSDT ETHUSDT SOLUSDT --timeframes 1m --exchange bingx
 ```
 
 **Command Options:**
@@ -350,6 +350,115 @@ python runner_history_download.py --start 7d --end today --symbols BTCUSDT ETHUS
 - `--exchange`: Exchange to download from (default: binance, options: binance,bingx,mexc,phemex)
 - `--validate`: Validate data integrity after download
 - `--verbose`: Enable verbose output
+
+### Managing Coins and Historical Data
+
+#### Download New Coins
+
+To download data for new coins:
+
+```bash
+# Download data for specific symbols (replace with actual symbols) - downloads only 1m data as base
+python runner_history_download.py --start 90d --end today --symbols BTCUSDT ETHUSDT --timeframes 1m
+
+# Download for all approved symbols for the last 3 months - downloads only 1m data as base
+python runner_history_download.py --start 90d --end today --timeframes 1m
+```
+
+#### Update Old Coins
+
+To update existing coins with new data:
+
+```bash
+# Run the historical data sync to update all approved symbols
+python runner_historical_data_sync.py now
+
+# Or run continuously to keep updating
+python runner_historical_data_sync.py
+```
+
+#### Get 3-Month History for Specific Symbol
+
+To get 3 months of history for a specific symbol:
+
+```bash
+# Download 3 months of data for a specific symbol - downloads only 1m data as base
+python runner_history_download.py --start 90d --end today --symbols YOUR_SYMBOL --timeframes 1m
+
+# Example for a specific coin:
+python runner_history_download.py --start 90d --end today --symbols SOLUSDT --timeframes 1m
+```
+
+#### Update Multi-timeframe Data
+
+After downloading raw 1-minute data, generate higher timeframes:
+
+```bash
+# Update multi-timeframe data from raw 1-minute data
+python runner_multitimeframe_update.py --symbols YOUR_SYMBOL --timeframes 5m 15m 30m 1h 4h 1d
+
+# Or update all symbols
+python runner_multitimeframe_update.py --all --timeframes 5m 15m 30m 1h 4h 1d
+```
+
+#### Sync Approved Symbols
+
+To ensure you have the latest list of available symbols:
+
+```bash
+# Update the list of approved symbols from exchanges
+python runner_sync_approved_symbols.py
+```
+
+#### Complete Process for a New Symbol:
+
+1. First, update the approved symbols list:
+   ```bash
+   python runner_sync_approved_symbols.py
+   ```
+
+2. Then download 3 months of 1-minute data (base data):
+   ```bash
+   python runner_history_download.py --start 90d --end today --symbols YOUR_SYMBOL --timeframes 1m
+   ```
+
+3. Generate higher timeframes from the 1-minute base data:
+   ```bash
+   python runner_multitimeframe_update.py --symbols YOUR_SYMBOL --timeframes 5m 15m 30m 1h 4h 1d
+   ```
+
+4. For ongoing updates, run the sync job:
+   ```bash
+   python runner_historical_data_sync.py now
+   ```
+
+#### Process All Symbols
+
+You can also run these operations for ALL approved symbols:
+
+1. Download 1-minute data for all approved symbols:
+   ```bash
+   python runner_history_download.py --start 90d --end today --timeframes 1m
+   # Note: Without specifying --symbols, it will use all approved symbols from the environment
+   ```
+
+2. Update multi-timeframe data for all symbols:
+   ```bash
+   python runner_multitimeframe_update.py --all --timeframes 5m 15m 30m 1h 4h 1d
+   ```
+
+3. Sync historical data for all approved symbols (this runs continuously):
+   ```bash
+   python runner_historical_data_sync.py
+   # Or run once:
+   python runner_historical_data_sync.py now
+   ```
+
+4. Get the list of all approved symbols:
+   ```bash
+   python runner_sync_approved_symbols.py
+   # This updates the approved symbols list from exchanges
+   ```
 
 ---
 

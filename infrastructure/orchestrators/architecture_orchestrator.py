@@ -88,6 +88,14 @@ class ArchitectureOrchestrator:
         except Exception as e:
             self.logger.error(f"Error clearing pending orders tracker: {e}")
 
+        # Also clear the broker registry to free up resources
+        try:
+            from infrastructure.services.broker_registry import broker_registry
+            broker_registry.clear_registry()
+            self.logger.info("Cleared broker registry to free up resources")
+        except Exception as e:
+            self.logger.error(f"Error clearing broker registry: {e}")
+
         self.logger.info("Architecture Orchestrator stopped")
 
     def get_status(self) -> Dict[str, Any]:

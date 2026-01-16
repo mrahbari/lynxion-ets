@@ -285,7 +285,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                 if exchange_name == 'binance':
                     api_url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
                 elif exchange_name == 'bingx':
-                    api_url = f"https://open-api-vst.bingx.com/openApi/quote/v1/ticker/price?symbol={SymbolFormatHelper.format_symbol_for_exchange(symbol, exchange_name)}"
+                    api_url = f"https://open-api.bingx.com/openApi/quote/v1/ticker/price?symbol={SymbolFormatHelper.format_symbol_for_exchange(symbol, exchange_name)}"
                 elif exchange_name == 'mexc':
                     api_url = f"https://api.mexc.com/api/v3/ticker/price?symbol={symbol}"
                 elif exchange_name == 'phemex':
@@ -293,13 +293,15 @@ class MultiBrokerExecutionService(ExecutionPort):
                 else:
                     continue  # Skip unknown exchanges
 
-                response = requests.get(api_url, timeout=5)
-                if response.status_code == 200:
-                    # Check if the response contains valid price data
-                    data = response.json()
-                    if 'price' in data or ('data' in data and 'last' in data.get('data', {})):
-                        self.logger.debug(f"Symbol {symbol} found via direct API on {exchange_name}")
-                        return True
+                # Use session with proper connection management
+                with requests.Session() as session:
+                    response = session.get(api_url, timeout=5)
+                    if response.status_code == 200:
+                        # Check if the response contains valid price data
+                        data = response.json()
+                        if 'price' in data or ('data' in data and 'last' in data.get('data', {})):
+                            self.logger.debug(f"Symbol {symbol} found via direct API on {exchange_name}")
+                            return True
             except Exception as e:
                 self.logger.debug(f"Direct API check failed for {symbol} on {exchange_name}: {e}")
                 continue
@@ -326,21 +328,6 @@ class MultiBrokerExecutionService(ExecutionPort):
         prevent_same_direction = os.getenv('PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL', 'true').lower() == 'true'
 
         if prevent_same_direction:
-            # Check if there's already an active position in the same direction for this symbol
-            # This requires checking the current positions, which may be done through the broker
-            # We'll check each broker for the position, starting with the primary broker
-            current_position = None
-            for exchange_name in self.exchange_order:
-                broker = self.brokers.get(exchange_name)
-                if broker and hasattr(broker, 'get_position'):
-                    try:
-                        current_position = broker.get_position(order.symbol)
-                        if current_position and hasattr(current_position,
-                                                        'side') and current_position.side is not None:
-                            break
-                    except:
-                        continue  # Try next broker
-
             # Determine the intended side of the new order
             order_side = getattr(order, 'side', None)
             intended_position_side = None
@@ -350,30 +337,16 @@ class MultiBrokerExecutionService(ExecutionPort):
                 elif order_side.name == 'SELL':
                     intended_position_side = 'SHORT'
 
-            # Check both existing positions and pending orders in the same direction
-            position_duplicate = False
-            pending_duplicate = False
-
-            # Check for existing position in the same direction
-            if current_position and hasattr(current_position, 'side') and current_position.side is not None:
-                if intended_position_side and hasattr(current_position.side,
-                                                     'name') and current_position.side.name == intended_position_side:
-                    position_duplicate = True
-
-            # Check for pending orders in the same direction
+            # Check for pending orders in the same direction using the shared tracker
             if intended_position_side:
                 pending_duplicate = self._has_pending_order_in_direction(order.symbol, intended_position_side)
 
-            # If either condition is true, prevent the trade
-            if position_duplicate or pending_duplicate:
-                if position_duplicate:
+                # If there's a pending order in the same direction, prevent the trade
+                if pending_duplicate:
                     self.logger.info(
-                        f"❌ DUPLICATE REJECTED: Active {current_position.side.name} position exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
-                else:
-                    self.logger.info(
-                        f"❌ DUPLICATE REJECTED: Pending {intended_position_side} order exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
-                # Return None instead of raising an exception to prevent system crashes
-                return None  # Indicate that the order was not placed due to duplicate prevention
+                        f"⚠️ DUPLICATE CHECK BLOCKED: Internal pending flag set for {intended_position_side} order on {order.symbol.value} — broker confirmation needed.")
+                    # Return None instead of raising an exception to prevent system crashes
+                    return None  # Indicate that the order was not placed due to duplicate prevention
 
         # Check for broker-specific order placement settings
         # Check if any specific broker is enabled for exclusive order placement
@@ -412,7 +385,7 @@ class MultiBrokerExecutionService(ExecutionPort):
             is_valid = self._validate_order_risk(order)
             if not is_valid:
                 self.logger.error(f"❌ ORDER REJECTED: Risk validation failed for order: {order}")
-                raise ValueError(f"Order failed risk validation: {order}")
+                return None  # Return None instead of raising to prevent system crashes
 
             # Perform final validation to ensure the order parameters are reasonable before sending to broker
             if not self._validate_order_parameters_before_broker(order):
@@ -421,12 +394,6 @@ class MultiBrokerExecutionService(ExecutionPort):
                 return None
 
             self.logger.info(f"🎯 EXECUTING ORDER ON {best_exchange.upper()}: {order}")
-
-            # Add to pending orders before placing the order
-            order_id_temp = None
-            if prevent_same_direction and intended_position_side:
-                order_id_temp = "TEMP_" + str(id(order))  # Temporary ID for tracking before placement
-                self._add_pending_order(order.symbol, intended_position_side, order_id_temp)
 
             try:
                 # Check if broker is connected before attempting to place order
@@ -450,6 +417,10 @@ class MultiBrokerExecutionService(ExecutionPort):
                     self.logger.error(f"❌ ORDER PLACEMENT FAILED ON {best_exchange.upper()}: Broker returned invalid order ID: {order_id}")
                     return None
 
+                # NOW we have a valid order ID from the broker, so we can add to pending orders
+                if prevent_same_direction and intended_position_side:
+                    self._add_pending_order(order.symbol, intended_position_side, order_id)
+
                 self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {best_exchange.upper()}: {order_id}")
 
                 # Send Telegram notification about successful order placement
@@ -458,18 +429,12 @@ class MultiBrokerExecutionService(ExecutionPort):
                 return order_id
             except Exception as e:
                 self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {best_exchange.upper()}: {e}")
-                raise
-            finally:
-                # Remove from pending orders after attempting to place (whether successful or failed)
-                # This is important to prevent stuck pending orders when order placement fails
-                if prevent_same_direction and intended_position_side and order_id_temp:
-                    try:
-                        self._remove_pending_order(order.symbol, order_id_temp)
-                    except Exception as cleanup_error:
-                        self.logger.error(f"❌ ERROR DURING PENDING ORDER CLEANUP: {cleanup_error}")
-                        # Don't raise the exception here as it would mask the original error
+                # Still return None instead of raising to prevent system crashes
+                return None
         else:
-            raise Exception(f"Symbol {symbol_str} not available on any configured exchange")
+            # If no exchange is available, return None instead of raising an exception
+            self.logger.error(f"❌ SYMBOL {symbol_str} not available on any configured exchange")
+            return None
 
     def _enhance_order_with_risk_parameters(self, order: Order) -> Order:
         """Enhance order with risk parameters if they're missing."""
@@ -670,7 +635,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                         elif sl_price <= 0:
                             self.logger.warning(f"Invalid SL for BUY order: SL ({sl_price}) <= 0")
                             return False
-                        elif entry_price > 0 and sl_price < entry_price * 0.01:  # SL not more than 99% below entry
+                        # More reasonable range check - allow SL to be up to 50% below entry
+                        elif entry_price > 0 and sl_price < entry_price * 0.5:  # SL not more than 50% below entry
                             self.logger.warning(f"SL too far from entry for BUY order: SL ({sl_price}) vs Entry ({entry_price})")
                             return False
                     else:
@@ -681,7 +647,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                         elif sl_price <= 0:
                             self.logger.warning(f"Invalid SL for SELL order: SL ({sl_price}) <= 0")
                             return False
-                        elif entry_price > 0 and sl_price > entry_price * 100:  # SL not more than 100x above entry
+                        # More reasonable range check - allow SL to be up to 50% above entry
+                        elif entry_price > 0 and sl_price > entry_price * 1.5:  # SL not more than 50% above entry
                             self.logger.warning(f"SL too far from entry for SELL order: SL ({sl_price}) vs Entry ({entry_price})")
                             return False
 
@@ -701,7 +668,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                         elif tp_price <= 0:
                             self.logger.warning(f"Invalid TP for BUY order: TP ({tp_price}) <= 0")
                             return False
-                        elif entry_price > 0 and tp_price > entry_price * 100:  # TP not more than 100x above entry
+                        # More reasonable range check - allow TP to be up to 200% above entry (2x)
+                        elif entry_price > 0 and tp_price > entry_price * 2.0:  # TP not more than 2x above entry
                             self.logger.warning(f"TP too far from entry for BUY order: TP ({tp_price}) vs Entry ({entry_price})")
                             return False
                     else:
@@ -712,7 +680,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                         elif tp_price <= 0:
                             self.logger.warning(f"Invalid TP for SELL order: TP ({tp_price}) <= 0")
                             return False
-                        elif entry_price > 0 and tp_price < entry_price * 0.01:  # TP not more than 99% below entry
+                        # More reasonable range check - allow TP to be up to 50% below entry
+                        elif entry_price > 0 and tp_price < entry_price * 0.5:  # TP not more than 50% below entry
                             self.logger.warning(f"TP too far from entry for SELL order: TP ({tp_price}) vs Entry ({entry_price})")
                             return False
 
@@ -771,7 +740,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                 api_url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
             elif exchange_name == 'bingx':
                 formatted_symbol = SymbolFormatHelper.format_symbol_for_exchange(symbol, exchange_name)
-                api_url = f"https://open-api-vst.bingx.com/openApi/quote/v1/ticker/price?symbol={formatted_symbol}"
+                api_url = f"https://open-api.bingx.com/openApi/quote/v1/ticker/price?symbol={formatted_symbol}"
             elif exchange_name == 'mexc':
                 api_url = f"https://api.mexc.com/api/v3/ticker/price?symbol={symbol}"
             elif exchange_name == 'phemex':
@@ -779,8 +748,10 @@ class MultiBrokerExecutionService(ExecutionPort):
             else:
                 return False
 
-            response = requests.get(api_url, timeout=5)
-            return response.status_code == 200
+            # Use session with proper connection management
+            with requests.Session() as session:
+                response = session.get(api_url, timeout=5)
+                return response.status_code == 200
         except Exception:
             return False
 

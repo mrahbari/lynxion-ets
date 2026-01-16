@@ -309,10 +309,18 @@ class SignalProcessor:
                         quantity = position_value / current_price
 
                     # Apply any quantity adjustments from risk parameters
+                    # Check if position_quantity in risk_params is significantly different from calculated quantity
                     if 'position_quantity' in risk_params:
-                        quantity = risk_params['position_quantity']
+                        risk_position_quantity = risk_params['position_quantity']
+                        # If there's a significant difference (>5% relative difference), log a warning
+                        if quantity != 0 and abs(risk_position_quantity - quantity) / quantity > 0.05:
+                            if self.logger:
+                                self.logger.warning(f"⚠️ Quantity mismatch: Risk params quantity={risk_position_quantity}, Calculated quantity={quantity}, Diff={abs(risk_position_quantity - quantity) / quantity:.2%}")
 
-            except:
+                        # Use the risk parameter quantity as the authoritative value
+                        quantity = risk_position_quantity
+
+            except Exception as e:
                 # If portfolio service fails, use a default quantity
                 if fixed_position_size_enabled:
                     # Use fixed position size for testing with fallback price
@@ -325,6 +333,9 @@ class SignalProcessor:
                     default_account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '1000.0'))  # Default to $1,000 if not available
                     fallback_price = 50000.0
                     quantity = position_size_pct * default_account_balance / fallback_price
+
+                if self.logger:
+                    self.logger.error(f"Error calculating quantity, using fallback: {e}")
 
             # Ensure minimum quantity to avoid issues with small trades
             if quantity < 0.001:
@@ -366,6 +377,17 @@ class SignalProcessor:
             # For SELL orders: SL should be above entry price, TP should be below entry price
             entry_price = float(current_price) if current_price else 50000.0  # fallback
 
+            # Validate signal direction consistency with order side
+            # Check if there's a contradiction between signal bias and order side
+            if hasattr(execution_intent, 'fused_signal') and execution_intent.fused_signal:
+                dominant_bias = getattr(execution_intent.fused_signal, 'dominant_bias', None)
+                if dominant_bias:
+                    bias_str = dominant_bias.value if hasattr(dominant_bias, 'value') else str(dominant_bias)
+                    if ((bias_str in ['SELL', 'SHORT'] and order_side.name == 'BUY') or
+                        (bias_str in ['BUY', 'LONG'] and order_side.name == 'SELL')):
+                        if self.logger:
+                            self.logger.warning(f"⚠️ Signal contradiction: Bias={bias_str} vs Order={order_side.name} for {execution_intent.symbol.value}")
+
             if order_side.name == 'BUY':
                 # For BUY orders, SL should be below entry, TP should be above entry
                 if (stop_loss_price is None or
@@ -374,6 +396,14 @@ class SignalProcessor:
                     # Recalculate SL if not set or invalid (above entry for BUY)
                     from domain.value_objects import Money
                     stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+                else:
+                    # Validate existing SL price for BUY order
+                    sl_amount = float(stop_loss_price.amount)
+                    if sl_amount >= entry_price:
+                        if self.logger:
+                            self.logger.warning(f"Invalid SL for BUY: SL({sl_amount}) >= Entry({entry_price}), recalculating...")
+                        from domain.value_objects import Money
+                        stop_loss_price = Money(amount=float(sl_price), currency='USDT')
 
                 if (take_profit_price is None or
                     (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= 0) or
@@ -381,6 +411,14 @@ class SignalProcessor:
                     # Recalculate TP if not set or invalid (below entry for BUY)
                     from domain.value_objects import Money
                     take_profit_price = Money(amount=float(tp_price), currency='USDT')
+                else:
+                    # Validate existing TP price for BUY order
+                    tp_amount = float(take_profit_price.amount)
+                    if tp_amount <= entry_price:
+                        if self.logger:
+                            self.logger.warning(f"Invalid TP for BUY: TP({tp_amount}) <= Entry({entry_price}), recalculating...")
+                        from domain.value_objects import Money
+                        take_profit_price = Money(amount=float(tp_price), currency='USDT')
             else:  # SELL
                 # For SELL orders, SL should be above entry, TP should be below entry
                 if (stop_loss_price is None or
@@ -389,6 +427,14 @@ class SignalProcessor:
                     # Recalculate SL if not set or invalid (below entry for SELL)
                     from domain.value_objects import Money
                     stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+                else:
+                    # Validate existing SL price for SELL order
+                    sl_amount = float(stop_loss_price.amount)
+                    if sl_amount <= entry_price:
+                        if self.logger:
+                            self.logger.warning(f"Invalid SL for SELL: SL({sl_amount}) <= Entry({entry_price}), recalculating...")
+                        from domain.value_objects import Money
+                        stop_loss_price = Money(amount=float(sl_price), currency='USDT')
 
                 if (take_profit_price is None or
                     (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= 0) or
@@ -396,6 +442,51 @@ class SignalProcessor:
                     # Recalculate TP if not set or invalid (above entry for SELL)
                     from domain.value_objects import Money
                     take_profit_price = Money(amount=float(tp_price), currency='USDT')
+                else:
+                    # Validate existing TP price for SELL order
+                    tp_amount = float(take_profit_price.amount)
+                    if tp_amount >= entry_price:
+                        if self.logger:
+                            self.logger.warning(f"Invalid TP for SELL: TP({tp_amount}) >= Entry({entry_price}), recalculating...")
+                        from domain.value_objects import Money
+                        take_profit_price = Money(amount=float(tp_price), currency='USDT')
+
+            # Perform comprehensive validation of calculated SL/TP prices
+            # Check for symbol-price consistency (sanity check)
+            if stop_loss_price:
+                sl_amount = float(stop_loss_price.amount)
+                sl_distance_ratio = abs(sl_amount - entry_price) / entry_price
+
+                # If SL is extremely far from entry price (>50%), it's likely a calculation error
+                if sl_distance_ratio > 0.5:
+                    if self.logger:
+                        self.logger.warning(f"SL price scale mismatch for {execution_intent.symbol.value}: SL={sl_amount}, Entry={entry_price}, Ratio={sl_distance_ratio:.2f}. Recalculating...")
+                    from domain.value_objects import Money
+                    stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+
+            if take_profit_price:
+                tp_amount = float(take_profit_price.amount)
+                tp_distance_ratio = abs(tp_amount - entry_price) / entry_price
+
+                # If TP is extremely far from entry price (>50%), it's likely a calculation error
+                if tp_distance_ratio > 0.5:
+                    if self.logger:
+                        self.logger.warning(f"TP price scale mismatch for {execution_intent.symbol.value}: TP={tp_amount}, Entry={entry_price}, Ratio={tp_distance_ratio:.2f}. Recalculating...")
+                    from domain.value_objects import Money
+                    take_profit_price = Money(amount=float(tp_price), currency='USDT')
+
+            # Log comprehensive order details before execution
+            if self.logger:
+                sl_val = float(stop_loss_price.amount) if stop_loss_price else "N/A"
+                tp_val = float(take_profit_price.amount) if take_profit_price else "N/A"
+
+                self.logger.info(f"📊 ORDER DETAILS: {execution_intent.symbol.value} | "
+                               f"Side: {order_side.name} | "
+                               f"Entry: ${entry_price:.4f} | "
+                               f"SL: ${sl_val} | "
+                               f"TP: ${tp_val} | "
+                               f"Qty: {quantity} | "
+                               f"Strategy: {execution_intent.strategy_name}")
 
             order = Order(
                 symbol=execution_intent.symbol,
@@ -415,8 +506,13 @@ class SignalProcessor:
             if hasattr(execution_service_to_use, 'execute_order'):
                 try:
                     order_id = execution_service_to_use.execute_order(order)
-                    if self.logger:
-                        self.logger.info(f"Executed order with ID: {order_id}")
+                    if order_id is not None:
+                        if self.logger:
+                            self.logger.info(f"Executed order with ID: {order_id}")
+                    else:
+                        if self.logger:
+                            self.logger.warning(f"Order execution returned None - order was not placed")
+                    # Only return order_id if it's not None, otherwise return appropriate status
                     return order_id
                 except ValueError as ve:
                     if "DUPLICATE:" in str(ve):

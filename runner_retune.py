@@ -16,6 +16,10 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 # Add project root to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 

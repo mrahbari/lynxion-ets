@@ -751,32 +751,24 @@ class AutoDetectionOrchestrator:
         direction = execution_intent.side.name if hasattr(execution_intent.side, 'name') else str(execution_intent.side)
 
         with self._pending_intents_lock:
-            # Check if there's already a pending intent for this symbol and direction in orchestrator tracking
-            if symbol in self._pending_intents:
-                if direction in self._pending_intents[symbol]:
-                    confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
-                    self.logger.info(f"❌ DUPLICATE REJECTED: Pending {direction} intent exists for {symbol}. Preventing duplicate same-direction intent. | Intent Confidence: {confidence:.2%}")
-                    return True  # Duplicate found
-
-            # Also check the shared tracker used by execution services to ensure consistency
+            # Check the shared tracker used by execution services to ensure consistency
+            # This is the primary check to avoid double-rejection issues
             from domain.value_objects import Symbol
             symbol_obj = Symbol(symbol)
             if self._pending_orders_tracker.has_pending_order_in_direction(symbol_obj, direction):
                 confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
-                self.logger.info(f"❌ DUPLICATE REJECTED: Pending {direction} order exists in shared tracker for {symbol}. Preventing duplicate same-direction intent. | Intent Confidence: {confidence:.2%}")
+                self.logger.debug(f"⚠️ DUPLICATE CHECK: Pending {direction} order exists in shared tracker for {symbol} — broker will handle final confirmation. | Intent Confidence: {confidence:.2%}")
                 return True  # Duplicate found in shared tracker
 
-            # Add this intent to BOTH the orchestrator tracking AND the shared tracker
+            # Add this intent to the orchestrator's internal tracking only
+            # The execution service will handle the shared tracker when actually placing the order
             if symbol not in self._pending_intents:
                 self._pending_intents[symbol] = {}
             self._pending_intents[symbol][direction] = datetime.now()
 
-            # Also add to shared tracker to prevent conflicts with execution services
-            temp_order_id = f"orch_intent_{id(execution_intent)}_{int(datetime.now().timestamp())}"
-            self._pending_orders_tracker.add_pending_order(symbol_obj, direction, temp_order_id)
-
-            # Store the temp order ID for later removal
-            self._pending_intent_temp_ids[id(execution_intent)] = temp_order_id
+            # Store a reference to the execution intent for later removal
+            # Don't add to shared tracker here - let the execution service handle that
+            self._pending_intent_temp_ids[id(execution_intent)] = None  # No shared tracker ID yet
 
         return False  # Not a duplicate
 
@@ -873,14 +865,15 @@ class AutoDetectionOrchestrator:
                 if not self._pending_intents[symbol]:
                     del self._pending_intents[symbol]
 
-            # Also remove from shared tracker
+            # Also remove from shared tracker if we had added one
             from domain.value_objects import Symbol
             symbol_obj = Symbol(symbol)
             # Use the stored temp order ID
             execution_intent_id = id(execution_intent)
             if execution_intent_id in self._pending_intent_temp_ids:
                 temp_order_id = self._pending_intent_temp_ids[execution_intent_id]
-                self._pending_orders_tracker.remove_pending_order(symbol_obj, temp_order_id)
+                if temp_order_id is not None:  # Only remove from shared tracker if we actually added one
+                    self._pending_orders_tracker.remove_pending_order(symbol_obj, temp_order_id)
                 # Clean up the stored temp ID
                 del self._pending_intent_temp_ids[execution_intent_id]
 
@@ -913,6 +906,8 @@ class AutoDetectionOrchestrator:
             # Double-check for duplicates right before execution to prevent race conditions
             # This catches cases where multiple threads might have passed the initial check
             # but are now trying to execute simultaneously
+            # NOTE: The actual broker service will also perform this check, so we'll just log if found
+            # but allow the broker service to handle the rejection to avoid duplicate messages
             prevent_same_direction = os.getenv('PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL', 'true').lower() == 'true'
             if prevent_same_direction:
                 symbol = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
@@ -923,14 +918,10 @@ class AutoDetectionOrchestrator:
                 symbol_obj = Symbol(symbol)
                 if self._pending_orders_tracker.has_pending_order_in_direction(symbol_obj, direction):
                     confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
-                    self.logger.info(f"❌ DUPLICATE REJECTED AT EXECUTION: Pending {direction} order exists in shared tracker for {symbol}. Preventing duplicate same-direction intent. | Intent Confidence: {confidence:.2%}")
+                    self.logger.debug(f"DUPLICATE CHECK: Pending {direction} order exists in shared tracker for {symbol}. Broker service will handle rejection. | Intent Confidence: {confidence:.2%}")
 
-                    # Remove from pending intents since we're not executing
-                    self._remove_pending_execution_intent(execution_intent)
-                    return {
-                        'status': 'failed',
-                        'error': f"DUPLICATE:{symbol}:{direction}"
-                    }
+                    # We'll let the broker service handle the actual rejection to avoid duplicate messages
+                    # Continue to execution where the broker service will reject it
 
         # Check if this is a stablecoin pair that should be filtered out
             filter_stablecoin_pairs = os.getenv('FILTER_OUT_STABLECOIN_PAIRS', 'true').lower() == 'true'
