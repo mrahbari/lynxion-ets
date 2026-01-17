@@ -11,8 +11,8 @@ class Symbol:
     value: str
 
     def __post_init__(self):
-        # Validate symbol format (e.g., BTC-USDT, ETHUSDC)
-        if not re.match(r'^[A-Z]{3,10}[-A-Z]{0,1}[A-Z]{3,6}$', self.value):
+        # Validate symbol format (e.g., BTC-USDT, ETHUSDC, AUSDT)
+        if not re.match(r'^[A-Z]{1,10}[-A-Z]{0,1}[A-Z]{3,6}$', self.value):
             raise ValueError(f"Invalid symbol format: {self.value}")
     
     def base_asset(self) -> str:

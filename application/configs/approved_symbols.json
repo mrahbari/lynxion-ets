@@ -144,7 +144,6 @@
   "EURIUSDT",
   "EURUSDT",
   "FARMUSDT",
-  "FARTCOINUSDT",
   "FDUSDUSDT",
   "FETUSDT",
   "FFUSDT",
@@ -154,8 +153,10 @@
   "FLOKIUSDT",
   "FLOWUSDT",
   "FLUXUSDT",
+  "FOGOUSDT",
   "FORMUSDT",
   "FORTHUSDT",
+  "FRAXUSDT",
   "FTTUSDT",
   "FUNUSDT",
   "FUSDT",
@@ -439,5 +440,6 @@
   "ZKPUSDT",
   "ZKUSDT",
   "ZROUSDT",
-  "ZRXUSDT"
+  "ZRXUSDT",
+  "\u5e01\u5b89\u4eba\u751fUSDT"
 ]
