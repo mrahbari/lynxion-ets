@@ -710,36 +710,98 @@ class _BingXBroker:
     def get_available_symbols(self) -> set:
         """Get set of available symbols on BingX."""
         try:
-            # Get exchange info from BingX API
-            response = self._make_request('GET', '/openApi/quote/v1/ticker/24hr', signed=False)
+            # Try the correct BingX API endpoint for getting all trading pairs
+            # According to BingX API documentation, the exchangeInfo endpoint is the most reliable
+            response = self._make_request('GET', '/openApi/spot/v1/public/exchangeInfo', signed=False)
 
             if response.get('code') == 0:
                 symbols = set()
-                data = response.get('data', [])
-                if isinstance(data, list):
-                    for item in data:
-                        if 'symbol' in item:
-                            # Convert from BingX format (e.g., BTC-USDT) to our format (BTCUSDT)
-                            symbol = item['symbol'].replace('-', '')
-                            symbols.add(symbol)
-                return symbols
-            else:
-                # Fallback: try another endpoint
-                response2 = self._make_request('GET', '/openApi/quote/v1/ticker/price', signed=False)
-                if response2.get('code') == 0:
+                data = response.get('data', {})
+
+                # Check if the response has a 'symbols' field (common format for exchange info)
+                if 'symbols' in data:
+                    for symbol_info in data['symbols']:
+                        if isinstance(symbol_info, dict):
+                            # Check if the symbol is currently trading
+                            status = symbol_info.get('status', '').upper()
+                            if status in ['TRADING', 'ENABLED', 'ACTIVE']:
+                                symbol = symbol_info.get('symbol', '')
+                                if symbol:
+                                    # Convert from BingX format (e.g., BTC-USDT) to our format (BTCUSDT)
+                                    formatted_symbol = symbol.replace('-', '')
+                                    symbols.add(formatted_symbol)
+
+                # If we found symbols using exchangeInfo, return them
+                if symbols:
+                    self.logger.debug(f"Retrieved {len(symbols)} symbols from exchangeInfo endpoint")
+                    return symbols
+
+            # If the exchangeInfo endpoint didn't work, try the ticker/24hr endpoint for all symbols
+            try:
+                ticker_response = self._make_request('GET', '/openApi/spot/v1/market/ticker/24hr', signed=False)
+
+                if ticker_response.get('code') == 0:
                     symbols = set()
-                    data = response2.get('data', [])
+                    data = ticker_response.get('data', [])
+
                     if isinstance(data, list):
                         for item in data:
-                            if 'symbol' in item:
-                                symbol = item['symbol'].replace('-', '')
-                                symbols.add(symbol)
-                    return symbols
-        except Exception as e:
-            # If API call fails, return empty set
-            pass
+                            if isinstance(item, dict) and 'symbol' in item:
+                                symbol = item['symbol']
+                                # Convert from BingX format (e.g., BTC-USDT) to our format (BTCUSDT)
+                                formatted_symbol = symbol.replace('-', '')
+                                symbols.add(formatted_symbol)
 
-        # Return empty set if all attempts fail
+                    if symbols:
+                        self.logger.debug(f"Retrieved {len(symbols)} symbols from ticker/24hr endpoint")
+                        return symbols
+            except Exception as ticker_error:
+                self.logger.debug(f"Ticker endpoint failed: {ticker_error}")
+
+            # If that doesn't work, try the ticker/price endpoint for all symbols
+            try:
+                price_response = self._make_request('GET', '/openApi/spot/v1/market/ticker/price', signed=False)
+
+                if price_response.get('code') == 0:
+                    symbols = set()
+                    data = price_response.get('data', [])
+
+                    if isinstance(data, list):
+                        for item in data:
+                            if isinstance(item, dict) and 'symbol' in item:
+                                symbol = item['symbol']
+                                # Convert from BingX format (e.g., BTC-USDT) to our format (BTCUSDT)
+                                formatted_symbol = symbol.replace('-', '')
+                                symbols.add(formatted_symbol)
+
+                    if symbols:
+                        self.logger.debug(f"Retrieved {len(symbols)} symbols from ticker/price endpoint")
+                        return symbols
+            except Exception as price_error:
+                self.logger.debug(f"Price ticker endpoint failed: {price_error}")
+
+        except Exception as e:
+            self.logger.error(f"Error getting available symbols from BingX: {e}")
+            # If API call fails, return empty set but log the error
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
+            return set()
+
+        # If all API methods fail, return the approved symbols as a fallback
+        # since we know these should be available on BingX
+        try:
+            from utils.symbol_validator import symbol_validator
+            if hasattr(symbol_validator, 'get_approved_symbols'):
+                approved_symbols = symbol_validator.get_approved_symbols()
+                self.logger.debug(f"Using {len(approved_symbols)} approved symbols as fallback")
+                return approved_symbols
+        except ImportError:
+            # If we can't import the symbol validator, return empty set
+            self.logger.warning("Could not import symbol validator, using empty set as fallback")
+            pass
+        except Exception as e:
+            self.logger.warning(f"Could not get approved symbols from validator: {e}")
+
         return set()
 
     def get_open_positions(self, symbol: str=None) -> List[Dict]:

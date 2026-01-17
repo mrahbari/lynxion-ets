@@ -52,10 +52,7 @@ The system is suitable for both **research/backtesting** and **live trading**.
 * **Multi-Asset Support**: Simultaneous trading across multiple cryptocurrencies
 * **Configurable Strategies**: Modular strategy system with easy customization
 * **Strategy Health Monitoring**: Comprehensive health monitoring with performance tracking
-* **Automatic Strategy Restart**: Self-healing capabilities with auto-restart on failure
-* **Signal Conflict Resolution**: Advanced algorithms for resolving conflicting signals
-* **Adaptive Signal Weighting**: Reliability-based weighting for signal fusion
-* **Engine Performance Tracking**: Detailed performance metrics for signal processing engines
+* **Approved Symbol Validation**: Automatic filtering of trading symbols against approved list to ensure only supported and listed symbols are processed
 * **Advanced Fusion System**: Adaptive weights with diversity metrics and explainability
 * **Watcher Health Management**: Comprehensive monitoring and auto-restart for watchers
 * **Dynamic Registration**: Runtime registration for strategies and watchers
@@ -101,6 +98,7 @@ Lynxion ETS follows **Hexagonal Architecture**, separating core business logic f
 * **Fusion Intelligence**: Adaptive weights with diversity metrics and explainability
 * **Watcher Orchestration**: Health monitoring, auto-restart, dynamic registration
 * **Resource Optimization**: Instance pooling and limitation systems
+* **Symbol Validation**: Automatic filtering against approved symbol lists to ensure only supported and listed symbols are processed through the system
 
 ### Layers
 
@@ -130,11 +128,31 @@ The system implements a complete automated trading workflow with proper validati
 
 ### Workflow Components
 
-* **Watcher Layer**: Health monitoring, auto-restart, signal validation, error isolation
+* **Watcher Layer**: Health monitoring, auto-restart, signal validation, error isolation, symbol filtering
 * **Engine Layer**: Performance tracking, validation, optimization, processing metrics
 * **Fusion Layer**: Adaptive weights, diversity metrics, explainability, conflict resolution
 * **Strategy Layer**: Health monitoring, auto-restart, performance tracking, resource optimization
 * **Broker Layer**: Order execution, risk management, performance monitoring
+
+### Symbol Validation System
+
+The system includes an advanced symbol validation mechanism that ensures only approved and supported symbols are processed:
+
+* **Approved Symbol Lists**: Configurable JSON files containing approved trading symbols
+* **Early Filtering**: Symbols are validated at the watcher level before entering the processing pipeline
+* **Multi-Level Validation**: Validation occurs at data provider, broker service, and execution levels
+* **Automatic Rejection**: Non-approved symbols are automatically rejected with clear logging
+* **Configuration Flexibility**: Easy to update approved symbol lists without code changes
+* **Performance Optimization**: Prevents system resources from being wasted on unsupported symbols
+
+### Symbol Management Utilities
+
+The system includes utilities to manage approved symbols:
+
+* **Symbol Updater**: `runner_sync_approved_symbols.py` - Fetches the latest available symbols from exchange APIs and updates the approved symbols list
+* **Automatic Backups**: The updater creates timestamped backups of the previous symbol list before updates
+* **Multi-Source Fallback**: Tries BingX API first, falls back to Binance API, and uses existing symbols as final fallback
+* **Change Tracking**: Reports added and removed symbols during updates for transparency
 
 ---
 
@@ -297,30 +315,30 @@ python runner_backtest.py --strategy crypto_breakout --start 90d --end today --r
 ### Historical Data Download
 
 ```bash
-# Download historical data for all configured symbols
-python runner_history_download.py --start 365d --end today
+# Download historical data for all configured symbols (downloads only 1m as base)
+python runner_history_download.py --start 365d --end today --timeframes 1m
 
-# Download historical data for a specific symbol
-python runner_history_download.py --start 90d --end today --symbols MATICUSDT
+# Download historical data for a specific symbol (downloads only 1m as base)
+python runner_history_download.py --start 90d --end today --symbols MATICUSDT --timeframes 1m
 
-# Download with custom timeframes (space-separated)
-python runner_history_download.py --start 30d --end today --symbols BTCUSDT --timeframes 5m 15m 1h
+# Download with custom timeframes (space-separated) - NOTE: downloads only 1m as base, use multitimeframe_update to generate others
+python runner_history_download.py --start 30d --end today --symbols BTCUSDT --timeframes 1m
 
-# Download to custom directory
-python runner_history_download.py --start 180d --end today --symbols ETHUSDT --output ./custom_data
+# Download to custom directory (downloads only 1m as base)
+python runner_history_download.py --start 180d --end today --symbols ETHUSDT --timeframes 1m --output ./custom_data
 
-# Download with specific date range
-python runner_history_download.py --start 2023-01-01 --end 2023-12-31 --symbols SOLUSDT
+# Download with specific date range (downloads only 1m as base)
+python runner_history_download.py --start 2023-01-01 --end 2023-12-31 --symbols SOLUSDT --timeframes 1m
 
-# Download from specific exchange (default: binance)
-python runner_history_download.py --start 90d --end today --symbols MATICUSDT --exchange bingx
+# Download from specific exchange (default: binance) - downloads only 1m as base
+python runner_history_download.py --start 90d --end today --symbols MATICUSDT --exchange bingx --timeframes 1m
 
-# Download from different exchanges
-python runner_history_download.py --start 30d --end today --symbols BTCUSDT ETHUSDT --exchange mexc
-python runner_history_download.py --start 60d --end today --symbols ADAUSDT --exchange phemex
+# Download from different exchanges - downloads only 1m as base
+python runner_history_download.py --start 30d --end today --symbols BTCUSDT ETHUSDT --exchange mexc --timeframes 1m
+python runner_history_download.py --start 60d --end today --symbols ADAUSDT --exchange phemex --timeframes 1m
 
-# Multiple symbols and custom timeframes from specific exchange
-python runner_history_download.py --start 7d --end today --symbols BTCUSDT ETHUSDT SOLUSDT --timeframes 1m 5m 15m --exchange bingx
+# Multiple symbols and 1m timeframe from specific exchange (other timeframes should be generated separately)
+python runner_history_download.py --start 7d --end today --symbols BTCUSDT ETHUSDT SOLUSDT --timeframes 1m --exchange bingx
 ```
 
 **Command Options:**
@@ -332,6 +350,115 @@ python runner_history_download.py --start 7d --end today --symbols BTCUSDT ETHUS
 - `--exchange`: Exchange to download from (default: binance, options: binance,bingx,mexc,phemex)
 - `--validate`: Validate data integrity after download
 - `--verbose`: Enable verbose output
+
+### Managing Coins and Historical Data
+
+#### Download New Coins
+
+To download data for new coins:
+
+```bash
+# Download data for specific symbols (replace with actual symbols) - downloads only 1m data as base
+python runner_history_download.py --start 90d --end today --symbols BTCUSDT ETHUSDT --timeframes 1m
+
+# Download for all approved symbols for the last 3 months - downloads only 1m data as base
+python runner_history_download.py --start 90d --end today --timeframes 1m
+```
+
+#### Update Old Coins
+
+To update existing coins with new data:
+
+```bash
+# Run the historical data sync to update all approved symbols
+python runner_historical_data_sync.py now
+
+# Or run continuously to keep updating
+python runner_historical_data_sync.py
+```
+
+#### Get 3-Month History for Specific Symbol
+
+To get 3 months of history for a specific symbol:
+
+```bash
+# Download 3 months of data for a specific symbol - downloads only 1m data as base
+python runner_history_download.py --start 90d --end today --symbols YOUR_SYMBOL --timeframes 1m
+
+# Example for a specific coin:
+python runner_history_download.py --start 90d --end today --symbols SOLUSDT --timeframes 1m
+```
+
+#### Update Multi-timeframe Data
+
+After downloading raw 1-minute data, generate higher timeframes:
+
+```bash
+# Update multi-timeframe data from raw 1-minute data
+python runner_multitimeframe_update.py --symbols YOUR_SYMBOL --timeframes 5m 15m 30m 1h 4h 1d
+
+# Or update all symbols
+python runner_multitimeframe_update.py --all --timeframes 5m 15m 30m 1h 4h 1d
+```
+
+#### Sync Approved Symbols
+
+To ensure you have the latest list of available symbols:
+
+```bash
+# Update the list of approved symbols from exchanges
+python runner_sync_approved_symbols.py
+```
+
+#### Complete Process for a New Symbol:
+
+1. First, update the approved symbols list:
+   ```bash
+   python runner_sync_approved_symbols.py
+   ```
+
+2. Then download 3 months of 1-minute data (base data):
+   ```bash
+   python runner_history_download.py --start 90d --end today --symbols YOUR_SYMBOL --timeframes 1m
+   ```
+
+3. Generate higher timeframes from the 1-minute base data:
+   ```bash
+   python runner_multitimeframe_update.py --symbols YOUR_SYMBOL --timeframes 5m 15m 30m 1h 4h 1d
+   ```
+
+4. For ongoing updates, run the sync job:
+   ```bash
+   python runner_historical_data_sync.py now
+   ```
+
+#### Process All Symbols
+
+You can also run these operations for ALL approved symbols:
+
+1. Download 1-minute data for all approved symbols:
+   ```bash
+   python runner_history_download.py --start 90d --end today --timeframes 1m
+   # Note: Without specifying --symbols, it will use all approved symbols from the environment
+   ```
+
+2. Update multi-timeframe data for all symbols:
+   ```bash
+   python runner_multitimeframe_update.py --all --timeframes 5m 15m 30m 1h 4h 1d
+   ```
+
+3. Sync historical data for all approved symbols (this runs continuously):
+   ```bash
+   python runner_historical_data_sync.py
+   # Or run once:
+   python runner_historical_data_sync.py now
+   ```
+
+4. Get the list of all approved symbols:
+   ```bash
+   python runner_sync_approved_symbols.py
+   # This updates the approved symbols list from exchanges
+   ```
 
 ---
 

@@ -292,61 +292,29 @@ def run_production_orchestrator(data_fetcher, strategy_name="crypto_breakout",
     # Import the broker execution service that handles broker configuration
     from infrastructure.services.broker_execution_service import create_execution_service
 
-    class MockPortfolioService(PortfolioManagementPort):
-        def __init__(self):
-            from shared.logger import EnhancedLogger
-            self.logger = EnhancedLogger("MockPortfolioService")
 
-        def calculate_allocation(self, total_capital: float, symbols):
-            from domain.value_objects import Symbol, Percentage
-            allocations = {}
-            if symbols:
-                # Simple equal allocation for all symbols
-                allocation_per_symbol = total_capital / len(symbols)
-                for sym in symbols:
-                    allocations[sym] = allocation_per_symbol
-            return allocations
-
-        def rebalance_portfolio(self, target_allocations):
-            self.logger.info(f"🔄 REBALANCING PORTFOLIO: {target_allocations}")
-            return []
-
-        def get_portfolio_metrics(self):
-            self.logger.info("📊 FETCHING PORTFOLIO METRICS")
-            return {"sharpe_ratio": 1.0, "max_drawdown": -0.05, "total_return": 0.1, "equity": 10000.0, "pnl": 500.0}
-
-    class MockOptimizationService(IOptimizationService):
-        def __init__(self):
-            from shared.logger import EnhancedLogger
-            self.logger = EnhancedLogger("MockOptimizationService")
-
-        def optimize_strategy(self, strategy_name, data, parameters):
-            self.logger.info(f"⚙️ OPTIMIZING STRATEGY: {strategy_name}")
-            return {"status": "success", "best_params": {}}
-
-        def get_optimized_parameters(self, strategy_name, symbol):
-            self.logger.info(f"🔍 GETTING OPTIMIZED PARAMETERS: {strategy_name} for {symbol}")
-            return {}
-
-        def save_optimized_parameters(self, strategy_name, symbol, parameters):
-            self.logger.info(f"💾 SAVING OPTIMIZED PARAMETERS: {strategy_name} for {symbol}")
-
-    # Create execution service first
-    execution_service = create_execution_service(use_multi_broker=True, primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
+    # Create execution service first using the registry to avoid duplicate initialization
+    from infrastructure.services.broker_registry import broker_registry
+    execution_service = broker_registry.get_execution_service(use_multi_broker=True, primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
 
     # Create enhanced data provider that uses real data and can download missing symbols
     # Use environment variable or default path for historical data
     # For now, pass the execution service as the broker service (it has access to the broker)
     # Configure to use binance as primary source for historical data to avoid BingX rate limits
-    market_data_repo = create_enhanced_data_provider(
+    market_data_repo = broker_registry.get_historical_data_provider(
         csv_base_path=None,
         download_enabled=True,
         broker_service=execution_service,
         historical_data_source=os.getenv('PREFERRED_HISTORICAL_DATA_SOURCE', 'binance'),  # Use binance by default to avoid BingX rate limits
         fallback_sources=['mexc', 'phemex', 'bingx']  # Fallback order to avoid rate limits
     )
-    portfolio_service = MockPortfolioService()
-    optimization_service = MockOptimizationService()
+    # Import real portfolio and optimization services
+    from infrastructure.portfolio.portfolio_adapters import EqualWeightPortfolioAdapter
+    from infrastructure.optimization.advanced_optimization_service import AdvancedOptimizationService
+
+    # Create and configure real services
+    portfolio_service = EqualWeightPortfolioAdapter()
+    optimization_service = AdvancedOptimizationService()
 
     # Create orchestrator
     orchestrator = ProductionTradingOrchestrator(
@@ -643,44 +611,29 @@ if __name__ == "__main__":
             from domain.ports.optimization_ports import IOptimizationService
 
 
-            class MockPortfolioService(PortfolioManagementPort):
-                def calculate_allocation(self, total_capital: float, symbols):
-                    from domain.value_objects import Symbol, Percentage
-                    return {sym: total_capital/len(symbols) if symbols else 0 for sym in symbols}
 
-                def rebalance_portfolio(self, target_allocations):
-                    return []
-
-                def get_portfolio_metrics(self):
-                    return {"sharpe_ratio": 1.0, "max_drawdown": -0.05, "total_return": 0.1}
-
-            class MockOptimizationService(IOptimizationService):
-                def optimize_strategy(self, strategy_name, data, parameters):
-                    return {"status": "success", "best_params": {}}
-
-                def get_optimized_parameters(self, strategy_name, symbol):
-                    return {}
-
-                def save_optimized_parameters(self, strategy_name, symbol, parameters):
-                    pass
-
-            # Create execution service first
-            from infrastructure.services.broker_execution_service import create_execution_service
-            execution_service = create_execution_service(use_multi_broker=True, primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
+            # Create execution service first using the registry to avoid duplicate initialization
+            from infrastructure.services.broker_registry import broker_registry
+            execution_service = broker_registry.get_execution_service(use_multi_broker=True, primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
 
             # Create enhanced data provider that uses real data and can download missing symbols
             # Use environment variable or default path for historical data
             # For now, pass the execution service as the broker service (it has access to the broker)
             # Configure to use binance as primary source for historical data to avoid BingX rate limits
-            market_data_repo = create_enhanced_data_provider(
+            market_data_repo = broker_registry.get_historical_data_provider(
                 csv_base_path=None,
                 download_enabled=True,
                 broker_service=execution_service,
                 historical_data_source=os.getenv('PREFERRED_HISTORICAL_DATA_SOURCE', 'binance'),  # Use binance by default to avoid BingX rate limits
                 fallback_sources=['mexc', 'phemex', 'bingx']  # Fallback order to avoid rate limits
             )
-            portfolio_service = MockPortfolioService()
-            optimization_service = MockOptimizationService()
+            # Import real portfolio and optimization services
+            from infrastructure.portfolio.portfolio_adapters import EqualWeightPortfolioAdapter
+            from infrastructure.optimization.advanced_optimization_service import AdvancedOptimizationService
+
+            # Create and configure real services
+            portfolio_service = EqualWeightPortfolioAdapter()
+            optimization_service = AdvancedOptimizationService()
 
             # Determine symbols to monitor
             symbols = []

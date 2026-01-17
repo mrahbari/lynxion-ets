@@ -12,7 +12,12 @@ class TickWatcherAdapter(BaseWatcher):
     """Tick Watcher - analyzes tick-by-tick market data, returns raw market observations"""
 
     def __init__(self, name: str, symbol: str, broker_service=None, lookback: int = 1000):
-        super().__init__(name, symbol, broker_service, None)
+        # Convert symbol string to Symbol object if needed
+        symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
+        super().__init__(name, symbol_obj)
+
+        # Store broker service and other parameters separately
+        self.broker_service = broker_service
 
         # Configuration from environment with defaults
         self.enabled = os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true'
@@ -142,6 +147,10 @@ class TickWatcherAdapter(BaseWatcher):
         )
 
         return observation
+
+    def analyze(self, symbol: Symbol) -> MarketObservation:
+        """Analyze market conditions and return a raw market observation"""
+        return self._analyze_impl(symbol)
 
     def _calculate_tick_intensity(self) -> float:
         """Calculate tick intensity (ticks per unit time)"""

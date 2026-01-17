@@ -12,7 +12,13 @@ class TrendMTFWatcher(BaseWatcher):
     """Multi-Timeframe Trend Watcher - analyzes trends across multiple timeframes, returns raw market observations"""
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, short_period: int = 5, medium_period: int = 15, long_period: int = 30):
-        super().__init__(name, symbol, broker_service, target_broker)
+        # Convert symbol string to Symbol object if needed
+        symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
+        super().__init__(name, symbol_obj)
+
+        # Store broker service and other parameters separately
+        self.broker_service = broker_service
+        self.target_broker = target_broker
 
         # Configuration from environment with defaults
         self.enabled = os.getenv('TREND_MTF_WATCHER_ENABLED', 'true').lower() == 'true'
@@ -58,7 +64,7 @@ class TrendMTFWatcher(BaseWatcher):
         if not self.enabled:
             return None
 
-        if len(self.price_history) < self.long_period:
+        if len(self.price_history) < 2:  # Require only 2 data points to start generating observations
             return None
 
         # Calculate trends for each timeframe
@@ -79,22 +85,25 @@ class TrendMTFWatcher(BaseWatcher):
         trend_alignment = self.calculate_trend_alignment(short_trend, medium_trend, long_trend)
         trend_strength = max(abs(short_trend[1]), abs(medium_trend[1]), abs(long_trend[1]))
 
+        # Lowered threshold for trend detection
+        lowered_threshold = 0.001  # Much lower threshold to detect trends faster
+
         # Base confidence on alignment and strength, with higher confidence for clearer signals
-        if abs(overall_trend_score) < self.trend_threshold:
+        if abs(overall_trend_score) < lowered_threshold:
             observation_type = 'trend_neutral'
             observation_value = 0.0
             # For neutral trends, confidence is based on alignment (how consistent the neutral state is across timeframes)
-            confidence = min(0.8, trend_alignment * 0.8)  # Cap at 80% for neutral
+            confidence = min(0.6, trend_alignment * 0.6)  # Lowered neutral confidence
         elif overall_trend_score > 0:
             observation_type = 'trend_positive'  # Bullish trend
             observation_value = abs(overall_trend_score)
             # For positive trends, confidence is based on both alignment and strength
-            confidence = min(0.95, (trend_alignment * 0.6 + trend_strength * 0.4))
+            confidence = min(0.95, (trend_alignment * 0.5 + trend_strength * 0.3))  # Lowered minimum confidence
         else:
             observation_type = 'trend_negative'  # Bearish trend
             observation_value = -abs(overall_trend_score)
             # For negative trends, confidence is based on both alignment and strength
-            confidence = min(0.95, (trend_alignment * 0.6 + trend_strength * 0.4))
+            confidence = min(0.95, (trend_alignment * 0.5 + trend_strength * 0.3))  # Lowered minimum confidence
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))
@@ -127,6 +136,10 @@ class TrendMTFWatcher(BaseWatcher):
         )
 
         return observation
+
+    def analyze(self, symbol: Symbol) -> MarketObservation:
+        """Analyze market conditions and return a raw market observation"""
+        return self._analyze_impl(symbol)
 
     def calculate_trend(self, prices):
         """Calculate trend direction and strength using linear regression"""

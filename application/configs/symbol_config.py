@@ -11,10 +11,10 @@ from domain.sync.entities import SymbolSyncConfig
 
 
 def _parse_wfo_symbols() -> List[SymbolSyncConfig]:
-    """Parse symbols from multiple sources: WFO_COINS environment variable, coins.json file, or default list"""
+    """Parse symbols from multiple sources: WFO_COINS environment variable, sync_symbols.json file, or default list"""
 
-    # First, try to read from coins.json file if it exists (for better organization)
-    coins_json_path = Path(os.getenv("COINS_CONFIG_PATH", "./application/configs/coins.json"))
+    # First, try to read from sync_symbols.json file if it exists (for better organization)
+    coins_json_path = Path(os.getenv("COINS_CONFIG_PATH", "./application/configs/sync_symbols.json"))
     if coins_json_path.exists():
         try:
             with open(coins_json_path, 'r') as f:
@@ -26,23 +26,23 @@ def _parse_wfo_symbols() -> List[SymbolSyncConfig]:
                     for category_coins in coins_data["categories"].values():
                         symbol_names.extend(category_coins)
         except Exception as e:
-            print(f"⚠️  WARNING: Could not load coins.json from {coins_json_path}: {e}")
+            print(f"⚠️  WARNING: Could not load sync_symbols.json from {coins_json_path}: {e}")
             symbol_names = []
     else:
-        # If coins.json doesn't exist, try the WFO_COINS environment variable
+        # If sync_symbols.json doesn't exist, try the WFO_COINS environment variable
         wfo_coins_str = os.getenv("WFO_COINS", "")
         if not wfo_coins_str:
-            # If neither coins.json nor WFO_COINS is set, try common default
-            print("⚠️  WARNING: WFO_COINS environment variable not set and coins.json not found. No symbols will be "
+            # If neither sync_symbols.json nor WFO_COINS is set, try common default
+            print("⚠️  WARNING: WFO_COINS environment variable not set and sync_symbols.json not found. No symbols will be "
                   "processed.")
-            print("   Please set WFO_COINS in your .env file or create ./application/configs/coins.json")
-            print("   Example coins.json format: {\"symbols\": [\"BTCUSDT\", \"ETHUSDT\", \"ZECUSDT\"]}")
+            print("   Please set WFO_COINS in your .env file or create ./application/configs/sync_symbols.json")
+            print("   Example sync_symbols.json format: {\"symbols\": [\"BTCUSDT\", \"ETHUSDT\", \"ZECUSDT\"]}")
             return []
 
         symbol_names = [s.strip() for s in wfo_coins_str.split(',')]
 
     if not symbol_names:
-        print("⚠️  WARNING: No symbols found in WFO_COINS or coins.json. No symbols will be processed.")
+        print("⚠️  WARNING: No symbols found in WFO_COINS or sync_symbols.json. No symbols will be processed.")
         return []
 
     symbol_configs = []

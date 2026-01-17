@@ -13,6 +13,10 @@ import time
 from datetime import datetime
 from typing import List, Optional
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 # Add project root to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 

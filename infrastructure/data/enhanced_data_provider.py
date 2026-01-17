@@ -371,6 +371,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
         # Try to get price via broker service if available
         if self.broker_service:
+            broker = None  # Initialize broker variable to avoid UnboundLocalError
             try:
                 broker_service_type = self._get_broker_type(self.broker_service)
                 self.logger.debug(f"Fetching price for {symbol} using broker service: {broker_service_type}")
@@ -384,6 +385,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                         return None
                     else:
                         self.logger.debug(f"Symbol {symbol} found in broker service available symbols")
+                    broker = self.broker_service  # Set broker for later use
                 # Check if it's a BrokerExecutionService and try to access its internal broker
                 elif hasattr(self.broker_service, 'broker'):
                     # Access the internal broker directly
@@ -424,27 +426,75 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                 import traceback
                 self.logger.error(f"Traceback: {traceback.format_exc()}")
 
-        # Try alternative method using requests
+        # Try alternative method using requests with exponential backoff
         try:
             import requests
+            import time
+            import random
 
-            # Use a generic approach - try Binance API as fallback
+            # Use a generic approach - try Binance API as fallback with exponential backoff
             api_url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
-            self.logger.debug(f"Using fallback API call for price of {symbol}: {api_url}")
-            response = requests.get(api_url, timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                if 'price' in data:
-                    price = float(data['price'])
-                    self.logger.debug(f"Successfully fetched price {price} for {symbol} from direct API")
 
-                    # Cache the price with a short TTL (30 seconds for price data)
-                    data_cache.set(broker_name, f"price_{symbol}", "tick", [{'price': price}], ttl=30)
-                    return price
-            elif response.status_code == 400:
-                # Symbol not found on exchange
-                self.logger.debug(f"Symbol {symbol} not found on exchange: {response.text}")
-                return None
+            # Exponential backoff parameters
+            max_retries = 3
+            base_delay = 1  # Start with 1 second
+
+            for attempt in range(max_retries):
+                try:
+                    self.logger.debug(f"Attempt {attempt + 1}/{max_retries} - Using fallback API call for price of {symbol}: {api_url}")
+                    # Use session with proper connection management
+                    with requests.Session() as session:
+                        response = session.get(api_url, timeout=10)  # Increased timeout
+
+                    if response.status_code == 200:
+                        data = response.json()
+                        if 'price' in data:
+                            price = float(data['price'])
+                            self.logger.debug(f"Successfully fetched price {price} for {symbol} from direct API")
+
+                            # Cache the price with a short TTL (30 seconds for price data)
+                            data_cache.set(broker_name, f"price_{symbol}", "tick", [{'price': price}], ttl=30)
+                            return price
+                    elif response.status_code == 400:
+                        # Symbol not found on exchange - don't retry
+                        self.logger.debug(f"Symbol {symbol} not found on exchange: {response.text}")
+                        return None
+                    elif response.status_code in [429, 502, 503, 504]:  # Rate limiting or server errors
+                        if attempt < max_retries - 1:  # Don't sleep on the last attempt
+                            # Calculate delay with exponential backoff and jitter
+                            delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                            self.logger.warning(f"API call failed with status {response.status_code}, retrying in {delay:.2f}s (attempt {attempt + 1})")
+                            time.sleep(delay)
+                        else:
+                            self.logger.warning(f"API call failed after {max_retries} attempts with status {response.status_code}")
+                    else:
+                        # Other HTTP errors - don't retry
+                        self.logger.debug(f"API call failed with status {response.status_code}: {response.text}")
+                        return None
+
+                except requests.exceptions.Timeout:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                        self.logger.warning(f"API call timed out, retrying in {delay:.2f}s (attempt {attempt + 1})")
+                        time.sleep(delay)
+                    else:
+                        self.logger.warning(f"API call timed out after {max_retries} attempts")
+                except requests.exceptions.ConnectionError:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                        self.logger.warning(f"Connection error, retrying in {delay:.2f}s (attempt {attempt + 1})")
+                        time.sleep(delay)
+                    else:
+                        self.logger.warning(f"Connection error after {max_retries} attempts")
+                except Exception as api_error:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                        self.logger.warning(f"API error: {api_error}, retrying in {delay:.2f}s (attempt {attempt + 1})")
+                        time.sleep(delay)
+                    else:
+                        self.logger.warning(f"API error after {max_retries} attempts: {api_error}")
+                        break
+
         except Exception as e:
             self.logger.debug(f"Could not fetch real price for {symbol} from direct API: {e}")
             pass
@@ -453,6 +503,19 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
     def is_symbol_available(self, symbol: str) -> bool:
         """Check if a symbol is available on the exchange with exchange switching capability."""
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        from domain.value_objects import Symbol as DomainSymbol
+
+        # Create a domain symbol object for validation
+        domain_symbol = DomainSymbol(symbol)
+        if not symbol_validator.is_symbol_approved(domain_symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
+            return False
+
+        # If symbol is approved, then check if it's available on the exchange
         # First, try to use the MultiBrokerExecutionService if available
         if self.broker_service:
             # Check if this is a MultiBrokerExecutionService that supports exchange switching
@@ -571,6 +634,25 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
     def _check_single_symbol(self, symbol: str) -> bool:
         """Check a single symbol availability using direct API call with exchange switching."""
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        from domain.value_objects import Symbol as DomainSymbol
+
+        # Create a domain symbol object for validation
+        domain_symbol = DomainSymbol(symbol)
+        if not symbol_validator.is_symbol_approved(domain_symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
+
+            # Cache this negative result
+            cache_key = f"symbol_check_{symbol}"
+            current_time = datetime.now()
+            with self._cache_lock:
+                self._symbol_availability_cache[cache_key] = (current_time, False)
+
+            return False
+
         # Check if we have a recent result for this symbol in our cache
         cache_key = f"symbol_check_{symbol}"
         current_time = datetime.now()
@@ -667,6 +749,18 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
     def _check_symbol_via_multiple_exchanges(self, symbol: str) -> bool:
         """Check symbol availability across multiple exchanges with fallback."""
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        from domain.value_objects import Symbol as DomainSymbol
+
+        # Create a domain symbol object for validation
+        domain_symbol = DomainSymbol(symbol)
+        if not symbol_validator.is_symbol_approved(domain_symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
+            return False
+
         import requests
 
         # Define exchange order for checking
@@ -678,7 +772,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
             },
             {
                 'name': 'bingx',
-                'url': f"https://open-api-vst.bingx.com/openApi/quote/v1/ticker/price?symbol={symbol}",
+                'url': f"https://open-api.bingx.com/openApi/quote/v1/ticker/price?symbol={symbol}",
                 'success_check': lambda resp: resp.status_code == 200 and 'data' in resp.json()
             },
             {
@@ -696,7 +790,9 @@ class EnhancedDataProviderAdapter(DataProviderPort):
         for config in exchange_configs:
             try:
                 self.logger.debug(f"Trying {config['name']} API for symbol {symbol}")
-                response = requests.get(config['url'], timeout=5)
+                # Use session with proper connection management
+                with requests.Session() as session:
+                    response = session.get(config['url'], timeout=5)
 
                 if config['success_check'](response):
                     self.logger.debug(f"Symbol {symbol} found on {config['name']}")

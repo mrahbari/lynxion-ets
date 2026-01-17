@@ -16,22 +16,14 @@ from domain.ports.engine_ports import SignalPort
 from domain.ports.engine_ports import FusionPort
 from shared.event_system import event_router
 
+# Import services
+from infrastructure.services.symbol_discovery_service import SymbolDiscoveryService
+from infrastructure.services.symbol_validation_service import SymbolValidationService
+from infrastructure.watchers.watcher_initialization_service import WatcherInitializationService
+from infrastructure.watchers.monitoring_analysis_service import MonitoringAnalysisService
 
-# Import all watcher adapters that are used in the initialization
-from infrastructure.watchers.adapters.market_pulse import MarketPulseWatcher
-from infrastructure.watchers.adapters.volatility import VolatilityWatcher
-from infrastructure.watchers.adapters.trend_mtf import TrendMTFWatcher
-from infrastructure.watchers.adapters.anomaly_ml import AnomalyMLWatcher
-from infrastructure.watchers.adapters.orderflow_ws import OrderFlowWSWatcher
-from infrastructure.watchers.adapters.cmc_screener import CMCScreener
-from infrastructure.watchers.adapters.funding_rate import FundingRateWatcher
-from infrastructure.watchers.adapters.liquidity import LiquidityWatcher
-from infrastructure.watchers.adapters.historical_candle_watcher import HistoricalCandleWatcherAdapter
-from infrastructure.watchers.adapters.tick_watcher import TickWatcherAdapter
-
-# Import improved watcher adapters
-from infrastructure.watchers.adapters.historical_candle_watcher_improved import HistoricalCandleWatcherImprovedAdapter
-from infrastructure.watchers.adapters.market_pulse_watcher_improved import MarketPulseWatcherImprovedAdapter
+# Import the symbol validator
+from utils.symbol_validator import symbol_validator
 
 
 class MarketOpportunityWatcher:
@@ -58,10 +50,17 @@ class MarketOpportunityWatcher:
 
         self.market_data_repo = market_data_repo
 
+        # Initialize services
+        self.symbol_discovery_service = SymbolDiscoveryService(self.logger)
+        self.symbol_validation_service = SymbolValidationService(self.logger)
+        self.watcher_init_service = WatcherInitializationService(self.logger, self.market_data_repo)
+        self.monitoring_service = MonitoringAnalysisService(self.logger, self.event_router, self.market_data_repo)
+
         # If no symbols provided and auto-discovery is enabled, discover symbols dynamically
         if auto_discover_symbols and not symbols:
-            discovered_symbols = self._discover_symbols_automatically()
-            self.symbols = self._filter_stablecoin_pairs(discovered_symbols)
+            discovered_symbols = self.symbol_discovery_service.discover_symbols_automatically()
+            filtered_symbols = self.symbol_validation_service.filter_stablecoin_pairs(discovered_symbols)
+            self.symbols = self.symbol_validation_service.validate_symbol_data_availability(filtered_symbols)
         elif symbols:
             # Convert symbol format if needed (e.g., BTC/USDT -> BTCUSDT)
             converted_symbols = []
@@ -77,12 +76,14 @@ class MarketOpportunityWatcher:
                     symbol_str = symbol_str.replace('/', '')
 
                 converted_symbols.append(Symbol(symbol_str))
-            self.symbols = self._filter_stablecoin_pairs(converted_symbols)
+            filtered_symbols = self.symbol_validation_service.filter_stablecoin_pairs(converted_symbols)
+            self.symbols = self.symbol_validation_service.validate_symbol_data_availability(filtered_symbols)
         else:
             # Use default symbols from environment variables or fallback to hard-coded defaults
             default_symbols = os.getenv("DEFAULT_WATCHLIST_SYMBOLS", "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT").split(",")
             unfiltered_symbols = [Symbol(s.strip()) for s in default_symbols]
-            self.symbols = self._filter_stablecoin_pairs(unfiltered_symbols)
+            filtered_symbols = self.symbol_validation_service.filter_stablecoin_pairs(unfiltered_symbols)
+            self.symbols = self.symbol_validation_service.validate_symbol_data_availability(filtered_symbols)
 
         # Initialize watcher adapters for each symbol
         self._initialize_watchers()
@@ -165,6 +166,70 @@ class MarketOpportunityWatcher:
             self.logger.info(f"📊 SYMBOL FILTERING: {original_count} -> {filtered_count} symbols after stablecoin filtering")
 
         return filtered_symbols
+
+    def _validate_symbol_data_availability(self, symbols):
+        """Validate that symbols have data available on exchanges before processing."""
+        validated_symbols = []
+
+        # Check if data validation is enabled
+        validate_data_availability = os.getenv('VALIDATE_SYMBOL_DATA_AVAILABILITY', 'true').lower() == 'true'
+
+        if not validate_data_availability:
+            # Still apply approved symbol validation even if data availability validation is disabled
+            for symbol in symbols:
+                symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+                if symbol_validator.is_symbol_approved(symbol):
+                    validated_symbols.append(symbol)
+                else:
+                    self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Skipping...")
+            return validated_symbols
+
+        self.logger.info(f"🔍 Validating data availability and approved status for {len(symbols)} symbols...")
+
+        for symbol in symbols:
+            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+
+            # First check if symbol is in approved list
+            if not symbol_validator.is_symbol_approved(symbol):
+                self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Skipping...")
+                continue
+
+            try:
+                # Check if the symbol is available in the market data repository
+                if self.market_data_repo and hasattr(self.market_data_repo, 'is_symbol_available'):
+                    is_available = self.market_data_repo.is_symbol_available(symbol_str)
+
+                    if is_available:
+                        validated_symbols.append(symbol)
+                        self.logger.debug(f"✅ Data available for {symbol_str}")
+                    else:
+                        self.logger.warning(f"⚠️ Data not available for {symbol_str}, skipping...")
+                else:
+                    # If no market data repo is available, try to validate using broker service
+                    if hasattr(self, 'broker_service') and self.broker_service:
+                        available_symbols = self.broker_service.get_available_symbols()
+
+                        if symbol_str in available_symbols:
+                            validated_symbols.append(symbol)
+                            self.logger.debug(f"✅ Symbol available on broker: {symbol_str}")
+                        else:
+                            self.logger.warning(f"⚠️ Symbol not available on broker: {symbol_str}, skipping...")
+                    else:
+                        # If no validation method is available, assume symbol is valid
+                        validated_symbols.append(symbol)
+                        self.logger.warning(f"⚠️ No validation method available for {symbol_str}, assuming valid...")
+
+            except Exception as e:
+                self.logger.warning(f"⚠️ Error validating data for {symbol_str}: {e}, skipping...")
+                continue
+
+        original_count = len(symbols)
+        validated_count = len(validated_symbols)
+
+        if original_count != validated_count:
+            self.logger.info(f"📊 DATA AVAILABILITY & APPROVAL VALIDATION: {original_count} -> {validated_count} symbols after validation")
+
+        return validated_symbols
 
     def _discover_symbols_automatically(self) -> List[Symbol]:
         """Dynamically discover symbols to monitor based on market conditions or other criteria."""
@@ -951,13 +1016,13 @@ class MarketOpportunityWatcher:
                         symbol_watchers['liquidity'] = LiquidityWatcher("Liquidity", symbol.value, broker_service=self.broker_service, target_broker=target_broker)
 
                     if os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'true').lower() == 'true':
-                        from infrastructure.watchers.adapters.historical_candle_watcher import HistoricalCandleWatcherAdapter
+                        from infrastructure.watchers.adapters.historical_candle import HistoricalCandleWatcherAdapter
                         # Use the shared broker service instead of creating new ones
                         # Note: This adapter doesn't accept target_broker parameter
                         symbol_watchers['historical_candle'] = HistoricalCandleWatcherAdapter("HistoricalCandle", symbol.value, broker_service=self.broker_service)
 
                     if os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true':
-                        from infrastructure.watchers.adapters.tick_watcher import TickWatcherAdapter
+                        from infrastructure.watchers.adapters.tick import TickWatcherAdapter
                         # Use the shared broker service instead of creating new ones
                         # Note: This adapter doesn't accept target_broker parameter
                         symbol_watchers['tick_watcher'] = TickWatcherAdapter("TickWatcher", symbol.value, broker_service=self.broker_service)
@@ -1245,301 +1310,25 @@ class MarketOpportunityWatcher:
             return self._discover_by_new_and_emerging()
 
     def _initialize_watchers(self):
-        """Initialize watcher adapters for each symbol based on which watcher discovered it - only if enabled."""
-
-        # First, let's track which symbols were discovered by which watcher type
-        # This information is available in self._discover_symbols_automatically()
-        # We need to track the original discovery mapping
-
-        # Create a mapping of symbols to their primary watcher based on discovery
-        symbol_to_primary_watcher = {}
-
-        # If we're in auto-discovery mode, we know which watcher discovered which symbols
-        if hasattr(self, '_watcher_specific_symbols'):
-            for watcher_type, symbols in self._watcher_specific_symbols.items():
-                # Check if this watcher type is enabled
-                env_var = f"{watcher_type.upper()}_WATCHER_ENABLED"
-                if os.getenv(env_var, 'true').lower() == 'true':
-                    for symbol in symbols:
-                        # Assign this watcher as the primary watcher for this symbol
-                        if symbol not in symbol_to_primary_watcher:
-                            symbol_to_primary_watcher[symbol] = set()
-                        symbol_to_primary_watcher[symbol].add(watcher_type)
-
-        # Import broker manager and configuration
-        from infrastructure.brokers.broker_manager import BrokerManager
-        from application.configs.hexagonal_settings import config as hexagonal_config
-
-        # Initialize broker manager with all available brokers
-        from infrastructure.services.broker_execution_service import create_execution_service
-        broker_service = create_execution_service(use_multi_broker=True)
-
-        for symbol in self.symbols:
-            symbol_watchers = {}
-
-            # Check each watcher type before creating to avoid unnecessary instantiation
-            # Only create watchers that are relevant to this symbol or if it's a general watcher
-
-            # Market Pulse watcher
-            if os.getenv('MARKET_PULSE_WATCHER_ENABLED', 'true').lower() == 'true':
-                # Check if enhanced signal generation is enabled
-                use_improved = os.getenv('ENABLE_ENHANCED_SIGNAL_GENERATION', 'false').lower() == 'true'
-
-                # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("MarketPulse")
-
-                # Choose watcher based on enhanced signal generation flag
-                if use_improved:
-                    watcher_class = MarketPulseWatcherImprovedAdapter
-                    watcher_name = "MarketPulseEnhanced"
-                else:
-                    watcher_class = MarketPulseWatcher
-                    watcher_name = "MarketPulse"
-
-                # Check if this symbol was discovered by market pulse watcher
-                if (symbol.value in symbol_to_primary_watcher and
-                        'market_pulse' in symbol_to_primary_watcher[symbol.value]):
-                    symbol_watchers['market_pulse'] = watcher_class(watcher_name, symbol.value, broker_service=broker_service, target_broker=target_broker)
-                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                        self.logger.log_background_activity(
-                            "Watcher Assignment",
-                            f"{watcher_name} assigned to {symbol.value} (discovered by MarketPulse) on broker {target_broker}",
-                            symbol=symbol.value,
-                            watcher="market_pulse",
-                            discovery_source="market_pulse",
-                            broker=target_broker
-                        )
-                elif not symbol_to_primary_watcher:  # If no specific mapping (fallback to original behavior)
-                    symbol_watchers['market_pulse'] = watcher_class(watcher_name, symbol.value, broker_service=broker_service, target_broker=target_broker)
-
-            # Volatility watcher
-            if os.getenv('VOLATILITY_WATCHER_ENABLED', 'true').lower() == 'true':
-                # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("Volatility")
-                # Check if this symbol was discovered by volatility watcher
-                if (symbol.value in symbol_to_primary_watcher and
-                        'volatility' in symbol_to_primary_watcher[symbol.value]):
-                    symbol_watchers['volatility'] = VolatilityWatcher("Volatility", symbol.value, broker_service=broker_service, target_broker=target_broker)
-                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                        self.logger.log_background_activity(
-                            "Watcher Assignment",
-                            f"Volatility assigned to {symbol.value} (discovered by Volatility) on broker {target_broker}",
-                            symbol=symbol.value,
-                            watcher="volatility",
-                            discovery_source="volatility",
-                            broker=target_broker
-                        )
-                elif not symbol_to_primary_watcher:  # If no specific mapping (fallback to original behavior)
-                    symbol_watchers['volatility'] = VolatilityWatcher("Volatility", symbol.value, broker_service=broker_service, target_broker=target_broker)
-
-            # Trend MTF watcher
-            if os.getenv('TREND_MTF_WATCHER_ENABLED', 'true').lower() == 'true':
-                # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("TrendMTF")
-                if (symbol.value in symbol_to_primary_watcher and
-                        'trend_mtf' in symbol_to_primary_watcher[symbol.value]):
-                    symbol_watchers['trend_mtf'] = TrendMTFWatcher("TrendMTF", symbol.value, broker_service=broker_service, target_broker=target_broker)
-                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                        self.logger.log_background_activity(
-                            "Watcher Assignment",
-                            f"TrendMTF assigned to {symbol.value} (discovered by TrendMTF) on broker {target_broker}",
-                            symbol=symbol.value,
-                            watcher="trend_mtf",
-                            discovery_source="trend_mtf",
-                            broker=target_broker
-                        )
-                elif not symbol_to_primary_watcher:
-                    symbol_watchers['trend_mtf'] = TrendMTFWatcher("TrendMTF", symbol.value, broker_service=broker_service, target_broker=target_broker)
-
-            # Anomaly ML watcher
-            if os.getenv('ANOMALY_ML_WATCHER_ENABLED', 'true').lower() == 'true':
-                # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("AnomalyML")
-                if (symbol.value in symbol_to_primary_watcher and
-                        'anomaly_ml' in symbol_to_primary_watcher[symbol.value]):
-                    symbol_watchers['anomaly_ml'] = AnomalyMLWatcher("AnomalyML", symbol.value, broker_service=broker_service, target_broker=target_broker)
-                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                        self.logger.log_background_activity(
-                            "Watcher Assignment",
-                            f"AnomalyML assigned to {symbol.value} (discovered by AnomalyML) on broker {target_broker}",
-                            symbol=symbol.value,
-                            watcher="anomaly_ml",
-                            discovery_source="anomaly_ml",
-                            broker=target_broker
-                        )
-                elif not symbol_to_primary_watcher:
-                    symbol_watchers['anomaly_ml'] = AnomalyMLWatcher("AnomalyML", symbol.value, broker_service=broker_service, target_broker=target_broker)
-
-            # OrderFlow WS watcher
-            if os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'true').lower() == 'true':
-                # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("OrderFlowWS")
-                if (symbol.value in symbol_to_primary_watcher and
-                        'orderflow_ws' in symbol_to_primary_watcher[symbol.value]):
-                    symbol_watchers['orderflow_ws'] = OrderFlowWSWatcher("OrderFlowWS", symbol.value, broker_service=broker_service, target_broker=target_broker)
-                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                        self.logger.log_background_activity(
-                            "Watcher Assignment",
-                            f"OrderFlowWS assigned to {symbol.value} (discovered by OrderFlowWS) on broker {target_broker}",
-                            symbol=symbol.value,
-                            watcher="orderflow_ws",
-                            discovery_source="orderflow_ws",
-                            broker=target_broker
-                        )
-                elif not symbol_to_primary_watcher:
-                    symbol_watchers['orderflow_ws'] = OrderFlowWSWatcher("OrderFlowWS", symbol.value, broker_service=broker_service, target_broker=target_broker)
-
-            # CMC Screener watcher
-            if os.getenv('CMC_SCREENER_ENABLED', 'true').lower() == 'true':
-                # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("CMCScreener")
-                if (symbol.value in symbol_to_primary_watcher and
-                        'cmc_screener' in symbol_to_primary_watcher[symbol.value]):
-                    symbol_watchers['cmc_screener'] = CMCScreener(name=f"CMCWatcher_{symbol.value}",
-                                                                  symbol=symbol.value)
-                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                        self.logger.log_background_activity(
-                            "Watcher Assignment",
-                            f"CMCScreener assigned to {symbol.value} (discovered by CMCScreener) on broker {target_broker}",
-                            symbol=symbol.value,
-                            watcher="cmc_screener",
-                            discovery_source="cmc_screener",
-                            broker=target_broker
-                        )
-                elif not symbol_to_primary_watcher:
-                    symbol_watchers['cmc_screener'] = CMCScreener(name=f"CMCWatcher_{symbol.value}",
-                                                                  symbol=symbol.value)
-
-            # Funding Rate watcher
-            if os.getenv('FUNDING_RATE_WATCHER_ENABLED', 'true').lower() == 'true':
-                # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("FundingRate")
-                if (symbol.value in symbol_to_primary_watcher and
-                        'funding_rate' in symbol_to_primary_watcher[symbol.value]):
-                    symbol_watchers['funding_rate'] = FundingRateWatcher("FundingRate", symbol.value, broker_service=broker_service, target_broker=target_broker)
-                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                        self.logger.log_background_activity(
-                            "Watcher Assignment",
-                            f"FundingRate assigned to {symbol.value} (discovered by FundingRate) on broker {target_broker}",
-                            symbol=symbol.value,
-                            watcher="funding_rate",
-                            discovery_source="funding_rate",
-                            broker=target_broker
-                        )
-                elif not symbol_to_primary_watcher:
-                    symbol_watchers['funding_rate'] = FundingRateWatcher("FundingRate", symbol.value, broker_service=broker_service, target_broker=target_broker)
-
-            # Liquidity watcher
-            if os.getenv('LIQUIDITY_WATCHER_ENABLED', 'true').lower() == 'true':
-                # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("Liquidity")
-                if (symbol.value in symbol_to_primary_watcher and
-                        'liquidity' in symbol_to_primary_watcher[symbol.value]):
-                    symbol_watchers['liquidity'] = LiquidityWatcher("Liquidity", symbol.value, broker_service=broker_service, target_broker=target_broker)
-                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                        self.logger.log_background_activity(
-                            "Watcher Assignment",
-                            f"Liquidity assigned to {symbol.value} (discovered by Liquidity) on broker {target_broker}",
-                            symbol=symbol.value,
-                            watcher="liquidity",
-                            discovery_source="liquidity",
-                            broker=target_broker
-                        )
-                elif not symbol_to_primary_watcher:
-                    symbol_watchers['liquidity'] = LiquidityWatcher("Liquidity", symbol.value, broker_service=broker_service, target_broker=target_broker)
-
-            # Historical Candle watcher
-            if os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'true').lower() == 'true':
-                # Check if enhanced signal generation is enabled
-                use_improved = os.getenv('ENABLE_ENHANCED_SIGNAL_GENERATION', 'false').lower() == 'true'
-
-                # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("HistoricalCandle")
-
-                # Choose watcher based on enhanced signal generation flag
-                if use_improved:
-                    watcher_class = HistoricalCandleWatcherImprovedAdapter
-                    watcher_name = "HistoricalCandleEnhanced"
-                else:
-                    watcher_class = HistoricalCandleWatcherAdapter
-                    watcher_name = "HistoricalCandle"
-
-                if (symbol.value in symbol_to_primary_watcher and
-                        'historical_candle' in symbol_to_primary_watcher[symbol.value]):
-                    symbol_watchers['historical_candle'] = watcher_class(watcher_name,
-                                                                                          symbol.value, broker_service=broker_service)
-                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                        self.logger.log_background_activity(
-                            "Watcher Assignment",
-                            f"{watcher_name} assigned to {symbol.value} (discovered by HistoricalCandle) on broker {target_broker}",
-                            symbol=symbol.value,
-                            watcher=watcher_name.lower().replace('improved', ''),
-                            discovery_source="historical_candle",
-                            broker=target_broker
-                        )
-                elif not symbol_to_primary_watcher:
-                    symbol_watchers['historical_candle'] = watcher_class(watcher_name,
-                                                                                          symbol.value, broker_service=broker_service)
-
-            # Tick Watcher
-            if os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true':
-                # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("TickWatcher")
-                if (symbol.value in symbol_to_primary_watcher and
-                        'tick_watcher' in symbol_to_primary_watcher[symbol.value]):
-                    symbol_watchers['tick_watcher'] = TickWatcherAdapter("TickWatcher", symbol.value, broker_service=broker_service)
-                    if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                        self.logger.log_background_activity(
-                            "Watcher Assignment",
-                            f"TickWatcher assigned to {symbol.value} (discovered by TickWatcher) on broker {target_broker}",
-                            symbol=symbol.value,
-                            watcher="tick_watcher",
-                            discovery_source="tick_watcher",
-                            broker=target_broker
-                        )
-                elif not symbol_to_primary_watcher:
-                    # Use the market data repo instead of execution service since we removed direct service access
-                    symbol_watchers['tick_watcher'] = TickWatcherAdapter("TickWatcher", symbol.value, self.market_data_repo)
-
-            self.watchers[symbol.value] = symbol_watchers
-
-            # Start only the enabled watchers - double check enabled status
-            for watcher_name, watcher in self.watchers[symbol.value].items():
-                # Double-check the watcher's enabled status before starting
-                if getattr(watcher, 'enabled', True):
-                    watcher.start()
-
-        # Store the broker service as an instance variable so it can be reused in _update_symbol_list
-        self.broker_service = broker_service
+        """Initialize watcher adapters for each symbol using the watcher initialization service."""
+        # Use the watcher initialization service to handle the complex initialization logic
+        self.watchers, self.broker_service = self.watcher_init_service.initialize_watchers(
+            self.symbols,
+            getattr(self, '_watcher_specific_symbols', None)
+        )
+        
+        # Set the watchers and symbols in the monitoring service
+        self.monitoring_service.set_watchers_and_symbols(self.watchers, self.symbols)
 
     def start_monitoring(self):
         """Start continuous market monitoring."""
-        if self.is_running:
-            self.logger.warning("Market opportunity watcher is already running")
-            return
-
-        self.is_running = True
-        self.monitoring_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
-        self.monitoring_thread.start()
-
-        # Start periodic symbol updates if auto-discovery is enabled
-        if self.auto_discover_symbols:
-            self.start_periodic_symbol_updates(update_interval_minutes=360)  # Update every 6 hours to reduce excessive reconnections
-
-        self.logger.log_auto_detection_status(len(self.symbols), 0, 0)
+        # Delegate to the monitoring service
+        self.monitoring_service.start_monitoring()
 
     def stop_monitoring(self):
         """Stop market monitoring."""
-        self.is_running = False
-        if self.monitoring_thread:
-            self.monitoring_thread.join(timeout=2.0)  # Wait up to 2 seconds for thread to finish
-
-        # Stop all watchers
-        for symbol_watchers in self.watchers.values():
-            for watcher in symbol_watchers.values():
-                watcher.stop()
-
-        self.logger.info("🛑 Market opportunity monitoring stopped")
+        # Delegate to the monitoring service
+        self.monitoring_service.stop_monitoring()
 
     def _monitoring_loop(self):
         """Main monitoring loop that continuously checks for opportunities."""
@@ -1551,22 +1340,46 @@ class MarketOpportunityWatcher:
         analysis_count = 0
         signals_found = 0
 
+        # Track symbol-specific analytics to ensure balanced processing
+        symbol_analysis_count = {symbol.value: 0 for symbol in self.symbols}
+        symbol_signal_count = {symbol.value: 0 for symbol in self.symbols}
+
         while self.is_running:
             try:
                 opportunities = self._check_market_opportunities()
                 analysis_count += len(self.symbols)
 
-                # Count signals found
+                # Update symbol-specific counts
+                for symbol in self.symbols:
+                    symbol_analysis_count[symbol.value] += 1
+
+                # Count signals found and track which symbols generated them
                 for opportunity in opportunities:
                     if opportunity.get('recommendation') and opportunity['confidence'] > 0.6:
                         signals_found += 1
+                        # Track which symbol generated the signal
+                        symbol_val = opportunity.get('symbol')
+                        if symbol_val and symbol_val in symbol_signal_count:
+                            symbol_signal_count[symbol_val] += 1
 
                 # Log periodic detailed reports
                 current_time = time.time()
                 if current_time - last_report_time >= report_interval:
+                    # Create a summary of signal distribution across symbols
+                    active_symbols = {sym: cnt for sym, cnt in symbol_signal_count.items() if cnt > 0}
+
                     self.logger.info(
                         f"📊 WATCHER ANALYTICS: Analyzed {analysis_count} symbol checks in last {report_interval}s | "
                         f"Signals found: {signals_found} | Monitored symbols: {len(self.symbols)}")
+
+                    if active_symbols:
+                        self.logger.info(f"📈 SIGNAL DISTRIBUTION: {active_symbols}")
+
+                    # Log analysis distribution to ensure all symbols are being processed
+                    analysis_distribution = {sym: cnt for sym, cnt in symbol_analysis_count.items() if cnt > 0}
+                    if analysis_distribution:
+                        self.logger.debug(f"🔍 ANALYSIS DISTRIBUTION: {analysis_distribution}")
+
                     analysis_count = 0
                     signals_found = 0
                     last_report_time = current_time
@@ -1587,12 +1400,29 @@ class MarketOpportunityWatcher:
             import time
             time.sleep(0.1)  # Small delay to allow data processing
 
-        # Then analyze each symbol
+        # Then analyze each symbol with a time limit to ensure fair processing
+        total_start_time = time.time()
+
+        # Process symbols in their original order to ensure systematic processing
         for symbol in self.symbols:
+            # Add logging to track which symbol is being processed
+            self.logger.debug(f"🔍 Processing symbol: {symbol.value}")
+
+            start_time = time.time()
             opportunities = self._analyze_symbol(symbol)
+
+            # Log processing time for this symbol
+            processing_time = time.time() - start_time
+            self.logger.debug(f"⏱️ Symbol {symbol.value} processed in {processing_time:.2f}s")
+
             if opportunities:
                 self._process_opportunities(symbol, opportunities)
                 all_opportunities.append(opportunities)
+
+        # Log the total processing time for all symbols
+        total_processing_time = time.time() - total_start_time
+        self.logger.info(f"📊 Total processing for {len(self.symbols)} symbols completed in {total_processing_time:.2f}s")
+
         return all_opportunities
 
     def _update_watchers_with_market_data(self, symbol: Symbol):
@@ -1617,7 +1447,7 @@ class MarketOpportunityWatcher:
             if hasattr(self.market_data_repo, 'get_historical_data'):
                 # Get historical data for initializing watchers with sufficient history
                 try:
-                    historical_data = self.market_data_repo.get_historical_data(Symbol(symbol.value), "30m", "1m")
+                    historical_data = self.market_data_repo.get_historical_data(symbol=Symbol(symbol.value), period="30m", timeframe="1m")
                     if historical_data:
                         # Use the most recent data point to initialize, but the historical data will help populate history
                         market_data = historical_data[0] if historical_data else None
@@ -1668,7 +1498,25 @@ class MarketOpportunityWatcher:
                     try:
                         # Convert market_data to the format expected by the watcher's update_data method
                         # The watchers expect a dictionary with market data
-                        formatted_data = self._format_market_data_for_watcher(market_data)
+
+                        # Different watchers expect different data formats
+                        # HistoricalCandleWatcher expects data in the format: {'candle': {...}}
+                        # Other watchers might expect flat format
+                        if 'historical' in watcher_name.lower():
+                            # Format for historical candle watchers
+                            candle_data = {
+                                'open': market_data.get('open', market_data.get('price', market_data.get('close', 0))),
+                                'high': market_data.get('high', market_data.get('price', market_data.get('close', 0))),
+                                'low': market_data.get('low', market_data.get('price', market_data.get('close', 0))),
+                                'close': market_data.get('close', market_data.get('price', market_data.get('last', 0))),
+                                'volume': market_data.get('volume', market_data.get('quoteVolume', 0)),
+                                'timestamp': market_data.get('timestamp', datetime.now().timestamp())
+                            }
+                            formatted_data = {'candle': candle_data}
+                        else:
+                            # Use the standard format for other watchers
+                            formatted_data = self._format_market_data_for_watcher(market_data)
+
                         watcher.update_data(formatted_data)
                     except Exception as e:
                         self.logger.warning(f"Error updating watcher {watcher_name} with market data: {e}")
@@ -1735,6 +1583,20 @@ class MarketOpportunityWatcher:
         Implements correct architecture: Watcher → Engine → Fusion → Strategy → Broker"""
         symbol_str = symbol.value
 
+        # Validate symbol against approved list before processing
+        if not symbol_validator.is_symbol_approved(symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Skipping processing.")
+            return {
+                'symbol': symbol_str,
+                'timestamp': datetime.now(),
+                'observations': {},
+                'indicators': {},
+                'recommendation': None,
+                'confidence': 0.0,
+                'strategy_suggestion': 'SKIPPED',  # Mark as skipped due to validation
+                'execution_intent': None
+            }
+
         # Log that the symbol analysis is starting
         if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
             self.logger.log_background_activity(
@@ -1754,8 +1616,18 @@ class MarketOpportunityWatcher:
             'execution_intent': None
         }
 
+        # Get priority order for watchers based on their predictive power
+        # This allows us to implement early exit logic if initial key indicators show no opportunity
+        watcher_priority_order = self._get_watcher_priority_order()
+
         # Process each watcher individually - only emit raw market observations
-        for watcher_name, watcher in self.watchers[symbol_str].items():
+        for watcher_name in watcher_priority_order:
+            # Check if this watcher exists for this symbol
+            if watcher_name not in self.watchers[symbol_str]:
+                continue
+
+            watcher = self.watchers[symbol_str][watcher_name]
+
             # Log that we're starting to analyze with this watcher
             if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
                 self.logger.log_background_activity(
@@ -1819,6 +1691,12 @@ class MarketOpportunityWatcher:
                         else:
                             self.logger.warning("No event router available to emit observation")
 
+                        # Implement early exit logic: if this is an early watcher and it indicates no opportunity,
+                        # we might want to skip remaining watchers for efficiency
+                        if self._should_skip_remaining_watchers(observation, watcher_name):
+                            self.logger.info(f"Early exit triggered for {symbol_str} after {watcher_name} - no profitable opportunity detected")
+                            break
+
                     else:
                         # No observation was generated by the watcher
                         if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
@@ -1866,195 +1744,65 @@ class MarketOpportunityWatcher:
 
         return opportunities
 
+    def _get_watcher_priority_order(self) -> List[str]:
+        """Get the priority order for watchers based on their predictive power."""
+        # Define priority order - most predictive watchers first
+        # This allows for early exit if initial key indicators show no opportunity
+        priority_order = [
+            'market_pulse',      # Market pulse often indicates immediate opportunities
+            'trend_mtf',         # Multi-timeframe trend is fundamental
+            'volatility',        # Volatility can indicate trade viability
+            'anomaly_ml',        # ML anomalies can be predictive
+            'liquidity',         # Liquidity affects trade execution
+            'funding_rate',      # Funding rates affect perpetual positions
+            'cmc_screener',      # General market conditions
+            'orderflow_ws',      # Order flow for execution timing
+            'historical_candle', # Historical patterns
+            'tick_watcher'       # Tick-level analysis (usually confirmatory)
+        ]
+
+        return priority_order
+
+    def _should_skip_remaining_watchers(self, observation, watcher_name: str) -> bool:
+        """Determine if remaining watchers should be skipped based on early indicators."""
+        # DISABLED: Never skip remaining watchers to ensure all observations flow through the system
+        # The architectural flow should be: Watcher → Engine → Fusion → Strategy → Broker
+        # Watchers should only emit observations, not make trading decisions
+        return False  # Always return False to ensure all watchers run
+
     def _process_opportunities(self, symbol: Symbol, opportunities: Dict[str, Any]):
-        """Process detected opportunities and trigger callback if available."""
-        if opportunities['recommendation'] and opportunities['confidence'] > 0.6:  # Only if confidence is high enough
-            self.logger.log_opportunity_detected(
-                symbol.value,
-                opportunities['recommendation'],
-                opportunities['confidence'],
-                "PENDING"  # Strategy selection happens in Strategy layer, not watcher
+        """Process detected opportunities - but in the correct architecture,
+        the watcher should only emit observations and not handle callbacks directly."""
+
+        # The watcher should only emit raw market observations to the event system
+        # The actual processing should happen through the event-driven flow
+
+        # Log that we're processing opportunities
+        if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
+            self.logger.log_background_activity(
+                "Opportunity Processing",
+                f"Processing opportunities for {symbol.value}",
+                symbol=symbol.value
             )
-
-            # Log the flow from watcher to the next component (engine)
-            self.logger.log_watcher_to_engine_flow(
-                symbol=symbol.value,
-                watcher_name="MarketOpportunityWatcher",
-                signal_generated=bool(opportunities['recommendation']),
-                signal_type=opportunities['recommendation'],
-                confidence=opportunities['confidence'],
-                reason=f"Opportunity detected with confidence {opportunities['confidence']:.2%}",
-            )
-
-            # Log background activity in comprehensive mode
-            if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
-                self.logger.log_background_activity(
-                    "Opportunity Processing",
-                    f"Processing opportunity for {symbol.value} - {opportunities['recommendation']} with confidence {opportunities['confidence']:.2%}",
-                    symbol=symbol.value,
-                    recommendation=opportunities['recommendation'],
-                    confidence=opportunities['confidence']
-                )
-
-            if self.opportunity_callback:
-                try:
-                    self.opportunity_callback(opportunities)
-                except Exception as e:
-                    self.logger.error(f"Error in opportunity callback: {e}")
 
     def _execute_intent_trade(self, execution_intent):
-        """Execute a trade based on the execution intent from the Strategy layer."""
-        if not self.execution_service:
-            self.logger.warning(f"No execution service available to execute intent for {execution_intent.symbol.value}")
-            return None
+        """This method should not exist in the Watcher layer.
+        The Watcher should only emit market observations, never execute trades directly.
+        This is a violation of the architectural pattern: Watcher → Engine → Fusion → Strategy → Broker.
+        The execution should happen only in the Broker layer after going through all intermediate layers."""
 
-        try:
-            # Get current price for the symbol to determine position size
-            current_price = None
-            if self.market_data_repo:
-                try:
-                    current_price = self.market_data_repo.get_current_price(execution_intent.symbol)
-                except:
-                    # If we can't get current price from data repo, try to get from exchange directly
-                    pass
+        # Log an error that this method is being called, which indicates an architectural violation
+        self.logger.error(
+            f"❌ ARCHITECTURE VIOLATION: Watcher layer attempted to execute trade directly for {execution_intent.symbol.value}. "
+            f"This violates the intended architecture: Watcher → Engine → Fusion → Strategy → Broker. "
+            f"The Watcher should only emit market observations, not execute trades."
+        )
 
-            # If we still don't have a price, use a fallback
-            if current_price is None or current_price <= 0:
-                # Try to get price from exchange directly
-                try:
-                    import ccxt
-                    exchange = ccxt.binance()
-                    ticker = exchange.fetch_ticker(execution_intent.symbol.value)
-                    current_price = ticker['last'] if 'last' in ticker else ticker['close']
-                except:
-                    # If all methods fail, we'll still proceed but log the issue
-                    self.logger.warning(f"Could not get current price for {execution_intent.symbol.value}, using default price")
-                    current_price = 50000.0  # Fallback price
-
-            # Use risk parameters from the execution intent
-            risk_params = execution_intent.risk_parameters
-            position_size_pct = risk_params.get('max_position_size', 0.02)  # Default 2%
-
-            # Fixed Position Size Configuration (for testing purposes)
-            import os
-            fixed_position_size_enabled = os.getenv('FIXED_POSITION_SIZE_ENABLED', 'false').lower() == 'true'
-            fixed_position_amount = float(os.getenv('FIXED_POSITION_AMOUNT', '10.0'))  # Default to $10 for testing
-
-            # Calculate quantity based on risk parameters and account balance
-            try:
-                if fixed_position_size_enabled:
-                    # Use fixed position size for testing
-                    quantity = fixed_position_amount / current_price
-                    self.logger.info(f"Using fixed position size: ${fixed_position_amount} at ${current_price} = {quantity} units")
-                else:
-                    # In a real implementation, we'd get portfolio metrics from portfolio service
-                    # For now, using a default account balance from environment variable
-                    import os
-                    account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))  # Default to $10,000 if not available
-                    position_value = account_balance * position_size_pct
-
-                    # Calculate quantity based on position value and current price
-                    quantity = position_value / current_price
-
-                    # Apply any quantity adjustments from risk parameters
-                    if 'position_quantity' in risk_params:
-                        quantity = risk_params['position_quantity']
-
-            except:
-                # If portfolio service fails, use a default quantity
-                if fixed_position_size_enabled:
-                    # Use fixed position size for testing
-                    quantity = fixed_position_amount / current_price
-                    self.logger.info(f"Using fixed position size (fallback): ${fixed_position_amount} at ${current_price} = {quantity} units")
-                else:
-                    # Use default account balance from environment variable
-                    import os
-                    default_account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '1000.0'))  # Default to $1,000 if not available
-                    quantity = position_size_pct * default_account_balance / current_price
-
-            # Ensure minimum quantity to avoid issues with small trades
-            if quantity < 0.001:
-                quantity = 0.001  # Minimum trade size
-
-            # Create order object using domain entities
-            from domain.entities.signal_entities import Order, OrderSide
-            from domain.value_objects import Money
-
-            # Use the side from the execution intent
-            order_side = execution_intent.side
-
-            # Determine position side based on order side for futures trading
-            position_side = "LONG" if order_side.name == 'BUY' else "SHORT"
-
-            # Ensure symbol is properly formatted for the broker
-            symbol_value = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
-
-            # Create order with proper risk parameters from the intent
-            order = Order(
-                symbol=symbol_value,  # Use string value instead of Symbol object
-                side=order_side,
-                order_type="MARKET",  # Using string instead of enum
-                quantity=quantity,
-                price=Money(amount=current_price, currency='USDT') if current_price else None,
-                strategy_name=execution_intent.strategy_name,  # Strategy name comes from intent
-                timestamp=datetime.now(),
-                position_side=position_side,  # Add position side for futures trading
-                stop_loss_price=Money(amount=risk_params.get('stop_loss_price', current_price * 0.98), currency='USDT'),  # Default SL
-                take_profit_price=Money(amount=risk_params.get('take_profit_price', current_price * 1.03), currency='USDT'),  # Default TP
-                parent_execution_intent=execution_intent  # Link back to the execution intent
-            )
-
-            # Validate symbol availability before executing order
-            if hasattr(self.execution_service, 'get_available_symbols'):
-                available_symbols = self.execution_service.get_available_symbols()
-                if symbol_value not in available_symbols:
-                    self.logger.warning(f"⚠️ Symbol {symbol_value} not available on any configured broker. Skipping order.")
-                    return None  # Skip execution if symbol is not available
-
-            # Execute order through execution service
-            execution_id = self.execution_service.execute_order(order)
-
-            # Log the successful execution with detailed information
-            # Handle both string and object formats for symbol and side
-            symbol_log_value = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
-            side_log_value = order.side.name if hasattr(order.side, 'name') else str(order.side)
-
-            confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
-
-            self.logger.info(
-                f"⚡ TRADE EXECUTED: {side_log_value} {quantity:.4f} {symbol_log_value} @ ${current_price:.4f} | Strategy: {execution_intent.strategy_name} | Intent Conf: {confidence:.2%}",
-                order_id=execution_id,
-                symbol=symbol_log_value,
-                side=side_log_value,
-                quantity=quantity,
-                price=current_price,
-                strategy=execution_intent.strategy_name,
-                confidence=confidence
-            )
-
-            # Log the execution in the signal progression
-            self.logger.log_signal_progression(
-                symbol=symbol_log_value,
-                stage="broker",
-                status="Executed",
-                details=f"Order executed successfully from strategy intent: {execution_id}",
-                confidence=confidence
-            )
-
-            return execution_id
-        except Exception as e:
-            import traceback
-            self.logger.error(f"Error executing trade from strategy intent: {e}")
-            self.logger.error(f"Traceback: {traceback.format_exc()}")
-            # Log the execution failure
-            self.logger.log_signal_progression(
-                symbol=execution_intent.symbol.value,
-                stage="broker",
-                status="Failed",
-                details=f"Order execution from strategy intent failed: {str(e)}",
-                confidence=float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
-            )
-            raise
+        # Raise an exception to prevent this architectural violation
+        raise RuntimeError(
+            f"Watcher layer attempted to execute trade directly for {execution_intent.symbol.value}. "
+            f"This is an architectural violation. The Watcher should only emit market observations."
+        )
 
     def get_status(self) -> Dict[str, Any]:
         """Get current status of the watcher."""

@@ -2,7 +2,7 @@
 """
 Backtest Runner - Execute backtesting for trading strategies.
 
-This script runs comprehensive backtests for trading strategies with 
+This script runs comprehensive backtests for trading strategies with
 different parameters, data sets, and risk management configurations.
 """
 import os
@@ -12,6 +12,10 @@ import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 import pandas as pd
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
 
 # Add project root to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

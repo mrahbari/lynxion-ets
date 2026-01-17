@@ -154,6 +154,11 @@ class WatcherManager:
         self.monitoring_active = False
         if self.monitoring_thread:
             self.monitoring_thread.join(timeout=2.0)
+
+        # Unregister all watchers to ensure proper cleanup
+        for name in list(self.watchers.keys()):
+            self.unregister_watcher(name)
+
         self.logger.info("Watcher monitoring stopped")
 
     def _monitoring_loop(self):

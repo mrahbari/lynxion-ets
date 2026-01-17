@@ -11,7 +11,13 @@ class FundingRateWatcher(BaseWatcher):
     """Funding Rate Watcher - analyzes funding rates for perpetual contracts, returns raw market observations"""
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 24):
-        super().__init__(name, symbol, broker_service, target_broker)
+        # Convert symbol string to Symbol object if needed
+        symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
+        super().__init__(name, symbol_obj)
+
+        # Store broker service and other parameters separately
+        self.broker_service = broker_service
+        self.target_broker = target_broker
 
         # Configuration from environment with defaults
         self.enabled = os.getenv('FUNDING_RATE_WATCHER_ENABLED', 'true').lower() == 'true'
@@ -122,6 +128,10 @@ class FundingRateWatcher(BaseWatcher):
         )
 
         return observation
+
+    def analyze(self, symbol: Symbol) -> MarketObservation:
+        """Analyze market conditions and return a raw market observation"""
+        return self._analyze_impl(symbol)
 
     def _calculate_funding_rate_volatility(self) -> float:
         """Calculate volatility of funding rates"""

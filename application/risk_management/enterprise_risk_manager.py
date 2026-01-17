@@ -39,8 +39,11 @@ class EnterpriseRiskManager:
                  fees_per_trade: float = 0.1,       # Fixed fee per trade
                  slippage_tolerance: float = 0.001, # 0.1%
                  max_correlation: float = 0.8,
+                 fixed_position_size_enabled: bool = False,
+                 fixed_position_amount: float = 10.0,
+                 default_account_balance: float = 10000.0,
                  risk_config: Dict[str, Any] = None):
-        
+
         # Use risk_config if provided, otherwise use individual parameters
         if risk_config:
             self.max_portfolio_exposure = risk_config.get('max_portfolio_exposure', max_portfolio_exposure)
@@ -51,6 +54,10 @@ class EnterpriseRiskManager:
             self.fees_per_trade = risk_config.get('fees_per_trade', fees_per_trade)
             self.slippage_tolerance = risk_config.get('slippage_tolerance', slippage_tolerance)
             self.max_correlation = risk_config.get('max_correlation', max_correlation)
+            # Configuration for fixed position sizing
+            self.fixed_position_size_enabled = risk_config.get('fixed_position_size_enabled', fixed_position_size_enabled)
+            self.fixed_position_amount = risk_config.get('fixed_position_amount', fixed_position_amount)
+            self.default_account_balance = risk_config.get('default_account_balance', default_account_balance)
         else:
             self.max_portfolio_exposure = max_portfolio_exposure
             self.max_position_exposure = max_position_exposure
@@ -60,6 +67,10 @@ class EnterpriseRiskManager:
             self.fees_per_trade = fees_per_trade
             self.slippage_tolerance = slippage_tolerance
             self.max_correlation = max_correlation
+            # Configuration for fixed position sizing
+            self.fixed_position_size_enabled = fixed_position_size_enabled
+            self.fixed_position_amount = fixed_position_amount
+            self.default_account_balance = default_account_balance
 
         # Track positions and PnL
         self.positions: Dict[str, Position] = {}
@@ -72,34 +83,53 @@ class EnterpriseRiskManager:
         self.daily_start = datetime.now().date()
         self.starting_equity = self.max_portfolio_exposure
 
-    def calculate_position_size(self, entry_price: float, stop_loss: float, 
+    def calculate_position_size(self, entry_price: float, stop_loss: float,
                                portfolio_equity: float, risk_percentage: Optional[float] = None) -> float:
         """
-        Calculate position size based on risk management principles
+        Calculate position size based on risk management principles with unified formula
+
+        If FIXED_POSITION_SIZE_ENABLED is true: position size = FIXED_POSITION_AMOUNT / entry_price
+        If FIXED_POSITION_SIZE_ENABLED is false: position size = (portfolio_equity * risk_percentage) / |entry_price - stop_loss|
+
+        The final position size is constrained by portfolio and position exposure limits.
         """
+        # Determine risk percentage to use
         risk_pct = risk_percentage or self.max_risk_per_trade
-        risk_amount = portfolio_equity * risk_pct
-        risk_per_unit = abs(entry_price - stop_loss)
-        
-        if risk_per_unit <= 0:
-            return 0.0  # Invalid stop loss
-        
-        # Calculate position size in units
-        position_size = risk_amount / risk_per_unit
-        
-        # Apply additional constraints to prevent unrealistic sizes for low-priced assets
-        max_size_by_price = portfolio_equity / entry_price if entry_price > 0 else 1.0
-        position_size = min(position_size, max_size_by_price * 0.1)  # Max 10% of portfolio by value
-        
-        # Apply reasonable maximum based on asset price
-        if entry_price > 1000:
-            position_size = min(position_size, 10)  # For expensive assets like BTC
-        elif entry_price > 100:
-            position_size = min(position_size, 100)  # For mid-range assets like ETH
+
+        # Calculate position size based on FIXED_POSITION_SIZE_ENABLED flag
+        if self.fixed_position_size_enabled:
+            # Fixed position sizing: always use the fixed dollar amount
+            fixed_dollar_amount = self.fixed_position_amount
+            position_size = fixed_dollar_amount / entry_price if entry_price > 0 else 0.0
+            # Calculate the actual risk amount for this fixed position
+            risk_amount = position_size * abs(entry_price - stop_loss) if stop_loss != entry_price else portfolio_equity * risk_pct
         else:
-            position_size = min(position_size, 10000)  # For low-priced assets like XRP
-        
-        return max(position_size, 1.0)  # At least 1 unit if valid
+            # Dynamic position sizing: calculate based on risk percentage and stop loss
+            risk_amount = portfolio_equity * risk_pct
+
+            risk_per_unit = abs(entry_price - stop_loss)
+
+            if risk_per_unit <= 0:
+                return 0.0  # Invalid stop loss
+
+            # Calculate position size in units based on risk amount and risk per unit
+            position_size = risk_amount / risk_per_unit
+
+        # Apply portfolio-level constraints
+        # 1. Ensure we don't exceed max position exposure limit
+        max_position_by_exposure = self.max_position_exposure / entry_price if entry_price > 0 else float('inf')
+        position_size = min(position_size, max_position_by_exposure)
+
+        # 2. Ensure we don't exceed remaining portfolio exposure capacity
+        current_total_exposure = self.get_total_exposure()
+        remaining_portfolio_capacity = self.max_portfolio_exposure - current_total_exposure
+        max_position_by_portfolio = remaining_portfolio_capacity / entry_price if entry_price > 0 else float('inf')
+        position_size = min(position_size, max_position_by_portfolio)
+
+        # 3. Ensure position size is positive
+        position_size = max(position_size, 0.0)
+
+        return position_size
 
     def validate_position_entry(self, symbol: str, size: float, entry_price: float) -> bool:
         """
@@ -119,7 +149,7 @@ class EnterpriseRiskManager:
 
         return True
 
-    def enter_position(self, symbol: str, entry_price: float, size: float, 
+    def enter_position(self, symbol: str, entry_price: float, size: float,
                       direction: PositionDirection, stop_loss: float, take_profit: float) -> bool:
         """
         Enter a new position with risk validation
@@ -127,9 +157,9 @@ class EnterpriseRiskManager:
         if not self.validate_position_entry(symbol, size, entry_price):
             return False
 
-        # Calculate risk amount for this position
+        # Calculate risk amount for this position based on actual position size
         risk_amount = size * abs(entry_price - stop_loss)
-        
+
         # Create and store position
         position = Position(
             symbol=symbol,
@@ -141,7 +171,7 @@ class EnterpriseRiskManager:
             entry_time=datetime.now(),
             risk_amount=risk_amount
         )
-        
+
         self.positions[symbol] = position
         return True
 
@@ -325,7 +355,10 @@ class EnterpriseRiskManager:
             'max_drawdown_pct': self.max_drawdown_pct,
             'fees_per_trade': self.fees_per_trade,
             'slippage_tolerance': self.slippage_tolerance,
-            'max_correlation': self.max_correlation
+            'max_correlation': self.max_correlation,
+            'fixed_position_size_enabled': self.fixed_position_size_enabled,
+            'fixed_position_amount': self.fixed_position_amount,
+            'default_account_balance': self.default_account_balance
         }
 
     def update_from_params(self, params: Dict[str, Any]):
@@ -338,5 +371,8 @@ class EnterpriseRiskManager:
         self.fees_per_trade = params.get('fees_per_trade', self.fees_per_trade)
         self.slippage_tolerance = params.get('slippage_tolerance', self.slippage_tolerance)
         self.max_correlation = params.get('max_correlation', self.max_correlation)
+        self.fixed_position_size_enabled = params.get('fixed_position_size_enabled', self.fixed_position_size_enabled)
+        self.fixed_position_amount = params.get('fixed_position_amount', self.fixed_position_amount)
+        self.default_account_balance = params.get('default_account_balance', self.default_account_balance)
         # Update starting equity if portfolio exposure changes
         self.starting_equity = self.max_portfolio_exposure

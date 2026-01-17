@@ -12,14 +12,14 @@ try:
 except ImportError:
     TORCH_AVAILABLE = False
     # When torch is not available, provide a mock to avoid errors
-    class MockTorch:
+    class MockCuda:
         @staticmethod
-        def cuda():
-            class Cuda:
-                @staticmethod
-                def is_available():
-                    return False
-            return Cuda()
+        def is_available():
+            return False
+
+    class MockTorch:
+        cuda = MockCuda()
+
     torch = MockTorch()
 
 # Add project root to path
@@ -120,8 +120,9 @@ class MainHexagonalContainer:
         self.logger.info("Initializing application services...")
 
         # Application services that orchestrate domain logic
-        self.optimization_app_service = OptimizationAppService()
-        self.adaptive_retuning_manager = AdaptiveRetuningManager()
+        # Note: These will be configured later in _wire_dependencies after infrastructure is initialized
+        self.optimization_app_service = None
+        self.adaptive_retuning_manager = None
 
     def _initialize_infrastructure_layer(self):
         """Initialize infrastructure layer adapters and implementations."""
@@ -193,22 +194,23 @@ class MainHexagonalContainer:
         """Wire dependencies following hexagonal architecture principles."""
         self.logger.info("Wiring dependencies in hexagonal architecture...")
 
-        # Inject infrastructure adapters into application services
-        # This maintains dependency inversion: domain/application don't depend on infrastructure
-        # but infrastructure adapts to domain/application interfaces
+        # Import the optimization service here to avoid circular imports
+        from shared.optimization_service import OptimizationService
 
-        # Configure optimization app service with dependencies
-        self.optimization_app_service.configure(
+        # Create the underlying optimization service
+        optimization_service = OptimizationService()
+
+        # Initialize the optimization app service with required dependencies
+        from application.services.optimization_service_app import OptimizationAppService
+        self.optimization_app_service = OptimizationAppService(
             data_loader=self.data_loader,
-            results_tracker=self.results_tracker,
-            metric_calculator=self.metric_calculator
+            optimization_service=optimization_service
         )
 
-        # Configure adaptive retuning with dependencies
-        self.adaptive_retuning_manager.configure(
-            results_tracker=self.results_tracker,
-            data_loader=self.data_loader,
-            coin_history_service=self.coin_history_service
+        # Initialize the adaptive retuning manager with required dependencies
+        from application.services.adaptive_retuning import AdaptiveRetuningManager
+        self.adaptive_retuning_manager = AdaptiveRetuningManager(
+            results_tracker=self.results_tracker
         )
 
         # Verify all dependencies are properly wired
@@ -304,4 +306,11 @@ class MainHexagonalContainer:
     def shutdown(self):
         """Clean shutdown of hexagonal container."""
         self.logger.info("Shutting down hexagonal container")
-        # Add any cleanup logic if needed
+
+        # Clear the broker registry to close connections and free resources
+        try:
+            from infrastructure.services.broker_registry import broker_registry
+            broker_registry.clear_registry()
+            self.logger.info("Broker registry cleared and connections closed")
+        except Exception as e:
+            self.logger.error(f"Error clearing broker registry: {e}")

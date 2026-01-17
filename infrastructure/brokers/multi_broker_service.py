@@ -22,9 +22,8 @@ class MultiBrokerExecutionService(ExecutionPort):
     Implements exchange switching similar to the downloader's approach.
     """
 
-    # Class-level storage for pending orders to prevent duplicate same-direction trades
-    _pending_orders = {}
-    _pending_orders_lock = threading.Lock()
+    # Duplicate prevention is now handled by the shared PendingOrdersTracker
+    # See infrastructure/shared/pending_orders_tracker.py
 
     def __init__(self, primary_broker: Optional[str] = None):
         self.logger = EnhancedLogger("MultiBrokerExecutionService")
@@ -143,37 +142,23 @@ class MultiBrokerExecutionService(ExecutionPort):
     @classmethod
     def _add_pending_order(cls, symbol: Symbol, side: str, order_id: str):
         """Add an order to the pending orders tracking."""
-        with cls._pending_orders_lock:
-            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
-            if symbol_str not in cls._pending_orders:
-                cls._pending_orders[symbol_str] = []
-            cls._pending_orders[symbol_str].append((side, order_id))
+        # Use the shared pending orders tracker to ensure consistency across all broker services
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        PendingOrdersTracker.add_pending_order(symbol, side, order_id)
 
     @classmethod
     def _remove_pending_order(cls, symbol: Symbol, order_id: str):
         """Remove an order from the pending orders tracking."""
-        with cls._pending_orders_lock:
-            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
-            if symbol_str in cls._pending_orders:
-                # Remove the specific order ID
-                cls._pending_orders[symbol_str] = [
-                    (side, oid) for side, oid in cls._pending_orders[symbol_str]
-                    if oid != order_id
-                ]
-                # Clean up empty lists
-                if not cls._pending_orders[symbol_str]:
-                    del cls._pending_orders[symbol_str]
+        # Use the shared pending orders tracker to ensure consistency across all broker services
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        PendingOrdersTracker.remove_pending_order(symbol, order_id)
 
     @classmethod
     def _has_pending_order_in_direction(cls, symbol: Symbol, side: str) -> bool:
         """Check if there's a pending order in the same direction for the symbol."""
-        with cls._pending_orders_lock:
-            symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
-            if symbol_str in cls._pending_orders:
-                for pending_side, _ in cls._pending_orders[symbol_str]:
-                    if pending_side == side:
-                        return True
-            return False
+        # Use the shared pending orders tracker to ensure consistency across all broker services
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        return PendingOrdersTracker.has_pending_order_in_direction(symbol, side)
 
     def get_available_symbols(self) -> Set[str]:
         """
@@ -211,6 +196,23 @@ class MultiBrokerExecutionService(ExecutionPort):
         Check if a symbol is available on any of the configured exchanges.
         Optimized with caching to reduce redundant API calls.
         """
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        from domain.value_objects import Symbol as DomainSymbol
+
+        # Create a domain symbol object for validation
+        domain_symbol = DomainSymbol(symbol)
+        if not symbol_validator.is_symbol_approved(domain_symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
+            # Cache this negative result
+            cache_key = f"symbol_check_{symbol}"
+            current_time = datetime.now()
+            with self._recent_checks_lock:
+                self._recent_checks[cache_key] = (current_time, False)
+            return False
+
         # Check if we have a recent result for this symbol in our cache
         cache_key = f"symbol_check_{symbol}"
         current_time = datetime.now()
@@ -263,6 +265,18 @@ class MultiBrokerExecutionService(ExecutionPort):
         """
         Fallback method to check symbol availability via direct API calls.
         """
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        from domain.value_objects import Symbol as DomainSymbol
+
+        # Create a domain symbol object for validation
+        domain_symbol = DomainSymbol(symbol)
+        if not symbol_validator.is_symbol_approved(domain_symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
+            return False
+
         import requests
 
         # Try each exchange via direct API
@@ -271,7 +285,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                 if exchange_name == 'binance':
                     api_url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
                 elif exchange_name == 'bingx':
-                    api_url = f"https://open-api-vst.bingx.com/openApi/quote/v1/ticker/price?symbol={SymbolFormatHelper.format_symbol_for_exchange(symbol, exchange_name)}"
+                    api_url = f"https://open-api.bingx.com/openApi/quote/v1/ticker/price?symbol={SymbolFormatHelper.format_symbol_for_exchange(symbol, exchange_name)}"
                 elif exchange_name == 'mexc':
                     api_url = f"https://api.mexc.com/api/v3/ticker/price?symbol={symbol}"
                 elif exchange_name == 'phemex':
@@ -279,13 +293,15 @@ class MultiBrokerExecutionService(ExecutionPort):
                 else:
                     continue  # Skip unknown exchanges
 
-                response = requests.get(api_url, timeout=5)
-                if response.status_code == 200:
-                    # Check if the response contains valid price data
-                    data = response.json()
-                    if 'price' in data or ('data' in data and 'last' in data.get('data', {})):
-                        self.logger.debug(f"Symbol {symbol} found via direct API on {exchange_name}")
-                        return True
+                # Use session with proper connection management
+                with requests.Session() as session:
+                    response = session.get(api_url, timeout=5)
+                    if response.status_code == 200:
+                        # Check if the response contains valid price data
+                        data = response.json()
+                        if 'price' in data or ('data' in data and 'last' in data.get('data', {})):
+                            self.logger.debug(f"Symbol {symbol} found via direct API on {exchange_name}")
+                            return True
             except Exception as e:
                 self.logger.debug(f"Direct API check failed for {symbol} on {exchange_name}: {e}")
                 continue
@@ -298,6 +314,13 @@ class MultiBrokerExecutionService(ExecutionPort):
         """
         symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
 
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available for trading
+        from utils.symbol_validator import symbol_validator
+        if not symbol_validator.is_symbol_approved(order.symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order execution denied.")
+            return None
+
         # Note: Symbol filtering (like stablecoin pairs) is now handled at the watcher level
         # to avoid processing symbols that will be rejected later. This improves efficiency.
 
@@ -305,21 +328,6 @@ class MultiBrokerExecutionService(ExecutionPort):
         prevent_same_direction = os.getenv('PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL', 'true').lower() == 'true'
 
         if prevent_same_direction:
-            # Check if there's already an active position in the same direction for this symbol
-            # This requires checking the current positions, which may be done through the broker
-            # We'll check each broker for the position, starting with the primary broker
-            current_position = None
-            for exchange_name in self.exchange_order:
-                broker = self.brokers.get(exchange_name)
-                if broker and hasattr(broker, 'get_position'):
-                    try:
-                        current_position = broker.get_position(order.symbol)
-                        if current_position and hasattr(current_position,
-                                                        'side') and current_position.side is not None:
-                            break
-                    except:
-                        continue  # Try next broker
-
             # Determine the intended side of the new order
             order_side = getattr(order, 'side', None)
             intended_position_side = None
@@ -329,30 +337,16 @@ class MultiBrokerExecutionService(ExecutionPort):
                 elif order_side.name == 'SELL':
                     intended_position_side = 'SHORT'
 
-            # Check both existing positions and pending orders in the same direction
-            position_duplicate = False
-            pending_duplicate = False
-
-            # Check for existing position in the same direction
-            if current_position and hasattr(current_position, 'side') and current_position.side is not None:
-                if intended_position_side and hasattr(current_position.side,
-                                                     'name') and current_position.side.name == intended_position_side:
-                    position_duplicate = True
-
-            # Check for pending orders in the same direction
+            # Check for pending orders in the same direction using the shared tracker
             if intended_position_side:
                 pending_duplicate = self._has_pending_order_in_direction(order.symbol, intended_position_side)
 
-            # If either condition is true, prevent the trade
-            if position_duplicate or pending_duplicate:
-                if position_duplicate:
+                # If there's a pending order in the same direction, prevent the trade
+                if pending_duplicate:
                     self.logger.info(
-                        f"❌ DUPLICATE REJECTED: Active {current_position.side.name} position exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
-                else:
-                    self.logger.info(
-                        f"❌ DUPLICATE REJECTED: Pending {intended_position_side} order exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
-                raise ValueError(
-                    f"DUPLICATE:{order.symbol.value}:{intended_position_side}")
+                        f"⚠️ DUPLICATE CHECK BLOCKED: Internal pending flag set for {intended_position_side} order on {order.symbol.value} — broker confirmation needed.")
+                    # Return None instead of raising an exception to prevent system crashes
+                    return None  # Indicate that the order was not placed due to duplicate prevention
 
         # Check for broker-specific order placement settings
         # Check if any specific broker is enabled for exclusive order placement
@@ -391,17 +385,42 @@ class MultiBrokerExecutionService(ExecutionPort):
             is_valid = self._validate_order_risk(order)
             if not is_valid:
                 self.logger.error(f"❌ ORDER REJECTED: Risk validation failed for order: {order}")
-                raise ValueError(f"Order failed risk validation: {order}")
+                return None  # Return None instead of raising to prevent system crashes
+
+            # Perform final validation to ensure the order parameters are reasonable before sending to broker
+            if not self._validate_order_parameters_before_broker(order):
+                self.logger.error(f"❌ ORDER REJECTED: Order parameters are invalid or unreasonable: {order}")
+                # Return None instead of raising an exception to prevent system crashes
+                return None
 
             self.logger.info(f"🎯 EXECUTING ORDER ON {best_exchange.upper()}: {order}")
 
-            # Add to pending orders before placing the order
-            if prevent_same_direction and intended_position_side:
-                order_id_temp = "TEMP_" + str(id(order))  # Temporary ID for tracking before placement
-                self._add_pending_order(order.symbol, intended_position_side, order_id_temp)
-
             try:
+                # Check if broker is connected before attempting to place order
+                if hasattr(broker, 'connected'):
+                    if not broker.connected:
+                        self.logger.error(f"❌ BROKER NOT CONNECTED: Cannot place order on {best_exchange.upper()}")
+                        return None
+                elif hasattr(broker, 'connect') and callable(getattr(broker, 'connect')):
+                    # Try to connect if not connected
+                    try:
+                        if not getattr(broker, 'connected', False):
+                            broker.connect()
+                    except Exception as conn_error:
+                        self.logger.error(f"❌ FAILED TO CONNECT TO BROKER {best_exchange.upper()}: {conn_error}")
+                        return None
+
                 order_id = broker.place_order(order)
+
+                # Check if order_id is valid before proceeding
+                if order_id is None or order_id == "":
+                    self.logger.error(f"❌ ORDER PLACEMENT FAILED ON {best_exchange.upper()}: Broker returned invalid order ID: {order_id}")
+                    return None
+
+                # NOW we have a valid order ID from the broker, so we can add to pending orders
+                if prevent_same_direction and intended_position_side:
+                    self._add_pending_order(order.symbol, intended_position_side, order_id)
+
                 self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {best_exchange.upper()}: {order_id}")
 
                 # Send Telegram notification about successful order placement
@@ -410,16 +429,24 @@ class MultiBrokerExecutionService(ExecutionPort):
                 return order_id
             except Exception as e:
                 self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {best_exchange.upper()}: {e}")
-                raise
-            finally:
-                # Remove from pending orders after attempting to place
-                if prevent_same_direction and intended_position_side:
-                    self._remove_pending_order(order.symbol, order_id_temp)
+                # Still return None instead of raising to prevent system crashes
+                return None
         else:
-            raise Exception(f"Symbol {symbol_str} not available on any configured exchange")
+            # If no exchange is available, return None instead of raising an exception
+            self.logger.error(f"❌ SYMBOL {symbol_str} not available on any configured exchange")
+            return None
 
     def _enhance_order_with_risk_parameters(self, order: Order) -> Order:
         """Enhance order with risk parameters if they're missing."""
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available for trading
+        from utils.symbol_validator import symbol_validator
+        if not symbol_validator.is_symbol_approved(order.symbol):
+            symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order enhancement skipped.")
+            return order
+
         # Check if the order already has SL/TP parameters
         has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
         has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
@@ -478,13 +505,28 @@ class MultiBrokerExecutionService(ExecutionPort):
                 )
 
                 # Calculate dynamic SL/TP levels based on risk factors
-                sl_price, tp_price = risk_service.calculate_sl_tp_levels(
-                    entry_price=current_price,
-                    position_side=position_side,
-                    risk_adjustment_factors=risk_factors,
-                    atr_value=None,  # Would come from market data in real implementation
-                    market_data=market_data
-                )
+                try:
+                    sl_price, tp_price = risk_service.calculate_sl_tp_levels(
+                        entry_price=current_price,
+                        position_side=position_side,
+                        risk_adjustment_factors=risk_factors,
+                        atr_value=None,  # Would come from market data in real implementation
+                        market_data=market_data
+                    )
+                except Exception as risk_calc_error:
+                    self.logger.warning(f"Risk calculation failed: {risk_calc_error}, using fallback SL/TP")
+                    # Fallback to simple percentage-based calculation
+                    sl_multiplier = 0.02  # 2% stop loss
+                    tp_multiplier = 0.03  # 3% take profit
+
+                    if hasattr(order, 'side') and order.side.name == 'BUY':
+                        # For BUY orders: SL below entry, TP above entry
+                        sl_price = current_price * (1 - sl_multiplier)
+                        tp_price = current_price * (1 + tp_multiplier)
+                    else:  # SELL
+                        # For SELL orders: SL above entry, TP below entry
+                        sl_price = current_price * (1 + sl_multiplier)  # SL above for SELL (stop loss if price rises)
+                        tp_price = current_price * (1 - tp_multiplier)  # TP below for SELL (take profit when price falls)
 
             except Exception as e:
                 # If advanced risk management fails, fall back to simple calculation
@@ -570,10 +612,100 @@ class MultiBrokerExecutionService(ExecutionPort):
                 self.logger.warning(f"Risk validation error: {e}, allowing order to proceed")
             return True  # Allow order to proceed if validation fails
 
+    def _validate_order_parameters_before_broker(self, order: Order) -> bool:
+        """Final validation to ensure order parameters are reasonable before sending to broker."""
+        try:
+            # Check if we have a valid price
+            if order.price and hasattr(order.price, 'amount') and order.price.amount:
+                entry_price = float(order.price.amount)
+
+                # Check if stop loss price is reasonable
+                if hasattr(order, 'stop_loss_price') and order.stop_loss_price:
+                    sl_price = float(order.stop_loss_price.amount) if hasattr(order.stop_loss_price, 'amount') else float(order.stop_loss_price)
+
+                    # For BUY orders: SL should be below entry price
+                    # For SELL orders: SL should be above entry price (for short positions)
+                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+
+                    if is_buy_order:
+                        # For BUY orders, SL should be below entry price (but not too far below)
+                        if sl_price >= entry_price and entry_price > 0:  # SL should be below for long positions
+                            self.logger.warning(f"Invalid SL for BUY order: SL ({sl_price}) >= Entry ({entry_price})")
+                            return False
+                        elif sl_price <= 0:
+                            self.logger.warning(f"Invalid SL for BUY order: SL ({sl_price}) <= 0")
+                            return False
+                        # More reasonable range check - allow SL to be up to 50% below entry
+                        elif entry_price > 0 and sl_price < entry_price * 0.5:  # SL not more than 50% below entry
+                            self.logger.warning(f"SL too far from entry for BUY order: SL ({sl_price}) vs Entry ({entry_price})")
+                            return False
+                    else:
+                        # For SELL orders, SL should be above entry price (for stop loss on short)
+                        if sl_price <= entry_price and entry_price > 0:  # SL should be above for short positions
+                            self.logger.warning(f"Invalid SL for SELL order: SL ({sl_price}) <= Entry ({entry_price})")
+                            return False
+                        elif sl_price <= 0:
+                            self.logger.warning(f"Invalid SL for SELL order: SL ({sl_price}) <= 0")
+                            return False
+                        # More reasonable range check - allow SL to be up to 50% above entry
+                        elif entry_price > 0 and sl_price > entry_price * 1.5:  # SL not more than 50% above entry
+                            self.logger.warning(f"SL too far from entry for SELL order: SL ({sl_price}) vs Entry ({entry_price})")
+                            return False
+
+                # Check if take profit price is reasonable
+                if hasattr(order, 'take_profit_price') and order.take_profit_price:
+                    tp_price = float(order.take_profit_price.amount) if hasattr(order.take_profit_price, 'amount') else float(order.take_profit_price)
+
+                    # For BUY orders: TP should be above entry price
+                    # For SELL orders: TP should be below entry price (for short positions)
+                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+
+                    if is_buy_order:
+                        # For BUY orders, TP should be above entry price (but not too far above)
+                        if tp_price <= entry_price and entry_price > 0:  # TP should be above for long positions
+                            self.logger.warning(f"Invalid TP for BUY order: TP ({tp_price}) <= Entry ({entry_price})")
+                            return False
+                        elif tp_price <= 0:
+                            self.logger.warning(f"Invalid TP for BUY order: TP ({tp_price}) <= 0")
+                            return False
+                        # More reasonable range check - allow TP to be up to 200% above entry (2x)
+                        elif entry_price > 0 and tp_price > entry_price * 2.0:  # TP not more than 2x above entry
+                            self.logger.warning(f"TP too far from entry for BUY order: TP ({tp_price}) vs Entry ({entry_price})")
+                            return False
+                    else:
+                        # For SELL orders, TP should be below entry price (for profit on short)
+                        if tp_price >= entry_price and entry_price > 0:  # TP should be below for short positions
+                            self.logger.warning(f"Invalid TP for SELL order: TP ({tp_price}) >= Entry ({entry_price})")
+                            return False
+                        elif tp_price <= 0:
+                            self.logger.warning(f"Invalid TP for SELL order: TP ({tp_price}) <= 0")
+                            return False
+                        # More reasonable range check - allow TP to be up to 50% below entry
+                        elif entry_price > 0 and tp_price < entry_price * 0.5:  # TP not more than 50% below entry
+                            self.logger.warning(f"TP too far from entry for SELL order: TP ({tp_price}) vs Entry ({entry_price})")
+                            return False
+
+            return True
+        except Exception as e:
+            self.logger.warning(f"Parameter validation error: {e}, allowing order to proceed")
+            return True  # Allow order to proceed if validation fails
+
     def _find_best_exchange_for_symbol(self, symbol: str) -> Optional[str]:
         """
         Find the best exchange for a given symbol by checking availability.
         """
+
+        # First, check if the symbol is in the approved symbols list
+        # This is the primary validation - if a symbol is not approved, it's not available
+        from utils.symbol_validator import symbol_validator
+        from domain.value_objects import Symbol as DomainSymbol
+
+        # Create a domain symbol object for validation
+        domain_symbol = DomainSymbol(symbol)
+        if not symbol_validator.is_symbol_approved(domain_symbol):
+            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
+            return None
+
         # First, try to find an exchange where the symbol is available
         for exchange_name in self.exchange_order:
             broker = self.brokers.get(exchange_name)
@@ -608,7 +740,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                 api_url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
             elif exchange_name == 'bingx':
                 formatted_symbol = SymbolFormatHelper.format_symbol_for_exchange(symbol, exchange_name)
-                api_url = f"https://open-api-vst.bingx.com/openApi/quote/v1/ticker/price?symbol={formatted_symbol}"
+                api_url = f"https://open-api.bingx.com/openApi/quote/v1/ticker/price?symbol={formatted_symbol}"
             elif exchange_name == 'mexc':
                 api_url = f"https://api.mexc.com/api/v3/ticker/price?symbol={symbol}"
             elif exchange_name == 'phemex':
@@ -616,8 +748,10 @@ class MultiBrokerExecutionService(ExecutionPort):
             else:
                 return False
 
-            response = requests.get(api_url, timeout=5)
-            return response.status_code == 200
+            # Use session with proper connection management
+            with requests.Session() as session:
+                response = session.get(api_url, timeout=5)
+                return response.status_code == 200
         except Exception:
             return False
 

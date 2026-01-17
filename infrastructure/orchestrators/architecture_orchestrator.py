@@ -12,6 +12,7 @@ from shared.event_system import event_router, signal_processor
 from infrastructure.engines.engine_service import engine_service
 from infrastructure.fusion.fusion_service import fusion_service
 from infrastructure.strategies.strategy_manager import strategy_manager
+from infrastructure.aggregators.signal_aggregator import signal_aggregator
 
 
 class ArchitectureOrchestrator:
@@ -50,6 +51,14 @@ class ArchitectureOrchestrator:
             # Subscribe to events and set up the proper processing chain
             self.logger.info("Starting Architecture Orchestrator...")
 
+            # Initialize the signal aggregator
+            if self.execution_service:
+                signal_aggregator.set_execution_service(self.execution_service)
+                self.logger.info("Signal aggregator configured with execution service")
+            else:
+                self.logger.warning("No execution service provided to signal aggregator")
+            signal_aggregator.start_aggregation()
+
             # The signal processor is already set up to handle the flow
             # Watcher emits -> Event Router -> Signal Processor -> Proper Layer Processing
 
@@ -61,12 +70,32 @@ class ArchitectureOrchestrator:
                 self.execution_service
             )
 
+            # Store the execution service globally so it can be accessed by the event system
+            architecture_orchestrator.execution_service = self.execution_service
+
             self.logger.info("Architecture Orchestrator started successfully")
-            self.logger.info("Proper flow established: Watcher → Engine → Fusion → Strategy → Broker")
+            self.logger.info("Proper flow established: Watcher → Engine → Fusion → Strategy → Aggregator → Broker")
 
     def stop(self):
         """Stop the architecture orchestrator."""
         self.is_running = False
+
+        # Clear any pending orders in the shared tracker to prevent resource leaks
+        try:
+            from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+            PendingOrdersTracker.clear_all_pending_orders()
+            self.logger.info("Cleared pending orders in shared tracker")
+        except Exception as e:
+            self.logger.error(f"Error clearing pending orders tracker: {e}")
+
+        # Also clear the broker registry to free up resources
+        try:
+            from infrastructure.services.broker_registry import broker_registry
+            broker_registry.clear_registry()
+            self.logger.info("Cleared broker registry to free up resources")
+        except Exception as e:
+            self.logger.error(f"Error clearing broker registry: {e}")
+
         self.logger.info("Architecture Orchestrator stopped")
 
     def get_status(self) -> Dict[str, Any]:

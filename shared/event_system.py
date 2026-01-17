@@ -2,6 +2,7 @@
 Event system for proper signal routing between architectural layers.
 Following correct architecture: Watcher → Engine → Fusion → Strategy → Broker
 """
+import os
 from typing import Callable, Dict, Any, List
 from dataclasses import dataclass
 from datetime import datetime
@@ -208,160 +209,330 @@ class SignalProcessor:
         try:
             fused_signal = event.data
             if self.logger:
-                self.logger.info(f"Processing fused signal from {event.source_component} for {fused_signal.symbol.value}")
-            
-            # Process signal through strategy manager
-            execution_intent = strategy_manager.evaluate_fused_signal(fused_signal)
-            
-            if execution_intent:
-                # Publish execution intent for final layer
-                self.event_router.publish_execution_intent(
-                    execution_intent,
-                    source="StrategyManager",
-                    correlation_id=event.correlation_id
-                )
-                if self.logger:
-                    self.logger.info(f"Published execution intent: {execution_intent.side.name} for {execution_intent.symbol.value}")
+                self.logger.info(f"Forwarding fused signal from {event.source_component} for {fused_signal.symbol.value} to aggregator")
+
+            # The signal aggregator is already subscribed to FUSED_SIGNAL events
+            # and will handle batch collection and evaluation of signals
+            # This ensures we compare opportunities across all symbols before executing
+            # The aggregator will handle the strategy evaluation and execution intent generation
+
         except Exception as e:
             if self.logger:
-                self.logger.error(f"Error processing fused signal: {e}")
+                self.logger.error(f"Error forwarding fused signal to aggregator: {e}")
 
     def _process_execution_intent(self, event: SignalEvent, execution_service):
         """Process execution intent through broker layer"""
         try:
             execution_intent = event.data
             if self.logger:
-                self.logger.info(f"Processing execution intent from {event.source_component} for {execution_intent.symbol.value}")
+                self.logger.info(f"📥 RECEIVED EXECUTION INTENT: Processing execution intent from {event.source_component} for {execution_intent.symbol.value} with confidence {float(execution_intent.intent_confidence.value):.2%}")
 
-            # Execute the trade through the execution service
-            # This would need to be implemented based on the execution service interface
-            if hasattr(execution_service, 'execute_intent_trade'):
-                order_id = execution_service.execute_intent_trade(execution_intent)
+            # Check if we have access to the orchestrator to queue the execution intent
+            # The orchestrator should be accessible through the global architecture orchestrator
+            from infrastructure.orchestrators.architecture_orchestrator import architecture_orchestrator
+
+            # If the architecture orchestrator has an execution service, use it
+            # Otherwise, use the execution service passed as a parameter
+            if hasattr(architecture_orchestrator, 'execution_service') and architecture_orchestrator.execution_service:
+                execution_service_to_use = architecture_orchestrator.execution_service
                 if self.logger:
-                    self.logger.info(f"Executed trade with ID: {order_id}")
+                    self.logger.info(f"Using execution service from architecture orchestrator for {execution_intent.symbol.value}")
             else:
-                # Fallback implementation - need to create order from intent and execute
-                from domain.entities.signal_entities import Order, OrderSide
-                from domain.value_objects import Money
-                from decimal import Decimal
+                execution_service_to_use = execution_service
+                if self.logger:
+                    self.logger.info(f"Using execution service from parameter for {execution_intent.symbol.value}")
 
-                # Create order from execution intent
-                # Get current price for the symbol to determine position size
-                current_price = None
-                if hasattr(execution_service, 'get_current_price'):
-                    try:
-                        current_price = execution_service.get_current_price(execution_intent.symbol)
-                    except:
-                        pass  # Fallback to default price below
+            # Use the execution service directly to execute the order
+            from domain.entities.signal_entities import Order, OrderSide
+            from domain.value_objects import Money
+            from decimal import Decimal
 
-                # If we still don't have a price, use a fallback
-                if current_price is None or current_price <= 0:
-                    # Try to get price from exchange directly
-                    try:
-                        import ccxt
-                        exchange = ccxt.binance()
-                        ticker = exchange.fetch_ticker(execution_intent.symbol.value)
-                        current_price = ticker['last'] if 'last' in ticker else ticker['close']
-                    except:
-                        # If all methods fail, use a default price
-                        current_price = 50000.0  # Fallback price
-
-                # Calculate quantity based on risk parameters
-                risk_params = execution_intent.risk_parameters
-                position_size_pct = risk_params.get('max_position_size', 0.02)  # Default 2%
-
-                # Fixed Position Size Configuration (for testing purposes)
-                import os
-                fixed_position_size_enabled = os.getenv('FIXED_POSITION_SIZE_ENABLED', 'false').lower() == 'true'
-                fixed_position_amount = float(os.getenv('FIXED_POSITION_AMOUNT', '10.0'))  # Default to $10 for testing
-
-                # Calculate quantity based on risk parameters and account balance
+            # Create order from execution intent
+            # Get current price for the symbol to determine position size
+            current_price = None
+            if hasattr(execution_service_to_use, 'get_current_price'):
                 try:
-                    if fixed_position_size_enabled:
-                        # Use fixed position size for testing
+                    current_price = execution_service_to_use.get_current_price(execution_intent.symbol)
+                except:
+                    pass  # Fallback to default price below
+
+            # If we still don't have a price, use a fallback
+            if current_price is None or current_price <= 0:
+                # Try to get price from exchange directly
+                try:
+                    import ccxt
+                    exchange = ccxt.binance()
+                    ticker = exchange.fetch_ticker(execution_intent.symbol.value)
+                    current_price = ticker['last'] if 'last' in ticker else ticker['close']
+                except:
+                    # If all methods fail, use a default price
+                    current_price = 50000.0  # Fallback price
+
+            # Calculate quantity based on risk parameters
+            risk_params = execution_intent.risk_parameters
+            position_size_pct = risk_params.get('max_position_size', 0.02)  # Default 2%
+
+            # Fixed Position Size Configuration (for testing purposes)
+            fixed_position_size_enabled = os.getenv('FIXED_POSITION_SIZE_ENABLED', 'false').lower() == 'true'
+            fixed_position_amount = float(os.getenv('FIXED_POSITION_AMOUNT', '10.0'))  # Default to $10 for testing
+
+            # Calculate quantity based on risk parameters and account balance
+            try:
+                if fixed_position_size_enabled:
+                    # Use fixed position size for testing
+                    # Check if current_price is valid before division
+                    if current_price is None or current_price <= 0:
+                        # Use fallback price if current_price is invalid
+                        fallback_price = 50000.0
+                        quantity = fixed_position_amount / fallback_price
+                        if self.logger:
+                            self.logger.info(f"Using fixed position size with fallback price: ${fixed_position_amount} at ${fallback_price} = {quantity} units")
+                    else:
                         quantity = fixed_position_amount / current_price
                         if self.logger:
                             self.logger.info(f"Using fixed position size: ${fixed_position_amount} at ${current_price} = {quantity} units")
-                    else:
-                        # In a real implementation, we'd get portfolio metrics from portfolio service
-                        # For now, using a default account balance from environment variable
-                        import os
-                        account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))  # Default to $10,000 if not available
-                        position_value = account_balance * position_size_pct
+                else:
+                    # In a real implementation, we'd get portfolio metrics from portfolio service
+                    # For now, using a default account balance from environment variable
+                    account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))  # Default to $10,000 if not available
+                    position_value = account_balance * position_size_pct
 
-                        # Calculate quantity based on position value and current price
+                    # Calculate quantity based on position value and current price
+                    # Check if current_price is valid before division
+                    if current_price is None or current_price <= 0:
+                        # Use fallback price if current_price is invalid
+                        fallback_price = 50000.0
+                        quantity = position_value / fallback_price
+                        if self.logger:
+                            self.logger.info(f"Using calculated position size with fallback price: ${position_value} at ${fallback_price} = {quantity} units")
+                    else:
                         quantity = position_value / current_price
 
-                        # Apply any quantity adjustments from risk parameters
-                        if 'position_quantity' in risk_params:
-                            quantity = risk_params['position_quantity']
+                    # Apply any quantity adjustments from risk parameters
+                    # Check if position_quantity in risk_params is significantly different from calculated quantity
+                    if 'position_quantity' in risk_params:
+                        risk_position_quantity = risk_params['position_quantity']
+                        # If there's a significant difference (>5% relative difference), log a warning
+                        if quantity != 0 and abs(risk_position_quantity - quantity) / quantity > 0.05:
+                            if self.logger:
+                                self.logger.warning(f"⚠️ Quantity mismatch: Risk params quantity={risk_position_quantity}, Calculated quantity={quantity}, Diff={abs(risk_position_quantity - quantity) / quantity:.2%}")
 
-                except:
-                    # If portfolio service fails, use a default quantity
-                    if fixed_position_size_enabled:
-                        # Use fixed position size for testing
-                        quantity = fixed_position_amount / current_price
-                        if self.logger:
-                            self.logger.info(f"Using fixed position size (fallback): ${fixed_position_amount} at ${current_price} = {quantity} units")
-                    else:
-                        # Use default account balance from environment variable
-                        import os
-                        default_account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '1000.0'))  # Default to $1,000 if not available
-                        quantity = position_size_pct * default_account_balance / current_price
+                        # Use the risk parameter quantity as the authoritative value
+                        quantity = risk_position_quantity
 
-                # Ensure minimum quantity to avoid issues with small trades
-                if quantity < 0.001:
-                    quantity = 0.001  # Minimum trade size
-
-                # Use the side from the execution intent
-                order_side = execution_intent.side
-
-                # Determine position side based on order side for futures trading
-                position_side = "LONG" if order_side.name == 'BUY' else "SHORT"
-
-                # Use risk management system to calculate dynamic TP/SL based on market conditions
-                from infrastructure.risk.advanced_risk_management import SLTPManager
-
-                # Initialize SL/TP manager with risk parameters
-                sltp_manager = SLTPManager(
-                    sl_activation_pct=risk_params.get('stop_loss_pct', 0.02),  # 2% default SL
-                    tp_activation_pct=risk_params.get('take_profit_pct', 0.03)  # 3% default TP
-                )
-
-                # Calculate dynamic stop loss and take profit prices based on risk parameters
-                if order_side.name == 'BUY':
-                    # For long positions: SL below entry, TP above entry
-                    sl_price = current_price * (1 - risk_params.get('stop_loss_pct', 0.02))
-                    tp_price = current_price * (1 + risk_params.get('take_profit_pct', 0.03))
-                else:  # SELL
-                    # For short positions: SL above entry, TP below entry
-                    sl_price = current_price * (1 + risk_params.get('stop_loss_pct', 0.02))  # SL above for SELL
-                    tp_price = current_price * (1 - risk_params.get('take_profit_pct', 0.03))  # TP below for SELL
-
-                # Create order with proper risk parameters from the intent
-                order = Order(
-                    symbol=execution_intent.symbol,
-                    side=order_side,
-                    order_type="MARKET",  # Using string instead of enum
-                    quantity=Decimal(str(quantity)),
-                    price=Money(amount=float(current_price), currency='USDT') if current_price else None,
-                    strategy_name=execution_intent.strategy_name,  # Strategy name comes from intent
-                    timestamp=execution_intent.timestamp,
-                    position_side=position_side,  # Add position side for futures trading
-                    stop_loss_price=Money(amount=float(sl_price), currency='USDT'),  # Dynamic SL based on risk
-                    take_profit_price=Money(amount=float(tp_price), currency='USDT'),  # Dynamic TP based on risk
-                    parent_execution_intent=execution_intent  # Link back to the execution intent
-                )
-
-                # Execute order through execution service
-                if hasattr(execution_service, 'execute_order'):
-                    order_id = execution_service.execute_order(order)
+            except Exception as e:
+                # If portfolio service fails, use a default quantity
+                if fixed_position_size_enabled:
+                    # Use fixed position size for testing with fallback price
+                    fallback_price = 50000.0
+                    quantity = fixed_position_amount / fallback_price
                     if self.logger:
-                        self.logger.info(f"Executed order with ID: {order_id}")
-                    return order_id
+                        self.logger.info(f"Using fixed position size (fallback): ${fixed_position_amount} at ${fallback_price} = {quantity} units")
                 else:
+                    # Use default account balance from environment variable
+                    default_account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '1000.0'))  # Default to $1,000 if not available
+                    fallback_price = 50000.0
+                    quantity = position_size_pct * default_account_balance / fallback_price
+
+                if self.logger:
+                    self.logger.error(f"Error calculating quantity, using fallback: {e}")
+
+            # Ensure minimum quantity to avoid issues with small trades
+            if quantity < 0.001:
+                quantity = 0.001  # Minimum trade size
+
+            # Use the side from the execution intent
+            order_side = execution_intent.side
+
+            # Determine position side based on order side for futures trading
+            position_side = "LONG" if order_side.name == 'BUY' else "SHORT"
+
+            # Use risk management system to calculate dynamic TP/SL based on market conditions
+            from infrastructure.risk.advanced_risk_management import SLTPManager
+
+            # Initialize SL/TP manager with risk parameters
+            sltp_manager = SLTPManager(
+                sl_activation_pct=risk_params.get('stop_loss_pct', 0.02),  # 2% default SL
+                tp_activation_pct=risk_params.get('take_profit_pct', 0.03)  # 3% default TP
+            )
+
+            # Calculate dynamic stop loss and take profit prices based on risk parameters
+            if order_side.name == 'BUY':
+                # For long positions: SL below entry, TP above entry
+                sl_price = current_price * (1 - risk_params.get('stop_loss_pct', 0.02))
+                tp_price = current_price * (1 + risk_params.get('take_profit_pct', 0.03))
+            else:  # SELL
+                # For short positions: SL above entry, TP below entry
+                sl_price = current_price * (1 + risk_params.get('stop_loss_pct', 0.02))  # SL above for SELL
+                tp_price = current_price * (1 - risk_params.get('take_profit_pct', 0.03))  # TP below for SELL
+
+            # Create order with risk parameters from the execution intent (set by Strategy layer)
+            # The Strategy layer should have already calculated all risk parameters
+            # However, if the strategy layer set incorrect SL/TP prices, we'll recalculate them
+            stop_loss_price = getattr(execution_intent, 'stop_loss_price', None)
+            take_profit_price = getattr(execution_intent, 'take_profit_price', None)
+
+            # Check if the strategy layer set incorrect SL/TP prices and recalculate if needed
+            # For BUY orders: SL should be below entry price, TP should be above entry price
+            # For SELL orders: SL should be above entry price, TP should be below entry price
+            entry_price = float(current_price) if current_price else 50000.0  # fallback
+
+            # Validate signal direction consistency with order side
+            # Check if there's a contradiction between signal bias and order side
+            if hasattr(execution_intent, 'fused_signal') and execution_intent.fused_signal:
+                dominant_bias = getattr(execution_intent.fused_signal, 'dominant_bias', None)
+                if dominant_bias:
+                    bias_str = dominant_bias.value if hasattr(dominant_bias, 'value') else str(dominant_bias)
+                    if ((bias_str in ['SELL', 'SHORT'] and order_side.name == 'BUY') or
+                        (bias_str in ['BUY', 'LONG'] and order_side.name == 'SELL')):
+                        if self.logger:
+                            self.logger.warning(f"⚠️ Signal contradiction: Bias={bias_str} vs Order={order_side.name} for {execution_intent.symbol.value}")
+
+            if order_side.name == 'BUY':
+                # For BUY orders, SL should be below entry, TP should be above entry
+                if (stop_loss_price is None or
+                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) <= 0) or
+                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) >= entry_price)):
+                    # Recalculate SL if not set or invalid (above entry for BUY)
+                    from domain.value_objects import Money
+                    stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+                else:
+                    # Validate existing SL price for BUY order
+                    sl_amount = float(stop_loss_price.amount)
+                    if sl_amount >= entry_price:
+                        if self.logger:
+                            self.logger.warning(f"Invalid SL for BUY: SL({sl_amount}) >= Entry({entry_price}), recalculating...")
+                        from domain.value_objects import Money
+                        stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+
+                if (take_profit_price is None or
+                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= 0) or
+                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= entry_price)):
+                    # Recalculate TP if not set or invalid (below entry for BUY)
+                    from domain.value_objects import Money
+                    take_profit_price = Money(amount=float(tp_price), currency='USDT')
+                else:
+                    # Validate existing TP price for BUY order
+                    tp_amount = float(take_profit_price.amount)
+                    if tp_amount <= entry_price:
+                        if self.logger:
+                            self.logger.warning(f"Invalid TP for BUY: TP({tp_amount}) <= Entry({entry_price}), recalculating...")
+                        from domain.value_objects import Money
+                        take_profit_price = Money(amount=float(tp_price), currency='USDT')
+            else:  # SELL
+                # For SELL orders, SL should be above entry, TP should be below entry
+                if (stop_loss_price is None or
+                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) <= 0) or
+                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) <= entry_price)):
+                    # Recalculate SL if not set or invalid (below entry for SELL)
+                    from domain.value_objects import Money
+                    stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+                else:
+                    # Validate existing SL price for SELL order
+                    sl_amount = float(stop_loss_price.amount)
+                    if sl_amount <= entry_price:
+                        if self.logger:
+                            self.logger.warning(f"Invalid SL for SELL: SL({sl_amount}) <= Entry({entry_price}), recalculating...")
+                        from domain.value_objects import Money
+                        stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+
+                if (take_profit_price is None or
+                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= 0) or
+                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) >= entry_price)):
+                    # Recalculate TP if not set or invalid (above entry for SELL)
+                    from domain.value_objects import Money
+                    take_profit_price = Money(amount=float(tp_price), currency='USDT')
+                else:
+                    # Validate existing TP price for SELL order
+                    tp_amount = float(take_profit_price.amount)
+                    if tp_amount >= entry_price:
+                        if self.logger:
+                            self.logger.warning(f"Invalid TP for SELL: TP({tp_amount}) >= Entry({entry_price}), recalculating...")
+                        from domain.value_objects import Money
+                        take_profit_price = Money(amount=float(tp_price), currency='USDT')
+
+            # Perform comprehensive validation of calculated SL/TP prices
+            # Check for symbol-price consistency (sanity check)
+            if stop_loss_price:
+                sl_amount = float(stop_loss_price.amount)
+                sl_distance_ratio = abs(sl_amount - entry_price) / entry_price
+
+                # If SL is extremely far from entry price (>50%), it's likely a calculation error
+                if sl_distance_ratio > 0.5:
                     if self.logger:
-                        self.logger.error("Execution service does not have execute_order method")
+                        self.logger.warning(f"SL price scale mismatch for {execution_intent.symbol.value}: SL={sl_amount}, Entry={entry_price}, Ratio={sl_distance_ratio:.2f}. Recalculating...")
+                    from domain.value_objects import Money
+                    stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+
+            if take_profit_price:
+                tp_amount = float(take_profit_price.amount)
+                tp_distance_ratio = abs(tp_amount - entry_price) / entry_price
+
+                # If TP is extremely far from entry price (>50%), it's likely a calculation error
+                if tp_distance_ratio > 0.5:
+                    if self.logger:
+                        self.logger.warning(f"TP price scale mismatch for {execution_intent.symbol.value}: TP={tp_amount}, Entry={entry_price}, Ratio={tp_distance_ratio:.2f}. Recalculating...")
+                    from domain.value_objects import Money
+                    take_profit_price = Money(amount=float(tp_price), currency='USDT')
+
+            # Log comprehensive order details before execution
+            if self.logger:
+                sl_val = float(stop_loss_price.amount) if stop_loss_price else "N/A"
+                tp_val = float(take_profit_price.amount) if take_profit_price else "N/A"
+
+                self.logger.info(f"📊 ORDER DETAILS: {execution_intent.symbol.value} | "
+                               f"Side: {order_side.name} | "
+                               f"Entry: ${entry_price:.4f} | "
+                               f"SL: ${sl_val} | "
+                               f"TP: ${tp_val} | "
+                               f"Qty: {quantity} | "
+                               f"Strategy: {execution_intent.strategy_name}")
+
+            order = Order(
+                symbol=execution_intent.symbol,
+                side=order_side,
+                order_type="MARKET",  # Using string instead of enum
+                quantity=Decimal(str(quantity)),
+                price=Money(amount=float(current_price), currency='USDT') if current_price else None,
+                strategy_name=execution_intent.strategy_name,  # Strategy name comes from intent
+                timestamp=execution_intent.timestamp,
+                position_side=position_side,  # Add position side for futures trading
+                stop_loss_price=stop_loss_price,  # SL from strategy or recalculated
+                take_profit_price=take_profit_price,  # TP from strategy or recalculated
+                parent_execution_intent=execution_intent  # Link back to the execution intent
+            )
+
+            # Execute order through execution service
+            if hasattr(execution_service_to_use, 'execute_order'):
+                try:
+                    order_id = execution_service_to_use.execute_order(order)
+                    if order_id is not None:
+                        if self.logger:
+                            self.logger.info(f"Executed order with ID: {order_id}")
+                    else:
+                        if self.logger:
+                            self.logger.warning(f"Order execution returned None - order was not placed")
+                    # Only return order_id if it's not None, otherwise return appropriate status
+                    return order_id
+                except ValueError as ve:
+                    if "DUPLICATE:" in str(ve):
+                        # Handle duplicate prevention gracefully
+                        if self.logger:
+                            self.logger.info(f"Duplicate trade prevented: {ve}")
+                        return None  # Return None to indicate the trade was prevented
+                    else:
+                        # Re-raise other ValueErrors
+                        if self.logger:
+                            self.logger.error(f"Non-duplicate ValueError occurred: {ve}")
+                        raise
+                except Exception as e:
+                    # Handle any other exceptions that might occur
+                    if self.logger:
+                        self.logger.error(f"Unexpected error during order execution: {e}")
+                    return None  # Return None to prevent system crashes
+            else:
+                if self.logger:
+                    self.logger.error("Execution service does not have execute_order method")
         except Exception as e:
             if self.logger:
                 self.logger.error(f"Error processing execution intent: {e}")

@@ -13,7 +13,13 @@ class LiquidityWatcher(BaseWatcher):
     """Liquidity Watcher - analyzes market liquidity conditions, returns raw market observations"""
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 20):
-        super().__init__(name, symbol, broker_service, target_broker)
+        # Convert symbol string to Symbol object if needed
+        symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
+        super().__init__(name, symbol_obj)
+
+        # Store broker service and other parameters separately
+        self.broker_service = broker_service
+        self.target_broker = target_broker
 
         # Configuration from environment with defaults
         self.enabled = os.getenv('LIQUIDITY_WATCHER_ENABLED', 'true').lower() == 'true'
@@ -141,6 +147,10 @@ class LiquidityWatcher(BaseWatcher):
         )
 
         return observation
+
+    def analyze(self, symbol: Symbol) -> MarketObservation:
+        """Analyze market conditions and return a raw market observation"""
+        return self._analyze_impl(symbol)
 
     def calculate_spread(self) -> float:
         """Calculate bid-ask spread as percentage"""

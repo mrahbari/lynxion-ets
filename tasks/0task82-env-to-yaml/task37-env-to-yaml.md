@@ -102,7 +102,7 @@ wfo:
       - MANAUSDT
       - SANDUSDT
       - AAVEUSDT
-    config_path: ./application/configs/coins.json
+    config_path: ./application/configs/sync_symbols.json
 
   data:
     base_dir: ./data

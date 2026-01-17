@@ -18,13 +18,20 @@ class EngineService:
     def process_observation(self, observation: MarketObservation) -> Optional[InterpretedSignal]:
         """Convert a raw market observation into an interpreted signal"""
         try:
+            # Log the incoming observation
+            symbol = observation.symbol.value if hasattr(observation.symbol, 'value') else str(observation.symbol)
+            if self.logger:
+                self.logger.info(f"Engine processing observation: {observation.observation_type} for {symbol}, "
+                               f"value: {observation.observation_value:.3f}, "
+                               f"confidence: {float(observation.confidence.value):.3f}")
+
             # Determine signal type based on observation type
             signal_type = self._determine_signal_type(observation)
-            
+
             # Calculate direction and strength based on observation value and confidence
             direction = self._calculate_direction(observation)
             strength = self._calculate_strength(observation)
-            
+
             # Create interpreted signal
             interpreted_signal = InterpretedSignal(
                 symbol=observation.symbol,
@@ -36,13 +43,14 @@ class EngineService:
                 source_watcher=observation.metadata.get('watcher_name') if observation.metadata else None,
                 metadata=observation.metadata or {}
             )
-            
+
             if self.logger:
                 self.logger.info(f"Engine processed observation: {observation.observation_type} -> {signal_type.value}, "
-                               f"strength: {strength:.2f}, confidence: {float(interpreted_signal.confidence.value):.2%}")
-            
+                               f"direction: {direction:.3f}, strength: {strength:.3f}, "
+                               f"confidence: {float(interpreted_signal.confidence.value):.3f}")
+
             return interpreted_signal
-            
+
         except Exception as e:
             if self.logger:
                 self.logger.error(f"Error processing observation in engine: {e}")
@@ -56,27 +64,27 @@ class EngineService:
 
         # Handle market pulse observations (e.g., market_pulse_positive, market_pulse_negative)
         if 'market_pulse' in obs_type:
-            if 'positive' in obs_type or observation.observation_value > 0.1:
+            if 'positive' in obs_type or observation.observation_value > 0.01:  # Lowered threshold from 0.1 to 0.01
                 return SignalType.BUY
-            elif 'negative' in obs_type or observation.observation_value < -0.1:
+            elif 'negative' in obs_type or observation.observation_value < -0.01:  # Lowered threshold from -0.1 to -0.01
                 return SignalType.SELL
             else:
                 return SignalType.NEUTRAL
 
         # Handle trend observations (e.g., trend_neutral, trend_bullish, trend_bearish)
         elif 'trend' in obs_type:
-            if 'bullish' in obs_type or 'positive' in obs_type or observation.observation_value > 0.1:
+            if 'bullish' in obs_type or 'positive' in obs_type or observation.observation_value > 0.01:  # Lowered threshold from 0.1 to 0.01
                 return SignalType.BUY
-            elif 'bearish' in obs_type or 'negative' in obs_type or observation.observation_value < -0.1:
+            elif 'bearish' in obs_type or 'negative' in obs_type or observation.observation_value < -0.01:  # Lowered threshold from -0.1 to -0.01
                 return SignalType.SELL
             else:
                 return SignalType.NEUTRAL
 
         # Handle momentum observations
         elif 'momentum' in obs_type:
-            if observation.observation_value > 0.1:
+            if observation.observation_value > 0.01:  # Lowered threshold from 0.1 to 0.01
                 return SignalType.BUY
-            elif observation.observation_value < -0.1:
+            elif observation.observation_value < -0.01:  # Lowered threshold from -0.1 to -0.01
                 return SignalType.SELL
             else:
                 return SignalType.NEUTRAL
@@ -99,12 +107,18 @@ class EngineService:
 
         # Handle anomaly observations
         elif 'anomaly' in obs_type:
-            if 'positive' in obs_type or observation.observation_value > 0.1:
+            if 'positive' in obs_type or observation.observation_value > 0.01:  # Lowered threshold from 0.1 to 0.01
                 return SignalType.SELL  # Positive anomaly might revert down
-            elif 'negative' in obs_type or observation.observation_value < -0.1:
+            elif 'negative' in obs_type or observation.observation_value < -0.01:  # Lowered threshold from -0.1 to -0.01
                 return SignalType.BUY   # Negative anomaly might revert up
             else:
                 return SignalType.NEUTRAL
+
+        # Handle single candle observations (our new observation type)
+        elif 'single_candle' in obs_type:
+            # For single candle observations, we can't determine direction from just price
+            # So we'll return NEUTRAL to indicate we need more data
+            return SignalType.NEUTRAL
 
         # Default to neutral for unknown observation types
         else:
@@ -113,16 +127,18 @@ class EngineService:
     def _calculate_direction(self, observation: MarketObservation) -> float:
         """Calculate direction based on observation value"""
         # Normalize observation value to range [-1, 1] based on its nature
-        # For now, we'll use a simple approach
         obs_value = observation.observation_value
-        
-        # Clamp to reasonable range and normalize
-        if obs_value > 1.0:
-            return 1.0
-        elif obs_value < -1.0:
-            return -1.0
-        else:
-            return float(obs_value)
+
+        # For single candle observations, we can't determine direction from absolute price
+        # So we'll return 0.0 (neutral) for single candle observations
+        if 'single_candle' in observation.observation_type.lower():
+            return 0.0
+
+        # For other observation types, normalize to [-1, 1] range
+        # This is a simple approach - in a real system, this would be more sophisticated
+        # based on the specific observation type and its meaning
+        normalized_value = max(-1.0, min(1.0, float(obs_value)))
+        return normalized_value
 
     def _calculate_strength(self, observation: MarketObservation) -> float:
         """Calculate strength based on observation confidence and value"""

@@ -12,7 +12,13 @@ class OrderFlowWSWatcher(BaseWatcher):
     """Order Flow Watcher - analyzes order flow data from WebSocket streams, returns raw market observations"""
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 100):
-        super().__init__(name, symbol, broker_service, target_broker)
+        # Convert symbol string to Symbol object if needed
+        symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
+        super().__init__(name, symbol_obj)
+
+        # Store broker service and other parameters separately
+        self.broker_service = broker_service
+        self.target_broker = target_broker
 
         # Configuration from environment with defaults
         self.enabled = os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'true').lower() == 'true'
@@ -147,6 +153,10 @@ class OrderFlowWSWatcher(BaseWatcher):
         )
 
         return observation
+
+    def analyze(self, symbol: Symbol) -> MarketObservation:
+        """Analyze market conditions and return a raw market observation"""
+        return self._analyze_impl(symbol)
 
     def _calculate_order_flow_metrics(self):
         """Calculate order flow metrics from trade and order book data"""

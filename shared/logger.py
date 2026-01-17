@@ -26,9 +26,26 @@ def create_logger(name: str):
     """Create a basic logger with rotating file handler and colored console output."""
     os.makedirs("logs", exist_ok=True)
     logger = logging.getLogger(name)
+
+    # Check if logger already has handlers to prevent duplicate handlers
+    if logger.handlers:
+        return logger
+
     logger.setLevel(logging.DEBUG)
 
-    handler = RotatingFileHandler("logs/system.log", maxBytes=1_000_000, backupCount=5)
+    # Create the rotating file handler with a safer approach to prevent rotation errors
+    # Ensure the main log file exists first to avoid issues during rotation
+    log_file_path = "logs/system.log"
+
+    # Touch the main log file to ensure it exists
+    if not os.path.exists(log_file_path):
+        open(log_file_path, 'a').close()
+
+    # Create the rotating file handler
+    # The backupCount specifies how many backup files to keep, but the rotation
+    # mechanism can sometimes fail if intermediate files are missing
+    handler = RotatingFileHandler(log_file_path, maxBytes=1_000_000, backupCount=5)
+
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
@@ -81,14 +98,23 @@ class ColoredFormatter(logging.Formatter):
 class EnhancedLogger:
     """Enhanced logger with structured logging, correlation IDs, and distributed tracing support."""
 
+    # Class-level cache to reuse logger instances
+    _logger_cache = {}
+
     def __init__(self, name: str = 'HedgeFund', log_file: TypingOptional[str] = "logs/trading_system.log",
                  comprehensive_mode: bool = False):
-        self.logger = create_logger(name)
+        # Use cached logger if it exists, otherwise create new one
+        if name in EnhancedLogger._logger_cache:
+            self.logger = EnhancedLogger._logger_cache[name]
+        else:
+            self.logger = create_logger(name)
+            EnhancedLogger._logger_cache[name] = self.logger
+
         self.metrics = {}
         self.name = name
         self.flow_tracker = {}  # Track flow IDs and their status
         self.comprehensive_mode = comprehensive_mode  # Enable comprehensive logging
-        
+
         # Initialize trace information
         self.active_spans = {}
         self.current_trace_id = None

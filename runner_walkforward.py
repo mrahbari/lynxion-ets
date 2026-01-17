@@ -2,7 +2,7 @@
 """
 Walk-Forward Runner - Execute walk-forward optimization and analysis.
 
-This script runs comprehensive walk-forward analysis for trading strategies with 
+This script runs comprehensive walk-forward analysis for trading strategies with
 training/testing windows, parameter optimization, and performance validation.
 """
 import os
@@ -11,6 +11,10 @@ import argparse
 import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
 
 # Add project root to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

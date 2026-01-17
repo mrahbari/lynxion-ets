@@ -1,3 +1,5 @@
+First, Always you must cover the rules and requirements that written in ./tasks/task0-force-to-cover.md
+
 I want a **complete, detailed, and professional review** of my entire project.
 The final output must include a file named **`./docs/COMPREHENSIVE-ANALYSIS-PRO.<VERSION>.md`** that summarizes all findings.
 
