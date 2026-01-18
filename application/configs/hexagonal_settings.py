@@ -10,6 +10,7 @@ from typing import Dict, Any, Optional, List
 from enum import Enum
 from decimal import Decimal
 import json
+import decimal
 from domain.value_objects import Percentage
 
 
@@ -103,59 +104,258 @@ class HexagonalConfig:
             self.environment = Environment.DEVELOPMENT
         self.log_level = os.getenv("LOG_LEVEL", self.log_level)
         self.debug = os.getenv("DEBUG", str(self.debug)).lower() == "true"
-        self.api_timeout = int(os.getenv("API_TIMEOUT", str(self.api_timeout)))
-        self.max_workers = int(os.getenv("MAX_WORKERS", str(self.max_workers)))
+        try:
+            api_timeout_env = os.getenv("API_TIMEOUT", str(self.api_timeout))
+            if api_timeout_env.lstrip('-').isdigit():
+                self.api_timeout = int(api_timeout_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
+
+        try:
+            max_workers_env = os.getenv("MAX_WORKERS", str(self.max_workers))
+            if max_workers_env.lstrip('-').isdigit():
+                self.max_workers = int(max_workers_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
         self.redis_url = os.getenv("REDIS_URL", self.redis_url)
         self.enable_metrics = os.getenv("ENABLE_METRICS", str(self.enable_metrics)).lower() == "true"
         
         # Risk settings - need to extract the decimal value from Percentage
-        self.max_portfolio_risk = Percentage(Decimal(os.getenv("MAX_PORTFOLIO_RISK", str(float(self.max_portfolio_risk.value)))))
-        self.max_position_risk = Percentage(Decimal(os.getenv("MAX_POSITION_RISK", str(float(self.max_position_risk.value)))))
-        self.max_drawdown = Percentage(Decimal(os.getenv("MAX_DRAWDOWN", str(float(self.max_drawdown.value)))))
-        self.max_correlation = Percentage(Decimal(os.getenv("MAX_CORRELATION", str(float(self.max_correlation.value)))))
-        self.max_leverage = float(os.getenv("MAX_LEVERAGE", str(self.max_leverage)))
-        self.max_daily_loss = Percentage(Decimal(os.getenv("MAX_DAILY_LOSS", str(float(self.max_daily_loss.value)))))
+        max_portfolio_risk_env = os.getenv("MAX_PORTFOLIO_RISK", str(float(self.max_portfolio_risk.value)))
+        try:
+            # Check if the environment variable is a valid number
+            if max_portfolio_risk_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (max_portfolio_risk_env.startswith('-') and max_portfolio_risk_env[1:].replace('.', '', 1).isdigit()):
+                self.max_portfolio_risk = Percentage(Decimal(max_portfolio_risk_env))
+            else:
+                # If it's not a valid number, keep the default value
+                pass  # Keep default value
+        except (ValueError, TypeError, decimal.InvalidOperation):
+            pass  # Keep default value
+
+        max_position_risk_env = os.getenv("MAX_POSITION_RISK", str(float(self.max_position_risk.value)))
+        try:
+            if max_position_risk_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (max_position_risk_env.startswith('-') and max_position_risk_env[1:].replace('.', '', 1).isdigit()):
+                self.max_position_risk = Percentage(Decimal(max_position_risk_env))
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError, decimal.InvalidOperation):
+            pass  # Keep default value
+
+        max_drawdown_env = os.getenv("MAX_DRAWDOWN", str(float(self.max_drawdown.value)))
+        try:
+            if max_drawdown_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (max_drawdown_env.startswith('-') and max_drawdown_env[1:].replace('.', '', 1).isdigit()):
+                self.max_drawdown = Percentage(Decimal(max_drawdown_env))
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError, decimal.InvalidOperation):
+            pass  # Keep default value
+
+        max_correlation_env = os.getenv("MAX_CORRELATION", str(float(self.max_correlation.value)))
+        try:
+            if max_correlation_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (max_correlation_env.startswith('-') and max_correlation_env[1:].replace('.', '', 1).isdigit()):
+                self.max_correlation = Percentage(Decimal(max_correlation_env))
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError, decimal.InvalidOperation):
+            pass  # Keep default value
+
+        try:
+            max_leverage_env = os.getenv("MAX_LEVERAGE", str(self.max_leverage))
+            if max_leverage_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (max_leverage_env.startswith('-') and max_leverage_env[1:].replace('.', '', 1).isdigit()):
+                self.max_leverage = float(max_leverage_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
+
+        max_daily_loss_env = os.getenv("MAX_DAILY_LOSS", str(float(self.max_daily_loss.value)))
+        try:
+            if max_daily_loss_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (max_daily_loss_env.startswith('-') and max_daily_loss_env[1:].replace('.', '', 1).isdigit()):
+                self.max_daily_loss = Percentage(Decimal(max_daily_loss_env))
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError, decimal.InvalidOperation):
+            pass  # Keep default value
+
         self.enable_kill_switch = os.getenv("ENABLE_KILL_SWITCH", str(self.enable_kill_switch)).lower() == "true"
 
         # Trading settings
-        self.target_volatility = Percentage(Decimal(os.getenv("TARGET_VOLATILITY", str(float(self.target_volatility.value)))))
+        target_volatility_env = os.getenv("TARGET_VOLATILITY", str(float(self.target_volatility.value)))
+        try:
+            if target_volatility_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (target_volatility_env.startswith('-') and target_volatility_env[1:].replace('.', '', 1).isdigit()):
+                self.target_volatility = Percentage(Decimal(target_volatility_env))
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError, decimal.InvalidOperation):
+            pass  # Keep default value
+
         self.rebalance_frequency = os.getenv("REBALANCE_FREQUENCY", self.rebalance_frequency)
         self.position_sizing_method = os.getenv("POSITION_SIZING_METHOD", self.position_sizing_method)
-        self.min_order_size = float(os.getenv("MIN_ORDER_SIZE", str(self.min_order_size)))
-        self.max_order_size = float(os.getenv("MAX_ORDER_SIZE", str(self.max_order_size)))
+        try:
+            min_order_size_env = os.getenv("MIN_ORDER_SIZE", str(self.min_order_size))
+            if min_order_size_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (min_order_size_env.startswith('-') and min_order_size_env[1:].replace('.', '', 1).isdigit()):
+                self.min_order_size = float(min_order_size_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
+
+        try:
+            max_order_size_env = os.getenv("MAX_ORDER_SIZE", str(self.max_order_size))
+            if max_order_size_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (max_order_size_env.startswith('-') and max_order_size_env[1:].replace('.', '', 1).isdigit()):
+                self.max_order_size = float(max_order_size_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
         self.enable_shorting = os.getenv("ENABLE_SHORTING", str(self.enable_shorting)).lower() == "true"
-        self.max_position_concentration = Percentage(Decimal(os.getenv("MAX_POSITION_CONCENTRATION", str(float(self.max_position_concentration.value)))))
+
+        max_position_concentration_env = os.getenv("MAX_POSITION_CONCENTRATION", str(float(self.max_position_concentration.value)))
+        try:
+            if max_position_concentration_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (max_position_concentration_env.startswith('-') and max_position_concentration_env[1:].replace('.', '', 1).isdigit()):
+                self.max_position_concentration = Percentage(Decimal(max_position_concentration_env))
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError, decimal.InvalidOperation):
+            pass  # Keep default value
 
         # Backtesting settings
-        self.initial_capital = float(os.getenv("INITIAL_CAPITAL", str(self.initial_capital)))
-        self.commission_rate = float(os.getenv("COMMISSION_RATE", str(self.commission_rate)))
-        self.slippage_rate = float(os.getenv("SLIPPAGE_RATE", str(self.slippage_rate)))
+        try:
+            initial_capital_env = os.getenv("INITIAL_CAPITAL", str(self.initial_capital))
+            if initial_capital_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (initial_capital_env.startswith('-') and initial_capital_env[1:].replace('.', '', 1).isdigit()):
+                self.initial_capital = float(initial_capital_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
+
+        try:
+            commission_rate_env = os.getenv("COMMISSION_RATE", str(self.commission_rate))
+            if commission_rate_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (commission_rate_env.startswith('-') and commission_rate_env[1:].replace('.', '', 1).isdigit()):
+                self.commission_rate = float(commission_rate_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
+
+        try:
+            slippage_rate_env = os.getenv("SLIPPAGE_RATE", str(self.slippage_rate))
+            if slippage_rate_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (slippage_rate_env.startswith('-') and slippage_rate_env[1:].replace('.', '', 1).isdigit()):
+                self.slippage_rate = float(slippage_rate_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
         self.start_date = os.getenv("BACKTEST_START_DATE", self.start_date)
         self.end_date = os.getenv("BACKTEST_END_DATE", self.end_date)
         self.benchmark_symbol = os.getenv("BENCHMARK_SYMBOL", self.benchmark_symbol)
 
         # Watcher settings
         self.enabled_watchers = os.getenv("ENABLED_WATCHERS", ",".join(self.enabled_watchers)).split(",")
-        self.update_frequency = int(os.getenv("WATCHER_UPDATE_FREQ", str(self.update_frequency)))
-        self.lookback_period = int(os.getenv("WATCHER_LOOKBACK", str(self.lookback_period)))
-        self.signal_threshold = float(os.getenv("SIGNAL_THRESHOLD", str(self.signal_threshold)))
+        try:
+            update_frequency_env = os.getenv("WATCHER_UPDATE_FREQ", str(self.update_frequency))
+            if update_frequency_env.lstrip('-').isdigit():
+                self.update_frequency = int(update_frequency_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
+
+        try:
+            lookback_period_env = os.getenv("WATCHER_LOOKBACK", str(self.lookback_period))
+            if lookback_period_env.lstrip('-').isdigit():
+                self.lookback_period = int(lookback_period_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
+
+        try:
+            signal_threshold_env = os.getenv("SIGNAL_THRESHOLD", str(self.signal_threshold))
+            if signal_threshold_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (signal_threshold_env.startswith('-') and signal_threshold_env[1:].replace('.', '', 1).isdigit()):
+                self.signal_threshold = float(signal_threshold_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
         self.auto_enable_watchers = os.getenv("AUTO_ENABLE_WATCHERS", str(self.auto_enable_watchers)).lower() == "true"
 
         # Engine settings
         self.enabled_engines = os.getenv("ENABLED_ENGINES", ",".join(self.enabled_engines)).split(",")
-        self.confidence_threshold = float(os.getenv("ENGINE_CONFIDENCE_THRESHOLD", str(self.confidence_threshold)))
+        try:
+            confidence_threshold_env = os.getenv("ENGINE_CONFIDENCE_THRESHOLD", str(self.confidence_threshold))
+            if confidence_threshold_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (confidence_threshold_env.startswith('-') and confidence_threshold_env[1:].replace('.', '', 1).isdigit()):
+                self.confidence_threshold = float(confidence_threshold_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
         self.signal_fusion_enabled = os.getenv("SIGNAL_FUSION_ENABLED", str(self.signal_fusion_enabled)).lower() == "true"
         self.regime_detection_enabled = os.getenv("REGIME_DETECTION_ENABLED", str(self.regime_detection_enabled)).lower() == "true"
         self.ml_weights_enabled = os.getenv("ML_WEIGHTS_ENABLED", str(self.ml_weights_enabled)).lower() == "true"
 
         # Execution settings
-        self.slippage_tolerance = float(os.getenv("SLIPPAGE_TOLERANCE", str(self.slippage_tolerance)))
-        self.order_timeout = int(os.getenv("ORDER_TIMEOUT", str(self.order_timeout)))
-        self.retry_attempts = int(os.getenv("RETRY_ATTEMPTS", str(self.retry_attempts)))
+        try:
+            slippage_tolerance_env = os.getenv("SLIPPAGE_TOLERANCE", str(self.slippage_tolerance))
+            if slippage_tolerance_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (slippage_tolerance_env.startswith('-') and slippage_tolerance_env[1:].replace('.', '', 1).isdigit()):
+                self.slippage_tolerance = float(slippage_tolerance_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
+
+        try:
+            order_timeout_env = os.getenv("ORDER_TIMEOUT", str(self.order_timeout))
+            if order_timeout_env.lstrip('-').isdigit():
+                self.order_timeout = int(order_timeout_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
+
+        try:
+            retry_attempts_env = os.getenv("RETRY_ATTEMPTS", str(self.retry_attempts))
+            if retry_attempts_env.lstrip('-').isdigit():
+                self.retry_attempts = int(retry_attempts_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
+
         self.enable_twap = os.getenv("ENABLE_TWAP", str(self.enable_twap)).lower() == "true"
         self.enable_vwap = os.getenv("ENABLE_VWAP", str(self.enable_vwap)).lower() == "true"
         self.smart_order_routing = os.getenv("SMART_ORDER_ROUTING", str(self.smart_order_routing)).lower() == "true"
-        self.min_order_quantity = float(os.getenv("MIN_ORDER_QUANTITY", str(self.min_order_quantity)))
+
+        try:
+            min_order_quantity_env = os.getenv("MIN_ORDER_QUANTITY", str(self.min_order_quantity))
+            if min_order_quantity_env.replace('.', '', 1).replace('-', '', 1).isdigit() or \
+               (min_order_quantity_env.startswith('-') and min_order_quantity_env[1:].replace('.', '', 1).isdigit()):
+                self.min_order_quantity = float(min_order_quantity_env)
+            else:
+                pass  # Keep default value
+        except (ValueError, TypeError):
+            pass  # Keep default value
+
         self.prevent_same_direction_trade_per_symbol = os.getenv("PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL", str(self.prevent_same_direction_trade_per_symbol)).lower() == "true"
 
         # Broker settings

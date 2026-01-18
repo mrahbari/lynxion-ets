@@ -1,3 +1,6 @@
+- Always you must cover the rules and requirements that written in ./tasks/task0-force-to-cover.md
+- Readme the ./README.md file to understand the runners, system features and a brief about it!
+
 I want to Implement the "Parameter Lifecycle Management"
 
 >

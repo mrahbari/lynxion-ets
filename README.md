@@ -307,6 +307,18 @@ python runner_walkforward.py --strategy crypto_breakout --train-days 60 --test-d
 ```
 
 ### Backtesting
+    """Enumeration of available strategy types"""
+    TREND_FOLLOWING = "trend_following"
+    MEAN_REVERSION = "mean_reversion"
+    VOLATILITY_BREAKOUT = "volatility_breakout"
+    MOMENTUM = "momentum"
+    SCALPING = "scalping"
+    BREAKOUT = "breakout"
+    LIQUIDITY = "liquidity"
+    MTF_TREND = "mtf_trend"
+    OI_FOOTPRINT = "oi_footprint"
+    SWEEP_SCALPER = "sweep_scalper"
+    VWAP_REVERSAL = "vwap_reversal"
 
 ```bash
 python runner_backtest.py --strategy crypto_breakout --start 90d --end today --report
@@ -362,7 +374,7 @@ To download data for new coins:
 python runner_history_download.py --start 90d --end today --symbols BTCUSDT ETHUSDT --timeframes 1m
 
 # Download for all approved symbols for the last 3 months - downloads only 1m data as base
-python runner_history_download.py --start 90d --end today --timeframes 1m
+python runner_history_download.py --start 1d --end today --timeframes 1m
 ```
 
 #### Update Old Coins

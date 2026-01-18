@@ -18,16 +18,17 @@ class CentralizedSymbolManager:
     Coordinates between environment variables, configuration files, and runtime validation.
     """
     
-    def __init__(self, 
+    def __init__(self,
                  approved_symbols_path: str = None,
                  sync_symbols_path: str = None):
         self.logger = EnhancedLogger("CentralizedSymbolManager")
-        
+
         # Set up paths
         if approved_symbols_path is None:
+            # Use the archive location as the primary source of truth
             approved_symbols_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)),  # Go up to application/
-                "configs", "approved_symbols.json"
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),  # Go up to project root/
+                "data", "approved-symbols", "approved_symbols.json"
             )
         
         if sync_symbols_path is None:
