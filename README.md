@@ -307,21 +307,69 @@ python runner_walkforward.py --strategy crypto_breakout --train-days 60 --test-d
 ```
 
 ### Backtesting
-    """Enumeration of available strategy types"""
-    TREND_FOLLOWING = "trend_following"
-    MEAN_REVERSION = "mean_reversion"
-    VOLATILITY_BREAKOUT = "volatility_breakout"
-    MOMENTUM = "momentum"
-    SCALPING = "scalping"
-    BREAKOUT = "breakout"
-    LIQUIDITY = "liquidity"
-    MTF_TREND = "mtf_trend"
-    OI_FOOTPRINT = "oi_footprint"
-    SWEEP_SCALPER = "sweep_scalper"
-    VWAP_REVERSAL = "vwap_reversal"
+
+The system supports 11 specialized strategies defined in the StrategyType enum:
+
+* **Trend Following (`trend_following`)** – Follows trending market movements
+* **Mean Reversion (`mean_reversion`)** – Bets on price returning to mean
+* **Volatility Breakout (`volatility_breakout`)** – Captures price movements during volatility expansion
+* **Momentum (`momentum`)** – Capitalizes on momentum patterns and rate of change
+* **Scalping (`scalping`)** – Short-term quick profit strategy
+* **Breakout (`breakout`)** – Identifies resistance/support breakouts
+* **Liquidity (`liquidity`)** – Based on liquidity and volume patterns
+* **MTF Trend (`mtf_trend`)** – Multi-timeframe trend following
+* **OI Footprint (`oi_footprint`)** – Order interest footprint analysis
+* **Sweep Scalper (`sweep_scalper`)** – Sweeping liquidity strategy
+* **VWAP Reversal (`vwap_reversal`)** – VWAP-based reversal strategy
+
+Additionally, the system includes the `crypto_breakout` strategy for compatibility with existing examples.
+
+#### Single Strategy Backtest
+
+Run a single strategy backtest:
 
 ```bash
-python runner_backtest.py --strategy crypto_breakout --start 90d --end today --report
+python runner_backtest.py --strategy trend_following --start 180d --end today --symbols BTCUSDT
+```
+
+#### Multiple Strategy Comparison
+
+Run all available strategies and compare their performance:
+
+```bash
+python runner_backtest.py --all-strategies --start 360d --end today --symbols BTCUSDT
+```
+
+Or run specific strategies:
+
+```bash
+python runner_backtest.py --strategies trend_following mean_reversion breakout --start 180d --end today --symbols BTCUSDT
+```
+
+The system will automatically detect all available strategies from the StrategyType enum and run them in sequence, providing a comprehensive comparison of their performance.
+
+#### Additional Options
+
+* `--capital AMOUNT`: Set initial capital (default: 10000.0)
+* `--fee RATE`: Set fee rate per trade (default: 0.001 = 0.1%)
+* `--slippage FACTOR`: Set slippage factor (default: 0.0005 = 0.05%)
+* `--output FILE`: Save results to JSON file
+* `--validate`: Validate results after backtesting
+* `--verbose`: Enable verbose output
+
+#### Example Output
+
+When running multiple strategies, the system will provide a ranked comparison showing:
+
+```
+🏆 STRATEGY COMPARISON RESULTS
+   Best Performing Strategy: trend_following (Return: 15.23%)
+
+   All Strategies Ranked by Return:
+   1. trend_following        Return: 15.23%, Sharpe: 1.25, Drawdown: -3.45%, Trades: 124
+   2. momentum               Return: 12.45%, Sharpe: 1.18, Drawdown: -4.21%, Trades: 98
+   3. breakout               Return: 9.87%,  Sharpe: 0.95, Drawdown: -2.89%, Trades: 156
+   ...
 ```
 
 ### Historical Data Download
