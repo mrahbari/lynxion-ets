@@ -293,7 +293,10 @@ class BrokerExecutionService(ExecutionPort):
                 self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {self.broker_name}: {order_id}")
 
                 # Send Telegram notification about successful order placement
-                self._send_order_placed_notification(order, order_id)
+                # Only send notification from BrokerExecutionService if not using multi-broker service
+                # (MultiBrokerExecutionService handles its own notifications)
+                if not self.use_multi_broker:
+                    self._send_order_placed_notification(order, order_id)
 
                 return order_id
             except Exception as e:
