@@ -505,3 +505,149 @@ Where we will:
 ---
 
 
+
+
+
+
+Below is a **precise, professional English prompt** you can use for your system / AI / developer instruction to add the missing logs and explain why they are critical — positioned **one step before “Hedge Fund Forensic Optimization”** and clearly stating what is currently missing.
+
+You can paste this directly into your engineering / LLM prompt.
+
+---
+
+## 🔹 Prompt: Missing Fusion, Engine, and Broker Logging – Pre-Forensic Phase
+
+> We are currently operating in a **crypto trading environment** (not gold).
+> Our system includes multiple engines, a fusion layer, strategy layer, and broker execution (BINGX).
+>
+> After reviewing the logs, we identified a **critical observability gap**:
+>
+> We only see logs from:
+>
+> * WATCHER layer
+> * STRATEGY layer
+>
+> But we **do NOT see any logs from**:
+>
+> * Individual Engines (ATR, Trend, Volatility, Regime, Liquidity, Orderflow, Correlation, ML Weight, etc.)
+> * Fusion / Engine Aggregation layer
+> * Broker Execution / Order lifecycle layer
+>
+> This means the decision pipeline is currently:
+>
+> WATCHER → STRATEGY → (UNKNOWN BLACK BOX) → BROKER
+>
+> Even though a real trade is successfully executed on BINGX, for example:
+>
+> Order Placed: YFIUSDT BUY on BINGX
+> Order ID: 2013384515499593728
+> Strategy: trend_following
+> Price, SL, TP correctly registered
+>
+> We **cannot trace**:
+>
+> * Which engines supported or rejected the trade
+> * How fusion weighted each engine
+> * Why the final confidence became 0.76
+> * Which filters passed or failed
+> * Why risk sizing produced this quantity
+> * What broker validations occurred before placement
+>
+> This is a **critical weakness** because without these logs:
+>
+> * We cannot perform forensic optimization
+> * We cannot debug losing trades
+> * We cannot validate engine contributions
+> * We cannot detect bias, overfitting, or regime misclassification
+> * We cannot build hedge-fund grade audit trails
+>
+> ---
+>
+> ### Objective
+>
+> Design and implement a **complete logging architecture** that fills the missing layers:
+>
+> #### 1. Engine Layer Logs
+>
+> Each engine must log:
+>
+> * engine_name
+> * symbol, exchange
+> * raw_signal
+> * normalized_signal
+> * confidence
+> * internal metrics used (e.g., ATR, slope, volatility, regime class, correlation score, liquidity score, etc.)
+> * timestamp
+>
+> #### 2. Fusion Layer Logs
+>
+> Fusion must log:
+>
+> * trade_id
+> * list of engines and their weights
+> * weighted contribution per engine
+> * fusion_score
+> * fusion_confidence
+> * decision_reason (text explanation)
+> * rejected_engines (if any)
+>
+> #### 3. Strategy Layer Enhancement Logs
+>
+> Strategy must log:
+>
+> * which fusion outputs were used
+> * why BUY/SELL/HOLD was selected
+> * risk profile used
+> * filters passed / failed
+>
+> #### 4. Broker Execution Logs
+>
+> Broker must log:
+>
+> * pre-validation checks
+> * margin availability
+> * quantity calculation formula
+> * SL/TP calculation origin
+> * order submission payload
+> * broker response
+> * order status lifecycle (NEW → FILLED / PARTIALLY_FILLED / REJECTED)
+>
+> ---
+>
+> ### Design Principles
+>
+> * All logs must be JSON structured
+> * All logs must include `trade_id` for full traceability
+> * Logs must allow reconstruction of the full decision chain
+> * Logs must be suitable for later **Hedge Fund Forensic Optimization**
+>
+> ---
+>
+> ### Final Goal
+>
+> Transform the system from a **profitable but opaque trader** into a **fully auditable hedge-fund grade trading system**, where every profitable or losing trade can be replayed, explained, and optimized scientifically.
+>
+> ---
+>
+> Now propose:
+>
+> * Exact log schemas for each layer
+> * Example log outputs
+> * Where each log should be placed in the code
+> * And how these logs enable future forensic optimization and ML retraining.
+
+---
+
+## 🔹 Why this prompt is powerful for you
+
+Because it:
+
+✔ Clearly states **what is missing**
+✔ Proves you already have **real broker execution**
+✔ Shows the system is profitable but **not auditable**
+✔ Positions you exactly one step before Hedge Fund Forensic Optimization
+✔ Forces the AI / developer to design a hedge-fund grade logging architecture
+✔ Protects you from future invisible bugs and false confidence
+
+---
+

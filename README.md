@@ -936,6 +936,29 @@ You can also run these operations for ALL approved symbols:
 * `shared/configurable_hyperopt.py`
 * `configs/hyperopt_configs/`
 
+### Forensic Logging Configuration
+
+The system includes forensic-grade structured logging for complete trade traceability and post-trade analysis:
+
+* `FORENSIC_LOGGING_ENABLED=true/false` - Enable/disable forensic logging (default: true)
+  - When enabled: Creates detailed JSON logs in `logs/forensic.log` for each trade
+  - When disabled: No forensic logging overhead for performance optimization
+  - Controlled via environment variable or code parameter
+
+**Forensic Logging Structure:**
+The system captures the complete trading workflow from market perception to final PnL:
+
+```
+Watcher → Engine → Fusion → Strategy → Broker → Trade Close
+```
+
+Each layer logs structured data with a unique trade ID for complete traceability.
+
+**Performance Considerations:**
+- When `FORENSIC_LOGGING_ENABLED=false`: Zero logging overhead for production performance
+- When `FORENSIC_LOGGING_ENABLED=true`: Detailed audit trail for analysis and optimization
+- Logs are written to `logs/forensic.log` in JSON format for easy parsing and analysis
+
 ---
 
 ## Data Structure

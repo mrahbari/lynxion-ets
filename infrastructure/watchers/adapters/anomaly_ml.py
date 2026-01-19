@@ -7,6 +7,7 @@ import numpy as np
 import os
 from typing import List, Optional
 from decimal import Decimal
+from infrastructure.logging.forensic_logger import forensic_logger
 
 
 class AnomalyMLWatcher(BaseWatcher):
@@ -15,7 +16,7 @@ class AnomalyMLWatcher(BaseWatcher):
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 50,
                  contamination: float = 0.1):
         # Convert symbol string to Symbol object if needed
-        self.volume_history = None
+        self.volume_history = []  # Initialize as empty list instead of None
         symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
         super().__init__(name, symbol_obj)
 
@@ -71,8 +72,6 @@ class AnomalyMLWatcher(BaseWatcher):
 
         # Handle volume data if available
         if 'volume' in data:
-            if not hasattr(self, 'volume_history'):
-                self.volume_history = []
             self.volume_history.append(data['volume'])
             if len(self.volume_history) > self.lookback * 3:  # Keep more data for stability
                 self.volume_history.pop(0)
@@ -172,6 +171,17 @@ class AnomalyMLWatcher(BaseWatcher):
                 'anomaly_source': self.name,
                 'lookback_period': self.lookback
             }
+        )
+
+        # Log the watcher observation to forensic log
+        forensic_logger.log_watcher_observation(
+            watcher=self.name,
+            symbol=symbol.value,
+            exchange=getattr(self, 'target_broker', 'BINANCE'),  # Use target broker if available, otherwise default
+            observation_type=observation_type,
+            value=observation_value,
+            confidence=float(confidence_percentage.value),
+            timestamp=observation.timestamp
         )
 
         return observation

@@ -14,6 +14,7 @@ from domain.value_objects import Symbol, Percentage, Money
 from domain.ports.strategy_ports import StrategyPort
 from shared.logger import EnhancedLogger
 from infrastructure.strategies.strategy_config import StrategyConfig
+from infrastructure.logging.forensic_logger import forensic_logger
 
 
 class BaseStrategyAdapter(StrategyPort):
@@ -90,8 +91,47 @@ class BaseStrategyAdapter(StrategyPort):
             currency='USDT'
         ) if risk_parameters.get('take_profit_price') else None
 
+        # Generate trade ID for this execution
+        trade_id = forensic_logger._generate_trade_id(fused_signal.symbol.value, getattr(fused_signal, 'exchange', 'BINANCE'))
+
         self.logger.info(f"Strategy {self.name} accepted fused signal for {fused_signal.symbol.value} "
                         f"with intent confidence {float(execution_intent.intent_confidence.value):.2%}")
+
+        # Prepare detailed strategy decision information for forensic logging
+        decision_reasons = {
+            'fused_signal_direction': fused_signal.direction,
+            'fused_signal_dominant_bias': fused_signal.dominant_bias.value if hasattr(fused_signal.dominant_bias, 'value') else str(fused_signal.dominant_bias),
+            'fused_signal_regime_context': fused_signal.regime_context,
+            'fused_signal_confidence': float(fused_signal.confidence.value),
+            'filters_passed': True,  # Would be determined by actual filter checks
+            'risk_profile_used': self.risk_parameters,
+            'selected_strategy': self.select_strategy(fused_signal)
+        }
+
+        # Identify which fusion outputs were used
+        fusion_outputs_used = {
+            'regime_context': fused_signal.regime_context,
+            'dominant_bias': fused_signal.dominant_bias.value if hasattr(fused_signal.dominant_bias, 'value') else str(fused_signal.dominant_bias),
+            'direction': fused_signal.direction,
+            'confidence': float(fused_signal.confidence.value),
+            'dominance_score': fused_signal.dominance_score
+        }
+
+        # Log the strategy decision to forensic log with enhanced details
+        forensic_logger.log_strategy_decision(
+            strategy=self.name,
+            symbol=fused_signal.symbol.value,
+            exchange=getattr(fused_signal, 'exchange', 'BINANCE'),
+            decision=self._determine_side(fused_signal).name if hasattr(self._determine_side(fused_signal), 'name') else str(self._determine_side(fused_signal)),
+            confidence=float(execution_intent.intent_confidence.value),
+            trade_id=trade_id,
+            decision_reasons=decision_reasons,
+            fusion_outputs_used=fusion_outputs_used,
+            timestamp=execution_intent.timestamp
+        )
+
+        # Add trade_id to execution intent metadata
+        execution_intent.metadata['trade_id'] = trade_id
 
         return execution_intent
 

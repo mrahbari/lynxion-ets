@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
+from infrastructure.tracking.trade_tracker import trade_tracker
 
 
 class PositionDirection(Enum):
@@ -24,6 +25,7 @@ class Position:
     take_profit: float
     entry_time: datetime
     risk_amount: float = 0.0
+    trade_id: str = None
 
 
 class EnterpriseRiskManager:
@@ -150,7 +152,7 @@ class EnterpriseRiskManager:
         return True
 
     def enter_position(self, symbol: str, entry_price: float, size: float,
-                      direction: PositionDirection, stop_loss: float, take_profit: float) -> bool:
+                      direction: PositionDirection, stop_loss: float, take_profit: float, trade_id: str = None) -> bool:
         """
         Enter a new position with risk validation
         """
@@ -159,6 +161,11 @@ class EnterpriseRiskManager:
 
         # Calculate risk amount for this position based on actual position size
         risk_amount = size * abs(entry_price - stop_loss)
+
+        # If no trade_id provided, generate one
+        if not trade_id:
+            from infrastructure.logging.forensic_logger import forensic_logger
+            trade_id = forensic_logger._generate_trade_id(symbol, "BINANCE")
 
         # Create and store position
         position = Position(
@@ -169,10 +176,24 @@ class EnterpriseRiskManager:
             stop_loss=stop_loss,
             take_profit=take_profit,
             entry_time=datetime.now(),
-            risk_amount=risk_amount
+            risk_amount=risk_amount,
+            trade_id=trade_id
         )
 
         self.positions[symbol] = position
+
+        # Register the trade with the trade tracker
+        trade_tracker.register_trade(
+            trade_id=trade_id,
+            symbol=symbol,
+            side=direction.value,
+            price=entry_price,
+            quantity=size,
+            sl=stop_loss,
+            tp=take_profit,
+            timestamp=position.entry_time
+        )
+
         return True
 
     def check_stop_loss_take_profit(self, symbol: str, candle_high: float, candle_low: float) -> tuple[Optional[float], Optional[str]]:
@@ -245,6 +266,15 @@ class EnterpriseRiskManager:
         # Update daily and total PnL
         self.daily_pnl += pnl
         self.total_pnl += pnl
+
+        # Close the trade with the trade tracker using the trade_id stored in the position
+        if position.trade_id:
+            trade_tracker.close_trade(
+                trade_id=position.trade_id,
+                exit_price=exit_price,
+                exit_reason=exit_type,
+                exit_timestamp=datetime.now()
+            )
 
         # Remove position
         del self.positions[symbol]

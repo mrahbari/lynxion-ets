@@ -6,6 +6,7 @@ from datetime import datetime
 import numpy as np
 import os
 from decimal import Decimal
+from infrastructure.logging.forensic_logger import forensic_logger
 
 
 class TrendMTFWatcher(BaseWatcher):
@@ -133,6 +134,17 @@ class TrendMTFWatcher(BaseWatcher):
                 'trend_source': self.name,
                 'price_history_length': len(self.price_history)
             }
+        )
+
+        # Log the watcher observation to forensic log
+        forensic_logger.log_watcher_observation(
+            watcher=self.name,
+            symbol=symbol.value,
+            exchange=getattr(self, 'target_broker', 'BINANCE'),  # Use target broker if available, otherwise default
+            observation_type=observation_type,
+            value=observation_value,
+            confidence=float(confidence),
+            timestamp=observation.timestamp
         )
 
         return observation

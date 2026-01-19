@@ -12,6 +12,7 @@ from domain.value_objects import Symbol, Percentage, Money
 from domain.ports.engine_ports import EnginePort
 from shared.logger import logger
 from infrastructure.engines.base_engine_adapter import BaseEngineAdapter
+from infrastructure.logging.forensic_logger import forensic_logger
 
 
 class TrendEngineAdapter(BaseEngineAdapter):
@@ -83,6 +84,27 @@ class TrendEngineAdapter(BaseEngineAdapter):
         # Calculate processing time and record performance
         processing_time = time.time() - start_time
         self.record_performance(processing_time, signal, result_signal)
+
+        # Prepare detailed internal metrics for forensic logging
+        internal_metrics = {
+            'trend_direction': getattr(self, 'trend_direction', 0),
+            'trend_strength': getattr(self, 'current_trend_strength', 0.0),
+            'price_history_length': len(getattr(self, 'price_history', [])),
+            'processing_time': processing_time
+        }
+
+        # Log the engine interpretation to forensic log with enhanced details
+        forensic_logger.log_engine_interpretation(
+            engine=self.name,
+            symbol=signal.symbol.value,
+            exchange=getattr(signal, 'exchange', 'BINANCE'),  # Use exchange from signal if available
+            input_observation=signal.signal_type.name,
+            interpreted_signal=result_signal.signal_type.name,
+            confidence=float(result_signal.confidence),
+            score=result_signal.score,
+            internal_metrics=internal_metrics,
+            timestamp=result_signal.timestamp
+        )
 
         logger.info(f"TrendEngine processed signal: {signal.signal_type.name} -> {result_signal.signal_type.name}, "
                    f"confidence: {float(signal.confidence):.2%} -> {float(result_signal.confidence):.2%}, "

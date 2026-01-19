@@ -13,6 +13,7 @@ import statistics
 from .hierarchical.hierarchical_fusion_service import hierarchical_fusion_service, HierarchicalFusionService
 from .hierarchical.watcher_classifier import WatcherClassifier
 from .hierarchical.confidence_thresholds import ConfidenceThresholds
+from infrastructure.logging.forensic_logger import forensic_logger
 
 
 class FusionService:
@@ -186,6 +187,43 @@ class FusionService:
                                f"Confidence={adjusted_confidence:.3f}, "
                                f"Correlation Factor={correlation_factor:.3f}, "
                                f"Regime={regime_context}")
+
+            # Log the fusion result to forensic log with enhanced details
+            # Extract contributors from the interpreted signals
+            contributors = {}
+            rejected_engines = []
+
+            for signal in interpreted_signals:
+                source = getattr(signal, 'source_engine', 'Unknown')
+                contributors[source] = float(signal.confidence.value) * signal.strength
+
+                # Identify if any signals were rejected (low confidence or opposite direction)
+                if float(signal.confidence.value) < 0.3 or signal.strength < 0.1:
+                    rejected_engines.append({
+                        'engine': source,
+                        'confidence': float(signal.confidence.value),
+                        'strength': signal.strength,
+                        'direction': signal.direction
+                    })
+
+            # Prepare decision reason
+            decision_reason = f"Aggregated {len(interpreted_signals)} signals with {regime_context} regime context. "
+            if len(interpreted_signals) > 1:
+                decision_reason += f"Dominant bias from {len(contributors)} engines."
+            else:
+                decision_reason += "Single signal processed."
+
+            forensic_logger.log_fusion_result(
+                symbol=symbol_str,
+                exchange=getattr(symbol, 'exchange', 'BINANCE'),  # Use exchange from symbol if available
+                regime=regime_context,
+                fused_direction=dominant_bias.value,
+                confidence=adjusted_confidence,
+                contributors=contributors,
+                decision_reason=decision_reason,
+                rejected_engines=rejected_engines,
+                timestamp=timestamp
+            )
 
             return fused_signal
 
