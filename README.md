@@ -46,7 +46,7 @@ The system is suitable for both **research/backtesting** and **live trading**.
 * **Hexagonal Architecture**: Clean separation of concerns with domain, application, and infrastructure layers
 * **Multi-Exchange Support**: Binance, BingX, MEXC, Phemex integration
 * **Advanced Optimization**: Hyperopt integration with Walk-Forward Optimization (WFO)
-* **Risk Management**: Comprehensive risk controls and position sizing
+* **Enhanced Risk Management**: Comprehensive risk controls with regime-adaptive, correlation-aware, drawdown-sensitive, and volatility-normalized features
 * **Real-time Monitoring**: Live dashboard and performance tracking
 * **Backtesting**: Realistic backtesting with fees, slippage, and execution simulation
 * **Multi-Asset Support**: Simultaneous trading across multiple cryptocurrencies
@@ -62,6 +62,12 @@ The system is suitable for both **research/backtesting** and **live trading**.
 * **Enhanced Logging System**: Comprehensive flow tracking (Watcher → Engine → Fusion → Strategy → Broker) with detailed decision logging
 * **Comprehensive Background Monitoring**: Detailed visibility into background activities with periodic status updates
 * **Configurable Logging**: Support for both brief and comprehensive logging modes
+* **Probabilistic Position Sizing**: Evidence-weighted approach with fusion confidence, regime accuracy, and correlation exposure factors
+* **Advanced SL/TP Logic**: Volatility-normalized and structure-aware stop loss/take profit levels with regime-adaptive adjustments
+* **Adaptive Fusion Weighting**: Performance-adaptive, correlation-penalizing, stability-rewarding, and noise-suppressing features
+* **Advanced Regime Classification**: Confidence scoring, veto mechanisms, maturity tracking, and confusion matrix feedback
+* **Intelligent Strategy Selection**: Performance-ranking, risk-adjustment, and regime-compatibility with promotion/demotion/suspension rules
+* **Profitability Enhancement**: Variance reduction, expectancy compounding, selective trade filtering, capital efficiency improvements, and signal timing refinement
 * Multi-exchange support (Binance, BingX, MEXC, Phemex)
 * Automated hyperparameter optimization (retuning)
 * Walk-forward analysis for strategy robustness
@@ -211,6 +217,58 @@ All strategies inherit from a shared base adapter and are fully isolated with en
 * **Watcher → Engine → Fusion → Strategy → Broker** flow with full monitoring
 * End-to-end error isolation and health tracking
 * Performance metrics across all system components
+
+### Enhanced System Components
+
+The system now includes advanced enhancements across all core components:
+
+#### Advanced Risk Management
+* **Regime-Adaptive Risk**: Risk parameters automatically adjust based on market regime detection
+* **Correlation-Aware Positioning**: Risk allocation considers correlation with existing positions
+* **Drawdown-Sensitive Controls**: Risk scales down during drawdown periods to preserve capital
+* **Volatility-Normalized Position Sizing**: Position sizes adjust based on asset volatility levels
+
+#### Probabilistic Position Sizing
+* **Evidence-Weighted Approach**: Position sizes based on multiple evidence sources (fusion confidence, regime accuracy, strategy expectancy)
+* **Mathematical Formula**: Position_Size = (Portfolio_Equity * Base_Risk * Confidence_Product * Regime_Adjustment * Correlation_Penalty) / Risk_Distance
+* **Dynamic Adjustment**: Sizes adjust based on real-time market conditions and performance
+
+#### Advanced SL/TP Logic
+* **Volatility-Normalized Levels**: Stop loss and take profit levels adjust based on ATR and volatility
+* **Structure-Aware Placement**: Levels consider support/resistance levels for optimal placement
+* **Regime-Adaptive Distances**: SL/TP distances vary based on market regime (trending vs ranging vs volatile)
+* **Priority-Based Execution**: Stop loss takes priority over take profit for simultaneous hits to preserve capital
+* **Realistic Market Dynamics**: Proper handling of simultaneous SL/TP hits with realistic order execution priority
+* **Market Structure Validation**: Ensures SL/TP levels respect key technical levels (support/resistance)
+* **Dynamic Trailing Stops**: ATR-based trailing stops that adapt to market volatility
+* **Realistic Level Validation**: Comprehensive validation ensuring SL/TP levels are achievable and reasonable
+
+#### Adaptive Fusion Weighting
+* **Performance-Adaptive Weights**: Signal weights update based on recent performance
+* **Correlation-Penalizing**: Highly correlated signals receive reduced weights to promote diversification
+* **Stability Rewards**: Consistent performers receive bonus weights
+* **Noise Suppression**: Volatile signals receive reduced weights to suppress noise
+
+#### Advanced Regime Classification
+* **Confidence Scoring**: Each regime classification includes confidence level
+* **Veto Mechanisms**: Low-confidence classifications are vetoed to prevent poor decisions
+* **Maturity Tracking**: System tracks how long a regime has persisted
+* **Recalibration Logic**: System adjusts classification based on prediction accuracy
+* **Confusion Matrix Feedback**: Performance feedback improves future classifications
+
+#### Intelligent Strategy Selection
+* **Performance-Ranking**: Strategies ranked by risk-adjusted returns and recent performance
+* **Regime Compatibility**: Strategies matched to current market regime
+* **Risk-Adjusted Selection**: Selection considers risk-adjusted returns, not just raw returns
+* **Promotion/Demotion Rules**: Underperforming strategies are demoted, top performers promoted
+* **Suspension Mechanisms**: Poor-performing strategies are temporarily suspended
+
+#### Profitability Enhancement Techniques
+* **Variance Reduction**: Techniques to reduce return volatility while maintaining returns
+* **Expectancy Compounding**: Multiple factors combine to enhance expected returns
+* **Selective Trade Filtering**: Only high-probability trades are executed
+* **Capital Efficiency Improvements**: Better utilization of available capital
+* **Signal Timing Refinement**: Optimal entry/exit timing based on market microstructure
 
 ---
 
@@ -605,6 +663,27 @@ The system now enforces real data usage in production validation mode:
 - **Environment Control**: Use `USE_MOCK_DATA_FOR_VALIDATION=true` for development/testing
 - **Data Integrity**: Ensures all validation results are based on real market data
 - **Regulatory Compliance**: Maintains data integrity for institutional requirements
+
+### Comprehensive Integration Testing
+
+The system includes comprehensive integration tests to validate all enhanced components:
+
+```bash
+python tests/integration_tests.py
+```
+
+This test suite validates:
+
+1. **Adaptive Risk Manager**: Regime-adaptive, correlation-aware, drawdown-sensitive, and volatility-normalized features
+2. **Probabilistic Position Sizing**: Evidence-weighted approach with fusion confidence and regime accuracy
+3. **Advanced SL/TP Logic**: Volatility-normalized and structure-aware stop loss/take profit levels
+4. **Adaptive Fusion Weighting**: Performance-adaptive, correlation-penalizing, stability-rewarding, and noise-suppressing features
+5. **Advanced Regime Classification**: Confidence scoring, veto mechanisms, maturity tracking, and confusion matrix feedback
+6. **Intelligent Strategy Selection**: Performance-ranking, risk-adjustment, and regime-compatibility with promotion/demotion/suspension rules
+7. **Profitability Enhancement**: Variance reduction, expectancy compounding, selective trade filtering, capital efficiency improvements, and signal timing refinement
+8. **End-to-End Integration**: Complete workflow validation from signal generation to position management
+
+The integration tests ensure all components work together seamlessly and maintain the high standards required for institutional-grade trading systems.
 
 ### Shadow Deployment Preparation
 

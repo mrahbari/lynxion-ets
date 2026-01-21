@@ -9,48 +9,74 @@ import numpy as np
 
 from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager, PositionDirection
 from application.position_sizing.enterprise_position_sizing import PositionSizingService
+from infrastructure.market_regime.regime_detector import RegimeType
 
 
 class AdvancedExecutionEngine:
     """
     Advanced execution engine with integrated risk management
     """
-    def __init__(self, 
+    def __init__(self,
                  risk_manager: EnterpriseRiskManager,
                  position_sizing_service: PositionSizingService,
                  fees_per_trade: float = 0.1,
                  slippage_tolerance: float = 0.001):
-        
+
         self.risk_manager = risk_manager
         self.position_sizing_service = position_sizing_service
         self.fees_per_trade = fees_per_trade
         self.slippage_tolerance = slippage_tolerance
-        
+
         # Track execution results
         self.trade_log: List[Dict] = []
         self.execution_reports: Dict[str, List] = {}
-        
-    def calculate_stop_loss_take_profit(self, entry_price: float, direction: PositionDirection, 
-                                      signal_strength: float = 1.0, volatility: float = 1.0) -> Tuple[float, float]:
+
+    def calculate_stop_loss_take_profit(self, entry_price: float, direction: PositionDirection,
+                                      signal_strength: float = 1.0, volatility: float = 1.0,
+                                      regime_context: str = None, strategy_name: str = None) -> Tuple[float, float]:
         """
-        Calculate dynamic stop loss and take profit based on signal strength and volatility
+        Calculate dynamic stop loss and take profit based on signal strength, volatility, regime, and strategy
         """
         # Use ATR-like measure for stop loss calculation
         atr_factor = volatility * 1.5  # 1.5x volatility for stop loss
-        
+
+        # Adjust stop loss and take profit based on regime
+        if regime_context:
+            if regime_context in [RegimeType.HIGH_VOLATILITY.value, RegimeType.CHOPPY.value]:
+                # In high volatility/choppy regimes, use wider stops
+                atr_factor *= 1.5
+            elif regime_context in [RegimeType.TRENDING_UP.value, RegimeType.TRENDING_DOWN.value]:
+                # In trending regimes, use tighter stops for better risk management
+                atr_factor *= 0.8
+
+        # Adjust based on strategy-specific requirements
+        if strategy_name:
+            if 'breakout' in strategy_name.lower():
+                # For breakout strategies, use wider stops to avoid noise exits
+                atr_factor *= 1.3
+            elif 'mean_reversion' in strategy_name.lower():
+                # For mean reversion, use tighter stops as reversals can be sharp
+                atr_factor *= 0.9
+
         # Calculate stop loss distance based on direction
         if direction == PositionDirection.LONG:
             sl_distance = atr_factor * signal_strength
             sl = entry_price - sl_distance
-            # Take profit is typically 2-3x the risk distance
+            # Take profit is typically 2-3x the risk distance, adjusted for regime
             tp_distance = atr_factor * signal_strength * 2.0
+            if regime_context in [RegimeType.TRENDING_UP.value, RegimeType.TRENDING_DOWN.value]:
+                # In trending markets, allow for bigger targets
+                tp_distance *= 1.2
             tp = entry_price + tp_distance
         else:  # SHORT
             sl_distance = atr_factor * signal_strength
             sl = entry_price + sl_distance
             tp_distance = atr_factor * signal_strength * 2.0
+            if regime_context in [RegimeType.TRENDING_UP.value, RegimeType.TRENDING_DOWN.value]:
+                # In trending markets, allow for bigger targets
+                tp_distance *= 1.2
             tp = entry_price - tp_distance
-        
+
         # Ensure SL and TP are valid
         if direction == PositionDirection.LONG:
             sl = min(sl, entry_price * 0.95)  # Stop loss shouldn't be above entry for long
@@ -58,14 +84,18 @@ class AdvancedExecutionEngine:
         else:
             sl = max(sl, entry_price * 1.05)  # Stop loss shouldn't be below entry for short
             tp = min(tp, entry_price * 0.95)  # Take profit shouldn't be above entry for short
-        
+
         return sl, tp
 
     def execute_entry(self, symbol: str, entry_price: float, direction: PositionDirection,
                      signal_strength: float = 1.0, volatility: float = 1.0,
                      position_size_model: str = 'fixed_risk',
                      portfolio_equity: float = 100000, risk_per_trade: float = 0.01,
-                     prevent_same_direction: bool = True) -> bool:
+                     prevent_same_direction: bool = True,
+                     regime_context: str = None, strategy_name: str = None,
+                     signal_expectancy: float = 0.0, regime_accuracy: float = 1.0,
+                     fusion_confidence: float = 0.5, correlation_exposure: float = 0.0,
+                     current_drawdown: float = 0.0) -> bool:
         """
         Execute a position entry with full risk management
         """
@@ -80,27 +110,41 @@ class AdvancedExecutionEngine:
                 print(f"Execution blocked: Already have an active {direction.value} position for {symbol}")
                 return False
 
-        # Calculate stop loss and take profit
-        sl, tp = self.calculate_stop_loss_take_profit(entry_price, direction, signal_strength, volatility)
+        # Calculate stop loss and take profit with regime and strategy considerations
+        sl, tp = self.calculate_stop_loss_take_profit(entry_price, direction, signal_strength,
+                                                     volatility, regime_context, strategy_name)
 
-        # Calculate position size using the specified model
+        # Calculate correlation penalty
+        portfolio_symbols = list(self.risk_manager.positions.keys())
+        correlation_penalty = self.risk_manager.calculate_correlation_penalty(symbol, portfolio_symbols)
+
+        # Calculate drawdown factor
+        drawdown_factor = self.risk_manager.calculate_drawdown_factor()
+
+        # Calculate position size using the specified model with all new parameters
         size = self.position_sizing_service.compute_size(
             model_name=position_size_model,
             entry_price=entry_price,
             stop_loss=sl,
             portfolio_equity=portfolio_equity,
             risk_per_trade=risk_per_trade,
-            volatility=volatility
+            volatility=volatility,
+            signal_expectancy=signal_expectancy,
+            regime_accuracy=regime_accuracy,
+            fusion_confidence=fusion_confidence,
+            correlation_exposure=correlation_exposure,
+            current_drawdown=current_drawdown
         )
 
-        # Attempt to enter the position
+        # Attempt to enter the position with regime context
         success = self.risk_manager.enter_position(
             symbol=symbol,
             entry_price=entry_price,
             size=size,
             direction=direction,
             stop_loss=sl,
-            take_profit=tp
+            take_profit=tp,
+            regime_context=regime_context
         )
 
         if success:
@@ -115,10 +159,18 @@ class AdvancedExecutionEngine:
                 'stop_loss': sl,
                 'take_profit': tp,
                 'signal_strength': signal_strength,
-                'volatility': volatility
+                'volatility': volatility,
+                'regime_context': regime_context,
+                'strategy_name': strategy_name,
+                'signal_expectancy': signal_expectancy,
+                'regime_accuracy': regime_accuracy,
+                'fusion_confidence': fusion_confidence,
+                'correlation_exposure': correlation_exposure,
+                'current_drawdown': current_drawdown
             })
 
-            print(f"Position entered: {symbol} {direction.value} at {entry_price}, size: {size:.2f}")
+            print(f"Position entered: {symbol} {direction.value} at {entry_price}, size: {size:.2f}, "
+                  f"regime: {regime_context}, strategy: {strategy_name}")
 
         return success
 

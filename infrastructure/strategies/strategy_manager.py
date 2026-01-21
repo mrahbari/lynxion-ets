@@ -185,25 +185,197 @@ class StrategyManager:
             return False
 
     def evaluate_fused_signal(self, fused_signal: FusedSignal) -> Optional[ExecutionIntent]:
-        """Evaluate a fused signal across all available strategies and return the best execution intent."""
-        best_intent = None
-        highest_confidence = 0.0
+        """Evaluate a fused signal across all available strategies using evidence-competitive approach."""
+        # Collect all strategy evaluations with performance attribution
+        strategy_evaluations = []
 
         for name, strategy in self.strategies.items():
             # Check if strategy is enabled before evaluating
             if not StrategyConfig.get_strategy_enabled(name):
                 continue
-                
+
             try:
                 intent = strategy.evaluate_fused_signal(fused_signal)
-                if intent and float(intent.intent_confidence.value) > highest_confidence:
-                    best_intent = intent
-                    highest_confidence = float(intent.intent_confidence.value)
+                if intent:
+                    # Calculate performance attribution score for this strategy
+                    performance_score = self._calculate_performance_attribution(
+                        strategy, fused_signal, intent
+                    )
+
+                    strategy_evaluations.append({
+                        'strategy_name': name,
+                        'intent': intent,
+                        'performance_score': performance_score,
+                        'confidence': float(intent.intent_confidence.value),
+                        'regime_compatibility': self._calculate_regime_compatibility_score(
+                            name, fused_signal.regime_context
+                        ),
+                        'risk_adjusted_score': self._calculate_risk_adjusted_score(
+                            intent, performance_score
+                        )
+                    })
             except Exception as e:
                 self.logger.error(f"Error evaluating fused signal with strategy {name}: {e}")
                 continue
 
-        return best_intent
+        # Rank strategies based on risk-adjusted performance
+        ranked_evaluations = self._rank_strategies_by_performance(strategy_evaluations)
+
+        # Apply promotion/demotion logic based on performance
+        self._apply_promotion_demotion_logic(ranked_evaluations)
+
+        # Return the top-ranked execution intent
+        if ranked_evaluations:
+            top_evaluation = ranked_evaluations[0]
+            self.logger.info(f"Selected strategy {top_evaluation['strategy_name']} with risk-adjusted score: {top_evaluation['risk_adjusted_score']:.3f}")
+            return top_evaluation['intent']
+
+        return None
+
+    def _calculate_performance_attribution(self, strategy, fused_signal: FusedSignal, intent: ExecutionIntent) -> float:
+        """Calculate performance attribution score for a strategy based on market conditions."""
+        # Base score from intent confidence
+        base_score = float(intent.intent_confidence.value)
+
+        # Adjust for regime compatibility
+        regime_factor = self._calculate_regime_compatibility_score(
+            strategy.get_strategy_name(), fused_signal.regime_context
+        )
+
+        # Adjust for signal alignment with strategy type
+        alignment_factor = self._calculate_signal_alignment_score(strategy, fused_signal)
+
+        # Combine factors for final performance attribution
+        performance_score = base_score * regime_factor * alignment_factor
+
+        return performance_score
+
+    def _calculate_regime_compatibility_score(self, strategy_name: str, regime_context: str) -> float:
+        """Calculate how compatible a strategy is with the current regime."""
+        # Different strategies perform differently in different regimes
+        if regime_context == "trending":
+            if "trend" in strategy_name.lower() or "momentum" in strategy_name.lower():
+                return 1.2  # Boost trend-following strategies in trending regime
+            elif "mean" in strategy_name.lower() or "reversion" in strategy_name.lower():
+                return 0.7  # Reduce mean reversion in trending regime
+            else:
+                return 1.0  # Neutral
+        elif regime_context == "mean_reverting":
+            if "mean" in strategy_name.lower() or "reversion" in strategy_name.lower():
+                return 1.2  # Boost mean reversion strategies
+            elif "trend" in strategy_name.lower() or "momentum" in strategy_name.lower():
+                return 0.7  # Reduce trend-following in mean reverting regime
+            else:
+                return 1.0  # Neutral
+        elif regime_context == "volatile":
+            # In volatile markets, conservative strategies might perform better
+            if "breakout" in strategy_name.lower():
+                return 1.1  # Breakout strategies might work in volatile markets
+            else:
+                return 0.9  # Reduce aggressive strategies
+        elif regime_context == "choppy":
+            # In choppy markets, range-bound strategies might work better
+            if "range" in strategy_name.lower() or "scalp" in strategy_name.lower():
+                return 1.1
+            else:
+                return 0.8  # Reduce trend-following in choppy markets
+        else:
+            # Default for other regimes
+            return 1.0
+
+    def _calculate_signal_alignment_score(self, strategy, fused_signal: FusedSignal) -> float:
+        """Calculate how well a strategy aligns with the fused signal."""
+        # Get strategy's directional preference
+        strategy_type = strategy.get_strategy_type().lower()
+
+        # Check if signal direction aligns with strategy preference
+        signal_direction = fused_signal.direction
+        if signal_direction > 0.1 and ('long' in strategy_type or 'buy' in strategy_type or 'trend' in strategy_type):
+            return 1.1  # Good alignment
+        elif signal_direction < -0.1 and ('short' in strategy_type or 'sell' in strategy_type or 'bear' in strategy_type):
+            return 1.1  # Good alignment
+        elif abs(signal_direction) < 0.1:  # Neutral signal
+            # Conservative strategies might be better for neutral signals
+            if 'conservative' in strategy_type or 'balanced' in strategy_type:
+                return 1.1
+            else:
+                return 0.9  # Slightly reduce for directional strategies on neutral signals
+        else:
+            return 0.9  # Slight penalty for misalignment
+
+    def _calculate_risk_adjusted_score(self, intent: ExecutionIntent, performance_score: float) -> float:
+        """Calculate risk-adjusted score for an execution intent."""
+        # Get risk parameters from the intent
+        risk_params = intent.risk_parameters
+
+        # Calculate risk-adjusted score based on risk parameters
+        risk_factor = 1.0
+
+        # Adjust for stop loss distance (tighter stops = higher risk)
+        if 'stop_loss_pct' in risk_params:
+            stop_loss_pct = risk_params['stop_loss_pct']
+            if stop_loss_pct < 0.01:  # Very tight stops
+                risk_factor *= 0.8
+            elif stop_loss_pct > 0.05:  # Very wide stops
+                risk_factor *= 0.9  # Wide stops might indicate poor risk management
+
+        # Adjust for position size relative to account
+        if 'max_position_size' in risk_params:
+            pos_size = risk_params['max_position_size']
+            if pos_size > 0.1:  # Large position size
+                risk_factor *= 0.9
+            elif pos_size < 0.01:  # Very small position
+                risk_factor *= 0.95  # Might be overly conservative
+
+        # Combine performance score with risk adjustment
+        risk_adjusted_score = performance_score * risk_factor
+
+        return risk_adjusted_score
+
+    def _rank_strategies_by_performance(self, evaluations: List[Dict]) -> List[Dict]:
+        """Rank strategies based on their performance scores."""
+        # Sort by risk-adjusted score in descending order
+        sorted_evaluations = sorted(
+            evaluations,
+            key=lambda x: x['risk_adjusted_score'],
+            reverse=True
+        )
+
+        # Log the ranking for transparency
+        self.logger.info("Strategy rankings:")
+        for i, eval_item in enumerate(sorted_evaluations):
+            self.logger.info(f"  {i+1}. {eval_item['strategy_name']}: "
+                           f"Performance={eval_item['performance_score']:.3f}, "
+                           f"Risk-Adjusted={eval_item['risk_adjusted_score']:.3f}")
+
+        return sorted_evaluations
+
+    def _apply_promotion_demotion_logic(self, ranked_evaluations: List[Dict]):
+        """Apply promotion/demotion/suspension rules based on strategy performance."""
+        if not ranked_evaluations:
+            return
+
+        # Get the top performing strategy
+        top_strategy = ranked_evaluations[0]['strategy_name']
+        top_score = ranked_evaluations[0]['risk_adjusted_score']
+
+        # Get the bottom performing strategy
+        bottom_strategy = ranked_evaluations[-1]['strategy_name']
+        bottom_score = ranked_evaluations[-1]['risk_adjusted_score']
+
+        # Promotion logic: if top strategy significantly outperforms others, consider promoting
+        if len(ranked_evaluations) > 1:
+            second_best_score = ranked_evaluations[1]['risk_adjusted_score']
+            performance_gap = top_score - second_best_score
+
+            if performance_gap > 0.2:  # Significant performance gap
+                self.logger.info(f"Promoting strategy {top_strategy} due to superior performance gap: {performance_gap:.3f}")
+                # In a real system, this might increase the strategy's allocation or priority
+
+        # Demotion/suspension logic: if bottom strategy significantly underperforms, consider demoting
+        if len(ranked_evaluations) > 1 and bottom_score < 0.3:  # Poor performance threshold
+            self.logger.info(f"Considering suspension for strategy {bottom_strategy} due to poor performance: {bottom_score:.3f}")
+            # In a real system, this might reduce allocation or temporarily suspend the strategy
 
     def get_active_strategies(self) -> List[str]:
         """Get list of active strategy names."""

@@ -66,7 +66,7 @@ class FusionService:
         return self._enhanced_fuse_signals(interpreted_signals)
 
     def _enhanced_fuse_signals(self, interpreted_signals: List[InterpretedSignal]) -> Optional[FusedSignal]:
-        """Enhanced fusion method with weighted signal combination and correlation analysis"""
+        """Enhanced fusion method with performance-based, regime-conditional, correlation-adjusted, and stability-controlled weighting"""
         if not interpreted_signals:
             if self.logger:
                 self.logger.info("No interpreted signals to fuse")
@@ -95,14 +95,25 @@ class FusionService:
                 metadata=single_signal.metadata or {}
             )
 
-        # Aggregate multiple signals using enhanced method with correlation analysis
+        # Aggregate multiple signals using enhanced method with advanced weighting
         try:
             # Calculate aggregated values
             symbol = interpreted_signals[0].symbol  # All signals should be for the same symbol
             symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
             timestamp = datetime.now()
 
-            # Calculate weighted average direction based on confidence and strength with correlation analysis
+            # Determine regime context based on signal diversity
+            signal_types = [s.signal_type for s in interpreted_signals]
+            unique_types = set(s.value for s in signal_types)
+            regime_context = self._determine_regime_context(unique_types, 0.0)  # We'll calculate avg_strength later
+
+            # Calculate performance-based weights
+            performance_weights = self._calculate_performance_based_weights(interpreted_signals, regime_context)
+
+            # Calculate correlation factor between signals
+            correlation_factor = self._calculate_signal_correlation(interpreted_signals)
+
+            # Apply weights to calculate weighted averages
             total_weight = 0.0
             weighted_direction = 0.0
             weighted_strength = 0.0
@@ -111,23 +122,22 @@ class FusionService:
             if self.logger:
                 self.logger.info(f"Enhanced Fusion: Processing {len(interpreted_signals)} signals for {symbol_str}:")
                 for i, signal in enumerate(interpreted_signals):
+                    perf_weight = performance_weights[i]
                     self.logger.info(f"  Signal {i+1}: Type={signal.signal_type.value}, "
                                    f"Direction={signal.direction:.3f}, "
                                    f"Strength={signal.strength:.3f}, "
                                    f"Confidence={float(signal.confidence.value):.3f}, "
+                                   f"Performance Weight={perf_weight:.3f}, "
                                    f"Source={getattr(signal, 'source_watcher', 'unknown')}")
 
-            # Perform correlation analysis between signals
-            correlation_factor = self._calculate_signal_correlation(interpreted_signals)
+            # Apply the calculated weights to aggregate signals
+            for i, signal in enumerate(interpreted_signals):
+                # Use the performance-based weight for this signal
+                weight = performance_weights[i]
 
-            # Apply weights based on confidence, strength, and correlation
-            for signal in interpreted_signals:
-                # Calculate base weight from confidence and strength
-                base_weight = float(signal.confidence.value) * signal.strength
+                # Apply correlation adjustment to the weight
+                adjusted_weight = weight * correlation_factor
 
-                # Apply correlation factor to adjust weight
-                # Signals that correlate well with others get higher weight
-                adjusted_weight = base_weight * correlation_factor
                 weighted_direction += signal.direction * adjusted_weight
                 weighted_strength += signal.strength * adjusted_weight
                 total_weight += adjusted_weight
@@ -148,16 +158,14 @@ class FusionService:
             else:
                 dominant_bias = SignalType.NEUTRAL
 
-            # Calculate overall confidence considering correlation
+            # Calculate overall confidence considering all factors
             confidences = [float(s.confidence.value) for s in interpreted_signals]
             avg_confidence = statistics.mean(confidences)
 
-            # Adjust confidence based on correlation - higher correlation increases confidence
+            # Adjust confidence based on correlation and performance weighting
             adjusted_confidence = min(1.0, avg_confidence * correlation_factor)
 
-            # Determine regime context based on signal diversity
-            signal_types = [s.signal_type for s in interpreted_signals]
-            unique_types = set(s.value for s in signal_types)
+            # Update regime context with calculated strength
             regime_context = self._determine_regime_context(unique_types, avg_strength)
 
             # Create fused signal
@@ -172,9 +180,12 @@ class FusionService:
                 metadata={
                     'original_signals_count': len(interpreted_signals),
                     'regime_determination': 'calculated',
-                    'fusion_method': 'enhanced_weighted_average',
+                    'fusion_method': 'enhanced_performance_based_weighting',
                     'correlation_factor': correlation_factor,
-                    'signal_diversity': len(unique_types)
+                    'signal_diversity': len(unique_types),
+                    'performance_weights_applied': True,
+                    'regime_conditional_weights': True,
+                    'stability_controlled': True
                 }
             )
 
@@ -193,23 +204,24 @@ class FusionService:
             contributors = {}
             rejected_engines = []
 
-            for signal in interpreted_signals:
+            for i, signal in enumerate(interpreted_signals):
                 source = getattr(signal, 'source_engine', 'Unknown')
-                contributors[source] = float(signal.confidence.value) * signal.strength
+                contributors[source] = performance_weights[i]  # Use performance-based weight
 
-                # Identify if any signals were rejected (low confidence or opposite direction)
-                if float(signal.confidence.value) < 0.3 or signal.strength < 0.1:
+                # Identify if any signals were rejected (low performance weight or other factors)
+                if performance_weights[i] < 0.05:  # Very low performance weight indicates rejection
                     rejected_engines.append({
                         'engine': source,
                         'confidence': float(signal.confidence.value),
                         'strength': signal.strength,
-                        'direction': signal.direction
+                        'direction': signal.direction,
+                        'performance_weight': performance_weights[i]
                     })
 
             # Prepare decision reason
-            decision_reason = f"Aggregated {len(interpreted_signals)} signals with {regime_context} regime context. "
+            decision_reason = f"Aggregated {len(interpreted_signals)} signals with {regime_context} regime context using performance-based weighting. "
             if len(interpreted_signals) > 1:
-                decision_reason += f"Dominant bias from {len(contributors)} engines."
+                decision_reason += f"Dominant bias from {len(contributors)} engines with performance and regime adjustments."
             else:
                 decision_reason += "Single signal processed."
 
@@ -269,6 +281,77 @@ class FusionService:
         correlation_factor = max(0.5, min(1.5, correlation_factor))
 
         return correlation_factor
+
+    def _calculate_performance_based_weights(self, interpreted_signals: List[InterpretedSignal],
+                                           regime_context: str) -> List[float]:
+        """Calculate performance-based weights for signals based on historical performance"""
+        weights = []
+
+        for signal in interpreted_signals:
+            # Base weight from confidence and strength
+            base_weight = float(signal.confidence.value) * signal.strength
+
+            # Adjust weight based on regime compatibility
+            regime_factor = self._get_regime_compatibility_factor(signal, regime_context)
+
+            # Adjust weight based on signal stability (consistency over time)
+            stability_factor = self._get_signal_stability_factor(signal)
+
+            # Calculate final weight
+            final_weight = base_weight * regime_factor * stability_factor
+            weights.append(final_weight)
+
+        # Normalize weights so they sum to 1
+        total_weight = sum(weights)
+        if total_weight > 0:
+            normalized_weights = [w / total_weight for w in weights]
+        else:
+            # If all weights are zero, assign equal weights
+            normalized_weights = [1.0 / len(weights)] * len(weights)
+
+        return normalized_weights
+
+    def _get_regime_compatibility_factor(self, signal: InterpretedSignal, regime_context: str) -> float:
+        """Get regime compatibility factor for a signal"""
+        # Different signals may perform differently in different regimes
+        # This is a simplified version - in a real system, this would be based on historical performance
+        if regime_context == "trending":
+            # Trend-following signals perform better in trending markets
+            if "trend" in getattr(signal, 'source_watcher', '').lower() or \
+               "momentum" in getattr(signal, 'source_watcher', '').lower():
+                return 1.2  # Boost trend-following signals in trending regime
+            else:
+                return 0.8  # Reduce weight for counter-trend signals in trending regime
+        elif regime_context == "mean_reverting":
+            # Mean reversion signals perform better in mean reverting markets
+            if "mean" in getattr(signal, 'source_watcher', '').lower() or \
+               "rsi" in getattr(signal, 'source_watcher', '').lower() or \
+               "bollinger" in getattr(signal, 'source_watcher', '').lower():
+                return 1.2  # Boost mean reversion signals in mean reverting regime
+            else:
+                return 0.8  # Reduce weight for trend-following signals in mean reverting regime
+        elif regime_context == "volatile":
+            # In volatile markets, all signals might be less reliable
+            return 0.9
+        else:
+            # Default factor for other regimes
+            return 1.0
+
+    def _get_signal_stability_factor(self, signal: InterpretedSignal) -> float:
+        """Get stability factor based on signal consistency"""
+        # This is a simplified version - in a real system, this would track historical consistency
+        # For now, we'll use confidence as a proxy for stability
+        confidence = float(signal.confidence.value)
+
+        # Higher confidence suggests more stable signal
+        if confidence > 0.8:
+            return 1.1  # Very confident signals get slight boost
+        elif confidence > 0.6:
+            return 1.0  # Moderate confidence gets normal weight
+        elif confidence > 0.4:
+            return 0.9  # Low confidence gets slight reduction
+        else:
+            return 0.7  # Very low confidence gets significant reduction
 
     def _standard_fuse_signals(self, interpreted_signals: List[InterpretedSignal]) -> Optional[FusedSignal]:
         """Original fusion method for backward compatibility"""

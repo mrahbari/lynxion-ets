@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
 from infrastructure.tracking.trade_tracker import trade_tracker
+from infrastructure.market_regime.regime_detector import regime_detector, RegimeType
 
 
 class PositionDirection(Enum):
@@ -26,6 +27,7 @@ class Position:
     entry_time: datetime
     risk_amount: float = 0.0
     trade_id: str = None
+    regime_context: str = None  # Store the regime context when position was opened
 
 
 class EnterpriseRiskManager:
@@ -44,7 +46,9 @@ class EnterpriseRiskManager:
                  fixed_position_size_enabled: bool = False,
                  fixed_position_amount: float = 10.0,
                  default_account_balance: float = 10000.0,
-                 risk_config: Dict[str, Any] = None):
+                 risk_config: Dict[str, Any] = None,
+                 regime_risk_multipliers: Optional[Dict[str, float]] = None,
+                 drawdown_decay_factor: float = 0.95):
 
         # Use risk_config if provided, otherwise use individual parameters
         if risk_config:
@@ -60,6 +64,16 @@ class EnterpriseRiskManager:
             self.fixed_position_size_enabled = risk_config.get('fixed_position_size_enabled', fixed_position_size_enabled)
             self.fixed_position_amount = risk_config.get('fixed_position_amount', fixed_position_amount)
             self.default_account_balance = risk_config.get('default_account_balance', default_account_balance)
+            self.drawdown_decay_factor = risk_config.get('drawdown_decay_factor', drawdown_decay_factor)
+            self.regime_risk_multipliers = risk_config.get('regime_risk_multipliers', regime_risk_multipliers or {
+                RegimeType.TRENDING_UP.value: 1.0,
+                RegimeType.TRENDING_DOWN.value: 1.0,
+                RegimeType.RANGING.value: 1.2,
+                RegimeType.HIGH_VOLATILITY.value: 0.7,
+                RegimeType.LOW_VOLATILITY.value: 1.1,
+                RegimeType.CHOPPY.value: 0.6,
+                RegimeType.BREAKOUT.value: 0.8
+            })
         else:
             self.max_portfolio_exposure = max_portfolio_exposure
             self.max_position_exposure = max_position_exposure
@@ -73,6 +87,16 @@ class EnterpriseRiskManager:
             self.fixed_position_size_enabled = fixed_position_size_enabled
             self.fixed_position_amount = fixed_position_amount
             self.default_account_balance = default_account_balance
+            self.drawdown_decay_factor = drawdown_decay_factor
+            self.regime_risk_multipliers = regime_risk_multipliers or {
+                RegimeType.TRENDING_UP.value: 1.0,
+                RegimeType.TRENDING_DOWN.value: 1.0,
+                RegimeType.RANGING.value: 1.2,
+                RegimeType.HIGH_VOLATILITY.value: 0.7,
+                RegimeType.LOW_VOLATILITY.value: 1.1,
+                RegimeType.CHOPPY.value: 0.6,
+                RegimeType.BREAKOUT.value: 0.8
+            }
 
         # Track positions and PnL
         self.positions: Dict[str, Position] = {}
@@ -85,8 +109,16 @@ class EnterpriseRiskManager:
         self.daily_start = datetime.now().date()
         self.starting_equity = self.max_portfolio_exposure
 
+        # Track correlations between symbols
+        self.correlation_matrix: Dict[str, Dict[str, float]] = {}
+
+        # Track regime-specific risk metrics
+        self.regime_exposures: Dict[str, float] = {}
+
     def calculate_position_size(self, entry_price: float, stop_loss: float,
-                               portfolio_equity: float, risk_percentage: Optional[float] = None) -> float:
+                               portfolio_equity: float, risk_percentage: Optional[float] = None,
+                               regime_context: Optional[str] = None, volatility: Optional[float] = None,
+                               correlation_penalty: float = 1.0, drawdown_factor: float = 1.0) -> float:
         """
         Calculate position size based on risk management principles with unified formula
 
@@ -97,6 +129,16 @@ class EnterpriseRiskManager:
         """
         # Determine risk percentage to use
         risk_pct = risk_percentage or self.max_risk_per_trade
+
+        # Apply regime-based risk multiplier if regime context is provided
+        if regime_context and regime_context in self.regime_risk_multipliers:
+            risk_pct *= self.regime_risk_multipliers[regime_context]
+
+        # Apply drawdown factor to reduce risk during drawdown periods
+        risk_pct *= drawdown_factor
+
+        # Apply correlation penalty to reduce position size when correlation is high
+        risk_pct /= correlation_penalty  # Higher penalty means lower risk allocation
 
         # Calculate position size based on FIXED_POSITION_SIZE_ENABLED flag
         if self.fixed_position_size_enabled:
@@ -109,7 +151,11 @@ class EnterpriseRiskManager:
             # Dynamic position sizing: calculate based on risk percentage and stop loss
             risk_amount = portfolio_equity * risk_pct
 
+            # Normalize risk by volatility if provided
             risk_per_unit = abs(entry_price - stop_loss)
+            if volatility and volatility > 0:
+                # Use volatility as a normalizer - higher volatility means wider stop loss distance
+                risk_per_unit = max(risk_per_unit, volatility * entry_price)
 
             if risk_per_unit <= 0:
                 return 0.0  # Invalid stop loss
@@ -152,7 +198,8 @@ class EnterpriseRiskManager:
         return True
 
     def enter_position(self, symbol: str, entry_price: float, size: float,
-                      direction: PositionDirection, stop_loss: float, take_profit: float, trade_id: str = None) -> bool:
+                      direction: PositionDirection, stop_loss: float, take_profit: float,
+                      trade_id: str = None, regime_context: str = None) -> bool:
         """
         Enter a new position with risk validation
         """
@@ -177,10 +224,15 @@ class EnterpriseRiskManager:
             take_profit=take_profit,
             entry_time=datetime.now(),
             risk_amount=risk_amount,
-            trade_id=trade_id
+            trade_id=trade_id,
+            regime_context=regime_context
         )
 
         self.positions[symbol] = position
+
+        # Update regime exposure tracking
+        if regime_context:
+            self.regime_exposures[regime_context] = self.regime_exposures.get(regime_context, 0.0) + (size * entry_price)
 
         # Register the trade with the trade tracker
         trade_tracker.register_trade(
@@ -375,6 +427,61 @@ class EnterpriseRiskManager:
             return True
         return False
 
+    def calculate_correlation_penalty(self, symbol: str, portfolio_symbols: List[str]) -> float:
+        """
+        Calculate correlation penalty based on correlation with other positions in portfolio.
+        Higher correlation increases the penalty (reducing position size).
+        """
+        if not portfolio_symbols:
+            return 1.0  # No penalty if no other positions
+
+        total_penalty = 0.0
+        penalty_count = 0
+
+        for other_symbol in portfolio_symbols:
+            if other_symbol != symbol:
+                # Get correlation between symbols (placeholder - in real implementation,
+                # this would come from actual correlation calculations)
+                correlation = self.correlation_matrix.get(symbol, {}).get(other_symbol, 0.0)
+
+                # If correlation is above threshold, apply penalty
+                if abs(correlation) > self.max_correlation:
+                    penalty = 1 + (abs(correlation) - self.max_correlation)
+                    total_penalty += penalty
+                    penalty_count += 1
+
+        # Average penalty across all correlated positions
+        if penalty_count > 0:
+            avg_penalty = total_penalty / penalty_count
+            # Cap the penalty to prevent extreme reductions
+            return min(avg_penalty, 3.0)  # Maximum 3x penalty
+        else:
+            return 1.0
+
+    def calculate_drawdown_factor(self) -> float:
+        """
+        Calculate drawdown factor to reduce risk during drawdown periods.
+        Returns a value between 0 and 1, where lower values indicate higher drawdown.
+        """
+        current_drawdown = self.calculate_drawdown()
+
+        if current_drawdown <= 0:
+            return 1.0  # No drawdown, full risk allocation
+
+        # Apply exponential decay based on drawdown magnitude
+        # As drawdown increases, the factor decreases exponentially
+        decay_factor = self.drawdown_decay_factor
+        max_drawdown = self.max_drawdown_pct
+
+        # Normalize drawdown to 0-1 scale relative to max drawdown
+        normalized_drawdown = min(current_drawdown / max_drawdown, 1.0)
+
+        # Apply exponential decay: factor = decay_factor ^ normalized_drawdown
+        drawdown_factor = pow(decay_factor, normalized_drawdown * 10)  # Multiply by 10 to make decay steeper
+
+        # Ensure factor is between 0.1 and 1.0
+        return max(0.1, drawdown_factor)
+
     def get_optimizable_params(self) -> Dict[str, Any]:
         """Get the current risk parameters that can be optimized."""
         return {
@@ -388,7 +495,9 @@ class EnterpriseRiskManager:
             'max_correlation': self.max_correlation,
             'fixed_position_size_enabled': self.fixed_position_size_enabled,
             'fixed_position_amount': self.fixed_position_amount,
-            'default_account_balance': self.default_account_balance
+            'default_account_balance': self.default_account_balance,
+            'drawdown_decay_factor': self.drawdown_decay_factor,
+            'regime_risk_multipliers': self.regime_risk_multipliers
         }
 
     def update_from_params(self, params: Dict[str, Any]):
@@ -404,5 +513,7 @@ class EnterpriseRiskManager:
         self.fixed_position_size_enabled = params.get('fixed_position_size_enabled', self.fixed_position_size_enabled)
         self.fixed_position_amount = params.get('fixed_position_amount', self.fixed_position_amount)
         self.default_account_balance = params.get('default_account_balance', self.default_account_balance)
+        self.drawdown_decay_factor = params.get('drawdown_decay_factor', self.drawdown_decay_factor)
+        self.regime_risk_multipliers = params.get('regime_risk_multipliers', self.regime_risk_multipliers)
         # Update starting equity if portfolio exposure changes
         self.starting_equity = self.max_portfolio_exposure
