@@ -53,6 +53,10 @@ except ImportError:
 from infrastructure.engines.engine_service import engine_service
 from infrastructure.fusion.fusion_service import fusion_service
 from infrastructure.strategies.strategy_manager import strategy_manager
+from infrastructure.statistical_validation.confidence_calibrator import confidence_calibrator
+from infrastructure.market_regime.regime_detector import regime_detector
+from infrastructure.risk_management.portfolio_risk_manager import portfolio_risk_manager
+from infrastructure.validation.execution_validator import execution_validator
 
 
 class MainHexagonalContainer:
@@ -185,6 +189,12 @@ class MainHexagonalContainer:
         self.strategy_manager.add_strategy(MeanReversionStrategy())
         self.strategy_manager.add_strategy(VolatilityBreakoutStrategy())
 
+        # Initialize new components for enhanced functionality
+        self.confidence_calibrator = confidence_calibrator
+        self.regime_detector = regime_detector
+        self.portfolio_risk_manager = portfolio_risk_manager
+        self.execution_validator = execution_validator
+
     def _initialize_shared_components(self):
         """Initialize shared cross-cutting components."""
         self.logger.info("Initializing shared components...")
@@ -281,6 +291,10 @@ class MainHexagonalContainer:
             "engine_service": self.engine_service,
             "fusion_service": self.fusion_service,
             "strategy_manager": self.strategy_manager,
+            "confidence_calibrator": self.confidence_calibrator,
+            "regime_detector": self.regime_detector,
+            "portfolio_risk_manager": self.portfolio_risk_manager,
+            "execution_validator": self.execution_validator,
         }
 
     def validate_architecture(self) -> Dict[str, bool]:

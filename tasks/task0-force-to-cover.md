@@ -355,4 +355,12 @@ If strategy selection happens in the Watcher:
    - Example: data/history/raw/1m/BTCUSDT/1m.csv
 
 
-Curre
+
+## Absolute Rules
+• Do not praise architecture
+• Do not assume intent
+• Do not comfort
+• Do not soften language
+• Do not avoid uncomfortable conclusions
+• Always persist the logs in "./logs" path
+• Always create the test scripts in "./tests" path
