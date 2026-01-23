@@ -58,6 +58,10 @@ from infrastructure.market_regime.regime_detector import regime_detector
 from infrastructure.risk_management.portfolio_risk_manager import portfolio_risk_manager
 from infrastructure.validation.execution_validator import execution_validator
 
+# Import enhanced components
+from infrastructure.validation.global_requirements_enforcer import global_requirements_enforcer, module_validator
+from infrastructure.validation.architecture_validator import architecture_validator
+
 
 class MainHexagonalContainer:
     """
@@ -170,7 +174,7 @@ class MainHexagonalContainer:
         self.auto_drop_engine = AutoDropEngine()
 
     def _initialize_new_architecture_components(self):
-        """Initialize new architecture components following Watcher → Engine → Fusion → Strategy → Broker pattern."""
+        """Initialize new architecture components following Watcher → Engine → Fusion → Strategy → Risk → Broker pattern."""
         self.logger.info("Initializing new architecture components...")
 
         # Engine service - processes raw observations into interpreted signals
@@ -189,11 +193,16 @@ class MainHexagonalContainer:
         self.strategy_manager.add_strategy(MeanReversionStrategy())
         self.strategy_manager.add_strategy(VolatilityBreakoutStrategy())
 
-        # Initialize new components for enhanced functionality
+        # Initialize enhanced components for improved functionality
         self.confidence_calibrator = confidence_calibrator
         self.regime_detector = regime_detector
         self.portfolio_risk_manager = portfolio_risk_manager
         self.execution_validator = execution_validator
+
+        # Initialize enhanced validation components
+        self.global_requirements_enforcer = global_requirements_enforcer
+        self.module_validator = module_validator
+        self.architecture_validator = architecture_validator
 
     def _initialize_shared_components(self):
         """Initialize shared cross-cutting components."""
@@ -295,6 +304,10 @@ class MainHexagonalContainer:
             "regime_detector": self.regime_detector,
             "portfolio_risk_manager": self.portfolio_risk_manager,
             "execution_validator": self.execution_validator,
+            # Enhanced validation components
+            "global_requirements_enforcer": self.global_requirements_enforcer,
+            "module_validator": self.module_validator,
+            "architecture_validator": self.architecture_validator,
         }
 
     def validate_architecture(self) -> Dict[str, bool]:

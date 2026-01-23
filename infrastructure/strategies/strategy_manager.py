@@ -9,8 +9,343 @@ from datetime import datetime
 from domain.value_objects import Symbol
 from domain.entities.signal_entities import FusedSignal, ExecutionIntent
 from infrastructure.strategies.strategy_adapters import BaseStrategyAdapter, TrendFollowingStrategy, MeanReversionStrategy, VolatilityBreakoutStrategy
+import numpy as np
+from scipy import stats
 from shared.logger import EnhancedLogger
 from infrastructure.strategies.strategy_config import StrategyConfig
+
+
+class PerformanceRankedStrategySelector:
+    """
+    Redesigned Strategy Selection with performance-ranking and risk-adjustment.
+
+    Mathematical Formula:
+    Performance_Score_i = f(historical_performance, recent_performance, consistency,
+                           regime_compatibility, correlation_penalty)
+
+    Risk_Adjusted_Score_i = Performance_Score_i * (1 - correlation_penalty) * Regime_Factor_i
+
+    Where:
+    - Performance_Score_i = weighted_combination of win_rate, avg_rr, expectancy, Sharpe_ratio
+    - Correlation_Penalty_i = sum(correlation_with_other_strategies * penalty_factor)
+    - Regime_Factor_i = compatibility_score_with_current_regime
+    - Allocation_Percentage_i = Risk_Adjusted_Score_i / sum(all_scores) * max_allocation_per_strategy
+    """
+
+    def __init__(self,
+                 max_strategies_per_selection: int = 5,
+                 max_allocation_per_strategy: float = 0.30,  # 30% max per strategy
+                 correlation_penalty_factor: float = 0.3,
+                 performance_decay_factor: float = 0.95,
+                 regime_compatibility_weight: float = 0.2,
+                 correlation_weight: float = 0.2,
+                 risk_adjustment_weight: float = 0.3):
+
+        self.max_strategies_per_selection = max_strategies_per_selection
+        self.max_allocation_per_strategy = max_allocation_per_strategy
+        self.correlation_penalty_factor = correlation_penalty_factor
+        self.performance_decay_factor = performance_decay_factor
+        self.regime_compatibility_weight = regime_compatibility_weight
+        self.correlation_weight = correlation_weight
+        self.risk_adjustment_weight = risk_adjustment_weight
+
+    def evaluate_strategies(self,
+                          strategies: List[Dict[str, Any]],
+                          correlation_matrix: Optional[np.ndarray] = None,
+                          regime_context: str = "normal",
+                          portfolio_correlations: Optional[Dict[str, float]] = None) -> List[Dict[str, Any]]:
+        """
+        Evaluate and rank strategies based on performance and risk-adjustment.
+        """
+        evaluations = []
+
+        for i, strategy in enumerate(strategies):
+            strategy_name = strategy.get('name', f'strategy_{i}')
+
+            # Calculate base performance score
+            performance_score = self._calculate_performance_score(strategy)
+
+            # Calculate regime compatibility
+            regime_compatibility = self._calculate_regime_compatibility(
+                strategy, regime_context
+            )
+
+            # Calculate correlation penalty
+            correlation_penalty = self._calculate_correlation_penalty(
+                strategy_name, correlation_matrix, portfolio_correlations, strategies
+            )
+
+            # Calculate risk-adjusted score
+            risk_adjusted_score = self._calculate_risk_adjusted_score(
+                performance_score, regime_compatibility, correlation_penalty
+            )
+
+            # Determine strategy status based on performance
+            status = self._determine_strategy_status(risk_adjusted_score, strategy)
+
+            evaluation = {
+                'strategy_name': strategy_name,
+                'performance_score': performance_score,
+                'risk_adjusted_score': risk_adjusted_score,
+                'regime_compatibility': regime_compatibility,
+                'correlation_penalty': correlation_penalty,
+                'win_rate': strategy.get('win_rate', 0.0),
+                'avg_rr': strategy.get('avg_rr', 1.0),
+                'expectancy': strategy.get('expectancy', 0.0),
+                'status': status,
+                'rank': 0,  # Will be set after sorting
+                'allocation_percentage': 0.0  # Will be calculated after ranking
+            }
+
+            evaluations.append(evaluation)
+
+        # Sort by risk-adjusted score (descending)
+        evaluations.sort(key=lambda x: x['risk_adjusted_score'], reverse=True)
+
+        # Assign ranks
+        for i, eval_item in enumerate(evaluations):
+            eval_item['rank'] = i + 1
+
+        # Calculate allocations based on rankings
+        self._calculate_allocations(evaluations)
+
+        return evaluations
+
+    def _calculate_performance_score(self, strategy: Dict[str, Any]) -> float:
+        """
+        Calculate performance score based on multiple metrics.
+        """
+        # Get performance metrics
+        win_rate = strategy.get('win_rate', 0.5)
+        avg_rr = strategy.get('avg_rr', 1.0)
+        expectancy = strategy.get('expectancy', 0.0)
+        sharpe_ratio = strategy.get('sharpe_ratio', 0.0)
+        sortino_ratio = strategy.get('sortino_ratio', 0.0)
+
+        # Normalize metrics to 0-1 range
+        norm_win_rate = max(0.0, min(1.0, win_rate))
+        norm_avg_rr = max(0.0, min(1.0, (avg_rr - 0.5) / 4.5)) if avg_rr >= 0.5 else max(0.0, min(1.0, avg_rr / 0.5))  # Map 0.5-5.0 to 0-1
+        norm_expectancy = max(0.0, min(1.0, (expectancy + 0.1) / 0.2)) if expectancy >= -0.1 else max(0.0, min(1.0, (expectancy + 0.2) / 0.1))  # Map -0.1 to 0.1 to 0-1
+        norm_sharpe = max(0.0, min(1.0, (sharpe_ratio + 1) / 6)) if sharpe_ratio >= -1 else max(0.0, min(1.0, (sharpe_ratio + 2) / 1))  # Map -1 to 5 to 0-1
+
+        # Weighted combination of metrics
+        performance_score = (
+            0.3 * norm_win_rate +
+            0.25 * norm_avg_rr +
+            0.25 * norm_expectancy +
+            0.1 * norm_sharpe +
+            0.1 * max(0.0, min(1.0, (sortino_ratio + 1) / 6))  # Additional 10% for sortino
+        )
+
+        # Apply decay based on recency of performance data
+        performance_age = strategy.get('performance_age_days', 0)
+        age_factor = self.performance_decay_factor ** (performance_age / 30)  # Monthly decay
+
+        return float(performance_score * age_factor)
+
+    def _calculate_regime_compatibility(self, strategy: Dict[str, Any], regime_context: str) -> float:
+        """
+        Calculate how compatible a strategy is with the current regime.
+        """
+        # Get strategy's regime compatibilities
+        regime_compatibilities = strategy.get('regime_compatibilities', {})
+
+        # Get base compatibility for current regime
+        base_compatibility = regime_compatibilities.get(regime_context.lower(), 0.5)
+
+        # Apply regime-specific adjustments
+        if regime_context.lower() in ['bullish_trending', 'bearish_trending']:
+            # Trend-following strategies perform better in trending markets
+            if any(keyword in strategy.get('name', '').lower() for keyword in ['trend', 'momentum', 'breakout']):
+                base_compatibility = min(1.0, base_compatibility * 1.2)
+        elif regime_context.lower() in ['choppy', 'mean_reverting']:
+            # Mean-reversion strategies perform better in ranging markets
+            if any(keyword in strategy.get('name', '').lower() for keyword in ['mean', 'reversion', 'rsi', 'bollinger']):
+                base_compatibility = min(1.0, base_compatibility * 1.2)
+        elif regime_context.lower() == 'high_volatility':
+            # Some strategies perform better in high volatility
+            if any(keyword in strategy.get('name', '').lower() for keyword in ['volatility', 'breakout', 'gap']):
+                base_compatibility = min(1.0, base_compatibility * 1.1)
+
+        return float(max(0.0, min(1.0, base_compatibility)))
+
+    def _calculate_correlation_penalty(self,
+                                    strategy_name: str,
+                                    correlation_matrix: Optional[np.ndarray],
+                                    portfolio_correlations: Optional[Dict[str, float]],
+                                    all_strategies: List[Dict[str, Any]]) -> float:
+        """
+        Calculate penalty based on correlation with other strategies and portfolio.
+        """
+        penalty = 0.0
+
+        # Get index of current strategy in correlation matrix
+        strategy_names = [s.get('name', f'strategy_{i}') for i, s in enumerate(all_strategies)]
+        try:
+            current_idx = strategy_names.index(strategy_name)
+        except ValueError:
+            current_idx = -1
+
+        # Calculate correlation with other strategies if correlation matrix provided
+        if correlation_matrix is not None and current_idx >= 0:
+            n = len(strategy_names)
+            if current_idx < correlation_matrix.shape[0]:
+                # Sum correlations with all other strategies (excluding self-correlation)
+                for j in range(n):
+                    if current_idx != j and j < correlation_matrix.shape[1]:
+                        correlation = abs(correlation_matrix[current_idx, j])
+                        penalty += correlation
+
+        # Add penalty based on portfolio correlations if provided
+        if portfolio_correlations and strategy_name in portfolio_correlations:
+            portfolio_corr = abs(portfolio_correlations[strategy_name])
+            penalty += portfolio_corr
+
+        # Normalize penalty (assuming max possible penalty)
+        max_possible_penalty = len(all_strategies)  # If perfectly correlated with all others
+        if max_possible_penalty > 0:
+            penalty = penalty / max_possible_penalty
+        else:
+            penalty = 0.0
+
+        # Apply penalty factor
+        penalty = penalty * self.correlation_penalty_factor
+
+        return float(max(0.0, min(1.0, penalty)))
+
+    def _calculate_risk_adjusted_score(self,
+                                    performance_score: float,
+                                    regime_compatibility: float,
+                                    correlation_penalty: float) -> float:
+        """
+        Calculate final risk-adjusted score combining all factors.
+        """
+        # Apply regime compatibility weight
+        regime_adjusted = performance_score * (1 + (regime_compatibility - 0.5) * self.regime_compatibility_weight)
+
+        # Apply correlation penalty
+        correlation_adjusted = regime_adjusted * (1 - correlation_penalty * self.correlation_weight)
+
+        # Ensure non-negative score
+        risk_adjusted_score = max(0.0, correlation_adjusted)
+
+        return float(risk_adjusted_score)
+
+    def _determine_strategy_status(self, risk_adjusted_score: float, strategy: Dict[str, Any]) -> str:
+        """
+        Determine strategy status based on performance metrics.
+        """
+        # Define thresholds
+        promotion_threshold = strategy.get('promotion_threshold', 0.7)
+        demotion_threshold = strategy.get('demotion_threshold', 0.3)
+        suspension_threshold = strategy.get('suspension_threshold', 0.15)
+
+        # Determine status based on risk-adjusted score
+        if risk_adjusted_score >= promotion_threshold:
+            return 'PROMOTED'
+        elif risk_adjusted_score >= demotion_threshold:
+            return 'ACTIVE'
+        elif risk_adjusted_score >= suspension_threshold:
+            return 'DEMOTED'
+        else:
+            return 'SUSPENDED'
+
+    def _calculate_allocations(self, evaluations: List[Dict[str, Any]]):
+        """
+        Calculate allocation percentages based on rankings and risk-adjusted scores.
+        """
+        # Filter to active strategies (not suspended or terminated)
+        active_evaluations = [e for e in evaluations if e['status'] not in ['SUSPENDED', 'TERMINATED']]
+
+        if not active_evaluations:
+            return
+
+        # Calculate total of risk-adjusted scores for active strategies
+        total_score = sum(e['risk_adjusted_score'] for e in active_evaluations)
+
+        if total_score <= 0:
+            # If all scores are zero or negative, distribute equally
+            equal_allocation = 1.0 / len(active_evaluations)
+            for eval_item in active_evaluations:
+                eval_item['allocation_percentage'] = min(self.max_allocation_per_strategy, equal_allocation)
+        else:
+            # Allocate proportionally to risk-adjusted scores
+            remaining_allocation = 1.0  # 100% of available allocation
+
+            # First pass: allocate based on proportional scores
+            for eval_item in active_evaluations:
+                proportional_allocation = (eval_item['risk_adjusted_score'] / total_score)
+                capped_allocation = min(self.max_allocation_per_strategy, proportional_allocation)
+                eval_item['allocation_percentage'] = capped_allocation
+
+                # Update remaining allocation
+                remaining_allocation -= capped_allocation
+
+            # Second pass: if there's remaining allocation, distribute to top performers
+            if remaining_allocation > 0:
+                # Distribute remaining allocation to top strategies
+                top_strategies = sorted(active_evaluations,
+                                      key=lambda x: x['risk_adjusted_score'],
+                                      reverse=True)[:self.max_strategies_per_selection]
+
+                for eval_item in top_strategies:
+                    additional_allocation = remaining_allocation / len(top_strategies)
+                    new_allocation = min(self.max_allocation_per_strategy,
+                                       eval_item['allocation_percentage'] + additional_allocation)
+                    eval_item['allocation_percentage'] = new_allocation
+                    remaining_allocation -= (new_allocation - (new_allocation - additional_allocation))
+
+    def select_top_strategies(self,
+                            evaluations: List[Dict[str, Any]],
+                            num_strategies: int = None) -> List[Dict[str, Any]]:
+        """
+        Select top N strategies based on risk-adjusted performance.
+        """
+        if num_strategies is None:
+            num_strategies = self.max_strategies_per_selection
+
+        # Filter to active strategies and sort by risk-adjusted score
+        active_strategies = [e for e in evaluations if e['status'] in ['PROMOTED', 'ACTIVE']]
+        active_strategies.sort(key=lambda x: x['risk_adjusted_score'], reverse=True)
+
+        # Return top N strategies
+        return active_strategies[:min(num_strategies, len(active_strategies))]
+
+    def update_strategy_performance(self,
+                                  strategy_name: str,
+                                  new_performance: Dict[str, Any],
+                                  strategy_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Update strategy performance data in the strategy list.
+        """
+        updated_strategies = []
+        updated = False
+
+        for strategy in strategy_list:
+            if strategy.get('name', '') == strategy_name:
+                # Update with new performance data
+                updated_strategy = strategy.copy()
+                updated_strategy.update(new_performance)
+                updated_strategy['performance_age_days'] = 0  # Reset age
+                updated_strategies.append(updated_strategy)
+                updated = True
+            else:
+                # Age other strategies' performance data
+                aged_strategy = strategy.copy()
+                current_age = aged_strategy.get('performance_age_days', 0)
+                aged_strategy['performance_age_days'] = current_age + 1
+                updated_strategies.append(aged_strategy)
+
+        if not updated:
+            # If strategy wasn't found, add it as new
+            new_strategy = {
+                'name': strategy_name,
+                'performance_age_days': 0,
+                **new_performance
+            }
+            updated_strategies.append(new_strategy)
+
+        return updated_strategies
 
 
 class StrategyManager:
@@ -32,6 +367,9 @@ class StrategyManager:
 
         # Register default strategies based on configuration
         self._register_default_strategies()
+
+        # Add the redesigned strategy selector
+        self.performance_ranked_selector = PerformanceRankedStrategySelector()
 
     def _register_default_strategies(self):
         """Register default strategies with the manager based on configuration."""

@@ -14,6 +14,292 @@ from .hierarchical.hierarchical_fusion_service import hierarchical_fusion_servic
 from .hierarchical.watcher_classifier import WatcherClassifier
 from .hierarchical.confidence_thresholds import ConfidenceThresholds
 from infrastructure.logging.forensic_logger import forensic_logger
+import numpy as np
+from scipy import stats
+
+
+class PerformanceAdaptiveFusionService:
+    """
+    Redesigned Fusion Service with performance-adaptive and correlation-penalizing mechanisms.
+
+    Mathematical Formula:
+    Weight_i = (Performance_Score_i * Stability_Factor_i * Regime_Adjustment_i) /
+               (1 + Correlation_Penalty_i) * Timeframe_Adjustment_i
+
+    Where:
+    - Performance_Score_i = f(historical_accuracy, recent_performance, consistency)
+    - Correlation_Penalty_i = sum(correlation_with_other_signals * penalty_factor)
+    - Stability_Factor_i = measure of signal consistency over time
+    - Regime_Adjustment_i = adjustment based on regime compatibility
+    - Timeframe_Adjustment_i = adjustment based on timeframe alignment
+    """
+
+    def __init__(self,
+                 correlation_penalty_factor: float = 0.3,
+                 performance_decay_factor: float = 0.95,
+                 stability_importance: float = 0.2,
+                 regime_importance: float = 0.2,
+                 timeframe_importance: float = 0.1):
+
+        self.correlation_penalty_factor = correlation_penalty_factor
+        self.performance_decay_factor = performance_decay_factor
+        self.stability_importance = stability_importance
+        self.regime_importance = regime_importance
+        self.timeframe_importance = timeframe_importance
+
+    def calculate_weights(self,
+                        signals: List[Dict[str, Any]],
+                        correlation_matrix: Optional[np.ndarray] = None,
+                        regime_context: str = "normal",
+                        timeframe: str = "H1") -> Dict[str, float]:
+        """
+        Calculate adaptive weights for fusion with correlation penalties.
+        """
+        signal_names = [signal.get('name', f'signal_{i}') for i, signal in enumerate(signals)]
+
+        # Calculate individual performance scores
+        performance_scores = self._calculate_performance_scores(signals)
+
+        # Calculate stability factors
+        stability_factors = self._calculate_stability_factors(signals)
+
+        # Calculate regime adjustments
+        regime_adjustments = self._calculate_regime_adjustments(signals, regime_context)
+
+        # Calculate timeframe adjustments
+        timeframe_adjustments = self._calculate_timeframe_adjustments(signals, timeframe)
+
+        # Calculate correlation penalties
+        correlation_penalties = self._calculate_correlation_penalties(
+            signal_names, correlation_matrix
+        )
+
+        # Calculate final weights
+        weights = {}
+        for i, name in enumerate(signal_names):
+            # Combine all factors
+            combined_score = (
+                performance_scores.get(name, 0.5) *
+                (1 + stability_factors.get(name, 0.0) * self.stability_importance) *
+                (1 + regime_adjustments.get(name, 0.0) * self.regime_importance) *
+                (1 + timeframe_adjustments.get(name, 0.0) * self.timeframe_importance)
+            )
+
+            # Apply correlation penalty
+            penalty = correlation_penalties.get(name, 0.0) * self.correlation_penalty_factor
+            penalized_score = combined_score / (1 + penalty)
+
+            weights[name] = max(0.0, penalized_score)  # Ensure non-negative weights
+
+        # Normalize weights to sum to 1
+        total_weight = sum(weights.values())
+        if total_weight > 0:
+            normalized_weights = {name: weight / total_weight for name, weight in weights.items()}
+        else:
+            # If all weights are zero, assign equal weights
+            normalized_weights = {name: 1.0 / len(signal_names) for name in signal_names}
+
+        return normalized_weights
+
+    def _calculate_performance_scores(self, signals: List[Dict[str, Any]]) -> Dict[str, float]:
+        """
+        Calculate performance scores based on historical accuracy and recent performance.
+        """
+        scores = {}
+        for signal in signals:
+            name = signal.get('name', 'unknown')
+
+            # Get historical performance metrics
+            historical_accuracy = signal.get('historical_accuracy', 0.5)
+            recent_performance = signal.get('recent_performance', 0.5)
+            consistency_score = signal.get('consistency_score', 0.5)
+
+            # Calculate weighted performance score
+            performance_score = (
+                0.4 * historical_accuracy +
+                0.4 * recent_performance +
+                0.2 * consistency_score
+            )
+
+            # Apply decay to older performance data
+            age_factor = signal.get('performance_age_factor', 1.0)
+            final_score = performance_score * (self.performance_decay_factor ** age_factor)
+
+            scores[name] = max(0.0, min(1.0, final_score))
+
+        return scores
+
+    def _calculate_stability_factors(self, signals: List[Dict[str, Any]]) -> Dict[str, float]:
+        """
+        Calculate stability factors based on signal consistency over time.
+        """
+        factors = {}
+        for signal in signals:
+            name = signal.get('name', 'unknown')
+
+            # Get stability metrics
+            variance = signal.get('variance', 0.1)  # Lower variance = more stable
+            trend_consistency = signal.get('trend_consistency', 0.5)
+            signal_noise_ratio = signal.get('signal_noise_ratio', 0.5)
+
+            # Calculate stability score (inverse of variance, plus other factors)
+            stability_score = (
+                (1.0 - min(1.0, variance * 10)) * 0.5 +  # Inverse of variance (clamped)
+                trend_consistency * 0.3 +
+                signal_noise_ratio * 0.2
+            )
+
+            factors[name] = max(-1.0, min(1.0, stability_score))
+
+        return factors
+
+    def _calculate_regime_adjustments(self, signals: List[Dict[str, Any]], regime_context: str) -> Dict[str, float]:
+        """
+        Calculate regime adjustments based on signal compatibility with current regime.
+        """
+        adjustments = {}
+        for signal in signals:
+            name = signal.get('name', 'unknown')
+
+            # Get regime compatibility scores
+            regime_compatibilities = signal.get('regime_compatibilities', {})
+            compatibility_score = regime_compatibilities.get(regime_context.lower(), 0.5)
+
+            # Apply regime-specific adjustment
+            if regime_context.lower() in ['trending_up', 'trending_down']:
+                # Trend-following signals get boost in trending markets
+                if 'trend' in name.lower() or 'momentum' in name.lower():
+                    compatibility_score = min(1.0, compatibility_score * 1.2)
+            elif regime_context.lower() in ['choppy', 'mean_reverting']:
+                # Mean-reversion signals get boost in choppy markets
+                if 'mean' in name.lower() or 'reversion' in name.lower() or 'rsi' in name.lower():
+                    compatibility_score = min(1.0, compatibility_score * 1.2)
+
+            adjustments[name] = max(-1.0, min(1.0, compatibility_score - 0.5))  # Center around 0
+
+        return adjustments
+
+    def _calculate_timeframe_adjustments(self, signals: List[Dict[str, Any]], timeframe: str) -> Dict[str, float]:
+        """
+        Calculate timeframe adjustments based on signal alignment with current timeframe.
+        """
+        adjustments = {}
+        for signal in signals:
+            name = signal.get('name', 'unknown')
+
+            # Get timeframe compatibility
+            signal_timeframes = signal.get('compatible_timeframes', [])
+            timeframe_match = 1.0 if timeframe in signal_timeframes else 0.5
+
+            # Apply adjustment based on timeframe alignment
+            if timeframe_match > 0.5:
+                # Signals compatible with current timeframe get positive adjustment
+                adjustments[name] = min(0.5, timeframe_match - 0.5)
+            else:
+                # Signals not compatible get negative adjustment
+                adjustments[name] = max(-0.5, timeframe_match - 0.5)
+
+        return adjustments
+
+    def _calculate_correlation_penalties(self,
+                                       signal_names: List[str],
+                                       correlation_matrix: Optional[np.ndarray] = None) -> Dict[str, float]:
+        """
+        Calculate correlation penalties based on inter-signal correlations.
+        """
+        penalties = {}
+
+        if correlation_matrix is not None and len(signal_names) > 1:
+            # Calculate average correlation for each signal with others
+            n = len(signal_names)
+            for i, name in enumerate(signal_names):
+                if i < correlation_matrix.shape[0]:
+                    # Sum correlations with all other signals (excluding self-correlation)
+                    correlations = []
+                    for j in range(n):
+                        if i != j and j < correlation_matrix.shape[1]:
+                            correlations.append(abs(correlation_matrix[i, j]))
+
+                    if correlations:
+                        avg_correlation = np.mean(correlations)
+                        penalties[name] = max(0.0, min(2.0, avg_correlation))  # Clamp penalty
+                    else:
+                        penalties[name] = 0.0
+                else:
+                    penalties[name] = 0.0
+        else:
+            # If no correlation matrix provided, use default penalties based on signal similarity
+            for name in signal_names:
+                # For now, assign minimal penalties if no correlation data
+                penalties[name] = 0.0
+
+        return penalties
+
+    def update_weights_over_time(self,
+                               current_weights: Dict[str, float],
+                               performance_updates: Dict[str, float],
+                               new_correlations: Optional[Dict[str, Dict[str, float]]] = None) -> Dict[str, float]:
+        """
+        Update weights based on new performance data and correlations.
+        """
+        updated_weights = current_weights.copy()
+
+        # Adjust weights based on performance updates
+        for name, perf_update in performance_updates.items():
+            if name in updated_weights:
+                # Apply performance-based adjustment
+                adjustment = perf_update * 0.1  # Small adjustment based on performance
+                updated_weights[name] = max(0.0, min(1.0, updated_weights[name] + adjustment))
+
+        # Recalculate correlation penalties if new correlation data provided
+        if new_correlations:
+            # Calculate new penalties based on updated correlations
+            for name in updated_weights.keys():
+                if name in new_correlations:
+                    # Sum correlations with other signals
+                    total_corr = sum(new_correlations[name].values())
+                    penalty = total_corr * self.correlation_penalty_factor
+                    # Apply penalty to weight
+                    updated_weights[name] = updated_weights[name] / (1 + penalty)
+
+        # Renormalize weights to sum to 1
+        total_weight = sum(updated_weights.values())
+        if total_weight > 0:
+            normalized_weights = {name: weight / total_weight for name, weight in updated_weights.items()}
+        else:
+            # If all weights become zero, assign equal weights
+            n_signals = len(updated_weights)
+            normalized_weights = {name: 1.0 / n_signals for name in updated_weights.keys()}
+
+        return normalized_weights
+
+    def suppress_noise(self, weights: Dict[str, float], signals: List[Dict[str, Any]],
+                      noise_threshold: float = 0.3) -> Dict[str, float]:
+        """
+        Suppress weights for noisy signals based on noise metrics.
+        """
+        suppressed_weights = weights.copy()
+
+        for i, signal in enumerate(signals):
+            name = signal.get('name', f'signal_{i}')
+
+            # Check if signal is too noisy
+            noise_level = signal.get('noise_level', 0.0)
+            if noise_level > noise_threshold:
+                # Reduce weight for noisy signals
+                suppression_factor = max(0.1, 1.0 - (noise_level - noise_threshold))
+                suppressed_weights[name] = weights[name] * suppression_factor
+
+        # Renormalize after suppression
+        total_weight = sum(suppressed_weights.values())
+        if total_weight > 0:
+            normalized_weights = {name: weight / total_weight for name, weight in suppressed_weights.items()}
+        else:
+            # If all weights are suppressed, assign equal weights
+            n_signals = len(suppressed_weights)
+            normalized_weights = {name: 1.0 / n_signals for name in suppressed_weights.keys()}
+
+        return normalized_weights
 
 
 class FusionService:
@@ -24,6 +310,9 @@ class FusionService:
         self.hierarchical_service = hierarchical_fusion_service
         self.watcher_classifier = WatcherClassifier()
         self.confidence_thresholds = ConfidenceThresholds()
+
+        # Add the redesigned fusion service
+        self.performance_adaptive_fusion = PerformanceAdaptiveFusionService()
 
     def fuse_signals(self, interpreted_signals: List[InterpretedSignal]) -> Optional[FusedSignal]:
         """Aggregate multiple interpreted signals into a single fused signal"""

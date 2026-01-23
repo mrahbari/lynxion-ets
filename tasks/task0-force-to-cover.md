@@ -7,6 +7,11 @@ You are strictly forbidden to:
 - Conclude that architecture is sound without execution proof
 - Use optimistic, hypothetical, or expectation-based reasoning
 
+CRITICAL CONSTRAINTS:
+- Prefer updating and extending EXISTING code files.
+- Creating NEW files is allowed ONLY if modification of existing files is not feasible.
+- If a new file is created, explicitly justify why existing files could not be safely extended.
+
 ### Mandatory Mindset
 
 You must operate under this principle:
