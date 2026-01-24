@@ -1034,63 +1034,11 @@ Watcher → Engine → Fusion → Strategy → Broker → Trade Close
 Each layer logs structured data with a unique trade ID for complete traceability.
 
 **Performance Considerations:**
+- All forensic logging is now controlled by the `FORENSIC_LOGGING_ENABLED` environment variable
+- No special execution path required - forensic logging works in all modes
 - When `FORENSIC_LOGGING_ENABLED=false`: Zero logging overhead for production performance
 - When `FORENSIC_LOGGING_ENABLED=true`: Detailed audit trail for analysis and optimization
 - Logs are written to `logs/forensic.log` in JSON format for easy parsing and analysis
-
-### Running with Forensic Governance
-
-The system includes a dedicated script for running the trading system with enhanced forensic logging and governance controls:
-
-```bash
-python run_with_forensics.py --mode production --strategy crypto_breakout --symbol BTCUSDT
-```
-
-**Available Modes:**
-- `--mode optimize`: Run hyperparameter optimization with forensic logging
-- `--mode backtest`: Run backtesting with complete forensic audit trail
-- `--mode retune`: Run auto-retune with forensic validation
-- `--mode monitor`: Run monitoring with forensic logging
-- `--mode production`: Run production trading with full forensic governance (default)
-- `--mode config-test`: Test configuration with forensic logging enabled
-
-**Additional Options:**
-- `--strategy`: Trading strategy to use (default: crypto_breakout)
-- `--symbol`: Trading pair symbol (default: BTC/USDT)
-- `--symbols`: Comma-separated list of symbols to trade
-- `--timeframe`: Timeframe for data (default: 1h)
-- `--max-evals`: Maximum number of hyperopt evaluations (default: 100)
-- `--days-back`: Number of days of historical data to use (default: 30)
-- `--verbose`: Enable verbose logging
-- `--log-dir`: Directory for log files (default: logs)
-- `--auto-detect`: Run in auto-detection mode (watcher detects opportunities and triggers strategies automatically)
-- `--comprehensive-logs`: Enable comprehensive logging with detailed background activity tracking
-
-**Forensic Logging Features:**
-- Enhanced logging with all mandatory fields per layer (watcher, engine, fusion, strategy, broker, broker_close)
-- Confidence calibration and statistical validation
-- Market regime detection and classification
-- Portfolio risk management and exposure tracking
-- Execution quality scoring and validation
-- Opportunity cost analysis and exit strategy effectiveness measurement
-- Complete audit trail with trace IDs for regulatory compliance
-
-**Example Usage:**
-```bash
-# Run production trading with full forensic logging
-python run_with_forensics.py --mode production --auto-detect --symbols BTCUSDT,ETHUSDT
-
-# Run backtesting with forensic audit trail
-python run_with_forensics.py --mode backtest --strategy trend_following --symbol BTCUSDT --days-back 180
-
-# Run optimization with forensic validation
-python run_with_forensics.py --mode optimize --strategy mean_reversion --symbols BTCUSDT,ETHUSDT --max-evals 200
-
-# Run configuration test with forensic logging enabled
-python run_with_forensics.py --mode config-test
-```
-
-The `run_with_forensics.py` script automatically enables forensic logging and includes all the enhanced logging fields required for institutional compliance and audit readiness.
 
 ---
 

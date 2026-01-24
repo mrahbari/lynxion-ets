@@ -10,6 +10,7 @@ import numpy as np
 from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager, PositionDirection
 from application.position_sizing.enterprise_position_sizing import PositionSizingService
 from infrastructure.market_regime.regime_detector import RegimeType
+from infrastructure.risk.advanced_sltp_manager import sltp_manager, AdvancedSLTPManager, RegimeType as SlTpRegimeType, PositionSide
 
 
 class AdvancedExecutionEngine:
@@ -35,55 +36,28 @@ class AdvancedExecutionEngine:
                                       signal_strength: float = 1.0, volatility: float = 1.0,
                                       regime_context: str = None, strategy_name: str = None) -> Tuple[float, float]:
         """
-        Calculate dynamic stop loss and take profit based on signal strength, volatility, regime, and strategy
+        Calculate dynamic stop loss and take profit - DEPRECATED: Use Risk Manager instead
         """
-        # Use ATR-like measure for stop loss calculation
-        atr_factor = volatility * 1.5  # 1.5x volatility for stop loss
+        # According to the risk governance rules, SL/TP calculation should only be done by the Risk module
+        # This method is deprecated and should not be used in production
+        # The actual calculation must be done by the Risk module.
 
-        # Adjust stop loss and take profit based on regime
-        if regime_context:
-            if regime_context in [RegimeType.HIGH_VOLATILITY.value, RegimeType.CHOPPY.value]:
-                # In high volatility/choppy regimes, use wider stops
-                atr_factor *= 1.5
-            elif regime_context in [RegimeType.TRENDING_UP.value, RegimeType.TRENDING_DOWN.value]:
-                # In trending regimes, use tighter stops for better risk management
-                atr_factor *= 0.8
+        # Return default values that will be overridden by the risk manager
+        # This is just a placeholder to maintain interface compatibility
 
-        # Adjust based on strategy-specific requirements
-        if strategy_name:
-            if 'breakout' in strategy_name.lower():
-                # For breakout strategies, use wider stops to avoid noise exits
-                atr_factor *= 1.3
-            elif 'mean_reversion' in strategy_name.lower():
-                # For mean reversion, use tighter stops as reversals can be sharp
-                atr_factor *= 0.9
-
-        # Calculate stop loss distance based on direction
+        # Default values based on direction
         if direction == PositionDirection.LONG:
-            sl_distance = atr_factor * signal_strength
-            sl = entry_price - sl_distance
-            # Take profit is typically 2-3x the risk distance, adjusted for regime
-            tp_distance = atr_factor * signal_strength * 2.0
-            if regime_context in [RegimeType.TRENDING_UP.value, RegimeType.TRENDING_DOWN.value]:
-                # In trending markets, allow for bigger targets
-                tp_distance *= 1.2
-            tp = entry_price + tp_distance
+            # For long positions: SL below entry, TP above entry
+            default_sl_distance = entry_price * 0.02  # 2% stop loss
+            default_tp_distance = entry_price * 0.03  # 3% take profit
+            sl = entry_price - default_sl_distance
+            tp = entry_price + default_tp_distance
         else:  # SHORT
-            sl_distance = atr_factor * signal_strength
-            sl = entry_price + sl_distance
-            tp_distance = atr_factor * signal_strength * 2.0
-            if regime_context in [RegimeType.TRENDING_UP.value, RegimeType.TRENDING_DOWN.value]:
-                # In trending markets, allow for bigger targets
-                tp_distance *= 1.2
-            tp = entry_price - tp_distance
-
-        # Ensure SL and TP are valid
-        if direction == PositionDirection.LONG:
-            sl = min(sl, entry_price * 0.95)  # Stop loss shouldn't be above entry for long
-            tp = max(tp, entry_price * 1.05)  # Take profit shouldn't be below entry for long
-        else:
-            sl = max(sl, entry_price * 1.05)  # Stop loss shouldn't be below entry for short
-            tp = min(tp, entry_price * 0.95)  # Take profit shouldn't be above entry for short
+            # For short positions: SL above entry, TP below entry
+            default_sl_distance = entry_price * 0.02  # 2% stop loss
+            default_tp_distance = entry_price * 0.03  # 3% take profit
+            sl = entry_price + default_sl_distance
+            tp = entry_price - default_tp_distance
 
         return sl, tp
 
@@ -110,9 +84,41 @@ class AdvancedExecutionEngine:
                 print(f"Execution blocked: Already have an active {direction.value} position for {symbol}")
                 return False
 
-        # Calculate stop loss and take profit with regime and strategy considerations
-        sl, tp = self.calculate_stop_loss_take_profit(entry_price, direction, signal_strength,
-                                                     volatility, regime_context, strategy_name)
+        # According to risk governance rules, stop loss and take profit should be calculated by the Risk module
+        # We'll delegate to the advanced SL/TP manager for proper calculation based on volatility and other factors
+
+        # Convert the regime context to the appropriate format for the SL/TP manager
+        sltp_regime = SlTpRegimeType.NORMAL
+        if regime_context:
+            if 'trending' in regime_context.lower():
+                sltp_regime = SlTpRegimeType.BULLISH_TRENDING if 'bullish' in regime_context.lower() else SlTpRegimeType.BEARISH_TRENDING
+            elif 'high_volatility' in regime_context.lower():
+                sltp_regime = SlTpRegimeType.HIGH_VOLATILITY
+            elif 'low_volatility' in regime_context.lower():
+                sltp_regime = SlTpRegimeType.LOW_VOLATILITY
+            elif 'choppy' in regime_context.lower():
+                sltp_regime = SlTpRegimeType.CHOPPY
+            elif 'breakout' in regime_context.lower():
+                sltp_regime = SlTpRegimeType.BREAKOUT
+
+        # Map PositionDirection to PositionSide for the SL/TP manager
+        if direction == PositionDirection.LONG:
+            position_side_for_sltp = PositionSide.LONG
+        else:  # PositionDirection.SHORT
+            position_side_for_sltp = PositionSide.SHORT
+
+        # Use the advanced SL/TP manager to calculate proper levels based on volatility and regime
+        sltp_result = sltp_manager.calculate_levels(
+            entry_price=entry_price,
+            position_side=position_side_for_sltp,
+            atr_value=volatility * entry_price,  # Convert volatility percentage to price-based ATR
+            regime=sltp_regime,
+            volatility=volatility,
+            trend_strength=signal_strength
+        )
+
+        sl = sltp_result.stop_loss
+        tp = sltp_result.take_profit
 
         # Calculate correlation penalty
         portfolio_symbols = list(self.risk_manager.positions.keys())

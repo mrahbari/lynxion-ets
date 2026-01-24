@@ -15,6 +15,7 @@ from domain.ports.strategy_ports import StrategyPort
 from shared.logger import EnhancedLogger
 from infrastructure.strategies.strategy_config import StrategyConfig
 from infrastructure.logging.forensic_logger import forensic_logger
+from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager
 
 
 class BaseStrategyAdapter(StrategyPort):
@@ -58,7 +59,7 @@ class BaseStrategyAdapter(StrategyPort):
         # Select appropriate strategy based on the fused signal
         strategy_name = self.select_strategy(fused_signal)
 
-        # Calculate comprehensive risk parameters using advanced risk management
+        # Request risk parameters from the strategy perspective (these will be validated by risk manager)
         risk_parameters = self._calculate_comprehensive_risk_parameters(fused_signal)
 
         # Create execution intent
@@ -79,17 +80,18 @@ class BaseStrategyAdapter(StrategyPort):
             }
         )
 
-        # Add stop loss and take profit prices directly to the execution intent
-        # This ensures the broker receives properly risk-managed orders
+        # The risk parameters contain the requested SL/TP values which will be processed by the risk manager
+        # However, we need to ensure that the execution intent has the SL/TP prices attached so the broker can use them
+        # The risk manager will ultimately validate and potentially adjust these values
         execution_intent.stop_loss_price = Money(
-            amount=float(risk_parameters.get('stop_loss_price', 0.0)),
+            amount=Decimal('0'),  # Placeholder - will be set by risk manager during position entry
             currency='USDT'
-        ) if risk_parameters.get('stop_loss_price') else None
+        )
 
         execution_intent.take_profit_price = Money(
-            amount=float(risk_parameters.get('take_profit_price', 0.0)),
+            amount=Decimal('0'),  # Placeholder - will be set by risk manager during position entry
             currency='USDT'
-        ) if risk_parameters.get('take_profit_price') else None
+        )
 
         # Generate trade ID for this execution
         trade_id = forensic_logger._generate_trade_id(fused_signal.symbol.value, getattr(fused_signal, 'exchange', 'BINANCE'))
@@ -104,7 +106,7 @@ class BaseStrategyAdapter(StrategyPort):
             'fused_signal_regime_context': fused_signal.regime_context,
             'fused_signal_confidence': float(fused_signal.confidence.value),
             'filters_passed': True,  # Would be determined by actual filter checks
-            'risk_profile_used': self.risk_parameters,
+            'risk_profile_requested': risk_parameters,
             'selected_strategy': self.select_strategy(fused_signal)
         }
 
@@ -146,7 +148,18 @@ class BaseStrategyAdapter(StrategyPort):
 
         # Check signal confidence against strategy threshold
         confidence = float(fused_signal.confidence.value)
-        return confidence >= min_confidence
+
+        # Log rejection reason if confidence is insufficient
+        if confidence < min_confidence:
+            self.logger.info(f"Trade rejected: "
+                           f"confidence={confidence:.2f} < "
+                           f"STRATEGY_MIN_CONFIDENCE_THRESHOLD={min_confidence:.2f} "
+                           f"source=strategy_adapter "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+
+        return True
 
     def select_strategy(self, fused_signal: FusedSignal) -> str:
         """Select the appropriate strategy based on the fused signal and market conditions"""
@@ -230,7 +243,7 @@ class BaseStrategyAdapter(StrategyPort):
             # Use bias as fallback
             return bias_side
 
-    def _calculate_comprehensive_risk_parameters(self, fused_signal: FusedSignal) -> Dict[str, Any]:
+    def _calculate_comprehensive_risk_parameters(self, fused_signal: FusedSignal, risk_manager: EnterpriseRiskManager = None) -> Dict[str, Any]:
         """Calculate comprehensive risk parameters based on the fused signal using advanced risk management"""
         # Get strategy-specific configuration
         current_price = 1.0  # Default price if not available
@@ -246,40 +259,26 @@ class BaseStrategyAdapter(StrategyPort):
                     if isinstance(current_price, (int, float)):
                         break
 
+        # If no risk manager is provided, we'll return basic parameters that will be processed by the risk manager later
+        # This ensures that the Strategy module only requests risk parameters but doesn't calculate them
         confidence_factor = float(fused_signal.confidence.value)
 
-        # Adjust position size based on confidence and strategy settings
-        position_size = min(
+        # Calculate requested position size based on confidence (this will be validated by risk manager)
+        requested_position_size = min(
             self.config['max_position_size'],
             self.config['max_position_size'] * confidence_factor
         )
 
-        # Calculate stop loss and take profit based on strategy parameters
-        stop_loss_pct = 0.02 * self.config['stop_loss_multiplier']  # Default 2% * multiplier
-        take_profit_pct = 0.03 * self.config['take_profit_multiplier']  # Default 3% * multiplier
-
-        # Adjust stop loss and take profit based on confidence
-        adjusted_stop_loss_pct = stop_loss_pct * (1.5 - confidence_factor)  # Tighter stops for higher confidence
-        adjusted_take_profit_pct = take_profit_pct * (1.0 + confidence_factor)  # Wider targets for higher confidence
-
-        # Calculate actual price levels
-        side = self._determine_side(fused_signal)
-        if side == 'BUY' or (hasattr(side, 'name') and side.name == 'BUY'):
-            stop_loss_price = current_price * (1 - adjusted_stop_loss_pct)
-            take_profit_price = current_price * (1 + adjusted_take_profit_pct)
-        else:  # SELL
-            stop_loss_price = current_price * (1 + adjusted_stop_loss_pct)
-            take_profit_price = current_price * (1 - adjusted_take_profit_pct)
-
+        # Strategy should only request risk parameters, not calculate them
+        # The actual calculation will be done by the risk manager
         risk_parameters = {
-            'max_position_size': position_size,
-            'stop_loss_pct': adjusted_stop_loss_pct,
-            'take_profit_pct': adjusted_take_profit_pct,
-            'stop_loss_price': stop_loss_price,
-            'take_profit_price': take_profit_price,
-            'risk_per_trade': self.config['risk_per_trade'] * position_size,
-            'max_position_exposure': 0.1 * position_size,  # 10% of position size max
-            'position_quantity': position_size * 10000 / current_price,  # Assuming $10k account for example
+            'requested_position_size': requested_position_size,
+            'strategy_confidence': confidence_factor,
+            'regime_context': fused_signal.regime_context,
+            'max_position_size': self.config['max_position_size'],
+            'risk_per_trade': self.config['risk_per_trade'],
+            'strategy_name': self.name,
+            'symbol': fused_signal.symbol.value if hasattr(fused_signal.symbol, 'value') else str(fused_signal.symbol)
         }
 
         return risk_parameters
@@ -308,7 +307,31 @@ class TrendFollowingStrategy(BaseStrategyAdapter):
         is_trending = 'trend' in fused_signal.regime_context.lower()
         has_direction = abs(fused_signal.direction) > 0.1
 
-        return confidence >= min_confidence and is_trending and has_direction
+        # Log specific rejection reason
+        if confidence < min_confidence:
+            self.logger.info(f"Trade rejected: "
+                           f"confidence={confidence:.2f} < "
+                           f"TREND_FOLLOWING_MIN_CONFIDENCE_THRESHOLD={min_confidence:.2f} "
+                           f"source=trend_following_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+        elif not is_trending:
+            self.logger.info(f"Trade rejected: "
+                           f"regime_context='{fused_signal.regime_context}' does not indicate trending market "
+                           f"source=trend_following_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+        elif not has_direction:
+            self.logger.info(f"Trade rejected: "
+                           f"direction={fused_signal.direction:.3f} is too weak (abs<{0.1}) "
+                           f"source=trend_following_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+
+        return True
 
 
 class MeanReversionStrategy(BaseStrategyAdapter):
@@ -333,7 +356,24 @@ class MeanReversionStrategy(BaseStrategyAdapter):
         confidence = float(fused_signal.confidence.value)
         is_reverting = 'mean' in fused_signal.regime_context.lower() or 'revert' in fused_signal.regime_context.lower()
 
-        return confidence >= min_confidence and is_reverting
+        # Log specific rejection reason
+        if confidence < min_confidence:
+            self.logger.info(f"Trade rejected: "
+                           f"confidence={confidence:.2f} < "
+                           f"MEAN_REVERSION_MIN_CONFIDENCE_THRESHOLD={min_confidence:.2f} "
+                           f"source=mean_reversion_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+        elif not is_reverting:
+            self.logger.info(f"Trade rejected: "
+                           f"regime_context='{fused_signal.regime_context}' does not indicate mean reversion "
+                           f"source=mean_reversion_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+
+        return True
 
 
 class VolatilityBreakoutStrategy(BaseStrategyAdapter):
@@ -357,4 +397,21 @@ class VolatilityBreakoutStrategy(BaseStrategyAdapter):
         confidence = float(fused_signal.confidence.value)
         is_volatile = 'volatile' in fused_signal.regime_context.lower() or 'breakout' in fused_signal.regime_context.lower()
 
-        return confidence >= min_confidence and is_volatile
+        # Log specific rejection reason
+        if confidence < min_confidence:
+            self.logger.info(f"Trade rejected: "
+                           f"confidence={confidence:.2f} < "
+                           f"VOLATILITY_BREAKOUT_MIN_CONFIDENCE_THRESHOLD={min_confidence:.2f} "
+                           f"source=volatility_breakout_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+        elif not is_volatile:
+            self.logger.info(f"Trade rejected: "
+                           f"regime_context='{fused_signal.regime_context}' does not indicate volatility breakout "
+                           f"source=volatility_breakout_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+
+        return True

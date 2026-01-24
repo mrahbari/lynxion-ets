@@ -38,34 +38,14 @@ class BaseStrategy(ABC):
             self.max_position = new_config['max_position']
     
     def calculate_position_size(self, signal: Signal, account_balance: float) -> float:
-        """Calculate position size based on risk management and signal confidence"""
-        # Base position size from config
-        base_size = account_balance * self.position_size
-        
-        # Adjust based on signal confidence (higher confidence = larger position)
-        confidence_factor = 0.5 + (signal.confidence * 0.5)  # Scale from 0.5 to 1.0
-        
-        # Adjust based on market conditions if provided in signal metadata
-        market_factor = 1.0
-        if signal.metadata:
-            # Reduce position size in high volatility
-            vol_regime = signal.metadata.get('volatility_regime', 'normal')
-            if vol_regime == 'high':
-                market_factor = 0.7
-            elif vol_regime == 'low':
-                market_factor = 1.2
-                
-            # Reduce position size when trend is not aligned
-            trend_aligned = signal.metadata.get('trend_aligned', True)
-            if not trend_aligned:
-                market_factor = 0.8
-        
-        final_size = base_size * confidence_factor * market_factor
-        
-        # Ensure position doesn't exceed maximum
-        final_size = min(final_size, self.max_position)
-        
-        return final_size
+        """Request position size - this should be handled by the risk manager"""
+        # According to the risk governance rules, the Strategy module should only
+        # request risk parameters but not calculate them. The actual calculation
+        # must be done by the Risk module.
+
+        # Return a default value that will be overridden by the risk manager
+        # This is just a placeholder to maintain interface compatibility
+        return 0.0
     
     def create_order(self, signal: Signal, quantity: float) -> Order:
         """Create an order based on signal"""

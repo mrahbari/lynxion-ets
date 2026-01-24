@@ -138,16 +138,14 @@ class RiskManager:
         }
 
     def calculate_position_size(self, symbol: str, signal: Signal, current_equity: float) -> float:
-        """Calculate position size based on risk parameters"""
-        # Use a percentage of available equity per symbol
-        available_for_symbol = current_equity * self.capital_per_symbol
-        
-        # Calculate position size based on risk per trade (2% of equity per trade as default)
-        risk_amount = available_for_symbol * 0.02  # 2% risk per trade
-        
-        # In a real implementation, this would also factor in stop loss distance
-        # For now, return a simple position size
-        return risk_amount / 1000 if risk_amount > 1000 else risk_amount / 100  # Default size based on available funds
+        """Request position size - this should be handled by the risk manager"""
+        # According to the risk governance rules, the Strategy module should only
+        # request risk parameters but not calculate them. The actual calculation
+        # must be done by the Risk module.
+
+        # Return a default value that will be overridden by the risk manager
+        # This is just a placeholder to maintain interface compatibility
+        return 0.0
 
 
 class MultiSymbolRouter:

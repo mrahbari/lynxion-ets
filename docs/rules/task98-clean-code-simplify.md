@@ -1,98 +1,120 @@
-- Always you must cover the rules and requirements that written in ./tasks/task0-force-to-cover.md
-- Do the analyzed the existing implementation, identified weaknesses, and implemented all the improvements
-You are a senior hedge-fund trading system architect.
+You are a senior hedge-fund trading system engineer.
 
-You are reviewing a production-grade algorithmic trading system with the following layers:
+You must comply with all rules and requirements defined in:
+./tasks/task0-force-to-cover.md
 
-Watcher → Engine → Fusion → Strategy → Risk → Broker → Forensic / Governance
+Your task is to REVIEW, AUDIT, and CLEAN the existing trading system codebase
+including:
+Watcher, Engine, Fusion, Strategy, Risk, Broker modules.
 
-Your task is NOT to add features.
-Your task is to REDUCE, SIMPLIFY, and HARDEN the system.
+Your goal is NOT to add features.
+Your goal is NOT to redesign architecture.
 
---------------------------------------------------
-OBJECTIVES
---------------------------------------------------
-
-1. Detect unnecessary code.
-2. Detect duplicated logic.
-3. Detect logic that belongs to the wrong layer.
-4. Detect over-engineering.
-5. Detect logic that produces no real trading value.
-6. Detect forensic / governance code that does not justify its runtime or complexity.
-7. Detect missing critical logic.
-8. Detect silent failure points.
-9. Detect places where behavior is unclear or ambiguous.
-10. Detect anything that increases complexity without increasing expectancy.
+Your goal is to ENFORCE strict risk governance
+and eliminate all structural risk violations.
 
 --------------------------------------------------
-FOR EACH MODULE
+CORE RISK AUTHORITY RULE
 --------------------------------------------------
 
-For each file, class, and major function:
+The Risk module is the ONLY authority allowed to:
+• Calculate Stop Loss distance
+• Calculate Take Profit distance
+• Calculate position size
+• Validate risk feasibility
 
-1. Explain its real trading purpose.
-2. State whether it is:
-   - Essential
-   - Useful but optional
-   - Over-engineered
-   - Redundant
-   - Removable
-3. Explain what will break if it is removed.
-4. Propose a simpler alternative if possible.
-5. Identify any duplicated responsibility.
+No other module may calculate or modify risk.
 
 --------------------------------------------------
-GLOBAL QUESTIONS YOU MUST ANSWER
+MANDATORY SEPARATION OF RESPONSIBILITIES
 --------------------------------------------------
 
-- Where is logic implemented more than once?
-- Where is logic implemented in the wrong layer?
-- Where does complexity exceed benefit?
-- Where is the system pretending to be institutional without real impact?
-- Where can we safely delete code?
-- Where are we missing real decision logic?
-- Where is behavior implicit instead of explicit?
-- Where does the system rely on assumptions instead of guarantees?
+• Strategy:
+  - May REQUEST risk parameters
+  - Must NEVER calculate SL, TP, size, or leverage
+
+• Fusion:
+  - May output direction and confidence ONLY
+  - Must NEVER influence risk distance or size
+
+• Engines & Watchers:
+  - Must NEVER know SL, TP, size, leverage, or capital
+
+• Broker:
+  - Must ONLY execute instructions validated by Risk
+  - Must NEVER override or modify risk parameters
 
 --------------------------------------------------
-FORENSIC & GOVERNANCE REVIEW
+RISK LOGIC REQUIREMENTS
 --------------------------------------------------
 
-Evaluate all forensic and governance components and classify each as:
+• Stop Loss:
+  - Must be derived from market volatility (ATR or equivalent)
+  - Must NOT be based on leverage or fixed percentages
 
-- Mandatory for production trading
-- Useful for research only
-- Nice-to-have but removable
-- Pure overhead
+• Take Profit:
+  - Must be derived from volatility and/or structural distance
+  - Must remain proportional to SL (RR governed, not arbitrary)
 
-Explain clearly:
+• Position Size:
+  - Must be calculated strictly as:
 
-- What trading or risk value each provides
-- Whether it is required in live production
-- Whether it can be disabled, simplified, or removed
+    position_size = risk_amount / stop_distance
 
---------------------------------------------------
-OUTPUT FORMAT
---------------------------------------------------
-
-1. Critical problems list
-2. Redundant code list
-3. Over-engineered components
-4. Missing essential logic
-5. Recommended deletions
-6. Recommended simplifications
-7. Final clean architecture summary
+• Leverage:
+  - Must NOT affect SL or TP distance
+  - Must ONLY affect margin usage
 
 --------------------------------------------------
-RULES
+WHAT TO CHECK
 --------------------------------------------------
 
-Do NOT rewrite the system.
-Do NOT redesign architecture.
-Do NOT add new layers.
+Audit the codebase and IDENTIFY:
 
-Only simplify, correct, and harden.
+• Any duplicated SL / TP / sizing logic across modules
+• Any SL or TP derived from leverage or fixed percentages
+• Any Strategy-side risk calculation
+• Any Broker-side risk modification
+• Any mismatch between stop distance and position size
 
-The goal is production robustness, not academic beauty.
+--------------------------------------------------
+WHAT TO FIX
+--------------------------------------------------
 
-Assume the system must scale to high frequency and high symbol count.
+• Remove duplicated risk logic
+• Centralize all risk computation inside Risk module
+• Replace invalid SL/TP logic with volatility-consistent logic
+• Ensure consistent risk-distance-to-size mapping
+• Preserve existing architecture and interfaces where possible
+
+--------------------------------------------------
+WHAT TO OUTPUT
+--------------------------------------------------
+
+1. A concise list of exact violations found (file + function)
+2. A clean, ordered risk calculation flow (sequence of calls)
+3. Corrected code blocks ONLY where change is mandatory
+4. Explicit confirmation that:
+   - SL is volatility-based
+   - TP is volatility/structure-consistent
+   - Position sizing is risk-based
+   - No duplicated logic remains
+
+--------------------------------------------------
+IMPORTANT CONSTRAINTS
+--------------------------------------------------
+
+• Do NOT redesign architecture
+• Do NOT add new modules
+• Do NOT add complexity
+• Modify existing code where possible
+
+The objective is SYSTEM STABILITY and CAPITAL PROTECTION,
+not feature richness or backtest beauty.
+
+--------------------------------------------------
+CRITICAL CONSTRAINTS:
+--------------------------------------------------
+- Prefer updating and extending EXISTING code files.
+- Creating NEW files is allowed ONLY if modification of existing files is not feasible.
+- If a new file is created, explicitly justify why existing files could not be safely extended.

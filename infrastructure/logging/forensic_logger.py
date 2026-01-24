@@ -16,10 +16,6 @@ from infrastructure.statistical_validation.statistical_authority_engine import s
 from infrastructure.statistical_validation.randomness_exposure_firewall import randomness_firewall, RandomnessExposureAlert
 from infrastructure.statistical_validation.decision_defensibility_validator import decision_validator, DecisionDefensibilityReport
 from infrastructure.statistical_validation.historical_data_tracker import historical_data_tracker
-# Import governance components separately to avoid circular imports
-from infrastructure.governance.decision_gate_controller import decision_gate_controller
-from infrastructure.governance.trade_classifier import trade_classifier, TradeClassification
-from infrastructure.governance.forensic_attribution_model import forensic_attribution_model
 
 
 class ForensicLogger:
@@ -110,31 +106,14 @@ class ForensicLogger:
                 historical_observations
             )
 
-        # Apply governance controls
-        gate_result, result_details = decision_gate_controller.evaluate_watcher_decision(
-            {"value": value, "confidence": confidence}, symbol
-        )
-
-        should_block = decision_gate_controller.should_block_decision(gate_result)
-        approval_multiplier = decision_gate_controller.get_approval_level_multiplier(
-            gate_result, result_details
-        )
-
-        # Classify the decision
-        from infrastructure.governance.decision_gate_controller import DecisionGateResult
-        if gate_result == DecisionGateResult.APPROVED_SCIENTIFIC:
-            classification = TradeClassification.SCIENTIFIC
-        elif gate_result == DecisionGateResult.APPROVED_PROBATIONARY:
-            classification = TradeClassification.PROBATIONARY
-        else:
-            classification = TradeClassification.RANDOM
-
+        # Governance controls have been removed for simplicity and reliability
+        # Always allow logging for audit purposes
         governance_result = {
-            "allowed": not should_block,
-            "classification": classification.value,
-            "approval_multiplier": approval_multiplier,
-            "gate_result": gate_result,
-            "result_details": result_details
+            "allowed": True,
+            "classification": "AUDIT_ONLY",  # Removed classification system
+            "approval_multiplier": 1.0,
+            "gate_result": "LOGGING_ALWAYS_ALLOWED",
+            "result_details": {"reason": "governance_removed_for_simplicity"}
         }
 
         log_entry = {
@@ -193,21 +172,20 @@ class ForensicLogger:
                 "decision_id": defensibility_report.decision_id
             }
 
-        # Only log if governance allows it
+        # Always log to forensic log regardless of governance decision
+        # Governance should only affect execution, not logging for audit purposes
+        self._log_structured(log_entry)
         if governance_result["allowed"]:
-            self._log_structured(log_entry)
             self.enhanced_logger.info(f"WATCHER OBSERVATION: {watcher} detected {observation_type} on {symbol} with confidence {confidence:.2%}")
         else:
             self.enhanced_logger.warning(f"WATCHER OBSERVATION BLOCKED: {watcher} detected {observation_type} on {symbol} - governance rejected")
 
-        # Add to historical data tracker regardless of governance decision
-        # This allows for learning and improvement of governance rules
+        # Add to historical data tracker
         historical_data_tracker.add_watcher_observation(symbol, {
             "value": value,
             "confidence": confidence,
             "timestamp": timestamp.isoformat() + "Z",
-            "was_correct": None,  # This would be updated later when outcome is known
-            "governance_classification": governance_result["classification"]
+            "was_correct": None  # This would be updated later when outcome is known
         })
 
         return log_entry
@@ -282,31 +260,14 @@ class ForensicLogger:
                 historical_interpretations
             )
 
-        # Apply governance controls
-        gate_result, result_details = decision_gate_controller.evaluate_engine_decision(
-            {"interpreted_signal": interpreted_signal, "confidence": confidence, "score": score}, symbol
-        )
-
-        should_block = decision_gate_controller.should_block_decision(gate_result)
-        approval_multiplier = decision_gate_controller.get_approval_level_multiplier(
-            gate_result, result_details
-        )
-
-        # Classify the decision
-        from infrastructure.governance.decision_gate_controller import DecisionGateResult
-        if gate_result == DecisionGateResult.APPROVED_SCIENTIFIC:
-            classification = TradeClassification.SCIENTIFIC
-        elif gate_result == DecisionGateResult.APPROVED_PROBATIONARY:
-            classification = TradeClassification.PROBATIONARY
-        else:
-            classification = TradeClassification.RANDOM
-
+        # Governance controls have been removed for simplicity and reliability
+        # Always allow logging for audit purposes
         governance_result = {
-            "allowed": not should_block,
-            "classification": classification.value,
-            "approval_multiplier": approval_multiplier,
-            "gate_result": gate_result,
-            "result_details": result_details
+            "allowed": True,
+            "classification": "AUDIT_ONLY",  # Removed classification system
+            "approval_multiplier": 1.0,
+            "gate_result": "LOGGING_ALWAYS_ALLOWED",
+            "result_details": {"reason": "governance_removed_for_simplicity"}
         }
 
         log_entry = {
@@ -370,22 +331,21 @@ class ForensicLogger:
                 "decision_id": defensibility_report.decision_id
             }
 
-        # Only log if governance allows it
+        # Always log to forensic log regardless of governance decision
+        # Governance should only affect execution, not logging for audit purposes
+        self._log_structured(log_entry)
         if governance_result["allowed"]:
-            self._log_structured(log_entry)
             self.enhanced_logger.info(f"ENGINE INTERPRETATION: {engine} interpreted {input_observation} as {interpreted_signal} on {symbol} with confidence {confidence:.2%}")
         else:
             self.enhanced_logger.warning(f"ENGINE INTERPRETATION BLOCKED: {engine} interpreted {input_observation} as {interpreted_signal} on {symbol} - governance rejected")
 
-        # Add to historical data tracker regardless of governance decision
-        # This allows for learning and improvement of governance rules
+        # Add to historical data tracker
         historical_data_tracker.add_engine_interpretation(symbol, {
             "interpreted_signal": interpreted_signal,
             "confidence": confidence,
             "score": score,
             "timestamp": timestamp.isoformat() + "Z",
-            "was_correct": None,  # This would be updated later when outcome is known
-            "governance_classification": governance_result["classification"]
+            "was_correct": None  # This would be updated later when outcome is known
         })
 
         return log_entry
@@ -456,31 +416,14 @@ class ForensicLogger:
                 historical_fusions
             )
 
-        # Apply governance controls
-        gate_result, result_details = decision_gate_controller.evaluate_fusion_decision(
-            {"fused_direction": fused_direction, "confidence": confidence, "contributors": contributors}, symbol
-        )
-
-        should_block = decision_gate_controller.should_block_decision(gate_result)
-        approval_multiplier = decision_gate_controller.get_approval_level_multiplier(
-            gate_result, result_details
-        )
-
-        # Classify the decision
-        from infrastructure.governance.decision_gate_controller import DecisionGateResult
-        if gate_result == DecisionGateResult.APPROVED_SCIENTIFIC:
-            classification = TradeClassification.SCIENTIFIC
-        elif gate_result == DecisionGateResult.APPROVED_PROBATIONARY:
-            classification = TradeClassification.PROBATIONARY
-        else:
-            classification = TradeClassification.RANDOM
-
+        # Governance controls have been removed for simplicity and reliability
+        # Always allow logging for audit purposes
         governance_result = {
-            "allowed": not should_block,
-            "classification": classification.value,
-            "approval_multiplier": approval_multiplier,
-            "gate_result": gate_result,
-            "result_details": result_details
+            "allowed": True,
+            "classification": "AUDIT_ONLY",  # Removed classification system
+            "approval_multiplier": 1.0,
+            "gate_result": "LOGGING_ALWAYS_ALLOWED",
+            "result_details": {"reason": "governance_removed_for_simplicity"}
         }
 
         log_entry = {
@@ -548,22 +491,21 @@ class ForensicLogger:
                 "decision_id": defensibility_report.decision_id
             }
 
-        # Only log if governance allows it
+        # Always log to forensic log regardless of governance decision
+        # Governance should only affect execution, not logging for audit purposes
+        self._log_structured(log_entry)
         if governance_result["allowed"]:
-            self._log_structured(log_entry)
             self.enhanced_logger.info(f"FUSION RESULT: Combined signals for {symbol} resulted in {fused_direction} with confidence {confidence:.2%}")
         else:
             self.enhanced_logger.warning(f"FUSION RESULT BLOCKED: Combined signals for {symbol} resulted in {fused_direction} - governance rejected")
 
-        # Add to historical data tracker regardless of governance decision
-        # This allows for learning and improvement of governance rules
+        # Add to historical data tracker
         historical_data_tracker.add_fusion_result(symbol, {
             "fused_direction": fused_direction,
             "confidence": confidence,
             "contributors": contributors,
             "timestamp": timestamp.isoformat() + "Z",
-            "was_correct": None,  # This would be updated later when outcome is known
-            "governance_classification": governance_result["classification"]
+            "was_correct": None  # This would be updated later when outcome is known
         })
 
         return log_entry
@@ -616,31 +558,14 @@ class ForensicLogger:
                 historical_decisions
             )
 
-        # Apply governance controls
-        gate_result, result_details = decision_gate_controller.evaluate_strategy_decision(
-            {"strategy": strategy, "decision": decision, "confidence": confidence}, symbol
-        )
-
-        should_block = decision_gate_controller.should_block_decision(gate_result)
-        approval_multiplier = decision_gate_controller.get_approval_level_multiplier(
-            gate_result, result_details
-        )
-
-        # Classify the decision
-        from infrastructure.governance.decision_gate_controller import DecisionGateResult
-        if gate_result == DecisionGateResult.APPROVED_SCIENTIFIC:
-            classification = TradeClassification.SCIENTIFIC
-        elif gate_result == DecisionGateResult.APPROVED_PROBATIONARY:
-            classification = TradeClassification.PROBATIONARY
-        else:
-            classification = TradeClassification.RANDOM
-
+        # Governance controls have been removed for simplicity and reliability
+        # Always allow logging for audit purposes
         governance_result = {
-            "allowed": not should_block,
-            "classification": classification.value,
-            "approval_multiplier": approval_multiplier,
-            "gate_result": gate_result,
-            "result_details": result_details
+            "allowed": True,
+            "classification": "AUDIT_ONLY",  # Removed classification system
+            "approval_multiplier": 1.0,
+            "gate_result": "LOGGING_ALWAYS_ALLOWED",
+            "result_details": {"reason": "governance_removed_for_simplicity"}
         }
 
         log_entry = {
@@ -708,23 +633,22 @@ class ForensicLogger:
                 "decision_id": defensibility_report.decision_id
             }
 
-        # Only log if governance allows it
+        # Always log to forensic log regardless of governance decision
+        # Governance should only affect execution, not logging for audit purposes
+        self._log_structured(log_entry)
         if governance_result["allowed"]:
-            self._log_structured(log_entry)
             self.enhanced_logger.info(f"STRATEGY DECISION: {strategy} decided {decision} for {symbol} (Trade ID: {trade_id}) with confidence {confidence:.2%}")
         else:
             self.enhanced_logger.warning(f"STRATEGY DECISION BLOCKED: {strategy} decided {decision} for {symbol} (Trade ID: {trade_id}) - governance rejected")
 
-        # Add to historical data tracker regardless of governance decision
-        # This allows for learning and improvement of governance rules
+        # Add to historical data tracker
         historical_data_tracker.add_strategy_decision(symbol, {
             "strategy": strategy,
             "decision": decision,
             "confidence": confidence,
             "trade_id": trade_id,
             "timestamp": timestamp.isoformat() + "Z",
-            "was_profitable": None,  # This would be updated later when trade closes
-            "governance_classification": governance_result["classification"]
+            "was_profitable": None  # This would be updated later when trade closes
         })
 
         return log_entry
@@ -781,31 +705,14 @@ class ForensicLogger:
                 historical_executions
             )
 
-        # Apply governance controls
-        gate_result, result_details = decision_gate_controller.evaluate_broker_decision(
-            {"slippage": slippage, "side": side, "price": price, "quantity": quantity}, symbol
-        )
-
-        should_block = decision_gate_controller.should_block_decision(gate_result)
-        approval_multiplier = decision_gate_controller.get_approval_level_multiplier(
-            gate_result, result_details
-        )
-
-        # Classify the decision
-        from infrastructure.governance.decision_gate_controller import DecisionGateResult
-        if gate_result == DecisionGateResult.APPROVED_SCIENTIFIC:
-            classification = TradeClassification.SCIENTIFIC
-        elif gate_result == DecisionGateResult.APPROVED_PROBATIONARY:
-            classification = TradeClassification.PROBATIONARY
-        else:
-            classification = TradeClassification.RANDOM
-
+        # Governance controls have been removed for simplicity and reliability
+        # Always allow logging for audit purposes
         governance_result = {
-            "allowed": not should_block,
-            "classification": classification.value,
-            "approval_multiplier": approval_multiplier,
-            "gate_result": gate_result,
-            "result_details": result_details
+            "allowed": True,
+            "classification": "AUDIT_ONLY",  # Removed classification system
+            "approval_multiplier": 1.0,
+            "gate_result": "LOGGING_ALWAYS_ALLOWED",
+            "result_details": {"reason": "governance_removed_for_simplicity"}
         }
 
         log_entry = {
@@ -876,23 +783,22 @@ class ForensicLogger:
                 "decision_id": defensibility_report.decision_id
             }
 
-        # Only log if governance allows it
+        # Always log to forensic log regardless of governance decision
+        # Governance should only affect execution, not logging for audit purposes
+        self._log_structured(log_entry)
         if governance_result["allowed"]:
-            self._log_structured(log_entry)
             self.enhanced_logger.info(f"BROKER EXECUTION: Executed {side} order for {quantity} {trade_id.split('_')[0]} at ${price:.2f} (Trade ID: {trade_id})")
         else:
             self.enhanced_logger.warning(f"BROKER EXECUTION BLOCKED: {side} order for {quantity} {trade_id.split('_')[0]} at ${price:.2f} (Trade ID: {trade_id}) - governance rejected")
 
-        # Add to historical data tracker regardless of governance decision
-        # This allows for learning and improvement of governance rules
+        # Add to historical data tracker
         historical_data_tracker.add_broker_execution(symbol, {
             "trade_id": trade_id,
             "side": side,
             "price": price,
             "slippage": slippage,
             "timestamp": timestamp.isoformat() + "Z",
-            "success": True,  # This would be updated if execution fails
-            "governance_classification": governance_result["classification"]
+            "success": True  # This would be updated if execution fails
         })
 
         return log_entry
@@ -943,12 +849,11 @@ class ForensicLogger:
                 historical_closures
             )
 
-        # Apply governance controls
-        # Note: For broker close, we still want to log the close event for record keeping,
-        # but we can still apply governance for analysis purposes
+        # Governance controls have been removed for simplicity and reliability
+        # Always allow close events to be logged for audit purposes
         governance_result = {
             "allowed": True,  # Always allow close events to be logged
-            "classification": "POST_TRADE_ANALYSIS",  # Special classification for post-trade analysis
+            "classification": "AUDIT_ONLY",  # Removed classification system
             "approval_multiplier": 1.0
         }
 
@@ -1010,6 +915,8 @@ class ForensicLogger:
                 "decision_id": defensibility_report.decision_id
             }
 
+        # Always log broker close events regardless of governance decision
+        # This is already set to always log, but maintaining consistency
         self._log_structured(log_entry)
         self.enhanced_logger.info(f"BROKER CLOSE: Trade {trade_id} closed with PnL ${pnl:.2f} ({roi_pct:.2%} ROI) after {holding_seconds}s")
 
@@ -1020,8 +927,7 @@ class ForensicLogger:
             "roi_pct": roi_pct,
             "exit_reason": exit_reason,
             "timestamp": timestamp.isoformat() + "Z",
-            "was_profitable": pnl > 0,
-            "governance_classification": governance_result["classification"]
+            "was_profitable": pnl > 0
         })
 
         return log_entry
@@ -1053,4 +959,4 @@ class JsonFormatter(logging.Formatter):
 
 
 # Global forensic logger instance
-forensic_logger = ForensicLogger(enabled=os.getenv('FORENSIC_LOGGING_ENABLED', 'true').lower() == 'true')
+forensic_logger = ForensicLogger(enabled=os.getenv('FORENSIC_LOGGING_ENABLED', 'true').lower() in ['true', '1', 'yes'])

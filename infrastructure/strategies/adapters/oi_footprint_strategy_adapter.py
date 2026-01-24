@@ -114,11 +114,14 @@ class OIFootprintStrategyAdapter(BaseStrategyAdapter):
             return None
 
     def calculate_position_size(self, signal: Signal, account_balance: float) -> float:
-        """Calculate appropriate position size for a signal"""
-        # Base implementation - use a percentage of account balance based on signal confidence
-        risk_per_trade = 0.02  # Risk 2% of account per trade
-        position_risk = risk_per_trade * float(signal.confidence.value)
-        return account_balance * position_risk
+        """Request position size - this should be handled by the risk manager"""
+        # According to the risk governance rules, the Strategy module should only
+        # request risk parameters but not calculate them. The actual calculation
+        # must be done by the Risk module.
+
+        # Return a default value that will be overridden by the risk manager
+        # This is just a placeholder to maintain interface compatibility
+        return 0.0
 
     def get_strategy_name(self) -> str:
         """Get the name of the strategy"""

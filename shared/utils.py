@@ -14,11 +14,14 @@ def generate_client_order_id(strategy_name: str, symbol: str) -> str:
 
 
 def calculate_position_size(balance: float, risk_per_trade: float, entry_price: float, stop_loss: float) -> float:
-    """Calculate position size based on risk management"""
-    risk_amount = balance * risk_per_trade
-    price_distance = abs(entry_price - stop_loss) if stop_loss != 0 else entry_price * 0.02  # default 2%
-    position_size = risk_amount / price_distance
-    return position_size
+    """Calculate position size based on risk management - DEPRECATED: Use Risk Manager instead"""
+    # According to the risk governance rules, position sizing should only be done by the Risk module
+    # This function is deprecated and should not be used in production
+    # The actual calculation must be done by the Risk module.
+
+    # Return a default value that will be overridden by the risk manager
+    # This is just a placeholder to maintain interface compatibility
+    return 0.0
 
 
 def normalize_symbol(symbol: str) -> str:

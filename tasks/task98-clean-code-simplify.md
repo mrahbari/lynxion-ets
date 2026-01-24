@@ -111,3 +111,10 @@ IMPORTANT CONSTRAINTS
 
 The objective is SYSTEM STABILITY and CAPITAL PROTECTION,
 not feature richness or backtest beauty.
+
+--------------------------------------------------
+CRITICAL CONSTRAINTS:
+--------------------------------------------------
+- Prefer updating and extending EXISTING code files.
+- Creating NEW files is allowed ONLY if modification of existing files is not feasible.
+- If a new file is created, explicitly justify why existing files could not be safely extended.

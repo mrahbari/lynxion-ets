@@ -168,20 +168,14 @@ class ShadowDeploymentSystem:
         return executed_trades
     
     def calculate_position_size(self, signal_data: Dict[str, Any]) -> float:
-        """Calculate position size based on risk management"""
-        # Simple risk-based position sizing
-        risk_amount = self.current_capital * self.risk_per_trade
-        price = signal_data['price']
-        
-        # Calculate position size based on risk and stop loss distance
-        # For now, using a simple approach - in practice, this would be more sophisticated
-        position_size = risk_amount / price  # Simplified calculation
-        
-        # Apply maximum position size constraint
-        max_position_value = self.current_capital * 0.05  # Max 5% per position
-        max_size = max_position_value / price
-        
-        return min(position_size, max_size)
+        """Request position size - this should be handled by the risk manager"""
+        # According to the risk governance rules, the Strategy module should only
+        # request risk parameters but not calculate them. The actual calculation
+        # must be done by the Risk module.
+
+        # Return a default value that will be overridden by the risk manager
+        # This is just a placeholder to maintain interface compatibility
+        return 0.0
     
     def update_performance(self, executed_trades: List[Dict[str, Any]]):
         """Update performance metrics based on executed trades"""

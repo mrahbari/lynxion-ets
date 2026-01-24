@@ -73,10 +73,22 @@ class ConfidenceValidator:
     @staticmethod
     def validate_observation(observation, watcher_name: str) -> Dict[str, any]:
         """Validate an observation against confidence thresholds"""
+        from shared.logger import EnhancedLogger
+        logger = EnhancedLogger("ConfidenceValidator")
+
         threshold = ConfidenceThresholds.get_threshold(watcher_name)
         current_confidence = float(observation.confidence.value)
         meets_threshold = current_confidence >= threshold
-        
+
+        # Log rejection if threshold not met
+        if not meets_threshold:
+            logger.info(f"Observation rejected: "
+                      f"confidence={current_confidence:.2f} < "
+                      f"{watcher_name.upper()}_CONFIDENCE_THRESHOLD={threshold:.2f} "
+                      f"source=confidence_validator "
+                      f"watcher={watcher_name} "
+                      f"symbol={observation.symbol.value if hasattr(observation.symbol, 'value') else str(observation.symbol)}")
+
         return {
             'watcher_name': watcher_name,
             'confidence': current_confidence,
@@ -89,24 +101,37 @@ class ConfidenceValidator:
     @staticmethod
     def filter_confident_observations(observations_with_watchers):
         """Filter out observations that don't meet confidence thresholds"""
+        from shared.logger import EnhancedLogger
+        logger = EnhancedLogger("ConfidenceValidator")
+
         confident_observations = []
         discarded_observations = []
-        
+
         for obs_data in observations_with_watchers:
             observation = obs_data['observation']
             watcher_name = obs_data['watcher_name']
-            
+
             is_confident = ConfidenceThresholds.is_confident_enough(watcher_name, observation.confidence)
-            
+            current_confidence = float(observation.confidence.value)
+            threshold = ConfidenceThresholds.get_threshold(watcher_name)
+
             if is_confident:
                 confident_observations.append(obs_data)
             else:
+                # Log the rejection with exact details
+                logger.info(f"Observation rejected: "
+                          f"confidence={current_confidence:.2f} < "
+                          f"{watcher_name.upper()}_CONFIDENCE_THRESHOLD={threshold:.2f} "
+                          f"source=confidence_validator "
+                          f"watcher={watcher_name} "
+                          f"symbol={observation.symbol.value if hasattr(observation.symbol, 'value') else str(observation.symbol)}")
+
                 discarded_observations.append({
                     **obs_data,
                     'reason': 'confidence_below_threshold',
-                    'threshold': ConfidenceThresholds.get_threshold(watcher_name)
+                    'threshold': threshold
                 })
-        
+
         return confident_observations, discarded_observations
 
 
