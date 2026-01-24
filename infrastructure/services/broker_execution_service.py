@@ -409,17 +409,53 @@ class BrokerExecutionService(ExecutionPort):
         # Create risk management service instance
         risk_service = AdvancedRiskManagementService()
 
-        # Create a dummy fused signal for risk calculation
+        # Try to get fused signal information from the order, otherwise create a default one
         from domain.entities.signal_entities import FusedSignal, SignalBias
         from domain.value_objects import Percentage
-        dummy_fused_signal = FusedSignal(
+
+        # Check if order has parent signal information
+        if hasattr(order, 'parent_signal') and order.parent_signal:
+            # Use information from the parent signal if available
+            parent_signal = order.parent_signal
+            direction = getattr(parent_signal, 'direction', 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1)
+            confidence = getattr(parent_signal, 'confidence', Percentage(0.6))
+            dominant_bias = getattr(parent_signal, 'dominant_bias', SignalBias.BULLISH if hasattr(order, 'side') and order.side.name == 'BUY' else SignalBias.BEARISH)
+            regime_context = getattr(parent_signal, 'regime_context', "normal")
+            dominance_score = getattr(parent_signal, 'dominance_score', 0.5)
+        elif hasattr(order, 'fused_signal') and order.fused_signal:
+            # Check if order has fused signal directly attached
+            fused_signal_attr = order.fused_signal
+            direction = getattr(fused_signal_attr, 'direction', 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1)
+            confidence = getattr(fused_signal_attr, 'confidence', Percentage(0.6))
+            dominant_bias = getattr(fused_signal_attr, 'dominant_bias', SignalBias.BULLISH if hasattr(order, 'side') and order.side.name == 'BUY' else SignalBias.BEARISH)
+            regime_context = getattr(fused_signal_attr, 'regime_context', "normal")
+            dominance_score = getattr(fused_signal_attr, 'dominance_score', 0.5)
+        elif hasattr(order, 'metadata') and order.metadata:
+            # Check if order has signal information in metadata
+            metadata = order.metadata
+            direction = metadata.get('signal_direction', 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1)
+            confidence_val = metadata.get('signal_confidence', 0.6)
+            confidence = Percentage(confidence_val)
+            dominant_bias_str = metadata.get('dominant_bias', 'BULLISH' if hasattr(order, 'side') and order.side.name == 'BUY' else 'BEARISH')
+            dominant_bias = SignalBias.BULLISH if 'BULLISH' in dominant_bias_str.upper() else SignalBias.BEARISH
+            regime_context = metadata.get('regime_context', "normal")
+            dominance_score = metadata.get('dominance_score', 0.5)
+        else:
+            # Create default values based on order information
+            direction = 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1
+            confidence = Percentage(0.6)  # Default confidence
+            dominant_bias = SignalBias.BULLISH if hasattr(order, 'side') and order.side.name == 'BUY' else SignalBias.BEARISH
+            regime_context = "normal"
+            dominance_score = 0.5
+
+        fused_signal = FusedSignal(
             symbol=order.symbol,
-            direction=0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1,  # Default direction based on side
-            confidence=Percentage(0.6),  # Default confidence
-            dominant_bias=SignalBias.BULLISH if hasattr(order, 'side') and order.side.name == 'BUY' else SignalBias.BEARISH,
-            regime_context="normal",
+            direction=direction,
+            confidence=confidence,
+            dominant_bias=dominant_bias,
+            regime_context=regime_context,
             timestamp=datetime.now(),
-            dominance_score=0.5
+            dominance_score=dominance_score
         )
 
         # Calculate position size and risk factors
@@ -431,17 +467,31 @@ class BrokerExecutionService(ExecutionPort):
                 symbol=order.symbol,
                 price=entry_price,
                 portfolio_value=portfolio_value,
-                fused_signal=dummy_fused_signal
+                fused_signal=fused_signal,
+                market_data=market_data
             )
 
             # Determine position side based on order side
             position_side = 'LONG' if hasattr(order, 'side') and order.side.name == 'BUY' else 'SHORT'
 
+            # Try to get real market data for more accurate risk calculations
+            market_data = None
+            try:
+                # Attempt to get market data from the data loader if available
+                if hasattr(self, 'data_loader') and self.data_loader:
+                    # Get recent market data for ATR calculation
+                    market_data = self.data_loader.get_recent_data(order.symbol, limit=50)
+            except:
+                # If data loader is not available or fails, continue with placeholder
+                pass
+
             # Calculate SL/TP levels
             sl_price, tp_price = risk_service.calculate_sl_tp_levels(
                 entry_price=entry_price,
                 position_side=position_side,
-                risk_adjustment_factors=risk_factors
+                risk_adjustment_factors=risk_factors,
+                atr_value=None,  # Will be calculated from market_data if available
+                market_data=market_data
             )
 
             # Create enhanced order with SL/TP if they were missing
