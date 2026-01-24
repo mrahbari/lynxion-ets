@@ -787,9 +787,9 @@ class ForensicLogger:
         # Governance should only affect execution, not logging for audit purposes
         self._log_structured(log_entry)
         if governance_result["allowed"]:
-            self.enhanced_logger.info(f"BROKER EXECUTION: Executed {side} order for {quantity} {trade_id.split('_')[0]} at ${price:.2f} (Trade ID: {trade_id})")
+            self.enhanced_logger.info(f"BROKER EXECUTION: Executed {side} order for {quantity} {str(trade_id).split('_')[0]} at ${price:.2f} (Trade ID: {trade_id})")
         else:
-            self.enhanced_logger.warning(f"BROKER EXECUTION BLOCKED: {side} order for {quantity} {trade_id.split('_')[0]} at ${price:.2f} (Trade ID: {trade_id}) - governance rejected")
+            self.enhanced_logger.warning(f"BROKER EXECUTION BLOCKED: {side} order for {quantity} {str(trade_id).split('_')[0]} at ${price:.2f} (Trade ID: {trade_id}) - governance rejected")
 
         # Add to historical data tracker
         historical_data_tracker.add_broker_execution(symbol, {
@@ -935,10 +935,13 @@ class ForensicLogger:
 
 def symbol_from_trade_id(trade_id: str) -> str:
     """Extract symbol from trade_id in format SYMBOL_EXCHANGE_TIMESTAMP"""
-    parts = trade_id.split('_')
+    # Convert to string in case an integer is passed
+    trade_id_str = str(trade_id)
+    parts = trade_id_str.split('_')
     if len(parts) >= 2:
         return parts[0]  # Return the symbol part
-    return "UNKNOWN"
+    # If no underscore is found, return the whole string as symbol
+    return trade_id_str
 
 
 class JsonFormatter(logging.Formatter):

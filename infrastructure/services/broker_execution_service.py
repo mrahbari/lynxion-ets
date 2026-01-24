@@ -11,6 +11,7 @@ from domain.enums.broker_enum import BrokerType
 from shared.logger import EnhancedLogger
 import os
 import threading
+from datetime import datetime
 from infrastructure.logging.forensic_logger import forensic_logger
 
 
@@ -364,7 +365,7 @@ class BrokerExecutionService(ExecutionPort):
                     slippage=0.0,  # Slippage would need to be calculated based on execution
                     validation_checks=validation_checks,
                     order_status_lifecycle=['NEW', 'ACCEPTED', 'FILLED'],  # Would be updated based on actual lifecycle
-                    timestamp=datetime.utcnow()
+                    timestamp=datetime.now()
                 )
 
                 # Send Telegram notification about successful order placement
