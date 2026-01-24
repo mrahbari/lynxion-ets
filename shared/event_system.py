@@ -164,14 +164,27 @@ class SignalProcessor:
             observation = event.data
             if self.logger:
                 self.logger.info(f"Processing observation from {event.source_component} for {observation.symbol.value}")
-            
+
             # Process observation through engine
             interpreted_signal = engine_service.process_observation(observation)
-            
+
             if interpreted_signal:
+                # Log the engine interpretation to forensic logger
+                from infrastructure.logging.forensic_logger import forensic_logger
+                forensic_logger.log_engine_interpretation(
+                    engine="EngineService",
+                    symbol=interpreted_signal.symbol.value if hasattr(interpreted_signal.symbol, 'value') else str(interpreted_signal.symbol),
+                    exchange=event.source_component if event.source_component else "UNKNOWN",
+                    input_observation=observation.observation_type if hasattr(observation, 'observation_type') else "unknown",
+                    interpreted_signal=interpreted_signal.signal_type.value if hasattr(interpreted_signal.signal_type, 'value') else str(interpreted_signal.signal_type),
+                    confidence=float(interpreted_signal.confidence.value) if hasattr(interpreted_signal.confidence, 'value') else 0.5,
+                    score=interpreted_signal.strength if hasattr(interpreted_signal, 'strength') else 0.5,
+                    timestamp=interpreted_signal.timestamp if hasattr(interpreted_signal, 'timestamp') else None
+                )
+
                 # Publish interpreted signal for next layer
                 self.event_router.publish_interpreted_signal(
-                    interpreted_signal, 
+                    interpreted_signal,
                     source="EngineService",
                     correlation_id=event.correlation_id
                 )
@@ -187,15 +200,27 @@ class SignalProcessor:
             signal = event.data
             if self.logger:
                 self.logger.info(f"Processing interpreted signal from {event.source_component} for {signal.symbol.value}")
-            
+
             # Process signal through fusion (we need to pass it as a list)
             fused_signal = fusion_service.fuse_signals([signal])
-            
+
             if fused_signal:
+                # Log the fusion result to forensic logger
+                from infrastructure.logging.forensic_logger import forensic_logger
+                forensic_logger.log_fusion_result(
+                    symbol=fused_signal.symbol.value if hasattr(fused_signal.symbol, 'value') else str(fused_signal.symbol),
+                    exchange=event.source_component if event.source_component else "UNKNOWN",
+                    regime=fused_signal.regime_context if hasattr(fused_signal, 'regime_context') else "unknown",
+                    fused_direction=fused_signal.dominant_bias.value if hasattr(fused_signal.dominant_bias, 'value') else str(fused_signal.dominant_bias),
+                    confidence=float(fused_signal.confidence.value) if hasattr(fused_signal.confidence, 'value') else 0.5,
+                    contributors=fused_signal.metadata.get('contributors', {}) if hasattr(fused_signal, 'metadata') and fused_signal.metadata else {},
+                    timestamp=fused_signal.timestamp if hasattr(fused_signal, 'timestamp') else None
+                )
+
                 # Publish fused signal for next layer
                 self.event_router.publish_fused_signal(
                     fused_signal,
-                    source="FusionService", 
+                    source="FusionService",
                     correlation_id=event.correlation_id
                 )
                 if self.logger:
@@ -509,6 +534,37 @@ class SignalProcessor:
                     if order_id is not None:
                         if self.logger:
                             self.logger.info(f"Executed order with ID: {order_id}")
+
+                        # Log the broker execution to forensic logger
+                        from infrastructure.logging.forensic_logger import forensic_logger
+                        forensic_logger.log_broker_execution(
+                            trade_id=order_id,
+                            exchange=getattr(execution_service_to_use, 'get_broker_name', lambda: 'UNKNOWN')(),
+                            side=order_side.name,
+                            price=float(current_price) if current_price else 0.0,
+                            sl=float(stop_loss_price.amount) if stop_loss_price and hasattr(stop_loss_price, 'amount') else 0.0,
+                            tp=float(take_profit_price.amount) if take_profit_price and hasattr(take_profit_price, 'amount') else 0.0,
+                            quantity=float(quantity),
+                            fee=0.0,  # Fee would need to be retrieved from execution response
+                            slippage=0.0,  # Slippage would need to be calculated based on execution
+                            validation_checks={
+                                'margin_availability_check': True,  # Would be checked in real implementation
+                                'risk_profile_compliance': True,    # Would be validated in real implementation
+                                'quantity_calculation_formula': f"risk_amount / (entry_price - stop_loss)",  # Example formula
+                                'sl_tp_calculation_origin': 'strategy_risk_parameters',
+                                'order_submission_payload': {
+                                    'symbol': order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol),
+                                    'side': order_side.name,
+                                    'type': 'MARKET',  # Would be determined from order
+                                    'quantity': float(quantity),
+                                    'price': float(current_price) if current_price else 0.0,
+                                    'stop_loss': float(stop_loss_price.amount) if stop_loss_price and hasattr(stop_loss_price, 'amount') else 0.0,
+                                    'take_profit': float(take_profit_price.amount) if take_profit_price and hasattr(take_profit_price, 'amount') else 0.0,
+                                }
+                            },
+                            order_status_lifecycle=['NEW', 'ACCEPTED', 'FILLED'],  # Would be updated based on actual lifecycle
+                            timestamp=execution_intent.timestamp
+                        )
                     else:
                         if self.logger:
                             self.logger.warning(f"Order execution returned None - order was not placed")

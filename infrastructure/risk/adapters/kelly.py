@@ -10,19 +10,23 @@ class KellyCriterion:
     
     def __init__(self, config: Dict = None):
         self.config = config or {}
-        
+
         # Kelly criterion parameters
         self.kelly_fraction = config.get('kelly_fraction', 0.5)  # Use half Kelly to be conservative
         self.max_position_size = config.get('max_position_size', 0.1)  # Max 10% of capital
         self.min_edge_threshold = config.get('min_edge_threshold', 0.05)  # Minimum edge threshold
         self.min_confidence_threshold = config.get('min_confidence_threshold', 0.6)  # Minimum confidence threshold
-        
+
         # Historical data for calculating win rate and payoff ratio
         self.outcomes: List[Dict] = []  # List of {'outcome': 1 for win, -1 for loss, 'pnl': actual_pnl, 'confidence': signal_confidence}
         self.lookback_window = config.get('lookback_window', 100)  # Number of trades to consider
-        
+
         # Asset-specific Kelly parameters
         self.asset_kelly_params: Dict[str, Dict] = {}
+
+        # Initialize logger
+        from shared.logger import EnhancedLogger
+        self.logger = EnhancedLogger("KellyCriterion")
         
     def calculate_kelly_position_size(self, signal: Signal, current_price: float, account_balance: float) -> float:
         """Calculate position size using Kelly Criterion"""
@@ -58,8 +62,15 @@ class KellyCriterion:
         if win_rate is None or avg_win is None or avg_loss is None:
             # If no historical data, use signal confidence as a proxy for edge
             if signal.confidence < self.min_confidence_threshold:
+                # Log the rejection with exact details
+                self.logger.info(f"Trade rejected: "
+                               f"confidence={float(signal.confidence):.2f} < "
+                               f"KELLY_MIN_CONFIDENCE_THRESHOLD={self.min_confidence_threshold:.2f} "
+                               f"source=kelly_criterion "
+                               f"strategy={getattr(signal, 'strategy', 'unknown')} "
+                               f"symbol={signal.symbol}")
                 return 0.0
-            
+
             # Use a conservative estimate when no historical data
             win_rate = max(0.5, signal.confidence)  # Conservative win rate estimate
             avg_win = 0.01  # Average 1% winners
@@ -165,27 +176,41 @@ class KellyCriterion:
         if win_rate is not None and avg_win is not None and avg_loss is not None:
             # Calculate edge
             edge = (avg_win * win_rate) - (avg_loss * (1 - win_rate))
-            
+
             # Check if signal meets minimum thresholds
             if signal.confidence < self.min_confidence_threshold:
                 advice['should_trade'] = False
                 advice['position_size'] = 0
+                # Log the rejection with exact details
+                self.logger.info(f"Trade rejected: "
+                               f"confidence={float(signal.confidence):.2f} < "
+                               f"KELLY_MIN_CONFIDENCE_THRESHOLD={self.min_confidence_threshold:.2f} "
+                               f"source=kelly_criterion "
+                               f"strategy={getattr(signal, 'strategy', 'unknown')} "
+                               f"symbol={signal.symbol}")
             elif edge < self.min_edge_threshold:
                 advice['should_trade'] = False
                 advice['position_size'] = 0
+                # Log the rejection with exact details
+                self.logger.info(f"Trade rejected: "
+                               f"edge={edge:.2f} < "
+                               f"KELLY_MIN_EDGE_THRESHOLD={self.min_edge_threshold:.2f} "
+                               f"source=kelly_criterion "
+                               f"strategy={getattr(signal, 'strategy', 'unknown')} "
+                               f"symbol={signal.symbol}")
             else:
                 # Calculate Kelly percentage
                 b = avg_win / avg_loss if avg_loss != 0 else 1
                 p = win_rate
                 q = 1 - p
-                
+
                 kelly_pct = max(0, (b * p - q) / b)
                 kelly_pct = min(kelly_pct, self.max_position_size) * self.kelly_fraction
                 advice['kelly_percentage'] = kelly_pct
                 advice['position_size'] = kelly_pct
                 advice['edge'] = edge
                 advice['expected_value'] = edge
-        
+
         return advice
     
     def reset_performance_history(self):

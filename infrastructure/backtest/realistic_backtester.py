@@ -913,7 +913,7 @@ class RealisticBacktester:
         # Profit factor
         winning_pnl = sum(t.get('pnl', 0) for t in self.trades if t.get('pnl', 0) > 0)
         losing_pnl = abs(sum(t.get('pnl', 0) for t in self.trades if t.get('pnl', 0) < 0))
-        profit_factor = winning_pnl / losing_pnl if losing_pnl > 0 else float('inf')
+        profit_factor = winning_pnl / losing_pnl if losing_pnl > 0 else (float('inf') if winning_pnl > 0 else 0.0)
         
         # Other metrics
         total_volume = sum(abs(t['size'] * t['price']) for t in self.trades)

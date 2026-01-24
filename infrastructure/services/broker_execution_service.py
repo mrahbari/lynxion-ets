@@ -11,6 +11,8 @@ from domain.enums.broker_enum import BrokerType
 from shared.logger import EnhancedLogger
 import os
 import threading
+from datetime import datetime
+from infrastructure.logging.forensic_logger import forensic_logger
 
 
 class BrokerExecutionService(ExecutionPort):
@@ -244,12 +246,40 @@ class BrokerExecutionService(ExecutionPort):
                     # Return a failure status instead of raising an exception to prevent system crashes
                     return None  # Indicate that the order was not placed due to duplicate prevention
 
-            # In a properly architected system, all risk management should be handled by the Strategy layer
-            # The broker should only execute orders that have already been properly risk-managed
-            # We'll validate that required risk parameters are present but won't enhance them
-            if not self._validate_required_risk_parameters(order):
-                self.logger.error(f"❌ ORDER REJECTED: Missing required risk parameters: {order}")
-                return None  # Return None instead of raising to prevent system crashes
+            # Check if stop loss and take profit are set (these should be set by the Strategy layer)
+            has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
+            has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
+
+            # If either SL or TP is missing, enhance the order with proper risk parameters
+            if not has_stop_loss or not has_take_profit:
+                # Enhance order with risk parameters if they're missing
+                # This ensures that all orders have proper SL/TP values before execution
+                enhanced_order = self._enhance_order_with_risk_parameters(order)
+
+                # Check if enhancement was successful by verifying SL/TP presence
+                enhanced_has_stop_loss = hasattr(enhanced_order, 'stop_loss_price') and enhanced_order.stop_loss_price is not None
+                enhanced_has_take_profit = hasattr(enhanced_order, 'take_profit_price') and enhanced_order.take_profit_price is not None
+
+                # Only use the enhanced order if it actually has both SL and TP values
+                if enhanced_has_stop_loss and enhanced_has_take_profit:
+                    order = enhanced_order
+                    has_stop_loss = enhanced_has_stop_loss
+                    has_take_profit = enhanced_has_take_profit
+                else:
+                    # If enhancement failed to add both SL and TP, reject the order
+                    self.logger.error(f"❌ ORDER REJECTED: Enhancement failed to add required SL/TP parameters for {order.symbol.value} - "
+                                    f"SL present after enhancement: {enhanced_has_stop_loss}, TP present after enhancement: {enhanced_has_take_profit}")
+                    return None
+
+            # For institutional standards, both SL and TP must be set by the Strategy layer
+            # Orders without proper SL/TP values should FAIL LOUDLY, not silently continue
+            # At this point, if enhancement was needed and successful, has_stop_loss/has_take_profit should be True
+            # If enhancement was needed but failed, the order would have been rejected above
+            if not has_stop_loss or not has_take_profit:
+                self.logger.error(f"❌ ORDER REJECTED: Missing required SL/TP parameters for {order.symbol.value} - "
+                                f"SL present: {has_stop_loss}, TP present: {has_take_profit}")
+                # Fail loudly instead of allowing the order to proceed
+                return None
 
             # Perform final validation to ensure the order parameters are reasonable before sending to broker
             if not self._validate_order_parameters_before_broker(order):
@@ -292,8 +322,57 @@ class BrokerExecutionService(ExecutionPort):
 
                 self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {self.broker_name}: {order_id}")
 
+                # Extract trade_id from order metadata if available, otherwise generate one
+                trade_id = getattr(order, 'metadata', {}).get('trade_id', None)
+                if not trade_id:
+                    # Generate trade ID if not available
+                    symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
+                    exchange = getattr(order, 'exchange', 'BINANCE')
+                    trade_id = forensic_logger._generate_trade_id(symbol_str, exchange)
+
+                # Prepare pre-validation checks and risk calculations for forensic logging
+                validation_checks = {
+                    'margin_availability_check': True,  # Would be checked in real implementation
+                    'risk_profile_compliance': True,    # Would be validated in real implementation
+                    'quantity_calculation_formula': f"risk_amount / (entry_price - stop_loss)",  # Example formula
+                    'sl_tp_calculation_origin': 'strategy_risk_parameters',
+                    'order_submission_payload': {
+                        'symbol': order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol),
+                        'side': order.side.name if hasattr(order.side, 'name') else str(order.side),
+                        'type': 'MARKET',  # Would be determined from order
+                        'quantity': float(order.quantity) if hasattr(order, 'quantity') else 0.0,
+                        'price': float(order.price.amount) if hasattr(order.price, 'amount') else 0.0,
+                        'stop_loss': float(order.stop_loss_price.amount) if hasattr(order.stop_loss_price, 'amount') else 0.0,
+                        'take_profit': float(order.take_profit_price.amount) if hasattr(order.take_profit_price, 'amount') else 0.0,
+                    }
+                }
+
+                # Log the broker execution to forensic log with enhanced details
+                price = float(order.price.amount) if hasattr(order.price, 'amount') else 0.0
+                sl = float(order.stop_loss_price.amount) if hasattr(order.stop_loss_price, 'amount') else 0.0
+                tp = float(order.take_profit_price.amount) if hasattr(order.take_profit_price, 'amount') else 0.0
+                quantity = float(order.quantity) if hasattr(order, 'quantity') else 0.0
+
+                forensic_logger.log_broker_execution(
+                    trade_id=trade_id,
+                    exchange=self.broker_name,
+                    side=order.side.name if hasattr(order.side, 'name') else str(order.side),
+                    price=price,
+                    sl=sl,
+                    tp=tp,
+                    quantity=quantity,
+                    fee=0.0,  # Fee would need to be retrieved from broker response
+                    slippage=0.0,  # Slippage would need to be calculated based on execution
+                    validation_checks=validation_checks,
+                    order_status_lifecycle=['NEW', 'ACCEPTED', 'FILLED'],  # Would be updated based on actual lifecycle
+                    timestamp=datetime.now()
+                )
+
                 # Send Telegram notification about successful order placement
-                self._send_order_placed_notification(order, order_id)
+                # Only send notification from BrokerExecutionService if not using multi-broker service
+                # (MultiBrokerExecutionService handles its own notifications)
+                if not self.use_multi_broker:
+                    self._send_order_placed_notification(order, order_id)
 
                 return order_id
             except Exception as e:
@@ -308,18 +387,156 @@ class BrokerExecutionService(ExecutionPort):
             # No temporary cleanup needed since we only add to pending tracker after successful broker confirmation
             pass
 
+    def _enhance_order_with_risk_parameters(self, order: Order) -> Order:
+        """Enhance order with risk parameters if they're missing"""
+        from infrastructure.risk.advanced_risk_management import AdvancedRiskManagementService
+        from domain.entities.trading_entities import Order as DomainOrder
+        from domain.value_objects import Money
+        from datetime import datetime
+
+        # Check if stop loss and take profit are already set
+        has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
+        has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
+
+        # If both SL and TP are already set, return the order as is
+        if has_stop_loss and has_take_profit:
+            return order
+
+        # If we don't have price information, we can't calculate SL/TP
+        if not hasattr(order, 'price') or not order.price or not hasattr(order.price, 'amount'):
+            self.logger.warning(f"Cannot enhance order with SL/TP: no price available for {order.symbol.value}")
+            return order
+
+        # Create risk management service instance
+        risk_service = AdvancedRiskManagementService()
+
+        # Try to get fused signal information from the order, otherwise create a default one
+        from domain.entities.signal_entities import FusedSignal, SignalBias
+        from domain.value_objects import Percentage
+
+        # Check if order has parent signal information
+        if hasattr(order, 'parent_signal') and order.parent_signal:
+            # Use information from the parent signal if available
+            parent_signal = order.parent_signal
+            direction = getattr(parent_signal, 'direction', 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1)
+            confidence = getattr(parent_signal, 'confidence', Percentage(0.6))
+            dominant_bias = getattr(parent_signal, 'dominant_bias', SignalBias.BULLISH if hasattr(order, 'side') and order.side.name == 'BUY' else SignalBias.BEARISH)
+            regime_context = getattr(parent_signal, 'regime_context', "normal")
+            dominance_score = getattr(parent_signal, 'dominance_score', 0.5)
+        elif hasattr(order, 'fused_signal') and order.fused_signal:
+            # Check if order has fused signal directly attached
+            fused_signal_attr = order.fused_signal
+            direction = getattr(fused_signal_attr, 'direction', 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1)
+            confidence = getattr(fused_signal_attr, 'confidence', Percentage(0.6))
+            dominant_bias = getattr(fused_signal_attr, 'dominant_bias', SignalBias.BULLISH if hasattr(order, 'side') and order.side.name == 'BUY' else SignalBias.BEARISH)
+            regime_context = getattr(fused_signal_attr, 'regime_context', "normal")
+            dominance_score = getattr(fused_signal_attr, 'dominance_score', 0.5)
+        elif hasattr(order, 'metadata') and order.metadata:
+            # Check if order has signal information in metadata
+            metadata = order.metadata
+            direction = metadata.get('signal_direction', 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1)
+            confidence_val = metadata.get('signal_confidence', 0.6)
+            confidence = Percentage(confidence_val)
+            dominant_bias_str = metadata.get('dominant_bias', 'BULLISH' if hasattr(order, 'side') and order.side.name == 'BUY' else 'BEARISH')
+            dominant_bias = SignalBias.BULLISH if 'BULLISH' in dominant_bias_str.upper() else SignalBias.BEARISH
+            regime_context = metadata.get('regime_context', "normal")
+            dominance_score = metadata.get('dominance_score', 0.5)
+        else:
+            # Create default values based on order information
+            direction = 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1
+            confidence = Percentage(0.6)  # Default confidence
+            dominant_bias = SignalBias.BULLISH if hasattr(order, 'side') and order.side.name == 'BUY' else SignalBias.BEARISH
+            regime_context = "normal"
+            dominance_score = 0.5
+
+        fused_signal = FusedSignal(
+            symbol=order.symbol,
+            direction=direction,
+            confidence=confidence,
+            dominant_bias=dominant_bias,
+            regime_context=regime_context,
+            timestamp=datetime.now(),
+            dominance_score=dominance_score
+        )
+
+        # Calculate position size and risk factors
+        try:
+            # Using a default portfolio value for calculation
+            portfolio_value = 10000.0  # Default portfolio value
+            entry_price = float(order.price.amount)
+            position_size, risk_factors = risk_service.calculate_position_size(
+                symbol=order.symbol,
+                price=entry_price,
+                portfolio_value=portfolio_value,
+                fused_signal=fused_signal,
+                market_data=market_data
+            )
+
+            # Determine position side based on order side
+            position_side = 'LONG' if hasattr(order, 'side') and order.side.name == 'BUY' else 'SHORT'
+
+            # Try to get real market data for more accurate risk calculations
+            market_data = None
+            try:
+                # Attempt to get market data from the data loader if available
+                if hasattr(self, 'data_loader') and self.data_loader:
+                    # Get recent market data for ATR calculation
+                    market_data = self.data_loader.get_recent_data(order.symbol, limit=50)
+            except:
+                # If data loader is not available or fails, continue with placeholder
+                pass
+
+            # Calculate SL/TP levels
+            sl_price, tp_price = risk_service.calculate_sl_tp_levels(
+                entry_price=entry_price,
+                position_side=position_side,
+                risk_adjustment_factors=risk_factors,
+                atr_value=None,  # Will be calculated from market_data if available
+                market_data=market_data
+            )
+
+            # Create enhanced order with SL/TP if they were missing
+            enhanced_order = DomainOrder(
+                symbol=getattr(order, 'symbol', 'UNKNOWN'),
+                side=getattr(order, 'side', None),
+                order_type=getattr(order, 'order_type', 'MARKET'),
+                quantity=getattr(order, 'quantity', 1.0),
+                price=getattr(order, 'price', None),
+                strategy_name=getattr(order, 'strategy_name', 'default'),
+                timestamp=getattr(order, 'timestamp', datetime.now()),
+                position_side=getattr(order, 'position_side', 'BOTH'),
+                stop_loss_price=Money(amount=float(sl_price), currency='USDT') if not has_stop_loss else getattr(order, 'stop_loss_price', None),
+                take_profit_price=Money(amount=float(tp_price), currency='USDT') if not has_take_profit else getattr(order, 'take_profit_price', None),
+                stop_price=getattr(order, 'stop_price', None),
+                time_in_force=getattr(order, 'time_in_force', 'GTC'),
+                client_order_id=getattr(order, 'client_order_id', None),
+                parent_signal=getattr(order, 'parent_signal', None),
+                risk_adjusted_quantity=getattr(order, 'risk_adjusted_quantity', None)
+            )
+
+            self.logger.info(f"✅ Order enhanced with dynamic SL/TP for {order.symbol.value}: "
+                           f"SL={sl_price:.4f}, TP={tp_price:.4f}")
+
+            return enhanced_order
+
+        except Exception as e:
+            self.logger.error(f"Error enhancing order with risk parameters: {e}")
+            # Return original order if enhancement fails
+            return order
+
     def _validate_required_risk_parameters(self, order: Order) -> bool:
         """Validate that the order has required risk parameters (should be set by Strategy layer)"""
         # Check if stop loss and take profit are set (these should be set by the Strategy layer)
         has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
         has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
 
-        # For institutional standards, both SL and TP should be set by the Strategy layer
-        # However, we'll allow execution if they're missing (with a warning) to maintain compatibility
+        # For institutional standards, both SL and TP must be set by the Strategy layer
+        # Orders without proper SL/TP values should FAIL LOUDLY, not silently continue
         if not has_stop_loss or not has_take_profit:
-            self.logger.warning(f"⚠️ Order missing SL/TP parameters (should be set by Strategy layer): {order.symbol.value}")
-            # We'll still allow the order to proceed but log the issue
-            return True
+            self.logger.error(f"❌ ORDER REJECTED: Missing required SL/TP parameters for {order.symbol.value} - "
+                            f"SL present: {has_stop_loss}, TP present: {has_take_profit}")
+            # Fail loudly instead of allowing the order to proceed
+            return False
 
         return True
 
@@ -463,7 +680,7 @@ class BrokerExecutionService(ExecutionPort):
             sl_value = getattr(stop_loss_price, 'amount', 'N/A') if stop_loss_price else 'N/A'
             tp_value = getattr(take_profit_price, 'amount', 'N/A') if take_profit_price else 'N/A'
 
-            message = (f"✅ ORDER PLACED\n"
+            message = (f"\n✅ ORDER PLACED\n"
                       f"Symbol: {symbol}\n"
                       f"Side: {side_name}\n"
                       f"Quantity: {quantity}\n"

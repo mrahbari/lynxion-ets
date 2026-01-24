@@ -788,7 +788,7 @@ class MultiBrokerExecutionService(ExecutionPort):
             sl_value = getattr(stop_loss_price, 'amount', 'N/A') if stop_loss_price else 'N/A'
             tp_value = getattr(take_profit_price, 'amount', 'N/A') if take_profit_price else 'N/A'
 
-            message = (f"✅ ORDER PLACED\n"
+            message = (f"\n✅ ORDER PLACED\n"
                        f"Exchange: {exchange_name}\n"
                        f"Symbol: {symbol}\n"
                        f"Side: {side_name}\n"

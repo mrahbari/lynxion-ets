@@ -20,7 +20,7 @@ load_dotenv()
 # Add project root to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from application.symbol_management.centralized_symbol_manager import get_unified_symbols, get_formatted_symbol_for_exchange
+from application.symbol_management.centralized_symbol_manager import get_unified_symbols, get_approved_symbols, get_formatted_symbol_for_exchange
 from application.configs.sync_settings import settings
 from application.data_sync.sync_manager import SyncManager
 from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
@@ -30,7 +30,8 @@ from shared.logger import EnhancedLogger
 
 def load_symbols_from_env() -> List[str]:
     """Load symbols from the centralized symbol manager."""
-    return get_unified_symbols()
+    # Use ALL approved symbols for historical data download, not just unified subset
+    return list(get_approved_symbols())
 
 
 def format_symbol_for_exchange(symbol: str) -> str:

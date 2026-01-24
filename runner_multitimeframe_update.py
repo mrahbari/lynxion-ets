@@ -22,13 +22,14 @@ load_dotenv()
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
-from application.symbol_management.centralized_symbol_manager import get_unified_symbols
+from application.symbol_management.centralized_symbol_manager import get_unified_symbols, get_approved_symbols
 from shared.logger import EnhancedLogger
 
 
 def load_symbols_from_env() -> List[str]:
     """Load symbols from the centralized symbol manager."""
-    return get_unified_symbols()
+    # Use ALL approved symbols for multi-timeframe update, not just unified subset
+    return list(get_approved_symbols())
 
 
 def run_multitimeframe_update(symbols: List[str], 

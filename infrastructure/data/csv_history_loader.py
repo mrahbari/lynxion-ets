@@ -5,6 +5,8 @@ from typing import Dict, Any, List
 from pathlib import Path
 from datetime import datetime
 import os
+import hashlib
+import json
 import logging
 from domain.ports.data_ports import DataProviderPort
 from domain.entities.trading_entities import MarketData
@@ -12,7 +14,7 @@ from domain.value_objects import Symbol
 
 
 class CSVHistoryLoaderAdapter(DataProviderPort):
-    """CSV-based historical data provider for the WFO pipeline."""
+    """CSV-based historical data provider for the WFO pipeline with data provenance."""
 
     def __init__(self, base_path: str = "./data"):
         """
@@ -32,6 +34,52 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.INFO)
+
+        # Initialize data provenance tracking
+        self.provenance_dir = self.base_path / "provenance"
+        self.provenance_dir.mkdir(parents=True, exist_ok=True)
+
+        # Get git commit hash for reproducibility
+        try:
+            import subprocess
+            self.git_commit_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+        except:
+            self.git_commit_hash = "unknown"
+
+    def _generate_data_checksum(self, df: pd.DataFrame) -> str:
+        """Generate a checksum for the data to ensure integrity."""
+        # Convert dataframe to string representation and hash it
+        data_str = df.to_json(orient='records', date_format='iso')
+        return hashlib.sha256(data_str.encode()).hexdigest()
+
+    def _record_data_provenance(self, symbol: str, timeframe: str, file_path: str) -> str:
+        """Record data provenance information for audit trail."""
+        # Load the data to generate checksum and metadata
+        df = pd.read_csv(file_path)
+
+        # Create provenance metadata
+        provenance_data = {
+            "source": "CSV",
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "checksum": self._generate_data_checksum(df),
+            "download_timestamp": datetime.now().isoformat(),
+            "row_count": len(df),
+            "date_range": {
+                "start": df['timestamp'].min() if 'timestamp' in df.columns else None,
+                "end": df['timestamp'].max() if 'timestamp' in df.columns else None
+            },
+            "columns": list(df.columns),
+            "git_commit": self.git_commit_hash,
+            "file_path": str(file_path)
+        }
+
+        # Save provenance data to JSON file
+        provenance_file = self.provenance_dir / f"{symbol}_{timeframe}_provenance.json"
+        with open(provenance_file, 'w') as f:
+            json.dump(provenance_data, f, indent=2, default=str)
+
+        return str(provenance_file)
 
     def get_current_price(self, symbol: Symbol) -> float:
         """Get the current price for a symbol from the latest CSV data."""
@@ -147,15 +195,169 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
                         if exact_path.exists():
                             file_path = exact_path
                         else:
-                            # Define default values for paths that might not be defined in all code paths
-                            alt_path_val = str(alt_path) if 'alt_path' in locals() else 'N/A'
-                            alt_path2_val = str(alt_path2) if 'alt_path2' in locals() else 'N/A'
-                            formatted_path_val = str(formatted_path) if 'formatted_path' in locals() else 'N/A'
-                            exact_path_val = str(exact_path) if 'exact_path' in locals() else 'N/A'
-                            raise FileNotFoundError(f"Data file not found: {file_path}, {alt_path_val}, {alt_path2_val}, {formatted_path_val}, or {exact_path_val}")
-        
+                            # Try the processed directory as a fallback (since raw only has 1m data)
+                            processed_path = self.base_path / "history" / "processed" / timeframe / f"{formatted_symbol}.csv"
+                            if processed_path.exists():
+                                # Check if the processed data has high missing candle ratio (indicating poor quality)
+                                df_processed = pd.read_csv(processed_path)
+                                if 'timestamp' in df_processed.columns:
+                                    # Calculate the time range and count expected daily candles
+                                    timestamps = pd.to_datetime(df_processed['timestamp'], unit='s', utc=True)
+                                    min_time = timestamps.min()
+                                    max_time = timestamps.max()
+                                    expected_days = (max_time - min_time).days
+
+                                    # If we have significantly fewer data points than expected, the data quality is poor
+                                    actual_points = len(df_processed)
+                                    if expected_days > 0 and actual_points / expected_days < 0.1:  # Less than 10% coverage
+                                        # Quality is poor, let's use 1-minute data and aggregate instead
+                                        if timeframe == '1d':
+                                            raw_1m_path = self.base_path / "history" / "raw" / "1m" / f"{formatted_symbol}.csv"
+                                            if raw_1m_path.exists():
+                                                # Load 1m data and aggregate to 1d
+                                                df_1m = pd.read_csv(raw_1m_path)
+
+                                                # Ensure timestamp column exists and convert to datetime
+                                                if 'timestamp' in df_1m.columns:
+                                                    df_1m['timestamp'] = pd.to_datetime(df_1m['timestamp'], unit='s', utc=True)
+                                                else:
+                                                    # If no timestamp column, assume index is datetime or create from standard columns
+                                                    raise ValueError(f"Required 'timestamp' column not found in {raw_1m_path}")
+
+                                                # Set timestamp as index for resampling
+                                                df_1m = df_1m.set_index('timestamp')
+
+                                                # Resample to daily data using OHLCV aggregation
+                                                df_1d = df_1m.resample('1D').agg({
+                                                    'open': 'first',
+                                                    'high': 'max',
+                                                    'low': 'min',
+                                                    'close': 'last',
+                                                    'volume': 'sum'
+                                                }).dropna()
+
+                                                # Reset index to convert back to timestamp column format expected by system
+                                                df_1d = df_1d.reset_index()
+                                                df_1d['timestamp'] = df_1d['timestamp'].astype('int64') // 10**9  # Convert to Unix timestamp
+
+                                                # Validate and clean the aggregated data
+                                                df_1d = self._validate_and_clean(df_1d)
+
+                                                # Record data provenance for audit trail
+                                                self._record_data_provenance(symbol, timeframe, raw_1m_path)
+
+                                                # IMPLEMENT HARD VALIDATION GATE: Block backtesting if missing data ratio exceeds 5%
+                                                # Calculate missing candle ratio for aggregated data
+                                                if 'timestamp' in df_1d.columns:
+                                                    timestamps = pd.to_datetime(df_1d['timestamp'], unit='s', utc=True)
+                                                    min_time = timestamps.min()
+                                                    max_time = timestamps.max()
+                                                    # For daily data, calculate expected number of days
+                                                    expected_count = (max_time - min_time).days + 1
+
+                                                    actual_count = len(df_1d)
+                                                    missing_ratio = 1 - (actual_count / expected_count) if expected_count > 0 else 0
+
+                                                    # Hard validation gate: reject data if missing ratio > 5%
+                                                    if missing_ratio > 0.05:
+                                                        raise ValueError(f"Data quality validation failed for {symbol}: {missing_ratio:.2%} missing data exceeds 5% threshold. Data range: {min_time.date()} to {max_time.date()}, Expected: {expected_count}, Actual: {actual_count}")
+
+                                                return df_1d
+
+                                # If processed data quality is acceptable or we're not dealing with 1d timeframe, use processed data
+                                file_path = processed_path
+                            else:
+                                # If processed data doesn't exist, try to use 1m raw data and aggregate
+                                if timeframe == '1d':
+                                    raw_1m_path = self.base_path / "history" / "raw" / "1m" / f"{formatted_symbol}.csv"
+                                    if raw_1m_path.exists():
+                                        # Load 1m data and aggregate to 1d
+                                        df_1m = pd.read_csv(raw_1m_path)
+
+                                        # Ensure timestamp column exists and convert to datetime
+                                        if 'timestamp' in df_1m.columns:
+                                            df_1m['timestamp'] = pd.to_datetime(df_1m['timestamp'], unit='s', utc=True)
+                                        else:
+                                            # If no timestamp column, assume index is datetime or create from standard columns
+                                            raise ValueError(f"Required 'timestamp' column not found in {raw_1m_path}")
+
+                                        # Set timestamp as index for resampling
+                                        df_1m = df_1m.set_index('timestamp')
+
+                                        # Resample to daily data using OHLCV aggregation
+                                        df_1d = df_1m.resample('1D').agg({
+                                            'open': 'first',
+                                            'high': 'max',
+                                            'low': 'min',
+                                            'close': 'last',
+                                            'volume': 'sum'
+                                        }).dropna()
+
+                                        # Reset index to convert back to timestamp column format expected by system
+                                        df_1d = df_1d.reset_index()
+                                        df_1d['timestamp'] = df_1d['timestamp'].astype('int64') // 10**9  # Convert to Unix timestamp
+
+                                        # Validate and clean the aggregated data
+                                        df_1d = self._validate_and_clean(df_1d)
+
+                                        # Record data provenance for audit trail
+                                        self._record_data_provenance(symbol, timeframe, raw_1m_path)
+
+                                        # IMPLEMENT HARD VALIDATION GATE: Block backtesting if missing data ratio exceeds 5%
+                                        # Calculate missing candle ratio for aggregated data
+                                        if 'timestamp' in df_1d.columns:
+                                            timestamps = pd.to_datetime(df_1d['timestamp'], unit='s', utc=True)
+                                            min_time = timestamps.min()
+                                            max_time = timestamps.max()
+                                            # For daily data, calculate expected number of days
+                                            expected_count = (max_time - min_time).days + 1
+
+                                            actual_count = len(df_1d)
+                                            missing_ratio = 1 - (actual_count / expected_count) if expected_count > 0 else 0
+
+                                            # Hard validation gate: reject data if missing ratio > 5%
+                                            if missing_ratio > 0.05:
+                                                raise ValueError(f"Data quality validation failed for {symbol}: {missing_ratio:.2%} missing data exceeds 5% threshold. Data range: {min_time.date()} to {max_time.date()}, Expected: {expected_count}, Actual: {actual_count}")
+
+                                        return df_1d
+
+                                # Define default values for paths that might not be defined in all code paths
+                                alt_path_val = str(alt_path) if 'alt_path' in locals() else 'N/A'
+                                alt_path2_val = str(alt_path2) if 'alt_path2' in locals() else 'N/A'
+                                formatted_path_val = str(formatted_path) if 'formatted_path' in locals() else 'N/A'
+                                exact_path_val = str(exact_path) if 'exact_path' in locals() else 'N/A'
+                                processed_path_val = str(processed_path) if 'processed_path' in locals() else 'N/A'
+                                raise FileNotFoundError(f"Data file not found: {file_path}, {alt_path_val}, {alt_path2_val}, {formatted_path_val}, {exact_path_val}, or {processed_path_val}")
+
         df = pd.read_csv(file_path)
-        
+
+        # Record data provenance for audit trail
+        self._record_data_provenance(symbol, timeframe, file_path)
+
+        # IMPLEMENT HARD VALIDATION GATE: Block backtesting if missing data ratio exceeds 5%
+        # Calculate missing candle ratio
+        if 'timestamp' in df.columns:
+            timestamps = pd.to_datetime(df['timestamp'], unit='s', utc=True)
+            min_time = timestamps.min()
+            max_time = timestamps.max()
+            # Calculate expected number of candles based on timeframe
+            if timeframe.endswith('d'):  # Daily data
+                expected_count = (max_time - min_time).days + 1
+            elif timeframe.endswith('h'):  # Hourly data
+                expected_count = int((max_time - min_time).total_seconds() / 3600) + 1
+            elif timeframe.endswith('m'):  # Minute data
+                expected_count = int((max_time - min_time).total_seconds() / 60) + 1
+            else:
+                # Default to daily if timeframe not recognized
+                expected_count = (max_time - min_time).days + 1
+
+            actual_count = len(df)
+            missing_ratio = 1 - (actual_count / expected_count) if expected_count > 0 else 0
+
+            # Hard validation gate: reject data if missing ratio > 5%
+            if missing_ratio > 0.05:
+                raise ValueError(f"Data quality validation failed for {symbol}: {missing_ratio:.2%} missing data exceeds 5% threshold. Data range: {min_time.date()} to {max_time.date()}, Expected: {expected_count}, Actual: {actual_count}")
+
         # Ensure required columns exist
         required_cols = ["timestamp", "open", "high", "low", "close", "volume"]
         if not all(col in df.columns.str.lower() for col in required_cols):
@@ -170,9 +372,9 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
                         break
                 if not found:
                     raise ValueError(f"Required column '{req_col}' not found in data")
-            
+
             df = df.rename(columns=col_mapping)
-        
+
         # Ensure timestamp column is integer Unix timestamp
         if df['timestamp'].dtype in ['object', 'float64']:
             # Handle mixed formats - could be datetime string or numeric value
@@ -209,10 +411,10 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
 
         # Set timestamp as index and sort
         df = df.set_index('timestamp').sort_index()
-        
+
         # Validate and clean data
         df = self._validate_and_clean(df)
-        
+
         return df
 
     def load_multi_assets(self, symbols: List[str], timeframe: str = "1d") -> Dict[str, pd.DataFrame]:
@@ -382,15 +584,24 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
                 combined_df.to_csv(file_path, index=False)
 
                 print(f"Updated {symbol} data: {len(existing_df)} existing rows, {len(df)} new rows, {len(combined_df)} total rows in {file_path}")
+
+                # Record data provenance for audit trail after saving
+                self._record_data_provenance(symbol, timeframe, file_path)
             except Exception as e:
                 self.logger.warning(f"Could not update existing file for {symbol}, overwriting: {e}")
                 # If there's an issue with merging, just save the new data
                 df.to_csv(file_path, index=False)
                 print(f"Saved {len(data)} data points for {symbol} to {file_path}")
+
+                # Record data provenance for audit trail after saving
+                self._record_data_provenance(symbol, timeframe, file_path)
         else:
             # If file doesn't exist, save as new
             df.to_csv(file_path, index=False)
             print(f"Saved {len(data)} data points for {symbol} to {file_path}")
+
+            # Record data provenance for audit trail after saving
+            self._record_data_provenance(symbol, timeframe, file_path)
 
 
 def load_csv_data_direct(symbol: str, base_path: str = "./data") -> pd.DataFrame:

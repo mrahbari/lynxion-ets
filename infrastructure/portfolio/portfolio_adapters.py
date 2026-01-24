@@ -164,16 +164,14 @@ class FixedRiskPositionSizingAdapter(BasePositionSizingAdapter):
         super().__init__("FixedRisk")
     
     def calculate_position_size(self, symbol: Symbol, account_balance: float, risk_percentage: float) -> float:
-        """Calculate position size based on fixed risk percentage"""
-        # Calculate position size based on risk per trade
-        risk_amount = account_balance * risk_percentage
-        
-        # For now, we'll return the risk amount as position size
-        # In a real system, this would factor in stop loss levels
-        position_size = risk_amount  # This would be adjusted based on stop loss distance
-        
-        logger.info(f"Calculated position size for {symbol.value}: ${position_size:.2f} (risk: {risk_percentage:.2%})")
-        return position_size
+        """Request position size - this should be handled by the risk manager"""
+        # According to the risk governance rules, the Strategy module should only
+        # request risk parameters but not calculate them. The actual calculation
+        # must be done by the Risk module.
+
+        # Return a default value that will be overridden by the risk manager
+        # This is just a placeholder to maintain interface compatibility
+        return 0.0
 
 
 class KellyCriterionPositionSizingAdapter(BasePositionSizingAdapter):
@@ -183,17 +181,14 @@ class KellyCriterionPositionSizingAdapter(BasePositionSizingAdapter):
         super().__init__("KellyCriterion")
     
     def calculate_position_size(self, symbol: Symbol, account_balance: float, risk_percentage: float) -> float:
-        """Calculate position size using Kelly Criterion"""
-        # Simplified Kelly Criterion calculation
-        # In a real system, this would use win rate and payoff ratio
-        
-        # For demonstration purposes, we'll calculate based on risk_percentage
-        # but with Kelly adjustment
-        kelly_fraction = risk_percentage * 0.5  # Simplified Kelly fraction
-        position_size = account_balance * kelly_fraction
-        
-        logger.info(f"Calculated Kelly position size for {symbol.value}: ${position_size:.2f}")
-        return min(position_size, account_balance * 0.1)  # Cap at 10% of account
+        """Request position size - this should be handled by the risk manager"""
+        # According to the risk governance rules, the Strategy module should only
+        # request risk parameters but not calculate them. The actual calculation
+        # must be done by the Risk module.
+
+        # Return a default value that will be overridden by the risk manager
+        # This is just a placeholder to maintain interface compatibility
+        return 0.0
 
 
 class BasePortfolioOptimizationAdapter(PortfolioOptimizationPort):
