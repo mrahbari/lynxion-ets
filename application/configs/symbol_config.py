@@ -3,18 +3,18 @@ Symbol configuration for the Downloader/Sync Engine.
 
 This module contains the authoritative symbol list and per-symbol metadata.
 """
-import os
 import json
 from typing import List, Optional
 from pathlib import Path
 from domain.sync.entities import SymbolSyncConfig
+from application.configs.configs import Configs
 
 
 def _parse_wfo_symbols() -> List[SymbolSyncConfig]:
     """Parse symbols from multiple sources: WFO_COINS environment variable, sync_symbols.json file, or default list"""
 
     # First, try to read from sync_symbols.json file if it exists (for better organization)
-    coins_json_path = Path(os.getenv("COINS_CONFIG_PATH", "./application/configs/sync_symbols.json"))
+    coins_json_path = Path(Configs.data.coins_config_path if Configs.data and hasattr(Configs.data, 'coins_config_path') else "./application/configs/sync_symbols.json")
     if coins_json_path.exists():
         try:
             with open(coins_json_path, 'r') as f:
@@ -30,7 +30,7 @@ def _parse_wfo_symbols() -> List[SymbolSyncConfig]:
             symbol_names = []
     else:
         # If sync_symbols.json doesn't exist, try the WFO_COINS environment variable
-        wfo_coins_str = os.getenv("WFO_COINS", "")
+        wfo_coins_str = Configs.wfo.wfo_coins if Configs.wfo and Configs.wfo.wfo_coins else ""
         if not wfo_coins_str:
             # If neither sync_symbols.json nor WFO_COINS is set, try common default
             print("⚠️  WARNING: WFO_COINS environment variable not set and sync_symbols.json not found. No symbols will be "
@@ -52,9 +52,9 @@ def _parse_wfo_symbols() -> List[SymbolSyncConfig]:
         formatted_symbol = symbol.replace('USDT', '-USDT') if 'USDT' in symbol else symbol
         symbol_configs.append(SymbolSyncConfig(
             symbol=formatted_symbol,
-            exchange=os.getenv("SYNC_DEFAULT_EXCHANGE", "binance"),
-            max_api_window_minutes=int(os.getenv("SYNC_MAX_WINDOW_MINUTES", "1440")),
-            rate_limit_requests_per_minute=int(os.getenv("SYNC_RATE_LIMIT", "10")),
+            exchange=Configs.data.sync_default_exchange if Configs.data and hasattr(Configs.data, 'sync_default_exchange') else "binance",
+            max_api_window_minutes=Configs.data.sync_max_window_minutes if Configs.data and hasattr(Configs.data, 'sync_max_window_minutes') else 1440,
+            rate_limit_requests_per_minute=Configs.data.sync_rate_limit if Configs.data and hasattr(Configs.data, 'sync_rate_limit') else 10,
             enabled=True,
             priority=max(10 - i // 3, 1)  # Higher priority for first symbols
         ))

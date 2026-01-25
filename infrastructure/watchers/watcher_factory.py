@@ -93,10 +93,10 @@ class WatcherFactory:
         Returns:
             Configured watcher instance
         """
-        import os
+        from application.configs.configs import Configs
 
         # Check if consolidated version should be used
-        use_consolidated = os.getenv(f'USE_CONSOLIDATED_{watcher_type.value.upper()}', 'false').lower() == 'true'
+        use_consolidated = getattr(Configs.watcher, f'use_consolidated_{watcher_type.value.lower()}', False) if Configs.watcher else False
 
         if use_consolidated:
             watcher_class = cls.CONSOLIDATED_WATCHERS[watcher_type]

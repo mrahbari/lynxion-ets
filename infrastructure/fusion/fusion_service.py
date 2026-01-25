@@ -3,6 +3,7 @@ Enhanced Fusion service for aggregating interpreted signals into fused signals.
 Now includes hierarchical decision making with role-based watcher classification.
 Following the correct architecture: Watcher → Engine → Fusion → Strategy → Broker
 """
+import os
 from typing import List, Optional, Dict, Any
 from domain.entities.signal_entities import InterpretedSignal, FusedSignal, MarketObservation
 from domain.value_objects import Symbol, Percentage
@@ -16,6 +17,7 @@ from .hierarchical.confidence_thresholds import ConfidenceThresholds
 from infrastructure.logging.forensic_logger import forensic_logger
 import numpy as np
 from scipy import stats
+from application.configs.configs import Configs
 
 
 class PerformanceAdaptiveFusionService:
@@ -562,8 +564,8 @@ class FusionService:
         # Combine consensus ratio and confidence to get correlation factor
         # Higher consensus and higher confidence of agreeing signals = higher correlation
         import os
-        consensus_weight = float(os.getenv('CORRELATION_CONSENSUS_WEIGHT', '0.6'))
-        confidence_weight = float(os.getenv('CORRELATION_CONFIDENCE_WEIGHT', '0.4'))
+        consensus_weight = Configs.fusion.correlation_consensus_weight if Configs.fusion and hasattr(Configs.fusion, 'correlation_consensus_weight') else 0.6
+        confidence_weight = Configs.fusion.correlation_confidence_weight if Configs.fusion and hasattr(Configs.fusion, 'correlation_confidence_weight') else 0.4
         correlation_factor = consensus_weight * consensus_ratio + confidence_weight * avg_agreeing_confidence
 
         # Ensure correlation factor is between 0.5 and 1.5 to avoid extreme adjustments

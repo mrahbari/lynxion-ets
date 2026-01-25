@@ -13,9 +13,7 @@ import time
 from datetime import datetime
 from typing import List, Optional
 
-# Load environment variables from .env file
-from dotenv import load_dotenv
-load_dotenv()
+from application.configs.configs import Configs
 
 # Add project root to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -333,7 +331,7 @@ async def run_full_resync_process(symbols: Optional[List[str]] = None,
     print("🔄 STARTING FULL RESYNC PROCESS")
     print(f"   Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"   Configuration: Data dir = {settings.data_dir}")
-    print(f"   Configuration: Exchange = {os.getenv('SYNC_DEFAULT_EXCHANGE', 'binance')}")
+    print(f"   Configuration: Exchange = {Configs.data.sync_default_exchange if Configs.data and hasattr(Configs.data, 'sync_default_exchange') else 'binance'}")
     print("="*70)
     
     start_time = time.time()
@@ -456,7 +454,7 @@ Examples:
     print(f"🚀 Resync Runner Started")
     print(f"   Processes: {'Downloader' if args.download else ''}{' | ' if args.download and (args.timeframes or args.retune) else ''}{'Timeframes' if args.timeframes else ''}{' | ' if args.timeframes and args.retune else ''}{'Retune' if args.retune else ''}")
     print(f"   Symbols: {args.symbols if args.symbols else 'All configured symbols'}")
-    print(f"   Environment: SYNC_DEFAULT_EXCHANGE={os.getenv('SYNC_DEFAULT_EXCHANGE', 'binance')}")
+    print(f"   Environment: SYNC_DEFAULT_EXCHANGE={Configs.data.sync_default_exchange if Configs.data and hasattr(Configs.data, 'sync_default_exchange') else 'binance'}")
     
     try:
         # Run the appropriate process(es)

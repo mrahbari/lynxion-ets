@@ -9,6 +9,8 @@ import json
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
+from application.configs import Configs
+
 load_dotenv()
 
 from shared.logger import EnhancedLogger
@@ -20,6 +22,7 @@ from infrastructure.services.risk_alerts import RiskAlertService
 from infrastructure.execution.live_execution_engine import LiveExecutionEngine
 from infrastructure.adapters.live_dashboard import LiveDashboardAdapter
 from infrastructure.optimization.auto_retune_hyperopt import AutoRetuneOptimizer
+from application.configs.configs import Configs
 
 
 class ProductionTradingOrchestrator:
@@ -59,7 +62,8 @@ class ProductionTradingOrchestrator:
         )
 
         # Initialize risk management
-        from infrastructure.services.risk_alerts import RiskAlertService, EmailNotificationService, TelegramNotificationService
+        from infrastructure.services.risk_alerts import RiskAlertService, EmailNotificationService, \
+            TelegramNotificationService
         email_service = EmailNotificationService()
         telegram_service = TelegramNotificationService()
         self.risk_alert_service = RiskAlertService(
@@ -113,13 +117,13 @@ class ProductionTradingOrchestrator:
     def _auto_retune_monitor(self):
         """Background thread to monitor and execute auto-retune."""
         self.logger.info("Auto-retune monitoring started")
-        
+
         while self.is_running:
             try:
                 current_time = datetime.now()
                 if (current_time - self.last_retune).total_seconds() >= (self.retune_interval_hours * 3600):
                     self.logger.info(f"Running scheduled auto-retune at {current_time}")
-                    
+
                     # Run auto-retune for all active strategies
                     for strategy_name, config in self.active_strategies.items():
                         self.auto_retune_optimizer.run_auto_retune(
@@ -127,10 +131,10 @@ class ProductionTradingOrchestrator:
                             symbols=config["symbols"],
                             risk_config=config["risk_config"]
                         )
-                    
+
                     self.last_retune = current_time
                     self.logger.info("Auto-retune cycle completed")
-                
+
                 time.sleep(60)  # Check every minute
             except Exception as e:
                 self.logger.error(f"Error in auto-retune monitor: {e}")
@@ -139,12 +143,12 @@ class ProductionTradingOrchestrator:
     def _risk_monitoring_loop(self):
         """Background risk monitoring loop."""
         self.logger.info("Risk monitoring started")
-        
+
         while self.is_running:
             try:
                 # Get current positions and performance
                 portfolio_metrics = self.portfolio_service.get_portfolio_metrics()
-                
+
                 # Check for risk violations
                 if 'drawdown' in portfolio_metrics and portfolio_metrics['drawdown'] < -0.15:
                     self.logger.warning(f"Portfolio drawdown exceeded threshold: {portfolio_metrics['drawdown']}")
@@ -152,7 +156,7 @@ class ProductionTradingOrchestrator:
                         message=f"Portfolio drawdown exceeded threshold: {portfolio_metrics['drawdown']}",
                         alert_type="critical"
                     )
-                
+
                 # Check leverage limits
                 if 'leverage' in portfolio_metrics and portfolio_metrics['leverage'] > 10.0:
                     self.logger.warning(f"Leverage exceeded threshold: {portfolio_metrics['leverage']}")
@@ -160,7 +164,7 @@ class ProductionTradingOrchestrator:
                         message=f"Leverage exceeded threshold: {portfolio_metrics['leverage']}",
                         alert_type="critical"
                     )
-                
+
                 time.sleep(30)  # Check every 30 seconds
             except Exception as e:
                 self.logger.error(f"Error in risk monitoring: {e}")
@@ -169,16 +173,16 @@ class ProductionTradingOrchestrator:
     def _performance_monitoring_loop(self):
         """Background performance monitoring loop."""
         self.logger.info("Performance monitoring started")
-        
+
         while self.is_running:
             try:
                 # Get performance metrics
                 performance_data = self.portfolio_service.get_performance_metrics()
-                
+
                 # Log performance metrics
                 for strategy, metrics in performance_data.items():
                     self.logger.info(f"Strategy {strategy} performance: {metrics}")
-                
+
                 time.sleep(300)  # Check every 5 minutes
             except Exception as e:
                 self.logger.error(f"Error in performance monitoring: {e}")
@@ -192,16 +196,16 @@ class ProductionTradingOrchestrator:
                 "atr_multiplier": 1.5,
                 "use_dynamic_position": True
             }
-        
+
         self.active_strategies[strategy_name] = {
             "symbols": symbols,
             "risk_config": risk_config,
             "status": "active"
         }
-        
+
         for symbol in symbols:
             self.active_symbols.add(symbol)
-        
+
         self.logger.info(f"Added strategy {strategy_name} for symbols: {symbols}")
 
     def remove_strategy(self, strategy_name: str):
@@ -210,14 +214,14 @@ class ProductionTradingOrchestrator:
             symbols = self.active_strategies[strategy_name]["symbols"]
             for symbol in symbols:
                 self.active_symbols.discard(symbol)
-            
+
             del self.active_strategies[strategy_name]
             self.logger.info(f"Removed strategy {strategy_name}")
 
-    def run_production_trading(self, 
-                             data_fetcher: Callable[[], Dict[str, Any]],
-                             strategy_name: str = "crypto_breakout",
-                             risk_config: Dict[str, Any] = None):
+    def run_production_trading(self,
+                               data_fetcher: Callable[[], Dict[str, Any]],
+                               strategy_name: str = "crypto_breakout",
+                               risk_config: Dict[str, Any] = None):
         """Main production trading loop with auto-retune capability."""
         if risk_config is None:
             risk_config = {
@@ -229,7 +233,7 @@ class ProductionTradingOrchestrator:
         self.add_strategy(strategy_name, list(self.active_symbols), risk_config)
 
         self.logger.info(f"Starting production trading for strategy: {strategy_name}")
-        
+
         while self.is_running:
             try:
                 # Fetch latest market data
@@ -272,16 +276,16 @@ class ProductionTradingOrchestrator:
         """Stop the production trading system."""
         self.logger.info("Stopping Production Trading Orchestrator...")
         self.is_running = False
-        
+
         # The background threads are daemon threads, so they will stop automatically
         # when the main program exits
-        
+
         self.logger.info("Production Trading Orchestrator stopped")
 
 
 # Standalone function for backward compatibility
 def run_production_orchestrator(data_fetcher, strategy_name="crypto_breakout",
-                               risk_config=None, retune_interval_hours=6):
+                                risk_config=None, retune_interval_hours=6):
     """Standalone function to run the production orchestrator."""
     # Create real implementations for standalone execution
     from infrastructure.data.enhanced_data_provider import create_enhanced_data_provider
@@ -292,10 +296,10 @@ def run_production_orchestrator(data_fetcher, strategy_name="crypto_breakout",
     # Import the broker execution service that handles broker configuration
     from infrastructure.services.broker_execution_service import create_execution_service
 
-
     # Create execution service first using the registry to avoid duplicate initialization
     from infrastructure.services.broker_registry import broker_registry
-    execution_service = broker_registry.get_execution_service(use_multi_broker=True, primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
+    execution_service = broker_registry.get_execution_service(use_multi_broker=True,
+                                                              primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
 
     # Create enhanced data provider that uses real data and can download missing symbols
     # Use environment variable or default path for historical data
@@ -305,7 +309,9 @@ def run_production_orchestrator(data_fetcher, strategy_name="crypto_breakout",
         csv_base_path=None,
         download_enabled=True,
         broker_service=execution_service,
-        historical_data_source=os.getenv('PREFERRED_HISTORICAL_DATA_SOURCE', 'binance'),  # Use binance by default to avoid BingX rate limits
+        historical_data_source=Configs.data.preferred_historical_data_source if Configs.data and hasattr(Configs.data,
+                                                                                                         'preferred_historical_data_source') else 'binance',
+        # Use binance by default to avoid BingX rate limits
         fallback_sources=['mexc', 'phemex', 'bingx']  # Fallback order to avoid rate limits
     )
     # Import real portfolio and optimization services
@@ -565,7 +571,8 @@ if __name__ == "__main__":
 
         print(f"✅ Optimization completed!")
         print(f"📊 Best parameters: {results.get('best_params', {})}")
-        print(f"🏆 Best score: {results.get('best_value', 0) if 'best_value' in results else results.get('best_loss', 'N/A')}")
+        print(
+            f"🏆 Best score: {results.get('best_value', 0) if 'best_value' in results else results.get('best_loss', 'N/A')}")
 
     elif args.mode == "retune":
         print(f"🔄 Running auto-retune for strategy: {args.strategy}")
@@ -597,7 +604,8 @@ if __name__ == "__main__":
             print("🚀 Starting auto-detection mode...")
             if args.symbols or args.symbol:
                 symbol_list = args.symbols or [args.symbol]
-                print(f"📊 System will monitor markets and automatically detect opportunities for symbols: {symbol_list}")
+                print(
+                    f"📊 System will monitor markets and automatically detect opportunities for symbols: {symbol_list}")
             else:
                 print("📊 System will automatically discover and monitor market opportunities across multiple symbols")
 
@@ -610,11 +618,11 @@ if __name__ == "__main__":
             from domain.ports.portfolio_ports import PortfolioManagementPort
             from domain.ports.optimization_ports import IOptimizationService
 
-
-
             # Create execution service first using the registry to avoid duplicate initialization
             from infrastructure.services.broker_registry import broker_registry
-            execution_service = broker_registry.get_execution_service(use_multi_broker=True, primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
+
+            execution_service = broker_registry.get_execution_service(use_multi_broker=True,
+                                                                      primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
 
             # Create enhanced data provider that uses real data and can download missing symbols
             # Use environment variable or default path for historical data
@@ -624,7 +632,9 @@ if __name__ == "__main__":
                 csv_base_path=None,
                 download_enabled=True,
                 broker_service=execution_service,
-                historical_data_source=os.getenv('PREFERRED_HISTORICAL_DATA_SOURCE', 'binance'),  # Use binance by default to avoid BingX rate limits
+                historical_data_source=Configs.data.preferred_historical_data_source if Configs.data and hasattr(
+                    Configs.data, 'preferred_historical_data_source') else 'binance',
+                # Use binance by default to avoid BingX rate limits
                 fallback_sources=['mexc', 'phemex', 'bingx']  # Fallback order to avoid rate limits
             )
             # Import real portfolio and optimization services
@@ -686,6 +696,7 @@ if __name__ == "__main__":
                 symbol_key = args.symbol if args.symbol else "BTCUSD"
                 return {symbol_key: df}
 
+
             risk_config = {
                 "max_risk": 0.02,
                 "atr_multiplier": 1.5,
@@ -720,6 +731,7 @@ if __name__ == "__main__":
         # Test that we can import and instantiate key components
         try:
             from shared.logger import EnhancedLogger
+
             logger = EnhancedLogger("ConfigTest")
             logger.info("Configuration test passed!")
             print("✅ Configuration test completed successfully")
@@ -730,6 +742,7 @@ if __name__ == "__main__":
         print(f"❌ Unknown mode: {args.mode}")
         parser.print_help()
         sys.exit(1)
+
 
 def main():
     """Main function that can be imported and called by other scripts."""
@@ -844,7 +857,8 @@ def main():
 
         print(f"✅ Optimization completed!")
         print(f"📊 Best parameters: {results.get('best_params', {})}")
-        print(f"🏆 Best score: {results.get('best_value', 0) if 'best_value' in results else results.get('best_loss', 'N/A')}")
+        print(
+            f"🏆 Best score: {results.get('best_value', 0) if 'best_value' in results else results.get('best_loss', 'N/A')}")
 
     elif args.mode == "retune":
         print(f"🔄 Running auto-retune for strategy: {args.strategy}")
@@ -876,7 +890,8 @@ def main():
             print("🚀 Starting auto-detection mode...")
             if args.symbols or args.symbol:
                 symbol_list = args.symbols or [args.symbol]
-                print(f"📊 System will monitor markets and automatically detect opportunities for symbols: {symbol_list}")
+                print(
+                    f"📊 System will monitor markets and automatically detect opportunities for symbols: {symbol_list}")
             else:
                 print("📊 System will automatically discover and monitor market opportunities across multiple symbols")
 
@@ -889,11 +904,10 @@ def main():
             from domain.ports.portfolio_ports import PortfolioManagementPort
             from domain.ports.optimization_ports import IOptimizationService
 
-
-
             # Create execution service first using the registry to avoid duplicate initialization
             from infrastructure.services.broker_registry import broker_registry
-            execution_service = broker_registry.get_execution_service(use_multi_broker=True, primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
+            execution_service = broker_registry.get_execution_service(use_multi_broker=True,
+                                                                      primary_broker='bingx')  # Uses multi-broker with exchange switching, primary is BingX
 
             # Create enhanced data provider that uses real data and can download missing symbols
             # Use environment variable or default path for historical data
@@ -903,7 +917,9 @@ def main():
                 csv_base_path=None,
                 download_enabled=True,
                 broker_service=execution_service,
-                historical_data_source=os.getenv('PREFERRED_HISTORICAL_DATA_SOURCE', 'binance'),  # Use binance by default to avoid BingX rate limits
+                historical_data_source=Configs.data.preferred_historical_data_source if Configs.data and hasattr(
+                    Configs.data, 'preferred_historical_data_source') else 'binance',
+                # Use binance by default to avoid BingX rate limits
                 fallback_sources=['mexc', 'phemex', 'bingx']  # Fallback order to avoid rate limits
             )
             # Import real portfolio and optimization services
@@ -1009,5 +1025,7 @@ def main():
         print(f"❌ Unknown mode: {args.mode}")
         parser.print_help()
         sys.exit(1)
+
+
 if __name__ == "__main__":
     main()

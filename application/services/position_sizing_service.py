@@ -13,6 +13,7 @@ from domain.entities.trading_entities import Signal, Order, Position
 from domain.value_objects import Symbol, Money, Percentage
 from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger
+from application.configs.configs import Configs
 
 
 class EnhancedPositionSizingService:
@@ -21,17 +22,17 @@ class EnhancedPositionSizingService:
     def __init__(self):
         # Configuration for different sizing algorithms using environment variables
         self.kelly_config = {
-            'max_position_size': float(os.getenv('KELLY_MAX_POSITION_SIZE', '0.10')),  # Maximum percentage per position
-            'kelly_fraction': float(os.getenv('KELLY_FRACTION', '0.25')),  # Use fraction of full Kelly recommendation
-            'minimum_edge': float(os.getenv('KELLY_MINIMUM_EDGE', '0.01')),  # Minimum edge required to trade
-            'maximum_drawdown_threshold': float(os.getenv('MAX_DRAWDOWN_THRESHOLD', '0.15'))  # Max portfolio drawdown
+            'max_position_size': Configs.position_sizing.kelly_max_position_size if Configs.position_sizing and hasattr(Configs.position_sizing, 'kelly_max_position_size') else 0.10,  # Maximum percentage per position
+            'kelly_fraction': Configs.position_sizing.kelly_fraction if Configs.position_sizing and hasattr(Configs.position_sizing, 'kelly_fraction') else 0.25,  # Use fraction of full Kelly recommendation
+            'minimum_edge': Configs.position_sizing.kelly_minimum_edge if Configs.position_sizing and hasattr(Configs.position_sizing, 'kelly_minimum_edge') else 0.01,  # Minimum edge required to trade
+            'maximum_drawdown_threshold': Configs.risk.max_drawdown_threshold if Configs.risk and hasattr(Configs.risk, 'max_drawdown_threshold') else 0.15  # Max portfolio drawdown
         }
 
         self.fixed_fractional_config = {
-            'percentage_per_trade': float(os.getenv('FIXED_FRACTIONAL_PERCENTAGE', '0.02')),  # Risk % of portfolio per trade
-            'risk_per_unit': float(os.getenv('FIXED_FRACTIONAL_RISK_PER_UNIT', '0.01')),  # Risk per unit of position
-            'minimum_position_size': float(os.getenv('MIN_POSITION_SIZE', '100')),  # Minimum trade size in USD
-            'maximum_position_size': float(os.getenv('MAX_POSITION_SIZE', '50000'))  # Maximum trade size in USD
+            'percentage_per_trade': Configs.position_sizing.fixed_fractional_percentage if Configs.position_sizing and hasattr(Configs.position_sizing, 'fixed_fractional_percentage') else 0.02,  # Risk % of portfolio per trade
+            'risk_per_unit': Configs.position_sizing.fixed_fractional_risk_per_unit if Configs.position_sizing and hasattr(Configs.position_sizing, 'fixed_fractional_risk_per_unit') else 0.01,  # Risk per unit of position
+            'minimum_position_size': Configs.risk.min_position_size if Configs.risk and hasattr(Configs.risk, 'min_position_size') else 100.0,  # Minimum trade size in USD
+            'maximum_position_size': Configs.risk.max_position_size if Configs.risk and hasattr(Configs.risk, 'max_position_size') else 50000.0  # Maximum trade size in USD
         }
 
         self.atr_based_config = {
@@ -62,7 +63,7 @@ class EnhancedPositionSizingService:
         self.martingale_config = {
             'base_risk_percentage': float(os.getenv('MARTINGALE_BASE_RISK_PERCENTAGE', '0.01')),  # Base 1% risk
             'maximum_progression_levels': int(os.getenv('MARTINGALE_MAX_PROGRESSION_LEVELS', '5')),  # Max 5 levels
-            'progression_multiplier': float(os.getenv('MARTINGALE_PROGRESSION_MULTIPLIER', '2.0'))  # 2x progression
+            'progression_multiplier': float(os.getenv('MARTINGALE_PROGRESSION_MULTIPLIER', '2.0')),  # 2x progression
             'maximum_total_exposure_multiplier': float(os.getenv('MARTINGALE_MAX_TOTAL_EXPOSURE_MULTIPLIER', '10.0'))  # Max 10x total exposure
         }
 

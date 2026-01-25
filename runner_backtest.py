@@ -15,10 +15,6 @@ import pandas as pd
 import numpy as np
 from enum import Enum
 
-# Load environment variables from .env file
-from dotenv import load_dotenv
-load_dotenv()
-
 # Add project root to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -29,16 +25,18 @@ from infrastructure.backtest.realistic_backtester import RealisticBacktester
 from application.data_sync.watcher_retune import WatcherRetuneUseCase
 from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
 from shared.logger import EnhancedLogger
+from application.configs.configs import Configs
 
 
 def load_symbols_from_env() -> List[str]:
-    """Load symbols from environment variable."""
-    symbols_str = os.getenv("WFO_COINS", "BTCUSDT,ETHUSDT")
+    """Load symbols from configuration."""
+    symbols_str = Configs.wfo.wfo_coins if Configs.wfo and Configs.wfo.wfo_coins else "BTCUSDT,ETHUSDT"
     return [s.strip() for s in symbols_str.split(',') if s.strip()]
 
 
 def load_sample_strategy(strategy_name: str):
     """Load a sample strategy function based on the strategy name."""
+
     def simple_rsi_strategy(row, params):
         """Simple RSI-based strategy."""
         rsi = row.get('rsi', 50)
@@ -83,8 +81,8 @@ def load_sample_strategy(strategy_name: str):
             return 0
 
         # Basic trend conditions
-        trend_bullish = close > sma_20 and sma_20 > sma_50 * 0.99  # Less strict trend condition
-        trend_bearish = close < sma_20 and sma_20 < sma_50 * 1.01  # Less strict trend condition
+        trend_bullish = close > sma_20 > sma_50 * 0.99  # Less strict trend condition
+        trend_bearish = close < sma_20 < sma_50 * 1.01  # Less strict trend condition
 
         # Add momentum confirmation
         momentum_bullish = pd.notna(roc) and roc > 0.0005  # Even smaller threshold
@@ -236,7 +234,7 @@ def load_sample_strategy(strategy_name: str):
     def breakout_strategy(row, params):
         """Regime-aware breakout strategy identifying resistance/support breakouts."""
         high_20 = row.get('high_20', 0)  # 20-period high
-        low_20 = row.get('low_20', 0)   # 20-period low
+        low_20 = row.get('low_20', 0)  # 20-period low
         close = row.get('close', 0)
         atr = row.get('atr', 0)
         volume = row.get('volume', 0)
@@ -312,7 +310,7 @@ def load_sample_strategy(strategy_name: str):
         """Regime-aware multi-timeframe trend strategy combining different timeframes."""
         sma_20_short = row.get('sma_20_short', 0)  # Short-term trend
         sma_50_short = row.get('sma_50_short', 0)
-        sma_20_long = row.get('sma_20_long', 0)   # Long-term trend
+        sma_20_long = row.get('sma_20_long', 0)  # Long-term trend
         sma_50_long = row.get('sma_50_long', 0)
         close = row.get('close', 0)
         roc_short = row.get('roc_10', 0)  # Short-term momentum
@@ -324,7 +322,7 @@ def load_sample_strategy(strategy_name: str):
 
         # Align trends across timeframes
         short_trend_bullish = sma_20_short > sma_50_short * 0.99  # Less strict
-        long_trend_bullish = sma_20_long > sma_50_long * 0.99   # Less strict
+        long_trend_bullish = sma_20_long > sma_50_long * 0.99  # Less strict
 
         # Momentum confirmation
         mom_bullish = pd.isna(roc_short) or roc_short > 0.0001  # Very small positive momentum
@@ -398,7 +396,7 @@ def load_sample_strategy(strategy_name: str):
 
         # Check if price is near recent extremes
         near_high = high >= high_5 * 0.99  # Less strict - within 1% of 5-period high
-        near_low = low <= low_5 * 1.01    # Less strict - within 1% of 5-period low
+        near_low = low <= low_5 * 1.01  # Less strict - within 1% of 5-period low
 
         # Check for potential sweep scenarios
         bullish_sweep = volume_spike and near_low and close > low  # Price moved away from low
@@ -493,7 +491,7 @@ def calculate_indicators_with_shifting(df: pd.DataFrame) -> pd.DataFrame:
     # ATR (Average True Range) with shifting
     high_low = df['high'] - df['low']
     high_close = abs(df['high'] - df['close'].shift(1))  # Use previous close
-    low_close = abs(df['low'] - df['close'].shift(1))    # Use previous close
+    low_close = abs(df['low'] - df['close'].shift(1))  # Use previous close
     tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
     df['atr'] = tr.rolling(window=14).mean().shift(1)
 
@@ -531,7 +529,8 @@ def calculate_indicators_with_shifting(df: pd.DataFrame) -> pd.DataFrame:
     # VWAP (Volume Weighted Average Price) - simplified version
     # For simplicity, we'll approximate VWAP using typical price weighted by volume
     typical_price = (df['high'] + df['low'] + df['close']) / 3
-    df['vwap'] = (typical_price * df['volume']).rolling(window=20).sum().shift(1) / df['volume'].rolling(window=20).sum().shift(1)
+    df['vwap'] = (typical_price * df['volume']).rolling(window=20).sum().shift(1) / df['volume'].rolling(
+        window=20).sum().shift(1)
 
     # Bid-Ask Spread approximation (using high-low as proxy)
     df['bid_ask_spread'] = (df['high'] - df['low']) / df['close']
@@ -540,8 +539,8 @@ def calculate_indicators_with_shifting(df: pd.DataFrame) -> pd.DataFrame:
     # For demonstration purposes, we'll create slower moving averages as "longer timeframe" indicators
     df['sma_20_short'] = df['close'].rolling(window=20).mean().shift(1)  # Shorter timeframe
     df['sma_50_short'] = df['close'].rolling(window=50).mean().shift(1)  # Shorter timeframe
-    df['sma_20_long'] = df['close'].rolling(window=20).mean().shift(1)   # Longer timeframe (simulated)
-    df['sma_50_long'] = df['close'].rolling(window=50).mean().shift(1)   # Longer timeframe (simulated)
+    df['sma_20_long'] = df['close'].rolling(window=20).mean().shift(1)  # Longer timeframe (simulated)
+    df['sma_50_long'] = df['close'].rolling(window=50).mean().shift(1)  # Longer timeframe (simulated)
 
     # Volatility regime indicators
     df['volatility_regime'] = df['atr'].rolling(window=20).mean().shift(1)
@@ -554,13 +553,13 @@ def calculate_indicators_with_shifting(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def run_backtest_process(symbols: List[str],
-                        strategy_name: str,
-                        start_date: datetime,
-                        end_date: datetime,
-                        initial_capital: float = 10000.0,
-                        fee_rate: float = 0.001,
-                        slippage_factor: float = 0.0005,
-                        strategy_params: Dict[str, Any] = None) -> Dict[str, Any]:
+                         strategy_name: str,
+                         start_date: datetime,
+                         end_date: datetime,
+                         initial_capital: float = 10000.0,
+                         fee_rate: float = 0.001,
+                         slippage_factor: float = 0.0005,
+                         strategy_params: Dict[str, Any] = None) -> Dict[str, Any]:
     """Run the backtest process for specified symbols and strategy."""
     logger = EnhancedLogger(f"BacktestRunner_{strategy_name}")
 
@@ -798,7 +797,7 @@ def classify_market_regime(df: pd.DataFrame) -> Dict[str, Any]:
     atr = latest_row.get('atr', 0)
     volatility_regime = latest_row.get('volatility_regime', 0)
     volatility_level = 'high' if volatility_regime > df['volatility_regime'].quantile(0.7) else \
-                      'low' if volatility_regime < df['volatility_regime'].quantile(0.3) else 'normal'
+        'low' if volatility_regime < df['volatility_regime'].quantile(0.3) else 'normal'
 
     # Determine market regime
     if trend_strength == 'strong' and volatility_level == 'high':
@@ -855,46 +854,46 @@ def audit_signal_density(df: pd.DataFrame, strategy_function) -> Dict[str, int]:
 def validate_backtest_results(results: Dict[str, Any]) -> Dict[str, Any]:
     """Validate the results of the backtest process."""
     print(f"\n✅ Validating backtest results...")
-    
+
     validation_results = {
         'valid': 0,
         'invalid': 0,
         'total': results['summary']['successful_backtests'] + results['summary']['failed_backtests'],
         'validation_details': {}
     }
-    
+
     for symbol, result in results['backtest_results'].items():
         if 'error' not in result and result:  # Successful backtest
             # Basic validation checks
             is_valid = True
             issues = []
-            
+
             # Check for reasonable values
             total_return = result.get('total_return', 0)
             if abs(total_return) > 10:  # 1000% return seems unreasonable
                 is_valid = False
                 issues.append(f"Unreasonable return: {total_return:.2%}")
-            
+
             sharpe_ratio = result.get('sharpe_ratio', 0)
             if abs(sharpe_ratio) > 5:  # Sharpe > 5 is typically unrealistic
                 is_valid = False
                 issues.append(f"Unreasonable Sharpe ratio: {sharpe_ratio:.2f}")
-            
+
             max_drawdown = result.get('max_drawdown', 0)
             if max_drawdown > 0:  # Drawdown should be negative
                 is_valid = False
                 issues.append(f"Positive drawdown value: {max_drawdown:.2%}")
-            
+
             win_rate = result.get('win_rate', 0)
             if win_rate < 0 or win_rate > 1:  # Win rate should be 0-1
                 is_valid = False
                 issues.append(f"Invalid win rate: {win_rate:.2%}")
-            
+
             validation_results['validation_details'][symbol] = {
                 'valid': is_valid,
                 'issues': issues
             }
-            
+
             if is_valid:
                 validation_results['valid'] += 1
             else:
@@ -905,21 +904,21 @@ def validate_backtest_results(results: Dict[str, Any]) -> Dict[str, Any]:
                 'issues': [result.get('error', 'Unknown error')]
             }
             validation_results['invalid'] += 1
-    
+
     print(f"   Valid results: {validation_results['valid']}")
     print(f"   Invalid results: {validation_results['invalid']}")
-    
+
     return validation_results
 
 
 def run_multiple_strategies_backtest(symbols: List[str],
-                                   strategy_names: List[str],
-                                   start_date: datetime,
-                                   end_date: datetime,
-                                   initial_capital: float = 10000.0,
-                                   fee_rate: float = 0.001,
-                                   slippage_factor: float = 0.0005,
-                                   strategy_params: Dict[str, Any] = None) -> Dict[str, Any]:
+                                     strategy_names: List[str],
+                                     start_date: datetime,
+                                     end_date: datetime,
+                                     initial_capital: float = 10000.0,
+                                     fee_rate: float = 0.001,
+                                     slippage_factor: float = 0.0005,
+                                     strategy_params: Dict[str, Any] = None) -> Dict[str, Any]:
     """Run backtests for multiple strategies and compare results."""
     logger = EnhancedLogger("MultiStrategyBacktest")
 
@@ -974,7 +973,7 @@ def run_multiple_strategies_backtest(symbols: List[str],
 
                 # Track best performing strategy by return
                 if (results['best_performing'] is None or
-                    comparison_entry['avg_return'] > results['best_performing']['avg_return']):
+                        comparison_entry['avg_return'] > results['best_performing']['avg_return']):
                     results['best_performing'] = comparison_entry
 
             results['summary']['successful_backtests'] += 1
@@ -1019,41 +1018,41 @@ Examples:
     # Mutually exclusive group for single vs multiple strategies
     strategy_group = parser.add_mutually_exclusive_group(required=False)
     strategy_group.add_argument('--strategy', type=str,
-                               default='rsi_strategy',
-                               help='Single strategy name to backtest (default: rsi_strategy)')
+                                default='rsi_strategy',
+                                help='Single strategy name to backtest (default: rsi_strategy)')
 
     strategy_group.add_argument('--all-strategies', action='store_true',
-                               help='Run all available strategies for comparison')
+                                help='Run all available strategies for comparison')
 
     strategy_group.add_argument('--strategies', nargs='+', type=str,
-                               help='List of specific strategies to run (space-separated)')
+                                help='List of specific strategies to run (space-separated)')
 
     parser.add_argument('--start', type=str, required=True,
-                       help='Start date in YYYY-MM-DD format or relative (e.g., "30d", "90d")')
+                        help='Start date in YYYY-MM-DD format or relative (e.g., "30d", "90d")')
 
     parser.add_argument('--end', type=str, default='today',
-                       help='End date in YYYY-MM-DD format or "today" (default: today)')
+                        help='End date in YYYY-MM-DD format or "today" (default: today)')
 
     parser.add_argument('--symbols', nargs='+', type=str,
-                       help='Specific symbols to backtest (default: from WFO_COINS env var)')
+                        help='Specific symbols to backtest (default: from WFO_COINS env var)')
 
     parser.add_argument('--capital', type=float, default=10000.0,
-                       help='Initial capital for backtest (default: 10000.0)')
+                        help='Initial capital for backtest (default: 10000.0)')
 
     parser.add_argument('--fee', type=float, default=0.001,
-                       help='Fee rate per trade (default: 0.001 = 0.1%%)')
+                        help='Fee rate per trade (default: 0.001 = 0.1%%)')
 
     parser.add_argument('--slippage', type=float, default=0.0005,
-                       help='Slippage factor (default: 0.0005 = 0.05%%)')
+                        help='Slippage factor (default: 0.0005 = 0.05%%)')
 
     parser.add_argument('--output', type=str,
-                       help='Output file to save results (JSON format)')
+                        help='Output file to save results (JSON format)')
 
     parser.add_argument('--validate', action='store_true',
-                       help='Validate results after backtesting')
+                        help='Validate results after backtesting')
 
     parser.add_argument('--verbose', '-v', action='store_true',
-                       help='Enable verbose output')
+                        help='Enable verbose output')
 
     args = parser.parse_args()
 

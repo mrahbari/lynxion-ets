@@ -1,0 +1,83 @@
+from pydantic import BaseModel, Field, validator
+from typing import Optional, Dict, Any, List
+from decimal import Decimal
+
+
+class DataConfig(BaseModel):
+    """
+    Configuration for data sources and handling.
+    """
+    # Original fields
+    data_source: str = Field(default="api", description="Source of market data")
+    data_frequency: str = Field(default="1m", description="Frequency of data updates")
+    lookback_days: int = Field(default=30, ge=1, description="Number of days to look back for data")
+    cache_enabled: bool = Field(default=True, description="Whether data caching is enabled")
+    max_data_age_hours: float = Field(default=1.0, gt=0, description="Maximum age of cached data in hours")
+
+    # Additional data fields from .env
+    path: str = Field(default="./data", description="Path to historical data")
+    results_dir: str = Field(default="./results", description="Path to store results")
+    cache_dir: str = Field(default="./cache", description="Path to cache processed data")
+    coin_history_cache_dir: str = Field(default="./data/coin_history_cache", description="Cache for coin history data")
+    max_cache_age_hours: int = Field(default=24, description="Max age of cached data before refresh")
+    max_coin_cache_size: int = Field(default=50, description="Max number of coins to cache")
+    default_provider: str = Field(default="binance", description="Default data provider")
+    default_timeframe: str = Field(default="1h", description="Default timeframe")
+    supported_timeframes: List[str] = Field(default=["1m", "5m", "15m", "1h", "4h", "1d"], description="Supported timeframes")
+    coins_config_path: str = Field(default="./application/configs/sync_symbols.json", description="Path to coins config")
+    wfo_data_dir: str = Field(default="./data", description="WFO data directory")
+    wfo_raw_dir: str = Field(default="./data/history/raw/1m", description="WFO raw data directory")
+    wfo_processed_dir: str = Field(default="./data/history/processed", description="WFO processed data directory")
+    cmc_api_key: str = Field(default="", description="CoinMarketCap API key")
+    cmc_listings_url: str = Field(default="https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest", description="CMC listings URL")
+    cmc_quotes_url: str = Field(default="https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest", description="CMC quotes URL")
+    cmc_excluded_coins: List[str] = Field(default=["BTC", "ETH", "SOL", "ADA", "DOT", "XRP", "DOGE", "LINK", "BNB", "AVAX", "MATIC", "USDC", "USDT", "DAI"], description="CMC excluded coins")
+    cmc_max_calls_per_minute: int = Field(default=10, description="CMC max calls per minute")
+    cmc_max_calls_per_hour: int = Field(default=300, description="CMC max calls per hour")
+    cmc_api_call_interval: float = Field(default=4.0, description="CMC API call interval")
+    cmc_cache_ttl_seconds: int = Field(default=300, description="CMC cache TTL in seconds")
+    cmc_listings_cache_ttl_seconds: int = Field(default=1800, description="CMC listings cache TTL in seconds")
+    cmc_quote_cache_ttl_seconds: int = Field(default=300, description="CMC quote cache TTL in seconds")
+    cmc_screen_top_coins_interval_hours: int = Field(default=1, description="CMC screen top coins interval in hours")
+    cmc_screen_top_coins_limit: int = Field(default=50, description="CMC screen top coins limit")
+    cmc_max_coins_to_analyze_per_run: int = Field(default=20, description="CMC max coins to analyze per run")
+    cmc_circuit_breaker_failure_threshold: int = Field(default=3, description="CMC circuit breaker failure threshold")
+    cmc_circuit_breaker_reset_timeout: int = Field(default=600, description="CMC circuit breaker reset timeout")
+    cmc_min_confidence_threshold: float = Field(default=0.02, description="CMC min confidence threshold")
+    cmc_vol_confidence_weight: float = Field(default=0.2, description="CMC vol confidence weight")
+    cmc_volume_confidence_weight: float = Field(default=0.3, description="CMC volume confidence weight")
+    cmc_change_confidence_weight: float = Field(default=0.2, description="CMC change confidence weight")
+    sync_interval_seconds: int = Field(default=3600, description="Sync interval in seconds")
+    async_concurrency: int = Field(default=50, description="Async concurrency")
+    download_threadpool_workers: int = Field(default=4, description="Download threadpool workers")
+    retry_max_attempts: int = Field(default=3, description="Retry max attempts")
+    retry_backoff_base: float = Field(default=0.3, description="Retry backoff base")
+    retry_backoff_factor: float = Field(default=1.5, description="Retry backoff factor")
+    rate_limit_tokens_per_second: int = Field(default=5, description="Rate limit tokens per second")
+    temp_file_suffix: str = Field(default=".partial", description="Temp file suffix")
+    dir: str = Field(default="./data/history", description="Data directory")
+    raw_retention_days: int = Field(default=180, description="Raw retention days")
+    processed_retention_days: int = Field(default=730, description="Processed retention days")
+    max_gap_fill_minutes: int = Field(default=720, description="Max gap fill minutes")
+    sync_default_exchange: str = Field(default="bingx", description="Sync default exchange")
+    sync_max_window_minutes: int = Field(default=720, description="Sync max window minutes")
+    sync_rate_limit: int = Field(default=5, description="Sync rate limit")
+    filter_out_stablecoin_pairs: bool = Field(default=True, description="Filter out stablecoin pairs")
+    allowed_stablecoins: List[str] = Field(default=["USDT", "BUSD", "USDC", "DAI", "PAX", "TUSD", "USDD", "FDUSD"], description="Allowed stablecoins")
+    excluded_symbols_pattern: str = Field(default="USD[SD]/?USD[SD]|BTC/BTC|ETH/ETH", description="Excluded symbols pattern")
+    csv_data_path: str = Field(default="./data/history/raw/1m", description="CSV data path")
+    default_watchlist_symbols: List[str] = Field(default=["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "ADAUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT", "LINKUSDT"], description="Default watchlist symbols")
+    failed_symbols_cache_duration: int = Field(default=300, description="Failed symbols cache duration")
+    fallback_watchlist_symbols: List[str] = Field(default=["BTCUSDT"], description="Fallback watchlist symbols")
+    historical_data_fallback_sources: List[str] = Field(default=["binance", "mexc", "phemex", "bingx"], description="Historical data fallback sources")
+    preferred_historical_data_source: str = Field(default="binance", description="Preferred historical data source")
+    validate_symbol_data_availability: str = Field(default="BTCUSDT", description="Validate symbol data availability")
+    cmc_categories_url: str = Field(default="https://pro-api.coinmarketcap.com/v1/cryptocurrency/categories/list", description="CMC categories URL")
+    cmc_update_interval: int = Field(default=300, description="CMC update interval")
+    cmc_volatility_high_threshold: float = Field(default=0.3, description="CMC volatility high threshold")
+    cmc_volatility_low_threshold: float = Field(default=0.3, description="CMC volatility low threshold")
+    cmc_volume_high_threshold: float = Field(default=0.3, description="CMC volume high threshold")
+    cmc_volume_low_threshold: float = Field(default=0.3, description="CMC volume low threshold")
+
+    class Config:
+        extra = "forbid"

@@ -1,90 +1,90 @@
 """
 Standardized Configuration for Strategies
-Provides consistent environment variable naming and default values
+Provides consistent access to strategy configuration through the Configs system
 """
-import os
 from typing import Union
+from application.configs.configs import Configs
 
 
 class StrategyConfig:
     """
     Standardized configuration class for all strategies.
-    Provides consistent environment variable naming and default values.
+    Provides consistent access to strategy configuration through the Configs system.
     """
 
     # Common strategy settings
     @staticmethod
     def get_strategy_enabled(strategy_name: str) -> bool:
         """Get if a strategy is enabled"""
-        env_var = f'{strategy_name.upper()}_STRATEGY_ENABLED'
-        return os.getenv(env_var, 'true').lower() == 'true'
+        # For now, return True by default since we don't have dynamic strategy configs
+        # This could be extended to check for specific strategy config fields in the future
+        return True
 
     @staticmethod
     def get_strategy_max_position_size(strategy_name: str, default: float = 0.05) -> float:
         """Get maximum position size for a strategy"""
-        env_var = f'{strategy_name.upper()}_MAX_POSITION_SIZE'
-        return float(os.getenv(env_var, str(default)))
+        # Use the general max position size from the strategy config
+        if Configs.strategy and hasattr(Configs.strategy, 'max_position_size'):
+            return Configs.strategy.max_position_size
+        return default
 
     @staticmethod
     def get_strategy_min_confidence(strategy_name: str = None, default: float = 0.3) -> float:
         """Get minimum confidence threshold for a strategy"""
-        if strategy_name:
-            env_var = f'{strategy_name.upper()}_MIN_CONFIDENCE_THRESHOLD'
-        else:
-            env_var = 'STRATEGY_MIN_CONFIDENCE_THRESHOLD'
-        return float(os.getenv(env_var, str(default)))
+        if Configs.strategy and hasattr(Configs.strategy, 'min_confidence_threshold'):
+            return Configs.strategy.min_confidence_threshold
+        return default
 
     @staticmethod
     def get_strategy_max_confidence(strategy_name: str = None, default: float = 0.95) -> float:
         """Get maximum confidence threshold for a strategy"""
-        if strategy_name:
-            env_var = f'{strategy_name.upper()}_MAX_CONFIDENCE_THRESHOLD'
-        else:
-            env_var = 'STRATEGY_MAX_CONFIDENCE_THRESHOLD'
-        return float(os.getenv(env_var, str(default)))
+        if Configs.strategy and hasattr(Configs.strategy, 'high_confidence_threshold'):
+            return Configs.strategy.high_confidence_threshold
+        return default
 
     @staticmethod
     def get_strategy_risk_per_trade(strategy_name: str, default: float = 0.02) -> float:
         """Get risk per trade for a strategy"""
-        env_var = f'{strategy_name.upper()}_RISK_PER_TRADE'
-        return float(os.getenv(env_var, str(default)))
+        if Configs.strategy and hasattr(Configs.strategy, 'risk_per_trade'):
+            return Configs.strategy.risk_per_trade
+        return default
 
     @staticmethod
     def get_strategy_stop_loss_multiplier(strategy_name: str, default: float = 1.5) -> float:
         """Get stop loss multiplier for a strategy"""
-        env_var = f'{strategy_name.upper()}_STOP_LOSS_MULTIPLIER'
-        return float(os.getenv(env_var, str(default)))
+        # Use a general stop loss multiplier from risk config
+        if Configs.risk and hasattr(Configs.risk, 'stop_loss_percentage'):
+            return Configs.risk.stop_loss_percentage / 0.01 * default  # Scale appropriately
+        return default
 
     @staticmethod
     def get_strategy_take_profit_multiplier(strategy_name: str, default: float = 2.0) -> float:
         """Get take profit multiplier for a strategy"""
-        env_var = f'{strategy_name.upper()}_TAKE_PROFIT_MULTIPLIER'
-        return float(os.getenv(env_var, str(default)))
+        # Use a general take profit multiplier from risk config
+        if Configs.risk and hasattr(Configs.risk, 'take_profit_percentage'):
+            return Configs.risk.take_profit_percentage / 0.01 * default  # Scale appropriately
+        return default
 
     @staticmethod
     def get_strategy_lookback_period(strategy_name: str = None, default: int = 50) -> int:
         """Get lookback period for a strategy"""
-        if strategy_name:
-            env_var = f'{strategy_name.upper()}_LOOKBACK_PERIOD'
-        else:
-            env_var = 'STRATEGY_LOOKBACK_PERIOD'
-        return int(os.getenv(env_var, str(default)))
+        if Configs.strategy and hasattr(Configs.strategy, 'lookback_period'):
+            return Configs.strategy.lookback_period
+        return default
 
     @staticmethod
     def get_strategy_timeframe(strategy_name: str = None, default: str = '1h') -> str:
         """Get timeframe for a strategy"""
-        if strategy_name:
-            env_var = f'{strategy_name.upper()}_TIMEFRAME'
-        else:
-            env_var = 'STRATEGY_TIMEFRAME'
-        return os.getenv(env_var, default)
+        if Configs.strategy and hasattr(Configs.strategy, 'timeframe'):
+            return Configs.strategy.timeframe
+        return default
 
 
 # Convenience functions for specific strategies
 def get_trend_following_config() -> dict:
     """Get configuration for TrendFollowingStrategy"""
     return {
-        'enabled': StrategyConfig.get_strategy_enabled('TREND_FOLLOWING'),
+        'enabled': True,  # Use static value since we don't have dynamic strategy configs
         'max_position_size': StrategyConfig.get_strategy_max_position_size('TREND_FOLLOWING', 0.05),
         'min_confidence': StrategyConfig.get_strategy_min_confidence('TREND_FOLLOWING', 0.3),
         'max_confidence': StrategyConfig.get_strategy_max_confidence('TREND_FOLLOWING', 0.95),
@@ -105,7 +105,7 @@ def get_trend_following_config() -> dict:
 def get_mean_reversion_config() -> dict:
     """Get configuration for MeanReversionStrategy"""
     return {
-        'enabled': StrategyConfig.get_strategy_enabled('MEAN_REVERSION'),
+        'enabled': True,  # Use static value since we don't have dynamic strategy configs
         'max_position_size': StrategyConfig.get_strategy_max_position_size('MEAN_REVERSION', 0.04),
         'min_confidence': StrategyConfig.get_strategy_min_confidence('MEAN_REVERSION', 0.35),
         'max_confidence': StrategyConfig.get_strategy_max_confidence('MEAN_REVERSION', 0.90),
@@ -127,7 +127,7 @@ def get_mean_reversion_config() -> dict:
 def get_volatility_breakout_config() -> dict:
     """Get configuration for VolatilityBreakoutStrategy"""
     return {
-        'enabled': StrategyConfig.get_strategy_enabled('VOLATILITY_BREAKOUT'),
+        'enabled': True,  # Use static value since we don't have dynamic strategy configs
         'max_position_size': StrategyConfig.get_strategy_max_position_size('VOLATILITY_BREAKOUT', 0.03),
         'min_confidence': StrategyConfig.get_strategy_min_confidence('VOLATILITY_BREAKOUT', 0.4),
         'max_confidence': StrategyConfig.get_strategy_max_confidence('VOLATILITY_BREAKOUT', 0.95),

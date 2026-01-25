@@ -7,6 +7,7 @@ from domain.entities.trading_entities import MarketData
 from domain.value_objects import Symbol
 from infrastructure.data.data_adapters import MockDataProviderAdapter
 from infrastructure.data.csv_history_loader import CSVHistoryLoaderAdapter
+from application.configs.configs import Configs
 
 
 class HybridDataProviderAdapter(DataProviderPort):
@@ -23,15 +24,13 @@ class HybridDataProviderAdapter(DataProviderPort):
             use_mock: If True, use mock data; if False, use CSV data; if None, determine from environment
             csv_base_path: Path to CSV historical data files (defaults to './data/history/raw/1m' or env var)
         """
-        import os
-
-        # Determine base path - from parameter, environment variable, or default
+        # Determine base path - from parameter, configuration, or default
         if csv_base_path is None:
-            csv_base_path = os.getenv('CSV_DATA_PATH', './data/history/raw/1m')
+            csv_base_path = Configs.data.csv_data_path if Configs.data and hasattr(Configs.data, 'csv_data_path') else './data/history/raw/1m'
 
-        # Determine whether to use mock based on environment variable or parameter
+        # Determine whether to use mock based on configuration or parameter
         if use_mock is None:
-            use_mock = os.getenv('USE_MOCK_DATA', 'false').lower() == 'true'
+            use_mock = Configs.infrastructure.use_mock_data if Configs.infrastructure and hasattr(Configs.infrastructure, 'use_mock_data') else False
 
         self.use_mock = use_mock
         self.csv_base_path = csv_base_path

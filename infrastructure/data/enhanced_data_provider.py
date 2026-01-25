@@ -2,7 +2,6 @@
 Enhanced Data Provider that can handle new symbols by downloading data when needed.
 This version uses a more practical approach for the existing architecture.
 """
-import os
 import threading
 import time
 import traceback
@@ -19,6 +18,7 @@ from shared.logger import EnhancedLogger
 from infrastructure.brokers.multi_broker_service import MultiBrokerExecutionService
 from infrastructure.data.improved_data_cache import improved_data_cache as data_cache
 from infrastructure.data.configurable_historical_data_provider import ConfigurableHistoricalDataProvider
+from application.configs.configs import Configs
 
 
 def _convert_period_to_ms(period: str) -> int:
@@ -61,7 +61,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
         """
         # Use environment variable or default for base path
         if csv_base_path is None:
-            csv_base_path = os.getenv('CSV_DATA_PATH', './data/history/raw/1m')
+            csv_base_path = Configs.data.csv_data_path if Configs.data and hasattr(Configs.data, 'csv_data_path') else './data/history/raw/1m'
 
         self.csv_base_path = csv_base_path
         self.download_enabled = download_enabled
@@ -393,7 +393,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                     broker_type = self._get_broker_type(broker)
                     self.logger.debug(f"Accessing internal broker {broker_type} for symbol {symbol}")
                 elif hasattr(self.broker_service, 'get_broker_by_name'):
-                    default_broker = os.getenv('DEFAULT_BROKER', 'bingx').lower()
+                    default_broker = Configs.broker.default_broker.lower() if Configs.broker and hasattr(Configs.broker, 'default_broker') else 'bingx'.lower()
                     broker = self.broker_service.get_broker_by_name(default_broker)
                     broker_type = self._get_broker_type(broker)
                     self.logger.debug(f"Got broker {broker_type} by name '{default_broker}' for symbol {symbol}")
@@ -587,7 +587,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                     self.logger.debug(f"Accessed internal broker: {broker_type}")
                 elif hasattr(self.broker_service, 'get_broker_by_name'):
                     # Get the default broker from environment or use 'bingx' as default
-                    default_broker = os.getenv('DEFAULT_BROKER', 'bingx').lower()
+                    default_broker = Configs.broker.default_broker.lower() if Configs.broker and hasattr(Configs.broker, 'default_broker') else 'bingx'.lower()
                     broker = self.broker_service.get_broker_by_name(default_broker)
                     broker_type = self._get_broker_type(broker)
                     self.logger.debug(f"Got broker by name '{default_broker}': {broker_type}")
@@ -707,7 +707,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
                         broker_type = self._get_broker_type(broker)
                         self.logger.debug(f"Accessing internal broker: {broker_type}")
                     elif hasattr(self.broker_service, 'get_broker_by_name'):
-                        default_broker = os.getenv('DEFAULT_BROKER', 'bingx').lower()
+                        default_broker = Configs.broker.default_broker.lower() if Configs.broker and hasattr(Configs.broker, 'default_broker') else 'bingx'.lower()
                         broker = self.broker_service.get_broker_by_name(default_broker)
                         broker_type = self._get_broker_type(broker)
                         self.logger.debug(f"Got broker by name '{default_broker}': {broker_type}")

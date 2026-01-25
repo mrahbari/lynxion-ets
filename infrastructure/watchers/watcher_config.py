@@ -1,9 +1,10 @@
 """
 Standardized Configuration for Watchers
-Provides consistent environment variable naming and default values
+Provides consistent access to configuration through the Configs system
 """
 import os
 from typing import Union
+from application.configs.configs import Configs
 
 
 class WatcherConfig:
@@ -16,23 +17,74 @@ class WatcherConfig:
     @staticmethod
     def get_watcher_enabled(watcher_name: str) -> bool:
         """Get if a watcher is enabled"""
-        env_var = f'{watcher_name.upper()}_WATCHER_ENABLED'
-        return os.getenv(env_var, 'true').lower() == 'true'
+        # Map watcher names to config attributes
+        config_map = {
+            'market_pulse': lambda: Configs.watcher.market_pulse_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'market_pulse_watcher_enabled') else True,
+            'volatility': lambda: Configs.watcher.volatility_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'volatility_watcher_enabled') else True,
+            'trend_mtf': lambda: Configs.watcher.trend_mtf_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'trend_mtf_watcher_enabled') else True,
+            'anomaly_ml': lambda: Configs.watcher.anomaly_ml_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'anomaly_ml_watcher_enabled') else True,
+            'orderflow_ws': lambda: Configs.watcher.orderflow_ws_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'orderflow_ws_watcher_enabled') else True,
+            'cmc_screener': lambda: Configs.watcher.cmc_screener_enabled if Configs.watcher and hasattr(Configs.watcher, 'cmc_screener_enabled') else True,
+            'funding_rate': lambda: Configs.watcher.funding_rate_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'funding_rate_watcher_enabled') else True,
+            'liquidity': lambda: Configs.watcher.liquidity_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'liquidity_watcher_enabled') else True,
+            'historical_candle': lambda: Configs.watcher.historical_candle_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'historical_candle_watcher_enabled') else True,
+            'tick': lambda: Configs.watcher.tick_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'tick_watcher_enabled') else False,
+        }
+
+        if watcher_name.lower() in config_map:
+            return config_map[watcher_name.lower()]()
+        else:
+            # Default to True if watcher name is not recognized
+            return True
     
     @staticmethod
     def get_watcher_lookback(watcher_name: str, default: int = 20) -> int:
         """Get lookback period for a watcher"""
-        env_var = f'{watcher_name.upper()}_LOOKBACK_PERIOD'
-        return int(os.getenv(env_var, str(default)))
+        # Map watcher names to config attributes
+        config_map = {
+            'market_pulse': lambda: Configs.watcher.market_pulse_lookback_period if Configs.watcher and hasattr(Configs.watcher, 'market_pulse_lookback_period') else default,
+            'volatility': lambda: Configs.watcher.volatility_lookback_period if Configs.watcher and hasattr(Configs.watcher, 'volatility_lookback_period') else default,
+            'trend_mtf': lambda: Configs.watcher.trend_mtf_lookback_period if Configs.watcher and hasattr(Configs.watcher, 'trend_mtf_lookback_period') else default,
+            'anomaly_ml': lambda: Configs.watcher.anomaly_ml_lookback_period if Configs.watcher and hasattr(Configs.watcher, 'anomaly_ml_lookback_period') else default,
+            'orderflow_ws': lambda: Configs.watcher.orderflow_ws_lookback_period if Configs.watcher and hasattr(Configs.watcher, 'orderflow_ws_lookback_period') else default,
+            'cmc_screener': lambda: Configs.watcher.cmc_screener_lookback_period if Configs.watcher and hasattr(Configs.watcher, 'cmc_screener_lookback_period') else default,
+            'funding_rate': lambda: Configs.watcher.funding_rate_lookback_period if Configs.watcher and hasattr(Configs.watcher, 'funding_rate_lookback_period') else default,
+            'liquidity': lambda: Configs.watcher.liquidity_lookback_period if Configs.watcher and hasattr(Configs.watcher, 'liquidity_lookback_period') else default,
+            'historical_candle': lambda: Configs.watcher.historical_candle_lookback_period if Configs.watcher and hasattr(Configs.watcher, 'historical_candle_lookback_period') else default,
+            'tick': lambda: Configs.watcher.tick_lookback_period if Configs.watcher and hasattr(Configs.watcher, 'tick_lookback_period') else default,
+        }
+
+        if watcher_name.lower() in config_map:
+            return config_map[watcher_name.lower()]()
+        else:
+            # Default to provided default if watcher name is not recognized
+            return default
     
     @staticmethod
     def get_watcher_min_confidence(watcher_name: str = None, default: float = 0.05) -> float:
         """Get minimum confidence threshold for a watcher"""
         if watcher_name:
-            env_var = f'{watcher_name.upper()}_MIN_CONFIDENCE_THRESHOLD'
+            # Map specific watcher names to config attributes
+            config_map = {
+                'market_pulse': lambda: Configs.watcher.market_pulse_min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'market_pulse_min_confidence_threshold') else default,
+                'volatility': lambda: Configs.watcher.volatility_min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'volatility_min_confidence_threshold') else default,
+                'trend_mtf': lambda: Configs.watcher.trend_mtf_min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'trend_mtf_min_confidence_threshold') else default,
+                'anomaly_ml': lambda: Configs.watcher.anomaly_ml_min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'anomaly_ml_min_confidence_threshold') else default,
+                'orderflow_ws': lambda: Configs.watcher.orderflow_ws_min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'orderflow_ws_min_confidence_threshold') else default,
+                'cmc_screener': lambda: Configs.watcher.cmc_screener_min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'cmc_screener_min_confidence_threshold') else default,
+                'funding_rate': lambda: Configs.watcher.funding_rate_min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'funding_rate_min_confidence_threshold') else default,
+                'liquidity': lambda: Configs.watcher.liquidity_min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'liquidity_min_confidence_threshold') else default,
+                'historical_candle': lambda: Configs.watcher.historical_candle_min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'historical_candle_min_confidence_threshold') else default,
+                'tick': lambda: Configs.watcher.tick_min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'tick_min_confidence_threshold') else default,
+            }
+
+            if watcher_name.lower() in config_map:
+                return config_map[watcher_name.lower()]()
+            else:
+                return default
         else:
-            env_var = 'WATCHER_MIN_CONFIDENCE_THRESHOLD'
-        return float(os.getenv(env_var, str(default)))
+            # Use general watcher min confidence threshold
+            return Configs.watcher.min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'min_confidence_threshold') else default
     
     @staticmethod
     def get_watcher_max_confidence(watcher_name: str = None, default: float = 0.95) -> float:

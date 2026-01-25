@@ -2,7 +2,6 @@
 Configurable Historical Data Provider that can use different brokers to avoid rate limits.
 This provider allows selecting different data sources for historical data requests.
 """
-import os
 import time
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
@@ -17,6 +16,7 @@ from infrastructure.brokers.broker_adapters import (
     BingXBrokerAdapter, BinanceBrokerAdapter, MEXCBrokerAdapter, PhemexBrokerAdapter
 )
 from infrastructure.brokers.multi_broker_service import MultiBrokerExecutionService
+from application.configs.configs import Configs
 
 
 class ConfigurableHistoricalDataProvider(DataProviderPort):
@@ -38,11 +38,11 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         # Determine preferred data source
         if preferred_data_source is None:
             # Default to binance for historical data to avoid BingX rate limits
-            preferred_data_source = os.getenv('PREFERRED_HISTORICAL_DATA_SOURCE', 'binance')
+            preferred_data_source = Configs.data.preferred_historical_data_source if Configs.data and hasattr(Configs.data, 'preferred_historical_data_source') else 'binance'
 
         # Set default fallbacks if not provided
         if fallback_sources is None:
-            fallback_sources = os.getenv('HISTORICAL_DATA_FALLBACK_SOURCES', 'binance,mexc,phemex').split(',')
+            fallback_sources = (Configs.data.historical_data_fallback_sources if Configs.data and Configs.data.historical_data_fallback_sources else 'binance,mexc,phemex').split(',')
 
         self.preferred_data_source = preferred_data_source.lower()
         self.fallback_sources = [source.strip().lower() for source in fallback_sources]
@@ -56,7 +56,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
         # Track symbols that have failed to fetch data recently to avoid repeated attempts
         self.failed_symbols_cache = {}  # symbol -> timestamp of last failure
-        self.failed_symbols_cache_duration = int(os.getenv('FAILED_SYMBOLS_CACHE_DURATION', '300'))  # 5 minutes default
+        self.failed_symbols_cache_duration = Configs.data.failed_symbols_cache_duration if Configs.data and hasattr(Configs.data, 'failed_symbols_cache_duration') else 300  # 5 minutes default
 
         self.logger.info(f"Configurable Historical Data Provider initialized with preferred source: {self.preferred_data_source}")
         self.logger.info(f"Fallback sources: {self.fallback_sources}")
@@ -67,8 +67,8 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         # NOTE: For historical data fetching, we can use public endpoints without API keys
         try:
             # Check if API keys are provided, but still initialize the adapter as it can use public endpoints
-            api_key = os.getenv('BINANCE_API_KEY')
-            secret_key = os.getenv('BINANCE_SECRET_KEY')
+            api_key = Configs.broker.binance_api_key if Configs.broker and hasattr(Configs.broker, 'binance_api_key') else None
+            secret_key = Configs.broker.binance_secret_key if Configs.broker and hasattr(Configs.broker, 'binance_secret_key') else None
 
             # Initialize Binance adapter even without API keys for public endpoint access
             self.brokers['binance'] = BinanceBrokerAdapter(
@@ -84,10 +84,10 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         try:
             # Initialize BingX adapter even without API keys for public endpoint access
             bingx_config = {
-                'api_key': os.getenv('BINGX_API_KEY') or '',
-                'secret_key': os.getenv('BINGX_SECRET_KEY') or '',
-                'passphrase': os.getenv('BINGX_PASSPHRASE', ''),
-                'testnet': os.getenv('BINGX_TESTNET', 'true').lower() == 'true'
+                'api_key': Configs.broker.bingx_api_key if Configs.broker and hasattr(Configs.broker, 'bingx_api_key') else '',
+                'secret_key': Configs.broker.bingx_secret_key if Configs.broker and hasattr(Configs.broker, 'bingx_secret_key') else '',
+                'passphrase': Configs.broker.bingx_passphrase if Configs.broker and hasattr(Configs.broker, 'bingx_passphrase') else '',
+                'testnet': Configs.broker.bingx_testnet if Configs.broker and hasattr(Configs.broker, 'bingx_testnet') else True
             }
 
             self.brokers['bingx'] = BingXBrokerAdapter(bingx_config)
@@ -99,9 +99,9 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         # NOTE: For historical data fetching, we can use public endpoints without API keys
         try:
             # Initialize MEXC adapter even without API keys for public endpoint access
-            api_key = os.getenv('MEXC_API_KEY')
-            secret_key = os.getenv('MEXC_SECRET_KEY')
-            testnet = os.getenv('MEXC_TESTNET', 'true').lower() == 'true'
+            api_key = Configs.broker.mexc_api_key if Configs.broker and hasattr(Configs.broker, 'mexc_api_key') else None
+            secret_key = Configs.broker.mexc_secret_key if Configs.broker and hasattr(Configs.broker, 'mexc_secret_key') else None
+            testnet = Configs.broker.mexc_testnet if Configs.broker and hasattr(Configs.broker, 'mexc_testnet') else True
 
             base_url = "https://api-testnet.mexc.com" if testnet else "https://api.mexc.com"
             self.brokers['mexc'] = MEXCBrokerAdapter(
@@ -117,9 +117,9 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         # NOTE: For historical data fetching, we can use public endpoints without API keys
         try:
             # Initialize Phemex adapter even without API keys for public endpoint access
-            api_key = os.getenv('PHEMEX_API_KEY')
-            secret_key = os.getenv('PHEMEX_SECRET_KEY')
-            testnet = os.getenv('PHEMEX_TESTNET', 'true').lower() == 'true'
+            api_key = Configs.broker.phemex_api_key if Configs.broker and hasattr(Configs.broker, 'phemex_api_key') else None
+            secret_key = Configs.broker.phemex_secret_key if Configs.broker and hasattr(Configs.broker, 'phemex_secret_key') else None
+            testnet = Configs.broker.phemex_testnet if Configs.broker and hasattr(Configs.broker, 'phemex_testnet') else True
 
             base_url = "https://testnet-api.phemex.com" if testnet else "https://api.phemex.com"
             self.brokers['phemex'] = PhemexBrokerAdapter(
@@ -240,7 +240,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             # Try to load from CSV cache if available
             from infrastructure.data.csv_history_loader import CSVHistoryLoaderAdapter
             # Use the same base path as configured in the environment variable
-            csv_data_path = os.getenv('CSV_DATA_PATH', './data/history/raw/1m')
+            csv_data_path = Configs.data.csv_data_path if Configs.data and hasattr(Configs.data, 'csv_data_path') else './data/history/raw/1m'
             # Extract the base path correctly (ensure we keep the relative path structure)
             # If path starts with ./ then keep it relative, otherwise handle absolute paths
             if csv_data_path.startswith('./'):
@@ -301,7 +301,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             # Save to CSV cache for future use
             from infrastructure.data.csv_history_loader import CSVHistoryLoaderAdapter
             # Use the same base path as configured in the environment variable
-            csv_data_path = os.getenv('CSV_DATA_PATH', './data/history/raw/1m')
+            csv_data_path = Configs.data.csv_data_path if Configs.data and hasattr(Configs.data, 'csv_data_path') else './data/history/raw/1m'
             # Extract the base path correctly (ensure we keep the relative path structure)
             # If path starts with ./ then keep it relative, otherwise handle absolute paths
             if csv_data_path.startswith('./'):
@@ -454,7 +454,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
             # Add API key to headers
             headers = {
-                'X-BX-APIKEY': os.getenv('BINGX_API_KEY', '')
+                'X-BX-APIKEY': Configs.broker.bingx_api_key if Configs.broker and hasattr(Configs.broker, 'bingx_api_key') else ''
             }
 
             # Use session with proper connection management
@@ -643,7 +643,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             # Fallback to other sources if needed
             try:
                 url = f"https://open-api.bingx.com/openApi/quote/v1/ticker/price?symbol={symbol_str}"
-                headers = {'X-BX-APIKEY': os.getenv('BINGX_API_KEY', '')}
+                headers = {'X-BX-APIKEY': Configs.broker.bingx_api_key if Configs.broker and hasattr(Configs.broker, 'bingx_api_key') else ''}
                 with requests.Session() as session:
                     response = session.get(url, headers=headers, timeout=5)
                     response.raise_for_status()

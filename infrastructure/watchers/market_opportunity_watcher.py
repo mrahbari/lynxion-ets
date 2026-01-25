@@ -3,7 +3,6 @@ Market Opportunity Watcher for auto-detection system.
 Monitors markets continuously and identifies opportunities based on technical conditions.
 Following correct architecture: Watchers only produce raw market observations.
 """
-import os
 import threading
 import time
 from datetime import datetime
@@ -24,6 +23,8 @@ from infrastructure.watchers.monitoring_analysis_service import MonitoringAnalys
 
 # Import the symbol validator
 from utils.symbol_validator import symbol_validator
+from application.configs.configs import Configs
+from utils.config_helper import cfg_get, cfg_get_bool, cfg_get_int, cfg_get_float, cfg_get_list, cfg_get_str
 
 
 class MarketOpportunityWatcher:
@@ -80,7 +81,7 @@ class MarketOpportunityWatcher:
             self.symbols = self.symbol_validation_service.validate_symbol_data_availability(filtered_symbols)
         else:
             # Use default symbols from environment variables or fallback to hard-coded defaults
-            default_symbols = os.getenv("DEFAULT_WATCHLIST_SYMBOLS", "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT").split(",")
+            default_symbols = (Configs.data.default_watchlist_symbols if Configs.data and Configs.data.default_watchlist_symbols else "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT").split(",")
             unfiltered_symbols = [Symbol(s.strip()) for s in default_symbols]
             filtered_symbols = self.symbol_validation_service.filter_stablecoin_pairs(unfiltered_symbols)
             self.symbols = self.symbol_validation_service.validate_symbol_data_availability(filtered_symbols)
@@ -94,13 +95,13 @@ class MarketOpportunityWatcher:
         import re
 
         # Check if filtering is enabled
-        filter_stablecoin_pairs = os.getenv('FILTER_OUT_STABLECOIN_PAIRS', 'true').lower() == 'true'
+        filter_stablecoin_pairs = cfg_get_bool(Configs.data, 'filter_out_stablecoin_pairs', True)
 
         if not filter_stablecoin_pairs:
             return symbols
 
-        # Get allowed stablecoins from environment
-        allowed_stablecoins_str = os.getenv('ALLOWED_STABLECOINS', 'USDT,BUSD,USDC,DAI,PAX,TUSD,USDD,FDUSD')
+        # Get allowed stablecoins from config
+        allowed_stablecoins_str = cfg_get_str(Configs.data, 'allowed_stablecoins', 'USDT,BUSD,USDC,DAI,PAX,TUSD,USDD,FDUSD')
         allowed_stablecoins = [s.strip().upper() for s in allowed_stablecoins_str.split(',')]
 
         filtered_symbols = []

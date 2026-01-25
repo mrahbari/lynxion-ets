@@ -1,7 +1,6 @@
 """
 CMC Screener - Optimized CoinMarketCap Screener following watcher perfection requirements
 """
-import os
 import requests
 import time
 import threading
@@ -15,7 +14,7 @@ from domain.entities.signal_entities import MarketObservation
 from domain.value_objects import Symbol, Percentage
 from domain.ports.watcher_ports import WatcherPort
 from shared.logger import EnhancedLogger
-from dotenv import load_dotenv
+from application.configs.configs import Configs
 
 
 class CMCScreener(WatcherPort):
@@ -28,7 +27,7 @@ class CMCScreener(WatcherPort):
         self.last_observation: Optional[MarketObservation] = None
 
         # Configuration from environment with defaults - enabled by default
-        self.enabled = os.getenv('CMC_SCREENER_ENABLED', 'true').lower() == 'true'
+        self.enabled = Configs.watcher.cmc_screener_enabled if Configs.watcher and hasattr(Configs.watcher, 'cmc_screener_enabled') else True
 
         # Only create logger if enabled
         if self.enabled:
@@ -46,14 +45,11 @@ class CMCScreener(WatcherPort):
         # Set screen_all flag if dealing with market-wide analysis
         self.screen_all = symbol in ["USDTUSDT", "MARKET"]
 
-        # Load CMC API configuration from environment
-        load_dotenv()
-
-        # Initialize CMC API configuration
-        self.cmc_api_key = os.getenv("CMC_API_KEY")
-        self.cmc_listings_url = os.getenv("CMC_LISTINGS_URL", "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest")
-        self.cmc_quotes_url = os.getenv("CMC_QUOTES_URL", "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest")
-        self.cmc_categories_url = os.getenv("CMC_CATEGORIES_URL", "https://pro-api.coinmarketcap.com/data-api/v3/cryptocurrency/categorization")
+        # Initialize CMC API configuration from Configs
+        self.cmc_api_key = Configs.data.cmc_api_key if Configs.data and hasattr(Configs.data, 'cmc_api_key') else None
+        self.cmc_listings_url = Configs.data.cmc_listings_url if Configs.data and hasattr(Configs.data, 'cmc_listings_url') else "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+        self.cmc_quotes_url = Configs.data.cmc_quotes_url if Configs.data and hasattr(Configs.data, 'cmc_quotes_url') else "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+        self.cmc_categories_url = Configs.data.cmc_categories_url if Configs.data and hasattr(Configs.data, 'cmc_categories_url') else "https://pro-api.coinmarketcap.com/data-api/v3/cryptocurrency/categorization"
 
         # Initialize data structures
         self.market_data = {}
@@ -61,7 +57,7 @@ class CMCScreener(WatcherPort):
         self.volume_history = defaultdict(deque)
         self.market_cap_history = defaultdict(deque)
         self.last_update_time = time.time()
-        self.update_interval = int(os.getenv("CMC_UPDATE_INTERVAL", "300"))  # 5 minutes default
+        self.update_interval = Configs.data.cmc_update_interval if Configs.data and hasattr(Configs.data, 'cmc_update_interval') else 300  # 5 minutes default
         self.data_lock = Lock()
 
         # Initialize performance tracking
@@ -82,10 +78,10 @@ class CMCScreener(WatcherPort):
         }
 
         # Initialize thresholds for different market conditions
-        self.volatility_threshold_high = float(os.getenv("CMC_VOLATILITY_HIGH_THRESHOLD", "0.05"))  # 5%
-        self.volatility_threshold_low = float(os.getenv("CMC_VOLATILITY_LOW_THRESHOLD", "0.01"))  # 1%
-        self.volume_threshold_high = float(os.getenv("CMC_VOLUME_HIGH_THRESHOLD", "2.0"))  # 2x average
-        self.volume_threshold_low = float(os.getenv("CMC_VOLUME_LOW_THRESHOLD", "0.5"))  # 0.5x average
+        self.volatility_threshold_high = Configs.data.cmc_volatility_high_threshold if Configs.data and hasattr(Configs.data, 'cmc_volatility_high_threshold') else 0.05  # 5%
+        self.volatility_threshold_low = Configs.data.cmc_volatility_low_threshold if Configs.data and hasattr(Configs.data, 'cmc_volatility_low_threshold') else 0.01  # 1%
+        self.volume_threshold_high = Configs.data.cmc_volume_high_threshold if Configs.data and hasattr(Configs.data, 'cmc_volume_high_threshold') else 2.0  # 2x average
+        self.volume_threshold_low = Configs.data.cmc_volume_low_threshold if Configs.data and hasattr(Configs.data, 'cmc_volume_low_threshold') else 0.5  # 0.5x average
 
     def analyze(self, symbol: Symbol) -> Optional[MarketObservation]:
         """Analyze market conditions and return a raw market observation (no strategy selection)"""
@@ -227,14 +223,13 @@ class CMCScreener(WatcherPort):
         change_confidence = min(1.0, abs(change_24h) / 10.0)  # Larger changes = higher confidence
         
         # Combine with configurable weights
-        import os
-        vol_weight = float(os.getenv('CMC_VOL_CONFIDENCE_WEIGHT', '0.3'))
-        volume_weight = float(os.getenv('CMC_VOLUME_CONFIDENCE_WEIGHT', '0.4'))
-        change_weight = float(os.getenv('CMC_CHANGE_CONFIDENCE_WEIGHT', '0.3'))
+        vol_weight = Configs.data.cmc_vol_confidence_weight if Configs.data and hasattr(Configs.data, 'cmc_vol_confidence_weight') else 0.3
+        volume_weight = Configs.data.cmc_volume_confidence_weight if Configs.data and hasattr(Configs.data, 'cmc_volume_confidence_weight') else 0.4
+        change_weight = Configs.data.cmc_change_confidence_weight if Configs.data and hasattr(Configs.data, 'cmc_change_confidence_weight') else 0.3
 
         confidence = (vol_confidence * vol_weight + volume_confidence * volume_weight + change_confidence * change_weight)
 
-        min_cmc_confidence = float(os.getenv('CMC_MIN_CONFIDENCE_THRESHOLD', '0.1'))
+        min_cmc_confidence = Configs.data.cmc_min_confidence_threshold if Configs.data and hasattr(Configs.data, 'cmc_min_confidence_threshold') else 0.1
         return max(min_cmc_confidence, min(1.0, confidence))  # Ensure minimum confidence based on config
 
     def _calculate_volatility(self, symbol: str) -> float:

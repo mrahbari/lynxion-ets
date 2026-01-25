@@ -13,9 +13,7 @@ import logging
 from typing import List, Dict, Any
 import pandas as pd
 
-# Load environment variables from .env file
-from dotenv import load_dotenv
-load_dotenv()
+from application.configs.configs import Configs
 
 # Add the project root to the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -32,7 +30,7 @@ class HistoricalDataSyncJob:
     def __init__(self, data_dir: str = None):
         # Use the environment variable for the data path if available
         if data_dir is None:
-            data_dir = os.getenv('CSV_DATA_PATH', './data/history/raw/1m')
+            data_dir = Configs.data.csv_data_path if Configs.data and Configs.data.csv_data_path else './data/history/raw/1m'
 
         self.data_dir = data_dir
         # Extract the base path from the full path (e.g., from ./data/history/raw/1m to ./data)
@@ -44,9 +42,15 @@ class HistoricalDataSyncJob:
             base_path = './data'  # Default fallback
 
         # Initialize the data provider with fallback options
+        fallback_sources_raw = Configs.data.historical_data_fallback_sources if Configs.data and Configs.data.historical_data_fallback_sources else 'binance,mexc,phemex'
+        if isinstance(fallback_sources_raw, list):
+            fallback_sources = fallback_sources_raw
+        else:
+            fallback_sources = fallback_sources_raw.split(',')
+
         self.data_provider = ConfigurableHistoricalDataProvider(
-            preferred_data_source=os.getenv('PREFERRED_HISTORICAL_DATA_SOURCE', 'binance'),
-            fallback_sources=os.getenv('HISTORICAL_DATA_FALLBACK_SOURCES', 'binance,mexc,phemex').split(',')
+            preferred_data_source=Configs.data.preferred_historical_data_source if Configs.data and Configs.data.preferred_historical_data_source else 'binance',
+            fallback_sources=fallback_sources
         )
         self.csv_loader = CSVHistoryLoaderAdapter(base_path=base_path)
         self.logger = self._setup_logger()
