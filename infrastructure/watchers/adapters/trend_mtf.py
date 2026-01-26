@@ -4,9 +4,10 @@ from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
 import numpy as np
-import os
 from decimal import Decimal
 from infrastructure.logging.forensic_logger import forensic_logger
+from application.configs.configs import Configs
+from utils.config_helper import cfg_get, cfg_get_bool, cfg_get_int, cfg_get_float, cfg_get_list, cfg_get_str
 
 
 class TrendMTFWatcher(BaseWatcher):
@@ -22,7 +23,7 @@ class TrendMTFWatcher(BaseWatcher):
         self.target_broker = target_broker
 
         # Configuration from environment with defaults
-        self.enabled = os.getenv('TREND_MTF_WATCHER_ENABLED', 'true').lower() == 'true'
+        self.enabled = cfg_get_bool(Configs.watcher, 'trend_mtf_watcher_enabled', True)
 
         # Only set logger if enabled, otherwise use mock logger
         if self.enabled:

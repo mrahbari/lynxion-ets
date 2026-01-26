@@ -420,6 +420,27 @@ class EnhancedConfigLoader:
             'debug': self.env_loader.get_bool_env_var('DEBUG', False),
             'environment': self.env_loader.get_env_var('ENVIRONMENT', 'production'),
             'use_mock_data': self.env_loader.get_bool_env_var('USE_MOCK_DATA', False),
+
+            # Additional fields needed for position sizing service
+            'edge_estimation_factor': self.env_loader.get_float_env_var('EDGE_ESTIMATION_FACTOR', 0.1),
+            'default_asset_volatility': self.env_loader.get_float_env_var('DEFAULT_ASSET_VOLATILITY', 0.02),
+            'max_volatility_impact_on_edge': self.env_loader.get_float_env_var('MAX_VOLATILITY_IMPACT_ON_EDGE', 0.2),
+            'volatility_impact_multiplier': self.env_loader.get_float_env_var('VOLATILITY_IMPACT_MULTIPLIER', 2.0),
+            'max_trend_impact_on_edge': self.env_loader.get_float_env_var('MAX_TREND_IMPACT_ON_EDGE', 0.5),
+            'high_volatility_threshold': self.env_loader.get_float_env_var('HIGH_VOLATILITY_THRESHOLD', 0.05),
+            'low_volatility_threshold': self.env_loader.get_float_env_var('LOW_VOLATILITY_THRESHOLD', 0.01),
+            'high_volatility_win_rate_impact': self.env_loader.get_float_env_var('HIGH_VOLATILITY_WIN_RATE_IMPACT', 0.8),
+            'low_volatility_win_rate_impact': self.env_loader.get_float_env_var('LOW_VOLATILITY_WIN_RATE_IMPACT', 0.9),
+            'trend_impact_on_win_rate_multiplier': self.env_loader.get_float_env_var('TREND_IMPACT_ON_WIN_RATE_MULTIPLIER', 0.5),
+            'max_trend_impact_on_win_rate': self.env_loader.get_float_env_var('MAX_TREND_IMPACT_ON_WIN_RATE', 0.2),
+            'minimum_win_rate_threshold': self.env_loader.get_float_env_var('MINIMUM_WIN_RATE_THRESHOLD', 0.4),
+            'maximum_win_rate_threshold': self.env_loader.get_float_env_var('MAXIMUM_WIN_RATE_THRESHOLD', 0.9),
+            'base_reward_risk_ratio': self.env_loader.get_float_env_var('BASE_REWARD_RISK_RATIO', 1.5),
+            'min_confidence_rr_factor': self.env_loader.get_float_env_var('MIN_CONFIDENCE_RR_FACTOR', 0.7),
+            'confidence_rr_multiplier': self.env_loader.get_float_env_var('CONFIDENCE_RR_MULTIPLIER', 0.6),
+            'min_reward_risk_ratio': self.env_loader.get_float_env_var('MIN_REWARD_RISK_RATIO', 0.5),
+            'max_reward_risk_ratio': self.env_loader.get_float_env_var('MAX_REWARD_RISK_RATIO', 5.0),
+            'default_annual_volatility': self.env_loader.get_float_env_var('DEFAULT_ANNUAL_VOLATILITY', 0.20),
         }
         return infrastructure_data
 
@@ -449,6 +470,21 @@ class EnhancedConfigLoader:
             'optimal_f_error_fallback_percentage': self.env_loader.get_float_env_var('OPTIMAL_F_ERROR_FALLBACK_PERCENTAGE', 0.02),
             'optimal_f_max_per_trade': self.env_loader.get_float_env_var('OPTIMAL_F_MAX_PER_TRADE', 0.05),
             'method': self.env_loader.get_env_var('POSITION_SIZING_METHOD', 'risk_percentagerisk_percentage'),
+
+            # Additional fields needed for position sizing service
+            'atr_multiplier': self.env_loader.get_float_env_var('ATR_MULTIPLIER', 2.0),
+            'atr_fixed_dollar_risk': self.env_loader.get_float_env_var('ATR_FIXED_DOLLAR_RISK', 1000.0),
+            'atr_min_multiple': self.env_loader.get_float_env_var('ATR_MIN_MULTIPLE', 1.5),
+            'atr_max_portfolio_percent': self.env_loader.get_float_env_var('ATR_MAX_PORTFOLIO_PERCENT', 0.10),
+            'atr_default_percentage': self.env_loader.get_float_env_var('ATR_DEFAULT_PERCENTAGE', 0.015),
+            'volatility_target': self.env_loader.get_float_env_var('VOLATILITY_TARGET', 0.15),
+            'volatility_max_portfolio_percent': self.env_loader.get_float_env_var('VOLATILITY_MAX_PORTFOLIO_PERCENT', 0.15),
+            'volatility_error_default_percentage': self.env_loader.get_float_env_var('VOLATILITY_ERROR_DEFAULT_PERCENTAGE', 0.01),
+            'volatility_target_percentage': self.env_loader.get_float_env_var('VOLATILITY_TARGET_PERCENTAGE', 0.15),
+            'volatility_max_portfolio_allocation': self.env_loader.get_float_env_var('VOLATILITY_MAX_PORTFOLIO_ALLOCATION', 0.15),
+            'volatility_max_rr_impact': self.env_loader.get_float_env_var('VOLATILITY_MAX_RR_IMPACT', 0.5),
+            'volatility_rr_multiplier': self.env_loader.get_float_env_var('VOLATILITY_RR_MULTIPLIER', 10.0),
+            'atr_to_volatility_multiplier': self.env_loader.get_float_env_var('ATR_TO_VOLATILITY_MULTIPLIER', 1.0),
         }
         return position_sizing_data
 
@@ -501,6 +537,146 @@ class EnhancedConfigLoader:
             'early_exit_momentum_threshold': self.env_loader.get_float_env_var('EARLY_EXIT_MOMENTUM_THRESHOLD', 0.0001),
             'early_exit_trend_confidence_threshold': self.env_loader.get_float_env_var('EARLY_EXIT_TREND_CONFIDENCE_THRESHOLD', 0.0001),
             'early_exit_volatility_threshold': self.env_loader.get_float_env_var('EARLY_EXIT_VOLATILITY_THRESHOLD', 0.0001),
+
+            # Specific watcher configuration fields
+            'market_pulse_lookback_period': self.env_loader.get_int_env_var('MARKET_PULSE_LOOKBACK_PERIOD', 20),
+            'volatility_lookback_period': self.env_loader.get_int_env_var('VOLATILITY_LOOKBACK_PERIOD', 20),
+            'trend_mtf_lookback_period': self.env_loader.get_int_env_var('TREND_MTF_LOOKBACK_PERIOD', 20),
+            'anomaly_ml_lookback_period': self.env_loader.get_int_env_var('ANOMALY_ML_LOOKBACK_PERIOD', 50),
+            'orderflow_ws_lookback_period': self.env_loader.get_int_env_var('ORDERFLOW_WS_LOOKBACK_PERIOD', 100),
+            'cmc_screener_lookback_period': self.env_loader.get_int_env_var('CMC_SCREENER_LOOKBACK_PERIOD', 20),
+            'funding_rate_lookback_period': self.env_loader.get_int_env_var('FUNDING_RATE_LOOKBACK_PERIOD', 24),
+            'liquidity_lookback_period': self.env_loader.get_int_env_var('LIQUIDITY_LOOKBACK_PERIOD', 20),
+            'historical_candle_lookback_period': self.env_loader.get_int_env_var('HISTORICAL_CANDLE_LOOKBACK_PERIOD', 50),
+            'tick_lookback_period': self.env_loader.get_int_env_var('TICK_LOOKBACK_PERIOD', 1000),
+
+            # Specific watcher min confidence thresholds
+            'market_pulse_min_confidence_threshold': self.env_loader.get_float_env_var('MARKET_PULSE_MIN_CONFIDENCE_THRESHOLD', 0.05),
+            'volatility_min_confidence_threshold': self.env_loader.get_float_env_var('VOLATILITY_MIN_CONFIDENCE_THRESHOLD', 0.05),
+            'trend_mtf_min_confidence_threshold': self.env_loader.get_float_env_var('TREND_MTF_MIN_CONFIDENCE_THRESHOLD', 0.05),
+            'anomaly_ml_min_confidence_threshold': self.env_loader.get_float_env_var('ANOMALY_ML_MIN_CONFIDENCE_THRESHOLD', 0.05),
+            'orderflow_ws_min_confidence_threshold': self.env_loader.get_float_env_var('ORDERFLOW_WS_MIN_CONFIDENCE_THRESHOLD', 0.05),
+            'cmc_screener_min_confidence_threshold': self.env_loader.get_float_env_var('CMC_SCREENER_MIN_CONFIDENCE_THRESHOLD', 0.05),
+            'funding_rate_min_confidence_threshold': self.env_loader.get_float_env_var('FUNDING_RATE_MIN_CONFIDENCE_THRESHOLD', 0.05),
+            'liquidity_min_confidence_threshold': self.env_loader.get_float_env_var('LIQUIDITY_MIN_CONFIDENCE_THRESHOLD', 0.05),
+            'historical_candle_min_confidence_threshold': self.env_loader.get_float_env_var('HISTORICAL_CANDLE_MIN_CONFIDENCE_THRESHOLD', 0.05),
+            'tick_min_confidence_threshold': self.env_loader.get_float_env_var('TICK_MIN_CONFIDENCE_THRESHOLD', 0.05),
+
+            # Specific watcher max confidence thresholds
+            'market_pulse_max_confidence_threshold': self.env_loader.get_float_env_var('MARKET_PULSE_MAX_CONFIDENCE_THRESHOLD', 0.95),
+            'volatility_max_confidence_threshold': self.env_loader.get_float_env_var('VOLATILITY_MAX_CONFIDENCE_THRESHOLD', 0.95),
+            'trend_mtf_max_confidence_threshold': self.env_loader.get_float_env_var('TREND_MTF_MAX_CONFIDENCE_THRESHOLD', 0.95),
+            'anomaly_ml_max_confidence_threshold': self.env_loader.get_float_env_var('ANOMALY_ML_MAX_CONFIDENCE_THRESHOLD', 0.95),
+            'orderflow_ws_max_confidence_threshold': self.env_loader.get_float_env_var('ORDERFLOW_WS_MAX_CONFIDENCE_THRESHOLD', 0.95),
+            'cmc_screener_max_confidence_threshold': self.env_loader.get_float_env_var('CMC_SCREENER_MAX_CONFIDENCE_THRESHOLD', 0.95),
+            'funding_rate_max_confidence_threshold': self.env_loader.get_float_env_var('FUNDING_RATE_MAX_CONFIDENCE_THRESHOLD', 0.95),
+            'liquidity_max_confidence_threshold': self.env_loader.get_float_env_var('LIQUIDITY_MAX_CONFIDENCE_THRESHOLD', 0.95),
+            'historical_candle_max_confidence_threshold': self.env_loader.get_float_env_var('HISTORICAL_CANDLE_MAX_CONFIDENCE_THRESHOLD', 0.95),
+            'tick_max_confidence_threshold': self.env_loader.get_float_env_var('TICK_MAX_CONFIDENCE_THRESHOLD', 0.95),
+
+            # Adaptive sensitivity settings
+            'market_pulse_adaptive_sensitivity': self.env_loader.get_bool_env_var('MARKET_PULSE_ADAPTIVE_SENSITIVITY', False),
+            'volatility_adaptive_sensitivity': self.env_loader.get_bool_env_var('VOLATILITY_ADAPTIVE_SENSITIVITY', False),
+            'trend_mtf_adaptive_sensitivity': self.env_loader.get_bool_env_var('TREND_MTF_ADAPTIVE_SENSITIVITY', False),
+            'anomaly_ml_adaptive_sensitivity': self.env_loader.get_bool_env_var('ANOMALY_ML_ADAPTIVE_SENSITIVITY', False),
+            'orderflow_ws_adaptive_sensitivity': self.env_loader.get_bool_env_var('ORDERFLOW_WS_ADAPTIVE_SENSITIVITY', False),
+            'cmc_screener_adaptive_sensitivity': self.env_loader.get_bool_env_var('CMC_SCREENER_ADAPTIVE_SENSITIVITY', False),
+            'funding_rate_adaptive_sensitivity': self.env_loader.get_bool_env_var('FUNDING_RATE_ADAPTIVE_SENSITIVITY', False),
+            'liquidity_adaptive_sensitivity': self.env_loader.get_bool_env_var('LIQUIDITY_ADAPTIVE_SENSITIVITY', False),
+            'historical_candle_adaptive_sensitivity': self.env_loader.get_bool_env_var('HISTORICAL_CANDLE_ADAPTIVE_SENSITIVITY', False),
+            'tick_adaptive_sensitivity': self.env_loader.get_bool_env_var('TICK_ADAPTIVE_SENSITIVITY', False),
+
+            # Specific watcher pattern weights
+            'market_pulse_pattern_weight': self.env_loader.get_float_env_var('MARKET_PULSE_PATTERN_WEIGHT', 0.4),
+            'volatility_pattern_weight': self.env_loader.get_float_env_var('VOLATILITY_PATTERN_WEIGHT', 0.4),
+            'trend_mtf_pattern_weight': self.env_loader.get_float_env_var('TREND_MTF_PATTERN_WEIGHT', 0.4),
+            'anomaly_ml_pattern_weight': self.env_loader.get_float_env_var('ANOMALY_ML_PATTERN_WEIGHT', 0.4),
+            'orderflow_ws_pattern_weight': self.env_loader.get_float_env_var('ORDERFLOW_WS_PATTERN_WEIGHT', 0.4),
+            'cmc_screener_pattern_weight': self.env_loader.get_float_env_var('CMC_SCREENER_PATTERN_WEIGHT', 0.4),
+            'funding_rate_pattern_weight': self.env_loader.get_float_env_var('FUNDING_RATE_PATTERN_WEIGHT', 0.4),
+            'liquidity_pattern_weight': self.env_loader.get_float_env_var('LIQUIDITY_PATTERN_WEIGHT', 0.4),
+            'historical_candle_pattern_weight': self.env_loader.get_float_env_var('HISTORICAL_CANDLE_PATTERN_WEIGHT', 0.4),
+            'tick_pattern_weight': self.env_loader.get_float_env_var('TICK_PATTERN_WEIGHT', 0.4),
+
+            # Specific watcher momentum weights
+            'market_pulse_momentum_weight': self.env_loader.get_float_env_var('MARKET_PULSE_MOMENTUM_WEIGHT', 0.3),
+            'volatility_momentum_weight': self.env_loader.get_float_env_var('VOLATILITY_MOMENTUM_WEIGHT', 0.3),
+            'trend_mtf_momentum_weight': self.env_loader.get_float_env_var('TREND_MTF_MOMENTUM_WEIGHT', 0.3),
+            'anomaly_ml_momentum_weight': self.env_loader.get_float_env_var('ANOMALY_ML_MOMENTUM_WEIGHT', 0.3),
+            'orderflow_ws_momentum_weight': self.env_loader.get_float_env_var('ORDERFLOW_WS_MOMENTUM_WEIGHT', 0.3),
+            'cmc_screener_momentum_weight': self.env_loader.get_float_env_var('CMC_SCREENER_MOMENTUM_WEIGHT', 0.3),
+            'funding_rate_momentum_weight': self.env_loader.get_float_env_var('FUNDING_RATE_MOMENTUM_WEIGHT', 0.3),
+            'liquidity_momentum_weight': self.env_loader.get_float_env_var('LIQUIDITY_MOMENTUM_WEIGHT', 0.3),
+            'historical_candle_momentum_weight': self.env_loader.get_float_env_var('HISTORICAL_CANDLE_MOMENTUM_WEIGHT', 0.3),
+            'tick_momentum_weight': self.env_loader.get_float_env_var('TICK_MOMENTUM_WEIGHT', 0.3),
+
+            # Specific watcher high volatility boosts
+            'market_pulse_high_volatility_boost': self.env_loader.get_float_env_var('MARKET_PULSE_HIGH_VOLATILITY_BOOST', 0.2),
+            'volatility_high_volatility_boost': self.env_loader.get_float_env_var('VOLATILITY_HIGH_VOLATILITY_BOOST', 0.2),
+            'trend_mtf_high_volatility_boost': self.env_loader.get_float_env_var('TREND_MTF_HIGH_VOLATILITY_BOOST', 0.2),
+            'anomaly_ml_high_volatility_boost': self.env_loader.get_float_env_var('ANOMALY_ML_HIGH_VOLATILITY_BOOST', 0.2),
+            'orderflow_ws_high_volatility_boost': self.env_loader.get_float_env_var('ORDERFLOW_WS_HIGH_VOLATILITY_BOOST', 0.2),
+            'cmc_screener_high_volatility_boost': self.env_loader.get_float_env_var('CMC_SCREENER_HIGH_VOLATILITY_BOOST', 0.2),
+            'funding_rate_high_volatility_boost': self.env_loader.get_float_env_var('FUNDING_RATE_HIGH_VOLATILITY_BOOST', 0.2),
+            'liquidity_high_volatility_boost': self.env_loader.get_float_env_var('LIQUIDITY_HIGH_VOLATILITY_BOOST', 0.2),
+            'historical_candle_high_volatility_boost': self.env_loader.get_float_env_var('HISTORICAL_CANDLE_HIGH_VOLATILITY_BOOST', 0.2),
+            'tick_high_volatility_boost': self.env_loader.get_float_env_var('TICK_HIGH_VOLATILITY_BOOST', 0.2),
+
+            # Specific watcher low volatility boosts
+            'market_pulse_low_volatility_boost': self.env_loader.get_float_env_var('MARKET_PULSE_LOW_VOLATILITY_BOOST', 0.05),
+            'volatility_low_volatility_boost': self.env_loader.get_float_env_var('VOLATILITY_LOW_VOLATILITY_BOOST', 0.05),
+            'trend_mtf_low_volatility_boost': self.env_loader.get_float_env_var('TREND_MTF_LOW_VOLATILITY_BOOST', 0.05),
+            'anomaly_ml_low_volatility_boost': self.env_loader.get_float_env_var('ANOMALY_ML_LOW_VOLATILITY_BOOST', 0.05),
+            'orderflow_ws_low_volatility_boost': self.env_loader.get_float_env_var('ORDERFLOW_WS_LOW_VOLATILITY_BOOST', 0.05),
+            'cmc_screener_low_volatility_boost': self.env_loader.get_float_env_var('CMC_SCREENER_LOW_VOLATILITY_BOOST', 0.05),
+            'funding_rate_low_volatility_boost': self.env_loader.get_float_env_var('FUNDING_RATE_LOW_VOLATILITY_BOOST', 0.05),
+            'liquidity_low_volatility_boost': self.env_loader.get_float_env_var('LIQUIDITY_LOW_VOLATILITY_BOOST', 0.05),
+            'historical_candle_low_volatility_boost': self.env_loader.get_float_env_var('HISTORICAL_CANDLE_LOW_VOLATILITY_BOOST', 0.05),
+            'tick_low_volatility_boost': self.env_loader.get_float_env_var('TICK_LOW_VOLATILITY_BOOST', 0.05),
+
+            # Specific watcher normal volatility boosts
+            'market_pulse_normal_volatility_boost': self.env_loader.get_float_env_var('MARKET_PULSE_NORMAL_VOLATILITY_BOOST', 0.1),
+            'volatility_normal_volatility_boost': self.env_loader.get_float_env_var('VOLATILITY_NORMAL_VOLATILITY_BOOST', 0.1),
+            'trend_mtf_normal_volatility_boost': self.env_loader.get_float_env_var('TREND_MTF_NORMAL_VOLATILITY_BOOST', 0.1),
+            'anomaly_ml_normal_volatility_boost': self.env_loader.get_float_env_var('ANOMALY_ML_NORMAL_VOLATILITY_BOOST', 0.1),
+            'orderflow_ws_normal_volatility_boost': self.env_loader.get_float_env_var('ORDERFLOW_WS_NORMAL_VOLATILITY_BOOST', 0.1),
+            'cmc_screener_normal_volatility_boost': self.env_loader.get_float_env_var('CMC_SCREENER_NORMAL_VOLATILITY_BOOST', 0.1),
+            'funding_rate_normal_volatility_boost': self.env_loader.get_float_env_var('FUNDING_RATE_NORMAL_VOLATILITY_BOOST', 0.1),
+            'liquidity_normal_volatility_boost': self.env_loader.get_float_env_var('LIQUIDITY_NORMAL_VOLATILITY_BOOST', 0.1),
+            'historical_candle_normal_volatility_boost': self.env_loader.get_float_env_var('HISTORICAL_CANDLE_NORMAL_VOLATILITY_BOOST', 0.1),
+            'tick_normal_volatility_boost': self.env_loader.get_float_env_var('TICK_NORMAL_VOLATILITY_BOOST', 0.1),
+
+            # Specific watcher momentum lookback periods
+            'market_pulse_momentum_lookback_period': self.env_loader.get_int_env_var('MARKET_PULSE_MOMENTUM_LOOKBACK_PERIOD', 10),
+            'volatility_momentum_lookback_period': self.env_loader.get_int_env_var('VOLATILITY_MOMENTUM_LOOKBACK_PERIOD', 10),
+            'trend_mtf_momentum_lookback_period': self.env_loader.get_int_env_var('TREND_MTF_MOMENTUM_LOOKBACK_PERIOD', 10),
+            'anomaly_ml_momentum_lookback_period': self.env_loader.get_int_env_var('ANOMALY_ML_MOMENTUM_LOOKBACK_PERIOD', 10),
+            'orderflow_ws_momentum_lookback_period': self.env_loader.get_int_env_var('ORDERFLOW_WS_MOMENTUM_LOOKBACK_PERIOD', 10),
+            'cmc_screener_momentum_lookback_period': self.env_loader.get_int_env_var('CMC_SCREENER_MOMENTUM_LOOKBACK_PERIOD', 10),
+            'funding_rate_momentum_lookback_period': self.env_loader.get_int_env_var('FUNDING_RATE_MOMENTUM_LOOKBACK_PERIOD', 10),
+            'liquidity_momentum_lookback_period': self.env_loader.get_int_env_var('LIQUIDITY_MOMENTUM_LOOKBACK_PERIOD', 10),
+            'historical_candle_momentum_lookback_period': self.env_loader.get_int_env_var('HISTORICAL_CANDLE_MOMENTUM_LOOKBACK_PERIOD', 10),
+            'tick_momentum_lookback_period': self.env_loader.get_int_env_var('TICK_MOMENTUM_LOOKBACK_PERIOD', 10),
+
+            # Specific watcher momentum sensitivity factors
+            'market_pulse_momentum_sensitivity_factor': self.env_loader.get_float_env_var('MARKET_PULSE_MOMENTUM_SENSITIVITY_FACTOR', 10.0),
+            'volatility_momentum_sensitivity_factor': self.env_loader.get_float_env_var('VOLATILITY_MOMENTUM_SENSITIVITY_FACTOR', 10.0),
+            'trend_mtf_momentum_sensitivity_factor': self.env_loader.get_float_env_var('TREND_MTF_MOMENTUM_SENSITIVITY_FACTOR', 10.0),
+            'anomaly_ml_momentum_sensitivity_factor': self.env_loader.get_float_env_var('ANOMALY_ML_MOMENTUM_SENSITIVITY_FACTOR', 10.0),
+            'orderflow_ws_momentum_sensitivity_factor': self.env_loader.get_float_env_var('ORDERFLOW_WS_MOMENTUM_SENSITIVITY_FACTOR', 10.0),
+            'cmc_screener_momentum_sensitivity_factor': self.env_loader.get_float_env_var('CMC_SCREENER_MOMENTUM_SENSITIVITY_FACTOR', 10.0),
+            'funding_rate_momentum_sensitivity_factor': self.env_loader.get_float_env_var('FUNDING_RATE_MOMENTUM_SENSITIVITY_FACTOR', 10.0),
+            'liquidity_momentum_sensitivity_factor': self.env_loader.get_float_env_var('LIQUIDITY_MOMENTUM_SENSITIVITY_FACTOR', 10.0),
+            'historical_candle_momentum_sensitivity_factor': self.env_loader.get_float_env_var('HISTORICAL_CANDLE_MOMENTUM_SENSITIVITY_FACTOR', 10.0),
+            'tick_momentum_sensitivity_factor': self.env_loader.get_float_env_var('TICK_MOMENTUM_SENSITIVITY_FACTOR', 10.0),
+
+            # Trend MTF specific fields
+            'trend_mtf_short_period': self.env_loader.get_int_env_var('TREND_MTF_SHORT_PERIOD', 5),
+            'trend_mtf_medium_period': self.env_loader.get_int_env_var('TREND_MTF_MEDIUM_PERIOD', 15),
+            'trend_mtf_long_period': self.env_loader.get_int_env_var('TREND_MTF_LONG_PERIOD', 30),
+
+            # Anomaly ML specific fields
+            'anomaly_ml_contamination': self.env_loader.get_float_env_var('ANOMALY_ML_CONTAMINATION', 0.1),
         }
         return watcher_data
 

@@ -4,8 +4,8 @@ from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
 import numpy as np
-import os
 from decimal import Decimal
+from application.configs.configs import Configs
 
 
 class OrderFlowWSWatcher(BaseWatcher):
@@ -21,7 +21,7 @@ class OrderFlowWSWatcher(BaseWatcher):
         self.target_broker = target_broker
 
         # Configuration from environment with defaults
-        self.enabled = os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'true').lower() == 'true'
+        self.enabled = Configs.watcher.orderflow_ws_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'orderflow_ws_watcher_enabled') else True
 
         # Only set logger if enabled, otherwise use mock logger
         if self.enabled:

@@ -30,6 +30,21 @@ class PositionSizingConfig(BaseModel):
     optimal_f_error_fallback_percentage: float = Field(default=0.02, description="Optimal F error fallback percentage")
     optimal_f_max_per_trade: float = Field(default=0.05, description="Optimal F max per trade")
     method: str = Field(default="risk_percentagerisk_percentage", description="Position sizing method")
-    
+
+    # Additional fields needed for position sizing service
+    atr_multiplier: float = Field(default=2.0, description="ATR multiplier for stop distance")
+    atr_fixed_dollar_risk: float = Field(default=1000.0, description="ATR fixed dollar risk")
+    atr_min_multiple: float = Field(default=1.5, description="ATR minimum multiple")
+    atr_max_portfolio_percent: float = Field(default=0.10, description="ATR max portfolio percent")
+    atr_default_percentage: float = Field(default=0.015, description="ATR default percentage")
+    volatility_target: float = Field(default=0.15, description="Volatility target")
+    volatility_max_portfolio_percent: float = Field(default=0.15, description="Volatility max portfolio percent")
+    volatility_error_default_percentage: float = Field(default=0.01, description="Volatility error default percentage")
+    volatility_target_percentage: float = Field(default=0.15, description="Volatility target percentage")
+    volatility_max_portfolio_allocation: float = Field(default=0.15, description="Volatility max portfolio allocation")
+    volatility_max_rr_impact: float = Field(default=0.5, description="Volatility max RR impact")
+    volatility_rr_multiplier: float = Field(default=10.0, description="Volatility RR multiplier")
+    atr_to_volatility_multiplier: float = Field(default=1.0, description="ATR to volatility multiplier")
+
     class Config:
         extra = "forbid"

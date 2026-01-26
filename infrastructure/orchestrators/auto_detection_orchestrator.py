@@ -698,7 +698,6 @@ class AutoDetectionOrchestrator:
 
             # Calculate opportunity score based on multiple factors
             # Weighted combination of confidence, dominance, position size, and reward-to-risk ratio
-            import os
             confidence_weight = Configs.strategy.opportunity_score_confidence_weight if Configs.strategy and hasattr(Configs.strategy, 'opportunity_score_confidence_weight') else 0.4
             dominance_weight = Configs.strategy.opportunity_score_dominance_weight if Configs.strategy and hasattr(Configs.strategy, 'opportunity_score_dominance_weight') else 0.2
             position_size_weight = Configs.strategy.opportunity_score_position_size_weight if Configs.strategy and hasattr(Configs.strategy, 'opportunity_score_position_size_weight') else 0.15

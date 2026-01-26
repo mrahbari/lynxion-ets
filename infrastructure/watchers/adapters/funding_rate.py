@@ -3,8 +3,8 @@ from domain.entities.signal_entities import MarketObservation
 from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
-import os
 from decimal import Decimal
+from application.configs.configs import Configs
 
 
 class FundingRateWatcher(BaseWatcher):
@@ -20,7 +20,7 @@ class FundingRateWatcher(BaseWatcher):
         self.target_broker = target_broker
 
         # Configuration from environment with defaults
-        self.enabled = os.getenv('FUNDING_RATE_WATCHER_ENABLED', 'true').lower() == 'true'
+        self.enabled = Configs.watcher.funding_rate_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'funding_rate_watcher_enabled') else True
 
         # Only set logger if enabled, otherwise use mock logger
         if self.enabled:
