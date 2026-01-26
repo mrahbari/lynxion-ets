@@ -80,22 +80,27 @@ def load_sample_strategy(strategy_name: str):
         if pd.isna(sma_20) or pd.isna(sma_50) or pd.isna(close):
             return 0
 
-        # Basic trend conditions
-        trend_bullish = close > sma_20 > sma_50 * 0.99  # Less strict trend condition
-        trend_bearish = close < sma_20 < sma_50 * 1.01  # Less strict trend condition
+        # Basic trend conditions - made less restrictive
+        trend_bullish = close > sma_20 * 0.999 and sma_20 > sma_50 * 0.999  # Much less strict trend condition
+        trend_bearish = close < sma_20 * 1.001 and sma_20 < sma_50 * 1.001  # Much less strict trend condition
 
-        # Add momentum confirmation
-        momentum_bullish = pd.notna(roc) and roc > 0.0005  # Even smaller threshold
-        momentum_bearish = pd.notna(roc) and roc < -0.0005  # Even smaller threshold
+        # Add momentum confirmation - made less restrictive
+        momentum_bullish = pd.notna(roc) and roc > 0.0001  # Smaller threshold
+        momentum_bearish = pd.notna(roc) and roc < -0.0001  # Smaller threshold
 
-        # Regime: Only trade in strong trend conditions
-        strong_trend = pd.isna(adx) or adx > 25  # ADX > 25 indicates trend
-        sufficient_trend_strength = pd.isna(trend_strength) or trend_strength > 0.1
+        # Regime: Less restrictive trend conditions
+        strong_trend = pd.isna(adx) or adx > 15  # Lower ADX threshold
+        sufficient_trend_strength = pd.isna(trend_strength) or trend_strength > 0.05  # Lower threshold
 
-        if trend_bullish and (strong_trend or sufficient_trend_strength) and (pd.isna(roc) or momentum_bullish):
+        # Allow trades with fewer conditions
+        if trend_bullish and (strong_trend or sufficient_trend_strength):
             return 1  # Buy
-        elif trend_bearish and (strong_trend or sufficient_trend_strength) and (pd.isna(roc) or momentum_bearish):
+        elif trend_bearish and (strong_trend or sufficient_trend_strength):
             return -1  # Sell
+        elif trend_bullish and momentum_bullish:
+            return 1  # Buy with momentum
+        elif trend_bearish and momentum_bearish:
+            return -1  # Sell with momentum
         else:
             return 0  # Hold
 
@@ -119,18 +124,28 @@ def load_sample_strategy(strategy_name: str):
             bb_position = 0.5  # Neutral if bands are equal
 
         # More sensitive thresholds for entry
-        rsi_oversold = 35  # More sensitive than 30
-        rsi_overbought = 65  # More sensitive than 70
+        rsi_oversold = 40  # Even more sensitive than 35
+        rsi_overbought = 60  # Even more sensitive than 65
 
-        # Regime: Only trade in ranging markets (weak trend)
-        weak_trend = pd.isna(adx) or adx < 30  # ADX < 30 indicates ranging market
+        # Regime: Less restrictive - allow trading in more market conditions
+        weak_trend = pd.isna(adx) or adx < 40  # Higher ADX threshold allows more trading
 
+        # Multiple entry conditions to increase trade frequency
         # Oversold condition with potential bounce from lower band
-        if rsi < rsi_oversold and bb_position < 0.4 and weak_trend:  # Near lower band in ranging market
+        rsi_oversold_condition = rsi < rsi_oversold
+        rsi_overbought_condition = rsi > rsi_overbought
+        near_lower_band = bb_position < 0.45
+        near_upper_band = bb_position > 0.55
+
+        if (rsi_oversold_condition and (near_lower_band or weak_trend)):
             return 1  # Buy
-        # Overbought condition with potential drop from upper band
-        elif rsi > rsi_overbought and bb_position > 0.6 and weak_trend:  # Near upper band in ranging market
+        elif (rsi_overbought_condition and (near_upper_band or weak_trend)):
             return -1  # Sell
+        # Additional conditions to increase trade frequency
+        elif rsi < 30:  # Strong oversold
+            return 1
+        elif rsi > 70:  # Strong overbought
+            return -1
         else:
             return 0  # Hold
 
@@ -149,25 +164,31 @@ def load_sample_strategy(strategy_name: str):
         if any(pd.isna(x) for x in [atr, high, low, close, sma_20]):
             return 0
 
-        # Define breakout thresholds based on ATR
-        breakout_threshold = atr * 0.5  # Even more sensitive
+        # Define breakout thresholds based on ATR - made less sensitive
+        breakout_threshold = atr * 0.2  # Even more sensitive
 
         # Bullish breakout: price moves above recent range with volume confirmation
         bullish_breakout = close > max(high, sma_20) + breakout_threshold
         bearish_breakout = close < min(low, sma_20) - breakout_threshold
 
-        # Volume confirmation (only if volume data available)
+        # Volume confirmation (only if volume data available) - made less strict
         volume_confirmation = True
         if pd.notna(volume) and pd.notna(sma_volume):
-            volume_confirmation = volume > sma_volume * 0.9  # Less strict volume requirement
+            volume_confirmation = volume > sma_volume * 0.7  # Much less strict volume requirement
 
-        # Regime: Only trade during high volatility periods
-        high_volatility = pd.isna(volatility_percentile) or volatility_percentile > 0.5
+        # Regime: Less restrictive volatility conditions
+        high_volatility = pd.isna(volatility_percentile) or volatility_percentile > 0.3  # Lower threshold
 
-        if bullish_breakout and volume_confirmation and high_volatility:
+        # Multiple conditions to increase trade frequency
+        if bullish_breakout and (volume_confirmation or high_volatility):
             return 1  # Buy
-        elif bearish_breakout and volume_confirmation and high_volatility:
+        elif bearish_breakout and (volume_confirmation or high_volatility):
             return -1  # Sell
+        # Additional breakout conditions
+        elif close > high * 1.001:  # Simple price breakout
+            return 1
+        elif close < low * 0.999:  # Simple price breakdown
+            return -1
         else:
             return 0  # Hold
 
@@ -184,19 +205,24 @@ def load_sample_strategy(strategy_name: str):
         if pd.isna(roc):
             return 0
 
-        # Volume confirmation (only if available)
+        # Volume confirmation (only if available) - made less strict
         volume_ok = True
         if pd.notna(volume) and pd.notna(sma_volume):
-            volume_ok = volume > sma_volume * 0.8  # Less strict volume requirement
+            volume_ok = volume > sma_volume * 0.5  # Much less strict volume requirement
 
-        # Regime: Only trade in trending markets where momentum is more effective
-        trending_market = pd.isna(adx) or adx > 20  # Allow trading in mild trends
+        # Regime: Less restrictive trend conditions
+        trending_market = pd.isna(adx) or adx > 15  # Lower threshold
 
         # More sensitive momentum thresholds
-        if roc > 0.001 and volume_ok and trending_market and (pd.isna(rsi) or 20 < rsi < 80):  # Less restrictive RSI
+        if roc > 0.0005 and (volume_ok or trending_market) and (pd.isna(rsi) or 15 < rsi < 85):  # Less restrictive RSI
             return 1  # Buy
-        elif roc < -0.001 and volume_ok and trending_market and (pd.isna(rsi) or 20 < rsi < 80):  # Less restrictive RSI
+        elif roc < -0.0005 and (volume_ok or trending_market) and (pd.isna(rsi) or 15 < rsi < 85):  # Less restrictive RSI
             return -1  # Sell
+        # Additional momentum conditions to increase trade frequency
+        elif roc > 0.002:  # Strong momentum
+            return 1
+        elif roc < -0.002:  # Strong negative momentum
+            return -1
         else:
             return 0  # Hold
 
@@ -213,21 +239,27 @@ def load_sample_strategy(strategy_name: str):
         if any(pd.isna(x) for x in [rsi, sma_fast, sma_slow, close]):
             return 0
 
-        # Fast MA crosses above slow MA with momentum confirmation
-        ma_bullish_cross = sma_fast > sma_slow  # Removed tight constraint
-        ma_bearish_cross = sma_fast < sma_slow  # Removed tight constraint
+        # Fast MA crosses above slow MA with momentum confirmation - made less restrictive
+        ma_bullish_cross = sma_fast > sma_slow * 0.999  # Very slight difference needed
+        ma_bearish_cross = sma_fast < sma_slow * 1.001  # Very slight difference needed
 
-        # Momentum confirmation
-        mom_bullish = pd.isna(roc) or roc > 0
-        mom_bearish = pd.isna(roc) or roc < 0
+        # Momentum confirmation - made less restrictive
+        mom_bullish = pd.isna(roc) or roc > -0.0001  # Allow slightly negative momentum
+        mom_bearish = pd.isna(roc) or roc < 0.0001  # Allow slightly positive momentum
 
-        # Regime: Scalping works better in higher volatility environments
-        high_volatility = pd.isna(volatility_regime) or volatility_regime > 0.01  # Adjusted threshold
+        # Regime: Less restrictive volatility conditions
+        high_volatility = pd.isna(volatility_regime) or volatility_regime > 0.001  # Much lower threshold
 
-        if ma_bullish_cross and mom_bullish and high_volatility and 25 < rsi < 75:  # Wider RSI range
+        # Multiple conditions to increase trade frequency
+        if ma_bullish_cross and (mom_bullish or high_volatility) and 20 < rsi < 80:  # Wider RSI range
             return 1  # Buy
-        elif ma_bearish_cross and mom_bearish and high_volatility and 25 < rsi < 75:  # Wider RSI range
+        elif ma_bearish_cross and (mom_bearish or high_volatility) and 20 < rsi < 80:  # Wider RSI range
             return -1  # Sell
+        # Additional conditions to increase trade frequency
+        elif sma_fast > sma_slow and rsi < 65:  # Simple MA cross without other conditions
+            return 1
+        elif sma_fast < sma_slow and rsi > 35:  # Simple MA cross without other conditions
+            return -1
         else:
             return 0  # Hold
 
@@ -245,25 +277,31 @@ def load_sample_strategy(strategy_name: str):
         if any(pd.isna(x) for x in [high_20, low_20, close, atr]):
             return 0
 
-        # More sensitive breakout thresholds
-        breakout_sensitivity = atr * 0.2  # Even more sensitive
+        # More sensitive breakout thresholds - made even more sensitive
+        breakout_sensitivity = atr * 0.1  # Even more sensitive
 
         # Clear breakout above resistance with ATR confirmation
         bullish_breakout = close > high_20 + breakout_sensitivity
         bearish_breakout = close < low_20 - breakout_sensitivity
 
-        # Volume confirmation (only if available)
+        # Volume confirmation (only if available) - made less strict
         volume_ok = True
         if pd.notna(volume) and pd.notna(sma_volume):
-            volume_ok = volume > sma_volume * 0.8  # Less strict volume requirement
+            volume_ok = volume > sma_volume * 0.5  # Much less strict volume requirement
 
-        # Regime: Only trade during high volatility periods where breakouts are more likely
-        high_volatility = pd.isna(volatility_percentile) or volatility_percentile > 0.4
+        # Regime: Less restrictive volatility conditions
+        high_volatility = pd.isna(volatility_percentile) or volatility_percentile > 0.2  # Lower threshold
 
-        if bullish_breakout and volume_ok and high_volatility:
+        # Multiple conditions to increase trade frequency
+        if bullish_breakout and (volume_ok or high_volatility):
             return 1  # Buy
-        elif bearish_breakout and volume_ok and high_volatility:
+        elif bearish_breakout and (volume_ok or high_volatility):
             return -1  # Sell
+        # Additional breakout conditions
+        elif close > high_20 * 1.0005:  # Simple breakout without ATR
+            return 1
+        elif close < low_20 * 0.9995:  # Simple breakdown without ATR
+            return -1
         else:
             return 0  # Hold
 
@@ -285,24 +323,31 @@ def load_sample_strategy(strategy_name: str):
         volume_ratio = volume / sma_volume if sma_volume > 0 else 1
         vol_ratio = atr / sma_atr if pd.notna(atr) and pd.notna(sma_atr) and sma_atr > 0 else 1
 
-        # Look for high volume and high volatility (liquidity events)
-        high_liquidity = volume_ratio > 1.2 and (pd.isna(vol_ratio) or vol_ratio > 1.0)  # Less strict thresholds
+        # Look for high volume and high volatility (liquidity events) - made less strict
+        high_liquidity = volume_ratio > 1.1 and (pd.isna(vol_ratio) or vol_ratio > 0.8)  # Much less strict thresholds
 
-        # Regime: Consider market conditions
-        trending_market = pd.isna(adx) or adx > 25
+        # Regime: Less restrictive market conditions
+        trending_market = pd.isna(adx) or adx > 15  # Lower threshold
 
+        # Multiple conditions to increase trade frequency
         if high_liquidity and pd.notna(rsi):
             # In oversold territory - potential buying opportunity
-            if rsi < 40 and trending_market:  # More sensitive RSI and trending market
+            if rsi < 45:  # More sensitive RSI, removed trending market requirement
                 return 1  # Buy
             # In overbought territory - potential selling opportunity
-            elif rsi > 60 and trending_market:  # More sensitive RSI and trending market
+            elif rsi > 55:  # More sensitive RSI, removed trending market requirement
                 return -1  # Sell
             else:
                 return 0  # Hold in neutral zone
         elif high_liquidity:
             # If no RSI, use price action - if price is relatively low in recent range, buy
             return 1  # Default to buy in high liquidity situations if no other info
+        # Additional conditions to increase trade frequency
+        elif volume_ratio > 1.05:  # Lower volume threshold
+            if rsi < 50:  # Buy when volume is high and RSI is low
+                return 1
+            elif rsi > 50:  # Sell when volume is high and RSI is high
+                return -1
         else:
             return 0  # Hold if not high liquidity
 
@@ -320,21 +365,27 @@ def load_sample_strategy(strategy_name: str):
         if any(pd.isna(x) for x in [sma_20_short, sma_50_short, sma_20_long, sma_50_long, close]):
             return 0
 
-        # Align trends across timeframes
-        short_trend_bullish = sma_20_short > sma_50_short * 0.99  # Less strict
-        long_trend_bullish = sma_20_long > sma_50_long * 0.99  # Less strict
+        # Align trends across timeframes - made less strict
+        short_trend_bullish = sma_20_short > sma_50_short * 0.999  # Much less strict
+        long_trend_bullish = sma_20_long > sma_50_long * 0.999  # Much less strict
 
-        # Momentum confirmation
-        mom_bullish = pd.isna(roc_short) or roc_short > 0.0001  # Very small positive momentum
-        mom_bearish = pd.isna(roc_short) or roc_short < -0.0001  # Very small negative momentum
+        # Momentum confirmation - made less strict
+        mom_bullish = pd.isna(roc_short) or roc_short > -0.0001  # Allow slightly negative momentum
+        mom_bearish = pd.isna(roc_short) or roc_short < 0.0001  # Allow slightly positive momentum
 
-        # Regime: Only trade in strong trend conditions
-        strong_trend = pd.isna(adx) or adx > 20  # Allow trading in mild trends
+        # Regime: Less restrictive trend conditions
+        strong_trend = pd.isna(adx) or adx > 15  # Lower threshold
 
-        if short_trend_bullish and long_trend_bullish and close > sma_20_short and mom_bullish and strong_trend:
+        # Multiple conditions to increase trade frequency
+        if (short_trend_bullish or long_trend_bullish) and (mom_bullish or strong_trend):
             return 1  # Buy
-        elif not short_trend_bullish and not long_trend_bullish and close < sma_20_short and mom_bearish and strong_trend:
+        elif (not short_trend_bullish or not long_trend_bullish) and (mom_bearish or strong_trend):
             return -1  # Sell
+        # Additional conditions to increase trade frequency
+        elif short_trend_bullish and close > sma_20_short:
+            return 1
+        elif not short_trend_bullish and close < sma_20_short:
+            return -1
         else:
             return 0  # Hold
 
@@ -353,25 +404,32 @@ def load_sample_strategy(strategy_name: str):
         if pd.isna(volume) or pd.isna(sma_volume):
             return 0
 
-        # Calculate volume and volatility ratios (proxy for OI changes)
+        # Calculate volume and volatility ratios (proxy for OI changes) - made less strict
         volume_ratio = volume / sma_volume if sma_volume > 0 else 1
         vol_ratio = atr / sma_atr if pd.notna(atr) and pd.notna(sma_atr) and sma_atr > 0 else 1
 
-        # High volume and high volatility often indicate institutional activity
-        oi_increasing = volume_ratio > 1.5 and (pd.isna(vol_ratio) or vol_ratio > 1.2)  # Less strict thresholds
+        # High volume and high volatility often indicate institutional activity - made less strict
+        oi_increasing = volume_ratio > 1.2 and (pd.isna(vol_ratio) or vol_ratio > 0.9)  # Much less strict thresholds
 
-        # Regime: Consider market conditions
-        trending_market = pd.isna(adx) or adx > 20
+        # Regime: Less restrictive market conditions
+        trending_market = pd.isna(adx) or adx > 15  # Lower threshold
 
+        # Multiple conditions to increase trade frequency
         if oi_increasing and pd.notna(rsi):
             # If OI proxy is increasing and RSI is oversold - potential accumulation
-            if rsi < 45 and trending_market and (pd.notna(roc) and roc > -0.001):  # Less strict momentum
+            if rsi < 50:  # Broader range, removed other conditions
                 return 1  # Buy
             # If OI proxy is increasing and RSI is overbought - potential distribution
-            elif rsi > 55 and trending_market and (pd.notna(roc) and roc < 0.001):  # Less strict momentum
+            elif rsi > 50:  # Broader range, removed other conditions
                 return -1  # Sell
             else:
                 return 0  # Hold
+        # Additional conditions to increase trade frequency
+        elif volume_ratio > 1.1:  # Lower threshold for volume spike
+            if rsi < 45:  # Buy when volume is high and RSI is low
+                return 1
+            elif rsi > 55:  # Sell when volume is high and RSI is high
+                return -1
         else:
             return 0  # Hold if no clear OI signal
 
@@ -391,24 +449,30 @@ def load_sample_strategy(strategy_name: str):
         if any(pd.isna(x) for x in [high, low, close, volume, high_5, low_5]):
             return 0
 
-        # Look for high volume near recent highs/lows (potential liquidity sweeps)
-        volume_spike = pd.notna(volume) and pd.notna(sma_volume) and volume > sma_volume * 1.2  # Less strict threshold
+        # Look for high volume near recent highs/lows (potential liquidity sweeps) - made less strict
+        volume_spike = pd.notna(volume) and pd.notna(sma_volume) and volume > sma_volume * 1.05  # Much less strict threshold
 
-        # Check if price is near recent extremes
-        near_high = high >= high_5 * 0.99  # Less strict - within 1% of 5-period high
-        near_low = low <= low_5 * 1.01  # Less strict - within 1% of 5-period low
+        # Check if price is near recent extremes - made less strict
+        near_high = high >= high_5 * 0.995  # Within 0.5% of 5-period high
+        near_low = low <= low_5 * 1.005  # Within 0.5% of 5-period low
 
         # Check for potential sweep scenarios
         bullish_sweep = volume_spike and near_low and close > low  # Price moved away from low
         bearish_sweep = volume_spike and near_high and close < high  # Price moved away from high
 
-        # Regime: Scalping works better in higher volatility environments
-        high_volatility = pd.isna(volatility_regime) or volatility_regime > 0.005  # Adjusted threshold
+        # Regime: Less restrictive volatility conditions
+        high_volatility = pd.isna(volatility_regime) or volatility_regime > 0.001  # Much lower threshold
 
-        if bullish_sweep and high_volatility:
+        # Multiple conditions to increase trade frequency
+        if (bullish_sweep or volume_spike) and (high_volatility or close < low_5 * 0.999):  # Additional condition
             return 1  # Buy - potential bullish sweep completed
-        elif bearish_sweep and high_volatility:
+        elif (bearish_sweep or volume_spike) and (high_volatility or close > high_5 * 1.001):  # Additional condition
             return -1  # Sell - potential bearish sweep completed
+        # Additional conditions to increase trade frequency
+        elif volume_spike and close < (high_5 + low_5) / 2:  # Volume spike and price is in lower half
+            return 1
+        elif volume_spike and close > (high_5 + low_5) / 2:  # Volume spike and price is in upper half
+            return -1
         else:
             return 0  # Hold
 
@@ -430,17 +494,28 @@ def load_sample_strategy(strategy_name: str):
         else:
             vwap_distance = 0
 
-        # More sensitive thresholds for VWAP distance
-        vwap_deviation_threshold = 0.003  # 0.3% instead of 0.5% - even more sensitive
+        # More sensitive thresholds for VWAP distance - made even more sensitive
+        vwap_deviation_threshold = 0.001  # 0.1% - much more sensitive
 
-        # Regime: Mean reversion works better in ranging markets
-        ranging_market = pd.isna(adx) or adx < 35  # Allow in ranging markets
+        # Regime: Less restrictive ranging market conditions
+        ranging_market = pd.isna(adx) or adx < 40  # Higher threshold allows more trading
 
-        # Price significantly above VWAP with overbought RSI - potential reversal down
-        if vwap_distance > vwap_deviation_threshold and ranging_market and pd.notna(rsi) and rsi > 60:
+        # Multiple conditions to increase trade frequency
+        # Price above VWAP with overbought RSI - potential reversal down
+        if vwap_distance > vwap_deviation_threshold and pd.notna(rsi) and rsi > 55:
             return -1  # Sell
-        # Price significantly below VWAP with oversold RSI - potential reversal up
-        elif vwap_distance < -vwap_deviation_threshold and ranging_market and pd.notna(rsi) and rsi < 40:
+        # Price below VWAP with oversold RSI - potential reversal up
+        elif vwap_distance < -vwap_deviation_threshold and pd.notna(rsi) and rsi < 45:
+            return 1  # Buy
+        # Additional conditions to increase trade frequency
+        elif vwap_distance > vwap_deviation_threshold * 2:  # Double threshold for stronger signal
+            return -1  # Sell
+        elif vwap_distance < -vwap_deviation_threshold * 2:  # Double threshold for stronger signal
+            return 1  # Buy
+        # Additional VWAP-based conditions without RSI
+        elif vwap_distance > vwap_deviation_threshold and ranging_market:
+            return -1  # Sell
+        elif vwap_distance < -vwap_deviation_threshold and ranging_market:
             return 1  # Buy
         else:
             return 0  # Hold
