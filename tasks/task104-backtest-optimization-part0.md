@@ -25,7 +25,8 @@ CRITICAL CONSTRAINTS:
 >
 > 1. Executes **only and exactly** the selected system strategies
 > 2. Follows the architectural flow without bypasses
-> 3. Produces trades solely as a consequence of strategy logic
+> 3. Produce trades solely as a consequence of strategy logic
+> 4.Check the ./runner_backtest.py and Readme.md file to understand the current implementations
 >
 > Nothing else is in scope for this step.
 >

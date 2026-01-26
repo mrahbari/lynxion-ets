@@ -11,7 +11,8 @@ CRITICAL CONSTRAINTS:
 
 > **System Context**
 > I am operating a professional trading system built on a strict **Hexagonal (Ports & Adapters) Architecture** with the following immutable execution flows:
->
+> Check the ./runner_backtest.py and Readme.md file to understand the current implementations
+
 > * **Watcher → Engine → Fusion → Strategy → Broker**
 > * **Watcher → Engine → Fusion → Strategy → Aggregator → Broker**
 >

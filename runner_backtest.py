@@ -642,11 +642,30 @@ def run_backtest_process(symbols: List[str],
                     df[first_col] = pd.to_datetime(df[first_col], errors='coerce')
                     df = df.set_index(first_col)
 
-                # Ensure index is datetime type
+                # Ensure index is datetime type - keep timezone as is
                 df.index = pd.to_datetime(df.index)
 
-                # Filter data by date range
-                df = df[(df.index >= start_date) & (df.index <= end_date)]
+                # Convert both the index and the date range to the same timezone-naive format for comparison
+                # This ensures consistent comparison regardless of timezone differences
+                df_index_naive = df.index.tz_localize(None) if df.index.tz is not None else df.index
+                start_date_naive = start_date.replace(tzinfo=None) if start_date.tzinfo else start_date
+                end_date_naive = end_date.replace(tzinfo=None) if end_date.tzinfo else end_date
+
+                # Create a mask for date filtering
+                date_mask = (df_index_naive >= start_date_naive) & (df_index_naive <= end_date_naive)
+
+                # Apply the mask to filter the dataframe
+                df = df[date_mask]
+
+                # Reset the index to maintain the original timezone if it existed
+                if df.index.tz is not None:
+                    df.index = df.index.tz_convert(df.index.tz)
+
+                # Debug: Print date range info
+                if len(df) > 0:
+                    print(f"   Date range filter applied: {start_date_naive.date()} to {end_date_naive.date()}, "
+                          f"data range: {df.index[0].date()} to {df.index[-1].date()}, "
+                          f"rows: {len(df)}")
 
                 if len(df) < 10:  # Need minimum data for backtest
                     print(f"   ⚠️  Insufficient data for {symbol} (only {len(df)} rows), skipping...")
@@ -662,11 +681,26 @@ def run_backtest_process(symbols: List[str],
                         print(f"   ⚠️  No data found for {symbol}, skipping...")
                         continue
 
-                    # Ensure index is datetime type for CSV loader too
+                    # Ensure index is datetime type - keep timezone as is for CSV loader too
                     df.index = pd.to_datetime(df.index)
 
-                    # Filter data by date range
-                    df = df[(df.index >= start_date) & (df.index <= end_date)]
+                    # Convert both the index and the date range to the same timezone-naive format for comparison
+                    # This ensures consistent comparison regardless of timezone differences
+                    df_index_naive = df.index.tz_localize(None) if df.index.tz is not None else df.index
+                    start_date_naive = start_date.replace(tzinfo=None) if start_date.tzinfo else start_date
+                    end_date_naive = end_date.replace(tzinfo=None) if end_date.tzinfo else end_date
+
+                    # Create a mask for date filtering
+                    date_mask = (df_index_naive >= start_date_naive) & (df_index_naive <= end_date_naive)
+
+                    # Apply the mask to filter the dataframe
+                    df = df[date_mask]
+
+                    # Debug: Print date range info
+                    if len(df) > 0:
+                        print(f"   Date range filter applied: {start_date_naive.date()} to {end_date_naive.date()}, "
+                              f"data range: {df.index[0].date()} to {df.index[-1].date()}, "
+                              f"rows: {len(df)}")
 
                     if len(df) < 10:
                         print(f"   ⚠️  Insufficient data for {symbol} (only {len(df)} rows), skipping...")
@@ -698,7 +732,8 @@ def run_backtest_process(symbols: List[str],
             backtest_result = backtester.run_backtest(
                 data=df_with_indicators,
                 strategy_function=strategy_function,
-                strategy_params=strategy_params
+                strategy_params=strategy_params,
+                strategy_name=strategy_name
             )
 
             # Perform signal density audit
@@ -778,6 +813,8 @@ def run_backtest_process(symbols: List[str],
 
     print(f"   Duration: {results['duration_seconds']:.2f}s")
 
+    # The validation is already performed inside the backtester, so we just report status
+    print(f"\n✅ Backtest completed with validation")
     return results
 
 

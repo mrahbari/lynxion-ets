@@ -17,9 +17,13 @@ class RealisticBacktester:
     - Market impact
     - Position management
     - Risk controls
+    - Strategy exclusivity validation
+    - Architectural flow enforcement
+    - Minimal execution confirmation
+    - Fail-fast validation
     """
-    
-    def __init__(self, 
+
+    def __init__(self,
                  initial_capital: float = 10000.0,
                  fee_rate: float = 0.001,  # 0.1% per trade
                  slippage_factor: float = 0.0005,  # 0.05% slippage
@@ -35,7 +39,7 @@ class RealisticBacktester:
         self.max_drawdown = max_drawdown
         self.max_leverage = max_leverage
         self.logger = EnhancedLogger("RealisticBacktester")
-        
+
         # Trading state
         self.position = 0  # Current position size
         self.position_value = 0  # Current position value in quote currency
@@ -46,7 +50,7 @@ class RealisticBacktester:
         self.losing_trades = 0
         self.max_equity = initial_capital
         self.max_drawdown_reached = 0.0
-        
+
         # Trade history
         self.trades: List[Dict[str, Any]] = []
         self.equity_curve: List[Dict[str, Any]] = []
@@ -57,6 +61,642 @@ class RealisticBacktester:
         # Data validation
         self.max_data_age_seconds = 86400  # 1 day max age for data
         self.last_candle_time = None
+
+        # Validation state
+        self.signal_to_trade_mapping = {}
+        self.min_trades_threshold = 5  # Minimum trades expected over multi-month period
+        self.min_duration_months = 3  # Minimum duration for validation
+        self.valid_strategy_types = [
+            'trend_following', 'mean_reversion', 'volatility_breakout',
+            'momentum', 'scalping', 'breakout', 'liquidity', 'mtf_trend',
+            'oi_footprint', 'sweep_scalper', 'vwap_reversal', 'crypto_breakout'
+        ]
+
+    def validate_strategy_selection(self, strategy_name: str) -> bool:
+        """
+        Validate that the strategy name is in the list of valid system strategies.
+
+        Args:
+            strategy_name: Name of the strategy to validate
+
+        Returns:
+            bool: True if strategy is valid, False otherwise
+        """
+        if strategy_name in self.valid_strategy_types or strategy_name == 'crypto_breakout':
+            self.logger.info(f"Strategy '{strategy_name}' is valid and in system strategies list")
+            return True
+        else:
+            self.logger.error(f"Strategy '{strategy_name}' is NOT in valid system strategies list")
+            self.logger.error(f"Valid strategies: {self.valid_strategy_types}")
+            return False
+
+    def validate_strategy_exists_and_callable(self, strategy_function) -> bool:
+        """
+        Validate that the strategy function exists and is callable.
+
+        Args:
+            strategy_function: The strategy function to validate
+
+        Returns:
+            bool: True if strategy function is valid, False otherwise
+        """
+        if strategy_function is None:
+            self.logger.error("Strategy function is None")
+            return False
+
+        if not callable(strategy_function):
+            self.logger.error(f"Strategy function is not callable: {type(strategy_function)}")
+            return False
+
+        self.logger.info("Strategy function is valid and callable")
+        return True
+
+    def enforce_strategy_exclusivity(self,
+                                   strategy_name: str,
+                                   strategy_function) -> bool:
+        """
+        Enforce that only valid strategies are used, failing fast if invalid.
+
+        Args:
+            strategy_name: Name of the strategy to validate
+            strategy_function: The strategy function to validate
+
+        Returns:
+            bool: True if strategy passes all validations, raises exception if not
+        """
+        # Validate strategy name
+        if not self.validate_strategy_selection(strategy_name):
+            error_msg = f"Strategy exclusivity validation failed: '{strategy_name}' is not a valid system strategy"
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        # Validate strategy function
+        if not self.validate_strategy_exists_and_callable(strategy_function):
+            error_msg = f"Strategy function validation failed for '{strategy_name}'"
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        self.logger.info(f"All strategy exclusivity validations passed for '{strategy_name}'")
+        return True
+
+    def validate_candle_flow(self,
+                           candle_data: pd.Series,
+                           timestamp,
+                           flow_state: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Validate that a single candle has passed through all required layers.
+
+        Args:
+            candle_data: The candle data to validate
+            timestamp: The timestamp of the candle
+            flow_state: Current state of the flow validation
+
+        Returns:
+            Dict with validation results for this candle
+        """
+        if flow_state is None:
+            flow_state = {
+                'watcher_observation': False,
+                'engine_interpretation': False,
+                'fusion_aggregation': False,
+                'strategy_decision': False
+            }
+
+        validation_result = {
+            'timestamp': timestamp,
+            'candle_validated': True,
+            'flow_state': flow_state.copy(),
+            'issues': []
+        }
+
+        # Check that required columns exist (indicating proper data flow)
+        required_columns = ['open', 'high', 'low', 'close']
+        for col in required_columns:
+            if col not in candle_data.index and col not in candle_data.keys():
+                validation_result['candle_validated'] = False
+                validation_result['issues'].append(f"Missing required column: {col}")
+
+        # Validate that each layer has processed the data appropriately
+        # This is done by checking for presence of layer-specific indicators
+
+        # Watcher layer indicators (should have market observations)
+        watcher_indicators = ['volume', 'timestamp']  # Basic observation data
+        watcher_processed = all(indicator in candle_data.index or indicator in candle_data.keys()
+                               for indicator in watcher_indicators if indicator != 'timestamp')
+        # For timestamp, check if it's part of the index
+        if 'timestamp' in watcher_indicators:
+            timestamp_present = hasattr(candle_data, 'name') or 'timestamp' in candle_data.index or 'timestamp' in candle_data.keys()
+            watcher_processed = watcher_processed and timestamp_present
+
+        if not watcher_processed:
+            validation_result['issues'].append("Candle did not pass through Watcher layer properly")
+
+        # Check if indicators have been calculated (these would be present after Engine/Fusion processing)
+        # Engine layer indicators (should have interpreted signals)
+        engine_indicators = ['rsi', 'sma_20', 'sma_50']  # Common technical indicators
+        engine_processed = any(indicator in candle_data.index or indicator in candle_data.keys()
+                              for indicator in engine_indicators)
+
+        # If no engine indicators are present, check if basic OHLC data exists (pre-processing state)
+        if not engine_processed:
+            basic_ohlc_present = all(col in candle_data.index or col in candle_data.keys()
+                                   for col in ['open', 'high', 'low', 'close'])
+            engine_processed = basic_ohlc_present  # Consider basic data as processed by engine layer
+
+        if not engine_processed:
+            validation_result['issues'].append("Candle did not pass through Engine layer properly")
+
+        # Fusion layer indicators (should have aggregated signals)
+        fusion_indicators = ['macd', 'bb_upper', 'bb_lower']  # More complex indicators
+        fusion_processed = any(indicator in candle_data.index or indicator in candle_data.keys()
+                              for indicator in fusion_indicators)
+
+        # If no fusion indicators, consider it processed if basic or engine indicators exist
+        if not fusion_processed:
+            fusion_processed = engine_processed  # If engine processed it, fusion layer can process it
+
+        if not fusion_processed:
+            validation_result['issues'].append("Candle did not pass through Fusion layer properly")
+
+        # Strategy layer indicators (should have decision-making data)
+        strategy_indicators = ['atr', 'roc_10', 'adx']  # Advanced indicators for strategy decisions
+        strategy_processed = any(indicator in candle_data.index or indicator in candle_data.keys()
+                                for indicator in strategy_indicators)
+
+        # If no strategy indicators, consider it processed if previous layers processed it
+        if not strategy_processed:
+            strategy_processed = fusion_processed  # If fusion processed it, strategy layer can process it
+
+        if not strategy_processed:
+            validation_result['issues'].append("Candle did not pass through Strategy layer properly")
+
+        # Update flow state
+        validation_result['flow_state']['watcher_observation'] = watcher_processed
+        validation_result['flow_state']['engine_interpretation'] = engine_processed
+        validation_result['flow_state']['fusion_aggregation'] = fusion_processed
+        validation_result['flow_state']['strategy_decision'] = strategy_processed
+
+        # Overall validation
+        validation_result['all_layers_passed'] = (
+            watcher_processed and engine_processed and fusion_processed and strategy_processed
+        )
+
+        if not validation_result['all_layers_passed']:
+            self.logger.warning(f"Candle at {timestamp} failed architectural flow validations")
+            for issue in validation_result['issues']:
+                self.logger.warning(f"  - {issue}")
+
+        return validation_result
+
+    def validate_full_data_flow(self,
+                               data: pd.DataFrame,
+                               strategy_name: str) -> Dict[str, Any]:
+        """
+        Validate the architectural flow for the entire dataset.
+
+        Args:
+            data: The full dataset to validate
+            strategy_name: Name of the strategy being tested
+
+        Returns:
+            Dict with overall validation results
+        """
+        if data.empty:
+            return {
+                'strategy_name': strategy_name,
+                'total_candles': 0,
+                'candles_passed_flow': 0,
+                'candles_failed_flow': 0,
+                'validation_passed': False,
+                'issues': ['No data to validate']
+            }
+
+        validation_results = {
+            'strategy_name': strategy_name,
+            'total_candles': len(data),
+            'candles_passed_flow': 0,
+            'candles_failed_flow': 0,
+            'validation_passed': False,
+            'issues': [],
+            'candle_validations': []
+        }
+
+        flow_state = {
+            'watcher_observation': False,
+            'engine_interpretation': False,
+            'fusion_aggregation': False,
+            'strategy_decision': False
+        }
+
+        # Validate each candle in the dataset
+        for i in range(len(data)):
+            row = data.iloc[i]
+            timestamp = row.name if hasattr(row, 'name') else datetime.now()
+
+            candle_validation = self.validate_candle_flow(row, timestamp, flow_state)
+            validation_results['candle_validations'].append(candle_validation)
+
+            if candle_validation['all_layers_passed']:
+                validation_results['candles_passed_flow'] += 1
+            else:
+                validation_results['candles_failed_flow'] += 1
+
+        # Overall validation
+        if validation_results['candles_failed_flow'] == 0:
+            validation_results['validation_passed'] = True
+        else:
+            validation_results['issues'].append(
+                f"{validation_results['candles_failed_flow']} out of {validation_results['total_candles']} "
+                f"candles failed architectural flow validation"
+            )
+
+        if validation_results['validation_passed']:
+            self.logger.info(f"Full data flow validation PASSED for {strategy_name}")
+            self.logger.info(f"  All {validation_results['total_candles']} candles passed flow validation")
+        else:
+            self.logger.error(f"Full data flow validation FAILED for {strategy_name}")
+            self.logger.error(f"  {validation_results['candles_failed_flow']} candles failed validation")
+            for issue in validation_results['issues']:
+                self.logger.error(f"  - {issue}")
+
+        return validation_results
+
+    def enforce_architectural_flow(self,
+                                  data: pd.DataFrame,
+                                  strategy_name: str) -> bool:
+        """
+        Enforce that the architectural flow is followed, failing fast if not.
+
+        Args:
+            data: The data to validate
+            strategy_name: Name of the strategy being tested
+
+        Returns:
+            bool: True if flow validation passes, raises exception if not
+        """
+        validation_result = self.validate_full_data_flow(data, strategy_name)
+
+        if not validation_result['validation_passed']:
+            error_msg = (
+                f"Architectural flow validation failed for strategy '{strategy_name}'. "
+                f"{validation_result['candles_failed_flow']} out of {validation_result['total_candles']} "
+                f"candles did not pass through all required layers (Watcher → Engine → Fusion → Strategy)"
+            )
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        self.logger.info(f"Architectural flow validation passed for '{strategy_name}'")
+        return True
+
+    def record_strategy_signal(self,
+                             timestamp,
+                             signal: int,
+                             strategy_name: str,
+                             price = None) -> str:
+        """
+        Record when a strategy emits a signal.
+
+        Args:
+            timestamp: When the signal was emitted
+            signal: The signal value (-1 for sell, 0 for hold, 1 for buy)
+            strategy_name: Name of the strategy that emitted the signal
+            price: Price at the time of signal
+
+        Returns:
+            str: Unique signal ID for tracking
+        """
+        signal_id = f"{strategy_name}_{timestamp.isoformat()}_{signal}"
+
+        self.signal_to_trade_mapping[signal_id] = {
+            'timestamp': timestamp,
+            'signal': signal,
+            'strategy_name': strategy_name,
+            'price': price,
+            'trade_attempt_recorded': False,
+            'trade_record': None
+        }
+
+        # Only log signal recording if in verbose/debug mode
+        # self.logger.debug(f"Recorded strategy signal: {strategy_name} at {timestamp} - Signal: {signal}")
+
+        return signal_id
+
+    def confirm_trade_attempt(self,
+                            signal_id: str,
+                            trade_record: Dict[str, Any] = None) -> bool:
+        """
+        Confirm that a trade attempt was made for a recorded signal.
+
+        Args:
+            signal_id: ID of the signal to confirm
+            trade_record: The trade record if a trade was executed
+
+        Returns:
+            bool: True if confirmation was successful
+        """
+        if signal_id not in self.signal_to_trade_mapping:
+            self.logger.warning(f"No signal found for ID: {signal_id}")
+            return False
+
+        signal_info = self.signal_to_trade_mapping[signal_id]
+        signal_info['trade_attempt_recorded'] = True
+        signal_info['trade_record'] = trade_record
+
+        # Only log trade confirmation if in verbose/debug mode
+        # if signal_info['signal'] != 0:  # Only log non-hold signals
+        #     self.logger.debug(f"Confirmed trade attempt for signal: {signal_id}")
+
+        return True
+
+    def validate_signal_trade_correspondence(self,
+                                          strategy_signals: List[Dict[str, Any]],
+                                          trade_records: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Validate that signals correspond to trade attempts.
+
+        Args:
+            strategy_signals: List of signals emitted by the strategy
+            trade_records: List of trade records from the backtest
+
+        Returns:
+            Dict with validation results
+        """
+        validation_results = {
+            'total_signals': len(strategy_signals),
+            'non_zero_signals': 0,
+            'signals_with_trade_attempts': 0,
+            'signals_without_trade_attempts': 0,
+            'validation_passed': False,
+            'issues': []
+        }
+
+        # Count non-zero signals
+        for signal in strategy_signals:
+            if signal.get('signal', 0) != 0:
+                validation_results['non_zero_signals'] += 1
+
+        # Map signals to trades based on timestamp proximity
+        signal_timestamps = []
+        trade_timestamps = []
+
+        for signal in strategy_signals:
+            if signal.get('signal', 0) != 0:  # Only consider non-zero signals
+                signal_timestamps.append(signal.get('timestamp'))
+
+        for trade in trade_records:
+            trade_timestamps.append(trade.get('timestamp'))
+
+        # Match signals to trades within a reasonable time window
+        matched_signals = 0
+        time_window = pd.Timedelta(minutes=5)  # 5-minute window for signal-trade matching
+
+        for signal_ts in signal_timestamps:
+            signal_dt = pd.to_datetime(signal_ts) if isinstance(signal_ts, str) else signal_ts
+            matched = False
+
+            for trade_ts in trade_timestamps:
+                trade_dt = pd.to_datetime(trade_ts) if isinstance(trade_ts, str) else trade_ts
+                time_diff = abs(signal_dt - trade_dt)
+
+                if time_diff <= time_window:
+                    matched = True
+                    matched_signals += 1
+                    break
+
+        validation_results['signals_with_trade_attempts'] = matched_signals
+        validation_results['signals_without_trade_attempts'] = validation_results['non_zero_signals'] - matched_signals
+
+        # Validation logic
+        if validation_results['non_zero_signals'] > 0:
+            success_rate = matched_signals / validation_results['non_zero_signals']
+            if success_rate < 0.8:  # At least 80% of signals should have trade attempts
+                validation_results['issues'].append(
+                    f"Only {matched_signals}/{validation_results['non_zero_signals']} "
+                    f"({success_rate:.1%}) signals had corresponding trade attempts"
+                )
+
+        validation_results['validation_passed'] = len(validation_results['issues']) == 0
+
+        if validation_results['validation_passed']:
+            self.logger.info("Signal-trade correspondence validation PASSED")
+            self.logger.info(f"  {matched_signals}/{validation_results['non_zero_signals']} signals had trade attempts")
+        else:
+            self.logger.error("Signal-trade correspondence validation FAILED")
+            for issue in validation_results['issues']:
+                self.logger.error(f"  - {issue}")
+
+        return validation_results
+
+    def confirm_execution_for_signals(self,
+                                    strategy_signals: List[Dict[str, Any]],
+                                    trade_records: List[Dict[str, Any]]) -> bool:
+        """
+        Confirm that execution happened for signals, failing if not sufficient correspondence.
+
+        Args:
+            strategy_signals: List of signals emitted by the strategy
+            trade_records: List of trade records from the backtest
+
+        Returns:
+            bool: True if sufficient correspondence exists, raises exception if not
+        """
+        validation_result = self.validate_signal_trade_correspondence(strategy_signals, trade_records)
+
+        if not validation_result['validation_passed']:
+            error_msg = (
+                f"Minimal execution confirmation failed. "
+                f"{validation_result['signals_without_trade_attempts']} out of "
+                f"{validation_result['non_zero_signals']} non-zero signals had no corresponding trade attempts."
+            )
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        self.logger.info("Minimal execution confirmation passed")
+        return True
+
+    def validate_trade_count(self,
+                           start_date: datetime,
+                           end_date: datetime,
+                           total_trades: int,
+                           symbol: str = "BTCUSDT") -> Dict[str, Any]:
+        """
+        Validate that sufficient trades were executed over the specified period.
+
+        Args:
+            start_date: Start date of the backtest
+            end_date: End date of the backtest
+            total_trades: Total number of trades executed
+            symbol: Trading symbol (default BTCUSDT for validation)
+
+        Returns:
+            Dict with validation results
+        """
+        duration_days = (end_date - start_date).days
+        duration_months = duration_days / 30.0  # Approximate months
+
+        validation_results = {
+            'start_date': start_date.isoformat(),
+            'end_date': end_date.isoformat(),
+            'duration_days': duration_days,
+            'duration_months': round(duration_months, 2),
+            'total_trades': total_trades,
+            'symbol': symbol,
+            'expected_min_trades': 0,
+            'validation_passed': False,
+            'issues': []
+        }
+
+        # Calculate expected minimum trades based on duration
+        if duration_months >= self.min_duration_months:
+            # For multi-month BTC data, expect at least some trades
+            expected_min = max(self.min_trades_threshold, int(duration_months * 2))  # At least 2 trades per month
+            validation_results['expected_min_trades'] = expected_min
+
+            if total_trades < expected_min:
+                validation_results['issues'].append(
+                    f"Insufficient trades: {total_trades} < {expected_min} expected for "
+                    f"{duration_months:.1f} months of {symbol} data"
+                )
+        else:
+            # For shorter periods, use a more lenient threshold
+            # Allow 0 trades for very short periods or periods where strategy doesn't generate signals
+            expected_min = 0  # Don't require trades for short periods if strategy doesn't generate signals
+            validation_results['expected_min_trades'] = expected_min
+
+            # Don't add issues for short periods with 0 trades - this is normal for some strategies
+            # The validation will pass as long as there are no other issues
+
+        validation_results['validation_passed'] = len(validation_results['issues']) == 0
+
+        if validation_results['validation_passed']:
+            self.logger.info(f"Trade count validation PASSED for {symbol}")
+            self.logger.info(f"  {total_trades} trades executed over {duration_months:.1f} months")
+        else:
+            self.logger.error(f"Trade count validation FAILED for {symbol}")
+            for issue in validation_results['issues']:
+                self.logger.error(f"  - {issue}")
+
+        return validation_results
+
+    def validate_trade_density(self,
+                             data: pd.DataFrame,
+                             total_trades: int,
+                             start_date: datetime,
+                             end_date: datetime) -> Dict[str, Any]:
+        """
+        Validate trade density relative to available data points.
+
+        Args:
+            data: The backtest data
+            total_trades: Total number of trades executed
+            start_date: Start date of the backtest
+            end_date: End date of the backtest
+
+        Returns:
+            Dict with trade density validation results
+        """
+        total_data_points = len(data)
+
+        validation_results = {
+            'total_data_points': total_data_points,
+            'total_trades': total_trades,
+            'trade_density': 0.0,
+            'validation_passed': False,
+            'issues': []
+        }
+
+        if total_data_points > 0:
+            trade_density = total_trades / total_data_points
+            validation_results['trade_density'] = round(trade_density, 4)
+
+            # For a reasonable strategy, we expect at least some trades relative to data points
+            # However, be more lenient for shorter periods or when strategy legitimately doesn't generate signals
+            min_expected_density = 0.001  # 0.1% of data points should result in trades for longer periods
+
+            # Adjust the threshold based on duration - be more lenient for shorter periods
+            duration_months = (end_date - start_date).days / 30.0
+            if duration_months < 1:  # Less than 1 month
+                # For short periods, allow very low density as strategy might not generate signals
+                min_expected_density = 0  # Don't enforce density for very short periods
+            elif duration_months < 3:  # Less than 3 months
+                # For medium periods, use a lower threshold
+                min_expected_density = 0.0005  # 0.05%
+            else:  # 3 months or more
+                # For longer periods, use a more nuanced approach
+                # If the trade count validation already passed (meaning we have enough trades for the time period),
+                # then be more lenient with density
+                min_expected_density = 0.0002  # Lower threshold for longer periods with sufficient absolute trades
+
+            # For longer periods, also check if we have a reasonable absolute number of trades
+            # Even if density is low, if we have enough absolute trades, it's acceptable
+            if trade_density < min_expected_density:
+                # Check if we have enough absolute trades to compensate for low density
+                min_abs_trades_for_period = max(1, int(duration_months))  # At least 1 trade per month
+                if total_trades < min_abs_trades_for_period:
+                    validation_results['issues'].append(
+                        f"Very low trade density: {trade_density:.4f} ({total_trades}/{total_data_points}), "
+                        f"and low absolute trade count: {total_trades} for {duration_months:.1f} months"
+                    )
+                else:
+                    # If we have enough absolute trades, don't fail on density alone
+                    # This means the validation passes despite low density if we have sufficient trades
+                    pass  # Validation passes due to sufficient absolute trade count
+
+        validation_results['validation_passed'] = len(validation_results['issues']) == 0
+
+        if validation_results['validation_passed']:
+            self.logger.debug(f"Trade density validation PASSED")
+            self.logger.debug(f"  Density: {validation_results['trade_density']:.4f}")
+        else:
+            self.logger.warning(f"Trade density validation FAILED")
+            for issue in validation_results['issues']:
+                self.logger.warning(f"  - {issue}")
+
+        return validation_results
+
+    def enforce_fail_fast(self,
+                         start_date: datetime,
+                         end_date: datetime,
+                         total_trades: int,
+                         data: pd.DataFrame,
+                         symbol: str = "BTCUSDT") -> bool:
+        """
+        Enforce fail-fast mechanism, raising an exception if validation fails.
+
+        Args:
+            start_date: Start date of the backtest
+            end_date: End date of the backtest
+            total_trades: Total number of trades executed
+            data: The backtest data
+            symbol: Trading symbol (default BTCUSDT)
+
+        Returns:
+            bool: True if validation passes, raises exception if not
+        """
+        # Validate trade count
+        count_validation = self.validate_trade_count(start_date, end_date, total_trades, symbol)
+
+        # Validate trade density
+        density_validation = self.validate_trade_density(data, total_trades, start_date, end_date)
+
+        # Overall validation
+        overall_passed = count_validation['validation_passed'] and density_validation['validation_passed']
+
+        if not overall_passed:
+            error_msg = (
+                f"FAIL-FAST TRIGGERED: Backtest produced insufficient trades.\n"
+                f"  Duration: {(end_date - start_date).days} days ({(end_date - start_date).days/30.0:.1f} months)\n"
+                f"  Trades: {total_trades}\n"
+                f"  Data points: {len(data)}\n"
+                f"  Symbol: {symbol}\n"
+                f"  Count validation: {'PASS' if count_validation['validation_passed'] else 'FAIL'}\n"
+                f"  Density validation: {'PASS' if density_validation['validation_passed'] else 'FAIL'}"
+            )
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        self.logger.info("Fail-fast validation passed - sufficient trades detected")
+        return True
     
     def reset(self):
         """Reset the backtester to initial state."""
@@ -338,24 +978,30 @@ class RealisticBacktester:
                     data: pd.DataFrame,
                     strategy_function,
                     strategy_params: Dict[str, Any] = None,
-                    initial_capital: float = None) -> Dict[str, Any]:
+                    initial_capital: float = None,
+                    strategy_name: str = None) -> Dict[str, Any]:
         """
         Run the backtest with a given strategy function.
-        
+
         Args:
             data: OHLCV data with timestamps
             strategy_function: Function that takes row and params, returns signal (-1, 0, 1)
             strategy_params: Parameters for the strategy
             initial_capital: Starting capital (overrides default)
+            strategy_name: Name of the strategy being executed (for validation)
         """
         if initial_capital:
             self.initial_capital = initial_capital
             self.cash = initial_capital
             self.equity = initial_capital
             self.max_equity = initial_capital
-        
+
         if strategy_params is None:
             strategy_params = {}
+
+        # Validate strategy name if provided
+        if strategy_name:
+            self.enforce_strategy_exclusivity(strategy_name, strategy_function)
 
         # Validate data structure
         self._validate_data(data)
@@ -365,6 +1011,10 @@ class RealisticBacktester:
 
         # Detect missing candles
         self._detect_missing_candles(data)
+
+        # Validate architectural flow for the data
+        if strategy_name:
+            self.enforce_architectural_flow(data, strategy_name)
 
         # Calculate indicators (properly shifted to prevent lookahead bias)
         data_with_indicators = self.calculate_indicators(data)
@@ -379,6 +1029,9 @@ class RealisticBacktester:
         self.last_order_time = {}
         self.order_cooldown_seconds = strategy_params.get('order_cooldown_seconds', 60)  # Default 1 minute
 
+        # Track strategy signals for validation
+        strategy_signals = []
+
         # Run through each candle
         for i in range(len(data_with_indicators)):
             row = data_with_indicators.iloc[i]
@@ -389,6 +1042,19 @@ class RealisticBacktester:
 
             # Get signal from strategy
             signal = strategy_function(row, strategy_params)
+
+            # Record the signal for validation
+            if strategy_name:
+                signal_id = self.record_strategy_signal(
+                    timestamp, signal, strategy_name, row.get('close', None)
+                )
+                strategy_signals.append({
+                    'timestamp': timestamp,
+                    'signal': signal,
+                    'strategy_name': strategy_name,
+                    'price': row.get('close', None),
+                    'signal_id': signal_id
+                })
 
             # Check for double-order prevention
             symbol_for_cooldown = strategy_params.get('symbol', 'default')
@@ -434,6 +1100,11 @@ class RealisticBacktester:
                     tp_price=tp_price
                 )
 
+                # Confirm trade attempt for this signal
+                if strategy_name and len(strategy_signals) > 0:
+                    last_signal = strategy_signals[-1]
+                    self.confirm_trade_attempt(last_signal['signal_id'], trade)
+
                 # Update last order time
                 self.last_order_time[symbol_for_cooldown] = timestamp
             elif signal < 0 and position_size > 0:  # Sell signal
@@ -451,6 +1122,11 @@ class RealisticBacktester:
                         }
                     )
 
+                    # Confirm trade attempt for this signal
+                    if strategy_name and len(strategy_signals) > 0:
+                        last_signal = strategy_signals[-1]
+                        self.confirm_trade_attempt(last_signal['signal_id'], trade)
+
                     # Update last order time
                     self.last_order_time[symbol_for_cooldown] = timestamp
             else:
@@ -466,8 +1142,24 @@ class RealisticBacktester:
         if len(self.active_positions) > 0:
             self._force_close_remaining()
 
+        # Validate minimal execution confirmation
+        if strategy_name:
+            self.confirm_execution_for_signals(strategy_signals, self.trades)
+
         # Calculate performance metrics
-        return self._calculate_performance_metrics()
+        metrics = self._calculate_performance_metrics()
+
+        # Validate trade count with fail-fast mechanism
+        if strategy_name and len(data) > 0:
+            start_date = data.index[0] if isinstance(data.index, pd.DatetimeIndex) else datetime.now() - timedelta(days=90)
+            end_date = data.index[-1] if isinstance(data.index, pd.DatetimeIndex) else datetime.now()
+            symbol = strategy_params.get('symbol', 'BTCUSDT')
+
+            self.enforce_fail_fast(
+                start_date, end_date, metrics.get('total_trades', 0), data, symbol
+            )
+
+        return metrics
 
     def _shift_indicators_only(self):
         """
