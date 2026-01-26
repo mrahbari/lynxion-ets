@@ -8,137 +8,86 @@ CRITICAL CONSTRAINTS:
 • No architectural rewrites without necessity.
 
 
-## ✅ NEXT-STEP PROMPT — Execution-Safe & Architecture-Preserving
+
+## ✅ FINAL PROMPT — Hyperopt-Ready Backtest Hardening (Corrected)
 
 > **System Context**
-> I am working with a production-grade trading system built on a strict **Hexagonal (Ports & Adapters) Architecture**.
+> I am preparing a strategy backtesting system for **Hyperparameter Optimization (Hyperopt)**.
 >
-> The execution pipelines are immutable:
+> The system already:
 >
-> * **Watcher → Engine → Fusion → Strategy → Broker**
-> * **Watcher → Engine → Fusion → Strategy → Aggregator → Broker**
+> * executes strategies correctly
+> * produces real trades
+> * follows the intended architectural flow
 >
-> Backtest logs over 360 days on BTCUSDT prove that strategies generate thousands of signals, yet almost no trades are executed.
-> This confirms an **execution-layer failure**, not a strategy failure.
+> This step is strictly focused on making the backtest engine **stable, deterministic, and optimization-safe**.
 >
 > ---
 >
 > ## 🎯 Objective (This Step Only)
 >
-> Perform a **surgical, non-breaking intervention** to:
+> Ensure that the backtest engine is:
 >
-> 1. Identify the exact code path where **entry intent is discarded**
-> 2. Introduce a formal **ExecutionIntent contract**
-> 3. Enforce **Backtest ↔ BingX VST execution parity**
+> 1. Fully deterministic across repeated runs
+> 2. Free of hidden state or cross-run leakage
+> 3. Producing performance metrics that are safe to optimize
 >
-> This must be done **without refactoring, bypassing, or collapsing any architectural layer**.
->
-> ---
->
-> ## 🔍 Step 1 — Locate the Entry Kill Zone
->
-> Audit the execution flow and explicitly answer:
->
-> * Where is a valid strategy entry signal:
->
->   * filtered
->   * short-circuited
->   * ignored
->   * or converted into a no-op
->
-> You must:
->
-> * name the exact class and method
-> * show the conditional logic responsible
-> * explain why execution stops
->
-> Any logic that:
->
-> * checks `backtest_mode`
-> * skips broker calls
-> * simulates PnL without creating an orderable object
->   must be flagged as **execution-breaking**.
+> This step must **not** change trading behavior.
 >
 > ---
 >
-> ## 📐 Step 2 — Inject ExecutionIntent (Do Not Replace)
+> ## 🔍 Hardening Requirements
 >
-> Introduce an **ExecutionIntent** object as an explicit, immutable contract between:
+> ### 1. Run Isolation
 >
-> * Strategy → Engine
-> * Engine → Broker
+> * All runtime state must reset between runs:
 >
-> Constraints:
+>   * positions
+>   * equity
+>   * indicators
+>   * caches
+> * No shared or static state across strategy executions
 >
-> * Strategies may **only emit ExecutionIntent**
-> * Engine may:
+> ### 2. Deterministic Execution
 >
->   * accept
->   * reject (with reason)
->   * forward
->     but may not modify intent semantics
-> * Broker adapters (Backtest & BingX VST) must:
+> * Remove or fix all sources of randomness
+> * Identical inputs must produce identical outputs
 >
->   * accept the same ExecutionIntent interface
->   * differ only in execution mechanics
+> ### 3. Trade Density Validation
 >
-> No existing strategy logic may be rewritten; intent must be **wrapped around existing outputs**.
+> * Detect and explicitly reject:
 >
-> ---
+>   * near-zero trade strategies
+>   * pathological overtrading
+> * Invalid runs must fail fast and be excluded from optimization
 >
-> ## 🧪 Step 3 — Enforce Backtest ↔ BingX VST Parity
+> ### 4. Metric Integrity
 >
-> Add parity assertions that guarantee:
+> * Metrics must be computed **only** from executed trades
+> * Metrics must reset per run
+> * Guard against NaN, infinity, or division-by-zero
 >
-> 1. Every accepted ExecutionIntent results in:
+> ### 5. Performance Constraints
 >
->    * a simulated fill (backtest)
->    * or a real order ID (BingX VST)
-> 2. If an intent is rejected:
->
->    * the rejection reason is logged
->    * execution continues safely
-> 3. Over multi-month BTC data:
->
->    * executed trade count must be > 0
->    * otherwise the system must fail fast
->
-> Silent execution paths are not allowed.
+> * Backtests must be fast enough for repeated Hyperopt iterations
+> * Heavy logging must be optional or disabled by default
 >
 > ---
 >
-> ## 🚨 Non-Negotiable Rules
+> ## 🚫 Explicit Non-Goals
 >
-> * Do NOT:
->
->   * refactor architecture
->   * merge layers
->   * introduce side effects
->   * add hardcoded trading logic
-> * All changes must be:
->
->   * additive
->   * traceable
->   * reversible
+> * Do NOT introduce new execution abstractions
+> * Do NOT add live trading or broker logic
+> * Do NOT refactor architecture
+> * Do NOT optimize or change strategy logic
 >
 > ---
 >
 > ## ✅ Expected Outcome
 >
-> * Exact identification of the entry-blocking logic
-> * A formal ExecutionIntent pipeline in place
-> * Identical strategy behavior across:
+> * Stable and repeatable backtest results
+> * Metrics suitable as Hyperopt objectives
+> * Clear rejection of invalid optimization runs
 >
->   * backtests
->   * simulations
->   * BingX VST live trading
->
-> If any step cannot be completed without breaking the architecture, it must be explicitly stated and justified.
->
-> ---
->
-> **Important**
-> This system is used for real capital deployment.
-> Execution ambiguity or silent failures are unacceptable.
+> If any requirement cannot be met without changing system behavior, it must be reported explicitly.
 
----

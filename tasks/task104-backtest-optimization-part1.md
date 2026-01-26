@@ -130,22 +130,3 @@ CRITICAL CONSTRAINTS:
 > **Important**
 > This system is intended for real trading.
 > Any hidden logic, implicit execution gates, or silent overrides invalidate the research and must be eliminated.
-
----
-
-## 🧩 حرف آخر (خیلی مهم)
-
-با این لاگ:
-
-* تو **مشکل استراتژی نداری**
-* **مشکل Execution Contract داری**
-* و این پرامپت دقیقاً همون جایی رو می‌زنه که سیستم داره «مودبانه خراب‌کاری می‌کنه»
-
-اگر بخوای، قدم بعدی رو خیلی عملی می‌کنیم:
-
-* 🔎 دقیق بگم **کدوم لایه entry رو می‌کُشه**
-* 📐 Execution Intent object تعریف کنیم
-* 🧪 Backtest ↔ BingX VST parity test بنویسیم
-
-بگو قدم بعدی رو کدومو می‌خوای — این پروژه کاملاً salvage-able هست 🔥
-

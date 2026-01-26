@@ -30,7 +30,8 @@ class RealisticBacktester:
                  min_order_size: float = 0.001,
                  max_position_size: float = 0.20,  # 20% max position size
                  max_drawdown: float = 0.90,  # 90% max drawdown for backtesting (allow more flexibility)
-                 max_leverage: float = 1.0):
+                 max_leverage: float = 1.0,
+                 deterministic_seed: int = 42):  # Fixed seed for deterministic execution
         self.initial_capital = initial_capital
         self.fee_rate = fee_rate
         self.slippage_factor = slippage_factor
@@ -38,7 +39,14 @@ class RealisticBacktester:
         self.max_position_size = max_position_size
         self.max_drawdown = max_drawdown
         self.max_leverage = max_leverage
+        self.deterministic_seed = deterministic_seed  # For deterministic execution
         self.logger = EnhancedLogger("RealisticBacktester")
+
+        # Set random seed for deterministic execution
+        np.random.seed(self.deterministic_seed)
+        # Note: We don't use Python's random module in this implementation, but if we did, we'd set it too:
+        # import random
+        # random.seed(self.deterministic_seed)
 
         # Trading state
         self.position = 0  # Current position size
@@ -625,18 +633,44 @@ class RealisticBacktester:
             'total_trades': total_trades,
             'trade_density': 0.0,
             'validation_passed': False,
-            'issues': []
+            'issues': [],
+            'is_zero_trade_strategy': False,
+            'is_pathological_overtrading': False
         }
 
         if total_data_points > 0:
             trade_density = total_trades / total_data_points
-            validation_results['trade_density'] = round(trade_density, 4)
+            validation_results['trade_density'] = round(trade_density, 6)  # More precision for small values
 
-            # For a reasonable strategy, we expect at least some trades relative to data points
-            # However, be much more lenient for different strategy types
-            # Different strategies have very different trade frequencies
-            min_expected_density = 0.0001  # Much lower threshold for backtesting
+            # Check for near-zero trade strategies
+            if total_trades == 0:
+                validation_results['is_zero_trade_strategy'] = True
+                validation_results['issues'].append(
+                    f"Zero trades executed: {total_trades} trades for {total_data_points} data points. "
+                    f"This may indicate a strategy that never generates signals or has overly restrictive conditions."
+                )
+            elif total_trades == 1:
+                validation_results['is_zero_trade_strategy'] = True
+                validation_results['issues'].append(
+                    f"Only 1 trade executed: {total_trades} trades for {total_data_points} data points. "
+                    f"This may indicate a strategy that rarely generates signals."
+                )
+            elif trade_density < 0.0001:  # Less than 0.01% of data points result in trades
+                validation_results['is_zero_trade_strategy'] = True
+                validation_results['issues'].append(
+                    f"Extremely low trade density: {trade_density:.6f} ({total_trades}/{total_data_points}). "
+                    f"This may indicate a strategy that rarely generates signals."
+                )
 
+            # Check for pathological overtrading
+            if trade_density > 0.5:  # More than 50% of data points result in trades
+                validation_results['is_pathological_overtrading'] = True
+                validation_results['issues'].append(
+                    f"Pathological overtrading detected: {trade_density:.4f} trade density "
+                    f"({total_trades}/{total_data_points}). This may indicate a strategy that trades excessively."
+                )
+
+            # For a reasonable strategy, we expect trades within a reasonable range
             # Adjust the threshold based on duration - be more lenient for shorter periods
             duration_months = (end_date - start_date).days / 30.0
             if duration_months < 1:  # Less than 1 month
@@ -651,26 +685,27 @@ class RealisticBacktester:
 
             # For longer periods, also check if we have a reasonable absolute number of trades
             # Even if density is low, if we have enough absolute trades, it's acceptable
-            if trade_density < min_expected_density:
-                # Check if we have enough absolute trades to compensate for low density
-                min_abs_trades_for_period = max(1, int(duration_months * 0.2))  # At least 0.2 trades per month
-                if total_trades < min_abs_trades_for_period:
-                    validation_results['issues'].append(
-                        f"Very low trade density: {trade_density:.4f} ({total_trades}/{total_data_points}), "
-                        f"and low absolute trade count: {total_trades} for {duration_months:.1f} months (may be normal for some strategies)"
-                    )
-                else:
-                    # If we have enough absolute trades, don't fail on density alone
-                    # This means the validation passes despite low density if we have sufficient trades
-                    pass  # Validation passes due to sufficient absolute trade count
+            if not validation_results['is_zero_trade_strategy'] and not validation_results['is_pathological_overtrading']:
+                if trade_density < min_expected_density:
+                    # Check if we have enough absolute trades to compensate for low density
+                    min_abs_trades_for_period = max(1, int(duration_months * 0.2))  # At least 0.2 trades per month
+                    if total_trades < min_abs_trades_for_period:
+                        validation_results['issues'].append(
+                            f"Very low trade density: {trade_density:.6f} ({total_trades}/{total_data_points}), "
+                            f"and low absolute trade count: {total_trades} for {duration_months:.1f} months (may be normal for some strategies)"
+                        )
+                    else:
+                        # If we have enough absolute trades, don't fail on density alone
+                        # This means the validation passes despite low density if we have sufficient trades
+                        pass  # Validation passes due to sufficient absolute trade count
 
         validation_results['validation_passed'] = len(validation_results['issues']) == 0
 
         if validation_results['validation_passed']:
             self.logger.debug(f"Trade density validation PASSED")
-            self.logger.debug(f"  Density: {validation_results['trade_density']:.4f}")
+            self.logger.debug(f"  Density: {validation_results['trade_density']:.6f}")
         else:
-            self.logger.warning(f"Trade density validation issues (may be normal for some strategies)")
+            self.logger.warning(f"Trade density validation issues:")
             for issue in validation_results['issues']:
                 self.logger.warning(f"  - {issue}")
 
@@ -704,7 +739,33 @@ class RealisticBacktester:
         # Overall validation
         overall_passed = count_validation['validation_passed'] and density_validation['validation_passed']
 
-        if not overall_passed:
+        # Check for zero trade strategies and pathological overtrading specifically
+        is_zero_trade_strategy = density_validation.get('is_zero_trade_strategy', False)
+        is_pathological_overtrading = density_validation.get('is_pathological_overtrading', False)
+
+        if is_zero_trade_strategy:
+            error_msg = (
+                f"INVALID STRATEGY DETECTED: Near-zero trade strategy.\n"
+                f"  Duration: {(end_date - start_date).days} days ({(end_date - start_date).days / 30.0:.1f} months)\n"
+                f"  Trades: {total_trades}\n"
+                f"  Data points: {len(data)}\n"
+                f"  Symbol: {symbol}\n"
+                f"  This strategy should be rejected from optimization."
+            )
+            self.logger.error("FAIL-FAST TRIGGERED: Zero trade strategy detected - rejecting from optimization")
+            raise ValueError(error_msg)
+        elif is_pathological_overtrading:
+            error_msg = (
+                f"INVALID STRATEGY DETECTED: Pathological overtrading.\n"
+                f"  Duration: {(end_date - start_date).days} days ({(end_date - start_date).days / 30.0:.1f} months)\n"
+                f"  Trades: {total_trades}\n"
+                f"  Data points: {len(data)}\n"
+                f"  Symbol: {symbol}\n"
+                f"  This strategy should be rejected from optimization."
+            )
+            self.logger.error("FAIL-FAST TRIGGERED: Pathological overtrading detected - rejecting from optimization")
+            raise ValueError(error_msg)
+        elif not overall_passed:
             # For backtesting, we should log warnings but not necessarily fail fast
             # Different strategies may legitimately have few trades depending on market conditions
             error_msg = (
@@ -743,6 +804,10 @@ class RealisticBacktester:
         self.trades = []
         self.equity_curve = []
         self.active_positions = []
+        # Reset additional state variables to ensure full isolation between runs
+        self.signal_to_trade_mapping = {}
+        self.last_order_time = {}
+        self.data = None
 
     def calculate_order_execution_price(self,
                                         price: float,
@@ -1021,6 +1086,12 @@ class RealisticBacktester:
             initial_capital: Starting capital (overrides default)
             strategy_name: Name of the strategy being executed (for validation)
         """
+        # Ensure deterministic execution by resetting the random seed
+        np.random.seed(self.deterministic_seed)
+
+        # Ensure complete state reset before each backtest run to ensure determinism
+        self.reset()
+
         if initial_capital:
             self.initial_capital = initial_capital
             self.cash = initial_capital
@@ -1054,10 +1125,9 @@ class RealisticBacktester:
         self.data = data_with_indicators
 
         # Initialize tracking
-        self.reset()
+        # NOTE: self.reset() already initializes tracking variables above
 
         # Track last order time for double-order prevention
-        self.last_order_time = {}
         self.order_cooldown_seconds = strategy_params.get('order_cooldown_seconds', 60)  # Default 1 minute
 
         # Track strategy signals for validation
@@ -1654,22 +1724,31 @@ class RealisticBacktester:
         equity_values = [point['equity'] for point in self.equity_curve]
         if len(equity_values) > 1:
             returns = np.diff(equity_values) / equity_values[:-1]
+            # Handle potential division by zero in returns calculation
+            returns = np.nan_to_num(returns, nan=0.0, posinf=0.0, neginf=0.0)
+
             if len(returns) > 0:
                 avg_return = np.mean(returns)
                 std_return = np.std(returns)
 
-                # Sharpe ratio (annualized)
-                if std_return > 0:
+                # Sharpe ratio (annualized) - guard against division by zero
+                if std_return > 0 and not np.isnan(std_return) and not np.isinf(std_return):
                     sharpe_ratio = (avg_return / std_return) * np.sqrt(365)  # Daily returns
+                    # Ensure sharpe_ratio is finite
+                    if not np.isfinite(sharpe_ratio):
+                        sharpe_ratio = 0.0
                 else:
                     sharpe_ratio = 0
 
-                # Sortino ratio (downside deviation)
+                # Sortino ratio (downside deviation) - guard against division by zero
                 negative_returns = returns[returns < 0]
                 if len(negative_returns) > 0:
                     downside_std = np.std(negative_returns)
-                    if downside_std > 0:
+                    if downside_std > 0 and not np.isnan(downside_std) and not np.isinf(downside_std):
                         sortino_ratio = (avg_return / downside_std) * np.sqrt(365)
+                        # Ensure sortino_ratio is finite
+                        if not np.isfinite(sortino_ratio):
+                            sortino_ratio = 0.0
                     else:
                         sortino_ratio = 0
                 else:
@@ -1677,9 +1756,17 @@ class RealisticBacktester:
 
                 # Max drawdown
                 equity_curve = np.array(equity_values)
-                running_max = np.maximum.accumulate(equity_curve)
-                drawdowns = (equity_curve - running_max) / running_max
-                max_drawdown = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0.0
+                if len(equity_curve) > 0:
+                    running_max = np.maximum.accumulate(equity_curve)
+                    # Handle potential division by zero in drawdown calculation
+                    drawdowns = np.zeros_like(equity_curve)
+                    nonzero_max = running_max != 0
+                    drawdowns[nonzero_max] = (equity_curve[nonzero_max] - running_max[nonzero_max]) / running_max[nonzero_max]
+                    # Replace any NaN or infinite values with 0
+                    drawdowns = np.nan_to_num(drawdowns, nan=0.0, posinf=0.0, neginf=0.0)
+                    max_drawdown = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0.0
+                else:
+                    max_drawdown = 0.0
             else:
                 sharpe_ratio = 0
                 sortino_ratio = 0
@@ -1689,33 +1776,46 @@ class RealisticBacktester:
             sortino_ratio = 0
             max_drawdown = 0.0
 
-        # Profit factor
+        # Profit factor - guard against division by zero
         winning_pnl = sum(t.get('pnl', 0) for t in self.trades if t.get('pnl', 0) > 0)
         losing_pnl = abs(sum(t.get('pnl', 0) for t in self.trades if t.get('pnl', 0) < 0))
-        profit_factor = winning_pnl / losing_pnl if losing_pnl > 0 else (float('inf') if winning_pnl > 0 else 0.0)
+
+        if losing_pnl > 0:
+            profit_factor = winning_pnl / losing_pnl
+            # Ensure profit_factor is finite
+            if not np.isfinite(profit_factor):
+                profit_factor = float('inf') if winning_pnl > 0 else 0.0
+        else:
+            profit_factor = float('inf') if winning_pnl > 0 else 0.0
 
         # Other metrics
         total_volume = sum(abs(t['size'] * t['price']) for t in self.trades)
         total_fees = sum(t['fees'] for t in self.trades)
 
+        # Ensure all metrics are computed only from executed trades and reset per run
         metrics = {
-            "total_return": float(total_return),
+            "total_return": float(total_return) if np.isfinite(total_return) else 0.0,
             "sharpe_ratio": float(sharpe_ratio),
             "sortino_ratio": float(sortino_ratio),
             "max_drawdown": float(max_drawdown),
-            "win_rate": float(win_rate),
+            "win_rate": float(win_rate) if np.isfinite(win_rate) else 0.0,
             "profit_factor": float(profit_factor),
             "total_trades": int(total_trades),
             "winning_trades": int(winning_trades),
             "losing_trades": int(losing_trades),
-            "total_volume": float(total_volume),
-            "total_fees": float(total_fees),
-            "final_equity": float(self.equity),
+            "total_volume": float(total_volume) if np.isfinite(total_volume) else 0.0,
+            "total_fees": float(total_fees) if np.isfinite(total_fees) else 0.0,
+            "final_equity": float(self.equity) if np.isfinite(self.equity) else 0.0,
             "initial_capital": float(self.initial_capital),
-            "max_drawdown_reached": float(self.max_drawdown_reached),
+            "max_drawdown_reached": float(self.max_drawdown_reached) if np.isfinite(self.max_drawdown_reached) else 0.0,
             "trades": [dict(t) for t in self.trades],  # Convert any numpy types to basic types
             "equity_curve": [dict(e) for e in self.equity_curve]
         }
+
+        # Clear trade history after metrics calculation to ensure clean state for next run
+        # This is important for hyperparameter optimization where multiple runs happen
+        self.trades.clear()
+        self.equity_curve.clear()
 
         return metrics
 
