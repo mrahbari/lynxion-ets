@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import uuid
 
 from shared.logger import EnhancedLogger
+from infrastructure.backtest.execution_intent import ExecutionIntent, create_execution_intent, OrderSide
 
 
 class RealisticBacktester:
@@ -75,9 +76,10 @@ class RealisticBacktester:
         self.min_trades_threshold = 5  # Minimum trades expected over multi-month period
         self.min_duration_months = 3  # Minimum duration for validation
         self.valid_strategy_types = [
+            'rsi_strategy', 'ma_crossover_strategy', 'crypto_breakout',
             'trend_following', 'mean_reversion', 'volatility_breakout',
             'momentum', 'scalping', 'breakout', 'liquidity', 'mtf_trend',
-            'oi_footprint', 'sweep_scalper', 'vwap_reversal', 'crypto_breakout'
+            'oi_footprint', 'sweep_scalper', 'vwap_reversal'
         ]
 
     def validate_strategy_selection(self, strategy_name: str) -> bool:
@@ -1098,7 +1100,7 @@ class RealisticBacktester:
 
         Args:
             data: OHLCV data with timestamps
-            strategy_function: Function that takes row and params, returns signal (-1, 0, 1)
+            strategy_function: Function that takes row and params, returns signal (-1, 0, 1) or ExecutionIntent
             strategy_params: Parameters for the strategy
             initial_capital: Starting capital (overrides default)
             strategy_name: Name of the strategy being executed (for validation)
@@ -1149,6 +1151,7 @@ class RealisticBacktester:
 
         # Track strategy signals for validation
         strategy_signals = []
+        execution_intents = []
 
         # Run through each candle
         for i in range(len(data_with_indicators)):
@@ -1158,8 +1161,20 @@ class RealisticBacktester:
             # First, check if any active positions hit SL/TP (this happens before new orders)
             sltp_pnl = self._check_stop_loss_take_profit(row, timestamp)
 
-            # Get signal from strategy
-            signal = strategy_function(row, strategy_params)
+            # Get output from strategy (could be simple signal or ExecutionIntent)
+            strategy_output = strategy_function(row, strategy_params)
+
+            # Handle both simple signals and ExecutionIntent objects
+            if hasattr(strategy_output, 'is_valid'):  # It's an ExecutionIntent
+                if strategy_output and strategy_output.is_valid:
+                    signal = 1 if strategy_output.side == OrderSide.BUY else -1
+                    execution_intent = strategy_output
+                else:
+                    signal = 0
+                    execution_intent = None
+            else:  # It's a simple signal
+                signal = strategy_output
+                execution_intent = None  # Will be created later
 
             # Record the signal for validation
             if strategy_name:
@@ -1179,140 +1194,52 @@ class RealisticBacktester:
                     self.logger.info(
                         f"[TRACE] Strategy {strategy_name} generated signal {signal} at {timestamp} for price {row.get('close', 'N/A')}")
 
-            # Check for double-order prevention
-            # Only apply cooldown for same-direction trades to allow position management
-            symbol_for_cooldown = strategy_params.get('symbol', 'default')
-            if symbol_for_cooldown in self.last_order_time:
-                time_since_last = (timestamp - self.last_order_time[symbol_for_cooldown]).total_seconds()
-                if time_since_last < self.order_cooldown_seconds:
-                    # Check if this is a position reversal (opposite signal to current position)
-                    # Allow reversals but block same-direction trades during cooldown
-                    current_position_direction = 1 if self.position > 0 else (-1 if self.position < 0 else 0)
-                    signal_direction = 1 if signal > 0 else (-1 if signal < 0 else 0)
+            # Process execution intent if valid
+            if execution_intent and execution_intent.is_valid:
+                # Check for double-order prevention
+                # Only apply cooldown for same-direction trades to allow position management
+                symbol_for_cooldown = strategy_params.get('symbol', 'default')
 
-                    # Only skip if it's a same-direction trade during cooldown
-                    # Allow position reversals and additions to opposite positions
-                    if signal_direction != 0 and signal_direction == current_position_direction:
-                        # Skip same-direction ordering due to cooldown
-                        signal = 0  # Clear the signal
-                    # Otherwise, allow the trade to proceed (reversal or addition to opposite position)
+                if symbol_for_cooldown in self.last_order_time:
+                    time_since_last = (timestamp - self.last_order_time[symbol_for_cooldown]).total_seconds()
+                    if time_since_last < self.order_cooldown_seconds:
+                        # Check if this is a position reversal (opposite signal to current position)
+                        # Allow reversals but block same-direction trades during cooldown
+                        current_position_direction = 1 if self.position > 0 else (-1 if self.position < 0 else 0)
+                        intent_direction = 1 if execution_intent.side == OrderSide.BUY else -1
 
-            # Determine position sizing based on strategy and risk management
-            position_size = self._calculate_position_size(row, signal, strategy_params)
+                        # Only skip if it's a same-direction trade during cooldown
+                        # Allow position reversals and additions to opposite positions
+                        if intent_direction != 0 and intent_direction == current_position_direction:
+                            # Skip same-direction ordering due to cooldown
+                            self.logger.info(f"[TRACE] Skipping trade due to cooldown: {timestamp}")
+                            execution_intent = None  # Clear the intent
+                        # Otherwise, allow the trade to proceed (reversal or addition to opposite position)
 
-            # Add tracing for position sizing
-            if signal != 0 and position_size > 0:
-                self.logger.info(
-                    f"[TRACE] Position sizing calculated: signal={signal}, size={position_size}, price={row['close']}")
+                # Accept or reject execution intent based on risk management
+                if execution_intent and self._accept_execution_intent(execution_intent):
+                    # Execute the trade based on the accepted intent
+                    trade = self._execute_from_intent(execution_intent, row)
 
-            # Calculate SL and TP prices based on ATR or other methods if we're opening a position
-            sl_price = None
-            tp_price = None
-            if signal > 0 and position_size > 0:  # Buy signal
-                # Calculate stop loss and take profit based on ATR or other methods
-                atr = row.get('atr', 0.01 * row['close'])  # Get ATR value
-                risk_params = strategy_params.get('atr_multiplier', 1.5)  # Reduced from 2.0 to 1.5
-                reward_params = strategy_params.get('risk_reward_ratio', 1.5)  # Reduced from 2.0 to 1.5 for more balanced trades
+                    # Log intent acceptance
+                    self.logger.info(f"[TRACE] Execution intent accepted: {execution_intent.id} at {timestamp}")
 
-                entry_price = row['close']
-                sl_price = entry_price - (atr * risk_params)  # Stop loss below entry
-                tp_price = entry_price + (atr * risk_params * reward_params)  # Take profit above entry
+                    # Confirm trade attempt for this signal
+                    if strategy_name and len(strategy_signals) > 0:
+                        last_signal = strategy_signals[-1]
+                        self.confirm_trade_attempt(last_signal['signal_id'], trade)
 
-                # Ensure SL is below entry and TP is above entry - made more balanced
-                sl_price = max(sl_price, entry_price * 0.97)  # Max 3% below for more realistic SL
-                tp_price = min(tp_price, entry_price * 1.045)  # Max 4.5% above for more realistic TP (still maintaining 1.5:1 ratio)
+                    # Update last order time
+                    self.last_order_time[symbol_for_cooldown] = timestamp
 
-                # Add tracing for SL/TP calculation
-                self.logger.info(f"[TRACE] Calculated SL/TP: SL={sl_price}, TP={tp_price}, ATR={atr}")
-
-            # Execute trades based on signal
-            if signal > 0 and position_size > 0:  # Buy signal
-                self.logger.info(
-                    f"[TRACE] Executing BUY order: size={position_size}, price={row['close']}, SL={sl_price}, TP={tp_price}")
-                trade = self.execute_order(
-                    side='buy',
-                    size=position_size,
-                    price=row['close'],
-                    timestamp=timestamp,
-                    market_data={
-                        'high': row['high'],
-                        'low': row['low'],
-                        'volume': row['volume']
-                    },
-                    sl_price=sl_price,
-                    tp_price=tp_price
-                )
-
-                # Confirm trade attempt for this signal
-                if strategy_name and len(strategy_signals) > 0:
-                    last_signal = strategy_signals[-1]
-                    self.confirm_trade_attempt(last_signal['signal_id'], trade)
-
-                # Update last order time
-                self.last_order_time[symbol_for_cooldown] = timestamp
-            elif signal < 0 and position_size > 0:  # Sell signal
-                self.logger.info(
-                    f"[TRACE] Executing SELL order: size={position_size}, price={row['close']}, current_position={self.position}")
-
-                # Calculate SL and TP prices for sell signals as well
-                sl_price = None
-                tp_price = None
-
-                # Calculate stop loss and take profit based on ATR or other methods
-                atr = row.get('atr', 0.01 * row['close'])  # Get ATR value
-                risk_params = strategy_params.get('atr_multiplier', 1.5)  # Reduced from 2.0 to 1.5
-                reward_params = strategy_params.get('risk_reward_ratio', 1.5)  # Reduced from 2.0 to 1.5 for more balanced trades
-
-                entry_price = row['close']
-                sl_price = entry_price + (atr * risk_params)  # Stop loss above entry for short
-                tp_price = entry_price - (atr * risk_params * reward_params)  # Take profit below entry for short
-
-                # Ensure SL is above entry and TP is below entry - made more balanced
-                sl_price = min(sl_price, entry_price * 1.03)  # Max 3% above for more realistic SL
-                tp_price = max(tp_price, entry_price * 0.955)  # Max 4.5% below for more realistic TP
-
-                # Handle selling existing long positions or opening short positions
-                if self.position > 0:
-                    # Selling existing long position
-                    trade = self.execute_order(
-                        side='sell',
-                        size=min(position_size, self.position),  # Don't sell more than we own
-                        price=row['close'],
-                        timestamp=timestamp,
-                        market_data={
-                            'high': row['high'],
-                            'low': row['low'],
-                            'volume': row['volume']
-                        },
-                        sl_price=sl_price,
-                        tp_price=tp_price
-                    )
+                    # Add to execution intents list for validation
+                    execution_intents.append(execution_intent)
                 else:
-                    # Opening a short position (if short selling is allowed)
-                    # Note: This implementation assumes short selling is allowed
-                    trade = self.execute_order(
-                        side='sell',
-                        size=position_size,
-                        price=row['close'],
-                        timestamp=timestamp,
-                        market_data={
-                            'high': row['high'],
-                            'low': row['low'],
-                            'volume': row['volume']
-                        },
-                        sl_price=sl_price,
-                        tp_price=tp_price
-                    )
-
-                # Confirm trade attempt for this signal
-                if strategy_name and len(strategy_signals) > 0:
-                    last_signal = strategy_signals[-1]
-                    self.confirm_trade_attempt(last_signal['signal_id'], trade)
-
-                # Update last order time
-                self.last_order_time[symbol_for_cooldown] = timestamp
+                    # Log intent rejection
+                    if execution_intent:
+                        self.logger.info(f"[TRACE] Execution intent rejected: {execution_intent.id} at {timestamp}")
             else:
-                # No trade, still record equity for curve
+                # No valid execution intent, still record equity for curve
                 self.equity_curve.append({
                     "timestamp": timestamp,
                     "equity": self.equity,
@@ -1335,6 +1262,7 @@ class RealisticBacktester:
         if strategy_name:
             self.logger.info(f"[TRACE] Backtest completed for {strategy_name}")
             self.logger.info(f"[TRACE] Total signals generated: {len(strategy_signals)}")
+            self.logger.info(f"[TRACE] Total execution intents: {len(execution_intents)}")
             self.logger.info(f"[TRACE] Total trades executed: {metrics.get('total_trades', 0)}")
             self.logger.info(f"[TRACE] Final equity: {self.equity}")
             self.logger.info(f"[TRACE] Total return: {metrics.get('total_return', 0):.4f}")
@@ -1353,6 +1281,240 @@ class RealisticBacktester:
             )
 
         return metrics
+
+    def _convert_signal_to_intent(self,
+                                  signal: int,
+                                  row: pd.Series,
+                                  timestamp: datetime,
+                                  strategy_params: Dict[str, Any],
+                                  strategy_name: str) -> Optional[ExecutionIntent]:
+        """
+        Convert a strategy signal to an ExecutionIntent object.
+
+        Args:
+            signal: The signal from the strategy (-1 for sell, 0 for hold, 1 for buy)
+            row: The current data row
+            timestamp: The timestamp of the signal
+            strategy_params: Strategy parameters
+            strategy_name: Name of the strategy
+
+        Returns:
+            ExecutionIntent if the signal should result in a trade, None otherwise
+        """
+        if signal == 0:
+            return None  # No signal, no intent
+
+        # Determine position sizing based on strategy and risk management
+        position_size = self._calculate_position_size(row, signal, strategy_params)
+
+        if position_size <= 0:
+            return None  # No position size, no intent
+
+        # Calculate SL and TP prices based on ATR or other methods if we're opening a position
+        sl_price = None
+        tp_price = None
+
+        if signal > 0:  # Buy signal
+            # Calculate stop loss and take profit based on ATR or other methods
+            atr = row.get('atr', 0.01 * row['close'])  # Get ATR value
+            risk_params = strategy_params.get('atr_multiplier', 1.5)  # Reduced from 2.0 to 1.5
+            reward_params = strategy_params.get('risk_reward_ratio', 1.5)  # Reduced from 2.0 to 1.5 for more balanced trades
+
+            entry_price = row['close']
+            sl_price = entry_price - (atr * risk_params)  # Stop loss below entry
+            tp_price = entry_price + (atr * risk_params * reward_params)  # Take profit above entry
+
+            # Ensure SL is below entry and TP is above entry - made more balanced
+            sl_price = max(sl_price, entry_price * 0.97)  # Max 3% below for more realistic SL
+            tp_price = min(tp_price, entry_price * 1.045)  # Max 4.5% above for more realistic TP (still maintaining 1.5:1 ratio)
+        elif signal < 0:  # Sell signal
+            # Calculate stop loss and take profit based on ATR or other methods
+            atr = row.get('atr', 0.01 * row['close'])  # Get ATR value
+            risk_params = strategy_params.get('atr_multiplier', 1.5)  # Reduced from 2.0 to 1.5
+            reward_params = strategy_params.get('risk_reward_ratio', 1.5)  # Reduced from 2.0 to 1.5 for more balanced trades
+
+            entry_price = row['close']
+            sl_price = entry_price + (atr * risk_params)  # Stop loss above entry for short
+            tp_price = entry_price - (atr * risk_params * reward_params)  # Take profit below entry for short
+
+            # Ensure SL is above entry and TP is below entry - made more balanced
+            sl_price = min(sl_price, entry_price * 1.03)  # Max 3% above for more realistic SL
+            tp_price = max(tp_price, entry_price * 0.955)  # Max 4.5% below for more realistic TP
+
+        # Create the execution intent
+        intent = create_execution_intent(
+            side=OrderSide.BUY if signal > 0 else OrderSide.SELL,
+            size=position_size,
+            price=row['close'],
+            timestamp=timestamp,
+            stop_loss=sl_price,
+            take_profit=tp_price,
+            strategy_name=strategy_name,
+            symbol=strategy_params.get('symbol', 'BTCUSDT')
+        )
+
+        # Log the creation of the intent
+        self.logger.info(f"[TRACE] Created execution intent: {intent.id} - {intent.side.value} {intent.size}@{intent.price}")
+
+        return intent
+
+    def _accept_execution_intent(self, intent: ExecutionIntent) -> bool:
+        """
+        Determine whether to accept an execution intent based on risk management.
+
+        Args:
+            intent: The execution intent to evaluate
+
+        Returns:
+            bool: True if the intent should be accepted, False otherwise
+        """
+        # Check if we're in a drawdown that exceeds limits
+        current_drawdown = (self.max_equity - self.equity) / self.max_equity
+        if current_drawdown > self.max_drawdown:
+            self.logger.info(f"[TRACE] Rejecting intent {intent.id} due to max drawdown exceeded: {current_drawdown:.2%}")
+            return False
+
+        # Calculate trade value and fees
+        trade_value = intent.size * intent.price
+        fees = trade_value * self.fee_rate
+
+        # Check order size constraints
+        if intent.size < self.min_order_size:
+            self.logger.info(f"[TRACE] Rejecting intent {intent.id} due to small order size: {intent.size} < {self.min_order_size}")
+            return False
+
+        # Calculate required cash for buy orders
+        if intent.side == OrderSide.BUY:
+            required_cash = trade_value + fees
+
+            # Check if we have enough cash
+            if required_cash > self.cash:
+                self.logger.info(f"[TRACE] Rejecting intent {intent.id} due to insufficient cash: {required_cash:.2f} > {self.cash:.2f}")
+                return False
+
+        # Check position size limits
+        if intent.side == OrderSide.BUY:
+            new_position_value = self.position_value + (intent.size * intent.price)
+        else:  # SELL
+            # For sell orders, we might be closing positions
+            new_position_value = abs(self.position_value - (intent.size * intent.price))
+
+        # Calculate position size as percentage of equity
+        equity_for_position = abs(new_position_value)
+        position_pct = equity_for_position / self.equity
+
+        if position_pct > self.max_position_size:
+            self.logger.info(f"[TRACE] Rejecting intent {intent.id} due to position size limit: {position_pct:.2%} > {self.max_position_size:.2%}")
+            return False
+
+        # If we reach here, the intent is accepted
+        self.logger.info(f"[TRACE] Accepting execution intent: {intent.id}")
+        return True
+
+    def _execute_from_intent(self, intent: ExecutionIntent, row: pd.Series) -> Optional[Dict[str, Any]]:
+        """
+        Execute a trade based on an accepted execution intent.
+
+        Args:
+            intent: The accepted execution intent
+            row: The current data row
+
+        Returns:
+            Trade record if successful, None otherwise
+        """
+        self.logger.info(f"[TRACE] Executing trade from intent: {intent.id} - {intent.side.value} {intent.size}@{intent.price}")
+
+        # Calculate realistic execution price
+        execution_price = self.calculate_order_execution_price(
+            intent.price, intent.side.value, intent.size, {
+                'high': row['high'],
+                'low': row['low'],
+                'volume': row['volume']
+            }
+        )
+
+        # Calculate trade value and fees
+        trade_value = intent.size * execution_price
+        fees = trade_value * self.fee_rate
+
+        # Execute the trade
+        if intent.side == OrderSide.BUY:
+            # Buy: reduce cash, increase position
+            self.cash -= (intent.size * execution_price + fees)
+            self.position += intent.size
+            self.position_value += (intent.size * execution_price)
+
+            # Add long position to active positions with SL/TP if provided
+            if intent.stop_loss is not None or intent.take_profit is not None:
+                # Set default SL/TP if not provided
+                sl_price = intent.stop_loss
+                tp_price = intent.take_profit
+
+                self.active_positions.append({
+                    'entry_price': execution_price,
+                    'size': intent.size,
+                    'direction': 1,  # Long
+                    'stop_loss': sl_price,
+                    'take_profit': tp_price,
+                    'timestamp': intent.timestamp
+                })
+        else:  # SELL
+            # For sell orders, we might be closing positions
+            if self.position > 0:
+                # Determine whether we're reducing/fully closing position
+                size_to_sell = min(intent.size, self.position)
+
+                # Reduce position
+                self.cash += (size_to_sell * execution_price - fees)
+                self.position -= size_to_sell
+                self.position_value -= (size_to_sell * execution_price)
+            else:
+                # Sell to open short position
+                self.cash += (intent.size * execution_price - fees)
+                self.position -= intent.size  # negative position indicates short
+                self.position_value -= (intent.size * execution_price)
+
+        # Update equity
+        self.equity = self.cash + self.position_value
+
+        # Update trade statistics
+        self.total_trades += 1
+        trade_record = {
+            "id": str(uuid.uuid4()),
+            "timestamp": intent.timestamp,
+            "side": intent.side.value,
+            "size": intent.size,
+            "price": execution_price,
+            "fees": fees,
+            "equity": self.equity,
+            "position": self.position,
+            "position_value": self.position_value,
+            "cash": self.cash,
+            "intent_id": intent.id  # Link to the execution intent
+        }
+
+        self.trades.append(trade_record)
+
+        # Update statistics
+        # Note: PnL is calculated when positions are closed, not when opened
+
+        # Update max equity and drawdown tracking
+        if self.equity > self.max_equity:
+            self.max_equity = self.equity
+
+        current_drawdown = (self.max_equity - self.equity) / self.max_equity
+        if current_drawdown > self.max_drawdown_reached:
+            self.max_drawdown_reached = current_drawdown
+
+        # Record equity point
+        self.equity_curve.append({
+            "timestamp": intent.timestamp,
+            "equity": self.equity,
+            "cash": self.cash,
+            "position_value": self.position_value
+        })
+
+        return trade_record
 
     def _shift_indicators_only(self):
         """

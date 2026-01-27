@@ -26,6 +26,7 @@ from application.data_sync.watcher_retune import WatcherRetuneUseCase
 from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
 from shared.logger import EnhancedLogger
 from application.configs.configs import Configs
+from infrastructure.backtest.execution_intent import create_execution_intent, OrderSide
 
 
 def load_symbols_from_env() -> List[str]:
@@ -540,6 +541,87 @@ def load_sample_strategy(strategy_name: str):
     return strategies.get(strategy_name, simple_rsi_strategy)
 
 
+def wrap_strategy_with_execution_intent(strategy_func, strategy_name: str):
+    """
+    Wrap a strategy function to return ExecutionIntent objects instead of simple signals.
+
+    Args:
+        strategy_func: Original strategy function that returns -1, 0, or 1
+        strategy_name: Name of the strategy
+
+    Returns:
+        Wrapped function that returns ExecutionIntent objects
+    """
+    def wrapped_strategy(row, params, timestamp=None):
+        # Get the original signal
+        signal = strategy_func(row, params)
+
+        # If no signal, return None
+        if signal == 0 or pd.isna(signal):
+            return None
+
+        # Create an ExecutionIntent based on the signal
+        # This is a simplified approach - in a real implementation, you'd calculate position size
+        # and risk parameters based on the strategy's assessment
+        import uuid
+        from datetime import datetime
+
+        # Get timestamp from row if not provided
+        if timestamp is None:
+            if hasattr(row, 'name'):
+                timestamp = row.name
+            else:
+                timestamp = datetime.now()
+
+        # Determine side and calculate position size
+        side = OrderSide.BUY if signal > 0 else OrderSide.SELL
+
+        # Calculate position size based on risk management
+        # This is a simplified approach - in practice, strategies would return more detailed information
+        price = row.get('close', 0)
+        if price <= 0:
+            return None  # Invalid price
+
+        # Use a fixed percentage of capital for position sizing (can be made configurable)
+        risk_pct = params.get('risk_per_trade', 0.02)  # 2% risk per trade
+        position_size = (params.get('capital', 10000) * risk_pct) / price
+
+        # Calculate stop loss and take profit based on ATR or other methods
+        atr = row.get('atr', 0.01 * price)  # Default to 1% if no ATR
+        atr_multiplier = params.get('atr_multiplier', 1.5)
+        risk_reward_ratio = params.get('risk_reward_ratio', 1.5)
+
+        sl_distance = atr_multiplier * atr
+        tp_distance = sl_distance * risk_reward_ratio
+
+        sl_price = None
+        tp_price = None
+
+        if signal > 0:  # Buy signal
+            sl_price = price - sl_distance
+            tp_price = price + tp_distance
+        else:  # Sell signal
+            sl_price = price + sl_distance
+            tp_price = price - tp_distance
+
+        # Create and return the ExecutionIntent
+        intent = create_execution_intent(
+            side=side,
+            size=position_size,
+            price=price,
+            timestamp=timestamp,
+            stop_loss=sl_price,
+            take_profit=tp_price,
+            strategy_name=strategy_name,
+            symbol=params.get('symbol', 'BTCUSDT'),
+            intent_id=f"{strategy_name}_{uuid.uuid4().hex[:8]}"
+        )
+
+        return intent
+
+    return wrapped_strategy
+
+
 def calculate_indicators_with_shifting(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate technical indicators with proper shifting to prevent lookahead bias."""
     df = df.copy()
@@ -658,8 +740,9 @@ def run_backtest_process(symbols: List[str],
         slippage_factor=slippage_factor
     )
 
-    # Load strategy function
-    strategy_function = load_sample_strategy(strategy_name)
+    # Load strategy function and wrap it with ExecutionIntent
+    original_strategy_function = load_sample_strategy(strategy_name)
+    strategy_function = wrap_strategy_with_execution_intent(original_strategy_function, strategy_name)
 
     results = {
         'strategy_name': strategy_name,

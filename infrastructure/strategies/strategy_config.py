@@ -79,6 +79,54 @@ class StrategyConfig:
             return Configs.strategy.timeframe
         return default
 
+    @staticmethod
+    def get_strategy_min_bars_between_entries(strategy_name: str, default: int = 5) -> int:
+        """Get minimum bars between entries for a strategy"""
+        # Use a general minimum bars setting from strategy config
+        if Configs.strategy and hasattr(Configs.strategy, 'min_bars_between_entries'):
+            return Configs.strategy.min_bars_between_entries
+        return default
+
+    @staticmethod
+    def get_strategy_max_trades_per_day(strategy_name: str, default: int = 10) -> int:
+        """Get maximum trades per day for a strategy"""
+        # Use a general max trades per day setting from strategy config
+        if Configs.strategy and hasattr(Configs.strategy, 'max_trades_per_day'):
+            return Configs.strategy.max_trades_per_day
+        return default
+
+    @staticmethod
+    def get_strategy_max_consecutive_losses(strategy_name: str, default: int = 3) -> int:
+        """Get maximum consecutive losses before pausing for a strategy"""
+        # Use a general max consecutive losses setting from strategy config
+        if Configs.strategy and hasattr(Configs.strategy, 'max_consecutive_losses'):
+            return Configs.strategy.max_consecutive_losses
+        return default
+
+    @staticmethod
+    def get_strategy_min_atr_threshold(strategy_name: str, default: float = 0.001) -> float:
+        """Get minimum ATR threshold for trading"""
+        # Use a general minimum ATR threshold from strategy config
+        if Configs.strategy and hasattr(Configs.strategy, 'min_atr_threshold'):
+            return Configs.strategy.min_atr_threshold
+        return default
+
+    @staticmethod
+    def get_strategy_avoid_flat_markets(strategy_name: str, default: bool = True) -> bool:
+        """Get whether to avoid trading in flat markets"""
+        # Use a general flat market avoidance setting from strategy config
+        if Configs.strategy and hasattr(Configs.strategy, 'avoid_flat_markets'):
+            return Configs.strategy.avoid_flat_markets
+        return default
+
+    @staticmethod
+    def get_strategy_cooldown_after_exit_minutes(strategy_name: str, default: int = 30) -> int:
+        """Get cooldown period after exit in minutes"""
+        # Use a general cooldown setting from strategy config
+        if Configs.strategy and hasattr(Configs.strategy, 'cooldown_after_exit_minutes'):
+            return Configs.strategy.cooldown_after_exit_minutes
+        return default
+
 
 # Convenience functions for specific strategies
 def get_trend_following_config() -> dict:

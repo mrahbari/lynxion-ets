@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any, List
 from decimal import Decimal
 import numpy as np
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from domain.entities.signal_entities import FusedSignal, ExecutionIntent
 from domain.value_objects import Symbol, Percentage, Money
@@ -19,7 +19,7 @@ from application.risk_management.enterprise_risk_manager import EnterpriseRiskMa
 
 
 class BaseStrategyAdapter(StrategyPort):
-    """Base class for strategy adapters implementing StrategyPort"""
+    """Base class for strategy adapters implementing StrategyPort with intent discipline"""
 
     def __init__(self, name: str):
         self.name = name
@@ -35,7 +35,14 @@ class BaseStrategyAdapter(StrategyPort):
             'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier(name, 1.5),
             'take_profit_multiplier': StrategyConfig.get_strategy_take_profit_multiplier(name, 2.0),
             'lookback_period': StrategyConfig.get_strategy_lookback_period(name, 50),
-            'timeframe': StrategyConfig.get_strategy_timeframe(name, '1h')
+            'timeframe': StrategyConfig.get_strategy_timeframe(name, '1h'),
+            # New configuration for intent discipline
+            'min_bars_between_entries': StrategyConfig.get_strategy_min_bars_between_entries(name, 5),
+            'max_trades_per_day': StrategyConfig.get_strategy_max_trades_per_day(name, 10),
+            'max_consecutive_losses': StrategyConfig.get_strategy_max_consecutive_losses(name, 3),
+            'min_atr_threshold': StrategyConfig.get_strategy_min_atr_threshold(name, 0.001),
+            'avoid_flat_markets': StrategyConfig.get_strategy_avoid_flat_markets(name, True),
+            'cooldown_after_exit_minutes': StrategyConfig.get_strategy_cooldown_after_exit_minutes(name, 30)
         }
 
         # Initialize with default risk parameters
@@ -45,11 +52,31 @@ class BaseStrategyAdapter(StrategyPort):
             'take_profit_pct': 0.03     # 3% take profit
         }
 
+        # Initialize intent discipline tracking
+        self.last_intent_timestamp = {}  # Track last intent per symbol
+        self.intent_count_today = {}     # Track daily intent count per symbol
+        self.consecutive_losses = {}     # Track consecutive losses per symbol
+        self.last_entry_bar_index = {}   # Track last entry bar index per symbol
+        self.current_positions = {}      # Track current positions per symbol
+        self.last_exit_time = {}         # Track last exit time per symbol for cooldown
+        self.bar_counter = {}            # Track bar count per symbol for cooldown
+        self.last_signal_conditions = {} # Track last signal conditions to avoid repetition
+
     def evaluate_fused_signal(self, fused_signal: FusedSignal) -> Optional[ExecutionIntent]:
         """Evaluate a fused signal and return execution intent if strategy accepts it"""
         # Check if strategy is enabled before processing
         if not StrategyConfig.get_strategy_enabled(self.name):
             self.logger.debug(f"Strategy {self.name} is disabled, skipping signal evaluation")
+            return None
+
+        # Increment bar counter for this symbol to track timing between entries
+        symbol = fused_signal.symbol.value
+        self.increment_bar_counter(symbol)
+
+        # Check intent discipline rules before proceeding
+        should_emit, reason = self._should_emit_intent(fused_signal)
+        if not should_emit:
+            self.logger.info(f"Strategy {self.name} blocked intent emission for {symbol}: {reason}")
             return None
 
         if not self.should_execute(fused_signal):
@@ -92,6 +119,9 @@ class BaseStrategyAdapter(StrategyPort):
             amount=Decimal('0'),  # Placeholder - will be set by risk manager during position entry
             currency='USDT'
         )
+
+        # Record the intent emission for discipline tracking
+        self.record_intent_emission(fused_signal, execution_intent)
 
         # Generate trade ID for this execution
         trade_id = forensic_logger._generate_trade_id(fused_signal.symbol.value, getattr(fused_signal, 'exchange', 'BINANCE'))
@@ -136,6 +166,253 @@ class BaseStrategyAdapter(StrategyPort):
         execution_intent.metadata['trade_id'] = trade_id
 
         return execution_intent
+
+    def _should_emit_intent(self, fused_signal: FusedSignal) -> tuple[bool, str]:
+        """
+        Determine if the strategy should emit an intent based on discipline rules.
+
+        Returns:
+            tuple[bool, str]: (should_emit, reason_for_blocking)
+        """
+        symbol = fused_signal.symbol.value
+
+        # 1. Check if a position is already open for this symbol
+        if self._has_open_position(symbol):
+            return False, f"Position already open for {symbol}, preventing duplicate entry"
+
+        # 2. Check minimum bars between entries
+        if not self._passes_min_bars_check(symbol):
+            return False, f"Insufficient bars elapsed since last entry for {symbol}"
+
+        # 3. Check daily trade limit
+        if not self._passes_daily_trade_limit_check(symbol):
+            return False, f"Daily trade limit exceeded for {symbol}"
+
+        # 4. Check consecutive losses
+        if not self._passes_consecutive_losses_check(symbol):
+            return False, f"Too many consecutive losses for {symbol}, triggering safety pause"
+
+        # 5. Check cooldown after exit
+        if not self._passes_exit_cooldown_check(symbol):
+            return False, f"Cooldown period after exit not elapsed for {symbol}"
+
+        # 6. Check market conditions (volatility, flat markets)
+        if not self._passes_market_condition_check(fused_signal):
+            return False, f"Market conditions not favorable for {symbol}"
+
+        # 7. Check for repeated signals (debouncing)
+        if not self._passes_signal_debounce_check(fused_signal):
+            return False, f"Repeated signal detected for {symbol}, debouncing"
+
+        # All checks passed
+        return True, "All discipline checks passed"
+
+    def _has_open_position(self, symbol: str) -> bool:
+        """Check if there's an open position for the given symbol."""
+        return self.current_positions.get(symbol, False)
+
+    def _passes_min_bars_check(self, symbol: str) -> bool:
+        """Check if minimum bars have passed since last entry."""
+        min_bars = self.config['min_bars_between_entries']
+        if min_bars <= 0:
+            return True
+
+        last_bar_idx = self.last_entry_bar_index.get(symbol, -float('inf'))
+        current_bar_idx = self.bar_counter.get(symbol, 0)
+
+        bars_since_last_entry = current_bar_idx - last_bar_idx
+        passes_check = bars_since_last_entry >= min_bars
+
+        if not passes_check:
+            self.logger.debug(f"Min bars check failed for {symbol}: "
+                            f"last_entry_bar={last_bar_idx}, current_bar={current_bar_idx}, "
+                            f"bars_since={bars_since_last_entry}, min_required={min_bars}")
+
+        return passes_check
+
+    def _passes_daily_trade_limit_check(self, symbol: str) -> bool:
+        """Check if daily trade limit is not exceeded."""
+        max_daily_trades = self.config['max_trades_per_day']
+        if max_daily_trades <= 0:
+            return True
+
+        today = datetime.now().date()
+        daily_count = self.intent_count_today.get((symbol, today), 0)
+        passes_check = daily_count < max_daily_trades
+
+        if not passes_check:
+            self.logger.debug(f"Daily trade limit check failed for {symbol}: "
+                            f"daily_count={daily_count}, limit={max_daily_trades}")
+
+        return passes_check
+
+    def _passes_consecutive_losses_check(self, symbol: str) -> bool:
+        """Check if consecutive loss limit is not exceeded."""
+        max_consecutive_losses = self.config['max_consecutive_losses']
+        if max_consecutive_losses <= 0:
+            return True
+
+        consecutive_loss_count = self.consecutive_losses.get(symbol, 0)
+        passes_check = consecutive_loss_count < max_consecutive_losses
+
+        if not passes_check:
+            self.logger.debug(f"Consecutive losses check failed for {symbol}: "
+                            f"consecutive_losses={consecutive_loss_count}, limit={max_consecutive_losses}")
+
+        return passes_check
+
+    def _passes_exit_cooldown_check(self, symbol: str) -> bool:
+        """Check if cooldown period after exit has elapsed."""
+        cooldown_minutes = self.config['cooldown_after_exit_minutes']
+        if cooldown_minutes <= 0:
+            return True
+
+        last_exit = self.last_exit_time.get(symbol)
+        if last_exit is None:
+            return True
+
+        time_since_exit = datetime.now() - last_exit
+        passes_check = time_since_exit.total_seconds() >= (cooldown_minutes * 60)
+
+        if not passes_check:
+            self.logger.debug(f"Exit cooldown check failed for {symbol}: "
+                            f"time_since_exit={time_since_exit}, required={cooldown_minutes}min")
+
+        return passes_check
+
+    def _passes_market_condition_check(self, fused_signal: FusedSignal) -> bool:
+        """Check if market conditions are favorable for trading."""
+        # Check volatility threshold if ATR is available in metadata
+        atr_threshold = self.config['min_atr_threshold']
+        if atr_threshold > 0 and hasattr(fused_signal, 'metadata') and fused_signal.metadata:
+            atr_value = fused_signal.metadata.get('atr')
+            current_price = fused_signal.metadata.get('current_price') or fused_signal.metadata.get('close_price')
+
+            if atr_value is not None and current_price and current_price > 0:
+                atr_pct = atr_value / current_price
+                if atr_pct < atr_threshold:
+                    self.logger.debug(f"Low volatility check failed for {fused_signal.symbol.value}: "
+                                    f"ATR%={atr_pct:.4f}, threshold={atr_threshold:.4f}")
+                    return False
+            elif atr_value is not None and atr_value < atr_threshold:
+                # If current_price is not available but ATR is provided, check ATR directly
+                if atr_value < atr_threshold:
+                    self.logger.debug(f"Low volatility check failed for {fused_signal.symbol.value}: "
+                                    f"ATR={atr_value:.4f}, threshold={atr_threshold:.4f}")
+                    return False
+
+        # Check for flat market conditions if available
+        if self.config['avoid_flat_markets'] and hasattr(fused_signal, 'metadata') and fused_signal.metadata:
+            market_regime = fused_signal.metadata.get('market_regime', '').lower()
+            if 'flat' in market_regime or 'sideways' in market_regime:
+                self.logger.debug(f"Flat market check failed for {fused_signal.symbol.value}: "
+                                f"regime={market_regime}")
+                return False
+
+        return True
+
+    def _passes_signal_debounce_check(self, fused_signal: FusedSignal) -> bool:
+        """Check if the signal is a repeat of a previous signal."""
+        symbol = fused_signal.symbol.value
+
+        # Get current signal characteristics
+        current_conditions = {
+            'direction': round(fused_signal.direction, 3),  # Round to avoid floating point issues
+            'dominant_bias': fused_signal.dominant_bias.value if hasattr(fused_signal.dominant_bias, 'value') else str(fused_signal.dominant_bias),
+            'confidence': round(float(fused_signal.confidence.value), 3),
+            'regime_context': fused_signal.regime_context
+        }
+
+        last_conditions = self.last_signal_conditions.get(symbol)
+
+        # If no previous signal, allow this one
+        if last_conditions is None:
+            self.last_signal_conditions[symbol] = current_conditions
+            return True
+
+        # Check if conditions are essentially the same (debounce repeated signals)
+        is_same_direction = abs(last_conditions['direction'] - current_conditions['direction']) < 0.01
+        is_same_bias = last_conditions['dominant_bias'] == current_conditions['dominant_bias']
+        is_similar_confidence = abs(last_conditions['confidence'] - current_conditions['confidence']) < 0.05
+        is_same_regime = last_conditions['regime_context'] == current_conditions['regime_context']
+
+        is_duplicate = is_same_direction and is_same_bias and is_similar_confidence and is_same_regime
+
+        if is_duplicate:
+            self.logger.debug(f"Signal debounce check failed for {symbol}: "
+                            f"conditions match previous signal")
+            return False
+        else:
+            # Update with new conditions
+            self.last_signal_conditions[symbol] = current_conditions
+            return True
+
+    def increment_bar_counter(self, symbol: str):
+        """Increment the bar counter for a symbol to track timing between entries."""
+        current_count = self.bar_counter.get(symbol, -1)  # Start at -1 so first increment gives 0
+        self.bar_counter[symbol] = current_count + 1
+
+    def record_intent_emission(self, fused_signal: FusedSignal, execution_intent: ExecutionIntent):
+        """Record intent emission for discipline tracking."""
+        symbol = fused_signal.symbol.value
+
+        # Update last intent timestamp
+        self.last_intent_timestamp[symbol] = datetime.now()
+
+        # Update daily intent count
+        today = datetime.now().date()
+        daily_key = (symbol, today)
+        current_count = self.intent_count_today.get(daily_key, 0)
+        self.intent_count_today[daily_key] = current_count + 1
+
+        # Update last entry bar index
+        current_bar_idx = self.bar_counter.get(symbol, 0)
+        self.last_entry_bar_index[symbol] = current_bar_idx
+
+        # Mark that we now have an open position
+        self.current_positions[symbol] = True
+
+        # Log the intent emission
+        self.logger.info(f"Intent emitted for {symbol}: {execution_intent.side.name} "
+                        f"with confidence {float(execution_intent.intent_confidence.value):.2%}")
+
+    def record_position_closed(self, symbol: str):
+        """Record that a position has been closed."""
+        self.current_positions[symbol] = False
+        self.last_exit_time[symbol] = datetime.now()
+
+        # Reset consecutive losses counter for this symbol
+        self.consecutive_losses[symbol] = 0
+
+        self.logger.info(f"Position closed for {symbol}, updated discipline tracking")
+
+    def force_reset_position_status(self, symbol: str, force_open: bool = False):
+        """Force reset the position status for a symbol - useful for testing or correcting state."""
+        if force_open:
+            self.current_positions[symbol] = True
+            self.logger.info(f"Force set position status to OPEN for {symbol}")
+        else:
+            self.current_positions[symbol] = False
+            self.logger.info(f"Force set position status to CLOSED for {symbol}")
+
+    def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True):
+        """Record the result of a trade for consecutive loss tracking."""
+        if is_profitable:
+            # Reset consecutive losses counter
+            self.consecutive_losses[symbol] = 0
+        else:
+            # Increment consecutive losses counter
+            current_losses = self.consecutive_losses.get(symbol, 0)
+            self.consecutive_losses[symbol] = current_losses + 1
+
+        # Optionally mark the position as closed after recording the trade result
+        if position_closed:
+            self.current_positions[symbol] = False
+            self.last_exit_time[symbol] = datetime.now()
+
+        self.logger.debug(f"Trade result recorded for {symbol}: {'profit' if is_profitable else 'loss'}, "
+                         f"consecutive_losses={self.consecutive_losses[symbol]}, "
+                         f"position_closed={position_closed}")
 
     def should_execute(self, fused_signal: FusedSignal) -> bool:
         """Check if the strategy should execute based on the fused signal"""
