@@ -5,7 +5,7 @@ Welcome to the documentation for the Lynxion Enterprise Trading System (ETS). Th
 ## Current Analysis Report
 
 The most recent comprehensive analysis of the system can be found in:
-- [COMPREHENSIVE-ANALYSIS-PRO.4.0.md](./COMPREHENSIVE-ANALYSIS-PRO.4.0.md) - Latest system analysis report
+- [COMPREHENSIVE-ANALYSIS-PRO.4.0.md](__archive__/COMPREHENSIVE-ANALYSIS-PRO.4.0.md) - Latest system analysis report
 
 ## Directory Structure
 
