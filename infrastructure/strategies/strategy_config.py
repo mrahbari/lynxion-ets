@@ -24,107 +24,163 @@ class StrategyConfig:
     def get_strategy_max_position_size(strategy_name: str, default: float = 0.05) -> float:
         """Get maximum position size for a strategy"""
         # Use the general max position size from the strategy config
-        if Configs.strategy and hasattr(Configs.strategy, 'max_position_size'):
-            return Configs.strategy.max_position_size
+        if Configs.strategy:
+            try:
+                if hasattr(Configs.strategy, 'max_position_size'):
+                    return Configs.strategy.max_position_size
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_min_confidence(strategy_name: str = None, default: float = 0.3) -> float:
         """Get minimum confidence threshold for a strategy"""
-        if Configs.strategy and hasattr(Configs.strategy, 'min_confidence_threshold'):
-            return Configs.strategy.min_confidence_threshold
+        if Configs.strategy:
+            try:
+                if hasattr(Configs.strategy, 'min_confidence_threshold'):
+                    return Configs.strategy.min_confidence_threshold
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_max_confidence(strategy_name: str = None, default: float = 0.95) -> float:
         """Get maximum confidence threshold for a strategy"""
-        if Configs.strategy and hasattr(Configs.strategy, 'high_confidence_threshold'):
-            return Configs.strategy.high_confidence_threshold
+        if Configs.strategy:
+            try:
+                if hasattr(Configs.strategy, 'high_confidence_threshold'):
+                    return Configs.strategy.high_confidence_threshold
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_risk_per_trade(strategy_name: str, default: float = 0.02) -> float:
         """Get risk per trade for a strategy"""
-        if Configs.strategy and hasattr(Configs.strategy, 'risk_per_trade'):
-            return Configs.strategy.risk_per_trade
+        if Configs.strategy:
+            try:
+                if hasattr(Configs.strategy, 'risk_per_trade'):
+                    return Configs.strategy.risk_per_trade
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_stop_loss_multiplier(strategy_name: str, default: float = 1.5) -> float:
         """Get stop loss multiplier for a strategy"""
         # Use a general stop loss multiplier from risk config
-        if Configs.risk and hasattr(Configs.risk, 'stop_loss_percentage'):
-            return Configs.risk.stop_loss_percentage / 0.01 * default  # Scale appropriately
+        if Configs.risk:
+            try:
+                if hasattr(Configs.risk, 'stop_loss_percentage'):
+                    return Configs.risk.stop_loss_percentage / 0.01 * default  # Scale appropriately
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_take_profit_multiplier(strategy_name: str, default: float = 2.0) -> float:
         """Get take profit multiplier for a strategy"""
         # Use a general take profit multiplier from risk config
-        if Configs.risk and hasattr(Configs.risk, 'take_profit_percentage'):
-            return Configs.risk.take_profit_percentage / 0.01 * default  # Scale appropriately
+        if Configs.risk:
+            try:
+                if hasattr(Configs.risk, 'take_profit_percentage'):
+                    return Configs.risk.take_profit_percentage / 0.01 * default  # Scale appropriately
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_lookback_period(strategy_name: str = None, default: int = 50) -> int:
         """Get lookback period for a strategy"""
-        if Configs.strategy and hasattr(Configs.strategy, 'lookback_period'):
-            return Configs.strategy.lookback_period
+        if Configs.strategy:
+            try:
+                if hasattr(Configs.strategy, 'lookback_period'):
+                    return Configs.strategy.lookback_period
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_timeframe(strategy_name: str = None, default: str = '1h') -> str:
         """Get timeframe for a strategy"""
-        if Configs.strategy and hasattr(Configs.strategy, 'timeframe'):
-            return Configs.strategy.timeframe
+        if Configs.strategy:
+            try:
+                if hasattr(Configs.strategy, 'timeframe'):
+                    return Configs.strategy.timeframe
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_min_bars_between_entries(strategy_name: str, default: int = 5) -> int:
         """Get minimum bars between entries for a strategy"""
         # Use a general minimum bars setting from strategy config
-        if Configs.strategy and hasattr(Configs.strategy, 'min_bars_between_entries'):
-            return Configs.strategy.min_bars_between_entries
+        if Configs.strategy:
+            try:
+                if hasattr(Configs.strategy, 'min_bars_between_entries'):
+                    return Configs.strategy.min_bars_between_entries
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_max_trades_per_day(strategy_name: str, default: int = 10) -> int:
         """Get maximum trades per day for a strategy"""
         # Use a general max trades per day setting from strategy config
-        if Configs.strategy and hasattr(Configs.strategy, 'max_trades_per_day'):
-            return Configs.strategy.max_trades_per_day
+        if Configs.strategy:
+            try:
+                if hasattr(Configs.strategy, 'max_trades_per_day'):
+                    return Configs.strategy.max_trades_per_day
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_max_consecutive_losses(strategy_name: str, default: int = 3) -> int:
         """Get maximum consecutive losses before pausing for a strategy"""
         # Use a general max consecutive losses setting from strategy config
-        if Configs.strategy and hasattr(Configs.strategy, 'max_consecutive_losses'):
-            return Configs.strategy.max_consecutive_losses
+        if Configs.strategy:
+            try:
+                if hasattr(Configs.strategy, 'max_consecutive_losses'):
+                    return Configs.strategy.max_consecutive_losses
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_min_atr_threshold(strategy_name: str, default: float = 0.001) -> float:
         """Get minimum ATR threshold for trading"""
         # Use a general minimum ATR threshold from strategy config
-        if Configs.strategy and hasattr(Configs.strategy, 'min_atr_threshold'):
-            return Configs.strategy.min_atr_threshold
+        if Configs.strategy:
+            try:
+                if hasattr(Configs.strategy, 'min_atr_threshold'):
+                    return Configs.strategy.min_atr_threshold
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_avoid_flat_markets(strategy_name: str, default: bool = True) -> bool:
         """Get whether to avoid trading in flat markets"""
         # Use a general flat market avoidance setting from strategy config
-        if Configs.strategy and hasattr(Configs.strategy, 'avoid_flat_markets'):
-            return Configs.strategy.avoid_flat_markets
+        if Configs.strategy:
+            try:
+                if hasattr(Configs.strategy, 'avoid_flat_markets'):
+                    return Configs.strategy.avoid_flat_markets
+            except AttributeError:
+                pass
         return default
 
     @staticmethod
     def get_strategy_cooldown_after_exit_minutes(strategy_name: str, default: int = 30) -> int:
         """Get cooldown period after exit in minutes"""
         # Use a general cooldown setting from strategy config
-        if Configs.strategy and hasattr(Configs.strategy, 'cooldown_after_exit_minutes'):
-            return Configs.strategy.cooldown_after_exit_minutes
+        if Configs.strategy:
+            try:
+                if hasattr(Configs.strategy, 'cooldown_after_exit_minutes'):
+                    return Configs.strategy.cooldown_after_exit_minutes
+            except AttributeError:
+                pass
         return default
 
 

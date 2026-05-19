@@ -7,387 +7,258 @@ CRITICAL CONSTRAINTS:
 • Any new file must be explicitly justified.
 • No architectural rewrites without necessity.
 
-
-## 🔴 IMPORTANT ALIGNMENT (READ ONCE)
-
-These prompts are **NOT asking to “make strategies profitable”**.
-They are asking to:
-
-* make each strategy **well-defined**
-* enforce **clear market hypothesis**
-* remove **implicit noise behavior**
-* make strategies **testable, falsifiable, and Hyperopt-ready**
-
-Each prompt:
-
-* focuses on **conceptual correctness**
-* allows **small, surgical changes**
-* avoids new files unless absolutely necessary
-* respects your existing architecture & ExecutionIntent flow
-
-You should run them **in order**, and **finish one strategy before moving to the next**.
+This is actually **very good news**, even though it feels frustrating.
+I’ll be very direct and precise, because at this point ambiguity is the real enemy.
 
 ---
 
-# ✅ STRATEGY REPAIR PROMPTS (ORDERED)
+
+The fact that **before and after are 100% identical** tells us something *very specific*:
+
+> **Your strategy “alignment changes” are NOT on the effective execution path.**
+
+This is not about bad ideas, bad math, or bad markets anymore.
+
+This is a **control-flow / wiring / ownership problem**.
 
 ---
 
-## **PROMPT 1 — Breakout Strategy (FOUNDATIONAL)**
+## 2️⃣ What this result definitively proves (no speculation)
 
-> **Context**
->
-> The current Breakout strategy relies on indicator-based resistance detection and price crossing logic.
-> Backtests show excessive false breakouts, late entries, and poor R:R.
->
-> ---
->
-> **Objective**
->
-> Refactor the Breakout strategy into a **structure-based breakout hypothesis**, without introducing new indicators or files.
->
-> ---
->
-> **Required Changes**
->
-> 1. Explicitly define:
->
->    * What constitutes a *range* (time + price compression)
->    * When the market is *eligible* for breakout trading
-> 2. Separate logic into:
->
->    * **Setup**: market compression / consolidation
->    * **Trigger**: breakout validation candle (close, not wick)
->    * **Entry**: first pullback or acceptance, not the breakout bar
-> 3. Add **invalid breakout detection**:
->
->    * wick-only breaks
->    * immediate rejection
-> 4. Ensure:
->
->    * at least one trade per range
->    * no re-entry unless a new structure forms
->
-> ---
->
-> **Constraints**
->
-> * Do NOT add new indicators
-> * Do NOT add new files
-> * Extend existing logic only
-> * ExecutionIntent interface must remain unchanged
->
-> ---
->
-> **Expected Outcome**
->
-> * Higher-quality trades
-> * Clear separation between noise and valid breakouts
-> * Trade count reduction without hard limits
+From the logs:
 
----
-
-## **PROMPT 2 — Liquidity Strategy**
-
-> **Context**
->
-> The Liquidity strategy currently reacts to price movements labeled as liquidity events without confirming actual liquidity sweeps.
->
-> ---
->
-> **Objective**
->
-> Convert the Liquidity strategy into a **true stop-sweep reaction model**.
->
-> ---
->
-> **Required Changes**
->
-> 1. Redefine liquidity as:
->
->    * prior swing highs/lows
->    * equal highs/lows
-> 2. Require:
->
->    * sweep beyond the level
->    * **close back inside the range**
-> 3. Entry must:
->
->    * occur *after* sweep confirmation
->    * never on the sweep candle itself
-> 4. Add:
->
->    * session awareness (Asia/London/NY)
->    * time-based invalidation of unused sweeps
->
-> ---
->
-> **Constraints**
->
-> * No new indicators
-> * No volume proxies
-> * No new files
->
-> ---
->
-> **Expected Outcome**
->
-> * Drastic reduction in false liquidity signals
-> * Trades aligned with real stop-hunt behavior
-
----
-
-## **PROMPT 3 — VWAP Reversal Strategy**
-
-> **Context**
->
-> The VWAP Reversal strategy currently assumes mean reversion without session anchoring or trend context.
->
-> ---
->
-> **Objective**
->
-> Restrict VWAP Reversal trades to **valid mean-reversion regimes only**.
->
-> ---
->
-> **Required Changes**
->
-> 1. Enforce session anchoring:
->
->    * VWAP must reset per session
-> 2. Only allow reversal trades when:
->
->    * price deviates significantly from VWAP
->    * higher-timeframe trend is flat or exhausted
-> 3. Block trades:
->
->    * during strong trend continuation
->    * immediately after VWAP breaks
-> 4. Require:
->
->    * rejection candle or failure pattern near VWAP
->
-> ---
->
-> **Constraints**
->
-> * Use existing VWAP logic only
-> * No trend indicators added
-> * Minimal logic extension
->
-> ---
->
-> **Expected Outcome**
->
-> * Higher quality trades
-> * Better alignment with real VWAP behavior
-
----
-
-## **PROMPT 4 — Mean Reversion Strategy**
-
-> **Context**
->
-> The Mean Reversion strategy currently trades reversals without volatility contraction or regime filtering.
->
-> ---
->
-> **Objective**
->
-> Ensure Mean Reversion trades only occur in **range-bound, low-momentum markets**.
->
-> ---
->
-> **Required Changes**
->
-> 1. Explicitly block trades when:
->
->    * volatility is expanding
->    * directional momentum is increasing
-> 2. Require:
->
->    * range definition
->    * multiple failed expansion attempts
-> 3. Entry must:
->
->    * occur near range extremes
->    * include rejection confirmation
->
-> ---
->
-> **Constraints**
->
-> * Reuse existing volatility logic
-> * No new filters added globally
->
-> ---
->
-> **Expected Outcome**
->
-> * Mean reversion behaves as intended
-> * No trend-fighting behavior
-
----
-
-## **PROMPT 5 — Trend Following Strategy**
-
-> **Context**
->
-> The Trend Following strategy currently reacts to short-term slope changes, resulting in noise trades.
->
-> ---
->
-> **Objective**
->
-> Restrict Trend Following to **established directional regimes only**.
->
-> ---
->
-> **Required Changes**
->
-> 1. Require:
->
->    * sustained directional movement
->    * higher-high / higher-low (or inverse) structure
-> 2. Entry must:
->
->    * occur on pullbacks
->    * never at trend extremes
-> 3. Block:
->
->    * choppy or overlapping price action
->
-> ---
->
-> **Constraints**
->
-> * No new timeframes
-> * No new indicators
->
-> ---
->
-> **Expected Outcome**
->
-> * Reduced whipsaw losses
-
----
-
-## **PROMPT 6 — Momentum Strategy**
-
-> **Context**
->
-> The Momentum strategy currently confuses volatility spikes with sustainable momentum.
->
-> ---
->
-> **Objective**
->
-> Ensure momentum trades only occur when **continuation probability is high**.
->
-> ---
->
-> **Required Changes**
->
-> 1. Momentum must:
->
->    * persist across multiple candles
->    * show follow-through, not single spikes
-> 2. Entry must:
->
->    * occur after momentum confirmation
->    * avoid exhaustion candles
->
-> ---
->
-> **Expected Outcome**
->
-> * Momentum trades reflect continuation, not noise
-
----
-
-## **PROMPT 7 — Scalping Strategy (OPTIONAL / LAST)**
-
-> **Context**
->
-> The Scalping strategy shows extreme trade counts and poor expectancy.
->
-> ---
->
-> **Objective**
->
-> Decide whether this strategy is **structurally viable**.
->
-> ---
->
-> **Required Changes**
->
-> 1. Explicitly define:
->
->    * market micro-conditions required
->    * maximum acceptable spread / volatility
-> 2. If these cannot be enforced reliably:
->
->    * the strategy must self-disable
->
-> ---
->
-> **Expected Outcome**
->
-> * Either a disciplined scalping model
-> * Or a justified deprecation
-
----
-
-## 🔚 FINAL GUIDANCE
-
-* Do **NOT** run Hyperopt until:
-
-  * at least **4 strategies** show sane behavior
-  * trade counts are explainable
-  * drawdowns are bounded
-
-
-
-
-### Before running alignment
 ```
-   ✅ BTCUSDT backtest completed
-      Return: -57.19%
-      Sharpe: -2.75
-      Max DD: -57.19%
-      Trades: 770
-      Signal Audit - Generated: 4733, Filtered: 0, Entries: 4733
-
-📊 BACKTEST SUMMARY
-   Strategy: crypto_breakout
-   Symbols processed: 1
-   Successful: 1
-   Failed: 0
-   Average Return: -57.19%
-   Average Sharpe: -2.75
-   Average Max DD: -57.19%
-   Average Win Rate: 0.39%
-   Total Trades: 770
-   Duration: 2.17s
-
-✅ Backtest completed with validation
-   ✅ crypto_breakout backtest completed
-
-🏆 STRATEGY COMPARISON RESULTS
-   Best Performing Strategy: breakout (Return: -20.06%)
-
-   All Strategies Ranked by Return:
-   1. breakout             Return: -20.06%, Sharpe: -2.54, Drawdown: -20.06%, Trades: 471
-   2. oi_footprint         Return: -29.04%, Sharpe: -5.49, Drawdown: -28.80%, Trades: 1054
-   3. vwap_reversal        Return: -32.44%, Sharpe: -2.71, Drawdown: -32.44%, Trades: 575
-   4. liquidity            Return: -33.15%, Sharpe: -5.73, Drawdown: -32.62%, Trades: 1157
-   5. mean_reversion       Return: -35.55%, Sharpe: -3.87, Drawdown: -35.55%, Trades: 588
-   6. trend_following      Return: -54.37%, Sharpe: -10.00, Drawdown: -54.37%, Trades: 866
-   7. crypto_breakout      Return: -57.19%, Sharpe: -2.75, Drawdown: -57.19%, Trades: 770
-   8. momentum             Return: -61.90%, Sharpe: -6.34, Drawdown: -61.90%, Trades: 1400
-   9. scalping             Return: -64.72%, Sharpe: -6.61, Drawdown: -64.10%, Trades: 1088
-   10. mtf_trend            Return: -90.95%, Sharpe: -4.57, Drawdown: -87.65%, Trades: 1540
-
-🎉 All backtests completed successfully!
+Generated: 4733
+Filtered: 0
+Entries: 4733
+Trades: 770
 ```
+
+And **unchanged after “alignment”**.
+
+This means:
+
+### ✅ Proven facts
+
+1. **The strategy logic you edited is not influencing `ExecutionIntent` creation**
+2. The backtester is still receiving **one intent per bar**
+3. Whatever you changed:
+
+   * is not being called
+   * or is overridden
+   * or is bypassed
+   * or lives in a base/helper that strategies do not use
+
+This is no longer about:
+
+* market hypothesis
+* indicators
+* discipline rules
+
+It is about **who actually owns the entry decision**.
+
+---
+
+## 3️⃣ The real root cause (this is the key insight)
+
+### 🔴 Your system currently has **TWO entry authorities**
+
+1. **What you *think* is the strategy logic**
+2. **What actually emits ExecutionIntent in runtime**
+
+And they are **not the same thing**.
+
+That’s why:
+
+* You can rewrite strategy logic
+* Add filters
+* Add discipline
+* Add regime checks
+
+…and **nothing changes**.
+
+---
+
+## 4️⃣ Why this happens (very common in modular systems)
+
+Based on everything you showed earlier, the most likely causes are:
+
+### One (or more) of these is true:
+
+1. **Strategies return “signals”**, but
+   `RealisticBacktester` converts signals → intents *unconditionally*
+
+2. There is a **default adapter / wrapper** like:
+
+   ```python
+   if signal != 0:
+       create ExecutionIntent
+   ```
+
+   ignoring strategy-side logic entirely
+
+3. Your “alignment changes” live in:
+
+   * BaseStrategyAdapter
+   * helper methods
+   * unused hooks
+
+   …but the actual execution path never calls them
+
+4. The strategy class you modified is **not the one instantiated**
+   (enum mismatch, registry mismatch, aliasing)
+
+---
+
+## 5️⃣ This explains EVERYTHING strange you saw
+
+| Symptom                                      | Explanation                          |
+| -------------------------------------------- | ------------------------------------ |
+| Discipline rules “implemented” but no effect | Not on execution path                |
+| Filtered = 0 always                          | No filter ever runs                  |
+| Same trades count                            | Same intent creation logic           |
+| All strategies behave similarly              | Centralized signal→intent conversion |
+| Extreme overtrading                          | One intent per bar                   |
+
+This is not a trading problem.
+This is a **software ownership problem**.
+
+---
+
+## 6️⃣ So no, don’t “start over” blindly ❌
+
+What you *should not* do:
+
+* Rewrite strategies again
+* Add more filters
+* Tune parameters
+* Touch Hyperopt
+* Touch risk or sizing
+
+That would just be **working on dead code**.
+
+---
+
+## 7️⃣ What we must do next (the correct reset)
+
+We must answer **one single question**:
+
+> **Where is the ONLY place in the entire system that decides:
+> “yes, an ExecutionIntent will be created now”?**
+
+Until that is nailed, **nothing else matters**.
+
+---
+
+## 8️⃣ The ONLY correct next prompt (very surgical)
+
+This is the next prompt you should run.
+Do not mix it with anything else.
+
+---
+
+## ✅ ENTRY AUTHORITY & EXECUTION OWNERSHIP AUDIT PROMPT
+
+> **System Context**
+>
+> Strategy logic changes have been applied, but backtest results remain 100% unchanged.
+>
+> This proves that strategy-side logic is **not controlling ExecutionIntent emission**.
+>
+> ---
+>
+> ## 🎯 Objective (This Step Only)
+>
+> Identify and fix the **single authoritative execution decision point** responsible for creating `ExecutionIntent`.
+>
+> The goal is to ensure:
+>
+> > *No ExecutionIntent can be created unless the strategy explicitly authorizes it.*
+>
+> ---
+>
+> ## 🔍 Step 1 — Trace the ExecutionIntent Birthplace
+>
+> Starting from `runner_backtest.py`, trace:
+>
+> * which class instantiates the strategy
+> * which method is called per bar
+> * where `ExecutionIntent(...)` is actually constructed
+>
+> You must:
+>
+> * list the exact file, class, and method
+> * show the conditional logic that triggers intent creation
+>
+> ---
+>
+> ## 🔴 Step 2 — Identify Unauthorized Intent Creation
+>
+> Flag any logic that:
+>
+> * converts a raw signal (`1 / -1`) into an ExecutionIntent
+> * ignores strategy-side gating logic
+> * creates intents inside the backtester or engine unconditionally
+>
+> This logic is considered **execution-authority leakage**.
+>
+> ---
+>
+> ## 🔧 Step 3 — Enforce Single Authority
+>
+> Refactor minimally so that:
+>
+> * Strategies return **ExecutionIntent or None**
+> * No other layer is allowed to “invent” an intent
+> * Backtester may execute intents, but never create them
+>
+> No new files unless unavoidable.
+>
+> ---
+>
+> ## 🧪 Step 4 — Verification
+>
+> Re-run the same 360-day BTCUSDT backtest and confirm:
+>
+> * `Filtered > 0`
+> * `Entries < Generated`
+> * Trade count materially changes
+>
+> If results remain identical, the task must be marked as **FAILED** and the next caller must explain why.
+>
+> ---
+>
+> ## 🚫 Non-Negotiable Rules
+>
+> * Do NOT change strategy math
+> * Do NOT optimize logic
+> * Do NOT add new filters
+> * Do NOT touch risk management
+>
+> This step is strictly about **execution ownership**.
+
+---
+
+## 9️⃣ Final reassurance (important)
+
+What you’re seeing right now is actually what **strong systems uncover early**:
+
+* You didn’t waste months on Hyperopt
+* You didn’t blow real capital
+* You caught a **silent architectural bug**
+
+Most people never do.
+
+Once this single-authority issue is fixed, you’ll likely see:
+
+* Trade count drop by **orders of magnitude**
+* Metrics finally respond to strategy changes
+* A clear separation between “bad idea” and “bad wiring”
+
+When you run this next step, paste **only**:
+
+* the identified method
+* the fix
+* the new log summary
+
+We’ll know immediately if the system is finally under control.

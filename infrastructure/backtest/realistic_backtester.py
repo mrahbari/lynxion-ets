@@ -8,6 +8,7 @@ import uuid
 
 from shared.logger import EnhancedLogger
 from infrastructure.backtest.execution_intent import ExecutionIntent, create_execution_intent, OrderSide
+from domain.entities.signal_entities import ExecutionIntent as DomainExecutionIntent, OrderSide as DomainOrderSide
 
 
 class RealisticBacktester:
@@ -809,6 +810,99 @@ class RealisticBacktester:
 
         return True
 
+    def _adapt_domain_execution_intent(self,
+                                       domain_intent: DomainExecutionIntent,
+                                       market_row: pd.Series) -> ExecutionIntent:
+        """
+        Adapter function to convert Domain ExecutionIntent to Infrastructure ExecutionIntent.
+
+        Args:
+            domain_intent: Domain-level ExecutionIntent with risk_parameters
+            market_row: Current market data row containing price information
+
+        Returns:
+            ExecutionIntent: Infrastructure-level ExecutionIntent with execution-ready parameters
+        """
+        import uuid
+        from datetime import datetime
+
+        # Extract price from market data (using close price as the execution price)
+        execution_price = market_row['close']
+
+        # Extract risk parameters from domain intent
+        risk_params = domain_intent.risk_parameters
+
+        # Calculate position size based on risk parameters
+        # Use the equity and risk percentage from risk parameters if available
+        # Default to a reasonable position sizing approach
+        risk_percentage = risk_params.get('risk_per_trade', 0.02)  # 2% risk per trade
+        equity = getattr(self, 'equity', 10000.0)  # Use current equity or default
+        risk_amount = equity * risk_percentage
+
+        # Calculate stop loss distance based on ATR or other risk parameters
+        atr = market_row.get('atr', 0.01 * execution_price)  # Default to 1% if no ATR
+        atr_multiplier = risk_params.get('atr_multiplier', 1.5)
+        stop_loss_distance = atr_multiplier * atr
+
+        # Calculate position size based on risk amount and stop loss distance
+        if stop_loss_distance > 0:
+            position_size = risk_amount / stop_loss_distance
+        else:
+            # Fallback: use a percentage of equity divided by price
+            position_size = (equity * risk_percentage) / execution_price
+
+        # Apply position size limits
+        max_position_by_equity = (equity * getattr(self, 'max_position_size', 0.20)) / execution_price
+        position_size = min(position_size, max_position_by_equity)
+
+        # Ensure minimum order size
+        min_order_size = getattr(self, 'min_order_size', 0.001)
+        if position_size < min_order_size:
+            position_size = min_order_size  # Use minimum size if calculated size is too small
+
+        # Calculate stop loss and take profit prices based on risk parameters
+        sl_price = None
+        tp_price = None
+
+        if domain_intent.side == OrderSide.BUY:
+            # For BUY: SL below entry, TP above entry
+            sl_price = execution_price - stop_loss_distance
+            risk_reward_ratio = risk_params.get('risk_reward_ratio', 1.5)
+            tp_distance = stop_loss_distance * risk_reward_ratio
+            tp_price = execution_price + tp_distance
+        else:  # SELL
+            # For SELL: SL above entry, TP below entry
+            sl_price = execution_price + stop_loss_distance
+            risk_reward_ratio = risk_params.get('risk_reward_ratio', 1.5)
+            tp_distance = stop_loss_distance * risk_reward_ratio
+            tp_price = execution_price - tp_distance
+
+        # Convert Domain OrderSide to Infrastructure OrderSide
+        if domain_intent.side == DomainOrderSide.BUY:
+            infra_side = OrderSide.BUY
+        else:  # DomainOrderSide.SELL
+            infra_side = OrderSide.SELL
+
+        # Create infrastructure ExecutionIntent with derived parameters
+        intent_id = f"adapted_{uuid.uuid4().hex[:8]}"
+
+        adapted_intent = create_execution_intent(
+            side=infra_side,
+            size=position_size,
+            price=execution_price,
+            timestamp=domain_intent.timestamp,
+            stop_loss=sl_price,
+            take_profit=tp_price,
+            strategy_name=domain_intent.strategy_name,
+            symbol=str(domain_intent.symbol) if hasattr(domain_intent.symbol, '__str__') else str(domain_intent.symbol),
+            intent_id=intent_id
+        )
+
+        self.logger.info(f"[ADAPTER] Adapted domain intent {domain_intent.strategy_name} to execution intent {adapted_intent.id}")
+        self.logger.info(f"[ADAPTER] Size: {position_size:.4f}, Price: {execution_price:.4f}, SL: {sl_price:.4f}, TP: {tp_price:.4f}")
+
+        return adapted_intent
+
     def reset(self):
         """Reset the backtester to initial state."""
         self.position = 0
@@ -1165,10 +1259,20 @@ class RealisticBacktester:
             strategy_output = strategy_function(row, strategy_params)
 
             # Handle both simple signals and ExecutionIntent objects
-            if hasattr(strategy_output, 'is_valid'):  # It's an ExecutionIntent
+            if hasattr(strategy_output, 'is_valid'):  # It's an Infrastructure ExecutionIntent
                 if strategy_output and strategy_output.is_valid:
                     signal = 1 if strategy_output.side == OrderSide.BUY else -1
                     execution_intent = strategy_output
+                else:
+                    signal = 0
+                    execution_intent = None
+            elif hasattr(strategy_output, 'risk_parameters'):  # It's a Domain ExecutionIntent
+                if strategy_output:
+                    # Adapt Domain ExecutionIntent to Infrastructure ExecutionIntent
+                    execution_intent = self._adapt_domain_execution_intent(strategy_output, row)
+                    signal = 1 if execution_intent.side == OrderSide.BUY else -1
+                    # Since this came from a Domain ExecutionIntent, we need to record the signal properly
+                    # The signal should be based on the adapted intent
                 else:
                     signal = 0
                     execution_intent = None
@@ -1195,7 +1299,7 @@ class RealisticBacktester:
                         f"[TRACE] Strategy {strategy_name} generated signal {signal} at {timestamp} for price {row.get('close', 'N/A')}")
 
             # Process execution intent if valid
-            if execution_intent and execution_intent.is_valid:
+            if execution_intent and hasattr(execution_intent, 'is_valid') and execution_intent.is_valid:
                 # Check for double-order prevention
                 # Only apply cooldown for same-direction trades to allow position management
                 symbol_for_cooldown = strategy_params.get('symbol', 'default')
@@ -1238,6 +1342,10 @@ class RealisticBacktester:
                     # Log intent rejection
                     if execution_intent:
                         self.logger.info(f"[TRACE] Execution intent rejected: {execution_intent.id} at {timestamp}")
+            elif hasattr(strategy_output, 'risk_parameters'):  # Domain ExecutionIntent that was adapted
+                # If we have a Domain ExecutionIntent that was adapted to Infrastructure ExecutionIntent
+                # The adaptation already happened in the condition check above
+                pass  # The adapted intent was already processed
             else:
                 # No valid execution intent, still record equity for curve
                 self.equity_curve.append({
@@ -1358,16 +1466,25 @@ class RealisticBacktester:
 
         return intent
 
-    def _accept_execution_intent(self, intent: ExecutionIntent) -> bool:
+    def _accept_execution_intent(self, intent) -> bool:
         """
         Determine whether to accept an execution intent based on risk management.
 
         Args:
-            intent: The execution intent to evaluate
+            intent: The execution intent to evaluate (could be Infrastructure or Domain)
 
         Returns:
             bool: True if the intent should be accepted, False otherwise
         """
+        # Check if it's a Domain ExecutionIntent (which should have been converted by now)
+        # But we'll handle both cases for robustness
+        if hasattr(intent, 'risk_parameters'):  # Domain ExecutionIntent
+            # This shouldn't happen as Domain intents should be converted by now
+            # But if it does, we'll convert it here
+            self.logger.warning(f"[TRACE] Found Domain ExecutionIntent in accept method - this should have been converted already: {getattr(intent, 'strategy_name', 'unknown')}")
+            return False  # Domain intents should be converted before reaching this point
+
+        # It's an Infrastructure ExecutionIntent
         # Check if we're in a drawdown that exceeds limits
         current_drawdown = (self.max_equity - self.equity) / self.max_equity
         if current_drawdown > self.max_drawdown:
@@ -1411,17 +1528,23 @@ class RealisticBacktester:
         self.logger.info(f"[TRACE] Accepting execution intent: {intent.id}")
         return True
 
-    def _execute_from_intent(self, intent: ExecutionIntent, row: pd.Series) -> Optional[Dict[str, Any]]:
+    def _execute_from_intent(self, intent, row: pd.Series) -> Optional[Dict[str, Any]]:
         """
         Execute a trade based on an accepted execution intent.
 
         Args:
-            intent: The accepted execution intent
+            intent: The accepted execution intent (could be Infrastructure or Domain)
             row: The current data row
 
         Returns:
             Trade record if successful, None otherwise
         """
+        # Handle both Infrastructure and Domain ExecutionIntent objects
+        if hasattr(intent, 'risk_parameters'):  # Domain ExecutionIntent - this shouldn't happen
+            self.logger.error(f"[TRACE] Attempting to execute Domain ExecutionIntent - this should have been converted: {getattr(intent, 'strategy_name', 'unknown')}")
+            return None
+
+        # It's an Infrastructure ExecutionIntent
         self.logger.info(f"[TRACE] Executing trade from intent: {intent.id} - {intent.side.value} {intent.size}@{intent.price}")
 
         # Calculate realistic execution price

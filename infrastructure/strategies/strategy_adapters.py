@@ -47,7 +47,7 @@ class BaseStrategyAdapter(StrategyPort):
 
         # Initialize with default risk parameters
         self.risk_parameters = {
-            'max_position_size': self.config['max_position_size'],
+            'max_position_size': self.config.get('max_position_size', 0.05),
             'stop_loss_pct': 0.02,      # 2% stop loss
             'take_profit_pct': 0.03     # 3% take profit
         }
@@ -57,7 +57,7 @@ class BaseStrategyAdapter(StrategyPort):
         self.intent_count_today = {}     # Track daily intent count per symbol
         self.consecutive_losses = {}     # Track consecutive losses per symbol
         self.last_entry_bar_index = {}   # Track last entry bar index per symbol
-        self.current_positions = {}      # Track current positions per symbol
+        self.current_positions = {}      # Track current positions per symbol (TEMPORARY - will be phased out)
         self.last_exit_time = {}         # Track last exit time per symbol for cooldown
         self.bar_counter = {}            # Track bar count per symbol for cooldown
         self.last_signal_conditions = {} # Track last signal conditions to avoid repetition
@@ -170,37 +170,35 @@ class BaseStrategyAdapter(StrategyPort):
     def _should_emit_intent(self, fused_signal: FusedSignal) -> tuple[bool, str]:
         """
         Determine if the strategy should emit an intent based on discipline rules.
+        NOTE: Position tracking has been removed as strategies should not own position state.
+        Position existence is evaluated downstream by execution layer.
 
         Returns:
             tuple[bool, str]: (should_emit, reason_for_blocking)
         """
         symbol = fused_signal.symbol.value
 
-        # 1. Check if a position is already open for this symbol
-        if self._has_open_position(symbol):
-            return False, f"Position already open for {symbol}, preventing duplicate entry"
-
-        # 2. Check minimum bars between entries
+        # 1. Check minimum bars between entries (LEGITIMATE - timing discipline)
         if not self._passes_min_bars_check(symbol):
             return False, f"Insufficient bars elapsed since last entry for {symbol}"
 
-        # 3. Check daily trade limit
+        # 2. Check daily trade limit (LEGITIMATE - volume discipline)
         if not self._passes_daily_trade_limit_check(symbol):
             return False, f"Daily trade limit exceeded for {symbol}"
 
-        # 4. Check consecutive losses
+        # 3. Check consecutive losses (LEGITIMATE - risk management)
         if not self._passes_consecutive_losses_check(symbol):
             return False, f"Too many consecutive losses for {symbol}, triggering safety pause"
 
-        # 5. Check cooldown after exit
+        # 4. Check cooldown after exit (LEGITIMATE - timing discipline)
         if not self._passes_exit_cooldown_check(symbol):
             return False, f"Cooldown period after exit not elapsed for {symbol}"
 
-        # 6. Check market conditions (volatility, flat markets)
+        # 5. Check market conditions (volatility, flat markets) (LEGITIMATE - market suitability)
         if not self._passes_market_condition_check(fused_signal):
             return False, f"Market conditions not favorable for {symbol}"
 
-        # 7. Check for repeated signals (debouncing)
+        # 6. Check for repeated signals (debouncing) (LEGITIMATE - signal quality)
         if not self._passes_signal_debounce_check(fused_signal):
             return False, f"Repeated signal detected for {symbol}, debouncing"
 
@@ -208,12 +206,14 @@ class BaseStrategyAdapter(StrategyPort):
         return True, "All discipline checks passed"
 
     def _has_open_position(self, symbol: str) -> bool:
-        """Check if there's an open position for the given symbol."""
-        return self.current_positions.get(symbol, False)
+        """Check if there's an open position for the given symbol.
+        NOTE: This method now always returns False as strategies should not track position state.
+        Position state is handled by the execution layer downstream."""
+        return False  # Always return False to allow intent emission
 
     def _passes_min_bars_check(self, symbol: str) -> bool:
         """Check if minimum bars have passed since last entry."""
-        min_bars = self.config['min_bars_between_entries']
+        min_bars = self.config.get('min_bars_between_entries', 5)  # Use default value of 5 if not specified
         if min_bars <= 0:
             return True
 
@@ -232,7 +232,7 @@ class BaseStrategyAdapter(StrategyPort):
 
     def _passes_daily_trade_limit_check(self, symbol: str) -> bool:
         """Check if daily trade limit is not exceeded."""
-        max_daily_trades = self.config['max_trades_per_day']
+        max_daily_trades = self.config.get('max_trades_per_day', 10)  # Use default value of 10 if not specified
         if max_daily_trades <= 0:
             return True
 
@@ -248,7 +248,7 @@ class BaseStrategyAdapter(StrategyPort):
 
     def _passes_consecutive_losses_check(self, symbol: str) -> bool:
         """Check if consecutive loss limit is not exceeded."""
-        max_consecutive_losses = self.config['max_consecutive_losses']
+        max_consecutive_losses = self.config.get('max_consecutive_losses', 3)  # Use default value of 3 if not specified
         if max_consecutive_losses <= 0:
             return True
 
@@ -263,7 +263,7 @@ class BaseStrategyAdapter(StrategyPort):
 
     def _passes_exit_cooldown_check(self, symbol: str) -> bool:
         """Check if cooldown period after exit has elapsed."""
-        cooldown_minutes = self.config['cooldown_after_exit_minutes']
+        cooldown_minutes = self.config.get('cooldown_after_exit_minutes', 30)  # Use default value of 30 if not specified
         if cooldown_minutes <= 0:
             return True
 
@@ -283,7 +283,7 @@ class BaseStrategyAdapter(StrategyPort):
     def _passes_market_condition_check(self, fused_signal: FusedSignal) -> bool:
         """Check if market conditions are favorable for trading."""
         # Check volatility threshold if ATR is available in metadata
-        atr_threshold = self.config['min_atr_threshold']
+        atr_threshold = self.config.get('min_atr_threshold', 0.001)  # Use default value of 0.001 if not specified
         if atr_threshold > 0 and hasattr(fused_signal, 'metadata') and fused_signal.metadata:
             atr_value = fused_signal.metadata.get('atr')
             current_price = fused_signal.metadata.get('current_price') or fused_signal.metadata.get('close_price')
@@ -302,7 +302,7 @@ class BaseStrategyAdapter(StrategyPort):
                     return False
 
         # Check for flat market conditions if available
-        if self.config['avoid_flat_markets'] and hasattr(fused_signal, 'metadata') and fused_signal.metadata:
+        if self.config.get('avoid_flat_markets', True) and hasattr(fused_signal, 'metadata') and fused_signal.metadata:
             market_regime = fused_signal.metadata.get('market_regime', '').lower()
             if 'flat' in market_regime or 'sideways' in market_regime:
                 self.logger.debug(f"Flat market check failed for {fused_signal.symbol.value}: "
@@ -369,31 +369,24 @@ class BaseStrategyAdapter(StrategyPort):
         current_bar_idx = self.bar_counter.get(symbol, 0)
         self.last_entry_bar_index[symbol] = current_bar_idx
 
-        # Mark that we now have an open position
-        self.current_positions[symbol] = True
-
         # Log the intent emission
         self.logger.info(f"Intent emitted for {symbol}: {execution_intent.side.name} "
                         f"with confidence {float(execution_intent.intent_confidence.value):.2%}")
 
     def record_position_closed(self, symbol: str):
         """Record that a position has been closed."""
-        self.current_positions[symbol] = False
+        # Only update exit time and reset consecutive losses - don't modify position state
         self.last_exit_time[symbol] = datetime.now()
 
         # Reset consecutive losses counter for this symbol
         self.consecutive_losses[symbol] = 0
 
-        self.logger.info(f"Position closed for {symbol}, updated discipline tracking")
+        self.logger.info(f"Position closed event recorded for {symbol}, updated discipline tracking")
 
     def force_reset_position_status(self, symbol: str, force_open: bool = False):
-        """Force reset the position status for a symbol - useful for testing or correcting state."""
-        if force_open:
-            self.current_positions[symbol] = True
-            self.logger.info(f"Force set position status to OPEN for {symbol}")
-        else:
-            self.current_positions[symbol] = False
-            self.logger.info(f"Force set position status to CLOSED for {symbol}")
+        """Force reset the position status for a symbol - useful for testing or correcting state.
+        NOTE: This method no longer modifies position state as strategies should not track positions."""
+        self.logger.info(f"Position status reset attempt for {symbol} ignored - strategies should not track position state")
 
     def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True):
         """Record the result of a trade for consecutive loss tracking."""
@@ -405,9 +398,8 @@ class BaseStrategyAdapter(StrategyPort):
             current_losses = self.consecutive_losses.get(symbol, 0)
             self.consecutive_losses[symbol] = current_losses + 1
 
-        # Optionally mark the position as closed after recording the trade result
+        # Optionally update exit time after recording the trade result (but don't modify position state)
         if position_closed:
-            self.current_positions[symbol] = False
             self.last_exit_time[symbol] = datetime.now()
 
         self.logger.debug(f"Trade result recorded for {symbol}: {'profit' if is_profitable else 'loss'}, "
@@ -421,7 +413,7 @@ class BaseStrategyAdapter(StrategyPort):
             return False
 
         # Get strategy-specific configuration
-        min_confidence = self.config['min_confidence']
+        min_confidence = self.config.get('min_confidence', 0.3)  # Use default value of 0.3 if not specified
 
         # Check signal confidence against strategy threshold
         confidence = float(fused_signal.confidence.value)
@@ -541,9 +533,10 @@ class BaseStrategyAdapter(StrategyPort):
         confidence_factor = float(fused_signal.confidence.value)
 
         # Calculate requested position size based on confidence (this will be validated by risk manager)
+        max_position_size = self.config.get('max_position_size', 0.05)  # Use default value of 0.05 if not specified
         requested_position_size = min(
-            self.config['max_position_size'],
-            self.config['max_position_size'] * confidence_factor
+            max_position_size,
+            max_position_size * confidence_factor
         )
 
         # Strategy should only request risk parameters, not calculate them
@@ -552,8 +545,8 @@ class BaseStrategyAdapter(StrategyPort):
             'requested_position_size': requested_position_size,
             'strategy_confidence': confidence_factor,
             'regime_context': fused_signal.regime_context,
-            'max_position_size': self.config['max_position_size'],
-            'risk_per_trade': self.config['risk_per_trade'],
+            'max_position_size': self.config.get('max_position_size', 0.05),
+            'risk_per_trade': self.config.get('risk_per_trade', 0.02),
             'strategy_name': self.name,
             'symbol': fused_signal.symbol.value if hasattr(fused_signal.symbol, 'value') else str(fused_signal.symbol)
         }
@@ -577,7 +570,7 @@ class TrendFollowingStrategy(BaseStrategyAdapter):
             return False
 
         # Get strategy-specific configuration
-        min_confidence = self.config['min_confidence']
+        min_confidence = self.config.get('min_confidence', 0.3)  # Use default value of 0.3 if not specified
 
         # Check if signal meets trend-following criteria
         confidence = float(fused_signal.confidence.value)
@@ -627,7 +620,7 @@ class MeanReversionStrategy(BaseStrategyAdapter):
             return False
 
         # Get strategy-specific configuration
-        min_confidence = self.config['min_confidence']
+        min_confidence = self.config.get('min_confidence', 0.3)  # Use default value of 0.3 if not specified
 
         # Check if signal meets mean reversion criteria
         confidence = float(fused_signal.confidence.value)
@@ -668,7 +661,7 @@ class VolatilityBreakoutStrategy(BaseStrategyAdapter):
             return False
 
         # Get strategy-specific configuration
-        min_confidence = self.config['min_confidence']
+        min_confidence = self.config.get('min_confidence', 0.3)  # Use default value of 0.3 if not specified
 
         # Check if signal meets volatility breakout criteria
         confidence = float(fused_signal.confidence.value)

@@ -78,7 +78,7 @@ class TestTrendFollowStrategyAdapter(unittest.TestCase):
 
     def setUp(self):
         """Setup test fixtures before each test method."""
-        self.adapter = TrendFollowStrategyAdapter()
+        self.adapter = TrendFollowStrategyAdapter({})
 
     def test_init_sets_correct_attributes(self):
         """Test that TrendFollowStrategyAdapter is initialized with correct attributes."""
@@ -109,7 +109,7 @@ class TestMeanReversionStrategyAdapter(unittest.TestCase):
 
     def setUp(self):
         """Setup test fixtures before each test method."""
-        self.adapter = MeanReversionStrategyAdapter()
+        self.adapter = MeanReversionStrategyAdapter({})
 
     def test_init_sets_correct_attributes(self):
         """Test that MeanReversionStrategyAdapter is initialized with correct attributes."""
@@ -140,7 +140,7 @@ class TestScalpingStrategyAdapter(unittest.TestCase):
 
     def setUp(self):
         """Setup test fixtures before each test method."""
-        self.adapter = ScalpingStrategyAdapter()
+        self.adapter = ScalpingStrategyAdapter({})
 
     def test_init_sets_correct_attributes(self):
         """Test that ScalpingStrategyAdapter is initialized with correct attributes."""
@@ -172,7 +172,7 @@ class TestBreakoutStrategyAdapter(unittest.TestCase):
 
     def setUp(self):
         """Setup test fixtures before each test method."""
-        self.adapter = BreakoutStrategyAdapter()
+        self.adapter = BreakoutStrategyAdapter({})
 
     def test_init_sets_correct_attributes(self):
         """Test that BreakoutStrategyAdapter is initialized with correct attributes."""
@@ -204,7 +204,7 @@ class TestCryptoLiquidityStrategyAdapter(unittest.TestCase):
 
     def setUp(self):
         """Setup test fixtures before each test method."""
-        self.adapter = CryptoLiquidityStrategyAdapter()
+        self.adapter = CryptoLiquidityStrategyAdapter({})
 
     def test_init_sets_correct_attributes(self):
         """Test that CryptoLiquidityStrategyAdapter is initialized with correct attributes."""
@@ -316,7 +316,7 @@ class TestCryptoVWAPReversalStrategyAdapter(unittest.TestCase):
 
     def setUp(self):
         """Setup test fixtures before each test method."""
-        self.adapter = CryptoVWAPReversalStrategyAdapter()
+        self.adapter = CryptoVWAPReversalStrategyAdapter({})
 
     def test_init_sets_correct_attributes(self):
         """Test that CryptoVWAPReversalStrategyAdapter is initialized with correct attributes."""
