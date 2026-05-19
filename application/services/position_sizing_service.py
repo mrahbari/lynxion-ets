@@ -13,6 +13,7 @@ from domain.entities.trading_entities import Signal, Order, Position
 from domain.value_objects import Symbol, Money, Percentage
 from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger
+from application.configs.configs import Configs
 
 
 class EnhancedPositionSizingService:
@@ -21,56 +22,56 @@ class EnhancedPositionSizingService:
     def __init__(self):
         # Configuration for different sizing algorithms using environment variables
         self.kelly_config = {
-            'max_position_size': float(os.getenv('KELLY_MAX_POSITION_SIZE', '0.10')),  # Maximum percentage per position
-            'kelly_fraction': float(os.getenv('KELLY_FRACTION', '0.25')),  # Use fraction of full Kelly recommendation
-            'minimum_edge': float(os.getenv('KELLY_MINIMUM_EDGE', '0.01')),  # Minimum edge required to trade
-            'maximum_drawdown_threshold': float(os.getenv('MAX_DRAWDOWN_THRESHOLD', '0.15'))  # Max portfolio drawdown
+            'max_position_size': Configs.position_sizing.kelly_max_position_size if Configs.position_sizing and hasattr(Configs.position_sizing, 'kelly_max_position_size') else 0.10,  # Maximum percentage per position
+            'kelly_fraction': Configs.position_sizing.kelly_fraction if Configs.position_sizing and hasattr(Configs.position_sizing, 'kelly_fraction') else 0.25,  # Use fraction of full Kelly recommendation
+            'minimum_edge': Configs.position_sizing.kelly_minimum_edge if Configs.position_sizing and hasattr(Configs.position_sizing, 'kelly_minimum_edge') else 0.01,  # Minimum edge required to trade
+            'maximum_drawdown_threshold': Configs.risk.max_drawdown_threshold if Configs.risk and hasattr(Configs.risk, 'max_drawdown_threshold') else 0.15  # Max portfolio drawdown
         }
 
         self.fixed_fractional_config = {
-            'percentage_per_trade': float(os.getenv('FIXED_FRACTIONAL_PERCENTAGE', '0.02')),  # Risk % of portfolio per trade
-            'risk_per_unit': float(os.getenv('FIXED_FRACTIONAL_RISK_PER_UNIT', '0.01')),  # Risk per unit of position
-            'minimum_position_size': float(os.getenv('MIN_POSITION_SIZE', '100')),  # Minimum trade size in USD
-            'maximum_position_size': float(os.getenv('MAX_POSITION_SIZE', '50000'))  # Maximum trade size in USD
+            'percentage_per_trade': Configs.position_sizing.fixed_fractional_percentage if Configs.position_sizing and hasattr(Configs.position_sizing, 'fixed_fractional_percentage') else 0.02,  # Risk % of portfolio per trade
+            'risk_per_unit': Configs.position_sizing.fixed_fractional_risk_per_unit if Configs.position_sizing and hasattr(Configs.position_sizing, 'fixed_fractional_risk_per_unit') else 0.01,  # Risk per unit of position
+            'minimum_position_size': Configs.risk.min_position_size if Configs.risk and hasattr(Configs.risk, 'min_position_size') else 100.0,  # Minimum trade size in USD
+            'maximum_position_size': Configs.risk.max_position_size if Configs.risk and hasattr(Configs.risk, 'max_position_size') else 50000.0  # Maximum trade size in USD
         }
 
         self.atr_based_config = {
-            'atr_multiplier': float(os.getenv('ATR_MULTIPLIER', '2.0')),  # ATR multiple for stop distance
-            'fixed_dollar_risk': float(os.getenv('ATR_FIXED_DOLLAR_RISK', '1000')),  # Dollar risk per trade maximum
-            'minimum_atr_multiple': float(os.getenv('ATR_MIN_MULTIPLE', '1.5')),  # Minimum ATR multiple for position size
+            'atr_multiplier': Configs.position_sizing.atr_multiplier if Configs.position_sizing and hasattr(Configs.position_sizing, 'atr_multiplier') else 2.0,  # ATR multiple for stop distance
+            'fixed_dollar_risk': Configs.position_sizing.atr_fixed_dollar_risk if Configs.position_sizing and hasattr(Configs.position_sizing, 'atr_fixed_dollar_risk') else 1000.0,  # Dollar risk per trade maximum
+            'minimum_atr_multiple': Configs.position_sizing.atr_min_multiple if Configs.position_sizing and hasattr(Configs.position_sizing, 'atr_min_multiple') else 1.5,  # Minimum ATR multiple for position size
         }
 
         self.correlation_adjusted_config = {
-            'maximum_correlation': float(os.getenv('CORRELATION_MAX_CORRELATION', '0.7')),  # Max correlation with portfolio
-            'diversification_factor': float(os.getenv('CORRELATION_DIVERSIFICATION_FACTOR', '0.85')),  # Reduce as correlation increases
-            'portfolio_impact_threshold': float(os.getenv('CORRELATION_PORTFOLIO_IMPACT_THRESHOLD', '0.05'))  # Max portfolio impact per position
+            'maximum_correlation': Configs.portfolio.correlation_max_correlation if Configs.portfolio and hasattr(Configs.portfolio, 'correlation_max_correlation') else 0.7,  # Max correlation with portfolio
+            'diversification_factor': Configs.portfolio.correlation_diversification_factor if Configs.portfolio and hasattr(Configs.portfolio, 'correlation_diversification_factor') else 0.85,  # Reduce as correlation increases
+            'portfolio_impact_threshold': Configs.portfolio.correlation_portfolio_impact_threshold if Configs.portfolio and hasattr(Configs.portfolio, 'correlation_portfolio_impact_threshold') else 0.05  # Max portfolio impact per position
         }
 
         # Additional configurations for other algorithms
         self.optimal_f_config = {
-            'maximum_f_per_trade': float(os.getenv('OPTIMAL_F_MAX_PER_TRADE', '0.25')),  # Max 25% per trade
-            'default_percentage_when_insufficient_data': float(os.getenv('OPTIMAL_F_DEFAULT_PERCENTAGE', '0.05')),  # Default 5% if insufficient data
-            'calculation_error_fallback_percentage': float(os.getenv('OPTIMAL_F_ERROR_FALLBACK_PERCENTAGE', '0.02'))  # Default 2% if calculation fails
+            'maximum_f_per_trade': Configs.position_sizing.optimal_f_max_per_trade if Configs.position_sizing and hasattr(Configs.position_sizing, 'optimal_f_max_per_trade') else 0.25,  # Max 25% per trade
+            'default_percentage_when_insufficient_data': Configs.position_sizing.optimal_f_default_percentage if Configs.position_sizing and hasattr(Configs.position_sizing, 'optimal_f_default_percentage') else 0.05,  # Default 5% if insufficient data
+            'calculation_error_fallback_percentage': Configs.position_sizing.optimal_f_error_fallback_percentage if Configs.position_sizing and hasattr(Configs.position_sizing, 'optimal_f_error_fallback_percentage') else 0.02  # Default 2% if calculation fails
         }
 
         self.volatility_targeted_config = {
-            'target_volatility_percentage': float(os.getenv('VOLATILITY_TARGET_PERCENTAGE', '0.15')),  # Target 15% annual volatility
-            'maximum_portfolio_allocation': float(os.getenv('VOLATILITY_MAX_PORTFOLIO_ALLOCATION', '0.15')),  # Max 15% of portfolio
-            'calculation_error_default': float(os.getenv('VOLATILITY_ERROR_DEFAULT_PERCENTAGE', '0.01'))  # Default 1% if calculation fails
+            'target_volatility_percentage': Configs.position_sizing.volatility_target_percentage if Configs.position_sizing and hasattr(Configs.position_sizing, 'volatility_target_percentage') else 0.15,  # Target 15% annual volatility
+            'maximum_portfolio_allocation': Configs.position_sizing.volatility_max_portfolio_allocation if Configs.position_sizing and hasattr(Configs.position_sizing, 'volatility_max_portfolio_allocation') else 0.15,  # Max 15% of portfolio
+            'calculation_error_default': Configs.position_sizing.volatility_error_default_percentage if Configs.position_sizing and hasattr(Configs.position_sizing, 'volatility_error_default_percentage') else 0.01  # Default 1% if calculation fails
         }
 
         self.martingale_config = {
-            'base_risk_percentage': float(os.getenv('MARTINGALE_BASE_RISK_PERCENTAGE', '0.01')),  # Base 1% risk
-            'maximum_progression_levels': int(os.getenv('MARTINGALE_MAX_PROGRESSION_LEVELS', '5')),  # Max 5 levels
-            'progression_multiplier': float(os.getenv('MARTINGALE_PROGRESSION_MULTIPLIER', '2.0'))  # 2x progression
-            'maximum_total_exposure_multiplier': float(os.getenv('MARTINGALE_MAX_TOTAL_EXPOSURE_MULTIPLIER', '10.0'))  # Max 10x total exposure
+            'base_risk_percentage': Configs.position_sizing.martingale_base_risk_percentage if Configs.position_sizing and hasattr(Configs.position_sizing, 'martingale_base_risk_percentage') else 0.01,  # Base 1% risk
+            'maximum_progression_levels': Configs.position_sizing.martingale_max_progression_levels if Configs.position_sizing and hasattr(Configs.position_sizing, 'martingale_max_progression_levels') else 5,  # Max 5 levels
+            'progression_multiplier': Configs.position_sizing.martingale_progression_multiplier if Configs.position_sizing and hasattr(Configs.position_sizing, 'martingale_progression_multiplier') else 2.0,  # 2x progression
+            'maximum_total_exposure_multiplier': Configs.position_sizing.martingale_max_total_exposure_multiplier if Configs.position_sizing and hasattr(Configs.position_sizing, 'martingale_max_total_exposure_multiplier') else 10.0  # Max 10x total exposure
         }
 
         self.kelly_var_config = {
-            'var_confidence_level': float(os.getenv('KELLY_VAR_CONFIDENCE_LEVEL', '0.95')),  # 95% confidence for VaR
-            'maximum_position_with_var': float(os.getenv('KELLY_VAR_MAX_POSITION_WITH_VAR', '0.10')),  # Max 10% with VaR controls
-            'stress_test_multiplier': float(os.getenv('KELLY_VAR_STRESS_TEST_MULTIPLIER', '1.5')),  # Stress test factor
-            'margin_of_safety_percentage': float(os.getenv('KELLY_VAR_MARGIN_OF_SAFETY_PERCENTAGE', '0.20'))  # 20% margin of safety
+            'var_confidence_level': Configs.position_sizing.kelly_var_confidence_level if Configs.position_sizing and hasattr(Configs.position_sizing, 'kelly_var_confidence_level') else 0.95,  # 95% confidence for VaR
+            'maximum_position_with_var': Configs.position_sizing.kelly_var_max_position_with_var if Configs.position_sizing and hasattr(Configs.position_sizing, 'kelly_var_max_position_with_var') else 0.10,  # Max 10% with VaR controls
+            'stress_test_multiplier': Configs.position_sizing.kelly_var_stress_test_multiplier if Configs.position_sizing and hasattr(Configs.position_sizing, 'kelly_var_stress_test_multiplier') else 1.5,  # Stress test factor
+            'margin_of_safety_percentage': Configs.position_sizing.kelly_var_margin_of_safety_percentage if Configs.position_sizing and hasattr(Configs.position_sizing, 'kelly_var_margin_of_safety_percentage') else 0.20  # 20% margin of safety
         }
 
     def calculate_position_size(self, 
@@ -134,7 +135,7 @@ class EnhancedPositionSizingService:
         except Exception as e:
             logger.error(f"Error in Kelly position sizing: {e}")
             # Use configurable default percentage
-            default_percentage = float(os.getenv('KELLY_DEFAULT_PERCENTAGE', '0.01'))
+            default_percentage = Configs.position_sizing.kelly_default_percentage if Configs.position_sizing and hasattr(Configs.position_sizing, 'kelly_default_percentage') else 0.01
             return portfolio_value * default_percentage  # Default to configurable % if calculation fails
 
     def _calculate_fixed_fractional_position_size(self, signal: Signal, portfolio_value: float, market_data: Optional[Dict[str, Any]]) -> float:
@@ -153,7 +154,7 @@ class EnhancedPositionSizingService:
         except Exception as e:
             logger.error(f"Error in Fixed Fractional position sizing: {e}")
             # Use configurable default percentage
-            default_percentage = float(os.getenv('FIXED_FRACTIONAL_DEFAULT_PERCENTAGE', '0.02'))
+            default_percentage = Configs.position_sizing.fixed_fractional_default_percentage if Configs.position_sizing and hasattr(Configs.position_sizing, 'fixed_fractional_default_percentage') else 0.02
             return portfolio_value * default_percentage  # Default to configurable % if calculation fails
 
     def _calculate_atr_based_position_size(self, signal: Signal, portfolio_value: float, market_data: Optional[Dict[str, Any]]) -> float:
@@ -179,7 +180,7 @@ class EnhancedPositionSizingService:
             dollar_position = position_size * price
 
             # Apply maximum position size limit from environment (default 10% of portfolio)
-            max_portfolio_percent = float(os.getenv('ATR_MAX_PORTFOLIO_PERCENT', '0.10'))
+            max_portfolio_percent = Configs.position_sizing.atr_max_portfolio_percent if Configs.position_sizing and hasattr(Configs.position_sizing, 'atr_max_portfolio_percent') else 0.10
             max_position = portfolio_value * max_portfolio_percent
             dollar_position = min(dollar_position, max_position)
 
@@ -188,13 +189,13 @@ class EnhancedPositionSizingService:
 
         except Exception as e:
             logger.error(f"Error in ATR-based position sizing: {e}")
-            return portfolio_value * float(os.getenv('ATR_DEFAULT_PERCENTAGE', '0.015'))  # Default configurable percentage
+            return portfolio_value * (Configs.position_sizing.atr_default_percentage if Configs.position_sizing and hasattr(Configs.position_sizing, 'atr_default_percentage') else 0.015)  # Default configurable percentage
 
     def _calculate_correlation_adjusted_position_size(self, signal: Signal, portfolio_value: float, market_data: Optional[Dict[str, Any]]) -> float:
         """Calculate position size based on correlation with existing positions"""
         try:
             # Start with a base position size from environment variable (default 2% of portfolio)
-            base_percentage = float(os.getenv('CORRELATION_BASE_PERCENTAGE', '0.02'))
+            base_percentage = Configs.portfolio.correlation_base_percentage if Configs.portfolio and hasattr(Configs.portfolio, 'correlation_base_percentage') else 0.02
             base_position = portfolio_value * base_percentage
 
             # Get portfolio correlation information if available
@@ -220,7 +221,7 @@ class EnhancedPositionSizingService:
         except Exception as e:
             logger.error(f"Error in Correlation Adjusted position sizing: {e}")
             # Use configurable default percentage
-            default_percentage = float(os.getenv('CORRELATION_DEFAULT_PERCENTAGE', '0.02'))
+            default_percentage = Configs.portfolio.correlation_default_percentage if Configs.portfolio and hasattr(Configs.portfolio, 'correlation_default_percentage') else 0.02
             return portfolio_value * default_percentage  # Default to configurable % if calculation fails
 
     def _calculate_optimal_f_position_size(self, signal: Signal, portfolio_value: float, market_data: Optional[Dict[str, Any]]) -> float:
@@ -239,11 +240,11 @@ class EnhancedPositionSizingService:
                 # where b is win/loss ratio and p is win probability
                 approximate_f = ((reward_risk_ratio + 1) * win_rate - 1) / reward_risk_ratio
                 # Cap at configurable value (default 25% per trade)
-                max_f_per_trade = float(os.getenv('OPTIMAL_F_MAX_PER_TRADE', '0.25'))
+                max_f_per_trade = Configs.position_sizing.optimal_f_max_per_trade if Configs.position_sizing and hasattr(Configs.position_sizing, 'optimal_f_max_per_trade') else 0.25
                 f_to_use = max(0, min(approximate_f, max_f_per_trade))
             else:
                 # Default to configurable percentage if calculations fail
-                f_to_use = float(os.getenv('OPTIMAL_F_DEFAULT_PERCENTAGE', '0.05'))
+                f_to_use = Configs.position_sizing.optimal_f_default_percentage if Configs.position_sizing and hasattr(Configs.position_sizing, 'optimal_f_default_percentage') else 0.05
 
             position_size = portfolio_value * f_to_use
 
@@ -253,7 +254,7 @@ class EnhancedPositionSizingService:
         except Exception as e:
             logger.error(f"Error in Optimal F position sizing: {e}")
             # Use configurable default percentage
-            default_percentage = float(os.getenv('OPTIMAL_F_CALCULATION_ERROR_DEFAULT', '0.02'))
+            default_percentage = Configs.position_sizing.optimal_f_calculation_error_default if Configs.position_sizing and hasattr(Configs.position_sizing, 'optimal_f_calculation_error_default') else 0.02
             return portfolio_value * default_percentage  # Default to configurable % if calculation fails
 
     def _calculate_volatility_targeted_position_size(self, signal: Signal, portfolio_value: float, market_data: Optional[Dict[str, Any]]) -> float:
@@ -262,8 +263,8 @@ class EnhancedPositionSizingService:
             # Target volatility approach - adjust position size based on asset volatility
             # to achieve consistent portfolio volatility
 
-            target_volatility = float(os.getenv('VOLATILITY_TARGET', '0.15'))  # Target 15% annual volatility from env
-            max_portfolio_percent = float(os.getenv('VOLATILITY_MAX_PORTFOLIO_PERCENT', '0.15'))  # Max 15% of portfolio from env
+            target_volatility = Configs.position_sizing.volatility_target if Configs.position_sizing and hasattr(Configs.position_sizing, 'volatility_target') else 0.15  # Target 15% annual volatility from env
+            max_portfolio_percent = Configs.position_sizing.volatility_max_portfolio_percent if Configs.position_sizing and hasattr(Configs.position_sizing, 'volatility_max_portfolio_percent') else 0.15  # Max 15% of portfolio from env
             asset_volatility = self._estimate_asset_volatility(signal, market_data)
 
             if asset_volatility <= 0:
@@ -290,15 +291,15 @@ class EnhancedPositionSizingService:
         """Estimate the trading edge of the signal"""
         # Edge is the expected value of the trade
         # This is a simplified estimation using configurable parameters
-        edge_factor = float(os.getenv('EDGE_ESTIMATION_FACTOR', '0.1'))
+        edge_factor = Configs.infrastructure.edge_estimation_factor if Configs.infrastructure and hasattr(Configs.infrastructure, 'edge_estimation_factor') else 0.1
         base_edge = float(signal.confidence.value) * edge_factor  # Base on signal confidence with configurable factor
 
         # Adjust based on market conditions if available
         if market_data:
-            default_volatility = float(os.getenv('DEFAULT_ASSET_VOLATILITY', '0.02'))
-            max_volatility_impact = float(os.getenv('MAX_VOLATILITY_IMPACT_ON_EDGE', '0.2'))
-            volatility_multiplier = float(os.getenv('VOLATILITY_IMPACT_MULTIPLIER', '2.0'))
-            max_trend_impact = float(os.getenv('MAX_TREND_IMPACT_ON_EDGE', '0.5'))
+            default_volatility = Configs.infrastructure.default_asset_volatility if Configs.infrastructure and hasattr(Configs.infrastructure, 'default_asset_volatility') else 0.02
+            max_volatility_impact = Configs.infrastructure.max_volatility_impact_on_edge if Configs.infrastructure and hasattr(Configs.infrastructure, 'max_volatility_impact_on_edge') else 0.2
+            volatility_multiplier = Configs.infrastructure.volatility_impact_multiplier if Configs.infrastructure and hasattr(Configs.infrastructure, 'volatility_impact_multiplier') else 2.0
+            max_trend_impact = Configs.infrastructure.max_trend_impact_on_edge if Configs.infrastructure and hasattr(Configs.infrastructure, 'max_trend_impact_on_edge') else 0.5
 
             volatility = market_data.get('volatility', default_volatility)
             trend_strength = abs(market_data.get('trend_strength', 0.0))
@@ -317,14 +318,14 @@ class EnhancedPositionSizingService:
 
         # Adjust based on market conditions if available
         if market_data:
-            high_vol_threshold = float(os.getenv('HIGH_VOLATILITY_THRESHOLD', '0.05'))
-            low_vol_threshold = float(os.getenv('LOW_VOLATILITY_THRESHOLD', '0.01'))
-            high_vol_impact = float(os.getenv('HIGH_VOLATILITY_WIN_RATE_IMPACT', '0.8'))
-            low_vol_impact = float(os.getenv('LOW_VOLATILITY_WIN_RATE_IMPACT', '0.9'))
-            trend_impact_multiplier = float(os.getenv('TREND_IMPACT_ON_WIN_RATE_MULTIPLIER', '0.5'))
-            max_trend_impact = float(os.getenv('MAX_TREND_IMPACT_ON_WIN_RATE', '0.2'))
+            high_vol_threshold = Configs.infrastructure.high_volatility_threshold if Configs.infrastructure and hasattr(Configs.infrastructure, 'high_volatility_threshold') else 0.05
+            low_vol_threshold = Configs.infrastructure.low_volatility_threshold if Configs.infrastructure and hasattr(Configs.infrastructure, 'low_volatility_threshold') else 0.01
+            high_vol_impact = Configs.infrastructure.high_volatility_win_rate_impact if Configs.infrastructure and hasattr(Configs.infrastructure, 'high_volatility_win_rate_impact') else 0.8
+            low_vol_impact = Configs.infrastructure.low_volatility_win_rate_impact if Configs.infrastructure and hasattr(Configs.infrastructure, 'low_volatility_win_rate_impact') else 0.9
+            trend_impact_multiplier = Configs.infrastructure.trend_impact_on_win_rate_multiplier if Configs.infrastructure and hasattr(Configs.infrastructure, 'trend_impact_on_win_rate_multiplier') else 0.5
+            max_trend_impact = Configs.infrastructure.max_trend_impact_on_win_rate if Configs.infrastructure and hasattr(Configs.infrastructure, 'max_trend_impact_on_win_rate') else 0.2
 
-            volatility = market_data.get('volatility', float(os.getenv('DEFAULT_ASSET_VOLATILITY', '0.02')))
+            volatility = market_data.get('volatility', Configs.infrastructure.default_asset_volatility if Configs.infrastructure and hasattr(Configs.infrastructure, 'default_asset_volatility') else 0.02)
             trend_strength = abs(market_data.get('trend_strength', 0.0))
 
             # Very high volatility may reduce win rate (configurable impact)
@@ -336,21 +337,21 @@ class EnhancedPositionSizingService:
                 base_win_rate *= (1.0 + min(max_trend_impact, trend_strength * trend_impact_multiplier))
 
         # Ensure win rate is between configurable bounds (break-even with 1:1 RR and maximum)
-        min_win_rate = float(os.getenv('MINIMUM_WIN_RATE_THRESHOLD', '0.4'))
-        max_win_rate = float(os.getenv('MAXIMUM_WIN_RATE_THRESHOLD', '0.9'))
+        min_win_rate = Configs.infrastructure.minimum_win_rate_threshold if Configs.infrastructure and hasattr(Configs.infrastructure, 'minimum_win_rate_threshold') else 0.4
+        max_win_rate = Configs.infrastructure.maximum_win_rate_threshold if Configs.infrastructure and hasattr(Configs.infrastructure, 'maximum_win_rate_threshold') else 0.9
         return max(min_win_rate, min(max_win_rate, base_win_rate))
 
     def _estimate_reward_risk_ratio(self, signal: Signal, market_data: Optional[Dict[str, Any]]) -> float:
         """Estimate the reward:risk ratio of the signal"""
         # Base reward:risk on market conditions and signal type using configurable defaults
-        base_rr = float(os.getenv('BASE_REWARD_RISK_RATIO', '1.5'))  # Default ratio from config
+        base_rr = Configs.infrastructure.base_reward_risk_ratio if Configs.infrastructure and hasattr(Configs.infrastructure, 'base_reward_risk_ratio') else 1.5  # Default ratio from config
 
         if market_data:
-            default_volatility = float(os.getenv('DEFAULT_ASSET_VOLATILITY', '0.02'))
-            volatility_max_rr_impact = float(os.getenv('VOLATILITY_MAX_RR_IMPACT', '0.5'))
-            volatility_multiplier = float(os.getenv('VOLATILITY_RR_MULTIPLIER', '10.0'))
-            trend_max_rr_impact = float(os.getenv('TREND_MAX_RR_IMPACT', '0.3'))
-            trend_multiplier = float(os.getenv('TREND_RR_MULTIPLIER', '2.0'))
+            default_volatility = Configs.infrastructure.default_asset_volatility if Configs.infrastructure and hasattr(Configs.infrastructure, 'default_asset_volatility') else 0.02
+            volatility_max_rr_impact = Configs.infrastructure.volatility_max_rr_impact if Configs.infrastructure and hasattr(Configs.infrastructure, 'volatility_max_rr_impact') else 0.5
+            volatility_multiplier = Configs.infrastructure.volatility_rr_multiplier if Configs.infrastructure and hasattr(Configs.infrastructure, 'volatility_rr_multiplier') else 10.0
+            trend_max_rr_impact = Configs.infrastructure.trend_max_rr_impact if Configs.infrastructure and hasattr(Configs.infrastructure, 'trend_max_rr_impact') else 0.3
+            trend_multiplier = Configs.infrastructure.trend_rr_multiplier if Configs.infrastructure and hasattr(Configs.infrastructure, 'trend_rr_multiplier') else 2.0
 
             volatility = market_data.get('volatility', default_volatility)
             trend_strength = abs(market_data.get('trend_strength', 0.0))
@@ -362,20 +363,20 @@ class EnhancedPositionSizingService:
 
         # Adjust based on signal confidence with configurable parameters
         confidence = float(signal.confidence.value)
-        min_confidence_factor = float(os.getenv('MIN_CONFIDENCE_RR_FACTOR', '0.7'))
-        confidence_multiplier = float(os.getenv('CONFIDENCE_RR_MULTIPLIER', '0.6'))
+        min_confidence_factor = Configs.infrastructure.min_confidence_rr_factor if Configs.infrastructure and hasattr(Configs.infrastructure, 'min_confidence_rr_factor') else 0.7
+        confidence_multiplier = Configs.infrastructure.confidence_rr_multiplier if Configs.infrastructure and hasattr(Configs.infrastructure, 'confidence_rr_multiplier') else 0.6
         confidence_based_adjustment = min_confidence_factor + (confidence * confidence_multiplier)  # RR between ~min_confidence_factor*base and (min_confidence_factor + confidence_multiplier)*base based on confidence
         base_rr *= confidence_based_adjustment
 
         # Limit between configurable bounds
-        min_rr = float(os.getenv('MIN_REWARD_RISK_RATIO', '0.5'))
-        max_rr = float(os.getenv('MAX_REWARD_RISK_RATIO', '5.0'))
+        min_rr = Configs.infrastructure.min_reward_risk_ratio if Configs.infrastructure and hasattr(Configs.infrastructure, 'min_reward_risk_ratio') else 0.5
+        max_rr = Configs.infrastructure.max_reward_risk_ratio if Configs.infrastructure and hasattr(Configs.infrastructure, 'max_reward_risk_ratio') else 5.0
         return max(min_rr, min(max_rr, base_rr))
 
     def _estimate_asset_volatility(self, signal: Signal, market_data: Optional[Dict[str, Any]]) -> float:
         """Estimate the volatility of the asset"""
         # Use configurable default if no data available
-        default_vol = float(os.getenv('DEFAULT_ANNUAL_VOLATILITY', '0.20'))
+        default_vol = Configs.infrastructure.default_annual_volatility if Configs.infrastructure and hasattr(Configs.infrastructure, 'default_annual_volatility') else 0.20
 
         if market_data and 'volatility' in market_data:
             return market_data['volatility']
@@ -385,7 +386,7 @@ class EnhancedPositionSizingService:
             price = market_data['price']
             if price > 0:
                 # Configurable multiplier for ATR to volatility conversion
-                atr_to_vol_multiplier = float(os.getenv('ATR_TO_VOLATILITY_MULTIPLIER', '1.0'))
+                atr_to_vol_multiplier = Configs.position_sizing.atr_to_volatility_multiplier if Configs.position_sizing and hasattr(Configs.position_sizing, 'atr_to_volatility_multiplier') else 1.0
                 return (atr / price) * atr_to_vol_multiplier  # Rough approximation with configurable factor
 
         return default_vol

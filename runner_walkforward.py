@@ -12,9 +12,7 @@ import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
-# Load environment variables from .env file
-from dotenv import load_dotenv
-load_dotenv()
+from application.configs.configs import Configs
 
 # Add project root to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -28,7 +26,7 @@ from shared.logger import EnhancedLogger
 
 def load_symbols_from_env() -> List[str]:
     """Load symbols from environment variable."""
-    symbols_str = os.getenv("WFO_COINS", "BTCUSDT,ETHUSDT")
+    symbols_str = Configs.wfo.wfo_coins if Configs.wfo and Configs.wfo.wfo_coins else "BTCUSDT,ETHUSDT"
     return [s.strip() for s in symbols_str.split(',') if s.strip()]
 
 
@@ -61,9 +59,9 @@ def run_walkforward_process(symbols: List[str],
         'max_evals': max_evals,
         'results_dir': './data/results/wfo',
         'risk_config': {
-            'initial_capital': float(os.getenv('INITIAL_CAPITAL', '100000')),
-            'fee_rate': float(os.getenv('FEE_RATE', '0.001')),
-            'slippage_factor': float(os.getenv('SLIPPAGE_FACTOR', '0.0005'))
+            'initial_capital': Configs.backtest.initial_capital if Configs.backtest and hasattr(Configs.backtest, 'initial_capital') else 100000.0,
+            'fee_rate': Configs.execution.fee_rate if Configs.execution and hasattr(Configs.execution, 'fee_rate') else 0.001,
+            'slippage_factor': Configs.execution.slippage_factor if Configs.execution and hasattr(Configs.execution, 'slippage_factor') else 0.0005
         },
         'cv_n_splits': cv_splits,
         'cv_min_train_size': train_size // 2,

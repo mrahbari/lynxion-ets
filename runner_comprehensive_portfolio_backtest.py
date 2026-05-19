@@ -12,9 +12,7 @@ from typing import List, Dict, Any
 import pandas as pd
 import numpy as np
 
-# Load environment variables from .env file
-from dotenv import load_dotenv
-load_dotenv()
+from application.configs.configs import Configs
 
 # Add project root to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -25,7 +23,7 @@ from shared.logger import EnhancedLogger
 
 def load_symbols_from_env() -> List[str]:
     """Load symbols from environment variable."""
-    symbols_str = os.getenv("WFO_COINS", "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,ADAUSDT")
+    symbols_str = Configs.wfo.wfo_coins if Configs.wfo and Configs.wfo.wfo_coins else "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,ADAUSDT"
     return [s.strip() for s in symbols_str.split(',') if s.strip()]
 
 

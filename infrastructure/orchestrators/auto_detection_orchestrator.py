@@ -15,7 +15,7 @@ from domain.ports.optimization_ports import IOptimizationService
 from domain.value_objects import Symbol
 from shared.logger import EnhancedLogger
 from infrastructure.services.risk_alerts import RiskAlertService
-import os
+from application.configs.configs import Configs
 
 
 class AutoDetectionOrchestrator:
@@ -698,12 +698,11 @@ class AutoDetectionOrchestrator:
 
             # Calculate opportunity score based on multiple factors
             # Weighted combination of confidence, dominance, position size, and reward-to-risk ratio
-            import os
-            confidence_weight = float(os.getenv('OPPORTUNITY_SCORE_CONFIDENCE_WEIGHT', '0.4'))
-            dominance_weight = float(os.getenv('OPPORTUNITY_SCORE_DOMINANCE_WEIGHT', '0.2'))
-            position_size_weight = float(os.getenv('OPPORTUNITY_SCORE_POSITION_SIZE_WEIGHT', '0.15'))
-            reward_risk_weight = float(os.getenv('OPPORTUNITY_SCORE_REWARD_RISK_WEIGHT', '0.15'))
-            regime_bonus = float(os.getenv('OPPORTUNITY_SCORE_REGIME_BONUS', '0.1'))  # Bonus for favorable market regimes
+            confidence_weight = Configs.strategy.opportunity_score_confidence_weight if Configs.strategy and hasattr(Configs.strategy, 'opportunity_score_confidence_weight') else 0.4
+            dominance_weight = Configs.strategy.opportunity_score_dominance_weight if Configs.strategy and hasattr(Configs.strategy, 'opportunity_score_dominance_weight') else 0.2
+            position_size_weight = Configs.strategy.opportunity_score_position_size_weight if Configs.strategy and hasattr(Configs.strategy, 'opportunity_score_position_size_weight') else 0.15
+            reward_risk_weight = Configs.strategy.opportunity_score_reward_risk_weight if Configs.strategy and hasattr(Configs.strategy, 'opportunity_score_reward_risk_weight') else 0.15
+            regime_bonus = Configs.strategy.opportunity_score_regime_bonus if Configs.strategy and hasattr(Configs.strategy, 'opportunity_score_regime_bonus') else 0.1  # Bonus for favorable market regimes
 
             # Normalize values to 0-1 scale
             normalized_confidence = min(1.0, base_confidence)
@@ -742,7 +741,7 @@ class AutoDetectionOrchestrator:
     def _check_duplicate_execution_intent(self, execution_intent) -> bool:
         """Check if an execution intent is a duplicate based on symbol and direction."""
         # Check if duplicate prevention is enabled
-        prevent_same_direction = os.getenv('PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL', 'true').lower() == 'true'
+        prevent_same_direction = Configs.execution.prevent_same_direction_trade_per_symbol if Configs.execution and hasattr(Configs.execution, 'prevent_same_direction_trade_per_symbol') else True
 
         if not prevent_same_direction:
             return False  # No duplicate prevention needed
@@ -775,7 +774,7 @@ class AutoDetectionOrchestrator:
     def _check_broker_active_orders_for_duplicate(self, execution_intent) -> bool:
         """Check if there are active orders on the broker that would conflict with this execution intent."""
         # Check if duplicate prevention is enabled
-        prevent_same_direction = os.getenv('PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL', 'true').lower() == 'true'
+        prevent_same_direction = Configs.execution.prevent_same_direction_trade_per_symbol if Configs.execution and hasattr(Configs.execution, 'prevent_same_direction_trade_per_symbol') else True
 
         if not prevent_same_direction:
             return True  # No duplicate prevention needed, allow the intent
@@ -908,7 +907,7 @@ class AutoDetectionOrchestrator:
             # but are now trying to execute simultaneously
             # NOTE: The actual broker service will also perform this check, so we'll just log if found
             # but allow the broker service to handle the rejection to avoid duplicate messages
-            prevent_same_direction = os.getenv('PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL', 'true').lower() == 'true'
+            prevent_same_direction = Configs.execution.prevent_same_direction_trade_per_symbol if Configs.execution and hasattr(Configs.execution, 'prevent_same_direction_trade_per_symbol') else True
             if prevent_same_direction:
                 symbol = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
                 direction = execution_intent.side.name if hasattr(execution_intent.side, 'name') else str(execution_intent.side)
@@ -924,8 +923,8 @@ class AutoDetectionOrchestrator:
                     # Continue to execution where the broker service will reject it
 
         # Check if this is a stablecoin pair that should be filtered out
-            filter_stablecoin_pairs = os.getenv('FILTER_OUT_STABLECOIN_PAIRS', 'true').lower() == 'true'
-            allowed_stablecoins = os.getenv('ALLOWED_STABLECOINS', 'USDT,BUSD,USDC,DAI,PAX,TUSD,USDD,FDUSD').split(',')
+            filter_stablecoin_pairs = Configs.data.filter_out_stablecoin_pairs if Configs.data and hasattr(Configs.data, 'filter_out_stablecoin_pairs') else True
+            allowed_stablecoins = (Configs.data.allowed_stablecoins if Configs.data and Configs.data.allowed_stablecoins else 'USDT,BUSD,USDC,DAI,PAX,TUSD,USDD,FDUSD').split(',')
 
             symbol_str = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
 
@@ -999,8 +998,8 @@ class AutoDetectionOrchestrator:
             position_size_pct = risk_params.get('max_position_size', 0.02)  # Default 2%
 
             # Fixed Position Size Configuration (for testing purposes)
-            fixed_position_size_enabled = os.getenv('FIXED_POSITION_SIZE_ENABLED', 'false').lower() == 'true'
-            fixed_position_amount = float(os.getenv('FIXED_POSITION_AMOUNT', '10.0'))  # Default to $10 for testing
+            fixed_position_size_enabled = Configs.position_sizing.fixed_position_size_enabled if Configs.position_sizing and hasattr(Configs.position_sizing, 'fixed_position_size_enabled') else False
+            fixed_position_amount = Configs.position_sizing.fixed_position_amount if Configs.position_sizing and hasattr(Configs.position_sizing, 'fixed_position_amount') else 10.0  # Default to $10 for testing
 
             # Calculate quantity based on risk parameters and account balance
             try:
@@ -1011,7 +1010,7 @@ class AutoDetectionOrchestrator:
                 else:
                     # In a real implementation, we'd get portfolio metrics from portfolio service
                     # For now, using a default account balance from environment variable
-                    account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))  # Default to $10,000 if not available
+                    account_balance = Configs.position_sizing.default_account_balance if Configs.position_sizing and hasattr(Configs.position_sizing, 'default_account_balance') else 10000.0  # Default to $10,000 if not available
                     position_value = account_balance * position_size_pct
 
                     # Calculate quantity based on position value and current price
@@ -1029,7 +1028,7 @@ class AutoDetectionOrchestrator:
                     self.logger.info(f"Using fixed position size (fallback): ${fixed_position_amount} at ${current_price} = {quantity} units")
                 else:
                     # Use default account balance from environment variable
-                    default_account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '1000.0'))  # Default to $1,000 if not available
+                    default_account_balance = Configs.position_sizing.default_account_balance if Configs.position_sizing and hasattr(Configs.position_sizing, 'default_account_balance') else 1000.0  # Default to $1,000 if not available
                     quantity = position_size_pct * default_account_balance / current_price
 
             # Ensure minimum quantity to avoid issues with small trades

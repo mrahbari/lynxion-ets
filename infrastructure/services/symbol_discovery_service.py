@@ -2,12 +2,12 @@
 Symbol Discovery Module for Market Opportunity Watcher
 Handles automatic discovery of symbols based on market conditions and watcher requirements
 """
-import os
 import ccxt
 import requests
 from typing import List
 from domain.value_objects import Symbol
 from shared.logger import EnhancedLogger
+from application.configs.configs import Configs
 
 
 class SymbolDiscoveryService:
@@ -21,16 +21,16 @@ class SymbolDiscoveryService:
         self.logger.info("🔍 Discovering symbols to monitor automatically...")
 
         # Check which watcher types are enabled to determine appropriate discovery method
-        market_pulse_enabled = os.getenv('MARKET_PULSE_WATCHER_ENABLED', 'true').lower() == 'true'
-        volatility_enabled = os.getenv('VOLATILITY_WATCHER_ENABLED', 'true').lower() == 'true'
-        trend_mtf_enabled = os.getenv('TREND_MTF_WATCHER_ENABLED', 'true').lower() == 'true'
-        anomaly_ml_enabled = os.getenv('ANOMALY_ML_WATCHER_ENABLED', 'true').lower() == 'true'
-        orderflow_ws_enabled = os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'true').lower() == 'true'
-        cmc_screener_enabled = os.getenv('CMC_SCREENER_ENABLED', 'true').lower() == 'true'
-        funding_rate_enabled = os.getenv('FUNDING_RATE_WATCHER_ENABLED', 'true').lower() == 'true'
-        liquidity_enabled = os.getenv('LIQUIDITY_WATCHER_ENABLED', 'true').lower() == 'true'
-        historical_candle_enabled = os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'true').lower() == 'true'
-        tick_watcher_enabled = os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true'
+        market_pulse_enabled = Configs.watcher.market_pulse_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'market_pulse_watcher_enabled') else True
+        volatility_enabled = Configs.watcher.volatility_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'volatility_watcher_enabled') else True
+        trend_mtf_enabled = Configs.watcher.trend_mtf_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'trend_mtf_watcher_enabled') else True
+        anomaly_ml_enabled = Configs.watcher.anomaly_ml_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'anomaly_ml_watcher_enabled') else True
+        orderflow_ws_enabled = Configs.watcher.orderflow_ws_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'orderflow_ws_watcher_enabled') else True
+        cmc_screener_enabled = Configs.watcher.cmc_screener_enabled if Configs.watcher and hasattr(Configs.watcher, 'cmc_screener_enabled') else True
+        funding_rate_enabled = Configs.watcher.funding_rate_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'funding_rate_watcher_enabled') else True
+        liquidity_enabled = Configs.watcher.liquidity_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'liquidity_watcher_enabled') else True
+        historical_candle_enabled = Configs.watcher.historical_candle_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'historical_candle_watcher_enabled') else True
+        tick_watcher_enabled = Configs.watcher.tick_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'tick_watcher_enabled') else False
 
         # If multiple watchers are enabled, use comprehensive discovery that covers all types
         enabled_watchers = []
@@ -150,8 +150,7 @@ class SymbolDiscoveryService:
 
         # If still no symbols found, use fallback symbols
         if not discovered_symbols:
-            fallback_symbols_str = os.getenv("FALLBACK_WATCHLIST_SYMBOLS",
-                                             "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,AVAXUSDT,TRXUSDT,DOTUSDT,LINKUSDT")
+            fallback_symbols_str = Configs.data.fallback_watchlist_symbols if Configs.data and Configs.data.fallback_watchlist_symbols else "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,AVAXUSDT,TRXUSDT,DOTUSDT,LINKUSDT"
             fallback_symbols = [s.strip() for s in fallback_symbols_str.split(",")]
             discovered_symbols = fallback_symbols
 
@@ -435,9 +434,8 @@ class SymbolDiscoveryService:
             from dotenv import load_dotenv
             load_dotenv()
 
-            cmc_api_key = os.getenv("CMC_API_KEY")
-            cmc_listings_url = os.getenv("CMC_LISTINGS_URL",
-                                         "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest")
+            cmc_api_key = Configs.data.cmc_api_key if Configs.data and Configs.data.cmc_api_key else None
+            cmc_listings_url = Configs.data.cmc_listings_url if Configs.data and Configs.data.cmc_listings_url else "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
 
             if not cmc_api_key:
                 self.logger.warning("CMC_API_KEY not found, skipping market cap discovery")
@@ -461,8 +459,7 @@ class SymbolDiscoveryService:
 
                 if 'data' in data:
                     # Extract symbols from the top coins with filtering
-                    excluded_coins_str = os.getenv("CMC_EXCLUDED_COINS",
-                                                   "BTC,ETH,SOL,ADA,DOT,XRP,DOGE,LINK,BNB,AVAX,MATIC,BTCUSDT,ETHUSDT,SOLUSDT,ADAUSDT,DOTUSDT,XRPUSDT,DOGEUSDT,LINKUSDT,BNBUSDT,AVAXUSDT,MATICUSDT")
+                    excluded_coins_str = Configs.data.cmc_excluded_coins if Configs.data and Configs.data.cmc_excluded_coins else "BTC,ETH,SOL,ADA,DOT,XRP,DOGE,LINK,BNB,AVAX,MATIC,BTCUSDT,ETHUSDT,SOLUSDT,ADAUSDT,DOTUSDT,XRPUSDT,DOGEUSDT,LINKUSDT,BNBUSDT,AVAXUSDT,MATICUSDT"
                     excluded_coins = set(coin.strip().upper() for coin in excluded_coins_str.split(',') if coin.strip())
 
                     discovered_symbols = []

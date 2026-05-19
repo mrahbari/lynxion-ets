@@ -5,8 +5,8 @@ from shared.logger import logger
 from datetime import datetime
 import numpy as np
 from typing import Dict, List
-import os
 from decimal import Decimal
+from application.configs.configs import Configs
 
 
 class LiquidityWatcher(BaseWatcher):
@@ -22,7 +22,7 @@ class LiquidityWatcher(BaseWatcher):
         self.target_broker = target_broker
 
         # Configuration from environment with defaults
-        self.enabled = os.getenv('LIQUIDITY_WATCHER_ENABLED', 'true').lower() == 'true'
+        self.enabled = Configs.watcher.liquidity_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'liquidity_watcher_enabled') else True
 
         # Only set logger if enabled, otherwise use mock logger
         if self.enabled:

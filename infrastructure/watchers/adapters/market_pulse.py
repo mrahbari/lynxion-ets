@@ -4,8 +4,8 @@ from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
 import numpy as np
-import os
 from decimal import Decimal
+from application.configs.configs import Configs
 
 
 class MarketPulseWatcher(BaseWatcher):
@@ -21,7 +21,7 @@ class MarketPulseWatcher(BaseWatcher):
         self.target_broker = target_broker
 
         # Configuration from environment with defaults
-        self.enabled = os.getenv('MARKET_PULSE_WATCHER_ENABLED', 'true').lower() == 'true'
+        self.enabled = Configs.watcher.market_pulse_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'market_pulse_watcher_enabled') else True
 
         # Only set logger if enabled, otherwise use mock logger
         if self.enabled:

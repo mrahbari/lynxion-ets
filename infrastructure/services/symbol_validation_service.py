@@ -2,12 +2,12 @@
 Symbol Validation and Filtering Module for Market Opportunity Watcher
 Handles validation and filtering of symbols before processing
 """
-import os
 import re
 from typing import List
 from domain.value_objects import Symbol
 from shared.logger import EnhancedLogger
 from utils.symbol_validator import symbol_validator
+from application.configs.configs import Configs
 
 
 class SymbolValidationService:
@@ -19,14 +19,19 @@ class SymbolValidationService:
     def filter_stablecoin_pairs(self, symbols):
         """Filter out stablecoin-stablecoin pairs from the symbol list."""
         # Check if filtering is enabled
-        filter_stablecoin_pairs = os.getenv('FILTER_OUT_STABLECOIN_PAIRS', 'true').lower() == 'true'
+        filter_stablecoin_pairs = Configs.data.filter_out_stablecoin_pairs if Configs.data and hasattr(Configs.data, 'filter_out_stablecoin_pairs') else True
 
         if not filter_stablecoin_pairs:
             return symbols
 
-        # Get allowed stablecoins from environment
-        allowed_stablecoins_str = os.getenv('ALLOWED_STABLECOINS', 'USDT,BUSD,USDC,DAI,PAX,TUSD,USDD,FDUSD')
-        allowed_stablecoins = [s.strip().upper() for s in allowed_stablecoins_str.split(',')]
+        # Get allowed stablecoins from configs
+        allowed_stablecoins_raw = Configs.data.allowed_stablecoins if Configs.data and Configs.data.allowed_stablecoins else 'USDT,BUSD,USDC,DAI,PAX,TUSD,USDD,FDUSD'
+
+        # Handle both string and list formats
+        if isinstance(allowed_stablecoins_raw, list):
+            allowed_stablecoins = [s.strip().upper() for s in allowed_stablecoins_raw if s.strip()]
+        else:
+            allowed_stablecoins = [s.strip().upper() for s in allowed_stablecoins_raw.split(',')]
 
         filtered_symbols = []
         for symbol in symbols:
@@ -76,7 +81,7 @@ class SymbolValidationService:
                     continue  # Skip this symbol
 
             # Check using regex pattern if provided - improved to catch more stablecoin pairs
-            excluded_pattern = os.getenv('EXCLUDED_SYMBOLS_PATTERN', r'(?:USDT|USDC|BUSD|DAI|PAX|TUSD|USDD|FDUSD)(?:USDT|USDC|BUSD|DAI|PAX|TUSD|USDD|FDUSD)|BTC/BTC|ETH/ETH')
+            excluded_pattern = Configs.data.excluded_symbols_pattern if Configs.data and Configs.data.excluded_symbols_pattern else r'(?:USDT|USDC|BUSD|DAI|PAX|TUSD|USDD|FDUSD)(?:USDT|USDC|BUSD|DAI|PAX|TUSD|USDD|FDUSD)|BTC/BTC|ETH/ETH'
             if re.search(excluded_pattern, symbol_upper):
                 self.logger.info(f"🚫 PATTERN FILTER: Skipping {symbol_str} (matches exclusion pattern)")
                 continue  # Skip this symbol
@@ -97,7 +102,7 @@ class SymbolValidationService:
         validated_symbols = []
 
         # Check if data validation is enabled
-        validate_data_availability = os.getenv('VALIDATE_SYMBOL_DATA_AVAILABILITY', 'true').lower() == 'true'
+        validate_data_availability = Configs.data.validate_symbol_data_availability if Configs.data and hasattr(Configs.data, 'validate_symbol_data_availability') else True
 
         if not validate_data_availability:
             # Still apply approved symbol validation even if data availability validation is disabled

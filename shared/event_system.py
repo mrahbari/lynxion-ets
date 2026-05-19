@@ -2,7 +2,6 @@
 Event system for proper signal routing between architectural layers.
 Following correct architecture: Watcher → Engine → Fusion → Strategy → Broker
 """
-import os
 from typing import Callable, Dict, Any, List
 from dataclasses import dataclass
 from datetime import datetime
@@ -10,6 +9,7 @@ from enum import Enum
 import threading
 import queue
 from domain.entities.signal_entities import MarketObservation, InterpretedSignal, FusedSignal, ExecutionIntent
+from application.configs.configs import Configs
 
 
 class EventType(Enum):
@@ -298,8 +298,8 @@ class SignalProcessor:
             position_size_pct = risk_params.get('max_position_size', 0.02)  # Default 2%
 
             # Fixed Position Size Configuration (for testing purposes)
-            fixed_position_size_enabled = os.getenv('FIXED_POSITION_SIZE_ENABLED', 'false').lower() == 'true'
-            fixed_position_amount = float(os.getenv('FIXED_POSITION_AMOUNT', '10.0'))  # Default to $10 for testing
+            fixed_position_size_enabled = Configs.position_sizing.fixed_position_size_enabled if Configs.position_sizing and hasattr(Configs.position_sizing, 'fixed_position_size_enabled') else False
+            fixed_position_amount = Configs.position_sizing.fixed_position_amount if Configs.position_sizing and hasattr(Configs.position_sizing, 'fixed_position_amount') else 10.0  # Default to $10 for testing
 
             # Calculate quantity based on risk parameters and account balance
             try:
@@ -319,7 +319,7 @@ class SignalProcessor:
                 else:
                     # In a real implementation, we'd get portfolio metrics from portfolio service
                     # For now, using a default account balance from environment variable
-                    account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))  # Default to $10,000 if not available
+                    account_balance = Configs.position_sizing.default_account_balance if Configs.position_sizing and hasattr(Configs.position_sizing, 'default_account_balance') else 10000.0  # Default to $10,000 if not available
                     position_value = account_balance * position_size_pct
 
                     # Calculate quantity based on position value and current price
@@ -355,7 +355,7 @@ class SignalProcessor:
                         self.logger.info(f"Using fixed position size (fallback): ${fixed_position_amount} at ${fallback_price} = {quantity} units")
                 else:
                     # Use default account balance from environment variable
-                    default_account_balance = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '1000.0'))  # Default to $1,000 if not available
+                    default_account_balance = Configs.position_sizing.default_account_balance if Configs.position_sizing and hasattr(Configs.position_sizing, 'default_account_balance') else 1000.0  # Default to $1,000 if not available
                     fallback_price = 50000.0
                     quantity = position_size_pct * default_account_balance / fallback_price
 

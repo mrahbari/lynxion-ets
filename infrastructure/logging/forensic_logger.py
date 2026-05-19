@@ -9,13 +9,13 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from pathlib import Path
 from uuid import uuid4
-import os
 
 from shared.logger import EnhancedLogger
 from infrastructure.statistical_validation.statistical_authority_engine import statistical_authority_engine, StatisticalAuthorityScore
 from infrastructure.statistical_validation.randomness_exposure_firewall import randomness_firewall, RandomnessExposureAlert
 from infrastructure.statistical_validation.decision_defensibility_validator import decision_validator, DecisionDefensibilityReport
 from infrastructure.statistical_validation.historical_data_tracker import historical_data_tracker
+from application.configs.configs import Configs
 
 
 class ForensicLogger:
@@ -24,7 +24,7 @@ class ForensicLogger:
     def __init__(self, log_file: str = "logs/forensic.log", enabled: bool = True):
         """Initialize the enhanced forensic logger with statistical validation capabilities."""
         # Check if forensic logging is enabled via environment variable or parameter
-        self.enabled = enabled and os.getenv('FORENSIC_LOGGING_ENABLED', 'true').lower() == 'true'
+        self.enabled = enabled and (Configs.monitoring.forensic_logging_enabled if Configs.monitoring and hasattr(Configs.monitoring, 'forensic_logging_enabled') else True)
 
         if not self.enabled:
             # If disabled, just return early without setting up loggers
@@ -962,4 +962,4 @@ class JsonFormatter(logging.Formatter):
 
 
 # Global forensic logger instance
-forensic_logger = ForensicLogger(enabled=os.getenv('FORENSIC_LOGGING_ENABLED', 'true').lower() in ['true', '1', 'yes'])
+forensic_logger = ForensicLogger(enabled=Configs.monitoring.forensic_logging_enabled if Configs.monitoring and hasattr(Configs.monitoring, 'forensic_logging_enabled') else True)

@@ -9,10 +9,10 @@ from domain.entities.trading_entities import Order
 from domain.value_objects import Symbol
 from domain.enums.broker_enum import BrokerType
 from shared.logger import EnhancedLogger
-import os
 import threading
 from datetime import datetime
 from infrastructure.logging.forensic_logger import forensic_logger
+from application.configs.configs import Configs
 
 
 class BrokerExecutionService(ExecutionPort):
@@ -55,7 +55,7 @@ class BrokerExecutionService(ExecutionPort):
         else:
             # Determine broker type
             if broker_type is None:
-                broker_type_str = os.getenv('DEFAULT_BROKER', 'bingx').lower()  # Changed to 'bingx' as default
+                broker_type_str = Configs.broker.default_broker.lower() if Configs.broker and Configs.broker.default_broker else 'bingx'.lower()  # Changed to 'bingx' as default
             else:
                 broker_type_str = broker_type.lower()
 
@@ -126,28 +126,28 @@ class BrokerExecutionService(ExecutionPort):
 
         if broker_enum == BrokerType.BINGX:
             config = {
-                'api_key': os.getenv('BINGX_API_KEY'),
-                'secret_key': os.getenv('BINGX_SECRET_KEY'),
-                'passphrase': os.getenv('BINGX_PASSPHRASE', ''),
-                'testnet': os.getenv('BINGX_TESTNET', 'true').lower() == 'true'
+                'api_key': Configs.broker.bingx_api_key if Configs.broker and Configs.broker.bingx_api_key else '',
+                'secret_key': Configs.broker.bingx_secret_key if Configs.broker and Configs.broker.bingx_secret_key else '',
+                'passphrase': Configs.broker.bingx_passphrase if Configs.broker and Configs.broker.bingx_passphrase else '',
+                'testnet': Configs.broker.bingx_testnet if Configs.broker and hasattr(Configs.broker, 'bingx_testnet') else True
             }
         elif broker_enum == BrokerType.BINANCE:
             config = {
-                'api_key': os.getenv('BINANCE_API_KEY'),
-                'secret_key': os.getenv('BINANCE_SECRET_KEY'),
-                'testnet': os.getenv('BINANCE_TESTNET', 'true').lower() == 'true'
+                'api_key': Configs.broker.binance_api_key if Configs.broker and Configs.broker.binance_api_key else '',
+                'secret_key': Configs.broker.binance_secret_key if Configs.broker and Configs.broker.binance_secret_key else '',
+                'testnet': Configs.broker.binance_testnet if Configs.broker and hasattr(Configs.broker, 'binance_testnet') else True
             }
         elif broker_enum == BrokerType.MEXC:
             config = {
-                'api_key': os.getenv('MEXC_API_KEY'),
-                'secret_key': os.getenv('MEXC_SECRET_KEY'),
-                'testnet': os.getenv('MEXC_TESTNET', 'true').lower() == 'true'
+                'api_key': Configs.broker.mexc_api_key if Configs.broker and Configs.broker.mexc_api_key else '',
+                'secret_key': Configs.broker.mexc_secret_key if Configs.broker and Configs.broker.mexc_secret_key else '',
+                'testnet': Configs.broker.mexc_testnet if Configs.broker and hasattr(Configs.broker, 'mexc_testnet') else True
             }
         elif broker_enum == BrokerType.PHEMEX:
             config = {
-                'api_key': os.getenv('PHEMEX_API_KEY'),
-                'secret_key': os.getenv('PHEMEX_SECRET_KEY'),
-                'testnet': os.getenv('PHEMEX_TESTNET', 'true').lower() == 'true'
+                'api_key': Configs.broker.phemex_api_key if Configs.broker and Configs.broker.phemex_api_key else '',
+                'secret_key': Configs.broker.phemex_secret_key if Configs.broker and Configs.broker.phemex_secret_key else '',
+                'testnet': Configs.broker.phemex_testnet if Configs.broker and hasattr(Configs.broker, 'phemex_testnet') else True
             }
         else:
             raise ValueError(f"Unsupported broker type: {broker_type}")
@@ -204,7 +204,7 @@ class BrokerExecutionService(ExecutionPort):
             # to avoid processing symbols that will be rejected later. This improves efficiency.
 
             # Check if duplicate same-direction trade prevention is enabled
-            prevent_same_direction = os.getenv('PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL', 'true').lower() == 'true'
+            prevent_same_direction = Configs.execution.prevent_same_direction_trade_per_symbol if Configs.execution and hasattr(Configs.execution, 'prevent_same_direction_trade_per_symbol') else True
 
             if prevent_same_direction:
                 # Check if there's already an active position in the same direction for this symbol
@@ -642,7 +642,7 @@ class BrokerExecutionService(ExecutionPort):
         """Send a Telegram notification about a successfully placed order."""
         try:
             # Check if Telegram notifications are enabled
-            telegram_notifications_enabled = os.getenv('TELEGRAM_NOTIFICATIONS_ENABLED', 'true').lower() == 'true'
+            telegram_notifications_enabled = Configs.monitoring.telegram_notifications_enabled if Configs.monitoring and hasattr(Configs.monitoring, 'telegram_notifications_enabled') else True
             if not telegram_notifications_enabled:
                 self.logger.debug(f"Telegram notifications disabled, skipping notification for order {order_id}")
                 return  # Skip notifications if disabled
@@ -650,9 +650,9 @@ class BrokerExecutionService(ExecutionPort):
             # Import Telegram service
             from infrastructure.services.risk_alerts import TelegramNotificationService
 
-            # Get Telegram credentials from environment
-            bot_token = os.getenv('TELEGRAM_BOT_TOKEN', '')
-            chat_id = os.getenv('TELEGRAM_CHAT_ID', '')
+            # Get Telegram credentials from configs
+            bot_token = Configs.monitoring.telegram_bot_token if Configs.monitoring and Configs.monitoring.telegram_bot_token else ''
+            chat_id = Configs.monitoring.telegram_chat_id if Configs.monitoring and Configs.monitoring.telegram_chat_id else ''
 
             # Check if credentials are available
             if not bot_token or not chat_id:

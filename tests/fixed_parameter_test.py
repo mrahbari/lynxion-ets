@@ -86,9 +86,9 @@ def test_strategy_basic_functionality():
 
     strategies = [
         TrendFollowingStrategyAdapter(),
-        MeanReversionStrategyAdapter(),
-        ScalpingStrategyAdapter(),
-        BreakoutStrategyAdapter()
+        MeanReversionStrategyAdapter({}),
+        ScalpingStrategyAdapter({}),
+        BreakoutStrategyAdapter({})
     ]
 
     results = {}
@@ -169,9 +169,9 @@ def test_strategy_with_readiness_gate():
 
     strategies = [
         TrendFollowingStrategyAdapter(),
-        MeanReversionStrategyAdapter(),
-        ScalpingStrategyAdapter(),
-        BreakoutStrategyAdapter()
+        MeanReversionStrategyAdapter({}),
+        ScalpingStrategyAdapter({}),
+        BreakoutStrategyAdapter({})
     ]
 
     gate_results = {}

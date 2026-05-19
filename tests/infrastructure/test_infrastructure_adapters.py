@@ -151,7 +151,7 @@ class TestStrategyAdapters(unittest.TestCase):
     
     def test_trend_follow_strategy_adapter(self):
         """Test Trend Follow Strategy Adapter"""
-        strategy = TrendFollowStrategyAdapter()
+        strategy = TrendFollowStrategyAdapter({})
         
         self.assertEqual(strategy.get_strategy_name(), "TrendFollowStrategy")
         
@@ -170,7 +170,7 @@ class TestStrategyAdapters(unittest.TestCase):
     
     def test_mean_reversion_strategy_adapter(self):
         """Test Mean Reversion Strategy Adapter"""
-        strategy = MeanReversionStrategyAdapter()
+        strategy = MeanReversionStrategyAdapter({})
         
         self.assertEqual(strategy.get_strategy_name(), "MeanReversionStrategy")
         
@@ -188,7 +188,7 @@ class TestStrategyAdapters(unittest.TestCase):
     
     def test_scalping_strategy_adapter(self):
         """Test Scalping Strategy Adapter"""
-        strategy = ScalpingStrategyAdapter()
+        strategy = ScalpingStrategyAdapter({})
         
         self.assertEqual(strategy.get_strategy_name(), "ScalpingStrategy")
         
@@ -206,7 +206,7 @@ class TestStrategyAdapters(unittest.TestCase):
     
     def test_breakout_strategy_adapter(self):
         """Test Breakout Strategy Adapter"""
-        strategy = BreakoutStrategyAdapter()
+        strategy = BreakoutStrategyAdapter({})
         
         self.assertEqual(strategy.get_strategy_name(), "BreakoutStrategy")
         

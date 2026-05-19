@@ -2,18 +2,19 @@
 Multi-Broker Service for handling exchange switching and symbol availability checks.
 This service provides exchange switching capabilities similar to the downloader's approach.
 """
-from typing import Dict, List, Optional, Set
+import threading
+from datetime import datetime, timedelta
+from typing import Optional, Set
+
+from application.configs.configs import Configs
 from domain.entities.trading_entities import Order
 from domain.ports.execution_ports import ExecutionPort
 from domain.value_objects import Symbol
-from shared.logger import EnhancedLogger
 from infrastructure.brokers.broker_adapters import (
     BingXBrokerAdapter, BinanceBrokerAdapter, MEXCBrokerAdapter, PhemexBrokerAdapter
 )
 from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
-import os
-import threading
-from datetime import datetime, timedelta
+from shared.logger import EnhancedLogger
 
 
 class MultiBrokerExecutionService(ExecutionPort):
@@ -45,7 +46,8 @@ class MultiBrokerExecutionService(ExecutionPort):
         if primary_broker:
             self.primary_broker = primary_broker.lower()
         else:
-            self.primary_broker = os.getenv('DEFAULT_BROKER', 'bingx').lower()  # Default to bingx as requested
+            self.primary_broker = Configs.get_env_var('DEFAULT_BROKER',
+                                                      'bingx').lower()  # Default to bingx as requested
 
         # Define the order of exchanges to try for symbol availability
         all_exchanges = [self.primary_broker, "binance", "bingx", "mexc", "phemex"]
@@ -67,9 +69,10 @@ class MultiBrokerExecutionService(ExecutionPort):
         # Initialize Binance
         try:
             binance_config = {
-                'api_key': os.getenv('BINANCE_API_KEY'),
-                'secret_key': os.getenv('BINANCE_SECRET_KEY'),
-                'testnet': os.getenv('BINANCE_TESTNET', 'true').lower() == 'true'
+                'api_key': Configs.broker.binance_api_key if Configs.broker and Configs.broker.binance_api_key else '',
+                'secret_key': Configs.broker.binance_secret_key if Configs.broker and Configs.broker.binance_secret_key else '',
+                'testnet': Configs.broker.binance_testnet if Configs.broker and hasattr(Configs.broker,
+                                                                                        'binance_testnet') else True
             }
             if binance_config['api_key'] and binance_config['secret_key']:
                 self.brokers['binance'] = BinanceBrokerAdapter(
@@ -85,10 +88,11 @@ class MultiBrokerExecutionService(ExecutionPort):
         # Initialize BingX
         try:
             bingx_config = {
-                'api_key': os.getenv('BINGX_API_KEY'),
-                'secret_key': os.getenv('BINGX_SECRET_KEY'),
-                'passphrase': os.getenv('BINGX_PASSPHRASE', ''),
-                'testnet': os.getenv('BINGX_TESTNET', 'true').lower() == 'true'
+                'api_key': Configs.broker.bingx_api_key if Configs.broker and Configs.broker.bingx_api_key else '',
+                'secret_key': Configs.broker.bingx_secret_key if Configs.broker and Configs.broker.bingx_secret_key else '',
+                'passphrase': Configs.broker.bingx_passphrase if Configs.broker and Configs.broker.bingx_passphrase else '',
+                'testnet': Configs.broker.bingx_testnet if Configs.broker and hasattr(Configs.broker,
+                                                                                      'bingx_testnet') else True
             }
             required_keys = ['api_key', 'secret_key']
             if all(bingx_config.get(key) for key in required_keys):
@@ -101,9 +105,10 @@ class MultiBrokerExecutionService(ExecutionPort):
 
         # Initialize MEXC
         try:
-            mexc_api_key = os.getenv('MEXC_API_KEY')
-            mexc_secret_key = os.getenv('MEXC_SECRET_KEY')
-            mexc_testnet = os.getenv('MEXC_TESTNET', 'true').lower() == 'true'
+            mexc_api_key = Configs.broker.mexc_api_key if Configs.broker and Configs.broker.mexc_api_key else ''
+            mexc_secret_key = Configs.broker.mexc_secret_key if Configs.broker and Configs.broker.mexc_secret_key else ''
+            mexc_testnet = Configs.broker.mexc_testnet if Configs.broker and hasattr(Configs.broker,
+                                                                                     'mexc_testnet') else True
 
             if mexc_api_key and mexc_secret_key:
                 # Use testnet URL if testnet is enabled
@@ -121,9 +126,10 @@ class MultiBrokerExecutionService(ExecutionPort):
 
         # Initialize Phemex
         try:
-            phemex_api_key = os.getenv('PHEMEX_API_KEY')
-            phemex_secret_key = os.getenv('PHEMEX_SECRET_KEY')
-            phemex_testnet = os.getenv('PHEMEX_TESTNET', 'true').lower() == 'true'
+            phemex_api_key = Configs.broker.phemex_api_key if Configs.broker and Configs.broker.phemex_api_key else ''
+            phemex_secret_key = Configs.broker.phemex_secret_key if Configs.broker and Configs.broker.phemex_secret_key else ''
+            phemex_testnet = Configs.broker.phemex_testnet if Configs.broker and hasattr(Configs.broker,
+                                                                                         'phemex_testnet') else True
 
             if phemex_api_key and phemex_secret_key:
                 # Use testnet URL if testnet is enabled
@@ -318,14 +324,16 @@ class MultiBrokerExecutionService(ExecutionPort):
         # This is the primary validation - if a symbol is not approved, it's not available for trading
         from utils.symbol_validator import symbol_validator
         if not symbol_validator.is_symbol_approved(order.symbol):
-            self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order execution denied.")
+            self.logger.info(
+                f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order execution denied.")
             return None
 
         # Note: Symbol filtering (like stablecoin pairs) is now handled at the watcher level
         # to avoid processing symbols that will be rejected later. This improves efficiency.
 
         # Check if duplicate same-direction trade prevention is enabled
-        prevent_same_direction = os.getenv('PREVENT_SAME_DIRECTION_TRADE_PER_SYMBOL', 'true').lower() == 'true'
+        prevent_same_direction = Configs.execution.prevent_same_direction_trade_per_symbol if Configs.execution and hasattr(
+            Configs.execution, 'prevent_same_direction_trade_per_symbol') else True
 
         if prevent_same_direction:
             # Determine the intended side of the new order
@@ -350,10 +358,14 @@ class MultiBrokerExecutionService(ExecutionPort):
 
         # Check for broker-specific order placement settings
         # Check if any specific broker is enabled for exclusive order placement
-        bingx_order_placement_enabled = os.getenv('BINGX_ORDER_PLACEMENT_ENABLED', 'false').lower() == 'true'
-        binance_order_placement_enabled = os.getenv('BINANCE_ORDER_PLACEMENT_ENABLED', 'false').lower() == 'true'
-        mexc_order_placement_enabled = os.getenv('MEXC_ORDER_PLACEMENT_ENABLED', 'false').lower() == 'true'
-        phemex_order_placement_enabled = os.getenv('PHEMEX_ORDER_PLACEMENT_ENABLED', 'false').lower() == 'true'
+        bingx_order_placement_enabled = Configs.broker.bingx_order_placement_enabled if Configs.broker and hasattr(
+            Configs.broker, 'bingx_order_placement_enabled') else False
+        binance_order_placement_enabled = Configs.broker.binance_order_placement_enabled if Configs.broker and hasattr(
+            Configs.broker, 'binance_order_placement_enabled') else False
+        mexc_order_placement_enabled = Configs.broker.mexc_order_placement_enabled if Configs.broker and hasattr(
+            Configs.broker, 'mexc_order_placement_enabled') else False
+        phemex_order_placement_enabled = Configs.broker.phemex_order_placement_enabled if Configs.broker and hasattr(
+            Configs.broker, 'phemex_order_placement_enabled') else False
 
         # Determine which broker to use based on environment variables
         # Priority: Check each broker in order, first one enabled gets priority
@@ -414,7 +426,8 @@ class MultiBrokerExecutionService(ExecutionPort):
 
                 # Check if order_id is valid before proceeding
                 if order_id is None or order_id == "":
-                    self.logger.error(f"❌ ORDER PLACEMENT FAILED ON {best_exchange.upper()}: Broker returned invalid order ID: {order_id}")
+                    self.logger.error(
+                        f"❌ ORDER PLACEMENT FAILED ON {best_exchange.upper()}: Broker returned invalid order ID: {order_id}")
                     return None
 
                 # NOW we have a valid order ID from the broker, so we can add to pending orders
@@ -444,7 +457,8 @@ class MultiBrokerExecutionService(ExecutionPort):
         from utils.symbol_validator import symbol_validator
         if not symbol_validator.is_symbol_approved(order.symbol):
             symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
-            self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order enhancement skipped.")
+            self.logger.info(
+                f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order enhancement skipped.")
             return order
 
         # Check if the order already has SL/TP parameters
@@ -495,7 +509,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                 )
 
                 # Calculate risk-adjusted position size (even if we don't use it, we get risk factors)
-                portfolio_value = float(os.getenv('DEFAULT_ACCOUNT_BALANCE', '10000.0'))
+                portfolio_value = Configs.position_sizing.default_account_balance if Configs.position_sizing and hasattr(
+                    Configs.position_sizing, 'default_account_balance') else 10000.0
                 _, risk_factors = risk_service.calculate_position_size(
                     symbol=getattr(order, 'symbol', 'UNKNOWN'),
                     price=current_price,
@@ -526,7 +541,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                     else:  # SELL
                         # For SELL orders: SL above entry, TP below entry
                         sl_price = current_price * (1 + sl_multiplier)  # SL above for SELL (stop loss if price rises)
-                        tp_price = current_price * (1 - tp_multiplier)  # TP below for SELL (take profit when price falls)
+                        tp_price = current_price * (
+                                    1 - tp_multiplier)  # TP below for SELL (take profit when price falls)
 
             except Exception as e:
                 # If advanced risk management fails, fall back to simple calculation
@@ -562,11 +578,12 @@ class MultiBrokerExecutionService(ExecutionPort):
                 timestamp=getattr(order, 'timestamp', datetime.now()),
                 position_side=getattr(order, 'position_side', 'BOTH'),
                 stop_loss_price=Money(amount=float(sl_price), currency='USDT') if not has_stop_loss else getattr(order,
-                                                                                                          'stop_loss_price',
-                                                                                                          None),
-                take_profit_price=Money(amount=float(tp_price), currency='USDT') if not has_take_profit else getattr(order,
-                                                                                                              'take_profit_price',
-                                                                                                              None),
+                                                                                                                 'stop_loss_price',
+                                                                                                                 None),
+                take_profit_price=Money(amount=float(tp_price), currency='USDT') if not has_take_profit else getattr(
+                    order,
+                    'take_profit_price',
+                    None),
                 stop_price=getattr(order, 'stop_price', None),
                 time_in_force=getattr(order, 'time_in_force', 'GTC'),
                 client_order_id=getattr(order, 'client_order_id', None),
@@ -575,7 +592,7 @@ class MultiBrokerExecutionService(ExecutionPort):
             )
 
             self.logger.info(f"✅ Order enhanced with dynamic SL/TP: SL={sl_price:.4f}, TP={tp_price:.4f}. "
-                            f"Advanced risk management applied for proper position sizing and SL/TP levels.")
+                             f"Advanced risk management applied for proper position sizing and SL/TP levels.")
 
             return enhanced_order
         else:
@@ -621,7 +638,9 @@ class MultiBrokerExecutionService(ExecutionPort):
 
                 # Check if stop loss price is reasonable
                 if hasattr(order, 'stop_loss_price') and order.stop_loss_price:
-                    sl_price = float(order.stop_loss_price.amount) if hasattr(order.stop_loss_price, 'amount') else float(order.stop_loss_price)
+                    sl_price = float(order.stop_loss_price.amount) if hasattr(order.stop_loss_price,
+                                                                              'amount') else float(
+                        order.stop_loss_price)
 
                     # For BUY orders: SL should be below entry price
                     # For SELL orders: SL should be above entry price (for short positions)
@@ -637,7 +656,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                             return False
                         # More reasonable range check - allow SL to be up to 50% below entry
                         elif entry_price > 0 and sl_price < entry_price * 0.5:  # SL not more than 50% below entry
-                            self.logger.warning(f"SL too far from entry for BUY order: SL ({sl_price}) vs Entry ({entry_price})")
+                            self.logger.warning(
+                                f"SL too far from entry for BUY order: SL ({sl_price}) vs Entry ({entry_price})")
                             return False
                     else:
                         # For SELL orders, SL should be above entry price (for stop loss on short)
@@ -649,12 +669,15 @@ class MultiBrokerExecutionService(ExecutionPort):
                             return False
                         # More reasonable range check - allow SL to be up to 50% above entry
                         elif entry_price > 0 and sl_price > entry_price * 1.5:  # SL not more than 50% above entry
-                            self.logger.warning(f"SL too far from entry for SELL order: SL ({sl_price}) vs Entry ({entry_price})")
+                            self.logger.warning(
+                                f"SL too far from entry for SELL order: SL ({sl_price}) vs Entry ({entry_price})")
                             return False
 
                 # Check if take profit price is reasonable
                 if hasattr(order, 'take_profit_price') and order.take_profit_price:
-                    tp_price = float(order.take_profit_price.amount) if hasattr(order.take_profit_price, 'amount') else float(order.take_profit_price)
+                    tp_price = float(order.take_profit_price.amount) if hasattr(order.take_profit_price,
+                                                                                'amount') else float(
+                        order.take_profit_price)
 
                     # For BUY orders: TP should be above entry price
                     # For SELL orders: TP should be below entry price (for short positions)
@@ -670,7 +693,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                             return False
                         # More reasonable range check - allow TP to be up to 200% above entry (2x)
                         elif entry_price > 0 and tp_price > entry_price * 2.0:  # TP not more than 2x above entry
-                            self.logger.warning(f"TP too far from entry for BUY order: TP ({tp_price}) vs Entry ({entry_price})")
+                            self.logger.warning(
+                                f"TP too far from entry for BUY order: TP ({tp_price}) vs Entry ({entry_price})")
                             return False
                     else:
                         # For SELL orders, TP should be below entry price (for profit on short)
@@ -682,7 +706,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                             return False
                         # More reasonable range check - allow TP to be up to 50% below entry
                         elif entry_price > 0 and tp_price < entry_price * 0.5:  # TP not more than 50% below entry
-                            self.logger.warning(f"TP too far from entry for SELL order: TP ({tp_price}) vs Entry ({entry_price})")
+                            self.logger.warning(
+                                f"TP too far from entry for SELL order: TP ({tp_price}) vs Entry ({entry_price})")
                             return False
 
             return True
@@ -759,7 +784,8 @@ class MultiBrokerExecutionService(ExecutionPort):
         """Send a Telegram notification about a successfully placed order."""
         try:
             # Check if Telegram notifications are enabled
-            telegram_notifications_enabled = os.getenv('TELEGRAM_NOTIFICATIONS_ENABLED', 'true').lower() == 'true'
+            telegram_notifications_enabled = Configs.monitoring.telegram_notifications_enabled if Configs.monitoring and hasattr(
+                Configs.monitoring, 'telegram_notifications_enabled') else True
             if not telegram_notifications_enabled:
                 return  # Skip notifications if disabled
 
@@ -768,8 +794,8 @@ class MultiBrokerExecutionService(ExecutionPort):
 
             # Create Telegram service instance
             telegram_service = TelegramNotificationService(
-                bot_token=os.getenv('TELEGRAM_BOT_TOKEN', ''),
-                chat_id=os.getenv('TELEGRAM_CHAT_ID', '')
+                bot_token=Configs.monitoring.telegram_bot_token if Configs.monitoring and Configs.monitoring.telegram_bot_token else '',
+                chat_id=Configs.monitoring.telegram_chat_id if Configs.monitoring and Configs.monitoring.telegram_chat_id else ''
             )
 
             # Prepare notification message

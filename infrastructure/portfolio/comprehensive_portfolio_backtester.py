@@ -2,7 +2,6 @@
 Comprehensive Portfolio Backtester - Advanced multi-strategy, multi-symbol backtesting system
 with portfolio-level risk management, correlation analysis, and strategy selection.
 """
-import os
 import sys
 import json
 from datetime import datetime, timedelta, timezone
@@ -18,6 +17,7 @@ from infrastructure.backtest.realistic_backtester import RealisticBacktester
 from infrastructure.data.csv_history_loader import CSVHistoryLoaderAdapter
 from shared.logger import EnhancedLogger
 from shared.experiment_tracking import generate_run_id, save_experiment_results
+from application.configs.configs import Configs
 
 
 class ComprehensivePortfolioBacktester:
@@ -1067,7 +1067,7 @@ class ComprehensivePortfolioBacktester:
         self.logger.info(f"Generated run ID: {run_id}")
 
         # Determine if we should allow mock data based on environment variable
-        use_mock_data = os.getenv('USE_MOCK_DATA_FOR_VALIDATION', 'false').lower() == 'true'
+        use_mock_data = Configs.infrastructure.use_mock_data if Configs.infrastructure and hasattr(Configs.infrastructure, 'use_mock_data') else False
 
         # Load data for all symbols
         data_dict = self.load_data_for_symbols(symbols, start_date, end_date, mock_data_if_missing=use_mock_data)

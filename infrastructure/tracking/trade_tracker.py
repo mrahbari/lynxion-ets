@@ -4,8 +4,8 @@ Trade Tracker for managing and logging trade closures in the forensic logging sy
 from datetime import datetime
 from typing import Dict, Optional
 import threading
-import os
 from infrastructure.logging.forensic_logger import forensic_logger
+from application.configs.configs import Configs
 
 
 class TradeTracker:
@@ -15,7 +15,7 @@ class TradeTracker:
         self.active_trades: Dict[str, Dict] = {}
         self.lock = threading.Lock()
         # Check if forensic logging is enabled
-        self.forensic_logging_enabled = os.getenv('FORENSIC_LOGGING_ENABLED', 'true').lower() == 'true'
+        self.forensic_logging_enabled = Configs.monitoring.forensic_logging_enabled if Configs.monitoring and hasattr(Configs.monitoring, 'forensic_logging_enabled') else True
         
     def register_trade(self, trade_id: str, symbol: str, side: str, price: float, quantity: float, 
                       sl: float, tp: float, timestamp: datetime):

@@ -3,7 +3,6 @@ Market Opportunity Watcher for auto-detection system.
 Monitors markets continuously and identifies opportunities based on technical conditions.
 Following correct architecture: Watchers only produce raw market observations.
 """
-import os
 import threading
 import time
 from datetime import datetime
@@ -24,6 +23,8 @@ from infrastructure.watchers.monitoring_analysis_service import MonitoringAnalys
 
 # Import the symbol validator
 from utils.symbol_validator import symbol_validator
+from application.configs.configs import Configs
+from utils.config_helper import cfg_get, cfg_get_bool, cfg_get_int, cfg_get_float, cfg_get_list, cfg_get_str
 
 
 class MarketOpportunityWatcher:
@@ -80,7 +81,7 @@ class MarketOpportunityWatcher:
             self.symbols = self.symbol_validation_service.validate_symbol_data_availability(filtered_symbols)
         else:
             # Use default symbols from environment variables or fallback to hard-coded defaults
-            default_symbols = os.getenv("DEFAULT_WATCHLIST_SYMBOLS", "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT").split(",")
+            default_symbols = (Configs.data.default_watchlist_symbols if Configs.data and Configs.data.default_watchlist_symbols else "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT").split(",")
             unfiltered_symbols = [Symbol(s.strip()) for s in default_symbols]
             filtered_symbols = self.symbol_validation_service.filter_stablecoin_pairs(unfiltered_symbols)
             self.symbols = self.symbol_validation_service.validate_symbol_data_availability(filtered_symbols)
@@ -94,13 +95,13 @@ class MarketOpportunityWatcher:
         import re
 
         # Check if filtering is enabled
-        filter_stablecoin_pairs = os.getenv('FILTER_OUT_STABLECOIN_PAIRS', 'true').lower() == 'true'
+        filter_stablecoin_pairs = cfg_get_bool(Configs.data, 'filter_out_stablecoin_pairs', True)
 
         if not filter_stablecoin_pairs:
             return symbols
 
-        # Get allowed stablecoins from environment
-        allowed_stablecoins_str = os.getenv('ALLOWED_STABLECOINS', 'USDT,BUSD,USDC,DAI,PAX,TUSD,USDD,FDUSD')
+        # Get allowed stablecoins from config
+        allowed_stablecoins_str = cfg_get_str(Configs.data, 'allowed_stablecoins', 'USDT,BUSD,USDC,DAI,PAX,TUSD,USDD,FDUSD')
         allowed_stablecoins = [s.strip().upper() for s in allowed_stablecoins_str.split(',')]
 
         filtered_symbols = []
@@ -151,7 +152,7 @@ class MarketOpportunityWatcher:
                     continue  # Skip this symbol
 
             # Check using regex pattern if provided - improved to catch more stablecoin pairs
-            excluded_pattern = os.getenv('EXCLUDED_SYMBOLS_PATTERN', r'(?:USDT|USDC|BUSD|DAI|PAX|TUSD|USDD|FDUSD)(?:USDT|USDC|BUSD|DAI|PAX|TUSD|USDD|FDUSD)|BTC/BTC|ETH/ETH')
+            excluded_pattern = cfg_get_str(Configs.data, 'excluded_symbols_pattern', r'(?:USDT|USDC|BUSD|DAI|PAX|TUSD|USDD|FDUSD)(?:USDT|USDC|BUSD|DAI|PAX|TUSD|USDD|FDUSD)|BTC/BTC|ETH/ETH')
             if re.search(excluded_pattern, symbol_upper):
                 self.logger.info(f"🚫 PATTERN FILTER: Skipping {symbol_str} (matches exclusion pattern)")
                 continue  # Skip this symbol
@@ -172,7 +173,7 @@ class MarketOpportunityWatcher:
         validated_symbols = []
 
         # Check if data validation is enabled
-        validate_data_availability = os.getenv('VALIDATE_SYMBOL_DATA_AVAILABILITY', 'true').lower() == 'true'
+        validate_data_availability = cfg_get_bool(Configs.data, 'validate_symbol_data_availability', True)
 
         if not validate_data_availability:
             # Still apply approved symbol validation even if data availability validation is disabled
@@ -236,51 +237,16 @@ class MarketOpportunityWatcher:
         self.logger.info("🔍 Discovering symbols to monitor automatically...")
 
         # Check which watcher types are enabled to determine appropriate discovery method
-        market_pulse_enabled = os.getenv('MARKET_PULSE_WATCHER_ENABLED', 'true').lower() == 'true'
-        volatility_enabled = os.getenv('VOLATILITY_WATCHER_ENABLED', 'true').lower() == 'true'
-        trend_mtf_enabled = os.getenv('TREND_MTF_WATCHER_ENABLED', 'true').lower() == 'true'
-        anomaly_ml_enabled = os.getenv('ANOMALY_ML_WATCHER_ENABLED', 'true').lower() == 'true'
-        orderflow_ws_enabled = os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'true').lower() == 'true'
-        cmc_screener_enabled = os.getenv('CMC_SCREENER_ENABLED', 'true').lower() == 'true'
-        funding_rate_enabled = os.getenv('FUNDING_RATE_WATCHER_ENABLED', 'true').lower() == 'true'
-        liquidity_enabled = os.getenv('LIQUIDITY_WATCHER_ENABLED', 'true').lower() == 'true'
-        historical_candle_enabled = os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'true').lower() == 'true'
-        tick_watcher_enabled = os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true'
-
-        # If multiple watchers are enabled, use comprehensive discovery that covers all types
-        enabled_watchers = []
-        if market_pulse_enabled:
-            enabled_watchers.append('market_pulse')
-        if volatility_enabled:
-            enabled_watchers.append('volatility')
-        if trend_mtf_enabled:
-            enabled_watchers.append('trend_mtf')
-        if anomaly_ml_enabled:
-            enabled_watchers.append('anomaly_ml')
-        if orderflow_ws_enabled:
-            enabled_watchers.append('orderflow_ws')
-        if funding_rate_enabled:
-            enabled_watchers.append('funding_rate')
-        if liquidity_enabled:
-            enabled_watchers.append('liquidity')
-        if historical_candle_enabled:
-            enabled_watchers.append('historical_candle')
-        if cmc_screener_enabled:
-            enabled_watchers.append('cmc_screener')
-        if tick_watcher_enabled:
-            enabled_watchers.append('tick_watcher')
-
-        # Check which watcher types are enabled to determine appropriate discovery method
-        market_pulse_enabled = os.getenv('MARKET_PULSE_WATCHER_ENABLED', 'true').lower() == 'true'
-        volatility_enabled = os.getenv('VOLATILITY_WATCHER_ENABLED', 'true').lower() == 'true'
-        trend_mtf_enabled = os.getenv('TREND_MTF_WATCHER_ENABLED', 'true').lower() == 'true'
-        anomaly_ml_enabled = os.getenv('ANOMALY_ML_WATCHER_ENABLED', 'true').lower() == 'true'
-        orderflow_ws_enabled = os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'true').lower() == 'true'
-        cmc_screener_enabled = os.getenv('CMC_SCREENER_ENABLED', 'true').lower() == 'true'
-        funding_rate_enabled = os.getenv('FUNDING_RATE_WATCHER_ENABLED', 'true').lower() == 'true'
-        liquidity_enabled = os.getenv('LIQUIDITY_WATCHER_ENABLED', 'true').lower() == 'true'
-        historical_candle_enabled = os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'true').lower() == 'true'
-        tick_watcher_enabled = os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true'
+        market_pulse_enabled = cfg_get_bool(Configs.watcher, 'market_pulse_watcher_enabled', True)
+        volatility_enabled = cfg_get_bool(Configs.watcher, 'volatility_watcher_enabled', True)
+        trend_mtf_enabled = cfg_get_bool(Configs.watcher, 'trend_mtf_watcher_enabled', True)
+        anomaly_ml_enabled = cfg_get_bool(Configs.watcher, 'anomaly_ml_watcher_enabled', True)
+        orderflow_ws_enabled = cfg_get_bool(Configs.watcher, 'orderflow_ws_watcher_enabled', True)
+        cmc_screener_enabled = cfg_get_bool(Configs.watcher, 'cmc_screener_enabled', True)
+        funding_rate_enabled = cfg_get_bool(Configs.watcher, 'funding_rate_watcher_enabled', True)
+        liquidity_enabled = cfg_get_bool(Configs.watcher, 'liquidity_watcher_enabled', True)
+        historical_candle_enabled = cfg_get_bool(Configs.watcher, 'historical_candle_watcher_enabled', True)
+        tick_watcher_enabled = cfg_get_bool(Configs.watcher, 'tick_watcher_enabled', True)
 
         # If multiple watchers are enabled, use comprehensive discovery that covers all types
         enabled_watchers = []
@@ -403,8 +369,7 @@ class MarketOpportunityWatcher:
 
         # If still no symbols found, use fallback symbols
         if not discovered_symbols:
-            fallback_symbols_str = os.getenv("FALLBACK_WATCHLIST_SYMBOLS",
-                                             "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,AVAXUSDT,TRXUSDT,DOTUSDT,LINKUSDT")
+            fallback_symbols_str = cfg_get_str(Configs.data, 'fallback_watchlist_symbols', "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,AVAXUSDT,TRXUSDT,DOTUSDT,LINKUSDT")
             fallback_symbols = [s.strip() for s in fallback_symbols_str.split(",")]
             discovered_symbols = fallback_symbols
 
@@ -694,9 +659,8 @@ class MarketOpportunityWatcher:
             from dotenv import load_dotenv
             load_dotenv()
 
-            cmc_api_key = os.getenv("CMC_API_KEY")
-            cmc_listings_url = os.getenv("CMC_LISTINGS_URL",
-                                         "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest")
+            cmc_api_key = cfg_get(Configs.data, 'cmc_api_key', None)
+            cmc_listings_url = cfg_get_str(Configs.data, 'cmc_listings_url', "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest")
 
             if not cmc_api_key:
                 self.logger.warning("CMC_API_KEY not found, skipping market cap discovery")
@@ -720,8 +684,7 @@ class MarketOpportunityWatcher:
 
                 if 'data' in data:
                     # Extract symbols from the top coins with filtering
-                    excluded_coins_str = os.getenv("CMC_EXCLUDED_COINS",
-                                                   "BTC,ETH,SOL,ADA,DOT,XRP,DOGE,LINK,BNB,AVAX,MATIC,BTCUSDT,ETHUSDT,SOLUSDT,ADAUSDT,DOTUSDT,XRPUSDT,DOGEUSDT,LINKUSDT,BNBUSDT,AVAXUSDT,MATICUSDT")
+                    excluded_coins_str = ','.join(cfg_get_list(Configs.data, 'cmc_excluded_coins', ["BTC", "ETH", "SOL", "ADA", "DOT", "XRP", "DOGE", "LINK", "BNB", "AVAX", "MATIC", "BTCUSDT", "ETHUSDT", "SOLUSDT", "ADAUSDT", "DOTUSDT", "XRPUSDT", "DOGEUSDT", "LINKUSDT", "BNBUSDT", "AVAXUSDT", "MATICUSDT"]))
                     excluded_coins = set(coin.strip().upper() for coin in excluded_coins_str.split(',') if coin.strip())
 
                     discovered_symbols = []
@@ -969,59 +932,59 @@ class MarketOpportunityWatcher:
                     symbol_watchers = {}
 
                     # Check each watcher type before creating to avoid unnecessary instantiation
-                    if os.getenv('MARKET_PULSE_WATCHER_ENABLED', 'true').lower() == 'true':
+                    if cfg_get_bool(Configs.watcher, 'market_pulse_watcher_enabled', True):
                         from infrastructure.watchers.adapters.market_pulse import MarketPulseWatcher
                         # Use the shared broker service instead of creating new ones
-                        target_broker = os.getenv('TARGET_BROKER_MARKET_PULSE', 'binance')  # Default to binance
+                        target_broker = cfg_get_str(Configs.watcher, 'target_broker_market_pulse', 'binance')  # Default to binance
                         symbol_watchers['market_pulse'] = MarketPulseWatcher("MarketPulse", symbol.value, broker_service=self.broker_service, target_broker=target_broker)
 
-                    if os.getenv('VOLATILITY_WATCHER_ENABLED', 'true').lower() == 'true':
+                    if cfg_get_bool(Configs.watcher, 'volatility_watcher_enabled', True):
                         from infrastructure.watchers.adapters.volatility import VolatilityWatcher
                         # Use the shared broker service instead of creating new ones
-                        target_broker = os.getenv('TARGET_BROKER_VOLATILITY', 'binance')  # Default to binance
+                        target_broker = cfg_get_str(Configs.watcher, 'target_broker_volatility', 'binance')  # Default to binance
                         symbol_watchers['volatility'] = VolatilityWatcher("Volatility", symbol.value, broker_service=self.broker_service, target_broker=target_broker)
 
-                    if os.getenv('TREND_MTF_WATCHER_ENABLED', 'true').lower() == 'true':
+                    if cfg_get_bool(Configs.watcher, 'trend_mtf_watcher_enabled', True):
                         from infrastructure.watchers.adapters.trend_mtf import TrendMTFWatcher
                         # Use the shared broker service instead of creating new ones
-                        target_broker = os.getenv('TARGET_BROKER_TREND_MTF', 'binance')  # Default to binance
+                        target_broker = cfg_get_str(Configs.watcher, 'target_broker_trend_mtf', 'binance')  # Default to binance
                         symbol_watchers['trend_mtf'] = TrendMTFWatcher("TrendMTF", symbol.value, broker_service=self.broker_service, target_broker=target_broker)
 
-                    if os.getenv('ANOMALY_ML_WATCHER_ENABLED', 'true').lower() == 'true':
+                    if cfg_get_bool(Configs.watcher, 'anomaly_ml_watcher_enabled', True):
                         from infrastructure.watchers.adapters.anomaly_ml import AnomalyMLWatcher
                         # Use the shared broker service instead of creating new ones
-                        target_broker = os.getenv('TARGET_BROKER_ANOMALY_ML', 'binance')  # Default to binance
+                        target_broker = cfg_get_str(Configs.watcher, 'target_broker_anomaly_ml', 'binance')  # Default to binance
                         symbol_watchers['anomaly_ml'] = AnomalyMLWatcher("AnomalyML", symbol.value, broker_service=self.broker_service, target_broker=target_broker)
 
-                    if os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'true').lower() == 'true':
+                    if cfg_get_bool(Configs.watcher, 'orderflow_ws_watcher_enabled', True):
                         from infrastructure.watchers.adapters.orderflow_ws import OrderFlowWSWatcher
                         # Use the shared broker service instead of creating new ones
-                        target_broker = os.getenv('TARGET_BROKER_ORDERFLOW_WS', 'binance')  # Default to binance
+                        target_broker = cfg_get_str(Configs.watcher, 'target_broker_orderflow_ws', 'binance')  # Default to binance
                         symbol_watchers['orderflow_ws'] = OrderFlowWSWatcher("OrderFlowWS", symbol.value, broker_service=self.broker_service, target_broker=target_broker)
 
-                    if os.getenv('CMC_SCREENER_ENABLED', 'true').lower() == 'true':
+                    if cfg_get_bool(Configs.watcher, 'cmc_screener_enabled', True):
                         from infrastructure.watchers.adapters.cmc_screener import CMCScreener
                         symbol_watchers['cmc_screener'] = CMCScreener(name=f"CMCWatcher_{symbol.value}", symbol=symbol.value)
 
-                    if os.getenv('FUNDING_RATE_WATCHER_ENABLED', 'true').lower() == 'true':
+                    if cfg_get_bool(Configs.watcher, 'funding_rate_watcher_enabled', True):
                         from infrastructure.watchers.adapters.funding_rate import FundingRateWatcher
                         # Use the shared broker service instead of creating new ones
-                        target_broker = os.getenv('TARGET_BROKER_FUNDING_RATE', 'binance')  # Default to binance
+                        target_broker = cfg_get_str(Configs.watcher, 'target_broker_funding_rate', 'binance')  # Default to binance
                         symbol_watchers['funding_rate'] = FundingRateWatcher("FundingRate", symbol.value, broker_service=self.broker_service, target_broker=target_broker)
 
-                    if os.getenv('LIQUIDITY_WATCHER_ENABLED', 'true').lower() == 'true':
+                    if cfg_get_bool(Configs.watcher, 'liquidity_watcher_enabled', True):
                         from infrastructure.watchers.adapters.liquidity import LiquidityWatcher
                         # Use the shared broker service instead of creating new ones
-                        target_broker = os.getenv('TARGET_BROKER_LIQUIDITY', 'binance')  # Default to binance
+                        target_broker = cfg_get_str(Configs.watcher, 'target_broker_liquidity', 'binance')  # Default to binance
                         symbol_watchers['liquidity'] = LiquidityWatcher("Liquidity", symbol.value, broker_service=self.broker_service, target_broker=target_broker)
 
-                    if os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'true').lower() == 'true':
+                    if cfg_get_bool(Configs.watcher, 'historical_candle_watcher_enabled', True):
                         from infrastructure.watchers.adapters.historical_candle import HistoricalCandleWatcherAdapter
                         # Use the shared broker service instead of creating new ones
                         # Note: This adapter doesn't accept target_broker parameter
                         symbol_watchers['historical_candle'] = HistoricalCandleWatcherAdapter("HistoricalCandle", symbol.value, broker_service=self.broker_service)
 
-                    if os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true':
+                    if cfg_get_bool(Configs.watcher, 'tick_watcher_enabled', True):
                         from infrastructure.watchers.adapters.tick import TickWatcherAdapter
                         # Use the shared broker service instead of creating new ones
                         # Note: This adapter doesn't accept target_broker parameter
@@ -1185,7 +1148,7 @@ class MarketOpportunityWatcher:
             load_dotenv()
 
             # First, try to get trending coins from CMC (if API supports it)
-            cmc_api_key = os.getenv("CMC_API_KEY")
+            cmc_api_key = Configs.data.cmc_api_key if Configs.data and hasattr(Configs.data, 'cmc_api_key') else None
             if cmc_api_key:
                 # Try to get trending coins from CMC
                 headers = {

@@ -4,8 +4,8 @@ from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
 import numpy as np
-import os
 from decimal import Decimal
+from application.configs.configs import Configs
 
 
 class TickWatcherAdapter(BaseWatcher):
@@ -20,7 +20,7 @@ class TickWatcherAdapter(BaseWatcher):
         self.broker_service = broker_service
 
         # Configuration from environment with defaults
-        self.enabled = os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true'
+        self.enabled = Configs.watcher.tick_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'tick_watcher_enabled') else False
 
         # Only set logger if enabled, otherwise use mock logger
         if self.enabled:

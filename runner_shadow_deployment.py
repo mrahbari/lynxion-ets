@@ -12,9 +12,7 @@ import pandas as pd
 import numpy as np
 import time
 
-# Load environment variables from .env file
-from dotenv import load_dotenv
-load_dotenv()
+from application.configs.configs import Configs
 
 # Add project root to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -238,7 +236,7 @@ class ShadowDeploymentSystem:
         current_return = (self.current_capital - self.initial_capital) / self.initial_capital
         deviation = abs(current_return - backtest_return)
         
-        threshold = float(os.getenv('PERFORMANCE_DEVIATION_THRESHOLD', '0.05'))
+        threshold = Configs.risk.performance_deviation_threshold if Configs.risk and hasattr(Configs.risk, 'performance_deviation_threshold') else 0.05
         
         if deviation > threshold:
             self.logger.warning(f"Performance deviation detected: backtest={backtest_return:.2%}, shadow={current_return:.2%}, deviation={deviation:.2%}")
@@ -253,12 +251,12 @@ class ShadowDeploymentSystem:
         # For now, we'll just log the current state
         
         # Check drawdown threshold
-        max_dd_threshold = float(os.getenv('MAX_TOTAL_DRAWDOWN', '0.15'))
+        max_dd_threshold = Configs.risk.max_total_drawdown if Configs.risk and hasattr(Configs.risk, 'max_total_drawdown') else 0.15
         if abs(self.shadow_metrics['max_drawdown']) > max_dd_threshold:
             self.logger.critical(f"Maximum drawdown threshold exceeded: {self.shadow_metrics['max_drawdown']:.2%}")
         
         # Check daily loss threshold
-        daily_loss_threshold = float(os.getenv('MAX_DAILY_LOSS', '0.02'))
+        daily_loss_threshold = Configs.risk.max_daily_loss if Configs.risk and hasattr(Configs.risk, 'max_daily_loss') else 0.02
         # This would require daily PnL tracking which we don't have in this simplified version
         
         # Check number of consecutive losing trades

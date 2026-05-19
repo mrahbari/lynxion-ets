@@ -2,7 +2,6 @@
 Watcher Initialization Module for Market Opportunity Watcher
 Handles initialization and management of watcher instances
 """
-import os
 import threading
 import time
 from datetime import datetime
@@ -12,6 +11,7 @@ from shared.logger import EnhancedLogger
 from infrastructure.watchers.watcher_factory import WatcherFactory, WatcherType
 from application.configs.hexagonal_settings import config as hexagonal_config
 from infrastructure.services.broker_execution_service import create_execution_service
+from application.configs.configs import Configs
 
 
 class WatcherInitializationService:
@@ -31,7 +31,29 @@ class WatcherInitializationService:
             for watcher_type, symbols_list in watcher_specific_symbols.items():
                 # Check if this watcher type is enabled
                 env_var = f"{watcher_type.upper()}_WATCHER_ENABLED"
-                if os.getenv(env_var, 'true').lower() == 'true':
+                if env_var == 'MARKET_PULSE_WATCHER_ENABLED' and Configs.watcher:
+                    is_enabled = Configs.watcher.market_pulse_watcher_enabled
+                elif env_var == 'VOLATILITY_WATCHER_ENABLED' and Configs.watcher:
+                    is_enabled = Configs.watcher.volatility_watcher_enabled
+                elif env_var == 'TREND_MTF_WATCHER_ENABLED' and Configs.watcher:
+                    is_enabled = Configs.watcher.trend_mtf_watcher_enabled
+                elif env_var == 'ANOMALY_ML_WATCHER_ENABLED' and Configs.watcher:
+                    is_enabled = Configs.watcher.anomaly_ml_watcher_enabled
+                elif env_var == 'ORDERFLOW_WS_WATCHER_ENABLED' and Configs.watcher:
+                    is_enabled = Configs.watcher.orderflow_ws_watcher_enabled
+                elif env_var == 'CMC_SCREENER_ENABLED' and Configs.watcher:
+                    is_enabled = Configs.watcher.cmc_screener_enabled
+                elif env_var == 'FUNDING_RATE_WATCHER_ENABLED' and Configs.watcher:
+                    is_enabled = Configs.watcher.funding_rate_watcher_enabled
+                elif env_var == 'LIQUIDITY_WATCHER_ENABLED' and Configs.watcher:
+                    is_enabled = Configs.watcher.liquidity_watcher_enabled
+                elif env_var == 'HISTORICAL_CANDLE_WATCHER_ENABLED' and Configs.watcher:
+                    is_enabled = Configs.watcher.historical_candle_watcher_enabled
+                elif env_var == 'TICK_WATCHER_ENABLED' and Configs.watcher:
+                    is_enabled = Configs.watcher.tick_watcher_enabled
+                else:
+                    is_enabled = True  # Default to True if config is not available
+                if is_enabled:
                     for symbol in symbols_list:
                         # Assign this watcher as the primary watcher for this symbol
                         if symbol not in symbol_to_primary_watcher:
@@ -49,7 +71,7 @@ class WatcherInitializationService:
             # Only create watchers that are relevant to this symbol or if it's a general watcher
 
             # Market Pulse watcher
-            if os.getenv('MARKET_PULSE_WATCHER_ENABLED', 'true').lower() == 'true':
+            if Configs.watcher.market_pulse_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'market_pulse_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
                 target_broker = hexagonal_config.get_broker_for_watcher("MarketPulse")
 
@@ -82,7 +104,7 @@ class WatcherInitializationService:
                     )
 
             # Volatility watcher
-            if os.getenv('VOLATILITY_WATCHER_ENABLED', 'true').lower() == 'true':
+            if Configs.watcher.volatility_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'volatility_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
                 target_broker = hexagonal_config.get_broker_for_watcher("Volatility")
                 # Check if this symbol was discovered by volatility watcher
@@ -114,7 +136,7 @@ class WatcherInitializationService:
                     )
 
             # Trend MTF watcher
-            if os.getenv('TREND_MTF_WATCHER_ENABLED', 'true').lower() == 'true':
+            if Configs.watcher.trend_mtf_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'trend_mtf_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
                 target_broker = hexagonal_config.get_broker_for_watcher("TrendMTF")
                 if (symbol.value in symbol_to_primary_watcher and
@@ -145,7 +167,7 @@ class WatcherInitializationService:
                     )
 
             # Anomaly ML watcher
-            if os.getenv('ANOMALY_ML_WATCHER_ENABLED', 'true').lower() == 'true':
+            if Configs.watcher.anomaly_ml_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'anomaly_ml_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
                 target_broker = hexagonal_config.get_broker_for_watcher("AnomalyML")
                 if (symbol.value in symbol_to_primary_watcher and
@@ -176,7 +198,7 @@ class WatcherInitializationService:
                     )
 
             # OrderFlow WS watcher
-            if os.getenv('ORDERFLOW_WS_WATCHER_ENABLED', 'true').lower() == 'true':
+            if Configs.watcher.orderflow_ws_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'orderflow_ws_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
                 target_broker = hexagonal_config.get_broker_for_watcher("OrderFlowWS")
                 if (symbol.value in symbol_to_primary_watcher and
@@ -207,7 +229,7 @@ class WatcherInitializationService:
                     )
 
             # CMC Screener watcher
-            if os.getenv('CMC_SCREENER_ENABLED', 'true').lower() == 'true':
+            if Configs.watcher.cmc_screener_enabled if Configs.watcher and hasattr(Configs.watcher, 'cmc_screener_enabled') else True:
                 # Get target broker for this watcher from configuration
                 target_broker = hexagonal_config.get_broker_for_watcher("CMCScreener")
                 if (symbol.value in symbol_to_primary_watcher and
@@ -238,7 +260,7 @@ class WatcherInitializationService:
                     )
 
             # Funding Rate watcher
-            if os.getenv('FUNDING_RATE_WATCHER_ENABLED', 'true').lower() == 'true':
+            if Configs.watcher.funding_rate_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'funding_rate_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
                 target_broker = hexagonal_config.get_broker_for_watcher("FundingRate")
                 if (symbol.value in symbol_to_primary_watcher and
@@ -269,7 +291,7 @@ class WatcherInitializationService:
                     )
 
             # Liquidity watcher
-            if os.getenv('LIQUIDITY_WATCHER_ENABLED', 'true').lower() == 'true':
+            if Configs.watcher.liquidity_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'liquidity_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
                 target_broker = hexagonal_config.get_broker_for_watcher("Liquidity")
                 if (symbol.value in symbol_to_primary_watcher and
@@ -300,7 +322,7 @@ class WatcherInitializationService:
                     )
 
             # Historical Candle watcher
-            if os.getenv('HISTORICAL_CANDLE_WATCHER_ENABLED', 'true').lower() == 'true':
+            if Configs.watcher.historical_candle_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'historical_candle_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
                 target_broker = hexagonal_config.get_broker_for_watcher("HistoricalCandle")
 
@@ -330,7 +352,7 @@ class WatcherInitializationService:
                     )
 
             # Tick Watcher
-            if os.getenv('TICK_WATCHER_ENABLED', 'true').lower() == 'true':
+            if Configs.watcher.tick_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'tick_watcher_enabled') else False:  # Note: Tick watcher is disabled by default
                 # Get target broker for this watcher from configuration
                 target_broker = hexagonal_config.get_broker_for_watcher("TickWatcher")
                 if (symbol.value in symbol_to_primary_watcher and

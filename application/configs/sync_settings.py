@@ -2,11 +2,11 @@
 Configuration settings for the Downloader/Sync Engine.
 
 This module manages configuration settings for the sync system with support for
-environment variables and validation.
+centralized configuration and validation.
 """
-import os
 from dataclasses import dataclass
 from typing import Optional
+from application.configs.configs import Configs
 
 
 @dataclass
@@ -32,23 +32,23 @@ class SyncSettings:
     processed_retention_days: int = 1095  # 3 years
 
     def __post_init__(self):
-        # Load from environment variables if they exist
-        self.load_from_env()
+        # Load from centralized configuration if they exist
+        self.load_from_configs()
 
-    def load_from_env(self):
-        """Load configuration from environment variables"""
-        self.sync_interval_seconds = int(os.getenv("SYNC_INTERVAL_SECONDS", str(self.sync_interval_seconds)))
-        self.async_concurrency = int(os.getenv("ASYNC_CONCURRENCY", str(self.async_concurrency)))
-        self.download_threadpool_workers = int(os.getenv("DOWNLOAD_THREADPOOL_WORKERS", str(self.download_threadpool_workers)))
-        self.retry_max_attempts = int(os.getenv("RETRY_MAX_ATTEMPTS", str(self.retry_max_attempts)))
-        self.retry_backoff_base = float(os.getenv("RETRY_BACKOFF_BASE", str(self.retry_backoff_base)))
-        self.retry_backoff_factor = float(os.getenv("RETRY_BACKOFF_FACTOR", str(self.retry_backoff_factor)))
-        self.rate_limit_tokens_per_second = float(os.getenv("RATE_LIMIT_TOKENS_PER_SECOND", str(self.rate_limit_tokens_per_second)))
-        self.temp_file_suffix = os.getenv("TEMP_FILE_SUFFIX", self.temp_file_suffix)
-        self.data_dir = os.getenv("DATA_DIR", self.data_dir)
-        self.max_gap_fill_minutes = int(os.getenv("MAX_GAP_FILL_MINUTES", str(self.max_gap_fill_minutes)))
-        self.raw_retention_days = int(os.getenv("RAW_RETENTION_DAYS", str(self.raw_retention_days)))
-        self.processed_retention_days = int(os.getenv("PROCESSED_RETENTION_DAYS", str(self.processed_retention_days)))
+    def load_from_configs(self):
+        """Load configuration from centralized Configs system"""
+        self.sync_interval_seconds = Configs.data.sync_interval_seconds if Configs.data and hasattr(Configs.data, 'sync_interval_seconds') else int(self.sync_interval_seconds)
+        self.async_concurrency = Configs.data.async_concurrency if Configs.data and hasattr(Configs.data, 'async_concurrency') else int(self.async_concurrency)
+        self.download_threadpool_workers = Configs.data.download_threadpool_workers if Configs.data and hasattr(Configs.data, 'download_threadpool_workers') else int(self.download_threadpool_workers)
+        self.retry_max_attempts = Configs.data.retry_max_attempts if Configs.data and hasattr(Configs.data, 'retry_max_attempts') else int(self.retry_max_attempts)
+        self.retry_backoff_base = Configs.data.retry_backoff_base if Configs.data and hasattr(Configs.data, 'retry_backoff_base') else float(self.retry_backoff_base)
+        self.retry_backoff_factor = Configs.data.retry_backoff_factor if Configs.data and hasattr(Configs.data, 'retry_backoff_factor') else float(self.retry_backoff_factor)
+        self.rate_limit_tokens_per_second = Configs.data.rate_limit_tokens_per_second if Configs.data and hasattr(Configs.data, 'rate_limit_tokens_per_second') else float(self.rate_limit_tokens_per_second)
+        self.temp_file_suffix = Configs.data.temp_file_suffix if Configs.data and hasattr(Configs.data, 'temp_file_suffix') else self.temp_file_suffix
+        self.data_dir = Configs.data.data_dir if Configs.data and hasattr(Configs.data, 'data_dir') else self.data_dir
+        self.max_gap_fill_minutes = Configs.data.max_gap_fill_minutes if Configs.data and hasattr(Configs.data, 'max_gap_fill_minutes') else int(self.max_gap_fill_minutes)
+        self.raw_retention_days = Configs.data.raw_retention_days if Configs.data and hasattr(Configs.data, 'raw_retention_days') else int(self.raw_retention_days)
+        self.processed_retention_days = Configs.data.processed_retention_days if Configs.data and hasattr(Configs.data, 'processed_retention_days') else int(self.processed_retention_days)
 
 
 # Global configuration instance
