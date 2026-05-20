@@ -1,2 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# macOS
+.DS_Store
+
+# Pytest
+.pytest_cache/
+
+# Virtual env
+venv/
+.env/
 /.env
+
+# IDE
+.idea/
+.vscode/
+
+# Build
+dist/
+build/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Logs
 /logs/
+
+# Other
+/tasks/
