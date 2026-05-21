@@ -77,7 +77,9 @@ class TestSmokeTests(unittest.TestCase):
 
             def get_execution_status(self, execution_id: str) -> str:
                 return "filled"
-        
+
+            def get_available_symbols(self) -> set:
+                return {"BTCUSDT", "ETHUSDT"}        
         class MockPortfolioService(PortfolioManagementPort):
             def calculate_allocation(self, total_capital: float, symbols):
                 return {sym: total_capital/len(symbols) if symbols else 0 for sym in symbols}
@@ -144,7 +146,9 @@ class TestSmokeTests(unittest.TestCase):
 
             def get_execution_status(self, execution_id: str) -> str:
                 return "filled"
-        
+
+            def get_available_symbols(self) -> set:
+                return {"BTCUSDT", "ETHUSDT"}        
         class MockPortfolioService(PortfolioManagementPort):
             def calculate_allocation(self, total_capital: float, symbols):
                 return {sym: total_capital/len(symbols) if symbols else 0 for sym in symbols}

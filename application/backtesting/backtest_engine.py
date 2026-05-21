@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import torch
 import time
 
 from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager
@@ -132,10 +131,24 @@ class BacktestEngine:
     # OPEN / CLOSE
     # ---------------------------
     def _open_position(self, side, size, price, row):
+        # 🛡️ SAFETY FIX: Inject Realistic Fees & Slippage
+        fee_pct = 0.001        # 0.1% commission
+        slippage_pct = 0.0005  # 0.05% slippage
+
+        # Apply slippage to entry price
+        if side == "long":
+            executed_price = price * (1 + slippage_pct)
+        else:
+            executed_price = price * (1 - slippage_pct)
+
+        # Deduct entry fee
+        entry_fee = executed_price * size * fee_pct
+        self.balance -= entry_fee
+
         self.position = {
             "side": side,
             "size": size,
-            "entry": price,
+            "entry": executed_price,
             "timestamp": row["timestamp"]
         }
 
@@ -143,27 +156,40 @@ class BacktestEngine:
             "timestamp": row["timestamp"],
             "type": "OPEN",
             "side": side,
-            "entry": price,
-            "size": size
+            "entry": executed_price,
+            "size": size,
+            "fee": entry_fee
         })
 
     def _close_position(self, price, row):
+        # 🛡️ SAFETY FIX: Inject Realistic Fees & Slippage
+        fee_pct = 0.001        # 0.1% commission
+        slippage_pct = 0.0005  # 0.05% slippage
+
         entry = self.position["entry"]
         side = self.position["side"]
         size = self.position["size"]
 
+        # Apply slippage to exit price
         if side == "long":
-            pnl = (price - entry) * size
+            executed_price = price * (1 - slippage_pct)
+            gross_pnl = (executed_price - entry) * size
         else:
-            pnl = (entry - price) * size
+            executed_price = price * (1 + slippage_pct)
+            gross_pnl = (entry - executed_price) * size
 
-        self.balance += pnl
+        # Deduct exit fee
+        exit_fee = executed_price * size * fee_pct
+        net_pnl = gross_pnl - exit_fee
+
+        self.balance += gross_pnl - exit_fee
         self.trade_log.append({
             "timestamp": row["timestamp"],
             "type": "CLOSE",
             "side": side,
-            "exit": price,
-            "pnl": pnl
+            "exit": executed_price,
+            "pnl": net_pnl,
+            "fee": exit_fee
         })
 
         self.position = None

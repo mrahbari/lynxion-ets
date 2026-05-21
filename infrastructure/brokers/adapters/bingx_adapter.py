@@ -61,6 +61,13 @@ class BingXBrokerAdapter(BrokerPort):
         self.connected = False
 
     def place_order(self, order: Order) -> str:
+        # 🛡️ SAFETY FIX: Mandatory Risk Governance
+        if not hasattr(order, 'stop_loss_price') or order.stop_loss_price is None:
+            raise ValueError(f"CRITICAL RISK BREACH: Order for {order.symbol} rejected. STOP LOSS IS MANDATORY.")
+        
+        if not hasattr(order, 'take_profit_price') or order.take_profit_price is None:
+            raise ValueError(f"CRITICAL RISK BREACH: Order for {order.symbol} rejected. TAKE PROFIT IS MANDATORY.")
+
         if not self.connected:
             self.connect()
 

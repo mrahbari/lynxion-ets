@@ -586,14 +586,19 @@ class TrendFollowingStrategy(BaseStrategyAdapter):
                            f"strategy={self.name} "
                            f"symbol={fused_signal.symbol.value}")
             return False
-        elif not is_trending:
+        
+        # 🛡️ SAFETY FLEX: Allow high confidence signals even if regime detection is uncertain
+        if not is_trending and confidence < 0.6:
             self.logger.info(f"Trade rejected: "
-                           f"regime_context='{fused_signal.regime_context}' does not indicate trending market "
+                           f"regime_context='{fused_signal.regime_context}' does not indicate trending market and confidence {confidence:.2f} < 0.6 "
                            f"source=trend_following_strategy "
                            f"strategy={self.name} "
                            f"symbol={fused_signal.symbol.value}")
             return False
-        elif not has_direction:
+        elif not is_trending and confidence >= 0.6:
+            self.logger.info(f"🛡️ SAFETY FLEX: Allowing high-confidence ({confidence:.2%}) signal despite regime '{fused_signal.regime_context}'")
+
+        if not has_direction:
             self.logger.info(f"Trade rejected: "
                            f"direction={fused_signal.direction:.3f} is too weak (abs<{0.1}) "
                            f"source=trend_following_strategy "

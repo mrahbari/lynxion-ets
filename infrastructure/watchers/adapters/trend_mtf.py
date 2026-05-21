@@ -90,22 +90,36 @@ class TrendMTFWatcher(BaseWatcher):
         # Lowered threshold for trend detection
         lowered_threshold = 0.001  # Much lower threshold to detect trends faster
 
+        # 🛡️ DYNAMIC CONFIDENCE: Better granularity for MTF trends
+        raw_confidence = (trend_alignment * 0.6 + trend_strength * 0.4)
+        
         # Base confidence on alignment and strength, with higher confidence for clearer signals
         if abs(overall_trend_score) < lowered_threshold:
             observation_type = 'trend_neutral'
             observation_value = 0.0
-            # For neutral trends, confidence is based on alignment (how consistent the neutral state is across timeframes)
-            confidence = min(0.6, trend_alignment * 0.6)  # Lowered neutral confidence
+            # For neutral trends, confidence is based on alignment
+            confidence = min(0.6, trend_alignment * 0.6)
         elif overall_trend_score > 0:
             observation_type = 'trend_positive'  # Bullish trend
             observation_value = abs(overall_trend_score)
-            # For positive trends, confidence is based on both alignment and strength
-            confidence = min(0.95, (trend_alignment * 0.5 + trend_strength * 0.3))  # Lowered minimum confidence
+            
+            if raw_confidence <= 0.8:
+                confidence = 0.3 + (0.5 * raw_confidence)
+            else:
+                # Asymptotic approach to 0.95
+                confidence = 0.8 + 0.15 * (1.0 - (1.0 / (raw_confidence * 5)))
+                
+            confidence = min(0.95, max(0.2, confidence))
         else:
             observation_type = 'trend_negative'  # Bearish trend
             observation_value = -abs(overall_trend_score)
-            # For negative trends, confidence is based on both alignment and strength
-            confidence = min(0.95, (trend_alignment * 0.5 + trend_strength * 0.3))  # Lowered minimum confidence
+            
+            if raw_confidence <= 0.8:
+                confidence = 0.3 + (0.5 * raw_confidence)
+            else:
+                confidence = 0.8 + 0.15 * (1.0 - (1.0 / (raw_confidence * 5)))
+                
+            confidence = min(0.95, max(0.2, confidence))
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))

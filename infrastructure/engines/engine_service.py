@@ -91,9 +91,9 @@ class EngineService:
 
         # Handle volatility observations (e.g., volatility_normal, volatility_high, volatility_low)
         elif 'volatility' in obs_type:
-            if 'high' in obs_type or observation.observation_value > 0.7:  # High volatility breakout
+            if 'high' in obs_type or 'expansion' in obs_type or observation.observation_value > 0.7:  # High volatility or expansion
                 return SignalType.BUY  # Assuming breakout opportunity
-            elif 'low' in obs_type or observation.observation_value < 0.3:  # Low volatility
+            elif 'low' in obs_type or 'compression' in obs_type or 'contraction' in obs_type or observation.observation_value < 0.3:  # Low volatility
                 return SignalType.HOLD  # Wait for higher volatility
             else:
                 return SignalType.NEUTRAL  # Normal volatility

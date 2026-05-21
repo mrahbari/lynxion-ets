@@ -34,14 +34,8 @@ class ArchitectureOrchestrator:
         self.is_running = False
         self.orchestration_thread = None
 
-        # Initialize the signal processor with the services
+        # Ensure the signal processor has its logger set
         signal_processor.logger = self.logger
-        signal_processor.setup_signal_processing(
-            self.engine_service,
-            self.fusion_service,
-            self.strategy_manager,
-            self.execution_service
-        )
 
     def start(self):
         """Start the architecture orchestrator."""

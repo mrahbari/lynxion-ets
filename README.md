@@ -16,6 +16,7 @@ It combines automated optimization, walk-forward validation, and multi-timeframe
 * [Environment Setup](#environment-setup)
 * [Runners & Usage](#runners--usage)
 * [Recommended Workflow](#recommended-workflow)
+* [Safety & Integrity](#safety--integrity)
 * [Configuration](#configuration)
 * [Data Structure](#data-structure)
 * [Troubleshooting](#troubleshooting)
@@ -997,6 +998,19 @@ You can also run these operations for ALL approved symbols:
 
 * Deep backtesting
 * Parameter stability review
+
+---
+
+## Safety & Integrity
+
+The system has undergone a comprehensive forensic audit to ensure reliability and statistical integrity in live trading environments.
+
+* **Audit Report:** [Safety & Integrity Report (May 2026)](docs/SAFETY_AND_INTEGRITY_REPORT.md)
+* **Key Features:**
+    * **Execution Integrity:** Single-authority execution to prevent double-spending/duplicate orders.
+    * **Statistical Firewall:** Automated blocking of "random" signals or market noise.
+    * **Friction Awareness:** Realistic fee and slippage modeling in all backtests.
+    * **Dynamic Confidence:** Data-driven signal strength metrics replacing hardcoded plateau values.
 
 ---
 

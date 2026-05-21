@@ -91,19 +91,33 @@ class VolatilityWatcher(BaseWatcher):
         if regime == "high":
             observation_type = 'volatility_expansion'
             observation_value = abs(volatility_score)  # Positive for expansion
-            # Confidence increases with volatility magnitude
-            confidence = min(0.95, max(0.2, volatility_magnitude))  # Lowered minimum confidence
+            
+            # 🛡️ DYNAMIC CONFIDENCE: Use a logarithmic-style mapping for better granularity
+            # Higher magnitude = higher confidence, but it shouldn't hit 95% immediately
+            if volatility_magnitude <= 1.0:
+                confidence = 0.3 + (0.6 * volatility_magnitude)
+            else:
+                # Asymptotic approach to 0.95 for extreme volatility
+                confidence = 0.9 + 0.05 * (1.0 - (1.0 / volatility_magnitude))
+            
+            confidence = min(0.95, max(0.2, confidence))
         elif regime == "low":
             observation_type = 'volatility_compression'
             observation_value = -abs(volatility_score)  # Negative for compression
-            # Confidence increases with volatility magnitude
-            confidence = min(0.95, max(0.2, volatility_magnitude))  # Lowered minimum confidence
+            
+            # Same logic for low volatility (compression)
+            if volatility_magnitude <= 1.0:
+                confidence = 0.3 + (0.6 * volatility_magnitude)
+            else:
+                confidence = 0.9 + 0.05 * (1.0 - (1.0 / volatility_magnitude))
+                
+            confidence = min(0.95, max(0.2, confidence))
         else:
             observation_type = 'volatility_normal'
             observation_value = 0.0
-            # For neutral state, confidence is lower but not fixed at 0.3
-            # It's based on how close to neutral we are (smaller deviations = higher confidence in neutrality)
-            confidence = min(0.4, (1.0 - volatility_magnitude))  # Lowered neutral confidence
+            # For neutral state, confidence is higher when magnitude is closer to 0
+            confidence = 0.4 * (1.0 - (volatility_magnitude / 0.2)) if volatility_magnitude < 0.2 else 0.1
+            confidence = min(0.4, max(0.1, confidence))
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))
@@ -163,8 +177,9 @@ class VolatilityWatcher(BaseWatcher):
         # Calculate relative volatility (how much above/below normal)
         relative_vol = (volatility - avg_volatility) / avg_volatility
         
-        # Normalize to [-1, 1] range
-        return max(-1.0, min(1.0, relative_vol))
+        # Normalize to a wider range [-4.0, 4.0] to preserve granularity for extreme events
+        # 4.0 means volatility is 5x the average
+        return max(-4.0, min(4.0, relative_vol))
 
     def get_current_regime(self, volatility_score: float) -> str:
         """Get current volatility regime"""

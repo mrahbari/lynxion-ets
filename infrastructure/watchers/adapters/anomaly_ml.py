@@ -133,13 +133,26 @@ class AnomalyMLWatcher(BaseWatcher):
         elif anomaly_score > 0:
             observation_type = 'anomaly_positive'  # General positive anomaly
             observation_value = abs(anomaly_score)
-            # Confidence increases with anomaly magnitude
-            confidence = min(0.95, max(0.15, anomaly_magnitude))
+            
+            # 🛡️ DYNAMIC CONFIDENCE: Better granularity for ML anomalies
+            if anomaly_magnitude <= 0.8:
+                confidence = 0.2 + (0.7 * anomaly_magnitude)
+            else:
+                # Asymptotic approach to 0.95
+                confidence = 0.8 + 0.15 * (1.0 - (1.0 / (anomaly_magnitude * 5)))
+            
+            confidence = min(0.95, max(0.15, confidence))
         else:
             observation_type = 'anomaly_negative'  # General negative anomaly
             observation_value = -abs(anomaly_score)
-            # Confidence increases with anomaly magnitude
-            confidence = min(0.95, max(0.15, anomaly_magnitude))
+            
+            # Same dynamic logic for negative anomalies
+            if anomaly_magnitude <= 0.8:
+                confidence = 0.2 + (0.7 * anomaly_magnitude)
+            else:
+                confidence = 0.8 + 0.15 * (1.0 - (1.0 / (anomaly_magnitude * 5)))
+                
+            confidence = min(0.95, max(0.15, confidence))
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))
