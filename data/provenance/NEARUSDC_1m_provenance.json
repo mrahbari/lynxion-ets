@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "NEARUSDC",
+  "timeframe": "1m",
+  "checksum": "285e7ebcf000ba118e225799e41ed90d0a36c1e81041c111d0dd4ab056975127",
+  "download_timestamp": "2026-06-12T18:40:37.713826",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686920",
+    "end": "1778750400"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/NEARUSDC.csv"
+}

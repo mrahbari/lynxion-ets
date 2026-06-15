@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "PIUSDT",
+  "timeframe": "1m",
+  "checksum": "7b2df9a0d0a08279f6796c102e20820da787c270b9dd0a7c9a0f443225afe23d",
+  "download_timestamp": "2026-06-12T18:27:22.743997",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778719620"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/PI-USDT.csv"
+}

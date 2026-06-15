@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ICPUSDT",
+  "timeframe": "1m",
+  "checksum": "ffbc08fe067fe4c59ca46717a904688e3682ba7b706c2c1f058dfb7c79b4d76a",
+  "download_timestamp": "2026-06-12T18:43:17.092474",
+  "row_count": 1072,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778750580"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ICP-USDT.csv"
+}

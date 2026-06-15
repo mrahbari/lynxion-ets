@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "MAGMAUSDT",
+  "timeframe": "1m",
+  "checksum": "c178063ff7bd3b32ab5a75e5d4f9c7a96cb4b2b03a675cd18dc638420c09f23c",
+  "download_timestamp": "2026-06-12T18:40:16.488110",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686920",
+    "end": "1778720400"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/MAGMA-USDT.csv"
+}

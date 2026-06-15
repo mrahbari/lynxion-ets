@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Signal, Order, Fill, Position
+from domain.entities import Signal, Order, Fill, Position
 from domain.value_objects import Symbol, Money
 from domain.ports.trading_ports import (
     SignalPort, OrderManagementPort, MarketDataPort, 

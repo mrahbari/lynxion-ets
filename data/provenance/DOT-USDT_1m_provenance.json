@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "DOTUSDT",
+  "timeframe": "1m",
+  "checksum": "7c0c98b76b1b742ccee8fdafc24a499c5f57a027bccadfa69798c870b99ccebc",
+  "download_timestamp": "2026-06-12T22:05:03.758229",
+  "row_count": 1188,
+  "date_range": {
+    "start": "1778686440",
+    "end": "1781294700"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "950674f3588ac00f3161aec0a1b3c3f135ef0f59",
+  "file_path": "data/history/raw/1m/DOT-USDT.csv"
+}

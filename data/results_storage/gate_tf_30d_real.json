@@ -1,0 +1,104 @@
+{
+  "verdict": {
+    "verdict": "INSUFFICIENT_DATA",
+    "summary": "INSUFFICIENT_DATA \u2014 no (strategy,regime) cell reaches 30 trades; cannot judge edge. Gather more data before deciding.",
+    "passing": [],
+    "failing": [
+      {
+        "strategy": "trend_following",
+        "regime": "ranging",
+        "trade_count": 5,
+        "expectancy": -319.8527741004251,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 5 < min 30",
+          "expectancy -319.853 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "trending_down",
+        "trade_count": 2,
+        "expectancy": -1183.8221533722756,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 2 < min 30",
+          "expectancy -1183.82 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "trending_up",
+        "trade_count": 6,
+        "expectancy": -347.58369345557054,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 6 < min 30",
+          "expectancy -347.584 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "unknown",
+        "trade_count": 1,
+        "expectancy": -58.341574160331824,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 30",
+          "expectancy -58.3416 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      }
+    ]
+  },
+  "attribution": {
+    "total_pnl": -6110.751912140432,
+    "total_trades": 14,
+    "by_strategy": {
+      "trend_following": -6110.751912140432
+    },
+    "by_regime": {
+      "ranging": -1599.2638705021254,
+      "trending_down": -2367.644306744551,
+      "trending_up": -2085.5021607334234,
+      "unknown": -58.341574160331824
+    },
+    "cells": [
+      {
+        "strategy": "trend_following",
+        "regime": "ranging",
+        "pnl": -1599.2638705021254,
+        "trade_count": 5
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "trending_down",
+        "pnl": -2367.644306744551,
+        "trade_count": 2
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "trending_up",
+        "pnl": -2085.5021607334234,
+        "trade_count": 6
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "unknown",
+        "pnl": -58.341574160331824,
+        "trade_count": 1
+      }
+    ],
+    "reconciled": true,
+    "unattributed_trades": 0,
+    "unknown_regime_trades": 1
+  },
+  "ledger_path": "data/results_storage/edge_ledger.json"
+}

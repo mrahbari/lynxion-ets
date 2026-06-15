@@ -2,7 +2,11 @@
 
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Callable
-import pandas as pd
+
+# E4.T3: tabular market data / returns are intentionally typed ``Any`` (an OHLCV
+# pandas DataFrame / Series at runtime) so the domain layer takes no hard pandas
+# dependency. Concrete pandas types live in the infrastructure adapters that
+# implement these ports (e.g. ``infrastructure/optimization``).
 
 
 class IOptimizableStrategy(ABC):
@@ -69,7 +73,7 @@ class IDataLoader(ABC):
     """Interface for data loading operations."""
 
     @abstractmethod
-    def load_historical_data(self, symbol: str, timeframe: str, limit: int) -> pd.DataFrame:
+    def load_historical_data(self, symbol: str, timeframe: str, limit: int) -> Any:
         """Load historical market data."""
         pass
 
@@ -83,17 +87,17 @@ class IMetricCalculator(ABC):
     """Interface for performance metric calculation."""
 
     @abstractmethod
-    def calculate_sharpe_ratio(self, returns: pd.Series) -> float:
+    def calculate_sharpe_ratio(self, returns: Any) -> float:
         """Calculate Sharpe ratio."""
         pass
 
     @abstractmethod
-    def calculate_max_drawdown(self, equity_curve: pd.Series) -> float:
+    def calculate_max_drawdown(self, equity_curve: Any) -> float:
         """Calculate maximum drawdown."""
         pass
 
     @abstractmethod
-    def calculate_win_rate(self, trades: pd.DataFrame) -> float:
+    def calculate_win_rate(self, trades: Any) -> float:
         """Calculate win rate."""
         pass
 

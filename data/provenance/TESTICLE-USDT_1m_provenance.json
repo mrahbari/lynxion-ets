@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "TESTICLEUSDT",
+  "timeframe": "1m",
+  "checksum": "14b32786c1aaab3f128ebc8cd7924f5ef5894105aa9830366506a1172f794caa",
+  "download_timestamp": "2026-06-12T18:35:27.789012",
+  "row_count": 567,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778720100"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/TESTICLE-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "NEIROCTOUSDT",
+  "timeframe": "1m",
+  "checksum": "ceb927a0a08b4596dd85f3abc868bdc81ffbf1b1972955b49ec6962091dda662",
+  "download_timestamp": "2026-06-12T18:31:10.087228",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778719860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/NEIROCTO-USDT.csv"
+}

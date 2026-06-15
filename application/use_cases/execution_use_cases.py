@@ -2,7 +2,7 @@
 Use cases for execution functionality in the enterprise hedge fund trading system.
 """
 from typing import List
-from domain.entities.trading_entities import Order
+from domain.entities import Order
 from application.services.execution_services import ExecutionOrchestrationService
 
 

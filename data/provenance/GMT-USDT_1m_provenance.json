@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "GMTUSDT",
+  "timeframe": "1m",
+  "checksum": "877586e511fecf864009a5e120e35fab5c08f2c46f034a8d9e2c60fc28e34a03",
+  "download_timestamp": "2026-06-12T18:26:45.772920",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778749560"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/GMT-USDT.csv"
+}

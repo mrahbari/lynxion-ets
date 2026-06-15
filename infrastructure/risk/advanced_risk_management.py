@@ -11,9 +11,9 @@ from decimal import Decimal
 from dataclasses import dataclass
 from enum import Enum
 
-from domain.entities.trading_entities import Order, Position
+from domain.entities import Order, Position
 from domain.value_objects import Money, Percentage, Symbol
-from domain.entities.signal_entities import FusedSignal
+from domain.entities import FusedSignal
 from shared.logger import EnhancedLogger
 
 

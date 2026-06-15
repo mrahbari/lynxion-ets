@@ -1,0 +1,18 @@
+{
+  "source": "ccxt:fundingRateHistory",
+  "exchange": "binance",
+  "symbol": "ETCUSDT",
+  "data_class": "funding",
+  "checksum": "9fb6997156a333836000a8ad869adba02bb469b21ad96eda6db8f4a33aa0c763",
+  "download_timestamp": "2026-06-11T21:01:29.432630+00:00",
+  "row_count": 3285,
+  "date_range": {
+    "start": "1686614400",
+    "end": "1781193600"
+  },
+  "columns": [
+    "timestamp",
+    "funding_rate"
+  ],
+  "file_path": "./data/history/raw/funding/ETC-USDT.csv"
+}

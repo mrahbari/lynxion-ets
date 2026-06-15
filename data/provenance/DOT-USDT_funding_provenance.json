@@ -1,0 +1,18 @@
+{
+  "source": "ccxt:fundingRateHistory",
+  "exchange": "binance",
+  "symbol": "DOTUSDT",
+  "data_class": "funding",
+  "checksum": "c76445c79f572903918bb6c38678479e3a004ce5993d1c4922d8a61d19707b31",
+  "download_timestamp": "2026-06-11T21:01:06.693409+00:00",
+  "row_count": 3285,
+  "date_range": {
+    "start": "1686614400",
+    "end": "1781193600"
+  },
+  "columns": [
+    "timestamp",
+    "funding_rate"
+  ],
+  "file_path": "./data/history/raw/funding/DOT-USDT.csv"
+}

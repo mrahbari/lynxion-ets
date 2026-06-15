@@ -3,7 +3,7 @@ Conflict Resolution System for Hierarchical Multi-Watcher Architecture
 Implements the required conflict resolution rules for the hedge-fund-grade system.
 """
 from typing import List, Dict, Any, Optional, Tuple
-from domain.entities.signal_entities import MarketObservation, FusedSignal, SignalType
+from domain.entities import MarketObservation, FusedSignal, SignalType
 from .watcher_classifier import WatcherClassifier, WatcherRole
 from .confidence_thresholds import ConfidenceThresholds, ConfidenceValidator
 

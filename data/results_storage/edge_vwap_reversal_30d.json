@@ -1,0 +1,62 @@
+{
+  "verdict": {
+    "verdict": "NO_GO",
+    "summary": "NO_GO \u2014 2 cells evaluated, adequate sample present, but none clears expectancy>0.0 and PF>1.0 net of realistic costs. Do not invest in execution hardening yet.",
+    "passing": [],
+    "failing": [
+      {
+        "strategy": "vwap_reversal",
+        "regime": "ranging",
+        "trade_count": 34,
+        "expectancy": -111.61218914322389,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "expectancy -111.612 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "vwap_reversal",
+        "regime": "trending_down",
+        "trade_count": 55,
+        "expectancy": -93.92524168178554,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "expectancy -93.9252 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      }
+    ]
+  },
+  "attribution": {
+    "total_pnl": -8960.702723367816,
+    "total_trades": 89,
+    "by_strategy": {
+      "vwap_reversal": -8960.702723367816
+    },
+    "by_regime": {
+      "ranging": -3794.8144308696124,
+      "trending_down": -5165.8882924982045
+    },
+    "cells": [
+      {
+        "strategy": "vwap_reversal",
+        "regime": "ranging",
+        "pnl": -3794.8144308696124,
+        "trade_count": 34
+      },
+      {
+        "strategy": "vwap_reversal",
+        "regime": "trending_down",
+        "pnl": -5165.8882924982045,
+        "trade_count": 55
+      }
+    ],
+    "reconciled": true,
+    "unattributed_trades": 0,
+    "unknown_regime_trades": 0
+  },
+  "ledger_path": "data/results_storage/edge_ledger.json"
+}

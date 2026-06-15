@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "FLOWUSDT",
+  "timeframe": "1m",
+  "checksum": "085ebab9d00c6b960cd249eb4e1d5c259eab13e31284cbc9dd0febb5227f63a6",
+  "download_timestamp": "2026-06-12T18:28:18.230110",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778749680"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/FLOW-USDT.csv"
+}

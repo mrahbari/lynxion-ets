@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "TAKEUSDT",
+  "timeframe": "1m",
+  "checksum": "302e17c0f2015519ca70c1d0252e5fe5db386732672f8dd34a386d7926ee913c",
+  "download_timestamp": "2026-06-12T18:34:35.060562",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686560",
+    "end": "1778720040"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/TAKE-USDT.csv"
+}

@@ -2,7 +2,7 @@
 Infrastructure implementation of the MTF Trend Strategy following hexagonal architecture.
 """
 from typing import Dict, Any, Optional, List
-from domain.entities.trading_entities import Signal, SignalType
+from domain.entities import Signal, SignalType
 from domain.value_objects import Symbol, Percentage
 from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger
@@ -34,17 +34,9 @@ class MTFTrendStrategyAdapter(BaseStrategyAdapter):
         # For now, returning neutral as mock
         return 0
 
-    def update_with_market_data(self, data: Dict[str, Any]):
-        """Update strategy with new market data"""
-        # Buffer recent market data for analysis
-        if isinstance(data, list):
-            self.data_buffer.extend(data)
-        elif isinstance(data, dict):
-            self.data_buffer.append(data)
-
-        # Limit buffer size to prevent memory issues
-        if len(self.data_buffer) > self.buffer_size_limit:
-            self.data_buffer = self.data_buffer[-self.buffer_size_limit:]
+    # update_with_market_data inherits the base authoritative feed (lazy-inits
+    # data_buffer + caps at buffer_size_limit). Local override removed: it referenced
+    # self.data_buffer without initialising it (AttributeError) and duplicated the feed.
 
     def generate_signal(self, symbol: Symbol) -> Optional[Signal]:
         """Generate signal using multi-timeframe trend analysis with real market data"""
@@ -103,9 +95,8 @@ class MTFTrendStrategyAdapter(BaseStrategyAdapter):
                 signal_type=final_signal_type,
                 confidence=confidence,
                 score=final_score,
-                strategy_name=self.name,
                 timestamp=datetime.now(),
-                source_engine="MTFTrendTechnical",
+                source_layer="MTFTrendTechnical",
                 metadata={
                     "ma_short": ma_short,
                     "ma_medium": ma_medium,

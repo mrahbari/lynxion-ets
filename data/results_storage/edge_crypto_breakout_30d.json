@@ -1,0 +1,104 @@
+{
+  "verdict": {
+    "verdict": "DIRECTIONAL_NO_GO",
+    "summary": "DIRECTIONAL_NO_GO \u2014 no cell reached 30 trades (risk discipline throttled a losing strategy), but 19 aggregate trades show decisively negative expectancy (-365.2 < 0.0) with no positive cell. Reject: no edge.",
+    "passing": [],
+    "failing": [
+      {
+        "strategy": "crypto_breakout",
+        "regime": "ranging",
+        "trade_count": 5,
+        "expectancy": -999.0304768212739,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 5 < min 30",
+          "expectancy -999.03 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "trending_down",
+        "trade_count": 11,
+        "expectancy": -129.2279562605973,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 11 < min 30",
+          "expectancy -129.228 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "trending_up",
+        "trade_count": 2,
+        "expectancy": -235.25101407553225,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 2 < min 30",
+          "expectancy -235.251 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "unknown",
+        "trade_count": 1,
+        "expectancy": -51.432764932382575,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 30",
+          "expectancy -51.4328 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      }
+    ]
+  },
+  "attribution": {
+    "total_pnl": -6938.594696056386,
+    "total_trades": 19,
+    "by_strategy": {
+      "crypto_breakout": -6938.594696056386
+    },
+    "by_regime": {
+      "ranging": -4995.152384106369,
+      "trending_down": -1421.5075188665703,
+      "trending_up": -470.5020281510645,
+      "unknown": -51.432764932382575
+    },
+    "cells": [
+      {
+        "strategy": "crypto_breakout",
+        "regime": "ranging",
+        "pnl": -4995.152384106369,
+        "trade_count": 5
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "trending_down",
+        "pnl": -1421.5075188665703,
+        "trade_count": 11
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "trending_up",
+        "pnl": -470.5020281510645,
+        "trade_count": 2
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "unknown",
+        "pnl": -51.432764932382575,
+        "trade_count": 1
+      }
+    ],
+    "reconciled": true,
+    "unattributed_trades": 0,
+    "unknown_regime_trades": 1
+  },
+  "ledger_path": "data/results_storage/edge_ledger.json"
+}

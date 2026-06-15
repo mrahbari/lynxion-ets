@@ -2,7 +2,7 @@
 Use cases for risk governance functionality in the enterprise hedge fund trading system.
 """
 from typing import Dict, Any
-from domain.entities.trading_entities import Signal, Order
+from domain.entities import Signal, Order
 from application.services.risk_services_app import RiskGovernanceService, PortfolioRiskMonitoringService
 
 

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ONTUSDT",
+  "timeframe": "1m",
+  "checksum": "95b264171206d1db046f47ec69b711b7da0927f6b3a44da2c44308c6e0182029",
+  "download_timestamp": "2026-06-12T18:40:09.438245",
+  "row_count": 1072,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778750400"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ONT-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "POPCATUSDT",
+  "timeframe": "1m",
+  "checksum": "b5cdbc8781db5478249e31f36528e4fb8e947a0fe5649ec2de5eb0879605116e",
+  "download_timestamp": "2026-06-12T18:25:40.228804",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778685960",
+    "end": "1778719500"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/POPCAT-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "WHITEWHALEUSDT",
+  "timeframe": "1m",
+  "checksum": "e272e8f6ea33a2ce9c935e270d902360562f9e0db47c7a2db3525a1419026110",
+  "download_timestamp": "2026-06-12T18:39:22.990530",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686860",
+    "end": "1778720340"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/WHITEWHALE-USDT.csv"
+}

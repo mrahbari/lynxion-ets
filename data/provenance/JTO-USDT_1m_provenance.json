@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "JTOUSDT",
+  "timeframe": "1m",
+  "checksum": "e60c3eb430b02af491fa037440c198053d2b3cf2086385752e5c87afbbbb6add",
+  "download_timestamp": "2026-06-12T18:29:40.214375",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778749740"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/JTO-USDT.csv"
+}

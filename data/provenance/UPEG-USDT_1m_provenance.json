@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "UPEGUSDT",
+  "timeframe": "1m",
+  "checksum": "2ccc78496724e5681a9c049e5257020966f97049275525dc3217cb2bdf87adbb",
+  "download_timestamp": "2026-06-12T18:26:30.437604",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686020",
+    "end": "1778719560"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/UPEG-USDT.csv"
+}

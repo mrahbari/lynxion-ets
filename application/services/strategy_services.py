@@ -5,7 +5,7 @@ from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
-from domain.entities.trading_entities import Signal, Position
+from domain.entities import Signal, Position
 from domain.value_objects import Symbol
 from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger

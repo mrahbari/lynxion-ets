@@ -9,14 +9,31 @@ import logging
 from enum import Enum
 import json
 import traceback
+import uuid
 
-from domain.entities.trading_entities import Order, Fill, Position, Balance, OrderSide, PositionSide
+from domain.entities import Order, Fill, Position, Balance, OrderSide, PositionSide
 from domain.ports.broker_ports import BrokerPort
 from domain.value_objects import Symbol, Money
 from infrastructure.data.adapters.rest_client import RestClient
 from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 from shared.rate_limiter import global_rate_limiter
 from shared.utils import format_price_for_api
+
+
+def ensure_client_order_id(order) -> str:
+    """B2: return the order's client_order_id, generating + assigning one once if absent.
+
+    Assigning back to the order means a retry of the SAME order object reuses the id, so
+    the exchange can deduplicate (idempotency). BingX clientOrderID: alphanumeric, <=40 chars.
+    """
+    coid = getattr(order, "client_order_id", None)
+    if not coid:
+        coid = "x" + uuid.uuid4().hex[:30]
+        try:
+            order.client_order_id = coid
+        except Exception:
+            pass
+    return coid
 
 
 class BingXBrokerAdapter(BrokerPort):
@@ -76,7 +93,7 @@ class BingXBrokerAdapter(BrokerPort):
 
         # Temporarily modify the order's symbol for the API call
         # We'll create a temporary order with the formatted symbol
-        from domain.entities.trading_entities import Order as DomainOrder
+        from domain.entities import Order as DomainOrder
         from datetime import datetime
 
         # Create a temporary order with the formatted symbol but preserve all other attributes
@@ -130,6 +147,12 @@ class BingXBrokerAdapter(BrokerPort):
             self.connect()
         return self._broker.get_order_status(order_id, self._format_symbol(symbol))
 
+    def get_order_fill(self, order_id: str, symbol: Symbol) -> Dict[str, Any]:
+        """B7: return {status, executed_qty, avg_price} for partial-fill tracking."""
+        if not self.connected:
+            self.connect()
+        return self._broker.get_order_fill(order_id, self._format_symbol(symbol))
+
     def get_balance(self, asset: str = None) -> List[Balance]:
         if not self.connected:
             self.connect()
@@ -168,19 +191,26 @@ class BingXBrokerAdapter(BrokerPort):
         positions_data = self._broker.get_open_positions()
         positions = []
         for p in positions_data:
-            quantity = float(p['positionAmt'])
-            # Handle both possible field names for unrealized PnL
-            pnl_value = float(p.get('unrealisedPnl', p.get('unrealizedPnl', 0)))
-            positions.append(
-                Position(
-                    symbol=self._parse_symbol(p['symbol']),
-                    side=PositionSide.LONG if quantity > 0 else PositionSide.SHORT,
-                    quantity=abs(quantity),
-                    entry_price=Money(amount=float(p['avgPrice']), currency='USDT'),
-                    unrealized_pnl=Money(amount=pnl_value, currency='USDT'),
-                    timestamp=datetime.fromtimestamp(int(p.get('time', time.time()*1000)) / 1000)
+            # B4 resilience: one malformed/exotic exchange symbol must never break position
+            # reconciliation for the whole account — skip it (logged) and keep the rest.
+            try:
+                quantity = float(p['positionAmt'])
+                if quantity == 0:
+                    continue  # not an open position
+                pnl_value = float(p.get('unrealisedPnl', p.get('unrealizedPnl', 0)))
+                positions.append(
+                    Position(
+                        symbol=self._parse_symbol(p['symbol']),
+                        side=PositionSide.LONG if quantity > 0 else PositionSide.SHORT,
+                        quantity=abs(quantity),
+                        entry_price=Money(amount=float(p['avgPrice']), currency='USDT'),
+                        unrealized_pnl=Money(amount=pnl_value, currency='USDT'),
+                        timestamp=datetime.fromtimestamp(int(p.get('time', time.time() * 1000)) / 1000)
+                    )
                 )
-            )
+            except Exception as e:
+                self.logger.warning(f"Skipping unparseable position {p.get('symbol')!r}: {e}")
+                continue
         return positions
 
     def get_available_symbols(self) -> set:
@@ -354,12 +384,16 @@ class _BingXBroker:
                 else:
                     position_side_value = 'BOTH'
 
+            # B2 idempotency: ensure a client order id is sent so the exchange can dedupe.
+            client_order_id = ensure_client_order_id(order)
+
             order_data = {
                 'symbol': symbol_formatted,
                 'side': side_value.upper(),
                 'type': order_type_value.upper(),
                 'quantity': str(round(float(order.quantity), 6)),
-                'positionSide': position_side_value
+                'positionSide': position_side_value,
+                'clientOrderID': client_order_id,
             }
 
             if order.price:
@@ -456,7 +490,8 @@ class _BingXBroker:
                     'side': side_value.upper(),
                     'type': order_type_value.upper(),
                     'quantity': str(round(float(order.quantity), 6)),
-                    'positionSide': position_side_value
+                    'positionSide': position_side_value,
+                    'clientOrderID': client_order_id,
                 }
 
                 if order.price:
@@ -530,20 +565,44 @@ class _BingXBroker:
                         if not tp_response['success']:
                             conditional_errors.append(f"TP order failed: {tp_response['error']}")
 
-                    # Return success if main order succeeded, even if conditional orders had issues
-                    result = {
+                    # B1 GUARANTEED PROTECTION: a position must never remain open without its
+                    # SL/TP. If any protective order failed, unwind the just-opened position;
+                    # if the unwind also fails, halt all trading (kill switch) and flag the orphan.
+                    if conditional_errors:
+                        self.logger.error(
+                            f"🛑 PROTECTION FAILED for {main_order_id} on {symbol_formatted}: "
+                            f"{conditional_errors} — unwinding position (B1)")
+                        unwound = self._unwind_position(
+                            symbol_formatted, side_value.upper(),
+                            str(round(float(order.quantity), 6)), position_side_value)
+                        if not unwound:
+                            try:
+                                from shared.live_execution_guard import live_execution_guard
+                                live_execution_guard.engage_kill_switch(
+                                    f"UNPROTECTED naked position {main_order_id} on "
+                                    f"{symbol_formatted}: protective orders AND unwind both failed")
+                            except Exception:
+                                pass
+                            self.logger.critical(
+                                f"❌ NAKED POSITION {main_order_id} on {symbol_formatted}: unwind FAILED "
+                                f"— trading HALTED, manual intervention required")
+                        return {
+                            'success': False,
+                            'order_id': None,
+                            'error': f'protective orders failed ({conditional_errors}); unwound={unwound}',
+                            'protection_failed': True,
+                            'unwound': unwound,
+                            'orphaned_main_order_id': None if unwound else main_order_id,
+                        }
+
+                    # Both main order and protective orders succeeded.
+                    self.logger.info(f"Main order and conditional orders placed successfully ({main_order_id})")
+                    return {
                         'success': True,
                         'order_id': main_order_id,
                         'response': response['data'],
-                        'conditional_orders_errors': conditional_errors if conditional_errors else None
+                        'conditional_orders_errors': None,
                     }
-
-                    if conditional_errors:
-                        self.logger.warning(f"Main order placed successfully ({main_order_id}), but conditional orders had errors: {conditional_errors}")
-                    else:
-                        self.logger.info(f"Main order and conditional orders placed successfully ({main_order_id})")
-
-                    return result
                 else:
                     return {
                         'success': False,
@@ -569,6 +628,36 @@ class _BingXBroker:
         except Exception as e:
             self.logger.error(f"Failed to execute order: {e}")
             return {'success': False, 'error': str(e)}
+
+    def _unwind_position(self, symbol: str, original_side: str, quantity: str,
+                         position_side: str) -> bool:
+        """B1: flatten a just-opened position when its protective SL/TP could not be attached.
+
+        Places a reduceOnly MARKET order in the opposite direction. Returns True if the
+        exchange accepted the close. This is a protective unwind of an already-authorized
+        entry, so it bypasses the guard (it only ever reduces risk).
+        """
+        try:
+            close_side = 'SELL' if original_side.upper() == 'BUY' else 'BUY'
+            unwind_data = {
+                'symbol': symbol,
+                'side': close_side,
+                'type': 'MARKET',
+                'quantity': quantity,
+                'positionSide': position_side,
+                'reduceOnly': 'true',
+            }
+            resp = self._make_request('POST', '/openApi/swap/v2/trade/order',
+                                      data=unwind_data, signed=True)
+            if resp.get('code') == 0:
+                self.logger.warning(
+                    f"✅ UNWOUND unprotected position on {symbol} ({close_side} {quantity})")
+                return True
+            self.logger.error(f"❌ UNWIND FAILED on {symbol}: {resp.get('msg', resp)}")
+            return False
+        except Exception as e:
+            self.logger.error(f"❌ UNWIND EXCEPTION on {symbol}: {e}")
+            return False
 
     def _place_conditional_order(self, symbol: str, side: str, quantity: str, stop_price: str,
                                order_type: str, position_side: str) -> Dict[str, Any]:
@@ -652,6 +741,17 @@ class _BingXBroker:
                 return order.get('status')
 
         return "UNKNOWN"
+
+    def get_order_fill(self, order_id: str, symbol: str) -> Dict[str, Any]:
+        """B7: return the order's {status, executed_qty, avg_price} from open orders + history."""
+        for order in list(self.get_pending_orders(symbol)) + list(self.get_order_history(symbol, limit=100)):
+            if order.get('orderId') == order_id:
+                return {
+                    "status": order.get('status', 'UNKNOWN'),
+                    "executed_qty": order.get('executedQty', order.get('cumQty', 0)) or 0,
+                    "avg_price": order.get('avgPrice', order.get('avgFillPrice')),
+                }
+        return {"status": "UNKNOWN", "executed_qty": 0, "avg_price": None}
 
     def get_pending_orders(self, symbol: str = None) -> List[Dict]:
         """Get all pending orders."""
@@ -790,7 +890,7 @@ class _BingXBroker:
         # If all API methods fail, return the approved symbols as a fallback
         # since we know these should be available on BingX
         try:
-            from utils.symbol_validator import symbol_validator
+            from infrastructure.services.symbol_validator import symbol_validator
             if hasattr(symbol_validator, 'get_approved_symbols'):
                 approved_symbols = symbol_validator.get_approved_symbols()
                 self.logger.debug(f"Using {len(approved_symbols)} approved symbols as fallback")

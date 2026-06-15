@@ -1,4 +1,8 @@
 """
+DEPRECATED (E3.T1 -- Option A: Retire & Redefine). Dead backtest validator (zero
+importers). Canonical engine is RealisticBacktester behind BacktestEnginePort
+(infrastructure/backtest/backtest_engine_adapter.py). Physical removal -> E8.
+
 Backtesting Validation System based on Enterprise Hedge Fund Architecture
 Validates adherence to 17 critical hedge fund rules
 """

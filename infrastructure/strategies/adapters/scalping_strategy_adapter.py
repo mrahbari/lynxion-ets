@@ -3,7 +3,7 @@ Infrastructure implementation of the Scalping Strategy following hexagonal archi
 This strategy has been evaluated for structural viability and enhanced with strict market conditions.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Signal, SignalType
+from domain.entities import Signal, SignalType
 from domain.value_objects import Symbol, Percentage
 from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger
@@ -41,7 +41,8 @@ class ScalpingStrategyAdapter(BaseStrategyAdapter):
         # Scalping-specific parameters for market micro-conditions
         self.min_spread_threshold = self.config.get("min_spread_threshold", 0.0005)  # Minimum spread threshold (0.05%)
         self.max_volatility_threshold = self.config.get("max_volatility_threshold", 0.02)  # Maximum volatility threshold (2%)
-        self.min_volume_threshold = self.config.get("min_volume_threshold", 100)  # Minimum volume threshold
+        self.min_volume_threshold = self.config.get("min_volume_threshold", 100)  # Legacy absolute floor (kept for config compat)
+        self.min_volume_ratio = self.config.get("min_volume_ratio", 0.5)  # Relative liquidity floor: recent vol vs baseline
         self.required_tick_size_multiple = self.config.get("required_tick_size_multiple", 4)  # Price movement should be multiple of tick size
 
         # Viability assessment parameters
@@ -52,7 +53,11 @@ class ScalpingStrategyAdapter(BaseStrategyAdapter):
 
         # Track performance for viability assessment
         self.trade_history = []
-        self.consecutive_losses = 0
+        # E-P5.2: own viability counter — must NOT shadow BaseStrategyAdapter's
+        # per-symbol consecutive_losses DICT (super().__init__ set it to {}).
+        # Overwriting it with an int broke base discipline with
+        # "'int' object has no attribute 'get'" on the first bar.
+        self._scalp_consecutive_losses = 0
         self.total_trades = 0
         self.profitable_trades = 0
 
@@ -88,7 +93,13 @@ class ScalpingStrategyAdapter(BaseStrategyAdapter):
         # Assess conditions
         low_spread = True  # Assuming spread is acceptable for digital asset
         acceptable_volatility = volatility_pct <= self.max_volatility_threshold
-        adequate_volume = avg_volume >= self.min_volume_threshold
+        # Adequate liquidity is RELATIVE to the asset's own volume, not an absolute
+        # unit count. min_volume_threshold=100 was an absolute figure that never
+        # matched the data scale (BTC 1m volume ~6/bar) and failed EVERY bar, short-
+        # circuiting before the strategy's real (tick-cost) hypothesis gate could run.
+        # Scale-invariant floor: recent volume hasn't collapsed vs its own baseline.
+        recent_vol = float(np.mean(volumes[-self.lookback_period:])) if len(volumes) >= self.lookback_period else avg_volume
+        adequate_volume = avg_volume > 0 and recent_vol >= self.min_volume_ratio * avg_volume
 
         conditions_met = low_spread and acceptable_volatility and adequate_volume
 
@@ -118,8 +129,8 @@ class ScalpingStrategyAdapter(BaseStrategyAdapter):
             return False
 
         # Check consecutive losses
-        if self.consecutive_losses >= self.consecutive_losses_before_disable:
-            self.logger.warning(f"Scalping strategy had {self.consecutive_losses} consecutive losses, disabling")
+        if self._scalp_consecutive_losses >= self.consecutive_losses_before_disable:
+            self.logger.warning(f"Scalping strategy had {self._scalp_consecutive_losses} consecutive losses, disabling")
             return False
 
         # If we have enough trades and acceptable win rate, continue
@@ -240,9 +251,8 @@ class ScalpingStrategyAdapter(BaseStrategyAdapter):
                 signal_type=final_signal_type,
                 confidence=confidence,
                 score=final_score,
-                strategy_name=self.name,
                 timestamp=datetime.now(),
-                source_engine="DisciplinedScalping",
+                source_layer="DisciplinedScalping",
                 metadata={
                     "ma_fast": calculated_ma_fast,
                     "ma_slow": calculated_ma_slow,
@@ -270,7 +280,8 @@ class ScalpingStrategyAdapter(BaseStrategyAdapter):
             traceback.print_exc()
             return None
 
-    def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True):
+    def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True,
+                            exit_time=None):
         """
         Record the result of a trade for viability assessment
         """
@@ -278,9 +289,10 @@ class ScalpingStrategyAdapter(BaseStrategyAdapter):
 
         if is_profitable:
             self.profitable_trades += 1
-            self.consecutive_losses = 0  # Reset consecutive losses counter
+            self._scalp_consecutive_losses = 0  # Reset consecutive losses counter
         else:
-            self.consecutive_losses += 1
+            self._scalp_consecutive_losses += 1
 
         # Call parent method to handle other aspects of trade result recording
-        super().record_trade_result(symbol, is_profitable, position_closed)
+        # (E-P5.2: thread exit_time through so base discipline stays time-aware).
+        super().record_trade_result(symbol, is_profitable, position_closed, exit_time=exit_time)

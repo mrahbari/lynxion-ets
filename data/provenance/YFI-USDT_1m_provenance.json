@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "YFIUSDT",
+  "timeframe": "1m",
+  "checksum": "439c1fc7146cee463f0fa11bb90af044a271021a446020b74d8da6dc96682789",
+  "download_timestamp": "2026-06-12T18:32:52.350616",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686380",
+    "end": "1778749920"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/YFI-USDT.csv"
+}

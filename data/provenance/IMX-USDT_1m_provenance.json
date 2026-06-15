@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "IMXUSDT",
+  "timeframe": "1m",
+  "checksum": "214d4aa90f49c537402006549151feab76252b9dd3f6baccf6bc585cac34a099",
+  "download_timestamp": "2026-06-12T18:36:30.851692",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686680",
+    "end": "1778750160"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/IMX-USDT.csv"
+}

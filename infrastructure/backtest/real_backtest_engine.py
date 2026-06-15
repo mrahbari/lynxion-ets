@@ -1,4 +1,8 @@
 """
+DEPRECATED (E3.T1 -- Option A: Retire & Redefine). Dead backtest engine (zero
+importers). The canonical engine is RealisticBacktester behind BacktestEnginePort
+(infrastructure/backtest/backtest_engine_adapter.py). Physical removal -> E8.
+
 Realistic backtesting engine with proper order simulation including slippage, fees, and market impact.
 """
 from typing import List, Dict, Any, Optional
@@ -8,7 +12,7 @@ from datetime import datetime
 from dataclasses import dataclass
 import math
 
-from domain.entities.trading_entities import Signal, Order, Fill, Position
+from domain.entities import Signal, Order, Fill, Position
 from domain.value_objects import Symbol, Money, Percentage
 from domain.ports.backtest_ports import BacktestEnginePort
 from shared.logger import logger
@@ -215,7 +219,7 @@ class RealisticBacktestEngine(BacktestEnginePort):
             return None
 
         # Create order
-        from domain.entities.trading_entities import OrderSide
+        from domain.entities import OrderSide
         from domain.value_objects import Money
         
         order = Order(
@@ -266,7 +270,7 @@ class RealisticBacktestEngine(BacktestEnginePort):
             fee_amount = notional_value * self.fee_rate
 
             # Create fill
-            from domain.entities.trading_entities import Fill, FillType
+            from domain.entities import Fill, FillType
             from domain.value_objects import Money
             
             fill = Fill(
@@ -390,7 +394,7 @@ class RealisticBacktestEngine(BacktestEnginePort):
         
         if symbol_str not in self.positions:
             # Create new position
-            from domain.entities.trading_entities import Position, PositionSide
+            from domain.entities import Position, PositionSide
             from domain.value_objects import Money
             
             side = PositionSide.LONG if fill.side.name == 'BUY' else PositionSide.SHORT

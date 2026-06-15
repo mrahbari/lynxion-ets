@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "AIOTUSDT",
+  "timeframe": "1m",
+  "checksum": "728a4c3433cdcfa0f5db668012ebd7bf80b4760484113241981617978725e20b",
+  "download_timestamp": "2026-06-12T18:36:37.222671",
+  "row_count": 571,
+  "date_range": {
+    "start": "1778685960",
+    "end": "1778720160"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/AIOT-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ZBTUSDT",
+  "timeframe": "1m",
+  "checksum": "494ae5ae5e33f5466596b293ae8209d3216bd254411509c16e843e66ce50fba1",
+  "download_timestamp": "2026-06-12T18:29:43.973384",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778749740"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ZBT-USDT.csv"
+}

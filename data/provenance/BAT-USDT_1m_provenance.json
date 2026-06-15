@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "BATUSDT",
+  "timeframe": "1m",
+  "checksum": "556e6a3dfd9404dbe12929a9dff1c869d1241a182299b8b468360d97038313a6",
+  "download_timestamp": "2026-06-12T18:39:23.752470",
+  "row_count": 1067,
+  "date_range": {
+    "start": "1778686380",
+    "end": "1778750340"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/BAT-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "MANTAUSDT",
+  "timeframe": "1m",
+  "checksum": "7c8f8ac6745557c0cd103fb91b4d7a72081d7865fd6b14cc94c990b34bb801a3",
+  "download_timestamp": "2026-06-12T18:27:50.360251",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778749620"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/MANTA-USDT.csv"
+}

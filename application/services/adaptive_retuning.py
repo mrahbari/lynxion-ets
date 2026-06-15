@@ -9,14 +9,14 @@ import pandas as pd
 import time
 
 from shared.logger import EnhancedLogger
-from infrastructure.results_tracking.results_tracker import ResultsTracker
+from domain.ports.tracking_ports import ResultsTrackingPort
 
 
 class RetuningScheduler:
     """Scheduler for managing when retuning should occur."""
     
     def __init__(self, 
-                 results_tracker: ResultsTracker,
+                 results_tracker: ResultsTrackingPort,
                  schedule_config: Dict[str, Any] = None):
         self.results_tracker = results_tracker
         self.schedule_config = schedule_config or self._default_schedule_config()
@@ -117,7 +117,7 @@ class PerformanceBasedRetuner:
     """Class for triggering retuning based on performance degradation."""
 
     def __init__(self,
-                 results_tracker: ResultsTracker,
+                 results_tracker: ResultsTrackingPort,
                  performance_config: Dict[str, Any] = None):
         self.results_tracker = results_tracker
         self.performance_config = performance_config or self._default_performance_config()
@@ -288,7 +288,7 @@ class PerformanceBasedRetuner:
 class ManualRetuningTrigger:
     """Class for handling manual retuning requests."""
     
-    def __init__(self, results_tracker: ResultsTracker):
+    def __init__(self, results_tracker: ResultsTrackingPort):
         self.results_tracker = results_tracker
         self.logger = EnhancedLogger("ManualRetuningTrigger")
         self.manual_requests = []
@@ -349,7 +349,7 @@ class AdaptiveRetuningManager:
     """
 
     def __init__(self,
-                 results_tracker: ResultsTracker,
+                 results_tracker: ResultsTrackingPort,
                  schedule_config: Dict[str, Any] = None,
                  performance_config: Dict[str, Any] = None):
         self.results_tracker = results_tracker

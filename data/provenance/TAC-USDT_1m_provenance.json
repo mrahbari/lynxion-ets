@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "TACUSDT",
+  "timeframe": "1m",
+  "checksum": "14edc182b799a6c8b8d42d1caf40cc1cde4a2b87d1d625fb10bba32ffcddc153",
+  "download_timestamp": "2026-06-12T18:31:33.466429",
+  "row_count": 565,
+  "date_range": {
+    "start": "1778686020",
+    "end": "1778719860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/TAC-USDT.csv"
+}

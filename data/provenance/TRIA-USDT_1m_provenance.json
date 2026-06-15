@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "TRIAUSDT",
+  "timeframe": "1m",
+  "checksum": "968887f688cdfbd07719427f893c486c3495a8d54a7020a711ba9eb8793a3ae7",
+  "download_timestamp": "2026-06-12T18:43:22.356205",
+  "row_count": 577,
+  "date_range": {
+    "start": "1778686020",
+    "end": "1778720580"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/TRIA-USDT.csv"
+}

@@ -1,0 +1,5132 @@
+[
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "trend_following",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0018848331516663165,
+    "sharpe": -0.14471583812533886,
+    "sortino": -0.0031533277763331645,
+    "max_drawdown": -0.0018848331516663165,
+    "win_rate": 0.1,
+    "profit_factor": 0.05564639239505968,
+    "total_trades_raw": 10,
+    "closed_trades": 4,
+    "total_pnl": -6.85332708345871,
+    "total_fees": 19.999190476304175,
+    "by_regime": {
+      "ranging": -4.151665009015104,
+      "trending_down": -2.701662074443607
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 2,
+        "expectancy": -2.075832504507552,
+        "win_rate": 0.5,
+        "avg_rr": 0.08864776469137366,
+        "profit_factor": 0.08864776469137366
+      },
+      {
+        "regime": "trending_down",
+        "trades": 2,
+        "expectancy": -1.3508310372218035,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "mean_reversion",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.005409572094450595,
+    "sharpe": -0.22013077343436366,
+    "sortino": -0.006123258692953595,
+    "max_drawdown": -0.005409572094450595,
+    "win_rate": 0.043478260869565216,
+    "profit_factor": 0.009033423582986564,
+    "total_trades_raw": 23,
+    "closed_trades": 10,
+    "total_pnl": -28.138283547878686,
+    "total_fees": 45.929626903293794,
+    "by_regime": {
+      "ranging": -14.208363314767436,
+      "trending_down": -13.929920233111249
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 4,
+        "expectancy": -3.552090828691859,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_down",
+        "trades": 6,
+        "expectancy": -2.321653372185208,
+        "win_rate": 0.16666666666666666,
+        "avg_rr": 0.09040409204037034,
+        "profit_factor": 0.018080818408074066
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "momentum",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": 0.017395903290500427,
+    "sharpe": -0.3568410614699485,
+    "sortino": -0.01899188806711014,
+    "max_drawdown": -0.023765347028370343,
+    "win_rate": 0.06818181818181818,
+    "profit_factor": 0.10067672720000409,
+    "total_trades_raw": 88,
+    "closed_trades": 43,
+    "total_pnl": -160.2577053220174,
+    "total_fees": 172.6332606273197,
+    "by_regime": {
+      "ranging": -59.11552238104321,
+      "trending_down": -10.349214146875228,
+      "trending_up": -67.18860795553269,
+      "unknown": -23.604360838566272
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 16,
+        "expectancy": -3.694720148815201,
+        "win_rate": 0.125,
+        "avg_rr": 0.5200201124833769,
+        "profit_factor": 0.07428858749762526
+      },
+      {
+        "regime": "trending_down",
+        "trades": 7,
+        "expectancy": -1.4784591638393183,
+        "win_rate": 0.14285714285714285,
+        "avg_rr": 3.1965241640926285,
+        "profit_factor": 0.5327540273487715
+      },
+      {
+        "regime": "trending_up",
+        "trades": 19,
+        "expectancy": -3.5362425239754045,
+        "win_rate": 0.15789473684210525,
+        "avg_rr": 0.10857124434991676,
+        "profit_factor": 0.02035710831560939
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -23.604360838566272,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "scalping",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.30098883344510813,
+    "sharpe": -1.6632675552563068,
+    "sortino": -0.35209193374024983,
+    "max_drawdown": -0.3234785530808111,
+    "win_rate": 0.04231027535258563,
+    "profit_factor": 0.04521748186291758,
+    "total_trades_raw": 1489,
+    "closed_trades": 744,
+    "total_pnl": -2024.0363701692568,
+    "total_fees": 2464.819711130153,
+    "by_regime": {
+      "ranging": -606.3826473477021,
+      "trending_down": -705.1933248576248,
+      "trending_up": -688.8560371253635,
+      "unknown": -23.604360838566272
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 226,
+        "expectancy": -2.683109059060629,
+        "win_rate": 0.048672566371681415,
+        "avg_rr": 0.30406742019936356,
+        "profit_factor": 0.015556937777641857
+      },
+      {
+        "regime": "trending_down",
+        "trades": 276,
+        "expectancy": -2.555048278469655,
+        "win_rate": 0.11594202898550725,
+        "avg_rr": 0.5042640469546468,
+        "profit_factor": 0.06613298976454383
+      },
+      {
+        "regime": "trending_up",
+        "trades": 241,
+        "expectancy": -2.8583238054994338,
+        "win_rate": 0.08298755186721991,
+        "avg_rr": 0.5536424305879519,
+        "profit_factor": 0.050103387383525065
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -23.604360838566272,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.20342035013989251,
+    "sharpe": -1.3156584764202373,
+    "sortino": -0.23254042939596775,
+    "max_drawdown": -0.20342035013989251,
+    "win_rate": 0.04247990815154994,
+    "profit_factor": 0.03369326138286273,
+    "total_trades_raw": 871,
+    "closed_trades": 435,
+    "total_pnl": -1254.1899609631748,
+    "total_fees": 1557.973220041551,
+    "by_regime": {
+      "ranging": -522.9168165166475,
+      "trending_up": -731.2731444465273
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 181,
+        "expectancy": -2.889043185174848,
+        "win_rate": 0.09392265193370165,
+        "avg_rr": 0.3315785104385485,
+        "profit_factor": 0.0343709431552154
+      },
+      {
+        "regime": "trending_up",
+        "trades": 254,
+        "expectancy": -2.8790281277422336,
+        "win_rate": 0.07874015748031496,
+        "avg_rr": 0.3885345706939138,
+        "profit_factor": 0.03320808296529178
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "liquidity",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.019727784180553317,
+    "sharpe": -0.6215104872492698,
+    "sortino": -0.052770969805069734,
+    "max_drawdown": -0.05805408058652432,
+    "win_rate": 0.0931174089068826,
+    "profit_factor": 0.08433166108542932,
+    "total_trades_raw": 247,
+    "closed_trades": 123,
+    "total_pnl": -386.2164453964566,
+    "total_fees": 477.4083680340705,
+    "by_regime": {
+      "ranging": -173.15136910441686,
+      "trending_down": -144.88664326471593,
+      "trending_up": -21.250537036469648,
+      "unknown": -46.92789599085417
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 58,
+        "expectancy": -2.9853684328347736,
+        "win_rate": 0.20689655172413793,
+        "avg_rr": 0.34846512458751355,
+        "profit_factor": 0.09090394554456875
+      },
+      {
+        "regime": "trending_down",
+        "trades": 54,
+        "expectancy": -2.6830859863836283,
+        "win_rate": 0.18518518518518517,
+        "avg_rr": 0.484027165180822,
+        "profit_factor": 0.11000617390473227
+      },
+      {
+        "regime": "trending_up",
+        "trades": 9,
+        "expectancy": -2.3611707818299608,
+        "win_rate": 0.1111111111111111,
+        "avg_rr": 0.1286865993270016,
+        "profit_factor": 0.0160858249158752
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -23.463947995427084,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "mtf_trend",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.2985083413177174,
+    "sharpe": -1.7385190032134927,
+    "sortino": -0.3840639701714387,
+    "max_drawdown": -0.32075153356046854,
+    "win_rate": 0.028611304954640614,
+    "profit_factor": 0.015802413528220018,
+    "total_trades_raw": 1433,
+    "closed_trades": 716,
+    "total_pnl": -2038.35250613204,
+    "total_fees": 2381.60054386709,
+    "by_regime": {
+      "ranging": -1034.7769078301312,
+      "trending_down": -315.7747415132835,
+      "trending_up": -664.2941845743317,
+      "unknown": -23.506672214293445
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 358,
+        "expectancy": -2.8904382900282997,
+        "win_rate": 0.055865921787709494,
+        "avg_rr": 0.22926973692708347,
+        "profit_factor": 0.013566256622904347
+      },
+      {
+        "regime": "trending_down",
+        "trades": 125,
+        "expectancy": -2.526197932106268,
+        "win_rate": 0.08,
+        "avg_rr": 0.29704720054657946,
+        "profit_factor": 0.025830191351876475
+      },
+      {
+        "regime": "trending_up",
+        "trades": 232,
+        "expectancy": -2.8633370024755673,
+        "win_rate": 0.04741379310344827,
+        "avg_rr": 0.3015987279995754,
+        "profit_factor": 0.015011701393644024
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -23.506672214293445,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "oi_footprint",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.06265446192531399,
+    "sharpe": -0.6445804144827413,
+    "sortino": -0.05698054930679887,
+    "max_drawdown": -0.06265446192531399,
+    "win_rate": 0.07377049180327869,
+    "profit_factor": 0.07243153033940022,
+    "total_trades_raw": 244,
+    "closed_trades": 121,
+    "total_pnl": -388.15222531073636,
+    "total_fees": 472.9181036433627,
+    "by_regime": {
+      "ranging": -187.75751234464582,
+      "trending_down": -153.69341280580278,
+      "trending_up": -46.70130016028775
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 55,
+        "expectancy": -3.413772951720833,
+        "win_rate": 0.16363636363636364,
+        "avg_rr": 0.3361929393157153,
+        "profit_factor": 0.06577687943133562
+      },
+      {
+        "regime": "trending_down",
+        "trades": 54,
+        "expectancy": -2.84617431121857,
+        "win_rate": 0.16666666666666666,
+        "avg_rr": 0.5003465412375478,
+        "profit_factor": 0.10006930824750956
+      },
+      {
+        "regime": "trending_up",
+        "trades": 12,
+        "expectancy": -3.8917750133573126,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "sweep_scalper",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0046573833491647745,
+    "sharpe": -0.05350714492694343,
+    "sortino": 0.0,
+    "max_drawdown": -2.001200562699355e-05,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "total_trades_raw": 2,
+    "closed_trades": 2,
+    "total_pnl": -46.92789599085417,
+    "total_fees": 1.1545346924128332,
+    "by_regime": {
+      "unknown": -46.92789599085417
+    },
+    "cells": [
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -23.463947995427084,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "vwap_reversal",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.21081528147093087,
+    "sharpe": -1.2835753043495026,
+    "sortino": -0.20502783293755217,
+    "max_drawdown": -0.21081528147093087,
+    "win_rate": 0.060066740823136816,
+    "profit_factor": 0.04395205994346265,
+    "total_trades_raw": 899,
+    "closed_trades": 449,
+    "total_pnl": -1304.8269231861145,
+    "total_fees": 1604.640375694799,
+    "by_regime": {
+      "ranging": -601.7832183057812,
+      "trending_down": -678.6810450997909,
+      "trending_up": -24.36265978054228
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 211,
+        "expectancy": -2.8520531673259777,
+        "win_rate": 0.13744075829383887,
+        "avg_rr": 0.31533244776747205,
+        "profit_factor": 0.05024528013877302
+      },
+      {
+        "regime": "trending_down",
+        "trades": 235,
+        "expectancy": -2.8880044472331527,
+        "win_rate": 0.10638297872340426,
+        "avg_rr": 0.3345349350184819,
+        "profit_factor": 0.03982558750220023
+      },
+      {
+        "regime": "trending_up",
+        "trades": 3,
+        "expectancy": -8.120886593514093,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "volatility_breakout",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.002476686071304357,
+    "sharpe": -1.0404998723546102,
+    "sortino": -0.14891679190467252,
+    "max_drawdown": -0.002476686071304357,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_trades_raw": 92,
+    "closed_trades": 40,
+    "total_pnl": -14.363493977939982,
+    "total_fees": 18.405683630472947,
+    "by_regime": {
+      "ranging": -5.724575220610805,
+      "trending_up": -8.638918757329176
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 19,
+        "expectancy": -0.3012934326637266,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_up",
+        "trades": 21,
+        "expectancy": -0.4113770836823417,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "crypto_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.20999437269667906,
+    "sharpe": -1.2988727390573493,
+    "sortino": -0.2081680278955203,
+    "max_drawdown": -0.20999437269667906,
+    "win_rate": 0.04793756967670011,
+    "profit_factor": 0.03843782519107436,
+    "total_trades_raw": 897,
+    "closed_trades": 448,
+    "total_pnl": -1297.6518733742835,
+    "total_fees": 1602.5588366778939,
+    "by_regime": {
+      "ranging": -558.1940907875144,
+      "trending_down": -729.3651501381273,
+      "trending_up": -10.092632448641686
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 193,
+        "expectancy": -2.8921973615933387,
+        "win_rate": 0.07772020725388601,
+        "avg_rr": 0.42461174242909033,
+        "profit_factor": 0.035781888406945815
+      },
+      {
+        "regime": "trending_down",
+        "trades": 250,
+        "expectancy": -2.917460600552509,
+        "win_rate": 0.108,
+        "avg_rr": 0.3323301380336195,
+        "profit_factor": 0.04023728128658174
+      },
+      {
+        "regime": "trending_up",
+        "trades": 5,
+        "expectancy": -2.018526489728337,
+        "win_rate": 0.2,
+        "avg_rr": 0.21748635049405765,
+        "profit_factor": 0.05437158762351441
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "trend_following",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0026266270022828396,
+    "sharpe": -0.11213923201935443,
+    "sortino": -0.0020403674750122244,
+    "max_drawdown": -0.0026266270022828396,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_trades_raw": 10,
+    "closed_trades": 4,
+    "total_pnl": -14.27738295208821,
+    "total_fees": 19.98252995291609,
+    "by_regime": {
+      "ranging": -12.247819856935484,
+      "trending_down": -2.0295630951527253
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 3,
+        "expectancy": -4.082606618978494,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_down",
+        "trades": 1,
+        "expectancy": -2.0295630951527253,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "mean_reversion",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.008487808726377988,
+    "sharpe": -0.18547867361405915,
+    "sortino": -0.004192077599216685,
+    "max_drawdown": -0.008487808726377988,
+    "win_rate": 0.05555555555555555,
+    "profit_factor": 0.03204204014273317,
+    "total_trades_raw": 36,
+    "closed_trades": 17,
+    "total_pnl": -47.02576508616277,
+    "total_fees": 71.72875191467655,
+    "by_regime": {
+      "ranging": -36.05540296367295,
+      "trending_down": -10.970362122489824
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 9,
+        "expectancy": -4.00615588485255,
+        "win_rate": 0.1111111111111111,
+        "avg_rr": 0.17307660020648008,
+        "profit_factor": 0.02163457502581001
+      },
+      {
+        "regime": "trending_down",
+        "trades": 8,
+        "expectancy": -1.371295265311228,
+        "win_rate": 0.125,
+        "avg_rr": 0.4531825266611958,
+        "profit_factor": 0.0647403609515994
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "momentum",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.08471878664944743,
+    "sharpe": -0.5878002476864514,
+    "sortino": -0.05328374311527148,
+    "max_drawdown": -0.08676249174376842,
+    "win_rate": 0.03064066852367688,
+    "profit_factor": 0.05576804709505805,
+    "total_trades_raw": 359,
+    "closed_trades": 177,
+    "total_pnl": -502.2877430905131,
+    "total_fees": 683.8083607092769,
+    "by_regime": {
+      "ranging": -233.5960611487322,
+      "trending_down": -8.190514930707295,
+      "trending_up": -258.5844795439899,
+      "unknown": -1.9166874670837084
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 82,
+        "expectancy": -2.8487324530333193,
+        "win_rate": 0.04878048780487805,
+        "avg_rr": 0.2785743284583101,
+        "profit_factor": 0.014285862997862057
+      },
+      {
+        "regime": "trending_down",
+        "trades": 10,
+        "expectancy": -0.8190514930707294,
+        "win_rate": 0.2,
+        "avg_rr": 2.8628274292264098,
+        "profit_factor": 0.7157068573066024
+      },
+      {
+        "regime": "trending_up",
+        "trades": 84,
+        "expectancy": -3.078386661237975,
+        "win_rate": 0.05952380952380952,
+        "avg_rr": 0.3384844854845996,
+        "profit_factor": 0.021423068701556934
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -1.9166874670837084,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "scalping",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.19565868457768765,
+    "sharpe": -0.8945196191967025,
+    "sortino": -0.12107299115754974,
+    "max_drawdown": -0.25711782364490565,
+    "win_rate": 0.054030874785591765,
+    "profit_factor": 0.09352111238309319,
+    "total_trades_raw": 1166,
+    "closed_trades": 582,
+    "total_pnl": -1621.692323584239,
+    "total_fees": 2016.7818609840072,
+    "by_regime": {
+      "ranging": -504.1251250288161,
+      "trending_down": -576.9037871755938,
+      "trending_up": -479.1217022342399,
+      "unknown": -61.54170914558898
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 179,
+        "expectancy": -2.8163414806079112,
+        "win_rate": 0.0893854748603352,
+        "avg_rr": 0.9126407676674018,
+        "profit_factor": 0.089584369832383
+      },
+      {
+        "regime": "trending_down",
+        "trades": 222,
+        "expectancy": -2.5986657079981703,
+        "win_rate": 0.10810810810810811,
+        "avg_rr": 0.9348290004836304,
+        "profit_factor": 0.11331260611922792
+      },
+      {
+        "regime": "trending_up",
+        "trades": 180,
+        "expectancy": -2.661787234634666,
+        "win_rate": 0.12777777777777777,
+        "avg_rr": 0.5738995227313128,
+        "profit_factor": 0.08407445237465092
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -61.54170914558898,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.37228021900570746,
+    "sharpe": -1.2234007584762498,
+    "sortino": -0.209432409017041,
+    "max_drawdown": -0.37228021900570746,
+    "win_rate": 0.0592797783933518,
+    "profit_factor": 0.07433510394437053,
+    "total_trades_raw": 1805,
+    "closed_trades": 902,
+    "total_pnl": -2276.8547942164846,
+    "total_fees": 2889.953685066874,
+    "by_regime": {
+      "ranging": -907.4116102678203,
+      "trending_up": -1369.4431839486645
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 376,
+        "expectancy": -2.413328750712288,
+        "win_rate": 0.12234042553191489,
+        "avg_rr": 0.5076545575863981,
+        "profit_factor": 0.0707639686332555
+      },
+      {
+        "regime": "trending_up",
+        "trades": 526,
+        "expectancy": -2.6035041519936586,
+        "win_rate": 0.11596958174904944,
+        "avg_rr": 0.5845759351328009,
+        "profit_factor": 0.0766863054690341
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "liquidity",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.1466073492433421,
+    "sharpe": -0.5890102529842383,
+    "sortino": -0.050572017225870874,
+    "max_drawdown": -0.08700248317548272,
+    "win_rate": 0.033426183844011144,
+    "profit_factor": 0.03831440971837413,
+    "total_trades_raw": 359,
+    "closed_trades": 177,
+    "total_pnl": -625.2260105378425,
+    "total_fees": 683.7265597201299,
+    "by_regime": {
+      "ranging": -243.96773322091522,
+      "trending_down": -194.36420645666547,
+      "trending_up": -64.00250356400835,
+      "unknown": -122.89156729625341
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 77,
+        "expectancy": -3.1684121197521455,
+        "win_rate": 0.06493506493506493,
+        "avg_rr": 0.18953211462521674,
+        "profit_factor": 0.013161952404528941
+      },
+      {
+        "regime": "trending_down",
+        "trades": 79,
+        "expectancy": -2.4603064108438666,
+        "win_rate": 0.0759493670886076,
+        "avg_rr": 1.205611062634149,
+        "profit_factor": 0.0990913202165054
+      },
+      {
+        "regime": "trending_up",
+        "trades": 19,
+        "expectancy": -3.3685528191583343,
+        "win_rate": 0.05263157894736842,
+        "avg_rr": 0.07769049439634121,
+        "profit_factor": 0.004316138577574512
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -61.44578364812671,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "mtf_trend",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.44248823754619854,
+    "sharpe": -1.597488667965678,
+    "sortino": -0.34194251166130274,
+    "max_drawdown": -0.5015940400433784,
+    "win_rate": 0.038288288288288286,
+    "profit_factor": 0.041420417563001834,
+    "total_trades_raw": 2664,
+    "closed_trades": 1332,
+    "total_pnl": -3209.7132865194976,
+    "total_fees": 3854.7395545454974,
+    "by_regime": {
+      "ranging": -1515.7522456944066,
+      "trending_down": -538.2255565186879,
+      "trending_up": -1032.7830356180548,
+      "unknown": -122.95244868834851
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 662,
+        "expectancy": -2.2896559602634543,
+        "win_rate": 0.08157099697885196,
+        "avg_rr": 0.6118221061560235,
+        "profit_factor": 0.054339463375699455
+      },
+      {
+        "regime": "trending_down",
+        "trades": 233,
+        "expectancy": -2.309980929264755,
+        "win_rate": 0.06437768240343347,
+        "avg_rr": 0.2741328252220115,
+        "profit_factor": 0.01886235035931272
+      },
+      {
+        "regime": "trending_up",
+        "trades": 435,
+        "expectancy": -2.374213874984034,
+        "win_rate": 0.07586206896551724,
+        "avg_rr": 0.4678295666839376,
+        "profit_factor": 0.038403919653159056
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -61.476224344174256,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "oi_footprint",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.011275579337277122,
+    "sharpe": -0.6554507515652367,
+    "sortino": -0.05891008195277571,
+    "max_drawdown": -0.09826527571509469,
+    "win_rate": 0.024752475247524754,
+    "profit_factor": 0.019513831661685122,
+    "total_trades_raw": 404,
+    "closed_trades": 201,
+    "total_pnl": -658.2747034044148,
+    "total_fees": 766.1340639296443,
+    "by_regime": {
+      "ranging": -299.75686427098816,
+      "trending_down": -238.92205034339983,
+      "trending_up": -58.05407964443781,
+      "unknown": -61.54170914558898
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 92,
+        "expectancy": -3.258226785554219,
+        "win_rate": 0.05434782608695652,
+        "avg_rr": 0.1535235299776012,
+        "profit_factor": 0.008823191378023057
+      },
+      {
+        "regime": "trending_down",
+        "trades": 88,
+        "expectancy": -2.715023299356816,
+        "win_rate": 0.056818181818181816,
+        "avg_rr": 0.6945276151125409,
+        "profit_factor": 0.04183901295858681
+      },
+      {
+        "regime": "trending_up",
+        "trades": 20,
+        "expectancy": -2.9027039822218907,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -61.54170914558898,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "sweep_scalper",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.01226135444992542,
+    "sharpe": -0.037758854943444435,
+    "sortino": 0.0,
+    "max_drawdown": -2.0012004764446376e-05,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "total_trades_raw": 2,
+    "closed_trades": 2,
+    "total_pnl": -122.89156729625341,
+    "total_fees": 1.0784950077909021,
+    "by_regime": {
+      "unknown": -122.89156729625341
+    },
+    "cells": [
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -61.44578364812671,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "vwap_reversal",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.1761408950656336,
+    "sharpe": -0.7719823664642125,
+    "sortino": -0.07789845208744131,
+    "max_drawdown": -0.17691122815922153,
+    "win_rate": 0.06048387096774194,
+    "profit_factor": 0.07600053959677264,
+    "total_trades_raw": 744,
+    "closed_trades": 371,
+    "total_pnl": -1083.2863868512154,
+    "total_fees": 1352.6261681820033,
+    "by_regime": {
+      "ranging": -535.6155866578874,
+      "trending_down": -547.670800193328
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 183,
+        "expectancy": -2.9268611292780733,
+        "win_rate": 0.09289617486338798,
+        "avg_rr": 0.7117755362734686,
+        "profit_factor": 0.0728926754014998
+      },
+      {
+        "regime": "trending_down",
+        "trades": 188,
+        "expectancy": -2.9131425542198297,
+        "win_rate": 0.14893617021276595,
+        "avg_rr": 0.4515423226221739,
+        "profit_factor": 0.07901990645888043
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "volatility_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.009036747481911698,
+    "sharpe": -1.556963995223763,
+    "sortino": -0.470268087243872,
+    "max_drawdown": -0.009036747481911698,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_trades_raw": 354,
+    "closed_trades": 171,
+    "total_pnl": -53.748331953064564,
+    "total_fees": 70.8303206661348,
+    "by_regime": {
+      "ranging": -25.440712209231798,
+      "trending_up": -28.307619743832767
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 85,
+        "expectancy": -0.2993024965791976,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_up",
+        "trades": 86,
+        "expectancy": -0.3291583691143345,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "crypto_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.3791669486404969,
+    "sharpe": -1.2709595642643778,
+    "sortino": -0.19746167320872707,
+    "max_drawdown": -0.3791669486404969,
+    "win_rate": 0.05570876999448428,
+    "profit_factor": 0.04709704853888509,
+    "total_trades_raw": 1813,
+    "closed_trades": 906,
+    "total_pnl": -2347.216822907537,
+    "total_fees": 2886.884349394752,
+    "by_regime": {
+      "ranging": -1003.8293254561526,
+      "trending_down": -1319.0596832622061,
+      "trending_up": -24.327814189178245
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 398,
+        "expectancy": -2.522184234814454,
+        "win_rate": 0.08793969849246232,
+        "avg_rr": 0.40561994485734476,
+        "profit_factor": 0.03910936107439963
+      },
+      {
+        "regime": "trending_down",
+        "trades": 499,
+        "expectancy": -2.6434061788821768,
+        "win_rate": 0.13026052104208416,
+        "avg_rr": 0.3578325720402898,
+        "profit_factor": 0.0535924359046517
+      },
+      {
+        "regime": "trending_up",
+        "trades": 9,
+        "expectancy": -2.7030904654642494,
+        "win_rate": 0.1111111111111111,
+        "avg_rr": 0.14815631953800418,
+        "profit_factor": 0.018519539942250522
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "trend_following",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.33544139266445416,
+    "sharpe": -0.9048763445965032,
+    "sortino": -0.1102188231831328,
+    "max_drawdown": -0.33544139266445416,
+    "win_rate": 0.0325,
+    "profit_factor": 0.02923596187530924,
+    "total_trades_raw": 1600,
+    "closed_trades": 799,
+    "total_pnl": -2038.0270386681439,
+    "total_fees": 2629.216782096563,
+    "by_regime": {
+      "ranging": -919.8365229580334,
+      "trending_down": -950.1154268400276,
+      "trending_up": -168.07508887008296
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 379,
+        "expectancy": -2.427009295403782,
+        "win_rate": 0.10817941952506596,
+        "avg_rr": 0.41656279266272894,
+        "profit_factor": 0.05052980621056771
+      },
+      {
+        "regime": "trending_down",
+        "trades": 362,
+        "expectancy": -2.6246282509393026,
+        "win_rate": 0.019337016574585635,
+        "avg_rr": 0.42025029221880333,
+        "profit_factor": 0.008286625480370768
+      },
+      {
+        "regime": "trending_up",
+        "trades": 58,
+        "expectancy": -2.8978463598290167,
+        "win_rate": 0.06896551724137931,
+        "avg_rr": 0.3509812180978756,
+        "profit_factor": 0.025998608747990787
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "mean_reversion",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.06305033841265449,
+    "sharpe": -0.3518610041221519,
+    "sortino": -0.01597815443866253,
+    "max_drawdown": -0.06305033841265449,
+    "win_rate": 0.03515625,
+    "profit_factor": 0.03631238479227523,
+    "total_trades_raw": 256,
+    "closed_trades": 127,
+    "total_pnl": -380.79279661371936,
+    "total_fees": 495.5276745067211,
+    "by_regime": {
+      "ranging": -201.70585801730877,
+      "trending_down": -157.31105941732824,
+      "trending_up": -21.775879179082374
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 63,
+        "expectancy": -3.201680285989028,
+        "win_rate": 0.031746031746031744,
+        "avg_rr": 0.17785963696841203,
+        "profit_factor": 0.00583146350716105
+      },
+      {
+        "regime": "trending_down",
+        "trades": 55,
+        "expectancy": -2.860201080315059,
+        "win_rate": 0.09090909090909091,
+        "avg_rr": 0.5528581613781282,
+        "profit_factor": 0.05528581613781282
+      },
+      {
+        "regime": "trending_up",
+        "trades": 9,
+        "expectancy": -2.4195421310091527,
+        "win_rate": 0.2222222222222222,
+        "avg_rr": 0.5384730170617724,
+        "profit_factor": 0.15384943344622068
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "momentum",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.02208395112401813,
+    "sharpe": -0.19023364386176878,
+    "sortino": -0.004575095519038399,
+    "max_drawdown": -0.02208395112401813,
+    "win_rate": 0.04878048780487805,
+    "profit_factor": 0.05720789059025745,
+    "total_trades_raw": 82,
+    "closed_trades": 40,
+    "total_pnl": -137.72462687816707,
+    "total_fees": 162.26705677826578,
+    "by_regime": {
+      "ranging": -82.38690296186277,
+      "trending_down": -4.9949928541404525,
+      "trending_up": -50.34273106216386
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 21,
+        "expectancy": -3.923185855326799,
+        "win_rate": 0.09523809523809523,
+        "avg_rr": 0.5231139491729452,
+        "profit_factor": 0.055064626228731074
+      },
+      {
+        "regime": "trending_down",
+        "trades": 2,
+        "expectancy": -2.4974964270702262,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_up",
+        "trades": 17,
+        "expectancy": -2.9613371213037563,
+        "win_rate": 0.11764705882352941,
+        "avg_rr": 0.49482406347290714,
+        "profit_factor": 0.06597654179638762
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "scalping",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.41839912996528256,
+    "sharpe": -1.1866146202808012,
+    "sortino": -0.19522508106379036,
+    "max_drawdown": -0.498293016368424,
+    "win_rate": 0.022553516819571864,
+    "profit_factor": 0.02083729219078065,
+    "total_trades_raw": 2616,
+    "closed_trades": 1307,
+    "total_pnl": -3165.5989235455518,
+    "total_fees": 3798.404811446896,
+    "by_regime": {
+      "ranging": -825.044692095715,
+      "trending_down": -1236.093779705359,
+      "trending_up": -1019.4816560883196,
+      "unknown": -84.97879565615825
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 357,
+        "expectancy": -2.311049557691079,
+        "win_rate": 0.05042016806722689,
+        "avg_rr": 0.44508097542764047,
+        "profit_factor": 0.023632618164299495
+      },
+      {
+        "regime": "trending_down",
+        "trades": 508,
+        "expectancy": -2.433255471860943,
+        "win_rate": 0.045275590551181105,
+        "avg_rr": 0.5011235471877102,
+        "profit_factor": 0.02376462182539657
+      },
+      {
+        "regime": "trending_up",
+        "trades": 441,
+        "expectancy": -2.3117497870483437,
+        "win_rate": 0.04081632653061224,
+        "avg_rr": 0.3922594125345489,
+        "profit_factor": 0.016691889895087186
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -84.97879565615825,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.5009506378991667,
+    "sharpe": -1.0877361438259392,
+    "sortino": -0.16144206532681513,
+    "max_drawdown": -0.5009506378991667,
+    "win_rate": 0.05267034990791897,
+    "profit_factor": 0.05330048921906164,
+    "total_trades_raw": 2715,
+    "closed_trades": 1357,
+    "total_pnl": -3048.65553301207,
+    "total_fees": 3919.6819830400286,
+    "by_regime": {
+      "ranging": -1344.9875744310518,
+      "trending_up": -1703.6679585810184
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 620,
+        "expectancy": -2.1693347974694386,
+        "win_rate": 0.1032258064516129,
+        "avg_rr": 0.48099958311967866,
+        "profit_factor": 0.05536685848859611
+      },
+      {
+        "regime": "trending_up",
+        "trades": 737,
+        "expectancy": -2.3116254526201065,
+        "win_rate": 0.10719131614654002,
+        "avg_rr": 0.4303050520418827,
+        "profit_factor": 0.05166276460685217
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "liquidity",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.1652232784320624,
+    "sharpe": -0.8420060827444193,
+    "sortino": -0.09716351816824619,
+    "max_drawdown": -0.29150778519922405,
+    "win_rate": 0.025868440502586843,
+    "profit_factor": 0.0247747334662572,
+    "total_trades_raw": 1353,
+    "closed_trades": 675,
+    "total_pnl": -1937.3719921884103,
+    "total_fees": 2286.9761031805283,
+    "by_regime": {
+      "ranging": -667.0824103964491,
+      "trending_down": -996.7052127728346,
+      "trending_up": -103.5931612132892,
+      "unknown": -169.9912078058377
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 244,
+        "expectancy": -2.73394430490348,
+        "win_rate": 0.03278688524590164,
+        "avg_rr": 0.26735259234236464,
+        "profit_factor": 0.00906279974041914
+      },
+      {
+        "regime": "trending_down",
+        "trades": 386,
+        "expectancy": -2.582137856924442,
+        "win_rate": 0.05958549222797927,
+        "avg_rr": 0.5815761159920274,
+        "profit_factor": 0.03684917539343424
+      },
+      {
+        "regime": "trending_up",
+        "trades": 43,
+        "expectancy": -2.4091432840299816,
+        "win_rate": 0.09302325581395349,
+        "avg_rr": 0.4474978619126655,
+        "profit_factor": 0.045897216606427226
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -84.99560390291884,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "mtf_trend",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.4166883286681629,
+    "sharpe": -1.188274320537726,
+    "sortino": -0.19234865804693102,
+    "max_drawdown": -0.5006987721869561,
+    "win_rate": 0.028368794326241134,
+    "profit_factor": 0.02123214265270944,
+    "total_trades_raw": 2679,
+    "closed_trades": 1339,
+    "total_pnl": -3153.7825119912272,
+    "total_fees": 3872.423238458251,
+    "by_regime": {
+      "ranging": -1527.029834905252,
+      "trending_down": -633.5101435751632,
+      "trending_up": -908.2702672837837,
+      "unknown": -84.97226622702841
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 682,
+        "expectancy": -2.239046678746704,
+        "win_rate": 0.07624633431085044,
+        "avg_rr": 0.35983427045018035,
+        "profit_factor": 0.029700606449856157
+      },
+      {
+        "regime": "trending_down",
+        "trades": 269,
+        "expectancy": -2.3550562958184504,
+        "win_rate": 0.022304832713754646,
+        "avg_rr": 0.4192396644639949,
+        "profit_factor": 0.009564402991574029
+      },
+      {
+        "regime": "trending_up",
+        "trades": 387,
+        "expectancy": -2.346951595048537,
+        "win_rate": 0.046511627906976744,
+        "avg_rr": 0.34515996424965945,
+        "profit_factor": 0.016837071426812657
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -84.97226622702841,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "oi_footprint",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.07706206638491767,
+    "sharpe": -0.39701800081366395,
+    "sortino": -0.02208585529179928,
+    "max_drawdown": -0.07706206638491767,
+    "win_rate": 0.022653721682847898,
+    "profit_factor": 0.03731629597022655,
+    "total_trades_raw": 309,
+    "closed_trades": 153,
+    "total_pnl": -470.5291505729542,
+    "total_fees": 594.4290731898518,
+    "by_regime": {
+      "ranging": -177.28485063832878,
+      "trending_down": -266.285350103702,
+      "trending_up": -25.2348791974506,
+      "unknown": -1.7240706334728373
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 62,
+        "expectancy": -2.8594330748117547,
+        "win_rate": 0.03225806451612903,
+        "avg_rr": 0.07086061339756977,
+        "profit_factor": 0.002362020446585659
+      },
+      {
+        "regime": "trending_down",
+        "trades": 81,
+        "expectancy": -3.2874734580703953,
+        "win_rate": 0.04938271604938271,
+        "avg_rr": 0.9338018498055789,
+        "profit_factor": 0.048509187002887214
+      },
+      {
+        "regime": "trending_up",
+        "trades": 9,
+        "expectancy": -2.8038754663834,
+        "win_rate": 0.1111111111111111,
+        "avg_rr": 1.1516090596929898,
+        "profit_factor": 0.14395113246162372
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -1.7240706334728373,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "sweep_scalper",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.016976033181853926,
+    "sharpe": -0.03746116379529542,
+    "sortino": -15.0,
+    "max_drawdown": -4.002360830345424e-05,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "total_trades_raw": 2,
+    "closed_trades": 2,
+    "total_pnl": -169.9912078058377,
+    "total_fees": 1.0313481533670883,
+    "by_regime": {
+      "unknown": -169.9912078058377
+    },
+    "cells": [
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -84.99560390291884,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "vwap_reversal",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.058573705520580555,
+    "sharpe": -0.3436277405029031,
+    "sortino": -0.01771787369174419,
+    "max_drawdown": -0.05861956649036638,
+    "win_rate": 0.04435483870967742,
+    "profit_factor": 0.06573494751268605,
+    "total_trades_raw": 248,
+    "closed_trades": 123,
+    "total_pnl": -342.7469381643153,
+    "total_fees": 482.11138550528403,
+    "by_regime": {
+      "ranging": -158.92089288725737,
+      "trending_down": -185.13273652046382,
+      "trending_up": 1.3066912434059148
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 51,
+        "expectancy": -3.116095938965831,
+        "win_rate": 0.0784313725490196,
+        "avg_rr": 0.6869406920046142,
+        "profit_factor": 0.05846303761741397
+      },
+      {
+        "regime": "trending_down",
+        "trades": 71,
+        "expectancy": -2.6075033312741382,
+        "win_rate": 0.08450704225352113,
+        "avg_rr": 0.7077928159221293,
+        "profit_factor": 0.06533472146973501
+      },
+      {
+        "regime": "trending_up",
+        "trades": 1,
+        "expectancy": 1.3066912434059148,
+        "win_rate": 1.0,
+        "avg_rr": 0.0,
+        "profit_factor": null
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "volatility_breakout",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.0016814799183383002,
+    "sharpe": -0.43517281256349605,
+    "sortino": -0.027849341512681994,
+    "max_drawdown": -0.0016814799183383002,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_trades_raw": 60,
+    "closed_trades": 24,
+    "total_pnl": -9.613356934782358,
+    "total_fees": 12.002100211046718,
+    "by_regime": {
+      "ranging": -2.6325613329627378,
+      "trending_up": -6.98079560181962
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 6,
+        "expectancy": -0.4387602221604563,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_up",
+        "trades": 18,
+        "expectancy": -0.3878219778788678,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "crypto_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.500400895959734,
+    "sharpe": -1.1201301363917384,
+    "sortino": -0.1598994984269334,
+    "max_drawdown": -0.500400895959734,
+    "win_rate": 0.04420098224404987,
+    "profit_factor": 0.035535927231242354,
+    "total_trades_raw": 2647,
+    "closed_trades": 1323,
+    "total_pnl": -3084.97346427871,
+    "total_fees": 3835.913480624302,
+    "by_regime": {
+      "ranging": -1295.4744563718634,
+      "trending_down": -1742.6260565494815,
+      "trending_up": -46.87295135736477
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 560,
+        "expectancy": -2.313347243521185,
+        "win_rate": 0.07857142857142857,
+        "avg_rr": 0.29517265710855767,
+        "profit_factor": 0.02516976145886926
+      },
+      {
+        "regime": "trending_down",
+        "trades": 747,
+        "expectancy": -2.3328327396914075,
+        "win_rate": 0.09772423025435073,
+        "avg_rr": 0.40631154463371183,
+        "profit_factor": 0.04400703673332488
+      },
+      {
+        "regime": "trending_up",
+        "trades": 16,
+        "expectancy": -2.929559459835298,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "trend_following",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.10129678274954003,
+    "sharpe": -0.7986748972594021,
+    "sortino": -0.07959199836309881,
+    "max_drawdown": -0.10129678274954003,
+    "win_rate": 0.10602409638554217,
+    "profit_factor": 0.09065022483382221,
+    "total_trades_raw": 415,
+    "closed_trades": 206,
+    "total_pnl": -616.4086912645088,
+    "total_fees": 787.5634590287455,
+    "by_regime": {
+      "ranging": -369.6972459452001,
+      "trending_down": -163.87832404849064,
+      "trending_up": -82.83312127081795
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 126,
+        "expectancy": -2.9341051265492073,
+        "win_rate": 0.2222222222222222,
+        "avg_rr": 0.3724598813615194,
+        "profit_factor": 0.10641710896043412
+      },
+      {
+        "regime": "trending_down",
+        "trades": 59,
+        "expectancy": -2.7775987126862822,
+        "win_rate": 0.22033898305084745,
+        "avg_rr": 0.2651942355167724,
+        "profit_factor": 0.07494619699387046
+      },
+      {
+        "regime": "trending_up",
+        "trades": 21,
+        "expectancy": -3.9444343462294262,
+        "win_rate": 0.14285714285714285,
+        "avg_rr": 0.28582504166556094,
+        "profit_factor": 0.04763750694426015
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "mean_reversion",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.07364485049000177,
+    "sharpe": -0.5948999126386066,
+    "sortino": -0.047604131493621464,
+    "max_drawdown": -0.07364485049000177,
+    "win_rate": 0.1267605633802817,
+    "profit_factor": 0.1367130157773831,
+    "total_trades_raw": 284,
+    "closed_trades": 140,
+    "total_pnl": -458.71465943789593,
+    "total_fees": 547.8274223857276,
+    "by_regime": {
+      "ranging": -280.7262310414274,
+      "trending_down": -145.24608622491482,
+      "trending_up": -32.74234217155371
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 77,
+        "expectancy": -3.645795208330226,
+        "win_rate": 0.22077922077922077,
+        "avg_rr": 0.33052525486270734,
+        "profit_factor": 0.09364882221110041
+      },
+      {
+        "regime": "trending_down",
+        "trades": 56,
+        "expectancy": -2.5936801111591934,
+        "win_rate": 0.32142857142857145,
+        "avg_rr": 0.46630374234305494,
+        "profit_factor": 0.22088072005723652
+      },
+      {
+        "regime": "trending_up",
+        "trades": 7,
+        "expectancy": -4.677477453079101,
+        "win_rate": 0.14285714285714285,
+        "avg_rr": 0.419319301335852,
+        "profit_factor": 0.06988655022264201
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "momentum",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.07963762017121316,
+    "sharpe": -0.14231058880077554,
+    "sortino": -0.0023316732982998144,
+    "max_drawdown": -0.0017829607047148935,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_trades_raw": 11,
+    "closed_trades": 5,
+    "total_pnl": -89.06529012297885,
+    "total_fees": 19.112963176064294,
+    "by_regime": {
+      "ranging": -5.635902842066886,
+      "unknown": -83.42938728091197
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 3,
+        "expectancy": -1.878634280688962,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -41.714693640455984,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "scalping",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.2622634004447933,
+    "sharpe": -1.402881492238446,
+    "sortino": -0.25447820697809254,
+    "max_drawdown": -0.30274076714054515,
+    "win_rate": 0.08191881918819188,
+    "profit_factor": 0.09839651962062683,
+    "total_trades_raw": 1355,
+    "closed_trades": 677,
+    "total_pnl": -1928.7539273848492,
+    "total_fees": 2277.503769040833,
+    "by_regime": {
+      "ranging": -621.4565885471354,
+      "trending_down": -609.0878115488271,
+      "trending_up": -656.2537842057949,
+      "unknown": -41.95574308309178
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 208,
+        "expectancy": -2.9877720603227664,
+        "win_rate": 0.1201923076923077,
+        "avg_rr": 0.4016237647999338,
+        "profit_factor": 0.05486663453551008
+      },
+      {
+        "regime": "trending_down",
+        "trades": 246,
+        "expectancy": -2.475966713613118,
+        "win_rate": 0.22764227642276422,
+        "avg_rr": 0.5511802689985346,
+        "profit_factor": 0.16245313191535757
+      },
+      {
+        "regime": "trending_up",
+        "trades": 222,
+        "expectancy": -2.95609812705313,
+        "win_rate": 0.13513513513513514,
+        "avg_rr": 0.5054876132447641,
+        "profit_factor": 0.0789824395694944
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -41.95574308309178,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.20596417848834525,
+    "sharpe": -1.2085588284912747,
+    "sortino": -0.18383424244544774,
+    "max_drawdown": -0.20596417848834525,
+    "win_rate": 0.06302021403091558,
+    "profit_factor": 0.057187272563678795,
+    "total_trades_raw": 841,
+    "closed_trades": 420,
+    "total_pnl": -1306.9236643313411,
+    "total_fees": 1503.4089151580308,
+    "by_regime": {
+      "ranging": -618.8219398600955,
+      "trending_up": -688.1017244712457
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 202,
+        "expectancy": -3.0634749498024534,
+        "win_rate": 0.12376237623762376,
+        "avg_rr": 0.4671972016910649,
+        "profit_factor": 0.06598830532359673
+      },
+      {
+        "regime": "trending_up",
+        "trades": 218,
+        "expectancy": -3.156429928767182,
+        "win_rate": 0.12844036697247707,
+        "avg_rr": 0.3333786548719918,
+        "profit_factor": 0.04912948598113564
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "liquidity",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.05160989881259975,
+    "sharpe": -0.44639218526087965,
+    "sortino": -0.0325380439767015,
+    "max_drawdown": -0.04493754892085763,
+    "win_rate": 0.13043478260869565,
+    "profit_factor": 0.17856285675312125,
+    "total_trades_raw": 207,
+    "closed_trades": 103,
+    "total_pnl": -328.90886694060816,
+    "total_fees": 402.8389587715906,
+    "by_regime": {
+      "ranging": -136.84070832459665,
+      "trending_down": -106.62927569342665,
+      "trending_up": -1.948972377310639,
+      "unknown": -83.4899105452742
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 51,
+        "expectancy": -2.683151143619542,
+        "win_rate": 0.23529411764705882,
+        "avg_rr": 0.5558954620391202,
+        "profit_factor": 0.17104475755049853
+      },
+      {
+        "regime": "trending_down",
+        "trades": 44,
+        "expectancy": -2.4233926293960604,
+        "win_rate": 0.2727272727272727,
+        "avg_rr": 0.6499101080986188,
+        "profit_factor": 0.24371629053698204
+      },
+      {
+        "regime": "trending_up",
+        "trades": 6,
+        "expectancy": -0.32482872955177317,
+        "win_rate": 0.5,
+        "avg_rr": 0.8203627499891701,
+        "profit_factor": 0.8203627499891701
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -41.7449552726371,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "mtf_trend",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.26383406309465673,
+    "sharpe": -1.5503261579774643,
+    "sortino": -0.29675290814972644,
+    "max_drawdown": -0.3044667582298349,
+    "win_rate": 0.06382978723404255,
+    "profit_factor": 0.05353329932899315,
+    "total_trades_raw": 1363,
+    "closed_trades": 681,
+    "total_pnl": -1938.0349429736727,
+    "total_fees": 2293.0487456492638,
+    "by_regime": {
+      "ranging": -984.9633374342621,
+      "trending_down": -260.11498976896036,
+      "trending_up": -651.2920212261445,
+      "unknown": -41.66459454430573
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 339,
+        "expectancy": -2.9054965706025433,
+        "win_rate": 0.11799410029498525,
+        "avg_rr": 0.34864970188729705,
+        "profit_factor": 0.046642100586929365
+      },
+      {
+        "regime": "trending_down",
+        "trades": 104,
+        "expectancy": -2.501105670855388,
+        "win_rate": 0.14423076923076922,
+        "avg_rr": 0.29698815286844854,
+        "profit_factor": 0.05005418306771604
+      },
+      {
+        "regime": "trending_up",
+        "trades": 237,
+        "expectancy": -2.748067600110314,
+        "win_rate": 0.1350210970464135,
+        "avg_rr": 0.4373690876606876,
+        "profit_factor": 0.068272247829961
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -41.66459454430573,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "oi_footprint",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.10114565262980722,
+    "sharpe": -0.7439137837639275,
+    "sortino": -0.07796356465795068,
+    "max_drawdown": -0.10114565262980722,
+    "win_rate": 0.10476190476190476,
+    "profit_factor": 0.13147174911572054,
+    "total_trades_raw": 420,
+    "closed_trades": 209,
+    "total_pnl": -610.1175397355034,
+    "total_fees": 798.9209245357948,
+    "by_regime": {
+      "ranging": -270.81731638236977,
+      "trending_down": -293.86539842760715,
+      "trending_up": -45.43482492552648
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 94,
+        "expectancy": -2.8810352806635082,
+        "win_rate": 0.2127659574468085,
+        "avg_rr": 0.48568548509354026,
+        "profit_factor": 0.13126634732257844
+      },
+      {
+        "regime": "trending_down",
+        "trades": 97,
+        "expectancy": -3.0295401899753314,
+        "win_rate": 0.20618556701030927,
+        "avg_rr": 0.4712376832320759,
+        "profit_factor": 0.12239939824209764
+      },
+      {
+        "regime": "trending_up",
+        "trades": 18,
+        "expectancy": -2.5241569403070265,
+        "win_rate": 0.2222222222222222,
+        "avg_rr": 0.6544237127520711,
+        "profit_factor": 0.18697820364344886
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "sweep_scalper",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.00831724465487332,
+    "sharpe": -0.05347799937266147,
+    "sortino": 0.0,
+    "max_drawdown": -2.001201140032282e-05,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "total_trades_raw": 2,
+    "closed_trades": 2,
+    "total_pnl": -83.4899105452742,
+    "total_fees": 1.1179364103100298,
+    "by_regime": {
+      "unknown": -83.4899105452742
+    },
+    "cells": [
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -41.7449552726371,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "vwap_reversal",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.16184320889511583,
+    "sharpe": -1.1349335105572411,
+    "sortino": -0.16468763405177597,
+    "max_drawdown": -0.19540275059421447,
+    "win_rate": 0.10104529616724739,
+    "profit_factor": 0.10052842319748942,
+    "total_trades_raw": 861,
+    "closed_trades": 429,
+    "total_pnl": -1216.812846433543,
+    "total_fees": 1552.2036279287267,
+    "by_regime": {
+      "ranging": -545.3667341263706,
+      "trending_down": -604.9111741050499,
+      "trending_up": -24.91428141763582,
+      "unknown": -41.62065678448684
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 201,
+        "expectancy": -2.713267333962043,
+        "win_rate": 0.208955223880597,
+        "avg_rr": 0.33850835039352234,
+        "profit_factor": 0.0894173001039493
+      },
+      {
+        "regime": "trending_down",
+        "trades": 222,
+        "expectancy": -2.7248251085813058,
+        "win_rate": 0.19369369369369369,
+        "avg_rr": 0.4455845353563245,
+        "profit_factor": 0.10703986044872599
+      },
+      {
+        "regime": "trending_up",
+        "trades": 5,
+        "expectancy": -4.982856283527164,
+        "win_rate": 0.4,
+        "avg_rr": 0.4274933843700334,
+        "profit_factor": 0.2849955895800223
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -41.62065678448684,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "volatility_breakout",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.00248543087713515,
+    "sharpe": -1.0375170982739494,
+    "sortino": -0.129555887811763,
+    "max_drawdown": -0.00248543087713515,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_trades_raw": 94,
+    "closed_trades": 41,
+    "total_pnl": -14.250819232422993,
+    "total_fees": 18.807256036004304,
+    "by_regime": {
+      "ranging": -3.748766568128793,
+      "trending_up": -10.5020526642942
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 19,
+        "expectancy": -0.19730350358572596,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_up",
+        "trades": 22,
+        "expectancy": -0.47736603019519086,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "crypto_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.21781176405893812,
+    "sharpe": -1.205969121822696,
+    "sortino": -0.17957485500105216,
+    "max_drawdown": -0.21784757491420167,
+    "win_rate": 0.06976744186046512,
+    "profit_factor": 0.07565394089632244,
+    "total_trades_raw": 903,
+    "closed_trades": 451,
+    "total_pnl": -1373.033902045414,
+    "total_fees": 1608.1934755248794,
+    "by_regime": {
+      "ranging": -500.191628776451,
+      "trending_down": -862.0707976050994,
+      "trending_up": -10.771475663863345
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 189,
+        "expectancy": -2.6465165543727567,
+        "win_rate": 0.14285714285714285,
+        "avg_rr": 0.5828641394092053,
+        "profit_factor": 0.09714402323486755
+      },
+      {
+        "regime": "trending_down",
+        "trades": 258,
+        "expectancy": -3.34135968063992,
+        "win_rate": 0.13953488372093023,
+        "avg_rr": 0.3922427671715521,
+        "profit_factor": 0.06360693521700846
+      },
+      {
+        "regime": "trending_up",
+        "trades": 4,
+        "expectancy": -2.6928689159658363,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "trend_following",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.023041313505313157,
+    "sharpe": -0.2499246068074535,
+    "sortino": -0.008099176949311908,
+    "max_drawdown": -0.023041313505313157,
+    "win_rate": 0.1276595744680851,
+    "profit_factor": 0.14390037923374074,
+    "total_trades_raw": 94,
+    "closed_trades": 46,
+    "total_pnl": -135.4428790687033,
+    "total_fees": 186.01973541862247,
+    "by_regime": {
+      "ranging": -65.06375435382773,
+      "trending_down": -36.34377151167656,
+      "trending_up": -34.035353203198994
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 23,
+        "expectancy": -2.8288588849490317,
+        "win_rate": 0.2608695652173913,
+        "avg_rr": 0.46076441915393207,
+        "profit_factor": 0.162622736171976
+      },
+      {
+        "regime": "trending_down",
+        "trades": 12,
+        "expectancy": -3.0286476259730466,
+        "win_rate": 0.16666666666666666,
+        "avg_rr": 0.3306890350419027,
+        "profit_factor": 0.06613780700838054
+      },
+      {
+        "regime": "trending_up",
+        "trades": 11,
+        "expectancy": -3.094123018472636,
+        "win_rate": 0.36363636363636365,
+        "avg_rr": 0.3179522117410707,
+        "profit_factor": 0.18168697813775467
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "mean_reversion",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.001435860089201924,
+    "sharpe": -0.08262324097462485,
+    "sortino": -0.0008907133345974448,
+    "max_drawdown": -0.001435860089201924,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_trades_raw": 6,
+    "closed_trades": 2,
+    "total_pnl": -6.361268589122005,
+    "total_fees": 11.997408948271586,
+    "by_regime": {
+      "ranging": -6.361268589122005
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 2,
+        "expectancy": -3.1806342945610027,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "momentum",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.01997010211883644,
+    "sharpe": -0.24421932823732892,
+    "sortino": -0.007642005671697874,
+    "max_drawdown": -0.019950512894793285,
+    "win_rate": 0.10588235294117647,
+    "profit_factor": 0.11378581861388638,
+    "total_trades_raw": 85,
+    "closed_trades": 41,
+    "total_pnl": -114.27629488478063,
+    "total_fees": 166.71653318040458,
+    "by_regime": {
+      "ranging": -9.594208820847934,
+      "trending_down": -17.864608761250228,
+      "trending_up": -86.65006159903223,
+      "unknown": -0.16741570365023462
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 13,
+        "expectancy": -0.7380160631421487,
+        "win_rate": 0.5384615384615384,
+        "avg_rr": 0.4939993197342582,
+        "profit_factor": 0.5763325396899679
+      },
+      {
+        "regime": "trending_down",
+        "trades": 4,
+        "expectancy": -4.466152190312557,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_up",
+        "trades": 23,
+        "expectancy": -3.7673939825666185,
+        "win_rate": 0.08695652173913043,
+        "avg_rr": 0.1928379927559919,
+        "profit_factor": 0.018365523119618272
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -0.16741570365023462,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "scalping",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.11993383832087438,
+    "sharpe": -0.33276188336390106,
+    "sortino": -0.019499785343518535,
+    "max_drawdown": -0.054177727594936005,
+    "win_rate": 0.10344827586206896,
+    "profit_factor": 0.19999568026104217,
+    "total_trades_raw": 232,
+    "closed_trades": 115,
+    "total_pnl": -395.0952604594927,
+    "total_fees": 450.6684729793294,
+    "by_regime": {
+      "ranging": -91.78253843259806,
+      "trending_down": -104.63320335214912,
+      "trending_up": -104.89120729435867,
+      "unknown": -93.78831138038686
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 29,
+        "expectancy": -3.1649151183654505,
+        "win_rate": 0.1724137931034483,
+        "avg_rr": 0.3787108334186475,
+        "profit_factor": 0.07889809029555156
+      },
+      {
+        "regime": "trending_down",
+        "trades": 39,
+        "expectancy": -2.6829026500551056,
+        "win_rate": 0.20512820512820512,
+        "avg_rr": 0.5662018331876435,
+        "profit_factor": 0.14611660211294025
+      },
+      {
+        "regime": "trending_up",
+        "trades": 46,
+        "expectancy": -2.280243636833884,
+        "win_rate": 0.2391304347826087,
+        "avg_rr": 1.3057491104474002,
+        "profit_factor": 0.41037829185489716
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -93.78831138038686,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.0659393315717165,
+    "sharpe": -0.5080317001462187,
+    "sortino": -0.032774338470784654,
+    "max_drawdown": -0.0659393315717165,
+    "win_rate": 0.05639097744360902,
+    "profit_factor": 0.03673579749963658,
+    "total_trades_raw": 266,
+    "closed_trades": 132,
+    "total_pnl": -400.07080265454005,
+    "total_fees": 514.7820064051317,
+    "by_regime": {
+      "ranging": -191.9241704016731,
+      "trending_up": -208.14663225286694
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 62,
+        "expectancy": -3.0955511355108567,
+        "win_rate": 0.11290322580645161,
+        "avg_rr": 0.18297818036563349,
+        "profit_factor": 0.02328813204653517
+      },
+      {
+        "regime": "trending_up",
+        "trades": 70,
+        "expectancy": -2.973523317898099,
+        "win_rate": 0.11428571428571428,
+        "avg_rr": 0.3782880399571479,
+        "profit_factor": 0.04881135999447069
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "liquidity",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.12192605086972398,
+    "sharpe": -0.4613779982547996,
+    "sortino": -0.028280545813825716,
+    "max_drawdown": -0.0556270255913209,
+    "win_rate": 0.08085106382978724,
+    "profit_factor": 0.0450837072721995,
+    "total_trades_raw": 235,
+    "closed_trades": 117,
+    "total_pnl": -514.1862762225416,
+    "total_fees": 454.2543408734071,
+    "by_regime": {
+      "ranging": -137.86181509362237,
+      "trending_down": -151.49646211093184,
+      "trending_up": -37.14859301071942,
+      "unknown": -187.67940600726794
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 52,
+        "expectancy": -2.6511887518004302,
+        "win_rate": 0.19230769230769232,
+        "avg_rr": 0.48964396857117704,
+        "profit_factor": 0.11658189727885167
+      },
+      {
+        "regime": "trending_down",
+        "trades": 52,
+        "expectancy": -2.913393502133305,
+        "win_rate": 0.15384615384615385,
+        "avg_rr": 0.15999507797869805,
+        "profit_factor": 0.0290900141779451
+      },
+      {
+        "regime": "trending_up",
+        "trades": 11,
+        "expectancy": -3.377144819156311,
+        "win_rate": 0.09090909090909091,
+        "avg_rr": 0.3989448596644922,
+        "profit_factor": 0.03989448596644923
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -93.83970300363397,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "mtf_trend",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.40786823994052174,
+    "sharpe": -1.3915305792010308,
+    "sortino": -0.2607249080148095,
+    "max_drawdown": -0.5012235213189137,
+    "win_rate": 0.07348484848484849,
+    "profit_factor": 0.09261252696644426,
+    "total_trades_raw": 2640,
+    "closed_trades": 1320,
+    "total_pnl": -3287.805624213801,
+    "total_fees": 3820.8649609812733,
+    "by_regime": {
+      "ranging": -1695.8035192161694,
+      "trending_down": -482.38998866751007,
+      "trending_up": -921.9327103228536,
+      "unknown": -187.67940600726794
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 667,
+        "expectancy": -2.5424340617933576,
+        "win_rate": 0.13793103448275862,
+        "avg_rr": 0.4336694538920501,
+        "profit_factor": 0.06938711262272802
+      },
+      {
+        "regime": "trending_down",
+        "trades": 197,
+        "expectancy": -2.4486801455203557,
+        "win_rate": 0.1116751269035533,
+        "avg_rr": 0.2978803318431934,
+        "profit_factor": 0.03744781314600146
+      },
+      {
+        "regime": "trending_up",
+        "trades": 454,
+        "expectancy": -2.0306887892573866,
+        "win_rate": 0.1762114537444934,
+        "avg_rr": 0.8000975464731623,
+        "profit_factor": 0.17114386020816308
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -93.83970300363397,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "oi_footprint",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.14865483242825595,
+    "sharpe": -0.3100234069377401,
+    "sortino": -0.012942149197153408,
+    "max_drawdown": -0.028555132685790158,
+    "win_rate": 0.11290322580645161,
+    "profit_factor": 0.07773931826839756,
+    "total_trades_raw": 124,
+    "closed_trades": 61,
+    "total_pnl": -254.8552404369611,
+    "total_fees": 243.17419882062856,
+    "by_regime": {
+      "ranging": -61.69529443226526,
+      "trending_down": -76.25704932116432,
+      "trending_up": -23.11458530314469,
+      "unknown": -93.78831138038686
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 23,
+        "expectancy": -2.6824041057506633,
+        "win_rate": 0.2608695652173913,
+        "avg_rr": 0.44908950252006397,
+        "profit_factor": 0.1585021773600226
+      },
+      {
+        "regime": "trending_down",
+        "trades": 32,
+        "expectancy": -2.383032791286385,
+        "win_rate": 0.21875,
+        "avg_rr": 0.35124812322088267,
+        "profit_factor": 0.09834947450184717
+      },
+      {
+        "regime": "trending_up",
+        "trades": 5,
+        "expectancy": -4.622917060628938,
+        "win_rate": 0.2,
+        "avg_rr": 0.2504051045377869,
+        "profit_factor": 0.06260127613444673
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -93.78831138038686,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "sweep_scalper",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.01874662359294325,
+    "sharpe": -0.037748682222322374,
+    "sortino": 0.0,
+    "max_drawdown": -2.0012003040352767e-05,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "total_trades_raw": 2,
+    "closed_trades": 2,
+    "total_pnl": -187.67940600726794,
+    "total_fees": 1.0136422332102153,
+    "by_regime": {
+      "unknown": -187.67940600726794
+    },
+    "cells": [
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -93.83970300363397,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "vwap_reversal",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.18071000533693476,
+    "sharpe": -0.48513431576697524,
+    "sortino": -0.03024706513694529,
+    "max_drawdown": -0.07312036187500465,
+    "win_rate": 0.07473309608540925,
+    "profit_factor": 0.06468203376612512,
+    "total_trades_raw": 281,
+    "closed_trades": 138,
+    "total_pnl": -550.6940756390521,
+    "total_fees": 538.6498249980234,
+    "by_regime": {
+      "ranging": -262.3758055795046,
+      "trending_down": -167.80476758716028,
+      "trending_up": -26.97274134041873,
+      "unknown": -93.54076113196854
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 74,
+        "expectancy": -3.5456189943176293,
+        "win_rate": 0.13513513513513514,
+        "avg_rr": 0.5280053249303361,
+        "profit_factor": 0.08250083202036501
+      },
+      {
+        "regime": "trending_down",
+        "trades": 58,
+        "expectancy": -2.8931856480544877,
+        "win_rate": 0.15517241379310345,
+        "avg_rr": 0.2819799857202508,
+        "profit_factor": 0.0517922422751481
+      },
+      {
+        "regime": "trending_up",
+        "trades": 5,
+        "expectancy": -5.394548268083746,
+        "win_rate": 0.4,
+        "avg_rr": 0.2473078476263405,
+        "profit_factor": 0.16487189841756034
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -93.54076113196854,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "volatility_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.004027119862107793,
+    "sharpe": -1.0285553736147246,
+    "sortino": -0.15074944151083045,
+    "max_drawdown": -0.004027119862107793,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_trades_raw": 163,
+    "closed_trades": 76,
+    "total_pnl": -22.863373379489154,
+    "total_fees": 32.614824259378466,
+    "by_regime": {
+      "ranging": -9.35722087399718,
+      "trending_up": -13.506152505491972
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 28,
+        "expectancy": -0.33418645978561357,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_up",
+        "trades": 48,
+        "expectancy": -0.28137817719774944,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "crypto_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.3853959381147228,
+    "sharpe": -1.0668752029890844,
+    "sortino": -0.15562266194421753,
+    "max_drawdown": -0.385424263288152,
+    "win_rate": 0.08485856905158069,
+    "profit_factor": 0.11751625406315348,
+    "total_trades_raw": 1803,
+    "closed_trades": 901,
+    "total_pnl": -2420.749845924064,
+    "total_fees": 2864.6251861829883,
+    "by_regime": {
+      "ranging": -1008.0260586128954,
+      "trending_down": -1396.2041085208207,
+      "trending_up": -16.519678790347832
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 390,
+        "expectancy": -2.584682201571527,
+        "win_rate": 0.1641025641025641,
+        "avg_rr": 0.536927276950634,
+        "profit_factor": 0.10540903596576864
+      },
+      {
+        "regime": "trending_down",
+        "trades": 504,
+        "expectancy": -2.7702462470651206,
+        "win_rate": 0.1746031746031746,
+        "avg_rr": 0.6006025653210824,
+        "profit_factor": 0.12705054266407512
+      },
+      {
+        "regime": "trending_up",
+        "trades": 7,
+        "expectancy": -2.3599541129068333,
+        "win_rate": 0.14285714285714285,
+        "avg_rr": 0.13458996337198303,
+        "profit_factor": 0.022431660561997174
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "trend_following",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0021749350885511376,
+    "sharpe": -0.054577130305231654,
+    "sortino": -0.00034279668207946325,
+    "max_drawdown": -0.0021749350885511376,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_trades_raw": 6,
+    "closed_trades": 2,
+    "total_pnl": -13.75475441215453,
+    "total_fees": 11.989827870805524,
+    "by_regime": {
+      "ranging": -13.75475441215453
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 2,
+        "expectancy": -6.877377206077265,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "mean_reversion",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.028644498260831097,
+    "sharpe": -0.1380317881070504,
+    "sortino": -0.003439750050734025,
+    "max_drawdown": -0.03209376005121303,
+    "win_rate": 0.13675213675213677,
+    "profit_factor": 0.2851120266262104,
+    "total_trades_raw": 117,
+    "closed_trades": 57,
+    "total_pnl": -168.54079444936207,
+    "total_fees": 229.95923259013347,
+    "by_regime": {
+      "ranging": -52.453800852883404,
+      "trending_down": -99.46396961006161,
+      "trending_up": -16.623023986417067
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 30,
+        "expectancy": -1.7484600284294467,
+        "win_rate": 0.3,
+        "avg_rr": 1.0865676061668155,
+        "profit_factor": 0.4656718312143494
+      },
+      {
+        "regime": "trending_down",
+        "trades": 21,
+        "expectancy": -4.736379505241029,
+        "win_rate": 0.23809523809523808,
+        "avg_rr": 0.5134087316258938,
+        "profit_factor": 0.16044022863309182
+      },
+      {
+        "regime": "trending_up",
+        "trades": 6,
+        "expectancy": -2.770503997736178,
+        "win_rate": 0.3333333333333333,
+        "avg_rr": 0.26109815089348265,
+        "profit_factor": 0.13054907544674133
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "momentum",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.01024767734203342,
+    "sharpe": -0.07045181278510924,
+    "sortino": -0.0005339343807721356,
+    "max_drawdown": -0.010227995466853445,
+    "win_rate": 0.05555555555555555,
+    "profit_factor": 0.02550783248883134,
+    "total_trades_raw": 18,
+    "closed_trades": 7,
+    "total_pnl": -84.1254946151935,
+    "total_fees": 32.28807426555092,
+    "by_regime": {
+      "ranging": -31.080228802091383,
+      "trending_down": -41.16636521801664,
+      "trending_up": -14.080928580764338,
+      "unknown": 2.202027985678854
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 2,
+        "expectancy": -15.540114401045692,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_down",
+        "trades": 2,
+        "expectancy": -20.58318260900832,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_up",
+        "trades": 2,
+        "expectancy": -7.040464290382169,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": 2.202027985678854,
+        "win_rate": 1.0,
+        "avg_rr": 0.0,
+        "profit_factor": null
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "scalping",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.1347694727315431,
+    "sharpe": -0.6489203427045889,
+    "sortino": -0.05835121313740135,
+    "max_drawdown": -0.3137870049819132,
+    "win_rate": 0.11519777931991672,
+    "profit_factor": 0.1618336169069762,
+    "total_trades_raw": 1441,
+    "closed_trades": 719,
+    "total_pnl": -2009.0947330506829,
+    "total_fees": 2412.331213186853,
+    "by_regime": {
+      "ranging": -426.21231021665153,
+      "trending_down": -717.1257760328715,
+      "trending_up": -785.1332121879838,
+      "unknown": -80.62343461317606
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 224,
+        "expectancy": -1.9027335277529087,
+        "win_rate": 0.29464285714285715,
+        "avg_rr": 0.6555443424797374,
+        "profit_factor": 0.27383497850419414
+      },
+      {
+        "regime": "trending_down",
+        "trades": 234,
+        "expectancy": -3.0646400685165447,
+        "win_rate": 0.21367521367521367,
+        "avg_rr": 0.5240920500235939,
+        "profit_factor": 0.142416317941194
+      },
+      {
+        "regime": "trending_up",
+        "trades": 260,
+        "expectancy": -3.0197431237999375,
+        "win_rate": 0.19230769230769232,
+        "avg_rr": 0.5082991301912871,
+        "profit_factor": 0.12102360242649694
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -80.62343461317606,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.47429244895624023,
+    "sharpe": -0.8709837890938817,
+    "sortino": -0.10930639013562227,
+    "max_drawdown": -0.47429244895624023,
+    "win_rate": 0.12029780564263323,
+    "profit_factor": 0.15802016976486144,
+    "total_trades_raw": 2552,
+    "closed_trades": 1275,
+    "total_pnl": -2838.070017257827,
+    "total_fees": 3807.250636578107,
+    "by_regime": {
+      "ranging": -1097.173126810615,
+      "trending_up": -1740.8968904472124
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 580,
+        "expectancy": -1.891677804845888,
+        "win_rate": 0.2827586206896552,
+        "avg_rr": 0.5533905754448666,
+        "profit_factor": 0.21816359224268778
+      },
+      {
+        "regime": "trending_up",
+        "trades": 695,
+        "expectancy": -2.5048876121542625,
+        "win_rate": 0.20575539568345325,
+        "avg_rr": 0.4443794094668121,
+        "profit_factor": 0.1151200281770908
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "liquidity",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.07129564796515679,
+    "sharpe": -0.2260521824880198,
+    "sortino": -0.007421217938387913,
+    "max_drawdown": -0.05500883373998545,
+    "win_rate": 0.13023255813953488,
+    "profit_factor": 0.1375159131549474,
+    "total_trades_raw": 215,
+    "closed_trades": 107,
+    "total_pnl": -501.18574392820005,
+    "total_fees": 415.0925677008375,
+    "by_regime": {
+      "ranging": -127.83916990618232,
+      "trending_down": -195.93730959511475,
+      "trending_up": -16.175083878385216,
+      "unknown": -161.2341805485177
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 49,
+        "expectancy": -2.608962651146578,
+        "win_rate": 0.2653061224489796,
+        "avg_rr": 0.5714887068964759,
+        "profit_factor": 0.20637092193483855
+      },
+      {
+        "regime": "trending_down",
+        "trades": 46,
+        "expectancy": -4.259506730328582,
+        "win_rate": 0.2608695652173913,
+        "avg_rr": 0.4700927272631659,
+        "profit_factor": 0.16591508021052914
+      },
+      {
+        "regime": "trending_up",
+        "trades": 10,
+        "expectancy": -1.6175083878385217,
+        "win_rate": 0.3,
+        "avg_rr": 0.7519790168358503,
+        "profit_factor": 0.3222767215010787
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -80.61709027425886,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "mtf_trend",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.36633206074246716,
+    "sharpe": -0.8683700861919172,
+    "sortino": -0.1016511102650996,
+    "max_drawdown": -0.45223946148933214,
+    "win_rate": 0.12620950778291964,
+    "profit_factor": 0.1374932923235469,
+    "total_trades_raw": 2377,
+    "closed_trades": 1188,
+    "total_pnl": -2885.3096450312737,
+    "total_fees": 3592.0473352154577,
+    "by_regime": {
+      "ranging": -1394.1582881828008,
+      "trending_down": -346.96201994950394,
+      "trending_up": -982.7917953493663,
+      "unknown": -161.39754154960275
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 613,
+        "expectancy": -2.2743202091073424,
+        "win_rate": 0.25774877650897227,
+        "avg_rr": 0.4646185165194442,
+        "profit_factor": 0.16134005628587295
+      },
+      {
+        "regime": "trending_down",
+        "trades": 137,
+        "expectancy": -2.5325694886825105,
+        "win_rate": 0.18248175182481752,
+        "avg_rr": 0.30054089134687595,
+        "profit_factor": 0.06708502038992765
+      },
+      {
+        "regime": "trending_up",
+        "trades": 436,
+        "expectancy": -2.254109622360932,
+        "win_rate": 0.268348623853211,
+        "avg_rr": 0.39559119560644557,
+        "profit_factor": 0.14509144164875903
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -80.69877077480137,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "oi_footprint",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.2898157821406242,
+    "sharpe": -0.6348406009205282,
+    "sortino": -0.057695440171210276,
+    "max_drawdown": -0.29003144630475225,
+    "win_rate": 0.13513513513513514,
+    "profit_factor": 0.1819556205528577,
+    "total_trades_raw": 1406,
+    "closed_trades": 702,
+    "total_pnl": -1709.4755392495006,
+    "total_fees": 2374.496459024532,
+    "by_regime": {
+      "ranging": -645.2951986002385,
+      "trending_down": -892.4366630404097,
+      "trending_up": -171.74367760885235
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 286,
+        "expectancy": -2.256276918182652,
+        "win_rate": 0.28321678321678323,
+        "avg_rr": 0.4611429224162851,
+        "profit_factor": 0.1822076912961907
+      },
+      {
+        "regime": "trending_down",
+        "trades": 358,
+        "expectancy": -2.492839840894999,
+        "win_rate": 0.2737430167597765,
+        "avg_rr": 0.5185080957101453,
+        "profit_factor": 0.19543766684459327
+      },
+      {
+        "regime": "trending_up",
+        "trades": 58,
+        "expectancy": -2.961097889807799,
+        "win_rate": 0.1896551724137931,
+        "avg_rr": 0.43920349657525126,
+        "profit_factor": 0.10279230770910137
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "sweep_scalper",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.008057701734432885,
+    "sharpe": 0.0,
+    "sortino": 0.0,
+    "max_drawdown": 0.0,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "total_trades_raw": 1,
+    "closed_trades": 1,
+    "total_pnl": -80.69676046226934,
+    "total_fees": 0.5199831484842841,
+    "by_regime": {
+      "unknown": -80.69676046226934
+    },
+    "cells": [
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -80.69676046226934,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "vwap_reversal",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.12900926761161444,
+    "sharpe": -0.05294004532153399,
+    "sortino": -0.0004289228393635538,
+    "max_drawdown": -0.0062162946431079035,
+    "win_rate": 0.10526315789473684,
+    "profit_factor": 0.09782631532327606,
+    "total_trades_raw": 19,
+    "closed_trades": 8,
+    "total_pnl": -122.31159982728363,
+    "total_fees": 34.647566945899364,
+    "by_regime": {
+      "ranging": -5.210216695515461,
+      "trending_down": -36.600754952898896,
+      "unknown": -80.50062817886926
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 2,
+        "expectancy": -2.6051083477577306,
+        "win_rate": 0.5,
+        "avg_rr": 0.16964923562488315,
+        "profit_factor": 0.16964923562488315
+      },
+      {
+        "regime": "trending_down",
+        "trades": 5,
+        "expectancy": -7.320150990579779,
+        "win_rate": 0.2,
+        "avg_rr": 0.9998761361327705,
+        "profit_factor": 0.24996903403319262
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -80.50062817886926,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "volatility_breakout",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.0027287990691764207,
+    "sharpe": -0.44127597845866146,
+    "sortino": -0.0228301763764332,
+    "max_drawdown": -0.002728858823357087,
+    "win_rate": 0.014492753623188406,
+    "profit_factor": 0.010407020467811726,
+    "total_trades_raw": 69,
+    "closed_trades": 28,
+    "total_pnl": -19.086189483911596,
+    "total_fees": 13.798819697931531,
+    "by_regime": {
+      "ranging": -2.8895089284665314,
+      "trending_up": -16.196680555445067
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 4,
+        "expectancy": -0.7223772321166329,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_up",
+        "trades": 24,
+        "expectancy": -0.6748616898102111,
+        "win_rate": 0.041666666666666664,
+        "avg_rr": 0.2815411525951224,
+        "profit_factor": 0.012240919678048799
+      }
+    ]
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "crypto_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.47391621404813905,
+    "sharpe": -0.8288592523363006,
+    "sortino": -0.09858448220696955,
+    "max_drawdown": -0.4739702659695707,
+    "win_rate": 0.12064777327935222,
+    "profit_factor": 0.15974191267236526,
+    "total_trades_raw": 2470,
+    "closed_trades": 1234,
+    "total_pnl": -2899.9999655885977,
+    "total_fees": 3675.590268289164,
+    "by_regime": {
+      "ranging": -1250.6618350057724,
+      "trending_down": -1612.2240166306037,
+      "trending_up": -37.114113952221444
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 544,
+        "expectancy": -2.2990107261135524,
+        "win_rate": 0.23529411764705882,
+        "avg_rr": 0.43640085582318794,
+        "profit_factor": 0.13427718640713474
+      },
+      {
+        "regime": "trending_down",
+        "trades": 676,
+        "expectancy": -2.384946770163615,
+        "win_rate": 0.2470414201183432,
+        "avg_rr": 0.5517380213666648,
+        "profit_factor": 0.181022101312835
+      },
+      {
+        "regime": "trending_up",
+        "trades": 14,
+        "expectancy": -2.651008139444389,
+        "win_rate": 0.21428571428571427,
+        "avg_rr": 0.09443273698442127,
+        "profit_factor": 0.025754382813933073
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "trend_following",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.01855180900066589,
+    "sharpe": -0.3022786343909276,
+    "sortino": -0.010857706104515925,
+    "max_drawdown": -0.018724576428495857,
+    "win_rate": 0.16393442622950818,
+    "profit_factor": 0.05902148330273982,
+    "total_trades_raw": 61,
+    "closed_trades": 29,
+    "total_pnl": -122.10201869255187,
+    "total_fees": 120.89241385435209,
+    "by_regime": {
+      "ranging": -45.604759126983744,
+      "trending_down": -49.06688308980088,
+      "trending_up": -27.43037647576724
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 14,
+        "expectancy": -3.2574827947845533,
+        "win_rate": 0.5,
+        "avg_rr": 0.13066476722535722,
+        "profit_factor": 0.13066476722535722
+      },
+      {
+        "regime": "trending_down",
+        "trades": 10,
+        "expectancy": -4.906688308980089,
+        "win_rate": 0.2,
+        "avg_rr": 0.03563085243060017,
+        "profit_factor": 0.008907713107650043
+      },
+      {
+        "regime": "trending_up",
+        "trades": 5,
+        "expectancy": -5.486075295153448,
+        "win_rate": 0.2,
+        "avg_rr": 0.05225370508926118,
+        "profit_factor": 0.013063426272315295
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "mean_reversion",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.02276326581334106,
+    "sharpe": -0.2997927315136503,
+    "sortino": -0.015031138700994826,
+    "max_drawdown": -0.02276326581334106,
+    "win_rate": 0.18,
+    "profit_factor": 0.26768657016568537,
+    "total_trades_raw": 100,
+    "closed_trades": 49,
+    "total_pnl": -126.6682693943491,
+    "total_fees": 198.03150540070834,
+    "by_regime": {
+      "ranging": -92.74169482512923,
+      "trending_down": -13.797835558392073,
+      "trending_up": -20.12873901082779
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 24,
+        "expectancy": -3.8642372843803847,
+        "win_rate": 0.2916666666666667,
+        "avg_rr": 0.3246782962665528,
+        "profit_factor": 0.1336910631685806
+      },
+      {
+        "regime": "trending_down",
+        "trades": 20,
+        "expectancy": -0.6898917779196037,
+        "win_rate": 0.55,
+        "avg_rr": 0.5716265034183092,
+        "profit_factor": 0.6986546152890446
+      },
+      {
+        "regime": "trending_up",
+        "trades": 5,
+        "expectancy": -4.025747802165558,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "momentum",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": 0.07456328108441085,
+    "sharpe": -0.3620372523883222,
+    "sortino": -0.018190452311032106,
+    "max_drawdown": -0.029338987800517122,
+    "win_rate": 0.10476190476190476,
+    "profit_factor": 0.09562108778341093,
+    "total_trades_raw": 105,
+    "closed_trades": 52,
+    "total_pnl": -293.69768788113447,
+    "total_fees": 204.15523170707758,
+    "by_regime": {
+      "ranging": -105.44914661999809,
+      "trending_down": -23.599522332949,
+      "trending_up": -59.63291011929727,
+      "unknown": -105.01610880889015
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 27,
+        "expectancy": -3.9055239488888183,
+        "win_rate": 0.18518518518518517,
+        "avg_rr": 0.7802540679260747,
+        "profit_factor": 0.17733046998319876
+      },
+      {
+        "regime": "trending_down",
+        "trades": 6,
+        "expectancy": -3.9332537221581667,
+        "win_rate": 0.3333333333333333,
+        "avg_rr": 0.13833390318942368,
+        "profit_factor": 0.06916695159471184
+      },
+      {
+        "regime": "trending_up",
+        "trades": 17,
+        "expectancy": -3.507818242311604,
+        "win_rate": 0.23529411764705882,
+        "avg_rr": 0.32250170734375977,
+        "profit_factor": 0.0992312945673107
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -52.508054404445076,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "scalping",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.10063222319792003,
+    "sharpe": -0.14555885947334948,
+    "sortino": -0.002495103607843902,
+    "max_drawdown": -0.003584159880515654,
+    "win_rate": 0.125,
+    "profit_factor": 0.03425358507031401,
+    "total_trades_raw": 16,
+    "closed_trades": 7,
+    "total_pnl": -70.40894110605056,
+    "total_fees": 30.53074103902943,
+    "by_regime": {
+      "ranging": -5.03354703079997,
+      "trending_down": -5.477014872084309,
+      "trending_up": -7.14617957983591,
+      "unknown": -52.75219962333038
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 2,
+        "expectancy": -2.516773515399985,
+        "win_rate": 0.5,
+        "avg_rr": 0.26112518976307025,
+        "profit_factor": 0.26112518976307025
+      },
+      {
+        "regime": "trending_down",
+        "trades": 3,
+        "expectancy": -1.825671624028103,
+        "win_rate": 0.3333333333333333,
+        "avg_rr": 0.2319128944648204,
+        "profit_factor": 0.1159564472324102
+      },
+      {
+        "regime": "trending_up",
+        "trades": 1,
+        "expectancy": -7.14617957983591,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -52.75219962333038,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.2055169451685013,
+    "sharpe": -1.111344551196114,
+    "sortino": -0.16727194013628757,
+    "max_drawdown": -0.20574734734730118,
+    "win_rate": 0.08323563892145369,
+    "profit_factor": 0.10806647181145064,
+    "total_trades_raw": 853,
+    "closed_trades": 426,
+    "total_pnl": -1294.0249804451437,
+    "total_fees": 1520.3960463344392,
+    "by_regime": {
+      "ranging": -555.1754423504202,
+      "trending_up": -738.8495380947234
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 190,
+        "expectancy": -2.921976012370633,
+        "win_rate": 0.18421052631578946,
+        "avg_rr": 0.5027874115793937,
+        "profit_factor": 0.1135326413243792
+      },
+      {
+        "regime": "trending_up",
+        "trades": 236,
+        "expectancy": -3.1307183817573025,
+        "win_rate": 0.15254237288135594,
+        "avg_rr": 0.5773033304990717,
+        "profit_factor": 0.10391459948983289
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "liquidity",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.023005988834158053,
+    "sharpe": -0.571157583431327,
+    "sortino": -0.04281329267615922,
+    "max_drawdown": -0.0699374031131316,
+    "win_rate": 0.1717171717171717,
+    "profit_factor": 0.15376258878915666,
+    "total_trades_raw": 297,
+    "closed_trades": 148,
+    "total_pnl": -515.5249632391776,
+    "total_fees": 572.9313978283852,
+    "by_regime": {
+      "ranging": -163.11730829156667,
+      "trending_down": -219.45181526020917,
+      "trending_up": -27.82254231022297,
+      "unknown": -105.13329737717882
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 67,
+        "expectancy": -2.4345866909189056,
+        "win_rate": 0.3880597014925373,
+        "avg_rr": 0.33435850673393835,
+        "profit_factor": 0.2120322237824975
+      },
+      {
+        "regime": "trending_down",
+        "trades": 72,
+        "expectancy": -3.0479418786140164,
+        "win_rate": 0.3472222222222222,
+        "avg_rr": 0.347598623024714,
+        "profit_factor": 0.18489288458761383
+      },
+      {
+        "regime": "trending_up",
+        "trades": 7,
+        "expectancy": -3.9746489014604243,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -52.56664868858941,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "mtf_trend",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.24228945146715258,
+    "sharpe": -1.396331173343523,
+    "sortino": -0.24942124787753991,
+    "max_drawdown": -0.293322485148669,
+    "win_rate": 0.0920340293890178,
+    "profit_factor": 0.09188718868415308,
+    "total_trades_raw": 1293,
+    "closed_trades": 646,
+    "total_pnl": -1891.074294191585,
+    "total_fees": 2185.8142287621035,
+    "by_regime": {
+      "ranging": -906.5820870452976,
+      "trending_down": -223.56865043223326,
+      "trending_up": -708.4571332601358,
+      "unknown": -52.4664234539185
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 326,
+        "expectancy": -2.7809266473782137,
+        "win_rate": 0.18404907975460122,
+        "avg_rr": 0.42735584094896467,
+        "profit_factor": 0.09639605434939053
+      },
+      {
+        "regime": "trending_down",
+        "trades": 80,
+        "expectancy": -2.794608130402916,
+        "win_rate": 0.225,
+        "avg_rr": 0.30710484861227105,
+        "profit_factor": 0.08915947217775612
+      },
+      {
+        "regime": "trending_up",
+        "trades": 239,
+        "expectancy": -2.964255787699313,
+        "win_rate": 0.17154811715481172,
+        "avg_rr": 0.44972440944900616,
+        "profit_factor": 0.09312475145156189
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -52.4664234539185,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "oi_footprint",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.07364990249013899,
+    "sharpe": -0.5991563399974009,
+    "sortino": -0.04506997019077095,
+    "max_drawdown": -0.07364990249013899,
+    "win_rate": 0.16151202749140894,
+    "profit_factor": 0.14408140467299702,
+    "total_trades_raw": 291,
+    "closed_trades": 144,
+    "total_pnl": -452.1947433165044,
+    "total_fees": 562.8606028024801,
+    "by_regime": {
+      "ranging": -185.83687607650998,
+      "trending_down": -225.95965557268144,
+      "trending_up": -40.39821166731297
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 65,
+        "expectancy": -2.859028862715538,
+        "win_rate": 0.35384615384615387,
+        "avg_rr": 0.2758844713275066,
+        "profit_factor": 0.15107959144125363
+      },
+      {
+        "regime": "trending_down",
+        "trades": 71,
+        "expectancy": -3.1825303601786117,
+        "win_rate": 0.3380281690140845,
+        "avg_rr": 0.3133802352685181,
+        "profit_factor": 0.16002394992434968
+      },
+      {
+        "regime": "trending_up",
+        "trades": 8,
+        "expectancy": -5.049776458414121,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "sweep_scalper",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.010483749806491686,
+    "sharpe": -0.05347799937266145,
+    "sortino": 0.0,
+    "max_drawdown": -2.0012046051349953e-05,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "total_trades_raw": 2,
+    "closed_trades": 2,
+    "total_pnl": -105.13329737717882,
+    "total_fees": 1.0962724597645692,
+    "by_regime": {
+      "unknown": -105.13329737717882
+    },
+    "cells": [
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -52.56664868858941,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "vwap_reversal",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.07668705771657151,
+    "sharpe": -0.3774733351386867,
+    "sortino": -0.020671533386799872,
+    "max_drawdown": -0.032071517675110954,
+    "win_rate": 0.21875,
+    "profit_factor": 0.23477244800409325,
+    "total_trades_raw": 160,
+    "closed_trades": 78,
+    "total_pnl": -209.48448260113577,
+    "total_fees": 312.2100614593727,
+    "by_regime": {
+      "ranging": -86.27860173237619,
+      "trending_down": -47.06241422783313,
+      "trending_up": -23.77741135478113,
+      "unknown": -52.36605528614531
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 41,
+        "expectancy": -2.1043561398140533,
+        "win_rate": 0.3902439024390244,
+        "avg_rr": 0.39668160427469623,
+        "profit_factor": 0.2538762267358056
+      },
+      {
+        "regime": "trending_down",
+        "trades": 34,
+        "expectancy": -1.384188653759798,
+        "win_rate": 0.5588235294117647,
+        "avg_rr": 0.33623278174793986,
+        "profit_factor": 0.42589485688072387
+      },
+      {
+        "regime": "trending_up",
+        "trades": 2,
+        "expectancy": -11.888705677390565,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -52.36605528614531,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "volatility_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.004662233247390759,
+    "sharpe": -1.2625821969038182,
+    "sortino": -0.20683832923308032,
+    "max_drawdown": -0.004662233247390759,
+    "win_rate": 0.022058823529411766,
+    "profit_factor": 0.005809517279392842,
+    "total_trades_raw": 136,
+    "closed_trades": 60,
+    "total_pnl": -31.417033436528982,
+    "total_fees": 27.203602171118902,
+    "by_regime": {
+      "ranging": -8.690405470350138,
+      "trending_up": -22.726627966178842
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 18,
+        "expectancy": -0.482800303908341,
+        "win_rate": 0.1111111111111111,
+        "avg_rr": 0.051248561382443776,
+        "profit_factor": 0.006406070172805472
+      },
+      {
+        "regime": "trending_up",
+        "trades": 42,
+        "expectancy": -0.5411101896709248,
+        "win_rate": 0.023809523809523808,
+        "avg_rr": 0.22882972582865707,
+        "profit_factor": 0.005581212825089197
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "crypto_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.11484298063044716,
+    "sharpe": -0.8124233325507162,
+    "sortino": -0.0834033854174192,
+    "max_drawdown": -0.11484478023839129,
+    "win_rate": 0.13278008298755187,
+    "profit_factor": 0.11813681198784326,
+    "total_trades_raw": 482,
+    "closed_trades": 240,
+    "total_pnl": -691.8449481783881,
+    "total_fees": 909.5446558744246,
+    "by_regime": {
+      "ranging": -268.64967918955995,
+      "trending_down": -418.0357108276287,
+      "trending_up": -5.159558161199475
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 116,
+        "expectancy": -2.315945510254827,
+        "win_rate": 0.3275862068965517,
+        "avg_rr": 0.33826062237118987,
+        "profit_factor": 0.1647936365398104
+      },
+      {
+        "regime": "trending_down",
+        "trades": 123,
+        "expectancy": -3.398664315671778,
+        "win_rate": 0.21138211382113822,
+        "avg_rr": 0.3233843756683968,
+        "profit_factor": 0.08668034811730224
+      },
+      {
+        "regime": "trending_up",
+        "trades": 1,
+        "expectancy": -5.159558161199475,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "trend_following",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.025991910884810385,
+    "sharpe": -0.24655863527097718,
+    "sortino": -0.00791986609573644,
+    "max_drawdown": -0.025991910884810385,
+    "win_rate": 0.11578947368421053,
+    "profit_factor": 0.13962974517869065,
+    "total_trades_raw": 95,
+    "closed_trades": 46,
+    "total_pnl": -162.9949436295167,
+    "total_fees": 187.92538008425117,
+    "by_regime": {
+      "ranging": -77.82390549315687,
+      "trending_down": -46.73112969063245,
+      "trending_up": -38.439908445727376
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 24,
+        "expectancy": -3.242662728881536,
+        "win_rate": 0.25,
+        "avg_rr": 0.4521473136267231,
+        "profit_factor": 0.1507157712089077
+      },
+      {
+        "regime": "trending_down",
+        "trades": 13,
+        "expectancy": -3.594702283894804,
+        "win_rate": 0.23076923076923078,
+        "avg_rr": 0.4771011950684047,
+        "profit_factor": 0.14313035852052142
+      },
+      {
+        "regime": "trending_up",
+        "trades": 9,
+        "expectancy": -4.271100938414153,
+        "win_rate": 0.2222222222222222,
+        "avg_rr": 0.3911038046499149,
+        "profit_factor": 0.11174394418568998
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "mean_reversion",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.08698986127992211,
+    "sharpe": -0.4854831401480944,
+    "sortino": -0.03272893364439476,
+    "max_drawdown": -0.08698986127992211,
+    "win_rate": 0.10955056179775281,
+    "profit_factor": 0.1577170049772052,
+    "total_trades_raw": 356,
+    "closed_trades": 177,
+    "total_pnl": -527.6205946745613,
+    "total_fees": 680.8075387583978,
+    "by_regime": {
+      "ranging": -283.39532996149927,
+      "trending_down": -203.36871486033266,
+      "trending_up": -40.8565498527293
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 82,
+        "expectancy": -3.4560406092865765,
+        "win_rate": 0.18292682926829268,
+        "avg_rr": 0.5157028146867385,
+        "profit_factor": 0.11545585403434441
+      },
+      {
+        "regime": "trending_down",
+        "trades": 84,
+        "expectancy": -2.4210561292896746,
+        "win_rate": 0.25,
+        "avg_rr": 0.6454838728188818,
+        "profit_factor": 0.21516129093962727
+      },
+      {
+        "regime": "trending_up",
+        "trades": 11,
+        "expectancy": -3.714231804793573,
+        "win_rate": 0.2727272727272727,
+        "avg_rr": 0.3441092047043159,
+        "profit_factor": 0.12904095176411845
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "momentum",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.1999656155996663,
+    "sharpe": -0.5035575661280018,
+    "sortino": -0.032541066310220156,
+    "max_drawdown": -0.08748715707925424,
+    "win_rate": 0.09792284866468842,
+    "profit_factor": 0.08860053698505575,
+    "total_trades_raw": 337,
+    "closed_trades": 167,
+    "total_pnl": -649.490019214066,
+    "total_fees": 640.810976259136,
+    "by_regime": {
+      "ranging": -230.65818058627912,
+      "trending_down": -43.335411721081236,
+      "trending_up": -272.99972750615484,
+      "unknown": -102.49669940055078
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 69,
+        "expectancy": -3.342872182409842,
+        "win_rate": 0.18840579710144928,
+        "avg_rr": 0.424810964661258,
+        "profit_factor": 0.09861683108207775
+      },
+      {
+        "regime": "trending_down",
+        "trades": 20,
+        "expectancy": -2.166770586054062,
+        "win_rate": 0.35,
+        "avg_rr": 0.37800537774297044,
+        "profit_factor": 0.20354135724621486
+      },
+      {
+        "regime": "trending_up",
+        "trades": 77,
+        "expectancy": -3.5454510065734395,
+        "win_rate": 0.16883116883116883,
+        "avg_rr": 0.44052553674701334,
+        "profit_factor": 0.0894817496517371
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -102.49669940055078,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "scalping",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.14026491846835015,
+    "sharpe": -0.5456519808383006,
+    "sortino": -0.03904878170058478,
+    "max_drawdown": -0.1281302986958206,
+    "win_rate": 0.10614525139664804,
+    "profit_factor": 0.14033729678582996,
+    "total_trades_raw": 537,
+    "closed_trades": 267,
+    "total_pnl": -877.9200423629727,
+    "total_fees": 1004.5134289396136,
+    "by_regime": {
+      "ranging": -230.6997133498276,
+      "trending_down": -321.86957621631524,
+      "trending_up": -222.85200465140352,
+      "unknown": -102.49874814542639
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 76,
+        "expectancy": -3.0355225440766787,
+        "win_rate": 0.15789473684210525,
+        "avg_rr": 0.569646567909964,
+        "profit_factor": 0.10680873148311824
+      },
+      {
+        "regime": "trending_down",
+        "trades": 114,
+        "expectancy": -2.8234173352308356,
+        "win_rate": 0.20175438596491227,
+        "avg_rr": 0.6706710251561306,
+        "profit_factor": 0.16951025910539566
+      },
+      {
+        "regime": "trending_up",
+        "trades": 76,
+        "expectancy": -2.9322632190974147,
+        "win_rate": 0.2894736842105263,
+        "avg_rr": 0.4500442959111031,
+        "profit_factor": 0.18335137981563457
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -102.49874814542639,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.3625632796246997,
+    "sharpe": -0.9365465154988887,
+    "sortino": -0.14546268740348248,
+    "max_drawdown": -0.36274848777925384,
+    "win_rate": 0.11531938948558508,
+    "profit_factor": 0.194007061465772,
+    "total_trades_raw": 1769,
+    "closed_trades": 884,
+    "total_pnl": -2193.0531440365653,
+    "total_fees": 2863.7763709814967,
+    "by_regime": {
+      "ranging": -962.9853902926869,
+      "trending_up": -1230.0677537438785
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 398,
+        "expectancy": -2.4195612821424293,
+        "win_rate": 0.228643216080402,
+        "avg_rr": 0.6345136099975701,
+        "profit_factor": 0.18808058146507778
+      },
+      {
+        "regime": "trending_up",
+        "trades": 486,
+        "expectancy": -2.531003608526499,
+        "win_rate": 0.23251028806584362,
+        "avg_rr": 0.6555118471223911,
+        "profit_factor": 0.19858669899418283
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "liquidity",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.09951418204442744,
+    "sharpe": -0.7260545203492687,
+    "sortino": -0.07483911473133749,
+    "max_drawdown": -0.2392079231946523,
+    "win_rate": 0.15752212389380532,
+    "profit_factor": 0.20341694736134724,
+    "total_trades_raw": 1130,
+    "closed_trades": 564,
+    "total_pnl": -1606.5783502976667,
+    "total_fees": 1974.4042462026569,
+    "by_regime": {
+      "ranging": -596.2520931765919,
+      "trending_down": -707.0069073041545,
+      "trending_up": -98.40475342661699,
+      "unknown": -204.91459639030342
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 258,
+        "expectancy": -2.311054624715472,
+        "win_rate": 0.3372093023255814,
+        "avg_rr": 0.46896116865819276,
+        "profit_factor": 0.2385942787910104
+      },
+      {
+        "regime": "trending_down",
+        "trades": 273,
+        "expectancy": -2.589768891224009,
+        "win_rate": 0.3076923076923077,
+        "avg_rr": 0.5012034866249375,
+        "profit_factor": 0.2227571051666389
+      },
+      {
+        "regime": "trending_up",
+        "trades": 31,
+        "expectancy": -3.1743468847295806,
+        "win_rate": 0.22580645161290322,
+        "avg_rr": 0.5980042843016571,
+        "profit_factor": 0.17441791625464997
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -102.45729819515171,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "mtf_trend",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.49505006587075384,
+    "sharpe": -1.2745160645755818,
+    "sortino": -0.22501505909203026,
+    "max_drawdown": -0.49503997273375727,
+    "win_rate": 0.112890625,
+    "profit_factor": 0.1383519905528721,
+    "total_trades_raw": 2560,
+    "closed_trades": 1279,
+    "total_pnl": -3095.2036350437706,
+    "total_fees": 3708.8545600759485,
+    "by_regime": {
+      "ranging": -1509.5431401848793,
+      "trending_down": -385.56655558448045,
+      "trending_up": -1200.0939392744108
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 640,
+        "expectancy": -2.358661156538874,
+        "win_rate": 0.2390625,
+        "avg_rr": 0.4425310819822446,
+        "profit_factor": 0.13902927216279964
+      },
+      {
+        "regime": "trending_down",
+        "trades": 162,
+        "expectancy": -2.380040466570867,
+        "win_rate": 0.2222222222222222,
+        "avg_rr": 0.37341958375160783,
+        "profit_factor": 0.10669130964331654
+      },
+      {
+        "regime": "trending_up",
+        "trades": 477,
+        "expectancy": -2.5159202081224543,
+        "win_rate": 0.20964360587002095,
+        "avg_rr": 0.5550143027465362,
+        "profit_factor": 0.1472186479433783
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "oi_footprint",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.05922390630823047,
+    "sharpe": -0.5193657498987292,
+    "sortino": -0.03523728577963829,
+    "max_drawdown": -0.11442037535072178,
+    "win_rate": 0.11728395061728394,
+    "profit_factor": 0.14157939427545838,
+    "total_trades_raw": 486,
+    "closed_trades": 242,
+    "total_pnl": -785.1940192499785,
+    "total_fees": 917.4528237597538,
+    "by_regime": {
+      "ranging": -320.586690126844,
+      "trending_down": -307.5694673972825,
+      "trending_up": -54.53911358042565,
+      "unknown": -102.49874814542639
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 102,
+        "expectancy": -3.143006765949451,
+        "win_rate": 0.19607843137254902,
+        "avg_rr": 0.46554181535561884,
+        "profit_factor": 0.11354678423307775
+      },
+      {
+        "regime": "trending_down",
+        "trades": 123,
+        "expectancy": -2.5005647755876628,
+        "win_rate": 0.2764227642276423,
+        "avg_rr": 0.5032212585694756,
+        "profit_factor": 0.19224182911642893
+      },
+      {
+        "regime": "trending_up",
+        "trades": 16,
+        "expectancy": -3.408694598776603,
+        "win_rate": 0.1875,
+        "avg_rr": 0.9463199932425883,
+        "profit_factor": 0.21838153690213577
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -102.49874814542639,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "sweep_scalper",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.020471867872218535,
+    "sharpe": -0.03774868222232237,
+    "sortino": 0.0,
+    "max_drawdown": -2.0012003575565575e-05,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "total_trades_raw": 2,
+    "closed_trades": 2,
+    "total_pnl": -204.91459639030342,
+    "total_fees": 0.9963898895767409,
+    "by_regime": {
+      "unknown": -204.91459639030342
+    },
+    "cells": [
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -102.45729819515171,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "vwap_reversal",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": 0.16991271371637667,
+    "sharpe": -0.239245683374235,
+    "sortino": -0.007527864194777108,
+    "max_drawdown": -0.024881644688307277,
+    "win_rate": 0.13043478260869565,
+    "profit_factor": 0.09926556281489737,
+    "total_trades_raw": 92,
+    "closed_trades": 45,
+    "total_pnl": -250.492954549817,
+    "total_fees": 180.54710415441068,
+    "by_regime": {
+      "ranging": -56.16132143289819,
+      "trending_down": -70.81907409843306,
+      "trending_up": -21.212581622523604,
+      "unknown": -102.29997739596215
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 17,
+        "expectancy": -3.3036071431116585,
+        "win_rate": 0.29411764705882354,
+        "avg_rr": 0.32226958722737253,
+        "profit_factor": 0.1342789946780719
+      },
+      {
+        "regime": "trending_down",
+        "trades": 25,
+        "expectancy": -2.8327629639373226,
+        "win_rate": 0.28,
+        "avg_rr": 0.5415691583776995,
+        "profit_factor": 0.21061022825799422
+      },
+      {
+        "regime": "trending_up",
+        "trades": 2,
+        "expectancy": -10.606290811261802,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -102.29997739596215,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "volatility_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.0026994692871481676,
+    "sharpe": -0.7850118045042688,
+    "sortino": -0.07810945582481021,
+    "max_drawdown": -0.0026994692871481676,
+    "win_rate": 0.04807692307692308,
+    "profit_factor": 0.005209176406918099,
+    "total_trades_raw": 104,
+    "closed_trades": 46,
+    "total_pnl": -15.39057973048875,
+    "total_fees": 20.80900030460628,
+    "by_regime": {
+      "ranging": -5.240553269404068,
+      "trending_up": -10.15002646108468
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 13,
+        "expectancy": -0.4031194822618514,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_up",
+        "trades": 33,
+        "expectancy": -0.3075765594268085,
+        "win_rate": 0.15151515151515152,
+        "avg_rr": 0.044114200159317274,
+        "profit_factor": 0.007877535742735227
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "crypto_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.2978440270069408,
+    "sharpe": -0.8826294098776245,
+    "sortino": -0.10470746434175038,
+    "max_drawdown": -0.2978461646015574,
+    "win_rate": 0.1406926406926407,
+    "profit_factor": 0.17350308520250102,
+    "total_trades_raw": 1386,
+    "closed_trades": 692,
+    "total_pnl": -1806.7582417124077,
+    "total_fees": 2340.456626574238,
+    "by_regime": {
+      "ranging": -811.7937925064888,
+      "trending_down": -968.1419153137244,
+      "trending_up": -26.82253389219433
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 319,
+        "expectancy": -2.544808126979589,
+        "win_rate": 0.2884012539184953,
+        "avg_rr": 0.4124579726904615,
+        "profit_factor": 0.1671635836454734
+      },
+      {
+        "regime": "trending_down",
+        "trades": 364,
+        "expectancy": -2.659730536576166,
+        "win_rate": 0.2774725274725275,
+        "avg_rr": 0.4648854467552155,
+        "profit_factor": 0.17853015255618537
+      },
+      {
+        "regime": "trending_up",
+        "trades": 9,
+        "expectancy": -2.9802815435771475,
+        "win_rate": 0.2222222222222222,
+        "avg_rr": 0.634469497925057,
+        "profit_factor": 0.18127699940715916
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "trend_following",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.1293659681288118,
+    "sharpe": -0.37038395356647036,
+    "sortino": -0.02083044133205356,
+    "max_drawdown": -0.1305448389798732,
+    "win_rate": 0.16304347826086957,
+    "profit_factor": 0.22381279117008102,
+    "total_trades_raw": 552,
+    "closed_trades": 275,
+    "total_pnl": -776.9487992450831,
+    "total_fees": 1029.973607526437,
+    "by_regime": {
+      "ranging": -511.2333979338871,
+      "trending_down": -186.1165191026637,
+      "trending_up": -79.59888220853236
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 182,
+        "expectancy": -2.8089747139224563,
+        "win_rate": 0.3626373626373626,
+        "avg_rr": 0.4050180718354485,
+        "profit_factor": 0.2304413167339621
+      },
+      {
+        "regime": "trending_down",
+        "trades": 56,
+        "expectancy": -3.323509269690423,
+        "win_rate": 0.19642857142857142,
+        "avg_rr": 0.33408072600068883,
+        "profit_factor": 0.08166417746683503
+      },
+      {
+        "regime": "trending_up",
+        "trades": 37,
+        "expectancy": -2.151321140771145,
+        "win_rate": 0.35135135135135137,
+        "avg_rr": 0.7494480280213152,
+        "profit_factor": 0.4059510151782124
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "mean_reversion",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.14968661179375248,
+    "sharpe": -0.3983123501949052,
+    "sortino": -0.02320484998866374,
+    "max_drawdown": -0.1507627630365241,
+    "win_rate": 0.14890016920473773,
+    "profit_factor": 0.19511970269027942,
+    "total_trades_raw": 591,
+    "closed_trades": 294,
+    "total_pnl": -948.2413050005109,
+    "total_fees": 1091.9538613425198,
+    "by_regime": {
+      "ranging": -484.9857497180592,
+      "trending_down": -404.49791902482434,
+      "trending_up": -58.757636257627325
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 137,
+        "expectancy": -3.5400419687449576,
+        "win_rate": 0.2773722627737226,
+        "avg_rr": 0.3384230652252299,
+        "profit_factor": 0.1298997624096842
+      },
+      {
+        "regime": "trending_down",
+        "trades": 139,
+        "expectancy": -2.910056971401614,
+        "win_rate": 0.3381294964028777,
+        "avg_rr": 0.5084007567303745,
+        "profit_factor": 0.2597264735470392
+      },
+      {
+        "regime": "trending_up",
+        "trades": 18,
+        "expectancy": -3.2643131254237403,
+        "win_rate": 0.16666666666666666,
+        "avg_rr": 1.0463021987871528,
+        "profit_factor": 0.20926043975743058
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "momentum",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.13434412982590146,
+    "sharpe": -0.3575423653117652,
+    "sortino": -0.01907091051211974,
+    "max_drawdown": -0.13434412982590146,
+    "win_rate": 0.1651705565529623,
+    "profit_factor": 0.22536362162634005,
+    "total_trades_raw": 557,
+    "closed_trades": 277,
+    "total_pnl": -823.6439640263727,
+    "total_fees": 1035.838001149642,
+    "by_regime": {
+      "ranging": -400.57873114427707,
+      "trending_down": -91.29268266751495,
+      "trending_up": -324.59256064873307,
+      "unknown": -7.179989565847507
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 130,
+        "expectancy": -3.0813748549559774,
+        "win_rate": 0.33076923076923076,
+        "avg_rr": 0.4723795748121051,
+        "profit_factor": 0.23347496226345424
+      },
+      {
+        "regime": "trending_down",
+        "trades": 33,
+        "expectancy": -2.766444929318635,
+        "win_rate": 0.3939393939393939,
+        "avg_rr": 0.5272799223633812,
+        "profit_factor": 0.34273194953619773
+      },
+      {
+        "regime": "trending_up",
+        "trades": 113,
+        "expectancy": -2.872500536714452,
+        "win_rate": 0.3185840707964602,
+        "avg_rr": 0.3794572989839531,
+        "profit_factor": 0.17740860731717287
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -7.179989565847507,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "scalping",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.3822797614150133,
+    "sharpe": -0.7895773416988695,
+    "sortino": -0.09494847814431165,
+    "max_drawdown": -0.5008249864998567,
+    "win_rate": 0.15975027543150935,
+    "profit_factor": 0.23096999173181698,
+    "total_trades_raw": 2723,
+    "closed_trades": 1361,
+    "total_pnl": -3175.9835127389892,
+    "total_fees": 3900.2577622894155,
+    "by_regime": {
+      "ranging": -906.6196838183407,
+      "trending_down": -1109.7831376088482,
+      "trending_up": -1040.3246728679492,
+      "unknown": -119.25601844385102
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 425,
+        "expectancy": -2.1332227854549193,
+        "win_rate": 0.3270588235294118,
+        "avg_rr": 0.5883399008308814,
+        "profit_factor": 0.2859414203338899
+      },
+      {
+        "regime": "trending_down",
+        "trades": 495,
+        "expectancy": -2.241986136583532,
+        "win_rate": 0.32323232323232326,
+        "avg_rr": 0.47084084614459965,
+        "profit_factor": 0.22487921009891326
+      },
+      {
+        "regime": "trending_up",
+        "trades": 440,
+        "expectancy": -2.364374256518066,
+        "win_rate": 0.3090909090909091,
+        "avg_rr": 0.459035491713315,
+        "profit_factor": 0.20535798313490405
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -119.25601844385102,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.5011050911866317,
+    "sharpe": -0.772669594420117,
+    "sortino": -0.09917993340556294,
+    "max_drawdown": -0.5011050911866317,
+    "win_rate": 0.16120906801007556,
+    "profit_factor": 0.24526587428105062,
+    "total_trades_raw": 2779,
+    "closed_trades": 1389,
+    "total_pnl": -3000.1091651909314,
+    "total_fees": 4021.1411408790345,
+    "by_regime": {
+      "ranging": -1109.6665670278683,
+      "trending_up": -1890.4425981630632
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 597,
+        "expectancy": -1.8587379682208849,
+        "win_rate": 0.33668341708542715,
+        "avg_rr": 0.5743865253172767,
+        "profit_factor": 0.2915446757292238
+      },
+      {
+        "regime": "trending_up",
+        "trades": 792,
+        "expectancy": -2.38692247242811,
+        "win_rate": 0.31186868686868685,
+        "avg_rr": 0.4747730173243049,
+        "profit_factor": 0.21517235831028128
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "liquidity",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": 0.20949847129972732,
+    "sharpe": -0.11775237401226903,
+    "sortino": -0.0017276480807137114,
+    "max_drawdown": -0.02098427715711223,
+    "win_rate": 0.07547169811320754,
+    "profit_factor": 0.04558058186157896,
+    "total_trades_raw": 53,
+    "closed_trades": 26,
+    "total_pnl": -394.79408902609225,
+    "total_fees": 101.85868640079902,
+    "by_regime": {
+      "ranging": -32.7809466808845,
+      "trending_down": -123.22153719500069,
+      "unknown": -238.7916051502071
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 6,
+        "expectancy": -5.46349111348075,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_down",
+        "trades": 18,
+        "expectancy": -6.845640955277816,
+        "win_rate": 0.2222222222222222,
+        "avg_rr": 0.4644713714876074,
+        "profit_factor": 0.1327061061393164
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -119.39580257510354,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "mtf_trend",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.22194218219760842,
+    "sharpe": -0.6790337059222088,
+    "sortino": -0.07097830974687849,
+    "max_drawdown": -0.37454893878722834,
+    "win_rate": 0.16956292785676672,
+    "profit_factor": 0.21771786904804982,
+    "total_trades_raw": 1899,
+    "closed_trades": 949,
+    "total_pnl": -2470.9980353556916,
+    "total_fees": 3022.108593521781,
+    "by_regime": {
+      "ranging": -1054.1091429868943,
+      "trending_down": -260.5506273356918,
+      "trending_up": -917.5466598828983,
+      "unknown": -238.7916051502071
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 450,
+        "expectancy": -2.3424647621930985,
+        "win_rate": 0.3422222222222222,
+        "avg_rr": 0.475257250363585,
+        "profit_factor": 0.24726221809456786
+      },
+      {
+        "regime": "trending_down",
+        "trades": 97,
+        "expectancy": -2.68608894160507,
+        "win_rate": 0.27835051546391754,
+        "avg_rr": 0.38130436973409526,
+        "profit_factor": 0.14707454261172245
+      },
+      {
+        "regime": "trending_up",
+        "trades": 400,
+        "expectancy": -2.2938666497072457,
+        "win_rate": 0.3525,
+        "avg_rr": 0.44863437897775726,
+        "profit_factor": 0.24423724878711878
+      },
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -119.39580257510354,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "oi_footprint",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.14603438851802167,
+    "sharpe": -0.3769813668135013,
+    "sortino": -0.021266194959381857,
+    "max_drawdown": -0.14603438851802167,
+    "win_rate": 0.1511627906976744,
+    "profit_factor": 0.21940442080202383,
+    "total_trades_raw": 602,
+    "closed_trades": 300,
+    "total_pnl": -902.1325386510678,
+    "total_fees": 1112.9890483862848,
+    "by_regime": {
+      "ranging": -359.21677620776325,
+      "trending_down": -482.20250381871324,
+      "trending_up": -60.71325862459129
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 112,
+        "expectancy": -3.207292644712172,
+        "win_rate": 0.26785714285714285,
+        "avg_rr": 0.38152784521829247,
+        "profit_factor": 0.13958335800669236
+      },
+      {
+        "regime": "trending_down",
+        "trades": 165,
+        "expectancy": -2.9224394170831105,
+        "win_rate": 0.3212121212121212,
+        "avg_rr": 0.5662880502803671,
+        "profit_factor": 0.2679755952219594
+      },
+      {
+        "regime": "trending_up",
+        "trades": 23,
+        "expectancy": -2.6397068967213606,
+        "win_rate": 0.34782608695652173,
+        "avg_rr": 0.4427490934988273,
+        "profit_factor": 0.2361328498660412
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "sweep_scalper",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.023862959843933277,
+    "sharpe": -0.037456159779003725,
+    "sortino": -15.0,
+    "max_drawdown": -4.0023607323928445e-05,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "total_trades_raw": 2,
+    "closed_trades": 2,
+    "total_pnl": -238.7916051502071,
+    "total_fees": 0.9624788573529819,
+    "by_regime": {
+      "unknown": -238.7916051502071
+    },
+    "cells": [
+      {
+        "regime": "unknown",
+        "trades": 2,
+        "expectancy": -119.39580257510354,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "vwap_reversal",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": 0.1963180525478816,
+    "sharpe": -0.15769912846086093,
+    "sortino": -0.00362503407458774,
+    "max_drawdown": -0.03139941180588394,
+    "win_rate": 0.13513513513513514,
+    "profit_factor": 0.13239854088179928,
+    "total_trades_raw": 111,
+    "closed_trades": 53,
+    "total_pnl": -319.7372998628188,
+    "total_fees": 215.2855139735109,
+    "by_regime": {
+      "ranging": -87.17211247549044,
+      "trending_down": -113.36208196052408,
+      "unknown": -119.20310542680431
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 27,
+        "expectancy": -3.2285967583514976,
+        "win_rate": 0.3333333333333333,
+        "avg_rr": 0.3815936287063287,
+        "profit_factor": 0.19079681435316434
+      },
+      {
+        "regime": "trending_down",
+        "trades": 25,
+        "expectancy": -4.534483278420963,
+        "win_rate": 0.24,
+        "avg_rr": 0.6315189118550836,
+        "profit_factor": 0.19942702479634217
+      },
+      {
+        "regime": "unknown",
+        "trades": 1,
+        "expectancy": -119.20310542680431,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "volatility_breakout",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.0023062853935634847,
+    "sharpe": -0.4187236149733838,
+    "sortino": -0.02082053251957155,
+    "max_drawdown": -0.0023062853935634847,
+    "win_rate": 0.01694915254237288,
+    "profit_factor": 0.017844686803808293,
+    "total_trades_raw": 59,
+    "closed_trades": 24,
+    "total_pnl": -16.06128907487922,
+    "total_fees": 11.799312567919053,
+    "by_regime": {
+      "ranging": -5.665234501584802,
+      "trending_up": -10.39605457329442
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 8,
+        "expectancy": -0.7081543126981003,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "regime": "trending_up",
+        "trades": 16,
+        "expectancy": -0.6497534108309012,
+        "win_rate": 0.0625,
+        "avg_rr": 0.409552168452045,
+        "profit_factor": 0.027303477896803
+      }
+    ]
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "crypto_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.5008558376212797,
+    "sharpe": -0.7996533264364726,
+    "sortino": -0.09255065662828184,
+    "max_drawdown": -0.5008558376212797,
+    "win_rate": 0.16349384098544234,
+    "profit_factor": 0.21727353497854943,
+    "total_trades_raw": 2679,
+    "closed_trades": 1339,
+    "total_pnl": -3079.1547082220686,
+    "total_fees": 3857.835726676126,
+    "by_regime": {
+      "ranging": -1198.9090023370036,
+      "trending_down": -1849.4255296850056,
+      "trending_up": -30.820176200059425
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 570,
+        "expectancy": -2.1033491269070237,
+        "win_rate": 0.34385964912280703,
+        "avg_rr": 0.4079278266287252,
+        "profit_factor": 0.21378035834018755
+      },
+      {
+        "regime": "trending_down",
+        "trades": 753,
+        "expectancy": -2.456076400644098,
+        "win_rate": 0.3160690571049137,
+        "avg_rr": 0.4769778152418245,
+        "profit_factor": 0.2204285825777752
+      },
+      {
+        "regime": "trending_up",
+        "trades": 16,
+        "expectancy": -1.926261012503714,
+        "win_rate": 0.25,
+        "avg_rr": 0.4750102491292641,
+        "profit_factor": 0.1583367497097547
+      }
+    ]
+  }
+]

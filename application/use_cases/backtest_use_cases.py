@@ -1,4 +1,10 @@
 """
+DEPRECATED (E3.T1 -- Option A: Retire & Redefine). Legacy mock backtest use case
+(RunBacktestUseCase over BacktestExecutionService + mock data). NOTE: distinct
+from the canonical application.use_cases.run_backtest.RunBacktestUseCase used by
+the live CLI. Canonical engine is RealisticBacktester behind BacktestEnginePort
+(infrastructure/backtest/backtest_engine_adapter.py). Physical removal -> E8.
+
 Use cases for backtesting functionality in the enterprise hedge fund trading system.
 """
 from typing import List, Dict, Any

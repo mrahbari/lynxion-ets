@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ATOMUSDT",
+  "timeframe": "1m",
+  "checksum": "caf8b8f6a352ccd5d7c61b1025f01d5291f8af3fe1c7cc34f2b121d63012dc55",
+  "download_timestamp": "2026-06-12T22:06:14.408869",
+  "row_count": 1188,
+  "date_range": {
+    "start": "1778686380",
+    "end": "1781294760"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "file_path": "data/history/raw/1m/ATOM-USDT.csv"
+}

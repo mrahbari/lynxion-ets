@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ZENUSDT",
+  "timeframe": "1m",
+  "checksum": "800fa7ef96443b5889a10f09b5792892426942673417b34b43d14f2a8cf731a7",
+  "download_timestamp": "2026-06-12T18:38:01.898781",
+  "row_count": 1072,
+  "date_range": {
+    "start": "1778686020",
+    "end": "1778750280"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ZEN-USDT.csv"
+}

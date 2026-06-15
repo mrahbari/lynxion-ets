@@ -4,7 +4,7 @@ Following hexagonal architecture principles.
 """
 from abc import abstractmethod
 from typing import Protocol, List, Optional, Dict, Any
-from domain.entities.signal_entities import FusedSignal, ExecutionIntent
+from domain.entities import FusedSignal, ExecutionIntent
 from domain.value_objects import Symbol
 
 

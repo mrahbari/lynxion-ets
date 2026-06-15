@@ -5,8 +5,11 @@ as opposed to the EnginePort which processes signals in the hexagonal architectu
 """
 from abc import abstractmethod
 from typing import Protocol, Dict, Any
-import pandas as pd
 from domain.entities.engine_entities import EngineResult
+
+# E4.T3: ``data`` is intentionally typed ``Any`` (an OHLCV pandas DataFrame at
+# runtime) so the domain layer takes no hard pandas dependency. This interface
+# currently has no implementers and is slated for removal in E8.
 
 
 class EngineInterface(Protocol):
@@ -16,7 +19,7 @@ class EngineInterface(Protocol):
     """
 
     @abstractmethod
-    def compute(self, data: pd.DataFrame, context: Dict[str, Any] = None) -> EngineResult:
+    def compute(self, data: Any, context: Dict[str, Any] = None) -> EngineResult:
         """
         Compute an engine result based on market data
         Args:
@@ -28,7 +31,7 @@ class EngineInterface(Protocol):
         pass
 
     @abstractmethod
-    def validate_data(self, data: pd.DataFrame) -> bool:
+    def validate_data(self, data: Any) -> bool:
         """
         Validate if the provided data is suitable for the engine
         Args:

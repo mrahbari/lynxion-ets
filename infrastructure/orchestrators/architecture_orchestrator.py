@@ -5,10 +5,10 @@ Following correct architecture: Watcher → Engine → Fusion → Strategy → B
 import threading
 import time
 from typing import Dict, Any, Optional
-from domain.entities.signal_entities import MarketObservation, InterpretedSignal, FusedSignal, ExecutionIntent
+from domain.entities import MarketObservation, InterpretedSignal, FusedSignal, ExecutionIntent
 from domain.value_objects import Symbol
 from shared.logger import EnhancedLogger
-from shared.event_system import event_router, signal_processor
+from infrastructure.messaging.event_system import event_router, signal_processor
 from infrastructure.engines.engine_service import engine_service
 from infrastructure.fusion.fusion_service import fusion_service
 from infrastructure.strategies.strategy_manager import strategy_manager

@@ -2,7 +2,7 @@
 Infrastructure implementation of the Trend Follow Strategy following hexagonal architecture.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Signal, SignalType
+from domain.entities import Signal, SignalType
 from domain.value_objects import Symbol, Percentage
 from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger
@@ -168,8 +168,12 @@ class TrendFollowStrategyAdapter(BaseStrategyAdapter):
         recent_high = max(closes[-10:])
         recent_low = min(closes[-10:])
 
-        # Get extreme threshold from config
-        trend_extreme_threshold = self.config.get("trend_extreme_threshold", 0.99)
+        # Get extreme threshold from config. 0.99 blocks entry whenever price is
+        # within 1% of the 10-bar high — on the configured 1m timeframe that is
+        # nearly every bar (BUYs would need a ≥1% dip, rare on 1m) → signal
+        # starvation. 0.999 (within 0.1% of high) is the 1m-appropriate "avoid the
+        # very top" calibration, preserving the intent.
+        trend_extreme_threshold = self.config.get("trend_extreme_threshold", 0.999)
 
         if trend_direction == "BULLISH":
             # Check if we're near the recent high (extreme)
@@ -272,9 +276,8 @@ class TrendFollowStrategyAdapter(BaseStrategyAdapter):
                 signal_type=final_signal_type,
                 confidence=confidence,
                 score=final_score,
-                strategy_name=self.name,
                 timestamp=datetime.now(),
-                source_engine="EstablishedRegimeTrendFollow",
+                source_layer="EstablishedRegimeTrendFollow",
                 metadata={
                     "trend_direction": trend_info["direction"],
                     "trend_strength": trend_info["strength"],

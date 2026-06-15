@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "USELESSUSDT",
+  "timeframe": "1m",
+  "checksum": "d0efc4911393ffce44ca78fbe2209cfd316c38636fffdf59cdc6b4d4a5bd6bdf",
+  "download_timestamp": "2026-06-12T18:30:31.366233",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778719800"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/USELESS-USDT.csv"
+}

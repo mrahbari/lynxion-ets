@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "LAUSDT",
+  "timeframe": "1m",
+  "checksum": "0357d34fc4320bb0a96498a1513a20b37348d851e25b75d0554035e9edfbc72a",
+  "download_timestamp": "2026-06-12T18:26:38.864916",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778749560"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/LA-USDT.csv"
+}

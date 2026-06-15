@@ -1,0 +1,19 @@
+{
+  "source": "ccxt:openInterestHistory@1h",
+  "exchange": "binance",
+  "symbol": "ETHUSDT",
+  "data_class": "open_interest",
+  "checksum": "957816f5b07ae342929246bfa80242075a93f03df6752709d787655d7f14453c",
+  "download_timestamp": "2026-06-11T20:18:50.034698+00:00",
+  "row_count": 720,
+  "date_range": {
+    "start": "1778619600",
+    "end": "1781208000"
+  },
+  "columns": [
+    "timestamp",
+    "open_interest",
+    "open_interest_value"
+  ],
+  "file_path": "data/history/raw/open_interest/ETH-USDT.csv"
+}

@@ -77,12 +77,15 @@ class WatcherFactory:
     }
 
     @classmethod
-    def create_watcher(cls, watcher_type: WatcherType, name: str, symbol: str,
+    def create_watcher(cls, settings, watcher_type: WatcherType, name: str, symbol: str,
                       broker_service=None, target_broker=None, **kwargs) -> Any:
         """
         Create a watcher instance based on configuration.
 
         Args:
+            settings: Injected settings object (E1.T4 — supplied by the caller; this
+                factory no longer imports bootstrap.settings.loaders). Forwarded to
+                the watcher constructors that need it (settings.watcher).
             watcher_type: Type of watcher to create
             name: Name of the watcher
             symbol: Trading symbol
@@ -93,10 +96,9 @@ class WatcherFactory:
         Returns:
             Configured watcher instance
         """
-        from application.configs.configs import Configs
-
         # Check if consolidated version should be used
-        use_consolidated = getattr(Configs.watcher, f'use_consolidated_{watcher_type.value.lower()}', False) if Configs.watcher else False
+        _watcher_cfg = settings.watcher
+        use_consolidated = getattr(_watcher_cfg, f'use_consolidated_{watcher_type.value.lower()}', False) if _watcher_cfg else False
 
         if use_consolidated:
             watcher_class = cls.CONSOLIDATED_WATCHERS[watcher_type]
@@ -104,42 +106,43 @@ class WatcherFactory:
             watcher_class = cls.REGULAR_WATCHERS[watcher_type]
 
         # Get standardized configuration for the watcher type
-        config = cls._get_config_for_watcher_type(watcher_type)
+        config = cls._get_config_for_watcher_type(watcher_type, settings)
 
         # Handle special cases for watchers that have different constructor signatures
         if watcher_type == WatcherType.HISTORICAL_CANDLE:
             if use_consolidated:
-                return watcher_class(name, symbol,
+                return watcher_class(settings, name, symbol,
                                    broker_service=broker_service,
                                    lookback=config.get('lookback'),
                                    adaptive_sensitivity=config.get('adaptive_sensitivity', False))
             else:
                 # For regular version, use original constructor
-                return watcher_class(name, symbol, broker_service=broker_service, **kwargs)
+                return watcher_class(settings, name, symbol, broker_service=broker_service, **kwargs)
         elif watcher_type == WatcherType.MARKET_PULSE:
             if use_consolidated:
                 return watcher_class(name, symbol,
                                    broker_service=broker_service,
                                    target_broker=target_broker,
                                    lookback=config.get('lookback'),
-                                   adaptive_sensitivity=config.get('adaptive_sensitivity', False))
+                                   adaptive_sensitivity=config.get('adaptive_sensitivity', False),
+                                   watcher_config=_watcher_cfg)
             else:
                 # For regular version, use original constructor
                 return watcher_class(name, symbol, broker_service=broker_service,
-                                   target_broker=target_broker, **kwargs)
+                                   target_broker=target_broker, watcher_config=_watcher_cfg, **kwargs)
         elif watcher_type == WatcherType.CMC_SCREEN:
             # CMCScreener has its own constructor signature (no broker service needed)
-            return watcher_class(name, symbol, **kwargs)
+            return watcher_class(settings, name, symbol, **kwargs)
         elif watcher_type == WatcherType.TICK:
             # TickWatcherAdapter has its own constructor signature (no target_broker parameter)
-            return watcher_class(name, symbol, broker_service=broker_service, **kwargs)
+            return watcher_class(name, symbol, broker_service=broker_service, watcher_config=_watcher_cfg, **kwargs)
         else:
             # For other watchers, use standard constructor
             return watcher_class(name, symbol, broker_service=broker_service,
-                               target_broker=target_broker, **kwargs)
+                               target_broker=target_broker, watcher_config=_watcher_cfg, **kwargs)
 
     @classmethod
-    def _get_config_for_watcher_type(cls, watcher_type: WatcherType) -> dict:
+    def _get_config_for_watcher_type(cls, watcher_type: WatcherType, settings) -> dict:
         """Get standardized configuration for a specific watcher type."""
         config_map = {
             WatcherType.HISTORICAL_CANDLE: get_historical_candle_config,
@@ -148,7 +151,7 @@ class WatcherFactory:
             WatcherType.TREND_MTF: get_trend_mtf_config,
             WatcherType.ANOMALY_ML: get_anomaly_ml_config,
             WatcherType.ORDERFLOW_WS: get_orderflow_ws_config,
-            WatcherType.CMC_SCREEN: lambda: {},  # CMCScreener has its own config
+            WatcherType.CMC_SCREEN: lambda _settings: {},  # CMCScreener has its own config
             WatcherType.FUNDING_RATE: get_funding_rate_config,
             WatcherType.LIQUIDITY: get_liquidity_config,
             WatcherType.TICK: get_tick_config,
@@ -156,7 +159,7 @@ class WatcherFactory:
 
         config_func = config_map.get(watcher_type)
         if config_func:
-            return config_func()
+            return config_func(settings)
         return {}
 
     @classmethod

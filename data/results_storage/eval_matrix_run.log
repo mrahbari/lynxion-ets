@@ -1,0 +1,621 @@
+2026-06-12 05:48:34,363 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 05:48:34,369 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 05:49:19,372 - ERROR - RealisticBacktester - Signal-trade correspondence validation FAILED
+2026-06-12 05:49:19,375 - ERROR - RealisticBacktester -   - Only 103/202 (51.0%) signals had corresponding trade attempts
+2026-06-12 05:49:19,378 - WARNING - RealisticBacktester - Minimal execution confirmation showed low correspondence. 99 out of 202 non-zero signals had no corresponding trade attempts.
+📈 Starting backtest process for strategy: trend_following
+   Symbols: ['BTCUSDT']
+   Date Range: 2026-03-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 05:48:32
+
+🔍 Backtesting trend_following on BTCUSDT...
+   Date range filter applied: 2026-03-14 to 2026-06-12, data range: 2026-03-15 to 2026-06-11, rows: 126950
+   ✅ BTCUSDT backtest completed
+      Return: -5.48%
+      Sharpe: -0.44
+      Max DD: -5.49%
+      Trades: 205
+      Signal Audit - Generated: 126950, Filtered: 0, Entries: 126950
+
+📊 BACKTEST SUMMARY
+   Strategy: trend_following
+   Symbols processed: 1
+   Successful: 1
+   Failed: 0
+   Average Return: -5.48%
+   Average Sharpe: -0.44
+   Average Max DD: -5.49%
+   Average Win Rate: 17.07%
+   Total Trades: 205
+   Duration: 77.91s
+
+✅ Backtest completed with validation
+[1/108] BTCUSDT 90d trend_following: NO_GO pnl=-347.82555088983133 sharpe=-0.4372970835426117
+2026-06-12 05:49:51,865 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 05:49:51,867 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 05:51:01,847 - WARNING - RealisticBacktester - Trade density validation issues:
+2026-06-12 05:51:01,853 - WARNING - RealisticBacktester -   - Extremely low trade density: 0.000039 (5/126950). This may indicate a strategy that rarely generates signals.
+2026-06-12 05:51:01,859 - WARNING - RealisticBacktester - Zero trade strategy detected - this may be normal for some strategies
+📈 Starting backtest process for strategy: mean_reversion
+   Symbols: ['BTCUSDT']
+   Date Range: 2026-03-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 05:49:50
+
+🔍 Backtesting mean_reversion on BTCUSDT...
+   Date range filter applied: 2026-03-14 to 2026-06-12, data range: 2026-03-15 to 2026-06-11, rows: 126950
+   ✅ BTCUSDT backtest completed
+      Return: -0.15%
+      Sharpe: -0.09
+      Max DD: -0.15%
+      Trades: 5
+      Signal Audit - Generated: 126950, Filtered: 0, Entries: 126950
+
+📊 BACKTEST SUMMARY
+   Strategy: mean_reversion
+   Symbols processed: 1
+   Successful: 1
+   Failed: 0
+   Average Return: -0.15%
+   Average Sharpe: -0.09
+   Average Max DD: -0.15%
+   Average Win Rate: 0.00%
+   Total Trades: 5
+   Duration: 122.95s
+
+✅ Backtest completed with validation
+[2/108] BTCUSDT 90d mean_reversion: INSUFFICIENT_DATA pnl=-8.670262916860072 sharpe=-0.08570173418271101
+2026-06-12 05:51:54,745 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 05:51:54,750 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 05:52:42,260 - ERROR - RealisticBacktester - Signal-trade correspondence validation FAILED
+2026-06-12 05:52:42,264 - ERROR - RealisticBacktester -   - Only 7/9 (77.8%) signals had corresponding trade attempts
+2026-06-12 05:52:42,268 - WARNING - RealisticBacktester - Minimal execution confirmation showed low correspondence. 2 out of 9 non-zero signals had no corresponding trade attempts.
+📈 Starting backtest process for strategy: momentum
+   Symbols: ['BTCUSDT']
+   Date Range: 2026-03-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 05:51:53
+
+🔍 Backtesting momentum on BTCUSDT...
+   Date range filter applied: 2026-03-14 to 2026-06-12, data range: 2026-03-15 to 2026-06-11, rows: 126950
+   ✅ BTCUSDT backtest completed
+      Return: -0.44%
+      Sharpe: -0.09
+      Max DD: -0.45%
+      Trades: 13
+      Signal Audit - Generated: 126950, Filtered: 0, Entries: 126950
+
+📊 BACKTEST SUMMARY
+   Strategy: momentum
+   Symbols processed: 1
+   Successful: 1
+   Failed: 0
+   Average Return: -0.44%
+   Average Sharpe: -0.09
+   Average Max DD: -0.45%
+   Average Win Rate: 15.38%
+   Total Trades: 13
+   Duration: 79.05s
+
+✅ Backtest completed with validation
+[3/108] BTCUSDT 90d momentum: INSUFFICIENT_DATA pnl=-29.923924830221196 sharpe=-0.08561886066640366
+2026-06-12 05:53:14,025 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 05:53:14,029 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 05:55:11,697 - WARNING - RealisticBacktester - Trade count validation issues for BTCUSDT
+2026-06-12 05:55:11,701 - WARNING - RealisticBacktester -   - Low trade count: 0 < 1 expected for 2.9 months of BTCUSDT data (should have at least some trades after 2 weeks)
+2026-06-12 05:55:11,704 - WARNING - RealisticBacktester - Trade density validation issues:
+2026-06-12 05:55:11,708 - WARNING - RealisticBacktester -   - Zero trades executed: 0 trades for 126950 data points. This may indicate a strategy that never generates signals or has overly restrictive conditions.
+2026-06-12 05:55:11,712 - WARNING - RealisticBacktester - Zero trade strategy detected - this may be normal for some strategies
+2026-06-12 05:55:11,716 - ERROR - RealisticBacktester - FAIL-FAST TRIGGERED: Zero trades executed over 1+ month period - rejecting from optimization
+📈 Starting backtest process for strategy: scalping
+   Symbols: ['BTCUSDT']
+   Date Range: 2026-03-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 05:53:12
+
+🔍 Backtesting scalping on BTCUSDT...
+   Date range filter applied: 2026-03-14 to 2026-06-12, data range: 2026-03-15 to 2026-06-11, rows: 126950
+   ❌ Error during backtest for BTCUSDT: Zero trade strategy detected during backtest.
+  Duration: 88 days (2.9 months)
+  Trades: 0
+  Data points: 126950
+  Symbol: BTCUSDT
+  This may be normal for some strategies in certain market conditions.
+
+📊 BACKTEST SUMMARY
+   Strategy: scalping
+   Symbols processed: 1
+   Successful: 0
+   Failed: 1
+   Duration: 119.20s
+
+✅ Backtest completed with validation
+[4/108] BTCUSDT 90d scalping: error pnl=None sharpe=None
+2026-06-12 05:55:13,204 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 05:55:13,208 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 05:55:52,575 - WARNING - RealisticBacktester - Trade count validation issues for BTCUSDT
+2026-06-12 05:55:52,579 - WARNING - RealisticBacktester -   - Low trade count: 0 < 1 expected for 2.9 months of BTCUSDT data (should have at least some trades after 2 weeks)
+2026-06-12 05:55:52,581 - WARNING - RealisticBacktester - Trade density validation issues:
+2026-06-12 05:55:52,584 - WARNING - RealisticBacktester -   - Zero trades executed: 0 trades for 126950 data points. This may indicate a strategy that never generates signals or has overly restrictive conditions.
+2026-06-12 05:55:52,589 - WARNING - RealisticBacktester - Zero trade strategy detected - this may be normal for some strategies
+2026-06-12 05:55:52,593 - ERROR - RealisticBacktester - FAIL-FAST TRIGGERED: Zero trades executed over 1+ month period - rejecting from optimization
+📈 Starting backtest process for strategy: breakout
+   Symbols: ['BTCUSDT']
+   Date Range: 2026-03-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 05:55:11
+
+🔍 Backtesting breakout on BTCUSDT...
+   Date range filter applied: 2026-03-14 to 2026-06-12, data range: 2026-03-15 to 2026-06-11, rows: 126950
+   ❌ Error during backtest for BTCUSDT: Zero trade strategy detected during backtest.
+  Duration: 88 days (2.9 months)
+  Trades: 0
+  Data points: 126950
+  Symbol: BTCUSDT
+  This may be normal for some strategies in certain market conditions.
+
+📊 BACKTEST SUMMARY
+   Strategy: breakout
+   Symbols processed: 1
+   Successful: 0
+   Failed: 1
+   Duration: 40.83s
+
+✅ Backtest completed with validation
+[5/108] BTCUSDT 90d breakout: error pnl=None sharpe=None
+2026-06-12 05:55:54,086 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 05:55:54,091 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:00:02,766 - ERROR - RealisticBacktester - Signal-trade correspondence validation FAILED
+2026-06-12 06:00:02,770 - ERROR - RealisticBacktester -   - Only 1/10 (10.0%) signals had corresponding trade attempts
+2026-06-12 06:00:02,774 - WARNING - RealisticBacktester - Minimal execution confirmation showed low correspondence. 9 out of 10 non-zero signals had no corresponding trade attempts.
+2026-06-12 06:00:02,836 - WARNING - RealisticBacktester - Trade density validation issues:
+2026-06-12 06:00:02,840 - WARNING - RealisticBacktester -   - Only 1 trade executed: 1 trades for 126950 data points. This may indicate a strategy that rarely generates signals.
+2026-06-12 06:00:02,845 - WARNING - RealisticBacktester - Zero trade strategy detected - this may be normal for some strategies
+📈 Starting backtest process for strategy: liquidity
+   Symbols: ['BTCUSDT']
+   Date Range: 2026-03-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 05:55:52
+
+🔍 Backtesting liquidity on BTCUSDT...
+   Date range filter applied: 2026-03-14 to 2026-06-12, data range: 2026-03-15 to 2026-06-11, rows: 126950
+   ✅ BTCUSDT backtest completed
+      Return: -0.02%
+      Sharpe: -0.05
+      Max DD: -0.02%
+      Trades: 1
+      Signal Audit - Generated: 126950, Filtered: 0, Entries: 126950
+
+📊 BACKTEST SUMMARY
+   Strategy: liquidity
+   Symbols processed: 1
+   Successful: 1
+   Failed: 0
+   Average Return: -0.02%
+   Average Sharpe: -0.05
+   Average Max DD: -0.02%
+   Average Win Rate: 50.00%
+   Total Trades: 1
+   Duration: 491.98s
+
+✅ Backtest completed with validation
+[6/108] BTCUSDT 90d liquidity: INSUFFICIENT_DATA pnl=0.0 sharpe=-0.05362272693693869
+2026-06-12 06:04:06,002 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 06:04:06,007 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:05:24,580 - ERROR - RealisticBacktester - Signal-trade correspondence validation FAILED
+2026-06-12 06:05:24,584 - ERROR - RealisticBacktester -   - Only 434/854 (50.8%) signals had corresponding trade attempts
+2026-06-12 06:05:24,588 - WARNING - RealisticBacktester - Minimal execution confirmation showed low correspondence. 420 out of 854 non-zero signals had no corresponding trade attempts.
+📈 Starting backtest process for strategy: mtf_trend
+   Symbols: ['BTCUSDT']
+   Date Range: 2026-03-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 06:04:04
+
+🔍 Backtesting mtf_trend on BTCUSDT...
+   Date range filter applied: 2026-03-14 to 2026-06-12, data range: 2026-03-15 to 2026-06-11, rows: 126950
+   ✅ BTCUSDT backtest completed
+      Return: -20.20%
+      Sharpe: -1.22
+      Max DD: -20.20%
+      Trades: 855
+      Signal Audit - Generated: 126950, Filtered: 0, Entries: 126950
+
+📊 BACKTEST SUMMARY
+   Strategy: mtf_trend
+   Symbols processed: 1
+   Successful: 1
+   Failed: 0
+   Average Return: -20.20%
+   Average Sharpe: -1.22
+   Average Max DD: -20.20%
+   Average Win Rate: 4.56%
+   Total Trades: 855
+   Duration: 141.71s
+
+✅ Backtest completed with validation
+[7/108] BTCUSDT 90d mtf_trend: NO_GO pnl=-1254.5887550206169 sharpe=-1.2221517071396
+2026-06-12 06:06:27,994 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 06:06:27,998 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:07:47,127 - ERROR - RealisticBacktester - Signal-trade correspondence validation FAILED
+2026-06-12 06:07:47,131 - ERROR - RealisticBacktester -   - Only 460/889 (51.7%) signals had corresponding trade attempts
+2026-06-12 06:07:47,134 - WARNING - RealisticBacktester - Minimal execution confirmation showed low correspondence. 429 out of 889 non-zero signals had no corresponding trade attempts.
+📈 Starting backtest process for strategy: oi_footprint
+   Symbols: ['BTCUSDT']
+   Date Range: 2026-03-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 06:06:26
+
+🔍 Backtesting oi_footprint on BTCUSDT...
+   Date range filter applied: 2026-03-14 to 2026-06-12, data range: 2026-03-15 to 2026-06-11, rows: 126950
+   ✅ BTCUSDT backtest completed
+      Return: -18.54%
+      Sharpe: -1.36
+      Max DD: -20.97%
+      Trades: 890
+      Signal Audit - Generated: 126950, Filtered: 0, Entries: 126950
+
+📊 BACKTEST SUMMARY
+   Strategy: oi_footprint
+   Symbols processed: 1
+   Successful: 1
+   Failed: 0
+   Average Return: -18.54%
+   Average Sharpe: -1.36
+   Average Max DD: -20.97%
+   Average Win Rate: 2.81%
+   Total Trades: 890
+   Duration: 141.93s
+
+✅ Backtest completed with validation
+[8/108] BTCUSDT 90d oi_footprint: NO_GO pnl=-1306.4925590393557 sharpe=-1.3649143558043617
+2026-06-12 06:08:49,820 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 06:08:49,823 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:09:36,718 - ERROR - RealisticBacktester - Signal-trade correspondence validation FAILED
+2026-06-12 06:09:36,722 - ERROR - RealisticBacktester -   - Only 156/890 (17.5%) signals had corresponding trade attempts
+2026-06-12 06:09:36,726 - WARNING - RealisticBacktester - Minimal execution confirmation showed low correspondence. 734 out of 890 non-zero signals had no corresponding trade attempts.
+📈 Starting backtest process for strategy: sweep_scalper
+   Symbols: ['BTCUSDT']
+   Date Range: 2026-03-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 06:08:48
+
+🔍 Backtesting sweep_scalper on BTCUSDT...
+   Date range filter applied: 2026-03-14 to 2026-06-12, data range: 2026-03-15 to 2026-06-11, rows: 126950
+   ✅ BTCUSDT backtest completed
+      Return: -4.38%
+      Sharpe: -0.56
+      Max DD: -4.38%
+      Trades: 189
+      Signal Audit - Generated: 126950, Filtered: 0, Entries: 126950
+
+📊 BACKTEST SUMMARY
+   Strategy: sweep_scalper
+   Symbols processed: 1
+   Successful: 1
+   Failed: 0
+   Average Return: -4.38%
+   Average Sharpe: -0.56
+   Average Max DD: -4.38%
+   Average Win Rate: 10.05%
+   Total Trades: 189
+   Duration: 80.95s
+
+✅ Backtest completed with validation
+[9/108] BTCUSDT 90d sweep_scalper: NO_GO pnl=-249.78644274754453 sharpe=-0.5569256581171024
+2026-06-12 06:10:10,865 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 06:10:10,869 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:11:11,966 - ERROR - RealisticBacktester - Signal-trade correspondence validation FAILED
+2026-06-12 06:11:11,970 - ERROR - RealisticBacktester -   - Only 3/4 (75.0%) signals had corresponding trade attempts
+2026-06-12 06:11:11,974 - WARNING - RealisticBacktester - Minimal execution confirmation showed low correspondence. 1 out of 4 non-zero signals had no corresponding trade attempts.
+2026-06-12 06:11:12,041 - WARNING - RealisticBacktester - Trade density validation issues:
+2026-06-12 06:11:12,046 - WARNING - RealisticBacktester -   - Extremely low trade density: 0.000039 (5/126950). This may indicate a strategy that rarely generates signals.
+2026-06-12 06:11:12,050 - WARNING - RealisticBacktester - Zero trade strategy detected - this may be normal for some strategies
+📈 Starting backtest process for strategy: vwap_reversal
+   Symbols: ['BTCUSDT']
+   Date Range: 2026-03-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 06:10:09
+
+🔍 Backtesting vwap_reversal on BTCUSDT...
+   Date range filter applied: 2026-03-14 to 2026-06-12, data range: 2026-03-15 to 2026-06-11, rows: 126950
+   ✅ BTCUSDT backtest completed
+      Return: -0.06%
+      Sharpe: -0.09
+      Max DD: -0.08%
+      Trades: 5
+      Signal Audit - Generated: 126950, Filtered: 0, Entries: 126950
+
+📊 BACKTEST SUMMARY
+   Strategy: vwap_reversal
+   Symbols processed: 1
+   Successful: 1
+   Failed: 0
+   Average Return: -0.06%
+   Average Sharpe: -0.09
+   Average Max DD: -0.08%
+   Average Win Rate: 20.00%
+   Total Trades: 5
+   Duration: 104.20s
+
+✅ Backtest completed with validation
+[10/108] BTCUSDT 90d vwap_reversal: INSUFFICIENT_DATA pnl=-0.474741948841517 sharpe=-0.08715541983832338
+2026-06-12 06:11:54,945 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 06:11:54,949 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:13:04,634 - ERROR - RealisticBacktester - Signal-trade correspondence validation FAILED
+2026-06-12 06:13:04,638 - ERROR - RealisticBacktester -   - Only 241/460 (52.4%) signals had corresponding trade attempts
+2026-06-12 06:13:04,642 - WARNING - RealisticBacktester - Minimal execution confirmation showed low correspondence. 219 out of 460 non-zero signals had no corresponding trade attempts.
+📈 Starting backtest process for strategy: volatility_breakout
+   Symbols: ['BTCUSDT']
+   Date Range: 2026-03-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 06:11:53
+
+🔍 Backtesting volatility_breakout on BTCUSDT...
+   Date range filter applied: 2026-03-14 to 2026-06-12, data range: 2026-03-15 to 2026-06-11, rows: 126950
+   ✅ BTCUSDT backtest completed
+      Return: -11.95%
+      Sharpe: -1.03
+      Max DD: -11.95%
+      Trades: 481
+      Signal Audit - Generated: 126950, Filtered: 0, Entries: 126950
+
+📊 BACKTEST SUMMARY
+   Strategy: volatility_breakout
+   Symbols processed: 1
+   Successful: 1
+   Failed: 0
+   Average Return: -11.95%
+   Average Sharpe: -1.03
+   Average Max DD: -11.95%
+   Average Win Rate: 2.29%
+   Total Trades: 481
+   Duration: 125.50s
+
+✅ Backtest completed with validation
+[11/108] BTCUSDT 90d volatility_breakout: NO_GO pnl=-741.9077561893582 sharpe=-1.0346253567901738
+2026-06-12 06:14:00,524 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 06:14:00,528 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:14:40,264 - WARNING - RealisticBacktester - Trade count validation issues for BTCUSDT
+2026-06-12 06:14:40,268 - WARNING - RealisticBacktester -   - Low trade count: 0 < 1 expected for 2.9 months of BTCUSDT data (should have at least some trades after 2 weeks)
+2026-06-12 06:14:40,271 - WARNING - RealisticBacktester - Trade density validation issues:
+2026-06-12 06:14:40,276 - WARNING - RealisticBacktester -   - Zero trades executed: 0 trades for 126950 data points. This may indicate a strategy that never generates signals or has overly restrictive conditions.
+2026-06-12 06:14:40,279 - WARNING - RealisticBacktester - Zero trade strategy detected - this may be normal for some strategies
+2026-06-12 06:14:40,282 - ERROR - RealisticBacktester - FAIL-FAST TRIGGERED: Zero trades executed over 1+ month period - rejecting from optimization
+📈 Starting backtest process for strategy: crypto_breakout
+   Symbols: ['BTCUSDT']
+   Date Range: 2026-03-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 06:13:59
+
+🔍 Backtesting crypto_breakout on BTCUSDT...
+   Date range filter applied: 2026-03-14 to 2026-06-12, data range: 2026-03-15 to 2026-06-11, rows: 126950
+   ❌ Error during backtest for BTCUSDT: Zero trade strategy detected during backtest.
+  Duration: 88 days (2.9 months)
+  Trades: 0
+  Data points: 126950
+  Symbol: BTCUSDT
+  This may be normal for some strategies in certain market conditions.
+
+📊 BACKTEST SUMMARY
+   Strategy: crypto_breakout
+   Symbols processed: 1
+   Successful: 0
+   Failed: 1
+   Duration: 41.13s
+
+✅ Backtest completed with validation
+[12/108] BTCUSDT 90d crypto_breakout: error pnl=None sharpe=None
+2026-06-12 06:14:42,783 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 06:14:42,787 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:16:07,611 - ERROR - RealisticBacktester - Signal-trade correspondence validation FAILED
+2026-06-12 06:16:07,616 - ERROR - RealisticBacktester -   - Only 261/529 (49.3%) signals had corresponding trade attempts
+2026-06-12 06:16:07,619 - WARNING - RealisticBacktester - Minimal execution confirmation showed low correspondence. 268 out of 529 non-zero signals had no corresponding trade attempts.
+📈 Starting backtest process for strategy: trend_following
+   Symbols: ['BTCUSDT']
+   Date Range: 2025-12-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 06:14:40
+
+🔍 Backtesting trend_following on BTCUSDT...
+   Date range filter applied: 2025-12-14 to 2026-06-12, data range: 2025-12-15 to 2026-06-11, rows: 256371
+   ✅ BTCUSDT backtest completed
+      Return: -13.08%
+      Sharpe: -0.45
+      Max DD: -13.09%
+      Trades: 521
+      Signal Audit - Generated: 256371, Filtered: 0, Entries: 256371
+
+📊 BACKTEST SUMMARY
+   Strategy: trend_following
+   Symbols processed: 1
+   Successful: 1
+   Failed: 0
+   Average Return: -13.08%
+   Average Sharpe: -0.45
+   Average Max DD: -13.09%
+   Average Win Rate: 17.66%
+   Total Trades: 521
+   Duration: 148.87s
+
+✅ Backtest completed with validation
+[13/108] BTCUSDT 180d trend_following: NO_GO pnl=-821.6641396001359 sharpe=-0.45062001594760803
+2026-06-12 06:17:11,786 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 06:17:11,789 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:19:26,898 - ERROR - RealisticBacktester - Signal-trade correspondence validation FAILED
+2026-06-12 06:19:26,903 - ERROR - RealisticBacktester -   - Only 3/4 (75.0%) signals had corresponding trade attempts
+2026-06-12 06:19:26,907 - WARNING - RealisticBacktester - Minimal execution confirmation showed low correspondence. 1 out of 4 non-zero signals had no corresponding trade attempts.
+2026-06-12 06:19:27,030 - WARNING - RealisticBacktester - Trade density validation issues:
+2026-06-12 06:19:27,035 - WARNING - RealisticBacktester -   - Extremely low trade density: 0.000020 (5/256371). This may indicate a strategy that rarely generates signals.
+2026-06-12 06:19:27,039 - WARNING - RealisticBacktester - Zero trade strategy detected - this may be normal for some strategies
+📈 Starting backtest process for strategy: mean_reversion
+   Symbols: ['BTCUSDT']
+   Date Range: 2025-12-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 06:17:09
+
+🔍 Backtesting mean_reversion on BTCUSDT...
+   Date range filter applied: 2025-12-14 to 2026-06-12, data range: 2025-12-15 to 2026-06-11, rows: 256371
+   ✅ BTCUSDT backtest completed
+      Return: -0.15%
+      Sharpe: -0.06
+      Max DD: -0.15%
+      Trades: 5
+      Signal Audit - Generated: 256371, Filtered: 0, Entries: 256371
+
+📊 BACKTEST SUMMARY
+   Strategy: mean_reversion
+   Symbols processed: 1
+   Successful: 1
+   Failed: 0
+   Average Return: -0.15%
+   Average Sharpe: -0.06
+   Average Max DD: -0.15%
+   Average Win Rate: 0.00%
+   Total Trades: 5
+   Duration: 233.83s
+
+✅ Backtest completed with validation
+[14/108] BTCUSDT 180d mean_reversion: INSUFFICIENT_DATA pnl=-8.67022481151199 sharpe=-0.06030756446058769
+2026-06-12 06:21:05,613 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 06:21:05,617 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:22:32,415 - ERROR - RealisticBacktester - Signal-trade correspondence validation FAILED
+2026-06-12 06:22:32,419 - ERROR - RealisticBacktester -   - Only 23/39 (59.0%) signals had corresponding trade attempts
+2026-06-12 06:22:32,423 - WARNING - RealisticBacktester - Minimal execution confirmation showed low correspondence. 16 out of 39 non-zero signals had no corresponding trade attempts.
+📈 Starting backtest process for strategy: momentum
+   Symbols: ['BTCUSDT']
+   Date Range: 2025-12-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 06:21:03
+
+🔍 Backtesting momentum on BTCUSDT...
+   Date range filter applied: 2025-12-14 to 2026-06-12, data range: 2025-12-15 to 2026-06-11, rows: 256371
+   ✅ BTCUSDT backtest completed
+      Return: -0.20%
+      Sharpe: -0.01
+      Max DD: -0.77%
+      Trades: 45
+      Signal Audit - Generated: 256371, Filtered: 0, Entries: 256371
+
+📊 BACKTEST SUMMARY
+   Strategy: momentum
+   Symbols processed: 1
+   Successful: 1
+   Failed: 0
+   Average Return: -0.20%
+   Average Sharpe: -0.01
+   Average Max DD: -0.77%
+   Average Win Rate: 26.67%
+   Total Trades: 45
+   Duration: 145.18s
+
+✅ Backtest completed with validation
+[15/108] BTCUSDT 180d momentum: INSUFFICIENT_DATA pnl=25.920334681870997 sharpe=-0.011801883399915858
+2026-06-12 06:23:30,938 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 06:23:30,941 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:27:13,153 - WARNING - RealisticBacktester - Trade count validation issues for BTCUSDT
+2026-06-12 06:27:13,158 - WARNING - RealisticBacktester -   - Low trade count: 0 < 3 expected for 5.9 months of BTCUSDT data (some strategies may legitimately have few trades)
+2026-06-12 06:27:13,162 - WARNING - RealisticBacktester - Trade density validation issues:
+2026-06-12 06:27:13,166 - WARNING - RealisticBacktester -   - Zero trades executed: 0 trades for 256371 data points. This may indicate a strategy that never generates signals or has overly restrictive conditions.
+2026-06-12 06:27:13,170 - WARNING - RealisticBacktester - Zero trade strategy detected - this may be normal for some strategies
+2026-06-12 06:27:13,173 - ERROR - RealisticBacktester - FAIL-FAST TRIGGERED: Zero trades executed over 1+ month period - rejecting from optimization
+📈 Starting backtest process for strategy: scalping
+   Symbols: ['BTCUSDT']
+   Date Range: 2025-12-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 06:23:28
+
+🔍 Backtesting scalping on BTCUSDT...
+   Date range filter applied: 2025-12-14 to 2026-06-12, data range: 2025-12-15 to 2026-06-11, rows: 256371
+   ❌ Error during backtest for BTCUSDT: Zero trade strategy detected during backtest.
+  Duration: 178 days (5.9 months)
+  Trades: 0
+  Data points: 256371
+  Symbol: BTCUSDT
+  This may be normal for some strategies in certain market conditions.
+
+📊 BACKTEST SUMMARY
+   Strategy: scalping
+   Symbols processed: 1
+   Successful: 0
+   Failed: 1
+   Duration: 224.81s
+
+✅ Backtest completed with validation
+[16/108] BTCUSDT 180d scalping: error pnl=None sharpe=None
+2026-06-12 06:27:16,082 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 06:27:16,087 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:28:32,927 - WARNING - RealisticBacktester - Trade count validation issues for BTCUSDT
+2026-06-12 06:28:32,932 - WARNING - RealisticBacktester -   - Low trade count: 0 < 3 expected for 5.9 months of BTCUSDT data (some strategies may legitimately have few trades)
+2026-06-12 06:28:32,936 - WARNING - RealisticBacktester - Trade density validation issues:
+2026-06-12 06:28:32,940 - WARNING - RealisticBacktester -   - Zero trades executed: 0 trades for 256371 data points. This may indicate a strategy that never generates signals or has overly restrictive conditions.
+2026-06-12 06:28:32,944 - WARNING - RealisticBacktester - Zero trade strategy detected - this may be normal for some strategies
+2026-06-12 06:28:32,947 - ERROR - RealisticBacktester - FAIL-FAST TRIGGERED: Zero trades executed over 1+ month period - rejecting from optimization
+📈 Starting backtest process for strategy: breakout
+   Symbols: ['BTCUSDT']
+   Date Range: 2025-12-14 to 2026-06-12
+   Initial Capital: $10,000.00
+   Fee Rate: 0.100%
+   Slippage Factor: 0.050%
+   Timestamp: 2026-06-12 06:27:13
+
+🔍 Backtesting breakout on BTCUSDT...
+   Date range filter applied: 2025-12-14 to 2026-06-12, data range: 2025-12-15 to 2026-06-11, rows: 256371
+   ❌ Error during backtest for BTCUSDT: Zero trade strategy detected during backtest.
+  Duration: 178 days (5.9 months)
+  Trades: 0
+  Data points: 256371
+  Symbol: BTCUSDT
+  This may be normal for some strategies in certain market conditions.
+
+📊 BACKTEST SUMMARY
+   Strategy: breakout
+   Symbols processed: 1
+   Successful: 0
+   Failed: 1
+   Duration: 79.69s
+
+✅ Backtest completed with validation
+[17/108] BTCUSDT 180d breakout: error pnl=None sharpe=None
+2026-06-12 06:28:35,576 - WARNING - RealisticBacktester - Data is too old: 2026-06-11 05:46:00 vs current time
+2026-06-12 06:28:35,581 - WARNING - RealisticBacktester - Could not detect missing candles: Invalid frequency: 1H. Failed to parse with error message: ValueError("Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?")
+2026-06-12 06:40:26,291 - ERROR - RealisticBacktester - Signal-trade correspondence validation FAILED
+2026-06-12 06:40:26,295 - ERROR - RealisticBacktester -   - Only 1/21 (4.8%) signals had corresponding trade attempts
+2026-06-12 06:40:26,300 - WARNING - RealisticBacktester - Minimal execution confirmation showed low correspondence. 20 out of 21 non-zero signals had no corresponding trade attempts.
+2026-06-12 06:40:26,458 - WARNING - RealisticBacktester - Trade count validation issues for BTCUSDT
+2026-06-12 06:40:26,462 - WARNING - RealisticBacktester -   - Low trade count: 1 < 3 expected for 5.9 months of BTCUSDT data (some strategies may legitimately have few trades)
+2026-06-12 06:40:26,466 - WARNING - RealisticBacktester - Trade density validation issues:
+2026-06-12 06:40:26,471 - WARNING - RealisticBacktester -   - Only 1 trade executed: 1 trades for 256371 data points. This may indicate a strategy that rarely generates signals.
+2026-06-12 06:40:26,474 - WARNING - RealisticBacktester - Zero trade strategy detected - this may be normal for some strategies

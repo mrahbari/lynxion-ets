@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "INXUSDT",
+  "timeframe": "1m",
+  "checksum": "2885c7df4d067e4fa83e09bc343c0c540890a2ef42ee10fed664bac15ce3d91d",
+  "download_timestamp": "2026-06-12T18:34:47.769736",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686560",
+    "end": "1778720040"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/INX-USDT.csv"
+}

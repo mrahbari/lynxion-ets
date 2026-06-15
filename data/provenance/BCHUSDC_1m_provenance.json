@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "BCHUSDC",
+  "timeframe": "1m",
+  "checksum": "d152ff3feea563e3c52350a374ad94a48e371f887bba1355b2e3d33b269466e9",
+  "download_timestamp": "2026-06-12T18:27:55.832545",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778749620"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/BCHUSDC.csv"
+}

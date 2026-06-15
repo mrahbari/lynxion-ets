@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SPKUSDT",
+  "timeframe": "1m",
+  "checksum": "637f9d07ba322ec564159fd9d0c30ec2c549e37bceb2ba1980c0e24cb40f6984",
+  "download_timestamp": "2026-06-12T18:32:21.533387",
+  "row_count": 1062,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778749920"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SPK-USDT.csv"
+}

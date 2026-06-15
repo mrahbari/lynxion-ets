@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "UMAUSDT",
+  "timeframe": "1m",
+  "checksum": "c899118e95c5400cbae6045ec2e5d9496687c769c35d25fb22135c5f785cd746",
+  "download_timestamp": "2026-06-12T18:28:00.865488",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778749680"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/UMA-USDT.csv"
+}

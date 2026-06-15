@@ -1,0 +1,121 @@
+[tool.pytest.ini_options]
+minversion = "6.2"
+testpaths = ["tests"]
+# Fail on unknown markers/config so marker discipline is enforced from the start.
+addopts = "-ra --strict-markers --strict-config"
+# pytest-asyncio: run `async def test_*` without per-test decoration.
+asyncio_mode = "auto"
+markers = [
+    "unit: fast, isolated tests with no I/O or external services",
+    "integration: tests that exercise multiple components or external resources",
+    "e2e: end-to-end tests that run full workflows/runners",
+    "contract: adapter<->port conformance tests",
+]
+
+# --- E6.T1: Import-linter contracts encoding dependency rules R1-R6 ---
+# Authoritative source: docs/reports/phase2-target-architecture.md (§4 Dependency Rules).
+# Run locally / in CI with: lint-imports
+[tool.importlinter]
+root_packages = [
+    "domain",
+    "application",
+    "infrastructure",
+    "interface",
+    "bootstrap",
+    "shared",
+]
+
+# Layered architecture. Each layer may import only the layers BELOW it; siblings
+# joined by "|" are independent (may not import each other). This single contract
+# encodes:
+#   R2  application -> domain only        (not infrastructure/interface/bootstrap)
+#   R3  infrastructure -> domain only     (not application/interface/bootstrap)
+#   R4  nothing imports bootstrap except interface
+#   R5  domain pure (imports nothing above it; stdlib + shared only)
+#   R6  shared -> nothing (bottom layer; everyone may use it, it uses no layer)
+[[tool.importlinter.contracts]]
+name = "Layered architecture (R2, R3, R4, R5, R6)"
+type = "layers"
+layers = [
+    "interface",
+    "bootstrap",
+    "application | infrastructure",
+    "domain",
+    "shared",
+]
+# Pre-existing debt owned by DEFERRED tasks. Allowlisted so the contract stays green
+# today while still failing on any NEW violation. Remove each entry as its owning task
+# lands. This ledger was re-baselined in E6 graph-coverage: adding the missing
+# __init__.py files raised grimp coverage from 142 -> 412 modules, surfacing 79 layered
+# edges that were always present but invisible while their subpackages were skipped.
+# Each block below is retired wholesale by the named task.
+ignore_imports = [
+    # --- E1.T4/T5: settings-injection bridge ---------------------------------------
+    # Modules read bootstrap settings directly instead of receiving them via
+    # constructor injection. Retired when E1.T4/T5 lands the injection seam.
+    "application.configs.symbol_config -> bootstrap.settings.loaders",
+    "application.configs.sync_settings -> bootstrap.settings.loaders",
+    "application.symbol_management.centralized_symbol_manager -> bootstrap.settings.loaders",
+    "infrastructure.strategies.strategy_config -> bootstrap.settings.loaders",
+    "infrastructure.data.wfo_config -> bootstrap.settings.loaders",
+    # --- E5-B: risk / execution / position-sizing wiring (golden-gated) ------------
+    # E5-B.T1 (composition-root injection): strategy_adapters/risk_engine_adapter/
+    # position_sizing_engine_adapter no longer import the canonical application
+    # engines — the engine is built by bootstrap and injected (parity-gated by
+    # test_risk_decisions + test_position_sizing characterization). Remaining
+    # advanced_execution_service edge is INHERITANCE across layers (RiskAwareExecution
+    # extends application ExecutionService) — needs a layer/composition design
+    # decision, deferred.
+    "infrastructure.execution.advanced_execution_service -> application.services.execution_services",
+    "application.risk_management.enterprise_risk_manager -> infrastructure.tracking.trade_tracker",
+    "application.risk_management.enterprise_risk_manager -> infrastructure.market_regime.regime_detector",
+    "application.risk_management.enterprise_risk_manager -> infrastructure.logging.forensic_logger",
+    # --- E5-B: backtest / walk-forward / optimization wiring (golden-gated) --------
+    "application.walk_forward.wfo_orchestrator -> infrastructure.backtest.realistic_backtester",
+    "application.walk_forward.wfo_orchestrator -> infrastructure.backtest.adapters.walk_forward",
+    "application.walk_forward.wfo_orchestrator -> infrastructure.data.csv_history_loader",
+    "application.walk_forward.wfo_orchestrator -> infrastructure.optimization.hyperopt_space",
+    "infrastructure.backtest.adapters.walk_forward -> application.walk_forward.sliding_window_splitter",
+    "shared.optimization_service -> infrastructure.optimization.hyperopt_space",
+    # --- E4-deferred: data-ingestion / DTO wiring (infra.data -> application) -------
+    "infrastructure.data.csv_history_loader -> application.dto",
+    "infrastructure.data_sync.data_downloader_adapter -> application.dto",
+    "infrastructure.data_sync.data_downloader_adapter -> application.configs.sync_settings",
+    "infrastructure.data_sync.data_downloader_adapter -> application.configs.symbol_config",
+    "infrastructure.data_sync.file_repository_adapter -> application.data_sync.ports",
+    "infrastructure.data.configurable_historical_data_provider -> application.symbol_management.centralized_symbol_manager",
+    "infrastructure.data._edp_pricing -> application.data_sync.sync_manager",
+    "infrastructure.data._edp_availability -> application.data_sync.sync_manager",
+    "infrastructure.data.enhanced_data_provider -> application.data_sync.sync_manager",
+    # --- E5: data-sync / watcher-retune / workflow wiring (application -> infra) ----
+    "application.services.watcher_services -> infrastructure.data.market_data_feed",
+    # --- E5-A: reporting relocations awaiting dependency inversion (T1/T10) ---------
+    "infrastructure.orchestrators.production_trading_orchestrator -> interface.reporting.live_dashboard",
+    # --- E1-pattern: settings read directly (relocated event_system) ----------------
+    # event_system was relocated shared/ -> infrastructure/messaging/ in E8.T4(b),
+    # retiring its 5 R6 up-edges (-> domain/infrastructure). The remaining edge is the
+    # E1 settings shim: SignalProcessor reads load_settings() on its trade-execution
+    # path. Retired when settings injection reaches this singleton (E1-style; the
+    # module-level singleton has no container seam yet).
+    "infrastructure.messaging.event_system -> bootstrap.settings.loaders",
+]
+
+# R1: interface is user/operator-facing and must reach adapters only through the
+# composition root, never by importing infrastructure directly. allow_indirect_imports
+# keeps the legitimate interface -> bootstrap -> infrastructure path (the composition
+# root wiring) from tripping the rule.
+[[tool.importlinter.contracts]]
+name = "Interface must not import infrastructure directly (R1)"
+type = "forbidden"
+source_modules = ["interface"]
+forbidden_modules = ["infrastructure"]
+allow_indirect_imports = true
+# Pre-existing debt surfaced by E6 graph-coverage (portfolio subpackage was invisible
+# until its __init__.py was added). Three CLIs import the portfolio backtester's
+# load_sample_strategies directly instead of routing through the composition root.
+# Retired by E5.T6 CLI fat-wiring cleanup (route via bootstrap factory).
+ignore_imports = [
+    "interface.cli.comprehensive_portfolio_backtest -> infrastructure.portfolio.comprehensive_portfolio_backtester",
+    "interface.cli.comprehensive_validation -> infrastructure.portfolio.comprehensive_portfolio_backtester",
+    "interface.cli.extended_horizon_validation -> infrastructure.portfolio.comprehensive_portfolio_backtester",
+]

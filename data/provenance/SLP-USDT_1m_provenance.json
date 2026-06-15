@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SLPUSDT",
+  "timeframe": "1m",
+  "checksum": "e6352a269e9235730b9166cb7dd707681828bbb5fb5441c8643153f9cc2def03",
+  "download_timestamp": "2026-06-12T18:30:28.621729",
+  "row_count": 1061,
+  "date_range": {
+    "start": "1778686200",
+    "end": "1778749800"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SLP-USDT.csv"
+}

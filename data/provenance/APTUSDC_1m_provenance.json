@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "APTUSDC",
+  "timeframe": "1m",
+  "checksum": "36e71e029c54dfd155c5e10b0db460202fd76f1441e7f9f435c6d8c35d236813",
+  "download_timestamp": "2026-06-12T18:37:14.201119",
+  "row_count": 1065,
+  "date_range": {
+    "start": "1778686380",
+    "end": "1778750220"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/APTUSDC.csv"
+}

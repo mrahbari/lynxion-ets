@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "MNTUSDT",
+  "timeframe": "1m",
+  "checksum": "56a727c8a741ce3802325b156c67e6279fb2d1d92519f3359e9e229963a0cdf6",
+  "download_timestamp": "2026-06-12T18:25:35.927567",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778685960",
+    "end": "1778719500"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/MNT-USDT.csv"
+}

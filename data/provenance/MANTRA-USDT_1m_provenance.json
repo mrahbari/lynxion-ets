@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "MANTRAUSDT",
+  "timeframe": "1m",
+  "checksum": "baf65a20c9e473218a05f6a677a431f715fcf7b3373a0e86850d8868759a3d0d",
+  "download_timestamp": "2026-06-12T18:37:37.125827",
+  "row_count": 1072,
+  "date_range": {
+    "start": "1778685960",
+    "end": "1778750220"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/MANTRA-USDT.csv"
+}

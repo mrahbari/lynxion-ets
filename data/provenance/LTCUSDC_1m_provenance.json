@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "LTCUSDC",
+  "timeframe": "1m",
+  "checksum": "a2a8e3cd961907dac398700f07a9c63952c87399fda229daca619329efa86b19",
+  "download_timestamp": "2026-06-12T18:32:10.849938",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686380",
+    "end": "1778749920"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/LTCUSDC.csv"
+}

@@ -1,0 +1,4 @@
+# generated analysis outputs — keep the dir, ignore the artifacts
+*
+!.gitkeep
+!.gitignore

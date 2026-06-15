@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "MANAUSDT",
+  "timeframe": "1m",
+  "checksum": "3ef472805584c57630e123bc3e2f5f750c6d02db6007968d4d35fa5f045a7425",
+  "download_timestamp": "2026-06-12T18:30:10.880685",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778749800"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/MANA-USDT.csv"
+}

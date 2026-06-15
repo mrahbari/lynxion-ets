@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "AVNTUSDT",
+  "timeframe": "1m",
+  "checksum": "fffd15bba0c635c42cb83c4f0ff0687052733a6ec4115b7e073441331953756a",
+  "download_timestamp": "2026-06-12T18:36:09.691854",
+  "row_count": 1067,
+  "date_range": {
+    "start": "1778686200",
+    "end": "1778750160"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/AVNT-USDT.csv"
+}

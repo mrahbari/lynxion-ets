@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SAFEUSDT",
+  "timeframe": "1m",
+  "checksum": "ce4b7ada9df483bacbacfb6538c36922ba1c592c4902abc092920dff548f1f39",
+  "download_timestamp": "2026-06-12T18:24:58.656427",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778685900",
+    "end": "1778719440"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SAFE-USDT.csv"
+}

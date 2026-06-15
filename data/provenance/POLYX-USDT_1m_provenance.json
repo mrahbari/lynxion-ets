@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "POLYXUSDT",
+  "timeframe": "1m",
+  "checksum": "f83db41b2aa2c6f4cf79afa398ecfa3899f5efe82a10aa7e55165792da1f9d67",
+  "download_timestamp": "2026-06-12T18:31:20.791326",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778749860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/POLYX-USDT.csv"
+}

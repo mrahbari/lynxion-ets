@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "REALUSDT",
+  "timeframe": "1m",
+  "checksum": "43e614bd1b1e1a72a9711190e5f522678efc1efcd76edc1ad813784f64534eef",
+  "download_timestamp": "2026-06-12T18:38:55.469265",
+  "row_count": 572,
+  "date_range": {
+    "start": "1778686020",
+    "end": "1778720280"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/REAL-USDT.csv"
+}

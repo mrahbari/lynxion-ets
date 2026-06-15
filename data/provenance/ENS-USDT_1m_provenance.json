@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ENSUSDT",
+  "timeframe": "1m",
+  "checksum": "624a70c804b942d6203c186c03ad25f14b5ffcab84164bb56abafc7049fd0ddc",
+  "download_timestamp": "2026-06-12T18:40:46.358836",
+  "row_count": 1066,
+  "date_range": {
+    "start": "1778686500",
+    "end": "1778750400"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ENS-USDT.csv"
+}

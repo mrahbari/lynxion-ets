@@ -2,7 +2,7 @@
 Use cases for strategy functionality in the enterprise hedge fund trading system.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Signal, Position
+from domain.entities import Signal, Position
 from domain.value_objects import Symbol
 from application.services.strategy_services import StrategyOrchestrationService
 

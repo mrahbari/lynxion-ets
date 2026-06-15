@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "BSVUSDT",
+  "timeframe": "1m",
+  "checksum": "7ed8010ad49e6c967f4eccaf92765b8bb87d2647394eb8baae7a6fa395d198a2",
+  "download_timestamp": "2026-06-12T18:37:27.668669",
+  "row_count": 563,
+  "date_range": {
+    "start": "1778686500",
+    "end": "1778720220"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/BSV-USDT.csv"
+}

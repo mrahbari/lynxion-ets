@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "TRUTHUSDT",
+  "timeframe": "1m",
+  "checksum": "a2b26a13e01a1927171a730848b0f494c94fc30340a475ac446cca7fad3144ba",
+  "download_timestamp": "2026-06-12T18:30:51.706055",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778719800"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/TRUTH-USDT.csv"
+}

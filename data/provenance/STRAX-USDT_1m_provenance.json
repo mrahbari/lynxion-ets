@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "STRAXUSDT",
+  "timeframe": "1m",
+  "checksum": "13bffba74eb6817484b6e844195c5289ad8c8b33606cbed33127d9d672a7e235",
+  "download_timestamp": "2026-06-12T18:26:16.926578",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686020",
+    "end": "1778749560"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/STRAX-USDT.csv"
+}

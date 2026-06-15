@@ -1,10 +1,8 @@
 from typing import Dict, List, Optional, Callable, Tuple
-from shared.types import Signal, Order
 from shared.logger import logger
 from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
-from .simulator import BacktestSimulator
 from application.walk_forward.sliding_window_splitter import SlidingWindowSplitter, WalkForwardWindow
 
 
@@ -31,7 +29,7 @@ class WalkForwardAnalyzer:
     def run_walk_forward_analysis(self,
                                   data: Dict[str, pd.DataFrame],
                                   strategy_optimizer: Callable,
-                                  backtester_class: type = BacktestSimulator) -> Dict:
+                                  backtester_class: Optional[type] = None) -> Dict:
         """Run the complete walk-forward analysis"""
 
         logger.info(f"Starting Walk-Forward Analysis with train_size={self.train_size}, "

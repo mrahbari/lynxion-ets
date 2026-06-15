@@ -117,5 +117,16 @@ class GlobalRateLimiter:
         limiter.wait_for_tokens(num_tokens)
 
 
-# Global instance
-global_rate_limiter = GlobalRateLimiter()
+# Module-level instantiation retired (E2.T6): access is now mediated by the
+# composition root (bootstrap/container.py registers ``global_rate_limiter``).
+# This lazy accessor defers creation past import for backward-compatible callers.
+#
+# NOTE: the rate limiter INTENTIONALLY remains a single instance per process —
+# API rate limits are shared across ALL exchange calls in the run; isolating it
+# per container would split the budget and risk exchange bans.
+# ``GlobalRateLimiter.__new__`` enforces the process singleton, so the container
+# factory and this accessor return the same instance.
+def __getattr__(name):
+    if name == "global_rate_limiter":
+        return GlobalRateLimiter()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

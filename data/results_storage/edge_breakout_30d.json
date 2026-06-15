@@ -1,0 +1,64 @@
+{
+  "verdict": {
+    "verdict": "DIRECTIONAL_NO_GO",
+    "summary": "DIRECTIONAL_NO_GO \u2014 no cell reached 30 trades (risk discipline throttled a losing strategy), but 25 aggregate trades show decisively negative expectancy (-231.6 < 0.0) with no positive cell. Reject: no edge.",
+    "passing": [],
+    "failing": [
+      {
+        "strategy": "breakout",
+        "regime": "ranging",
+        "trade_count": 7,
+        "expectancy": -196.5076029643231,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 7 < min 30",
+          "expectancy -196.508 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "breakout",
+        "regime": "trending_up",
+        "trade_count": 18,
+        "expectancy": -245.24636474928195,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 18 < min 30",
+          "expectancy -245.246 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      }
+    ]
+  },
+  "attribution": {
+    "total_pnl": -5789.987786237337,
+    "total_trades": 25,
+    "by_strategy": {
+      "breakout": -5789.987786237337
+    },
+    "by_regime": {
+      "ranging": -1375.5532207502617,
+      "trending_up": -4414.434565487075
+    },
+    "cells": [
+      {
+        "strategy": "breakout",
+        "regime": "ranging",
+        "pnl": -1375.5532207502617,
+        "trade_count": 7
+      },
+      {
+        "strategy": "breakout",
+        "regime": "trending_up",
+        "pnl": -4414.434565487075,
+        "trade_count": 18
+      }
+    ],
+    "reconciled": true,
+    "unattributed_trades": 0,
+    "unknown_regime_trades": 0
+  },
+  "ledger_path": "data/results_storage/edge_ledger.json"
+}

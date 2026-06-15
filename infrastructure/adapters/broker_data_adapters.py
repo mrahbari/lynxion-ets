@@ -2,7 +2,7 @@
 Infrastructure adapters for broker integrations.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Order, Position
+from domain.entities import Order, Position
 from domain.value_objects import Symbol, Money
 from abc import ABC, abstractmethod
 import time
@@ -72,7 +72,7 @@ class MockBrokerAdapter(BrokerAdapter):
     def get_position(self, symbol: Symbol) -> Optional[Position]:
         """Get position for a symbol"""
         # Return a mock position
-        from domain.entities.trading_entities import PositionSide
+        from domain.entities import PositionSide
         from domain.value_objects import Money
         from decimal import Decimal
         from datetime import datetime
@@ -92,7 +92,7 @@ class MockBrokerAdapter(BrokerAdapter):
     def get_all_positions(self) -> List[Position]:
         """Get all positions"""
         # Return mock positions
-        from domain.entities.trading_entities import PositionSide
+        from domain.entities import PositionSide
         from domain.value_objects import Money
         from decimal import Decimal
         from datetime import datetime

@@ -1,0 +1,63 @@
+{
+  "verdict": {
+    "verdict": "NO_GO",
+    "summary": "NO_GO \u2014 2 cells evaluated, adequate sample present, but none clears expectancy>0.0 and PF>1.0 net of realistic costs. Do not invest in execution hardening yet.",
+    "passing": [],
+    "failing": [
+      {
+        "strategy": "volatility_breakout",
+        "regime": "ranging",
+        "trade_count": 16,
+        "expectancy": -11.788312998479826,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 16 < min 30",
+          "expectancy -11.7883 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "volatility_breakout",
+        "regime": "trending_up",
+        "trade_count": 43,
+        "expectancy": -9.88346093704089,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "expectancy -9.88346 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      }
+    ]
+  },
+  "attribution": {
+    "total_pnl": -613.6018282684355,
+    "total_trades": 59,
+    "by_strategy": {
+      "volatility_breakout": -613.6018282684355
+    },
+    "by_regime": {
+      "ranging": -188.61300797567722,
+      "trending_up": -424.9888202927583
+    },
+    "cells": [
+      {
+        "strategy": "volatility_breakout",
+        "regime": "ranging",
+        "pnl": -188.61300797567722,
+        "trade_count": 16
+      },
+      {
+        "strategy": "volatility_breakout",
+        "regime": "trending_up",
+        "pnl": -424.9888202927583,
+        "trade_count": 43
+      }
+    ],
+    "reconciled": true,
+    "unattributed_trades": 0,
+    "unknown_regime_trades": 0
+  },
+  "ledger_path": "data/results_storage/edge_ledger.json"
+}

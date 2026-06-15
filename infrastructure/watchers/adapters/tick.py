@@ -1,17 +1,16 @@
 from .base_watcher import BaseWatcher
-from domain.entities.signal_entities import MarketObservation
+from domain.entities import MarketObservation
 from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
 import numpy as np
 from decimal import Decimal
-from application.configs.configs import Configs
 
 
 class TickWatcherAdapter(BaseWatcher):
     """Tick Watcher - analyzes tick-by-tick market data, returns raw market observations"""
 
-    def __init__(self, name: str, symbol: str, broker_service=None, lookback: int = 1000):
+    def __init__(self, name: str, symbol: str, broker_service=None, lookback: int = 1000, watcher_config=None):
         # Convert symbol string to Symbol object if needed
         symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
         super().__init__(name, symbol_obj)
@@ -19,8 +18,9 @@ class TickWatcherAdapter(BaseWatcher):
         # Store broker service and other parameters separately
         self.broker_service = broker_service
 
-        # Configuration from environment with defaults
-        self.enabled = Configs.watcher.tick_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'tick_watcher_enabled') else False
+        # Configuration injected via constructor (E1.T4); falls back to the
+        # typed settings aggregate (same values as the legacy Configs.watcher).
+        self.enabled = watcher_config.tick_watcher_enabled if watcher_config and hasattr(watcher_config, 'tick_watcher_enabled') else False
 
         # Only set logger if enabled, otherwise use mock logger
         if self.enabled:

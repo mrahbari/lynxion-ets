@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SOONUSDT",
+  "timeframe": "1m",
+  "checksum": "6be8741efbc1cae18f4f2f811e2cd142ca52d00dd31e9b06927526df77d3a283",
+  "download_timestamp": "2026-06-12T18:37:25.353673",
+  "row_count": 570,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778720220"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SOON-USDT.csv"
+}

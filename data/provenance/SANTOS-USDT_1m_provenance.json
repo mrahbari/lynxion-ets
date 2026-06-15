@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SANTOSUSDT",
+  "timeframe": "1m",
+  "checksum": "305fe9fc4ee0bf7a108910d32f103e861e606025b20a4dd62467ef85696eb0a6",
+  "download_timestamp": "2026-06-12T18:28:19.005122",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778749680"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SANTOS-USDT.csv"
+}

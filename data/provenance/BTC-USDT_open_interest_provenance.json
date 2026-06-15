@@ -1,0 +1,19 @@
+{
+  "source": "ccxt:openInterestHistory@1h",
+  "exchange": "binance",
+  "symbol": "BTCUSDT",
+  "data_class": "open_interest",
+  "checksum": "47524102e0ab211a839853ef23e0230fb21c6463db2fde71879bc5deed27a7db",
+  "download_timestamp": "2026-06-11T20:18:48.783900+00:00",
+  "row_count": 720,
+  "date_range": {
+    "start": "1778619600",
+    "end": "1781208000"
+  },
+  "columns": [
+    "timestamp",
+    "open_interest",
+    "open_interest_value"
+  ],
+  "file_path": "data/history/raw/open_interest/BTC-USDT.csv"
+}

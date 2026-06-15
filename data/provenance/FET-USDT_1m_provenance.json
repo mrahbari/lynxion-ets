@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "FETUSDT",
+  "timeframe": "1m",
+  "checksum": "0c49a26ab300ecbe9d94f932fd99d97a3ce0faaa42f0817df905f48d880abde7",
+  "download_timestamp": "2026-06-12T22:06:22.225099",
+  "row_count": 1192,
+  "date_range": {
+    "start": "1778686380",
+    "end": "1781294760"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "file_path": "data/history/raw/1m/FET-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "MYXUSDT",
+  "timeframe": "1m",
+  "checksum": "96969a496fe6e50615376b852bfd462230551ca9bef234e55242c3aeecec8db3",
+  "download_timestamp": "2026-06-12T18:32:18.457338",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686380",
+    "end": "1778719920"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/MYX-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "KOMAUSDT",
+  "timeframe": "1m",
+  "checksum": "73faf8a09c8ac5826504d467d0838c194ecc84072bbfcbae1849432a41cd73c1",
+  "download_timestamp": "2026-06-12T18:43:31.123879",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778687100",
+    "end": "1778720580"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/KOMA-USDT.csv"
+}

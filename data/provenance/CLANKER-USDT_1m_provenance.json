@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "CLANKERUSDT",
+  "timeframe": "1m",
+  "checksum": "e319dfaf319610d28f8c3024adc372250d7c853d00d603a6885728391cbb5e52",
+  "download_timestamp": "2026-06-12T18:39:31.320644",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686860",
+    "end": "1778720340"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/CLANKER-USDT.csv"
+}

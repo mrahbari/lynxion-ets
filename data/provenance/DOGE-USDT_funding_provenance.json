@@ -1,0 +1,18 @@
+{
+  "source": "ccxt:fundingRateHistory",
+  "exchange": "binance",
+  "symbol": "DOGEUSDT",
+  "data_class": "funding",
+  "checksum": "39cb9177713da2f4d66fb2ffd9b599c1bf0eb2ce5b697529933d015e725e030a",
+  "download_timestamp": "2026-06-11T21:01:08.883262+00:00",
+  "row_count": 3285,
+  "date_range": {
+    "start": "1686614400",
+    "end": "1781193600"
+  },
+  "columns": [
+    "timestamp",
+    "funding_rate"
+  ],
+  "file_path": "./data/history/raw/funding/DOGE-USDT.csv"
+}

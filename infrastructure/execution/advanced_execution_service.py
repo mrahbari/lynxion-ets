@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 from decimal import Decimal
 import time
 
-from domain.entities.trading_entities import Order, Fill, Position
+from domain.entities import Order, Fill, Position
 from domain.value_objects import Symbol, Money, Percentage
 from domain.ports.execution_ports import ExecutionPort
 from application.services.execution_services import ExecutionService

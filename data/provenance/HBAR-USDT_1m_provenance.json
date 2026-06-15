@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "HBARUSDT",
+  "timeframe": "1m",
+  "checksum": "68acc2e4f76893f5b54fa41b04dda042adf56cc30f05c17c44640188c7850e30",
+  "download_timestamp": "2026-06-12T18:30:11.691731",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778749800"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/HBAR-USDT.csv"
+}

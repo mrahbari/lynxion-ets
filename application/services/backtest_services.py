@@ -1,8 +1,14 @@
 """
+DEPRECATED (E3.T1 -- Option A: Retire & Redefine). Legacy mock backtest stack
+(BacktestExecutionService over BasicBacktestEngineAdapter + mock data; not
+golden-tested). The canonical engine is RealisticBacktester behind
+BacktestEnginePort (infrastructure/backtest/backtest_engine_adapter.py).
+Physical removal -> E8.
+
 Application service for backtesting in the enterprise hedge fund trading system.
 """
 from typing import List, Dict, Any
-from domain.entities.trading_entities import Signal, Position
+from domain.entities import Signal, Position
 from domain.value_objects import Symbol, Money
 from domain.ports.backtest_ports import (
     BacktestEnginePort, HistoricalDataProviderPort, BacktestMetricsPort

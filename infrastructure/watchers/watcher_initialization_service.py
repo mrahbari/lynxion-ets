@@ -9,15 +9,33 @@ from typing import Dict, List, Optional, Callable, Any
 from domain.value_objects import Symbol
 from shared.logger import EnhancedLogger
 from infrastructure.watchers.watcher_factory import WatcherFactory, WatcherType
-from application.configs.hexagonal_settings import config as hexagonal_config
 from infrastructure.services.broker_execution_service import create_execution_service
-from application.configs.configs import Configs
+
+
+def _broker_for_watcher(settings, watcher_name: str) -> str:
+    """Resolve the target broker for a watcher from the injected settings object.
+
+    Replaces the retired ``HexagonalConfig.get_broker_for_watcher``: parses the
+    ``watcher.broker_config`` mapping string and falls back to the default broker.
+    """
+    _settings = settings
+    broker_config_str = getattr(_settings.watcher, 'broker_config', '') if _settings.watcher else ''
+    mapping = {}
+    if broker_config_str:
+        for pair in broker_config_str.split(','):
+            if ':' in pair:
+                w, b = pair.split(':', 1)
+                mapping[w.strip()] = b.strip()
+    return mapping.get(watcher_name, _settings.broker.default_broker)
 
 
 class WatcherInitializationService:
     """Service class for initializing and managing watcher instances."""
     
-    def __init__(self, logger: EnhancedLogger = None, market_data_repo=None):
+    def __init__(self, settings, logger: EnhancedLogger = None, market_data_repo=None):
+        # Settings injected by the composition root (E1.T4); read the same fields off
+        # self._settings and forward it to the watcher factory / broker resolver.
+        self._settings = settings
         self.logger = logger or EnhancedLogger("WatcherInitializationService")
         self.market_data_repo = market_data_repo
     
@@ -31,26 +49,26 @@ class WatcherInitializationService:
             for watcher_type, symbols_list in watcher_specific_symbols.items():
                 # Check if this watcher type is enabled
                 env_var = f"{watcher_type.upper()}_WATCHER_ENABLED"
-                if env_var == 'MARKET_PULSE_WATCHER_ENABLED' and Configs.watcher:
-                    is_enabled = Configs.watcher.market_pulse_watcher_enabled
-                elif env_var == 'VOLATILITY_WATCHER_ENABLED' and Configs.watcher:
-                    is_enabled = Configs.watcher.volatility_watcher_enabled
-                elif env_var == 'TREND_MTF_WATCHER_ENABLED' and Configs.watcher:
-                    is_enabled = Configs.watcher.trend_mtf_watcher_enabled
-                elif env_var == 'ANOMALY_ML_WATCHER_ENABLED' and Configs.watcher:
-                    is_enabled = Configs.watcher.anomaly_ml_watcher_enabled
-                elif env_var == 'ORDERFLOW_WS_WATCHER_ENABLED' and Configs.watcher:
-                    is_enabled = Configs.watcher.orderflow_ws_watcher_enabled
-                elif env_var == 'CMC_SCREENER_ENABLED' and Configs.watcher:
-                    is_enabled = Configs.watcher.cmc_screener_enabled
-                elif env_var == 'FUNDING_RATE_WATCHER_ENABLED' and Configs.watcher:
-                    is_enabled = Configs.watcher.funding_rate_watcher_enabled
-                elif env_var == 'LIQUIDITY_WATCHER_ENABLED' and Configs.watcher:
-                    is_enabled = Configs.watcher.liquidity_watcher_enabled
-                elif env_var == 'HISTORICAL_CANDLE_WATCHER_ENABLED' and Configs.watcher:
-                    is_enabled = Configs.watcher.historical_candle_watcher_enabled
-                elif env_var == 'TICK_WATCHER_ENABLED' and Configs.watcher:
-                    is_enabled = Configs.watcher.tick_watcher_enabled
+                if env_var == 'MARKET_PULSE_WATCHER_ENABLED' and self._settings.watcher:
+                    is_enabled = self._settings.watcher.market_pulse_watcher_enabled
+                elif env_var == 'VOLATILITY_WATCHER_ENABLED' and self._settings.watcher:
+                    is_enabled = self._settings.watcher.volatility_watcher_enabled
+                elif env_var == 'TREND_MTF_WATCHER_ENABLED' and self._settings.watcher:
+                    is_enabled = self._settings.watcher.trend_mtf_watcher_enabled
+                elif env_var == 'ANOMALY_ML_WATCHER_ENABLED' and self._settings.watcher:
+                    is_enabled = self._settings.watcher.anomaly_ml_watcher_enabled
+                elif env_var == 'ORDERFLOW_WS_WATCHER_ENABLED' and self._settings.watcher:
+                    is_enabled = self._settings.watcher.orderflow_ws_watcher_enabled
+                elif env_var == 'CMC_SCREENER_ENABLED' and self._settings.watcher:
+                    is_enabled = self._settings.watcher.cmc_screener_enabled
+                elif env_var == 'FUNDING_RATE_WATCHER_ENABLED' and self._settings.watcher:
+                    is_enabled = self._settings.watcher.funding_rate_watcher_enabled
+                elif env_var == 'LIQUIDITY_WATCHER_ENABLED' and self._settings.watcher:
+                    is_enabled = self._settings.watcher.liquidity_watcher_enabled
+                elif env_var == 'HISTORICAL_CANDLE_WATCHER_ENABLED' and self._settings.watcher:
+                    is_enabled = self._settings.watcher.historical_candle_watcher_enabled
+                elif env_var == 'TICK_WATCHER_ENABLED' and self._settings.watcher:
+                    is_enabled = self._settings.watcher.tick_watcher_enabled
                 else:
                     is_enabled = True  # Default to True if config is not available
                 if is_enabled:
@@ -61,7 +79,7 @@ class WatcherInitializationService:
                         symbol_to_primary_watcher[symbol].add(watcher_type)
 
         # Initialize broker service with all available brokers
-        broker_service = create_execution_service(use_multi_broker=True)
+        broker_service = create_execution_service(settings=self._settings, use_multi_broker=True)
 
         watchers = {}
         for symbol in symbols:
@@ -71,14 +89,15 @@ class WatcherInitializationService:
             # Only create watchers that are relevant to this symbol or if it's a general watcher
 
             # Market Pulse watcher
-            if Configs.watcher.market_pulse_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'market_pulse_watcher_enabled') else True:
+            if self._settings.watcher.market_pulse_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'market_pulse_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("MarketPulse")
+                target_broker = _broker_for_watcher(self._settings, "MarketPulse")
 
                 # Check if this symbol was discovered by market pulse watcher
                 if (symbol.value in symbol_to_primary_watcher and
                         'market_pulse' in symbol_to_primary_watcher[symbol.value]):
                     symbol_watchers['market_pulse'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.MARKET_PULSE,
                         "MarketPulse",
                         symbol.value,
@@ -96,6 +115,7 @@ class WatcherInitializationService:
                         )
                 else:  # If no specific mapping (fallback to original behavior)
                     symbol_watchers['market_pulse'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.MARKET_PULSE,
                         "MarketPulse",
                         symbol.value,
@@ -104,13 +124,14 @@ class WatcherInitializationService:
                     )
 
             # Volatility watcher
-            if Configs.watcher.volatility_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'volatility_watcher_enabled') else True:
+            if self._settings.watcher.volatility_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'volatility_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("Volatility")
+                target_broker = _broker_for_watcher(self._settings, "Volatility")
                 # Check if this symbol was discovered by volatility watcher
                 if (symbol.value in symbol_to_primary_watcher and
                         'volatility' in symbol_to_primary_watcher[symbol.value]):
                     symbol_watchers['volatility'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.VOLATILITY,
                         "Volatility",
                         symbol.value,
@@ -128,6 +149,7 @@ class WatcherInitializationService:
                         )
                 else:  # If no specific mapping (fallback to original behavior)
                     symbol_watchers['volatility'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.VOLATILITY,
                         "Volatility",
                         symbol.value,
@@ -136,12 +158,13 @@ class WatcherInitializationService:
                     )
 
             # Trend MTF watcher
-            if Configs.watcher.trend_mtf_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'trend_mtf_watcher_enabled') else True:
+            if self._settings.watcher.trend_mtf_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'trend_mtf_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("TrendMTF")
+                target_broker = _broker_for_watcher(self._settings, "TrendMTF")
                 if (symbol.value in symbol_to_primary_watcher and
                         'trend_mtf' in symbol_to_primary_watcher[symbol.value]):
                     symbol_watchers['trend_mtf'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.TREND_MTF,
                         "TrendMTF",
                         symbol.value,
@@ -159,6 +182,7 @@ class WatcherInitializationService:
                         )
                 else:
                     symbol_watchers['trend_mtf'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.TREND_MTF,
                         "TrendMTF",
                         symbol.value,
@@ -167,12 +191,13 @@ class WatcherInitializationService:
                     )
 
             # Anomaly ML watcher
-            if Configs.watcher.anomaly_ml_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'anomaly_ml_watcher_enabled') else True:
+            if self._settings.watcher.anomaly_ml_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'anomaly_ml_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("AnomalyML")
+                target_broker = _broker_for_watcher(self._settings, "AnomalyML")
                 if (symbol.value in symbol_to_primary_watcher and
                         'anomaly_ml' in symbol_to_primary_watcher[symbol.value]):
                     symbol_watchers['anomaly_ml'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.ANOMALY_ML,
                         "AnomalyML",
                         symbol.value,
@@ -190,6 +215,7 @@ class WatcherInitializationService:
                         )
                 else:
                     symbol_watchers['anomaly_ml'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.ANOMALY_ML,
                         "AnomalyML",
                         symbol.value,
@@ -198,12 +224,13 @@ class WatcherInitializationService:
                     )
 
             # OrderFlow WS watcher
-            if Configs.watcher.orderflow_ws_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'orderflow_ws_watcher_enabled') else True:
+            if self._settings.watcher.orderflow_ws_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'orderflow_ws_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("OrderFlowWS")
+                target_broker = _broker_for_watcher(self._settings, "OrderFlowWS")
                 if (symbol.value in symbol_to_primary_watcher and
                         'orderflow_ws' in symbol_to_primary_watcher[symbol.value]):
                     symbol_watchers['orderflow_ws'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.ORDERFLOW_WS,
                         "OrderFlowWS",
                         symbol.value,
@@ -221,6 +248,7 @@ class WatcherInitializationService:
                         )
                 else:
                     symbol_watchers['orderflow_ws'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.ORDERFLOW_WS,
                         "OrderFlowWS",
                         symbol.value,
@@ -229,12 +257,13 @@ class WatcherInitializationService:
                     )
 
             # CMC Screener watcher
-            if Configs.watcher.cmc_screener_enabled if Configs.watcher and hasattr(Configs.watcher, 'cmc_screener_enabled') else True:
+            if self._settings.watcher.cmc_screener_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'cmc_screener_enabled') else True:
                 # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("CMCScreener")
+                target_broker = _broker_for_watcher(self._settings, "CMCScreener")
                 if (symbol.value in symbol_to_primary_watcher and
                         'cmc_screener' in symbol_to_primary_watcher[symbol.value]):
                     symbol_watchers['cmc_screener'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.CMC_SCREEN,
                         "CMCScreener",
                         symbol.value,
@@ -252,6 +281,7 @@ class WatcherInitializationService:
                         )
                 else:
                     symbol_watchers['cmc_screener'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.CMC_SCREEN,
                         "CMCScreener",
                         symbol.value,
@@ -260,12 +290,13 @@ class WatcherInitializationService:
                     )
 
             # Funding Rate watcher
-            if Configs.watcher.funding_rate_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'funding_rate_watcher_enabled') else True:
+            if self._settings.watcher.funding_rate_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'funding_rate_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("FundingRate")
+                target_broker = _broker_for_watcher(self._settings, "FundingRate")
                 if (symbol.value in symbol_to_primary_watcher and
                         'funding_rate' in symbol_to_primary_watcher[symbol.value]):
                     symbol_watchers['funding_rate'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.FUNDING_RATE,
                         "FundingRate",
                         symbol.value,
@@ -283,6 +314,7 @@ class WatcherInitializationService:
                         )
                 else:
                     symbol_watchers['funding_rate'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.FUNDING_RATE,
                         "FundingRate",
                         symbol.value,
@@ -291,12 +323,13 @@ class WatcherInitializationService:
                     )
 
             # Liquidity watcher
-            if Configs.watcher.liquidity_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'liquidity_watcher_enabled') else True:
+            if self._settings.watcher.liquidity_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'liquidity_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("Liquidity")
+                target_broker = _broker_for_watcher(self._settings, "Liquidity")
                 if (symbol.value in symbol_to_primary_watcher and
                         'liquidity' in symbol_to_primary_watcher[symbol.value]):
                     symbol_watchers['liquidity'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.LIQUIDITY,
                         "Liquidity",
                         symbol.value,
@@ -314,6 +347,7 @@ class WatcherInitializationService:
                         )
                 else:
                     symbol_watchers['liquidity'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.LIQUIDITY,
                         "Liquidity",
                         symbol.value,
@@ -322,13 +356,14 @@ class WatcherInitializationService:
                     )
 
             # Historical Candle watcher
-            if Configs.watcher.historical_candle_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'historical_candle_watcher_enabled') else True:
+            if self._settings.watcher.historical_candle_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'historical_candle_watcher_enabled') else True:
                 # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("HistoricalCandle")
+                target_broker = _broker_for_watcher(self._settings, "HistoricalCandle")
 
                 if (symbol.value in symbol_to_primary_watcher and
                         'historical_candle' in symbol_to_primary_watcher[symbol.value]):
                     symbol_watchers['historical_candle'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.HISTORICAL_CANDLE,
                         "HistoricalCandle",
                         symbol.value,
@@ -345,6 +380,7 @@ class WatcherInitializationService:
                         )
                 else:
                     symbol_watchers['historical_candle'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.HISTORICAL_CANDLE,
                         "HistoricalCandle",
                         symbol.value,
@@ -352,12 +388,13 @@ class WatcherInitializationService:
                     )
 
             # Tick Watcher
-            if Configs.watcher.tick_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'tick_watcher_enabled') else False:  # Note: Tick watcher is disabled by default
+            if self._settings.watcher.tick_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'tick_watcher_enabled') else False:  # Note: Tick watcher is disabled by default
                 # Get target broker for this watcher from configuration
-                target_broker = hexagonal_config.get_broker_for_watcher("TickWatcher")
+                target_broker = _broker_for_watcher(self._settings, "TickWatcher")
                 if (symbol.value in symbol_to_primary_watcher and
                         'tick_watcher' in symbol_to_primary_watcher[symbol.value]):
                     symbol_watchers['tick_watcher'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.TICK,
                         "TickWatcher",
                         symbol.value,
@@ -375,6 +412,7 @@ class WatcherInitializationService:
                 else:
                     # Use the market data repo instead of execution service since we removed direct service access
                     symbol_watchers['tick_watcher'] = WatcherFactory.create_watcher(
+                        self._settings,
                         WatcherType.TICK,
                         "TickWatcher",
                         symbol.value,

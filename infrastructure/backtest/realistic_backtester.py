@@ -1,5 +1,6 @@
 """Realistic backtesting implementation with proper order execution simulation."""
 
+import math
 import numpy as np
 import pandas as pd
 from typing import Dict, Any, List, Optional
@@ -8,7 +9,7 @@ import uuid
 
 from shared.logger import EnhancedLogger
 from infrastructure.backtest.execution_intent import ExecutionIntent, create_execution_intent, OrderSide
-from domain.entities.signal_entities import ExecutionIntent as DomainExecutionIntent, OrderSide as DomainOrderSide
+from domain.entities import ExecutionIntent as DomainExecutionIntent, OrderSide as DomainOrderSide
 
 
 class RealisticBacktester:
@@ -33,7 +34,12 @@ class RealisticBacktester:
                  max_position_size: float = 0.20,  # 20% max position size
                  max_drawdown: float = 0.90,  # 90% max drawdown for backtesting (allow more flexibility)
                  max_leverage: float = 1.0,
-                 deterministic_seed: int = 42):  # Fixed seed for deterministic execution
+                 deterministic_seed: int = 42,  # Fixed seed for deterministic execution
+                 # --- E-P5.2 T4: realistic fill simulation -------------------------
+                 spread_bps: float = 2.0,            # full bid-ask spread in bps; half charged per side
+                 max_fill_ratio: float = 0.10,       # an order may consume at most this fraction of a bar's volume
+                 rejection_rate: float = 0.0,        # probability an order is rejected outright (0 = off)
+                 latency_slippage_bps: float = 0.0):  # adverse price drift during execution delay, in bps
         self.initial_capital = initial_capital
         self.fee_rate = fee_rate
         self.slippage_factor = slippage_factor
@@ -42,10 +48,21 @@ class RealisticBacktester:
         self.max_drawdown = max_drawdown
         self.max_leverage = max_leverage
         self.deterministic_seed = deterministic_seed  # For deterministic execution
+        # E-P5.2 T4 fill-realism knobs. Defaults add an always-on spread cost and
+        # volume-capped partial fills (the systematic overstatements); rejections
+        # and latency-slippage are opt-in (configured rates) so they don't inject
+        # stochasticity into every run by default.
+        self.spread_bps = spread_bps
+        self.max_fill_ratio = max_fill_ratio
+        self.rejection_rate = rejection_rate
+        self.latency_slippage_bps = latency_slippage_bps
         self.logger = EnhancedLogger("RealisticBacktester")
 
         # Set random seed for deterministic execution
         np.random.seed(self.deterministic_seed)
+        # Dedicated, seeded RNG for fill mechanics (rejections) so determinism is
+        # independent of any other np.random usage during a run. Reset per run.
+        self._fill_rng = np.random.default_rng(self.deterministic_seed)
         # Note: We don't use Python's random module in this implementation, but if we did, we'd set it too:
         # import random
         # random.seed(self.deterministic_seed)
@@ -60,6 +77,12 @@ class RealisticBacktester:
         self.losing_trades = 0
         self.max_equity = initial_capital
         self.max_drawdown_reached = 0.0
+        # E-P5.2 T4 fill diagnostics
+        self.rejected_orders = 0
+        self.partial_fills = 0
+        # E-P5.2 T2: regime in effect at the current bar (set per-bar in the run
+        # loop). Defaults to "unknown" so direct execute_order calls are safe.
+        self._current_regime = "unknown"
 
         # Trade history
         self.trades: List[Dict[str, Any]] = []
@@ -452,9 +475,12 @@ class RealisticBacktester:
             'issues': []
         }
 
-        # Count non-zero signals
+        # Count non-zero signals. Treat None as 0 (no-signal bars record None; the
+        # naive `None != 0` is True and miscounted every no-signal bar as actionable,
+        # inflating non_zero_signals to the full bar count and spuriously failing the
+        # correspondence guard). Consistent with the matched-signal loop below.
         for signal in strategy_signals:
-            if signal.get('signal', 0) != 0:
+            if (signal.get('signal') or 0) != 0:
                 validation_results['non_zero_signals'] += 1
 
         # Map signals to trades based on timestamp proximity
@@ -462,7 +488,10 @@ class RealisticBacktester:
         trade_timestamps = []
 
         for signal in strategy_signals:
-            if signal.get('signal', 0) != 0:  # Only consider non-zero signals
+            # E-P5.2: treat None as 0 (wrapped function strategies record None for
+            # no-signal bars; `None != 0` previously miscounted them as actionable
+            # signals, spuriously failing the signal/trade correspondence check).
+            if (signal.get('signal') or 0) != 0:  # Only consider non-zero signals
                 signal_timestamps.append(signal.get('timestamp'))
 
         for trade in trade_records:
@@ -737,6 +766,12 @@ class RealisticBacktester:
         Returns:
             bool: True if validation passes, raises exception if not
         """
+        # E-P5.2: define duration_months in THIS method's scope (it was used in
+        # the zero-trade branch below but only defined in other methods, so a
+        # long-window run that tripped the zero-trade check raised NameError and
+        # aborted the whole backtest -> 0 trades).
+        duration_months = (end_date - start_date).days / 30.0
+
         # Validate trade count
         count_validation = self.validate_trade_count(start_date, end_date, total_trades, symbol)
 
@@ -864,7 +899,13 @@ class RealisticBacktester:
         sl_price = None
         tp_price = None
 
-        if domain_intent.side == OrderSide.BUY:
+        # E-P5.2 Priority-1 FIX (bug #2): compare against the DOMAIN OrderSide
+        # (domain_intent.side is a domain enum). The old `== OrderSide.BUY`
+        # compared it to the INFRASTRUCTURE OrderSide enum (a different class),
+        # which is never equal, so EVERY adapted intent took the SELL branch and
+        # got short geometry (SL above / TP below) — inverting SL/TP for every
+        # BUY/long position. (Line below for infra_side already used DomainOrderSide.)
+        if domain_intent.side == DomainOrderSide.BUY:
             # For BUY: SL below entry, TP above entry
             sl_price = execution_price - stop_loss_distance
             risk_reward_ratio = risk_params.get('risk_reward_ratio', 1.5)
@@ -917,10 +958,68 @@ class RealisticBacktester:
         self.trades = []
         self.equity_curve = []
         self.active_positions = []
+        # E-P5.2 T4: reset fill diagnostics and re-seed the fill RNG so repeated
+        # runs are byte-identical (rejections are reproducible).
+        self.rejected_orders = 0
+        self.partial_fills = 0
+        self._fill_rng = np.random.default_rng(self.deterministic_seed)
+        self._current_regime = "unknown"  # E-P5.2 T2
         # Reset additional state variables to ensure full isolation between runs
         self.signal_to_trade_mapping = {}
         self.last_order_time = {}
         self.data = None
+
+    def _feed_trade_outcome(self, pnl, exit_time) -> None:
+        """E-P5.2: feed a realised trade outcome back into the strategy's
+        discipline so consecutive-loss tracking and the post-exit cooldown
+        actually function during a backtest (they were inactive — the backtester
+        never told the strategy how trades resolved). No-op for strategy
+        functions that don't expose the hook (e.g. the golden test fn)."""
+        symbol = getattr(self, '_symbol', None)
+        fn = getattr(self, '_strategy_function', None)
+        callback = getattr(fn, 'record_trade_result', None) if fn is not None else None
+        if callback is None or not symbol:
+            return  # no hook, or symbol unknown -> can't attribute the outcome
+        # Normalise the simulated exit time to a datetime for the discipline clock.
+        ts = exit_time
+        try:
+            if isinstance(ts, (int, float)):
+                ts = datetime.utcfromtimestamp(ts)
+            elif hasattr(ts, 'to_pydatetime'):
+                ts = ts.to_pydatetime()
+            if not isinstance(ts, datetime):
+                ts = None
+            callback(symbol, bool(pnl > 0), position_closed=True, exit_time=ts)
+        except Exception as e:  # discipline feedback must never break a backtest
+            self.logger.debug(f"Trade-outcome feedback skipped: {e}")
+
+    def _classify_bar_regime(self, row) -> str:
+        """Lightweight, deterministic regime label for P&L attribution (E-P5.2 T2).
+
+        Uses already-computed, lookahead-safe indicators (sma_20/sma_50 trend).
+        Returns an opaque string consumed by the edge ledger / attribution.
+
+        NOTE: this is a transparent backtest-time labeler, NOT the production
+        regime classifier. The system has several competing RegimeType
+        classifiers whose consolidation is deferred (deferred backlog DB-4);
+        this keeps attribution reproducible without entangling that fork. The
+        labels mirror common RegimeType members so a future swap is mechanical.
+        """
+        try:
+            close = row.get('close')
+            sma20 = row.get('sma_20')
+            sma50 = row.get('sma_50')
+            if close is None or sma20 is None or (isinstance(sma20, float) and math.isnan(sma20)):
+                return "unknown"
+            if sma50 is not None and not (isinstance(sma50, float) and math.isnan(sma50)):
+                if sma20 > sma50 and close > sma20:
+                    return "trending_up"
+                if sma20 < sma50 and close < sma20:
+                    return "trending_down"
+                return "ranging"
+            return "trending_up" if close > sma20 else "trending_down"
+        except Exception:
+            return "unknown"
 
     def calculate_order_execution_price(self,
                                         price: float,
@@ -942,25 +1041,43 @@ class RealisticBacktester:
         # Base slippage calculation
         base_slippage = self.slippage_factor * price
 
-        # Market impact based on order size relative to market volume
-        market_vol = market_data.get('volume', 1000000)  # Default volume
-        order_to_market_ratio = abs(size * price) / market_vol if market_vol > 0 else 0
+        # Market impact based on order size relative to market volume.
+        # E-P5.2 Priority-1 FIX: compare like units. `size` and `volume` are both
+        # base-asset quantities; the old `abs(size*price)/market_vol` divided a
+        # QUOTE amount ($) by a BASE volume (e.g. ~6 BTC/min), inflating the ratio
+        # ~price-fold (~46 vs ~0.0005). That made market_impact ~90x too large and
+        # pushed every BUY ~5% above (SELL ~5% below) the true price, so SL/TP
+        # (set from the real signal price) landed on the wrong side of entry and
+        # EVERY trade was a structural loss (0% win, MFE=0, R~-1) across all
+        # strategies. Correct ratio = order base-size / bar base-volume.
+        market_vol = market_data.get('volume', 1000000)  # Default volume (base units)
+        order_to_market_ratio = abs(size) / market_vol if market_vol > 0 else 0
 
         # Additional market impact (larger orders face more impact)
         market_impact = base_slippage * (1 + 2 * order_to_market_ratio)  # 2x impact factor
 
+        # E-P5.2 T4: half bid-ask spread (buyers lift the ask, sellers hit the
+        # bid) plus an adverse latency-drift term (price moves against us during
+        # the execution delay). Both are charged in the unfavourable direction.
+        half_spread = (self.spread_bps / 2.0 / 10000.0) * price
+        latency_cost = (self.latency_slippage_bps / 10000.0) * price
+        adverse_cost = market_impact + half_spread + latency_cost
+
         if side.lower() == 'buy':
             # Buy orders get filled at higher price (worse for buyer)
-            execution_price = price + market_impact
+            execution_price = price + adverse_cost
         else:  # sell
             # Sell orders get filled at lower price (worse for seller)
-            execution_price = price - market_impact
+            execution_price = price - adverse_cost
 
-        # Ensure execution price is reasonable
+        # Ensure execution price is reasonable. E-P5.2 Priority-1 FIX: the caps
+        # were backwards (a buy used max(.,0.95*price) — a floor — so the upside
+        # was uncapped). Bound the ADVERSE direction: a buy never fills >5% above,
+        # a sell never fills >5% below the reference price.
         if side.lower() == 'buy':
-            execution_price = max(execution_price, price * 0.95)  # Don't pay more than 5% above
+            execution_price = min(execution_price, price * 1.05)  # don't pay >5% above
         else:
-            execution_price = min(execution_price, price * 1.05)  # Don't sell for less than 5% below
+            execution_price = max(execution_price, price * 0.95)  # don't sell >5% below
 
         return execution_price
 
@@ -990,6 +1107,16 @@ class RealisticBacktester:
             self.logger.warning(f"Max drawdown exceeded: {current_drawdown:.2%}. Stopping trading.")
             return None
 
+        # E-P5.2 T4: order rejection at the configured rate (deterministic via the
+        # seeded fill RNG). A rejected order does not execute at all.
+        if self.rejection_rate > 0.0 and self._fill_rng.random() < self.rejection_rate:
+            self.rejected_orders += 1
+            self.logger.debug(f"Order rejected (rate={self.rejection_rate:.4f}): {side} {size} @ {price}")
+            return None
+
+        # Tracks whether liquidity capped this fill (set below); recorded on the trade.
+        partial_filled = False
+
         # Calculate realistic execution price
         execution_price = self.calculate_order_execution_price(
             price, side, size, market_data
@@ -1003,6 +1130,23 @@ class RealisticBacktester:
         if abs(size) < self.min_order_size:
             self.logger.debug(f"Order size too small: {size} < {self.min_order_size}")
             return None
+
+        # E-P5.2 T4: partial fill — an order cannot consume more than max_fill_ratio
+        # of the bar's available (quote-denominated) volume. Liquidity caps the fill
+        # before capital constraints apply; the unfilled remainder is simply dropped.
+        if self.max_fill_ratio and self.max_fill_ratio > 0:
+            market_vol = market_data.get('volume', 0) if market_data else 0
+            if market_vol and market_vol > 0:
+                max_fillable_value = self.max_fill_ratio * market_vol
+                if trade_value > max_fillable_value:
+                    size = max_fillable_value / execution_price
+                    partial_filled = True
+                    self.partial_fills += 1
+                    trade_value = abs(size) * execution_price
+                    fees = trade_value * self.fee_rate
+                    if abs(size) < self.min_order_size:
+                        self.logger.debug("Partial fill below min order size; order dropped.")
+                        return None
 
         # Calculate required cash for buy orders
         if side.lower() == 'buy':
@@ -1068,7 +1212,8 @@ class RealisticBacktester:
                     'direction': 1,  # Long
                     'stop_loss': sl_price,
                     'take_profit': tp_price,
-                    'timestamp': timestamp
+                    'timestamp': timestamp,
+                    'entry_regime': self._current_regime  # E-P5.2 T2
                 })
         else:  # sell
             # For sell orders, we might be closing positions
@@ -1112,7 +1257,8 @@ class RealisticBacktester:
             "equity": self.equity,
             "position": self.position,
             "position_value": self.position_value,
-            "cash": self.cash
+            "cash": self.cash,
+            "partial": partial_filled  # E-P5.2 T4: liquidity-capped fill
         }
 
         self.trades.append(trade_record)
@@ -1214,6 +1360,16 @@ class RealisticBacktester:
         if strategy_params is None:
             strategy_params = {}
 
+        # E-P5.2: remember the strategy function (it may expose a
+        # record_trade_result outcome hook) and the symbol, so each position
+        # close can feed realised win/loss + simulated exit time back into the
+        # strategy's discipline (consecutive-loss tracking + post-exit cooldown).
+        self._strategy_function = strategy_function
+        # Symbol-agnostic: whatever symbol this run is testing (no hardcoded
+        # default — every approved symbol must be testable). May be None if the
+        # caller didn't supply it, in which case outcome feedback is skipped.
+        self._symbol = strategy_params.get('symbol')
+
         # Validate strategy name if provided
         if strategy_name:
             self.enforce_strategy_exclusivity(strategy_name, strategy_function)
@@ -1250,7 +1406,27 @@ class RealisticBacktester:
         # Run through each candle
         for i in range(len(data_with_indicators)):
             row = data_with_indicators.iloc[i]
-            timestamp = row.get('timestamp', datetime.now())
+            # E-P5.2: use the BAR's simulated timestamp, not wall-clock. The data
+            # carries time on the INDEX (no 'timestamp' column), so the old
+            # `row.get('timestamp', datetime.now())` fell back to datetime.now()
+            # for every bar. That stamped signals AND trades with run-time
+            # wall-clock; on a long backtest (runtime > the 5-min correspondence
+            # window) early-bar signals and late-bar trades drifted apart, so the
+            # signal/trade correspondence guard spuriously aborted the run with
+            # "0 trade attempts". Prefer a 'timestamp' column, else the index.
+            timestamp = row.get('timestamp', None)
+            if timestamp is None:
+                _idx = getattr(row, 'name', None)
+                timestamp = _idx if isinstance(_idx, (datetime, pd.Timestamp)) else datetime.now()
+            if isinstance(timestamp, (int, float)):
+                timestamp = datetime.utcfromtimestamp(timestamp)
+            elif hasattr(timestamp, 'to_pydatetime'):
+                timestamp = timestamp.to_pydatetime()
+
+            # E-P5.2 T2: regime in effect at this bar (drives entry/exit-regime
+            # tagging for P&L attribution). Set before SL/TP so a close stamps
+            # this bar as its exit regime.
+            self._current_regime = self._classify_bar_regime(row)
 
             # First, check if any active positions hit SL/TP (this happens before new orders)
             sltp_pnl = self._check_stop_loss_take_profit(row, timestamp)
@@ -1365,6 +1541,18 @@ class RealisticBacktester:
 
         # Calculate performance metrics
         metrics = self._calculate_performance_metrics()
+
+        # E-P5.2 T1: attach the per-strategy edge ledger (expectancy / PF /
+        # win-rate / avg R:R / trade-count, segmented by regime) computed from
+        # this run's realised trades. Trades carry a per-bar ``regime`` field
+        # when available; otherwise they fall under "unknown" (the segmentation
+        # dimension is present so per-bar regime tagging can populate it later).
+        from infrastructure.results_tracking.edge_ledger import compute_edge_records
+        metrics["edge_records"] = [
+            r.to_dict() for r in compute_edge_records(
+                metrics.get("trades", []), strategy=strategy_name or "unknown"
+            )
+        ]
 
         # Add final tracing information
         if strategy_name:
@@ -1579,7 +1767,8 @@ class RealisticBacktester:
                     'direction': 1,  # Long
                     'stop_loss': sl_price,
                     'take_profit': tp_price,
-                    'timestamp': intent.timestamp
+                    'timestamp': intent.timestamp,
+                    'entry_regime': self._current_regime  # E-P5.2 T2
                 })
         else:  # SELL
             # For sell orders, we might be closing positions
@@ -1703,9 +1892,25 @@ class RealisticBacktester:
                     "position_value": self.position_value,
                     "cash": self.cash,
                     "exit_type": "force_close",
-                    "entry_price": pos['entry_price']
+                    "entry_price": pos['entry_price'],
+                    # E-P5.2 T2: attribute to the position's entry regime.
+                    "regime": pos.get('entry_regime', 'unknown'),
+                    "entry_regime": pos.get('entry_regime', 'unknown'),
+                    "exit_regime": self._current_regime,
+                    # E-P5.2 Priority-1 exit forensics
+                    "stop_loss": pos.get('stop_loss'),
+                    "take_profit": pos.get('take_profit'),
+                    "same_bar_collision": False,
+                    "mfe": pos.get('mfe', 0.0),
+                    "mae": pos.get('mae', 0.0),
+                    "realized_R": (pnl / (abs(pos['entry_price'] - pos['stop_loss']) * pos['size'])
+                                   if (pos.get('stop_loss') is not None and not pd.isna(pos.get('stop_loss'))
+                                       and abs(pos['entry_price'] - pos['stop_loss']) * pos['size'] > 0) else None),
                 }
                 self.trades.append(trade_record)
+
+                # E-P5.2: feed realised outcome back to strategy discipline.
+                self._feed_trade_outcome(pnl, last_ts)
 
                 positions_to_remove.append(i)
 
@@ -1760,7 +1965,7 @@ class RealisticBacktester:
 
         return True
 
-    def _detect_missing_candles(self, data: pd.DataFrame, expected_frequency: str = '1H') -> List[int]:
+    def _detect_missing_candles(self, data: pd.DataFrame, expected_frequency: str = '1h') -> List[int]:
         """Detect missing candles in the data."""
         if isinstance(data.index, pd.DatetimeIndex):
             # Check if the index is regularly spaced according to expected frequency
@@ -1804,6 +2009,16 @@ class RealisticBacktester:
 
             candle_high = candle_data['high']
             candle_low = candle_data['low']
+
+            # E-P5.2 Priority-1 exit forensics: track max favorable / adverse
+            # excursion (in price terms) over the position's life, before
+            # checking exits.
+            if direction == 1:
+                position['mfe'] = max(position.get('mfe', 0.0), candle_high - entry_price)
+                position['mae'] = max(position.get('mae', 0.0), entry_price - candle_low)
+            else:
+                position['mfe'] = max(position.get('mfe', 0.0), entry_price - candle_low)
+                position['mae'] = max(position.get('mae', 0.0), candle_high - entry_price)
 
             # Check if SL or TP was hit in this candle
             sl_hit = False
@@ -1880,9 +2095,26 @@ class RealisticBacktester:
                     "position_value": self.position_value,
                     "cash": self.cash,
                     "exit_type": exit_type,
-                    "entry_price": entry_price
+                    "entry_price": entry_price,
+                    # E-P5.2 T2: attribute realised P&L to the regime the position
+                    # was OPENED in; keep exit regime for lineage.
+                    "regime": position.get('entry_regime', 'unknown'),
+                    "entry_regime": position.get('entry_regime', 'unknown'),
+                    "exit_regime": self._current_regime,
+                    # E-P5.2 Priority-1 exit forensics
+                    "stop_loss": sl_price,
+                    "take_profit": tp_price,
+                    "same_bar_collision": bool(sl_hit and tp_hit),
+                    "mfe": position.get('mfe', 0.0),
+                    "mae": position.get('mae', 0.0),
+                    "realized_R": (pnl / (abs(entry_price - sl_price) * size)
+                                   if (sl_price is not None and not pd.isna(sl_price)
+                                       and abs(entry_price - sl_price) * size > 0) else None),
                 }
                 self.trades.append(trade_record)
+
+                # E-P5.2: feed realised outcome back to strategy discipline.
+                self._feed_trade_outcome(pnl, timestamp)
 
                 # Record in equity curve
                 self.equity_curve.append({
@@ -2147,6 +2379,15 @@ class RealisticBacktester:
             "final_equity": float(self.equity) if np.isfinite(self.equity) else 0.0,
             "initial_capital": float(self.initial_capital),
             "max_drawdown_reached": float(self.max_drawdown_reached) if np.isfinite(self.max_drawdown_reached) else 0.0,
+            # E-P5.2 T4: realistic-fill diagnostics
+            "rejected_orders": int(self.rejected_orders),
+            "partial_fills": int(self.partial_fills),
+            "fill_model": {
+                "spread_bps": float(self.spread_bps),
+                "max_fill_ratio": float(self.max_fill_ratio),
+                "rejection_rate": float(self.rejection_rate),
+                "latency_slippage_bps": float(self.latency_slippage_bps),
+            },
             "trades": [dict(t) for t in self.trades],  # Convert any numpy types to basic types
             "equity_curve": [dict(e) for e in self.equity_curve]
         }

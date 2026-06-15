@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "XAUTUSDT",
+  "timeframe": "1m",
+  "checksum": "61b0dd696dd598a3cd37209165da82629946b40761be928731effe601c22e84e",
+  "download_timestamp": "2026-06-12T22:05:05.390342",
+  "row_count": 1190,
+  "date_range": {
+    "start": "1778686380",
+    "end": "1781294700"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "950674f3588ac00f3161aec0a1b3c3f135ef0f59",
+  "file_path": "data/history/raw/1m/XAUT-USDT.csv"
+}

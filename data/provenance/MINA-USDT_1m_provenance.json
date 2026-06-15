@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "MINAUSDT",
+  "timeframe": "1m",
+  "checksum": "978a75deb29f49798ef93a78092078956add97bfb1a706a734c16644e17e5616",
+  "download_timestamp": "2026-06-12T18:27:47.119376",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778749620"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/MINA-USDT.csv"
+}

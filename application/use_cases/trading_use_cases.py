@@ -5,7 +5,7 @@ These represent specific business operations that the system performs.
 """
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from domain.entities.trading_entities import Signal, Order, Position
+from domain.entities import Signal, Order, Position
 from domain.value_objects import Symbol, Money, Percentage
 from application.services.trading_services import (
     SignalProcessingService, TradingExecutionService, 

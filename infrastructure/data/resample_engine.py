@@ -53,11 +53,13 @@ class ResampleEngine:
         }
 
         # Timeframe map
+        # pandas >=2.2 removed the legacy 'T'/'H' offset aliases (raises ValueError:
+        # "Invalid frequency"). Use the current 'min'/'h' aliases. (Type-A deprecated-path fix.)
         tf_map = {
-            "5m": "5T",  # 5 minutes
-            "15m": "15T",  # 15 minutes
-            "30m": "30T",  # 30 minutes
-            "1h": "1H"  # 1 hour
+            "5m": "5min",   # 5 minutes
+            "15m": "15min",  # 15 minutes
+            "30m": "30min",  # 30 minutes
+            "1h": "1h"  # 1 hour
         }
 
         for name, rule in tf_map.items():

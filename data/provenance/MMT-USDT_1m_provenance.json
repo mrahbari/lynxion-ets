@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "MMTUSDT",
+  "timeframe": "1m",
+  "checksum": "d22646dc2fcfe7f4a67d70c34fd1045ca341514e828b3dbfb16bb4b64ee39ddd",
+  "download_timestamp": "2026-06-12T18:31:20.060921",
+  "row_count": 1066,
+  "date_range": {
+    "start": "1778685960",
+    "end": "1778749860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/MMT-USDT.csv"
+}

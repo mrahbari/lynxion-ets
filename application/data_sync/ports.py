@@ -60,7 +60,7 @@ class FileRepository(ABC):
         pass
     
     @abstractmethod
-    def compact_and_aggregate(self, symbol: str, cleanup_old: bool = True) -> None:
+    def compact_and_aggregate(self, symbol: str, cleanup_old: bool = True) -> bool:
         """Generate processed (aggregated) files from raw data and optionally clean up old files"""
         pass
     

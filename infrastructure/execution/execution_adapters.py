@@ -2,7 +2,7 @@
 Infrastructure implementations of execution services.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Order, Fill
+from domain.entities import Order, Fill
 from domain.value_objects import Symbol
 from domain.ports.execution_ports import ExecutionPort, ExecutionAlgorithmPort
 from shared.logger import logger

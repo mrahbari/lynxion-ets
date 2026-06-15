@@ -5,14 +5,13 @@ the main runner files clean and focused.
 """
 from typing import Dict, Any, Optional
 from domain.ports.execution_ports import ExecutionPort
-from domain.entities.trading_entities import Order
+from domain.entities import Order
 from domain.value_objects import Symbol
 from domain.enums.broker_enum import BrokerType
 from shared.logger import EnhancedLogger
 import threading
 from datetime import datetime
 from infrastructure.logging.forensic_logger import forensic_logger
-from application.configs.configs import Configs
 
 
 class BrokerExecutionService(ExecutionPort):
@@ -24,17 +23,22 @@ class BrokerExecutionService(ExecutionPort):
     # Duplicate prevention is now handled by the shared PendingOrdersTracker
     # See infrastructure/shared/pending_orders_tracker.py
 
-    def __init__(self, broker_type: Optional[str] = None, config: Optional[Dict[str, Any]] = None, use_multi_broker: bool = False, primary_broker: Optional[str] = None):
+    def __init__(self, settings, broker_type: Optional[str] = None, config: Optional[Dict[str, Any]] = None, use_multi_broker: bool = False, primary_broker: Optional[str] = None):
         """
         Initialize the broker execution service.
 
         Args:
+            settings: Injected settings object (E1.T4 — supplied by the composition root;
+                this service no longer imports bootstrap.settings.loaders).
             broker_type: Type of broker ('bingx', 'binance', 'mexc', 'phemex').
                         If None, will use DEFAULT_BROKER environment variable.
             config: Optional configuration dictionary. If None, will load from environment.
             use_multi_broker: Whether to use multi-broker service with exchange switching
             primary_broker: Primary broker to use when using multi-broker service (e.g., 'bingx', 'binance')
         """
+        # Settings injected by the composition root (E1.T4); same values as before,
+        # without importing bootstrap.settings.loaders here.
+        self._settings = settings
         from infrastructure.brokers.broker_adapters import (
             BingXBrokerAdapter, BinanceBrokerAdapter, MEXCBrokerAdapter, PhemexBrokerAdapter
         )
@@ -46,7 +50,7 @@ class BrokerExecutionService(ExecutionPort):
         if self.use_multi_broker:
             # Initialize multi-broker service for exchange switching
             # Allow specifying primary broker for the multi-broker service
-            self.multi_broker_service = MultiBrokerExecutionService(primary_broker=primary_broker)
+            self.multi_broker_service = MultiBrokerExecutionService(settings=self._settings, primary_broker=primary_broker)
             self.logger = EnhancedLogger("BrokerExecutionService")
             self.broker_name = "MultiBroker"
             self.broker_type = "multi"
@@ -55,7 +59,7 @@ class BrokerExecutionService(ExecutionPort):
         else:
             # Determine broker type
             if broker_type is None:
-                broker_type_str = Configs.broker.default_broker.lower() if Configs.broker and Configs.broker.default_broker else 'bingx'.lower()  # Changed to 'bingx' as default
+                broker_type_str = self._settings.broker.default_broker.lower() if self._settings.broker and self._settings.broker.default_broker else 'bingx'.lower()  # Changed to 'bingx' as default
             else:
                 broker_type_str = broker_type.lower()
 
@@ -126,28 +130,28 @@ class BrokerExecutionService(ExecutionPort):
 
         if broker_enum == BrokerType.BINGX:
             config = {
-                'api_key': Configs.broker.bingx_api_key if Configs.broker and Configs.broker.bingx_api_key else '',
-                'secret_key': Configs.broker.bingx_secret_key if Configs.broker and Configs.broker.bingx_secret_key else '',
-                'passphrase': Configs.broker.bingx_passphrase if Configs.broker and Configs.broker.bingx_passphrase else '',
-                'testnet': Configs.broker.bingx_testnet if Configs.broker and hasattr(Configs.broker, 'bingx_testnet') else True
+                'api_key': self._settings.broker.bingx_api_key if self._settings.broker and self._settings.broker.bingx_api_key else '',
+                'secret_key': self._settings.broker.bingx_secret_key if self._settings.broker and self._settings.broker.bingx_secret_key else '',
+                'passphrase': self._settings.broker.bingx_passphrase if self._settings.broker and self._settings.broker.bingx_passphrase else '',
+                'testnet': self._settings.broker.bingx_testnet if self._settings.broker and hasattr(self._settings.broker, 'bingx_testnet') else True
             }
         elif broker_enum == BrokerType.BINANCE:
             config = {
-                'api_key': Configs.broker.binance_api_key if Configs.broker and Configs.broker.binance_api_key else '',
-                'secret_key': Configs.broker.binance_secret_key if Configs.broker and Configs.broker.binance_secret_key else '',
-                'testnet': Configs.broker.binance_testnet if Configs.broker and hasattr(Configs.broker, 'binance_testnet') else True
+                'api_key': self._settings.broker.binance_api_key if self._settings.broker and self._settings.broker.binance_api_key else '',
+                'secret_key': self._settings.broker.binance_secret_key if self._settings.broker and self._settings.broker.binance_secret_key else '',
+                'testnet': self._settings.broker.binance_testnet if self._settings.broker and hasattr(self._settings.broker, 'binance_testnet') else True
             }
         elif broker_enum == BrokerType.MEXC:
             config = {
-                'api_key': Configs.broker.mexc_api_key if Configs.broker and Configs.broker.mexc_api_key else '',
-                'secret_key': Configs.broker.mexc_secret_key if Configs.broker and Configs.broker.mexc_secret_key else '',
-                'testnet': Configs.broker.mexc_testnet if Configs.broker and hasattr(Configs.broker, 'mexc_testnet') else True
+                'api_key': self._settings.broker.mexc_api_key if self._settings.broker and self._settings.broker.mexc_api_key else '',
+                'secret_key': self._settings.broker.mexc_secret_key if self._settings.broker and self._settings.broker.mexc_secret_key else '',
+                'testnet': self._settings.broker.mexc_testnet if self._settings.broker and hasattr(self._settings.broker, 'mexc_testnet') else True
             }
         elif broker_enum == BrokerType.PHEMEX:
             config = {
-                'api_key': Configs.broker.phemex_api_key if Configs.broker and Configs.broker.phemex_api_key else '',
-                'secret_key': Configs.broker.phemex_secret_key if Configs.broker and Configs.broker.phemex_secret_key else '',
-                'testnet': Configs.broker.phemex_testnet if Configs.broker and hasattr(Configs.broker, 'phemex_testnet') else True
+                'api_key': self._settings.broker.phemex_api_key if self._settings.broker and self._settings.broker.phemex_api_key else '',
+                'secret_key': self._settings.broker.phemex_secret_key if self._settings.broker and self._settings.broker.phemex_secret_key else '',
+                'testnet': self._settings.broker.phemex_testnet if self._settings.broker and hasattr(self._settings.broker, 'phemex_testnet') else True
             }
         else:
             raise ValueError(f"Unsupported broker type: {broker_type}")
@@ -194,7 +198,7 @@ class BrokerExecutionService(ExecutionPort):
 
             # First, check if the symbol is in the approved symbols list
             # This is the primary validation - if a symbol is not approved, it's not available for trading
-            from utils.symbol_validator import symbol_validator
+            from infrastructure.services.symbol_validator import symbol_validator
             if not symbol_validator.is_symbol_approved(order.symbol):
                 symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
                 self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order execution denied.")
@@ -204,7 +208,7 @@ class BrokerExecutionService(ExecutionPort):
             # to avoid processing symbols that will be rejected later. This improves efficiency.
 
             # Check if duplicate same-direction trade prevention is enabled
-            prevent_same_direction = Configs.execution.prevent_same_direction_trade_per_symbol if Configs.execution and hasattr(Configs.execution, 'prevent_same_direction_trade_per_symbol') else True
+            prevent_same_direction = self._settings.execution.prevent_same_direction_trade_per_symbol if self._settings.execution and hasattr(self._settings.execution, 'prevent_same_direction_trade_per_symbol') else True
 
             if prevent_same_direction:
                 # Check if there's already an active position in the same direction for this symbol
@@ -290,26 +294,53 @@ class BrokerExecutionService(ExecutionPort):
             self.logger.info(f"🎯 EXECUTING ORDER ON {self.broker_name}: {order}")
 
             try:
-                # Check if broker is connected before attempting to place order
-                if hasattr(self.broker, 'connected'):
-                    if not self.broker.connected:
-                        self.logger.error(f"❌ BROKER NOT CONNECTED: Cannot place order on {self.broker_name}")
-                        return None
-                elif hasattr(self.broker, 'connect') and callable(getattr(self.broker, 'connect')):
-                    # Try to connect if not connected
-                    try:
-                        if not getattr(self.broker, 'connected', False):
-                            self.broker.connect()
-                    except Exception as conn_error:
-                        self.logger.error(f"❌ FAILED TO CONNECT TO BROKER {self.broker_name}: {conn_error}")
-                        return None
+                # Single-broker path: only a real (LIVE/TESTNET) send needs a connected broker;
+                # PAPER orders are filled by the paper engine and must not be connectivity-gated.
+                # (The multi-broker path handles its own connection check downstream.)
+                if not self.use_multi_broker:
+                    from shared.live_execution_guard import live_execution_guard
+                    if live_execution_guard.evaluate(self.broker_type, self._settings, order).is_real_send:
+                        if hasattr(self.broker, 'connected'):
+                            if not self.broker.connected:
+                                self.logger.error(f"❌ BROKER NOT CONNECTED: Cannot place order on {self.broker_name}")
+                                return None
+                        elif hasattr(self.broker, 'connect') and callable(getattr(self.broker, 'connect')):
+                            try:
+                                if not getattr(self.broker, 'connected', False):
+                                    self.broker.connect()
+                            except Exception as conn_error:
+                                self.logger.error(f"❌ FAILED TO CONNECT TO BROKER {self.broker_name}: {conn_error}")
+                                return None
 
-                # If using multi-broker service, use execute_order method
+                # If using multi-broker service, use execute_order method.
+                # NOTE: the multi-broker path enforces LIVE_EXECUTION_GUARD internally
+                # (it knows the routed exchange), so it is not re-evaluated here.
                 if self.use_multi_broker:
                     order_id = self.broker.execute_order(order)
                 else:
-                    # For single broker, use place_order method
-                    order_id = self.broker.place_order(order)
+                    # === LIVE_EXECUTION_GUARD — single, race-free execution-safety enforcement point (Phase-9) ===
+                    # Single-broker send path (concrete broker = self.broker_type). Atomically
+                    # evaluates, writes the Execution Truth Ledger BEFORE any send, and sends
+                    # under the guard lock so the kill switch / breaker cannot interleave.
+                    from shared.live_execution_guard import live_execution_guard
+                    guard_decision, order_id = live_execution_guard.authorize_and_send(
+                        broker_name=self.broker_type, settings=self._settings, order=order,
+                        send_fn=lambda: self.broker.place_order(order))
+                    if not guard_decision.allowed:
+                        self.logger.error(
+                            f"🛑 LIVE_EXECUTION_GUARD BLOCKED order on {self.broker_name}: {guard_decision.reason}")
+                        return None
+                    if guard_decision.simulate:
+                        self.logger.warning(
+                            f"🧪 PAPER MODE — order SIMULATED on {self.broker_name} "
+                            f"(NOT sent to exchange): {order_id} [{guard_decision.reason}]")
+                        if prevent_same_direction and intended_position_side:
+                            self._add_pending_order(order.symbol, intended_position_side, order_id)
+                        return order_id
+                    self.logger.info(
+                        f"🔐 LIVE_EXECUTION_GUARD authorized {guard_decision.mode.value.upper()} send "
+                        f"on {self.broker_name}: {guard_decision.reason}")
+                    # === end LIVE_EXECUTION_GUARD ===
 
                 # Check if order_id is valid before proceeding
                 if order_id is None or order_id == "":
@@ -390,7 +421,7 @@ class BrokerExecutionService(ExecutionPort):
     def _enhance_order_with_risk_parameters(self, order: Order) -> Order:
         """Enhance order with risk parameters if they're missing"""
         from infrastructure.risk.advanced_risk_management import AdvancedRiskManagementService
-        from domain.entities.trading_entities import Order as DomainOrder
+        from domain.entities import Order as DomainOrder
         from domain.value_objects import Money
         from datetime import datetime
 
@@ -411,7 +442,7 @@ class BrokerExecutionService(ExecutionPort):
         risk_service = AdvancedRiskManagementService()
 
         # Try to get fused signal information from the order, otherwise create a default one
-        from domain.entities.signal_entities import FusedSignal, SignalBias
+        from domain.entities import FusedSignal, SignalBias
         from domain.value_objects import Percentage
 
         # Check if order has parent signal information
@@ -642,7 +673,7 @@ class BrokerExecutionService(ExecutionPort):
         """Send a Telegram notification about a successfully placed order."""
         try:
             # Check if Telegram notifications are enabled
-            telegram_notifications_enabled = Configs.monitoring.telegram_notifications_enabled if Configs.monitoring and hasattr(Configs.monitoring, 'telegram_notifications_enabled') else True
+            telegram_notifications_enabled = self._settings.monitoring.telegram_notifications_enabled if self._settings.monitoring and hasattr(self._settings.monitoring, 'telegram_notifications_enabled') else True
             if not telegram_notifications_enabled:
                 self.logger.debug(f"Telegram notifications disabled, skipping notification for order {order_id}")
                 return  # Skip notifications if disabled
@@ -651,8 +682,8 @@ class BrokerExecutionService(ExecutionPort):
             from infrastructure.services.risk_alerts import TelegramNotificationService
 
             # Get Telegram credentials from configs
-            bot_token = Configs.monitoring.telegram_bot_token if Configs.monitoring and Configs.monitoring.telegram_bot_token else ''
-            chat_id = Configs.monitoring.telegram_chat_id if Configs.monitoring and Configs.monitoring.telegram_chat_id else ''
+            bot_token = self._settings.monitoring.telegram_bot_token if self._settings.monitoring and self._settings.monitoring.telegram_bot_token else ''
+            chat_id = self._settings.monitoring.telegram_chat_id if self._settings.monitoring and self._settings.monitoring.telegram_chat_id else ''
 
             # Check if credentials are available
             if not bot_token or not chat_id:
@@ -775,11 +806,12 @@ class BrokerExecutionService(ExecutionPort):
             return set()
 
 
-def create_execution_service(broker_type: Optional[str] = None, use_multi_broker: bool = True, primary_broker: Optional[str] = None) -> ExecutionPort:
+def create_execution_service(settings, broker_type: Optional[str] = None, use_multi_broker: bool = True, primary_broker: Optional[str] = None) -> ExecutionPort:
     """
     Factory function to create a broker execution service.
 
     Args:
+        settings: Injected settings object (E1.T4), forwarded to the service.
         broker_type: Type of broker ('bingx', 'binance', 'mexc', 'phemex').
                     If None, will use DEFAULT_BROKER environment variable.
         use_multi_broker: Whether to use multi-broker service with exchange switching (default: True)
@@ -788,14 +820,15 @@ def create_execution_service(broker_type: Optional[str] = None, use_multi_broker
     Returns:
         Configured execution service instance
     """
-    return BrokerExecutionService(broker_type=broker_type, use_multi_broker=use_multi_broker, primary_broker=primary_broker)
+    return BrokerExecutionService(settings=settings, broker_type=broker_type, use_multi_broker=use_multi_broker, primary_broker=primary_broker)
 
 
-def create_execution_service_from_enum(broker_type_enum: Optional['BrokerType'] = None) -> ExecutionPort:
+def create_execution_service_from_enum(settings, broker_type_enum: Optional['BrokerType'] = None) -> ExecutionPort:
     """
     Factory function to create a broker execution service from BrokerType enum.
 
     Args:
+        settings: Injected settings object (E1.T4), forwarded to the service.
         broker_type_enum: BrokerType enum value.
                          If None, will use DEFAULT_BROKER environment variable.
 
@@ -803,4 +836,4 @@ def create_execution_service_from_enum(broker_type_enum: Optional['BrokerType'] 
         Configured execution service instance
     """
     broker_type_str = broker_type_enum.value if broker_type_enum else None
-    return BrokerExecutionService(broker_type=broker_type_str)
+    return BrokerExecutionService(settings=settings, broker_type=broker_type_str)

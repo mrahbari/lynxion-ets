@@ -7,7 +7,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 
-from domain.entities.signal_entities import MarketObservation
+from domain.entities import MarketObservation
 from domain.value_objects import Symbol, Percentage
 from domain.ports.watcher_ports import WatcherPort
 from shared.logger import EnhancedLogger

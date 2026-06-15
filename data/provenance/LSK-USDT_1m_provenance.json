@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "LSKUSDT",
+  "timeframe": "1m",
+  "checksum": "823d43fcfa4bb89a86e71cadbbc78462c9c142567fb4e1bb818a79437d0568b6",
+  "download_timestamp": "2026-06-12T18:36:24.822056",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686680",
+    "end": "1778750160"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/LSK-USDT.csv"
+}

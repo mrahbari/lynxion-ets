@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "COWUSDT",
+  "timeframe": "1m",
+  "checksum": "e37bd7913f53c0254ac28d1606e6c3c46b7776b3ad75ab91476c9906f7a7a92b",
+  "download_timestamp": "2026-06-12T18:40:26.772157",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686920",
+    "end": "1778750400"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/COW-USDT.csv"
+}

@@ -1,0 +1,84 @@
+{
+  "verdict": {
+    "verdict": "DIRECTIONAL_NO_GO",
+    "summary": "DIRECTIONAL_NO_GO \u2014 no cell reached 30 trades (risk discipline throttled a losing strategy), but 13 aggregate trades show decisively negative expectancy (-490.3 < 0.0) with no positive cell. Reject: no edge.",
+    "passing": [],
+    "failing": [
+      {
+        "strategy": "trend_following",
+        "regime": "ranging",
+        "trade_count": 4,
+        "expectancy": -351.3747217894552,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 4 < min 30",
+          "expectancy -351.375 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "trending_down",
+        "trade_count": 8,
+        "expectancy": -591.2371797435683,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 8 < min 30",
+          "expectancy -591.237 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "trending_up",
+        "trade_count": 1,
+        "expectancy": -238.03659570088635,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 30",
+          "expectancy -238.037 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      }
+    ]
+  },
+  "attribution": {
+    "total_pnl": -6373.432920807253,
+    "total_trades": 13,
+    "by_strategy": {
+      "trend_following": -6373.432920807253
+    },
+    "by_regime": {
+      "ranging": -1405.4988871578207,
+      "trending_down": -4729.897437948546,
+      "trending_up": -238.03659570088635
+    },
+    "cells": [
+      {
+        "strategy": "trend_following",
+        "regime": "ranging",
+        "pnl": -1405.4988871578207,
+        "trade_count": 4
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "trending_down",
+        "pnl": -4729.897437948546,
+        "trade_count": 8
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "trending_up",
+        "pnl": -238.03659570088635,
+        "trade_count": 1
+      }
+    ],
+    "reconciled": true,
+    "unattributed_trades": 0,
+    "unknown_regime_trades": 0
+  },
+  "ledger_path": "data/results_storage/edge_ledger.json"
+}

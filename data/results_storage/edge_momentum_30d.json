@@ -1,0 +1,82 @@
+{
+  "verdict": {
+    "verdict": "NO_GO",
+    "summary": "NO_GO \u2014 3 cells evaluated, adequate sample present, but none clears expectancy>0.0 and PF>1.0 net of realistic costs. Do not invest in execution hardening yet.",
+    "passing": [],
+    "failing": [
+      {
+        "strategy": "momentum",
+        "regime": "ranging",
+        "trade_count": 38,
+        "expectancy": -57.65367120876767,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "expectancy -57.6537 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "momentum",
+        "regime": "trending_down",
+        "trade_count": 7,
+        "expectancy": -26.92016275479545,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 7 < min 30",
+          "expectancy -26.9202 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "momentum",
+        "regime": "trending_up",
+        "trade_count": 62,
+        "expectancy": -105.73448079364788,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "expectancy -105.734 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      }
+    ]
+  },
+  "attribution": {
+    "total_pnl": -8934.818454422908,
+    "total_trades": 107,
+    "by_strategy": {
+      "momentum": -8934.818454422908
+    },
+    "by_regime": {
+      "ranging": -2190.8395059331715,
+      "trending_down": -188.44113928356813,
+      "trending_up": -6555.537809206168
+    },
+    "cells": [
+      {
+        "strategy": "momentum",
+        "regime": "ranging",
+        "pnl": -2190.8395059331715,
+        "trade_count": 38
+      },
+      {
+        "strategy": "momentum",
+        "regime": "trending_down",
+        "pnl": -188.44113928356813,
+        "trade_count": 7
+      },
+      {
+        "strategy": "momentum",
+        "regime": "trending_up",
+        "pnl": -6555.537809206168,
+        "trade_count": 62
+      }
+    ],
+    "reconciled": true,
+    "unattributed_trades": 0,
+    "unknown_regime_trades": 0
+  },
+  "ledger_path": "data/results_storage/edge_ledger.json"
+}

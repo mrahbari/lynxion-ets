@@ -3,7 +3,7 @@ Application service for managing engines in the enterprise hedge fund trading sy
 """
 from typing import List, Optional
 from domain.ports.engine_ports import EnginePort
-from domain.entities.trading_entities import Signal
+from domain.entities import Signal
 from shared.logger import logger
 
 

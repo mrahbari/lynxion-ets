@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ESPORTSUSDT",
+  "timeframe": "1m",
+  "checksum": "9a6a0dca8b8e7f2e9f754cb28f812927275b99b6bd85ed6b89559fb22010e292",
+  "download_timestamp": "2026-06-12T18:41:54.900626",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686980",
+    "end": "1778720460"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ESPORTS-USDT.csv"
+}

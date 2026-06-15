@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "KAVAUSDT",
+  "timeframe": "1m",
+  "checksum": "ce140a6107e9d56a41faee5bca83de9da3552768e8a444fea2b767be41a7d55f",
+  "download_timestamp": "2026-06-12T18:26:54.989835",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778749560"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/KAVA-USDT.csv"
+}

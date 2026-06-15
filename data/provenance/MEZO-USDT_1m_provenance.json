@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "MEZOUSDT",
+  "timeframe": "1m",
+  "checksum": "39bea73be5c24a1045b1b7a145f4c8ab25f37e76e575be6667562a3be2cc1707",
+  "download_timestamp": "2026-06-12T18:29:04.201973",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686200",
+    "end": "1778719740"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/MEZO-USDT.csv"
+}

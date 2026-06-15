@@ -7,10 +7,10 @@ import threading
 import time
 from datetime import datetime
 from typing import Dict, List, Optional, Callable, Any
-from domain.entities.signal_entities import MarketObservation
+from domain.entities import MarketObservation
 from domain.value_objects import Symbol
 from shared.logger import EnhancedLogger
-from shared.event_system import EventType
+from infrastructure.messaging.event_system import EventType
 
 
 class MonitoringAnalysisService:
@@ -298,7 +298,7 @@ class MonitoringAnalysisService:
         symbol_str = symbol.value
 
         # Validate symbol against approved list before processing
-        from utils.symbol_validator import symbol_validator
+        from infrastructure.services.symbol_validator import symbol_validator
         if not symbol_validator.is_symbol_approved(symbol):
             self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Skipping processing.")
             return {

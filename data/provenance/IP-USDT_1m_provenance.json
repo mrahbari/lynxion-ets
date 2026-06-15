@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "IPUSDT",
+  "timeframe": "1m",
+  "checksum": "0a40be33fb3366283b608d4d37ae60b9a9036ead6be8a8d4b0fcfa35a66901e6",
+  "download_timestamp": "2026-06-12T18:31:02.583767",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778719860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/IP-USDT.csv"
+}

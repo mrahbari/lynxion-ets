@@ -1,0 +1,18 @@
+{
+  "source": "ccxt:fundingRateHistory",
+  "exchange": "binance",
+  "symbol": "AVAXUSDT",
+  "data_class": "funding",
+  "checksum": "53cfd8c5fff8e1a8b0056a71ab695f545ea335e0acc4fc5611f3185309a12340",
+  "download_timestamp": "2026-06-11T21:01:11.143442+00:00",
+  "row_count": 3285,
+  "date_range": {
+    "start": "1686614400",
+    "end": "1781193600"
+  },
+  "columns": [
+    "timestamp",
+    "funding_rate"
+  ],
+  "file_path": "./data/history/raw/funding/AVAX-USDT.csv"
+}

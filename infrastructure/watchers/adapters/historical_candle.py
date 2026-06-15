@@ -1,17 +1,19 @@
 from .base_watcher import BaseWatcher
-from domain.entities.signal_entities import MarketObservation
+from domain.entities import MarketObservation
 from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
 import numpy as np
 from decimal import Decimal
-from application.configs.configs import Configs
 
 
 class HistoricalCandleWatcherAdapter(BaseWatcher):
     """Historical Candle Watcher - analyzes historical candlestick patterns, returns raw market observations"""
 
-    def __init__(self, name: str, symbol: str, broker_service=None, lookback: int = 50):
+    def __init__(self, settings, name: str, symbol: str, broker_service=None, lookback: int = 50):
+        # Settings injected by the watcher factory (E1.T4); read the same fields off
+        # self._settings instead of importing bootstrap.settings.loaders.
+        self._settings = settings
         # Convert symbol string to Symbol object if needed
         symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
         super().__init__(name, symbol_obj)
@@ -20,7 +22,7 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
         self.broker_service = broker_service
 
         # Configuration from environment with defaults
-        self.enabled = Configs.watcher.historical_candle_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'historical_candle_watcher_enabled') else True
+        self.enabled = self._settings.watcher.historical_candle_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'historical_candle_watcher_enabled') else True
 
         # Only set logger if enabled, otherwise use mock logger
         if self.enabled:
@@ -98,14 +100,14 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
             # For single candle, use fallback logic
             observation_type = 'single_candle_observation'
             observation_value = self.candles[0]['close'] if self.candles else 0.0
-            confidence = max(Configs.watcher.watcher_min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'watcher_min_confidence_threshold') else 0.05, Configs.watcher.watcher_neutral_confidence if Configs.watcher and hasattr(Configs.watcher, 'watcher_neutral_confidence') else 0.05)
+            confidence = max(self._settings.watcher.watcher_min_confidence_threshold if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_min_confidence_threshold') else 0.05, self._settings.watcher.watcher_neutral_confidence if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_neutral_confidence') else 0.05)
 
         # If confidence is too low (meaning no significant patterns detected),
         # but we have trend or momentum, still generate an observation with lower confidence
-        min_confidence_threshold = Configs.watcher.watcher_min_confidence_threshold if Configs.watcher and hasattr(Configs.watcher, 'watcher_min_confidence_threshold') else 0.05  # Lowered from 0.15 to 0.05
-        max_confidence_with_patterns = Configs.watcher.watcher_max_confidence_with_patterns if Configs.watcher and hasattr(Configs.watcher, 'watcher_max_confidence_with_patterns') else 0.3
-        min_price_change_threshold = Configs.watcher.watcher_min_price_change_threshold if Configs.watcher and hasattr(Configs.watcher, 'watcher_min_price_change_threshold') else 0.0001  # Lowered from 0.0005 to 0.0001
-        max_confidence_with_movement = Configs.watcher.watcher_max_confidence_with_movement if Configs.watcher and hasattr(Configs.watcher, 'watcher_max_confidence_with_movement') else 0.35
+        min_confidence_threshold = self._settings.watcher.watcher_min_confidence_threshold if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_min_confidence_threshold') else 0.05  # Lowered from 0.15 to 0.05
+        max_confidence_with_patterns = self._settings.watcher.watcher_max_confidence_with_patterns if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_max_confidence_with_patterns') else 0.3
+        min_price_change_threshold = self._settings.watcher.watcher_min_price_change_threshold if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_min_price_change_threshold') else 0.0001  # Lowered from 0.0005 to 0.0001
+        max_confidence_with_movement = self._settings.watcher.watcher_max_confidence_with_movement if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_max_confidence_with_movement') else 0.35
 
         if confidence < min_confidence_threshold and (abs(trend_analysis.get('direction', 0)) > 0.0001 or abs(momentum_analysis.get('momentum', 0)) > 0.0001):
             # Generate a basic trend/momentum observation even without specific patterns
@@ -133,12 +135,12 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
                         # Even if no significant movement, we can still generate a neutral observation
                         observation_type = 'market_neutral'
                         observation_value = 0.0
-                        confidence = max(min_confidence_threshold, Configs.watcher.watcher_neutral_confidence if Configs.watcher and hasattr(Configs.watcher, 'watcher_neutral_confidence') else 0.05)  # Use min threshold as fallback
+                        confidence = max(min_confidence_threshold, self._settings.watcher.watcher_neutral_confidence if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_neutral_confidence') else 0.05)  # Use min threshold as fallback
                 else:
                     # If we only have 1 candle, we can still generate a basic observation
                     observation_type = 'single_candle_observation'
                     observation_value = recent_closes[0]  # Use the single price value
-                    confidence = max(min_confidence_threshold, Configs.watcher.watcher_neutral_confidence if Configs.watcher and hasattr(Configs.watcher, 'watcher_neutral_confidence') else 0.05)  # Use min threshold as fallback
+                    confidence = max(min_confidence_threshold, self._settings.watcher.watcher_neutral_confidence if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_neutral_confidence') else 0.05)  # Use min threshold as fallback
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))
@@ -416,13 +418,13 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
         momentum_strength = momentum_analysis.get('strength', 0.0) if momentum_analysis else 0.0
 
         # Get configuration from Configs
-        pattern_weight = Configs.watcher.watcher_pattern_weight if Configs.watcher and hasattr(Configs.watcher, 'watcher_pattern_weight') else 0.4
-        momentum_weight = Configs.watcher.watcher_momentum_weight if Configs.watcher and hasattr(Configs.watcher, 'watcher_momentum_weight') else 0.3
-        high_volatility_boost = Configs.watcher.watcher_high_volatility_boost if Configs.watcher and hasattr(Configs.watcher, 'watcher_high_volatility_boost') else 0.2
-        low_volatility_boost = Configs.watcher.watcher_low_volatility_boost if Configs.watcher and hasattr(Configs.watcher, 'watcher_low_volatility_boost') else 0.05
-        normal_volatility_boost = Configs.watcher.watcher_normal_volatility_boost if Configs.watcher and hasattr(Configs.watcher, 'watcher_normal_volatility_boost') else 0.1
-        min_confidence_when_signals_detected = Configs.watcher.watcher_min_confidence_when_signals_detected if Configs.watcher and hasattr(Configs.watcher, 'watcher_min_confidence_when_signals_detected') else 0.15
-        max_confidence_cap = Configs.watcher.watcher_max_confidence_cap if Configs.watcher and hasattr(Configs.watcher, 'watcher_max_confidence_cap') else 0.95
+        pattern_weight = self._settings.watcher.watcher_pattern_weight if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_pattern_weight') else 0.4
+        momentum_weight = self._settings.watcher.watcher_momentum_weight if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_momentum_weight') else 0.3
+        high_volatility_boost = self._settings.watcher.watcher_high_volatility_boost if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_high_volatility_boost') else 0.2
+        low_volatility_boost = self._settings.watcher.watcher_low_volatility_boost if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_low_volatility_boost') else 0.05
+        normal_volatility_boost = self._settings.watcher.watcher_normal_volatility_boost if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_normal_volatility_boost') else 0.1
+        min_confidence_when_signals_detected = self._settings.watcher.watcher_min_confidence_when_signals_detected if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_min_confidence_when_signals_detected') else 0.15
+        max_confidence_cap = self._settings.watcher.watcher_max_confidence_cap if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_max_confidence_cap') else 0.95
 
         # Base confidence on pattern strength
         confidence = pattern_strength * pattern_weight  # Configurable weight to allow other factors to contribute
@@ -519,13 +521,13 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
         momentum_strength = momentum_analysis.get('strength', 0.0)
 
         # Get configuration from Configs
-        pattern_weight = Configs.watcher.watcher_pattern_weight if Configs.watcher and hasattr(Configs.watcher, 'watcher_pattern_weight') else 0.4
-        momentum_weight = Configs.watcher.watcher_momentum_weight if Configs.watcher and hasattr(Configs.watcher, 'watcher_momentum_weight') else 0.3
-        high_volatility_boost = Configs.watcher.watcher_high_volatility_boost if Configs.watcher and hasattr(Configs.watcher, 'watcher_high_volatility_boost') else 0.2
-        low_volatility_boost = Configs.watcher.watcher_low_volatility_boost if Configs.watcher and hasattr(Configs.watcher, 'watcher_low_volatility_boost') else 0.05
-        normal_volatility_boost = Configs.watcher.watcher_normal_volatility_boost if Configs.watcher and hasattr(Configs.watcher, 'watcher_normal_volatility_boost') else 0.1
-        min_confidence_when_signals_detected = Configs.watcher.watcher_min_confidence_when_signals_detected if Configs.watcher and hasattr(Configs.watcher, 'watcher_min_confidence_when_signals_detected') else 0.25  # Increased for more responsive signals
-        max_confidence_cap = Configs.watcher.watcher_max_confidence_cap if Configs.watcher and hasattr(Configs.watcher, 'watcher_max_confidence_cap') else 0.95
+        pattern_weight = self._settings.watcher.watcher_pattern_weight if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_pattern_weight') else 0.4
+        momentum_weight = self._settings.watcher.watcher_momentum_weight if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_momentum_weight') else 0.3
+        high_volatility_boost = self._settings.watcher.watcher_high_volatility_boost if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_high_volatility_boost') else 0.2
+        low_volatility_boost = self._settings.watcher.watcher_low_volatility_boost if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_low_volatility_boost') else 0.05
+        normal_volatility_boost = self._settings.watcher.watcher_normal_volatility_boost if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_normal_volatility_boost') else 0.1
+        min_confidence_when_signals_detected = self._settings.watcher.watcher_min_confidence_when_signals_detected if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_min_confidence_when_signals_detected') else 0.25  # Increased for more responsive signals
+        max_confidence_cap = self._settings.watcher.watcher_max_confidence_cap if self._settings.watcher and hasattr(self._settings.watcher, 'watcher_max_confidence_cap') else 0.95
 
         # Base confidence on pattern strength
         confidence = pattern_strength * pattern_weight  # Configurable weight to allow other factors to contribute

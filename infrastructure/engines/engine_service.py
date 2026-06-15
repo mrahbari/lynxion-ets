@@ -3,7 +3,7 @@ Engine service for processing raw market observations into interpreted signals.
 Following the correct architecture: Watcher → Engine → Fusion → Strategy → Broker
 """
 from typing import List, Optional
-from domain.entities.signal_entities import MarketObservation, InterpretedSignal
+from domain.entities import MarketObservation, InterpretedSignal
 from domain.value_objects import Symbol, Percentage
 from datetime import datetime
 from decimal import Decimal
@@ -58,7 +58,7 @@ class EngineService:
 
     def _determine_signal_type(self, observation: MarketObservation):
         """Determine signal type based on observation type"""
-        from domain.entities.signal_entities import SignalType
+        from domain.entities import SignalType
 
         obs_type = observation.observation_type.lower()
 
@@ -152,5 +152,17 @@ class EngineService:
         return min(strength, 1.0)  # Cap at 1.0
 
 
-# Global engine service instance
-engine_service = EngineService()
+# Module-level singleton retired (E2.T6). The canonical instance is now created
+# in bootstrap/container.py (container-scoped). This lazy accessor preserves
+# backward compatibility for ``from ... import engine_service`` without
+# instantiating at import time. New code should resolve from the container.
+_engine_service_singleton = None
+
+
+def __getattr__(name):
+    global _engine_service_singleton
+    if name == "engine_service":
+        if _engine_service_singleton is None:
+            _engine_service_singleton = EngineService()
+        return _engine_service_singleton
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

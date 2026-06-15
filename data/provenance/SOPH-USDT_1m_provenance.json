@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SOPHUSDT",
+  "timeframe": "1m",
+  "checksum": "e0741adb89f85325406c3bcc118322925f123950dc1fb4be75eda151f793f628",
+  "download_timestamp": "2026-06-12T18:36:46.172249",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686680",
+    "end": "1778750160"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SOPH-USDT.csv"
+}

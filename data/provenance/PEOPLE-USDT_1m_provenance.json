@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "PEOPLEUSDT",
+  "timeframe": "1m",
+  "checksum": "39171f01dec958ed99e701778ff6d5bc7255a95296722f1026d84873b3ed416e",
+  "download_timestamp": "2026-06-12T18:38:28.057555",
+  "row_count": 1069,
+  "date_range": {
+    "start": "1778686200",
+    "end": "1778750280"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/PEOPLE-USDT.csv"
+}

@@ -2,7 +2,7 @@
 Use cases for watcher functionality in the enterprise hedge fund trading system.
 """
 from typing import List, Optional
-from domain.entities.trading_entities import Signal
+from domain.entities import Signal
 from domain.value_objects import Symbol
 from application.services.watcher_services import WatcherOrchestrationService
 

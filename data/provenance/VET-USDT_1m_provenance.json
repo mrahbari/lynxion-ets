@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "VETUSDT",
+  "timeframe": "1m",
+  "checksum": "f5d23f9fdc6d6a3df8f04cd61c5bcab4e45134970ea7ea0af9f5dd7f2ba278e4",
+  "download_timestamp": "2026-06-12T18:30:26.976442",
+  "row_count": 1129,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1781276700"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/VET-USDT.csv"
+}

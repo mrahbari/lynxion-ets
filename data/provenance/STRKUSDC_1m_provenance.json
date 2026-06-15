@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "STRKUSDC",
+  "timeframe": "1m",
+  "checksum": "ed385d6b658d9789182d0eb9d9f8efe5adace9684d51520251e9b974ded54a23",
+  "download_timestamp": "2026-06-12T18:34:44.930002",
+  "row_count": 1064,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778750040"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/STRKUSDC.csv"
+}

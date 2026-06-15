@@ -3,7 +3,7 @@ Signal Processing and Conflict Resolution System
 Handles signal validation, conflict resolution, and weighting based on reliability.
 """
 from typing import List, Dict, Optional, Tuple, Any
-from domain.entities.trading_entities import Signal
+from domain.entities import Signal
 from domain.value_objects import Symbol, Percentage
 from shared.logger import EnhancedLogger
 from datetime import datetime

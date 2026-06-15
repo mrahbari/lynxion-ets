@@ -1,16 +1,15 @@
 from .base_watcher import BaseWatcher
-from domain.entities.signal_entities import MarketObservation
+from domain.entities import MarketObservation
 from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
 from decimal import Decimal
-from application.configs.configs import Configs
 
 
 class FundingRateWatcher(BaseWatcher):
     """Funding Rate Watcher - analyzes funding rates for perpetual contracts, returns raw market observations"""
 
-    def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 24):
+    def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 24, watcher_config=None):
         # Convert symbol string to Symbol object if needed
         symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
         super().__init__(name, symbol_obj)
@@ -19,8 +18,9 @@ class FundingRateWatcher(BaseWatcher):
         self.broker_service = broker_service
         self.target_broker = target_broker
 
-        # Configuration from environment with defaults
-        self.enabled = Configs.watcher.funding_rate_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'funding_rate_watcher_enabled') else True
+        # Configuration injected via constructor (E1.T4); falls back to the
+        # typed settings aggregate (same values as the legacy Configs.watcher).
+        self.enabled = watcher_config.funding_rate_watcher_enabled if watcher_config and hasattr(watcher_config, 'funding_rate_watcher_enabled') else True
 
         # Only set logger if enabled, otherwise use mock logger
         if self.enabled:

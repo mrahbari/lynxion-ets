@@ -9,7 +9,7 @@ from datetime import datetime
 import time
 
 from domain.ports.watcher_ports import WatcherPort
-from domain.entities.trading_entities import Signal, Symbol
+from domain.entities import Signal, Symbol
 from domain.value_objects import Percentage
 from application.use_cases.trading_use_cases import ProcessMultipleSignalsUseCase
 from infrastructure.data.market_data_feed import MarketDataFeed
@@ -308,7 +308,7 @@ class SignalFusionService:
                 if total_buy_confidence >= total_sell_confidence and total_buy_confidence >= total_hold_confidence:
                     # BUY signal wins
                     avg_confidence = total_buy_confidence / len(buy_signals) if buy_signals else 0
-                    from domain.entities.trading_entities import SignalType
+                    from domain.entities import SignalType
                     return Signal(
                         symbol=symbol_signals_list[0].symbol,
                         signal_type=SignalType.BUY,
@@ -330,7 +330,7 @@ class SignalFusionService:
                 elif total_sell_confidence >= total_hold_confidence:
                     # SELL signal wins
                     avg_confidence = total_sell_confidence / len(sell_signals) if sell_signals else 0
-                    from domain.entities.trading_entities import SignalType
+                    from domain.entities import SignalType
                     return Signal(
                         symbol=symbol_signals_list[0].symbol,
                         signal_type=SignalType.SELL,
@@ -352,7 +352,7 @@ class SignalFusionService:
                 else:
                     # HOLD/NEUTRAL signal wins
                     avg_confidence = total_hold_confidence / len(hold_signals) if hold_signals else 0
-                    from domain.entities.trading_entities import SignalType
+                    from domain.entities import SignalType
                     return Signal(
                         symbol=symbol_signals_list[0].symbol,
                         signal_type=SignalType.HOLD,

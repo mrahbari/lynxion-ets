@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "DOODUSDT",
+  "timeframe": "1m",
+  "checksum": "cd6b658820f1161add2fe21c4b628657ce1256c959cd34bde251b4b03b7b75d1",
+  "download_timestamp": "2026-06-12T18:35:29.212343",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686620",
+    "end": "1778720100"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/DOOD-USDT.csv"
+}

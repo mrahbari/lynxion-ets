@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "KNCUSDT",
+  "timeframe": "1m",
+  "checksum": "4dddc980801c6cc3007c6a41b473b6a6c7380c85f4b002520e7d2fbd2b72df25",
+  "download_timestamp": "2026-06-12T18:36:08.831078",
+  "row_count": 1063,
+  "date_range": {
+    "start": "1778686440",
+    "end": "1778750160"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/KNC-USDT.csv"
+}

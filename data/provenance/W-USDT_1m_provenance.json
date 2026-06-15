@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "WUSDT",
+  "timeframe": "1m",
+  "checksum": "0ae5aede5b4d8a0bb97b3732a55a981d559e011b07000ae1bcef7b67cefb9439",
+  "download_timestamp": "2026-06-12T18:37:38.748402",
+  "row_count": 1061,
+  "date_range": {
+    "start": "1778686620",
+    "end": "1778750220"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/W-USDT.csv"
+}

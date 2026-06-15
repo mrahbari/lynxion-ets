@@ -1,0 +1,1827 @@
+[
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "trend_following",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.007721856951920381,
+    "sharpe": -0.22455924769132155,
+    "max_drawdown": -0.0117764629889758,
+    "win_rate": 0.24528301886792453,
+    "profit_factor": 0.9028779990117101,
+    "closed_trades": 26,
+    "total_pnl": -23.470278920393085,
+    "by_regime": {
+      "ranging": 64.5867899605938,
+      "trending_up": -88.05706888098689
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "mean_reversion",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 4236\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "momentum",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.0333261947686613,
+    "sharpe": -0.7786915563379645,
+    "max_drawdown": -0.0333261947686613,
+    "win_rate": 0.14545454545454545,
+    "profit_factor": 0.3681856510431188,
+    "closed_trades": 27,
+    "total_pnl": -277.8127807471276,
+    "by_regime": {
+      "ranging": -76.6996763135252,
+      "trending_down": -104.31524938225365,
+      "trending_up": -96.79785505134873
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "scalping",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.0002680712196528475,
+    "sharpe": 0.017585075701910757,
+    "max_drawdown": -0.004464669118714855,
+    "win_rate": 0.2,
+    "profit_factor": 1.3788044779216928,
+    "closed_trades": 4,
+    "total_pnl": 14.711867464978525,
+    "by_regime": {
+      "ranging": -38.837628176137315,
+      "trending_up": 53.54949564111584
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 4236\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "liquidity",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.01069626987670017,
+    "sharpe": -0.4759981543182968,
+    "max_drawdown": -0.012390245482954924,
+    "win_rate": 0.14285714285714285,
+    "profit_factor": 0.3621810482789567,
+    "closed_trades": 10,
+    "total_pnl": -85.03219122102811,
+    "by_regime": {
+      "ranging": 15.647064706694422,
+      "trending_down": -104.48645888927753,
+      "trending_up": 3.8072029615549856
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "mtf_trend",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.015598256535249676,
+    "sharpe": -0.2969937832521949,
+    "max_drawdown": -0.015608485852715967,
+    "win_rate": 0.22123893805309736,
+    "profit_factor": 0.9234028397804583,
+    "closed_trades": 56,
+    "total_pnl": -42.69445114600653,
+    "by_regime": {
+      "ranging": 86.00644613921058,
+      "trending_down": -12.785788750200053,
+      "trending_up": -115.91510853501705
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "oi_footprint",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.021440416230609664,
+    "sharpe": -0.5608507133302834,
+    "max_drawdown": -0.023369922882771368,
+    "win_rate": 0.23076923076923078,
+    "profit_factor": 0.6926706250846174,
+    "closed_trades": 45,
+    "total_pnl": -122.71985709057849,
+    "by_regime": {
+      "ranging": -128.67584718959029,
+      "trending_down": -2.596879250857995,
+      "trending_up": 8.552869349869795
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "sweep_scalper",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.005492535667948869,
+    "sharpe": -0.293188364159042,
+    "max_drawdown": -0.008171711590760829,
+    "win_rate": 0.16666666666666666,
+    "profit_factor": 0.7328605498926078,
+    "closed_trades": 10,
+    "total_pnl": -26.925974071977503,
+    "by_regime": {
+      "ranging": -40.17066850553644,
+      "trending_down": -19.407235992689024,
+      "trending_up": 45.926704981778784,
+      "unknown": -13.274774555530822
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "vwap_reversal",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0001998799810982746,
+    "sharpe": -0.29361010975735163,
+    "max_drawdown": -0.0001998799810982746,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "closed_trades": 0,
+    "total_pnl": 0.0,
+    "by_regime": {}
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "volatility_breakout",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.003300225749220226,
+    "sharpe": -0.4772977090420298,
+    "max_drawdown": -0.003300225749220226,
+    "win_rate": 0.1111111111111111,
+    "profit_factor": 0.2582661546640461,
+    "closed_trades": 4,
+    "total_pnl": -23.006623757722494,
+    "by_regime": {
+      "ranging": -20.791798333283275,
+      "trending_up": -2.2148254244392174
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "crypto_breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 4236\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "trend_following",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": 0.02916242974936431,
+    "sharpe": -0.41570228603074366,
+    "max_drawdown": -0.029453652943751234,
+    "win_rate": 0.19696969696969696,
+    "profit_factor": 0.7002665828715074,
+    "closed_trades": 33,
+    "total_pnl": -133.18114196689424,
+    "by_regime": {
+      "ranging": -8.68854514153584,
+      "trending_up": -124.49259682535842
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "mean_reversion",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 4243\n  Symbol: ETHUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "momentum",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.02281672424697117,
+    "sharpe": -0.9757315175973159,
+    "max_drawdown": -0.06770186456767306,
+    "win_rate": 0.14285714285714285,
+    "profit_factor": 0.3950483170021807,
+    "closed_trades": 49,
+    "total_pnl": -550.2462627737389,
+    "by_regime": {
+      "ranging": -313.18111454925014,
+      "trending_down": -94.73945778598092,
+      "trending_up": -142.32569043850776
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "scalping",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.005782649879334167,
+    "sharpe": -0.28512088725540036,
+    "max_drawdown": -0.009214332565348609,
+    "win_rate": 0.1,
+    "profit_factor": 0.4443295922781601,
+    "closed_trades": 4,
+    "total_pnl": -45.81777594323094,
+    "by_regime": {
+      "ranging": -26.048688711004427,
+      "trending_up": -19.769087232226518
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 4243\n  Symbol: ETHUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "liquidity",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.01824237583884151,
+    "sharpe": -0.7754127077549955,
+    "max_drawdown": -0.01824237583884151,
+    "win_rate": 0.047619047619047616,
+    "profit_factor": 0.14148339759459896,
+    "closed_trades": 10,
+    "total_pnl": -160.57765965578653,
+    "by_regime": {
+      "ranging": -42.24106725959849,
+      "trending_down": -58.89721967413381,
+      "trending_up": -59.439372722054216
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "mtf_trend",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.03700736130321275,
+    "sharpe": -0.6059877380908983,
+    "max_drawdown": -0.04773754225173377,
+    "win_rate": 0.18691588785046728,
+    "profit_factor": 0.6508338764384923,
+    "closed_trades": 53,
+    "total_pnl": -262.5536776704632,
+    "by_regime": {
+      "ranging": 29.514351899704195,
+      "trending_down": -22.964761038187234,
+      "trending_up": -269.1032685319801
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "oi_footprint",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.013543791350022002,
+    "sharpe": -0.2956706833244471,
+    "max_drawdown": -0.01602445577074541,
+    "win_rate": 0.2247191011235955,
+    "profit_factor": 0.890571701970179,
+    "closed_trades": 44,
+    "total_pnl": -46.26535901456225,
+    "by_regime": {
+      "ranging": -34.86931768931905,
+      "trending_down": 70.56020808783695,
+      "trending_up": -81.95624941308016
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "sweep_scalper",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.006216996507948352,
+    "sharpe": -0.41377346953106914,
+    "max_drawdown": -0.006216996507948352,
+    "win_rate": 0.1,
+    "profit_factor": 0.2818799919377956,
+    "closed_trades": 4,
+    "total_pnl": -50.18611856911682,
+    "by_regime": {
+      "trending_up": -35.39312174539339,
+      "unknown": -14.792996823723435
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "vwap_reversal",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 4243\n  Symbol: ETHUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "volatility_breakout",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0011773788756863723,
+    "sharpe": -0.08564942304993008,
+    "max_drawdown": -0.002637011785265713,
+    "win_rate": 0.14285714285714285,
+    "profit_factor": 0.8913675537425672,
+    "closed_trades": 3,
+    "total_pnl": -3.7798101170086014,
+    "by_regime": {
+      "ranging": 16.598458613046645,
+      "trending_up": -20.378268730055247
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 90,
+    "strategy": "crypto_breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 4243\n  Symbol: ETHUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "trend_following",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.02187966565994684,
+    "sharpe": -0.6018487556104639,
+    "max_drawdown": -0.03841576177375102,
+    "win_rate": 0.171875,
+    "profit_factor": 0.5151327274544433,
+    "closed_trades": 32,
+    "total_pnl": -260.1508574899883,
+    "by_regime": {
+      "ranging": -3.5521706228451975,
+      "trending_up": -256.5986868671431
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "mean_reversion",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 4243\n  Symbol: SOLUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "momentum",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.06543487532097989,
+    "sharpe": -1.0436131981782388,
+    "max_drawdown": -0.070591794777554,
+    "win_rate": 0.13592233009708737,
+    "profit_factor": 0.3883973340166882,
+    "closed_trades": 51,
+    "total_pnl": -553.9110313413051,
+    "by_regime": {
+      "ranging": -200.97456961203656,
+      "trending_down": -75.81692814208888,
+      "trending_up": -277.1195335871797
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "scalping",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.002176293644355792,
+    "sharpe": 0.1317464781034581,
+    "max_drawdown": -0.0029622733034899177,
+    "win_rate": 0.25,
+    "profit_factor": 2.234364439225849,
+    "closed_trades": 3,
+    "total_pnl": 31.791290610666593,
+    "by_regime": {
+      "ranging": -25.75518995881395,
+      "trending_up": 57.54648056948054
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 4243\n  Symbol: SOLUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "liquidity",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.020708616165680906,
+    "sharpe": -0.6668483358005985,
+    "max_drawdown": -0.020708616165680906,
+    "win_rate": 0.08,
+    "profit_factor": 0.2347244845056268,
+    "closed_trades": 12,
+    "total_pnl": -181.302008668414,
+    "by_regime": {
+      "ranging": -89.49245381483634,
+      "trending_down": -66.32111638895442,
+      "trending_up": -25.488438464623233
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "mtf_trend",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.06455364806162707,
+    "sharpe": -0.8647739780081846,
+    "max_drawdown": -0.06455364806162707,
+    "win_rate": 0.17647058823529413,
+    "profit_factor": 0.5671819479448515,
+    "closed_trades": 76,
+    "total_pnl": -497.62895625908607,
+    "by_regime": {
+      "ranging": 74.84557824038103,
+      "trending_down": 3.8590257364665526,
+      "trending_up": -576.3335602359336
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "oi_footprint",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.02653114614271399,
+    "sharpe": -0.5166754394346735,
+    "max_drawdown": -0.03341379344275701,
+    "win_rate": 0.2,
+    "profit_factor": 0.6658053926723169,
+    "closed_trades": 42,
+    "total_pnl": -179.74844835660622,
+    "by_regime": {
+      "ranging": 41.88659527683609,
+      "trending_down": -109.31677323845678,
+      "trending_up": -112.31827039498552
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "sweep_scalper",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "DIRECTIONAL_NO_GO",
+    "total_return": -0.03125051837782303,
+    "sharpe": -0.7702706357075967,
+    "max_drawdown": -0.035054974016884885,
+    "win_rate": 0.13114754098360656,
+    "profit_factor": 0.44910721055478575,
+    "closed_trades": 29,
+    "total_pnl": -249.1571892058369,
+    "by_regime": {
+      "ranging": -127.86082033979008,
+      "trending_down": -61.77620172060101,
+      "trending_up": -43.398929655862304,
+      "unknown": -16.121237489583518
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "vwap_reversal",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0041627520071288015,
+    "sharpe": -0.3077556164937709,
+    "max_drawdown": -0.0041627520071288015,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "closed_trades": 1,
+    "total_pnl": -39.62631945841879,
+    "by_regime": {
+      "trending_down": -39.62631945841879
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "volatility_breakout",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.002711792233764572,
+    "sharpe": -0.22606187175310283,
+    "max_drawdown": -0.004547613580799194,
+    "win_rate": 0.14285714285714285,
+    "profit_factor": 0.516790935302681,
+    "closed_trades": 3,
+    "total_pnl": -19.114845407975793,
+    "by_regime": {
+      "ranging": -22.972403051467072,
+      "trending_up": 3.8575576434912797
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 90,
+    "strategy": "crypto_breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 4243\n  Symbol: SOLUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "trend_following",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.02656484465515241,
+    "sharpe": -0.34013705860445653,
+    "max_drawdown": -0.030542464807146463,
+    "win_rate": 0.22935779816513763,
+    "profit_factor": 0.7401724830849082,
+    "closed_trades": 54,
+    "total_pnl": -157.53770897292216,
+    "by_regime": {
+      "ranging": 32.757527159474165,
+      "trending_up": -190.29523613239633
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "mean_reversion",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 178 days (5.9 months)\n  Trades: 0\n  Data points: 8556\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "momentum",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.06255281178258301,
+    "sharpe": -0.5495133340623144,
+    "max_drawdown": -0.06255281178258301,
+    "win_rate": 0.15267175572519084,
+    "profit_factor": 0.5343386573616763,
+    "closed_trades": 65,
+    "total_pnl": -497.2078855501952,
+    "by_regime": {
+      "ranging": -164.55216848726923,
+      "trending_down": -185.3866294432434,
+      "trending_up": -147.26908761968258
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "scalping",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "GO",
+    "total_return": -0.029572619625971127,
+    "sharpe": -0.24994473784387428,
+    "max_drawdown": -0.03183419057092144,
+    "win_rate": 0.22162162162162163,
+    "profit_factor": 0.896199993372384,
+    "closed_trades": 92,
+    "total_pnl": -111.88368291454071,
+    "by_regime": {
+      "ranging": 57.6430499456244,
+      "trending_down": -85.89536881243603,
+      "trending_up": -68.43009151696651,
+      "unknown": -15.201272530762571
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 178 days (5.9 months)\n  Trades: 0\n  Data points: 8556\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "liquidity",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.005387281903505209,
+    "sharpe": -0.12887089208986413,
+    "max_drawdown": -0.007738335671699315,
+    "win_rate": 0.2222222222222222,
+    "profit_factor": 0.8199707172993427,
+    "closed_trades": 13,
+    "total_pnl": -25.91949907503333,
+    "by_regime": {
+      "ranging": 12.910791821846797,
+      "trending_down": -48.45613324712235,
+      "trending_up": 9.625842350242225
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "mtf_trend",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.0393657292283875,
+    "sharpe": -0.6491349519675242,
+    "max_drawdown": -0.043047026580931916,
+    "win_rate": 0.17346938775510204,
+    "profit_factor": 0.47207034042291546,
+    "closed_trades": 48,
+    "total_pnl": -295.1857096703681,
+    "by_regime": {
+      "ranging": -69.25080144255001,
+      "trending_up": -225.9349082278181
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "oi_footprint",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.04468188578568024,
+    "sharpe": -0.5456246812738836,
+    "max_drawdown": -0.04714180229982858,
+    "win_rate": 0.2265193370165746,
+    "profit_factor": 0.6830567030561532,
+    "closed_trades": 90,
+    "total_pnl": -268.1640893377102,
+    "by_regime": {
+      "ranging": -191.9443821084808,
+      "trending_down": -52.48193649366169,
+      "trending_up": -23.73777073556772
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "sweep_scalper",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.004689546604931092,
+    "sharpe": -0.13742061430630317,
+    "max_drawdown": -0.010319329396229296,
+    "win_rate": 0.23076923076923078,
+    "profit_factor": 0.9636730694232954,
+    "closed_trades": 18,
+    "total_pnl": -5.075949778671806,
+    "by_regime": {
+      "ranging": 34.61187479609214,
+      "trending_up": -39.687824574763944
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "vwap_reversal",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.0015905910697027138,
+    "sharpe": 0.1823394650030846,
+    "max_drawdown": -0.00020012001537415928,
+    "win_rate": 0.5,
+    "profit_factor": null,
+    "closed_trades": 1,
+    "total_pnl": 17.90711085076807,
+    "by_regime": {
+      "ranging": 17.90711085076807
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "volatility_breakout",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.00022254734337548145,
+    "sharpe": 0.01278583262600982,
+    "max_drawdown": -0.0031009656700080163,
+    "win_rate": 0.23076923076923078,
+    "profit_factor": 1.5221389664013396,
+    "closed_trades": 6,
+    "total_pnl": 16.252612864352415,
+    "by_regime": {
+      "ranging": -10.66278333164806,
+      "trending_up": 26.915396196000472
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "crypto_breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 178 days (5.9 months)\n  Trades: 0\n  Data points: 8556\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "trend_following",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.06144990912092435,
+    "sharpe": -0.22506706898207757,
+    "max_drawdown": -0.0292596172289143,
+    "win_rate": 0.211864406779661,
+    "profit_factor": 0.8597872594238064,
+    "closed_trades": 59,
+    "total_pnl": -109.65806711197963,
+    "by_regime": {
+      "ranging": -36.644236606936786,
+      "trending_up": -73.01383050504285
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "mean_reversion",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.002248525969617549,
+    "sharpe": 0.18896847440161893,
+    "max_drawdown": -0.00020012002523399133,
+    "win_rate": 0.5,
+    "profit_factor": null,
+    "closed_trades": 1,
+    "total_pnl": 24.48645994851609,
+    "by_regime": {
+      "ranging": 24.48645994851609
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "momentum",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.046719010213166254,
+    "sharpe": -0.8501937691517085,
+    "max_drawdown": -0.13327248553785248,
+    "win_rate": 0.14864864864864866,
+    "profit_factor": 0.468023139205376,
+    "closed_trades": 111,
+    "total_pnl": -1124.8587169135567,
+    "by_regime": {
+      "ranging": -281.35603533954736,
+      "trending_down": -254.82623383309522,
+      "trending_up": -588.6764477409142
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "scalping",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.001513069257001189,
+    "sharpe": -0.043320680425905665,
+    "max_drawdown": -0.006495998853970014,
+    "win_rate": 0.2,
+    "profit_factor": 1.0336560977266391,
+    "closed_trades": 6,
+    "total_pnl": 2.8425903249598576,
+    "by_regime": {
+      "ranging": 1.1208170328944078,
+      "trending_down": -34.475481725988416,
+      "trending_up": 56.70786478860465,
+      "unknown": -20.510609770550786
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 178 days (5.9 months)\n  Trades: 0\n  Data points: 8563\n  Symbol: ETHUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "liquidity",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.015138832533217465,
+    "sharpe": -0.2166502781345187,
+    "max_drawdown": -0.021534958283691744,
+    "win_rate": 0.1891891891891892,
+    "profit_factor": 0.6739786191903469,
+    "closed_trades": 18,
+    "total_pnl": -113.46755582073709,
+    "by_regime": {
+      "ranging": 5.411816964036873,
+      "trending_down": -157.04258930729975,
+      "trending_up": 38.1632165225258
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "mtf_trend",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.10960665082325777,
+    "sharpe": -0.6946060863756133,
+    "max_drawdown": -0.11128104277973293,
+    "win_rate": 0.19435736677115986,
+    "profit_factor": 0.6572771916537067,
+    "closed_trades": 159,
+    "total_pnl": -792.9492344819114,
+    "by_regime": {
+      "ranging": -251.15240887267683,
+      "trending_down": -70.44652159022043,
+      "trending_up": -471.3503040190142
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "oi_footprint",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.041407727463946505,
+    "sharpe": -0.3970942162165417,
+    "max_drawdown": -0.04384539802144369,
+    "win_rate": 0.21714285714285714,
+    "profit_factor": 0.7538982944650106,
+    "closed_trades": 87,
+    "total_pnl": -242.51756092068288,
+    "by_regime": {
+      "ranging": -143.6655663815099,
+      "trending_down": -19.52179490583306,
+      "trending_up": -79.3301996333399
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "sweep_scalper",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.019202521727866406,
+    "sharpe": -0.6144460917899722,
+    "max_drawdown": -0.019202521727866406,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "closed_trades": 7,
+    "total_pnl": -172.13381296251967,
+    "by_regime": {
+      "ranging": -43.92426433600657,
+      "trending_down": -73.63995989949585,
+      "trending_up": -38.83849707693257,
+      "unknown": -15.731091650084652
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "vwap_reversal",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.002248525969617549,
+    "sharpe": 0.18896847440161893,
+    "max_drawdown": -0.00020012002523399133,
+    "win_rate": 0.5,
+    "profit_factor": null,
+    "closed_trades": 1,
+    "total_pnl": 24.48645994851609,
+    "by_regime": {
+      "ranging": 24.48645994851609
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "volatility_breakout",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.00469713467112033,
+    "sharpe": -0.2217336893419369,
+    "max_drawdown": -0.007379887562540171,
+    "win_rate": 0.09090909090909091,
+    "profit_factor": 0.4338490903609383,
+    "closed_trades": 5,
+    "total_pnl": -35.00855536081927,
+    "by_regime": {
+      "ranging": -16.9250854024749,
+      "trending_up": -18.083469958344374
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 180,
+    "strategy": "crypto_breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 178 days (5.9 months)\n  Trades: 0\n  Data points: 8563\n  Symbol: ETHUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "trend_following",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.03665227698349372,
+    "sharpe": -0.5252876224992874,
+    "max_drawdown": -0.058971052684495956,
+    "win_rate": 0.16923076923076924,
+    "profit_factor": 0.577108347583091,
+    "closed_trades": 65,
+    "total_pnl": -464.61120652898677,
+    "by_regime": {
+      "ranging": 8.99915652863838,
+      "trending_up": -473.61036305762514
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "mean_reversion",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.002539140973997928,
+    "sharpe": 0.19087979753517528,
+    "max_drawdown": -0.00020012003526680928,
+    "win_rate": 0.5,
+    "profit_factor": null,
+    "closed_trades": 1,
+    "total_pnl": 27.3926100926465,
+    "by_regime": {
+      "ranging": 27.3926100926465
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "momentum",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.1427436542252106,
+    "sharpe": -0.7809408793542395,
+    "max_drawdown": -0.1515604534322811,
+    "win_rate": 0.14644351464435146,
+    "profit_factor": 0.5008457036845592,
+    "closed_trades": 119,
+    "total_pnl": -1204.6967331290507,
+    "by_regime": {
+      "ranging": -386.4162834635358,
+      "trending_down": -330.9264749491823,
+      "trending_up": -487.35397471633246
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "scalping",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.052142431167532415,
+    "sharpe": -0.3188825136583579,
+    "max_drawdown": -0.0745642217778088,
+    "win_rate": 0.18333333333333332,
+    "profit_factor": 0.771552964626226,
+    "closed_trades": 89,
+    "total_pnl": -346.3673956947419,
+    "by_regime": {
+      "ranging": -141.60887517033655,
+      "trending_down": -69.10623857487474,
+      "trending_up": -162.41559978059837,
+      "unknown": 26.76331783106776
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 178 days (5.9 months)\n  Trades: 0\n  Data points: 8563\n  Symbol: SOLUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "liquidity",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.015229830153979128,
+    "sharpe": -0.2457522846236912,
+    "max_drawdown": -0.015229830153979128,
+    "win_rate": 0.21621621621621623,
+    "profit_factor": 0.6287723399270781,
+    "closed_trades": 18,
+    "total_pnl": -114.52525292982232,
+    "by_regime": {
+      "ranging": 106.02833249840319,
+      "trending_down": -194.9225460718249,
+      "trending_up": -25.631039356400592
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "mtf_trend",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.14269182728007945,
+    "sharpe": -0.8292821702425724,
+    "max_drawdown": -0.14269182728007945,
+    "win_rate": 0.1794871794871795,
+    "profit_factor": 0.6007437008711182,
+    "closed_trades": 175,
+    "total_pnl": -1102.7937694736243,
+    "by_regime": {
+      "ranging": -137.318947015778,
+      "trending_down": -26.043364673790634,
+      "trending_up": -939.4314577840555
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "oi_footprint",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.04054986410375095,
+    "sharpe": -0.37360135911847886,
+    "max_drawdown": -0.043389719537488415,
+    "win_rate": 0.2,
+    "profit_factor": 0.7669120496721421,
+    "closed_trades": 82,
+    "total_pnl": -242.05666379983174,
+    "by_regime": {
+      "ranging": -29.01772638090813,
+      "trending_down": -117.69243134874085,
+      "trending_up": -95.34650607018276
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "sweep_scalper",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.020912173353607795,
+    "sharpe": -0.44991615533041424,
+    "max_drawdown": -0.020912173353607795,
+    "win_rate": 0.1111111111111111,
+    "profit_factor": 0.38890865091528276,
+    "closed_trades": 17,
+    "total_pnl": -171.43801669984379,
+    "by_regime": {
+      "ranging": -84.4392555860142,
+      "trending_down": 49.87536240854749,
+      "trending_up": -136.87412352237706
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "vwap_reversal",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.002539140973997928,
+    "sharpe": 0.19087979753517528,
+    "max_drawdown": -0.00020012003526680928,
+    "win_rate": 0.5,
+    "profit_factor": null,
+    "closed_trades": 1,
+    "total_pnl": 27.3926100926465,
+    "by_regime": {
+      "ranging": 27.3926100926465
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "volatility_breakout",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.004648711718437698,
+    "sharpe": 0.20115806521381074,
+    "max_drawdown": -0.0024575315763901017,
+    "win_rate": 0.3333333333333333,
+    "profit_factor": 4.040484445935396,
+    "closed_trades": 4,
+    "total_pnl": 56.489264215661976,
+    "by_regime": {
+      "ranging": 51.89650312544385,
+      "trending_up": 4.592761090218122
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 180,
+    "strategy": "crypto_breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 178 days (5.9 months)\n  Trades: 0\n  Data points: 8563\n  Symbol: SOLUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "trend_following",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.050212372324651186,
+    "sharpe": -0.34596170599233045,
+    "max_drawdown": -0.06189396445847858,
+    "win_rate": 0.22624434389140272,
+    "profit_factor": 0.7469187445750961,
+    "closed_trades": 110,
+    "total_pnl": -284.90764137681606,
+    "by_regime": {
+      "ranging": -18.109536602588975,
+      "trending_up": -266.7981047742271
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "mean_reversion",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 363 days (12.1 months)\n  Trades: 0\n  Data points: 17436\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "momentum",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.09426781794878553,
+    "sharpe": -0.4716948069952887,
+    "max_drawdown": -0.09607729877865603,
+    "win_rate": 0.16170212765957448,
+    "profit_factor": 0.58693583604476,
+    "closed_trades": 117,
+    "total_pnl": -716.8461841332296,
+    "by_regime": {
+      "ranging": -209.67288827327002,
+      "trending_down": -321.85065969502705,
+      "trending_up": -185.32263616493248
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "scalping",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.08332935606517258,
+    "sharpe": -0.4314823773362187,
+    "max_drawdown": -0.08332935606517258,
+    "win_rate": 0.19594594594594594,
+    "profit_factor": 0.688267854227379,
+    "closed_trades": 147,
+    "total_pnl": -550.250789541036,
+    "by_regime": {
+      "ranging": -184.03904507091613,
+      "trending_down": -157.02968518756285,
+      "trending_up": -189.04589126859827,
+      "unknown": -20.136168013958844
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 363 days (12.1 months)\n  Trades: 0\n  Data points: 17436\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "liquidity",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.034217610463389246,
+    "sharpe": -0.4597410774828723,
+    "max_drawdown": -0.03461638364002408,
+    "win_rate": 0.1320754716981132,
+    "profit_factor": 0.2763518314535457,
+    "closed_trades": 26,
+    "total_pnl": -288.71603067026194,
+    "by_regime": {
+      "ranging": -120.31117754000782,
+      "trending_down": -182.98420701760887,
+      "trending_up": 14.579353887354713
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "mtf_trend",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.1332847128671121,
+    "sharpe": -0.9126882685519293,
+    "max_drawdown": -0.13778898397500464,
+    "win_rate": 0.15868263473053892,
+    "profit_factor": 0.4300704740954689,
+    "closed_trades": 166,
+    "total_pnl": -1017.2711773875499,
+    "by_regime": {
+      "ranging": -326.7952402091437,
+      "trending_down": -16.002226041610665,
+      "trending_up": -674.4737111367956
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "oi_footprint",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.0725693775904343,
+    "sharpe": -0.4897462139689549,
+    "max_drawdown": -0.07300788899476536,
+    "win_rate": 0.22841225626740946,
+    "profit_factor": 0.7414828075273857,
+    "closed_trades": 179,
+    "total_pnl": -377.05428755548013,
+    "by_regime": {
+      "ranging": -271.033714630284,
+      "trending_down": 10.199233295624992,
+      "trending_up": -116.21980622082111
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "sweep_scalper",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.0015540836288797436,
+    "sharpe": 0.06743669102580621,
+    "max_drawdown": -0.0035901961341090337,
+    "win_rate": 0.2631578947368421,
+    "profit_factor": 2.4637750292152587,
+    "closed_trades": 8,
+    "total_pnl": 37.54208764100396,
+    "by_regime": {
+      "ranging": 11.324698463220168,
+      "trending_down": 5.485571165736038,
+      "trending_up": 20.731818012047754
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "vwap_reversal",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.0012990437945420126,
+    "sharpe": 0.12427579044538216,
+    "max_drawdown": -0.00020012000310143776,
+    "win_rate": 0.5,
+    "profit_factor": null,
+    "closed_trades": 1,
+    "total_pnl": 14.991637976434518,
+    "by_regime": {
+      "trending_down": 14.991637976434518
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "volatility_breakout",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.005922818881095554,
+    "sharpe": -0.1463564600403776,
+    "max_drawdown": -0.007844458004548869,
+    "win_rate": 0.17142857142857143,
+    "profit_factor": 0.801858218053652,
+    "closed_trades": 17,
+    "total_pnl": -23.36978440290561,
+    "by_regime": {
+      "ranging": -32.57339608450273,
+      "trending_up": 9.203611681597124
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 365,
+    "strategy": "crypto_breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 363 days (12.1 months)\n  Trades: 0\n  Data points: 17436\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "trend_following",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.004721393324934798,
+    "sharpe": -0.33140315442176904,
+    "max_drawdown": -0.07437412164255293,
+    "win_rate": 0.19310344827586207,
+    "profit_factor": 0.7692723844342505,
+    "closed_trades": 145,
+    "total_pnl": -457.7450761632797,
+    "by_regime": {
+      "ranging": -48.376743413243304,
+      "trending_up": -409.3683327500364
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "mean_reversion",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0017397896640570251,
+    "sharpe": -0.16209675916001387,
+    "max_drawdown": -0.0017397896640570251,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "closed_trades": 1,
+    "total_pnl": -15.39669637619055,
+    "by_regime": {
+      "trending_down": -15.39669637619055
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "momentum",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0023073923763593483,
+    "sharpe": -0.02003756407664784,
+    "max_drawdown": -0.011049695574912585,
+    "win_rate": 0.21739130434782608,
+    "profit_factor": 1.0754018510342531,
+    "closed_trades": 22,
+    "total_pnl": 24.81636473255709,
+    "by_regime": {
+      "ranging": -18.12435694031636,
+      "trending_down": -45.237052443562845,
+      "trending_up": 88.1777741164363
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "scalping",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.006757775905521157,
+    "sharpe": -0.05249504178589146,
+    "max_drawdown": -0.017470778675886034,
+    "win_rate": 0.20270270270270271,
+    "profit_factor": 1.016765579317093,
+    "closed_trades": 36,
+    "total_pnl": 8.668932585237506,
+    "by_regime": {
+      "ranging": -26.84420879040036,
+      "trending_up": -19.87194421720028,
+      "unknown": 55.385085592838145
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 363 days (12.1 months)\n  Trades: 0\n  Data points: 17443\n  Symbol: ETHUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "liquidity",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0006194535936039756,
+    "sharpe": -0.003375488707479141,
+    "max_drawdown": -0.014122463140250082,
+    "win_rate": 0.23728813559322035,
+    "profit_factor": 1.119373911098381,
+    "closed_trades": 29,
+    "total_pnl": 53.92304129925074,
+    "by_regime": {
+      "ranging": 1.5374966923137947,
+      "trending_down": 78.60431964203457,
+      "trending_up": -26.218775035097618
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "mtf_trend",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.1874149984843267,
+    "sharpe": -0.5642597821307846,
+    "max_drawdown": -0.20086893275098605,
+    "win_rate": 0.20239680426098536,
+    "profit_factor": 0.7664371086545716,
+    "closed_trades": 375,
+    "total_pnl": -1176.8219723580382,
+    "by_regime": {
+      "ranging": -533.261625900581,
+      "trending_down": -83.99415650609751,
+      "trending_up": -559.5661899513598
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "oi_footprint",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.06914687034346897,
+    "sharpe": -0.30765906088462397,
+    "max_drawdown": -0.07191721569063157,
+    "win_rate": 0.22070844686648503,
+    "profit_factor": 0.8399681296223052,
+    "closed_trades": 183,
+    "total_pnl": -336.6459080834674,
+    "by_regime": {
+      "ranging": -304.0536815751916,
+      "trending_down": 50.8037548215861,
+      "trending_up": -83.39598132986191
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "sweep_scalper",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0033433159344152955,
+    "sharpe": -0.05530141446704092,
+    "max_drawdown": -0.009972070911880853,
+    "win_rate": 0.20689655172413793,
+    "profit_factor": 0.9907734188632488,
+    "closed_trades": 13,
+    "total_pnl": -1.4433738789486625,
+    "by_regime": {
+      "ranging": -72.90814247255571,
+      "trending_down": 46.58185247674767,
+      "trending_up": 24.882916116859377
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "vwap_reversal",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.00019987999592776758,
+    "sharpe": -0.14466409056784704,
+    "max_drawdown": -0.00019987999592776758,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "closed_trades": 0,
+    "total_pnl": 0.0,
+    "by_regime": {}
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "volatility_breakout",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.0035125287970044156,
+    "sharpe": 0.06743055682190364,
+    "max_drawdown": -0.0048906390063168945,
+    "win_rate": 0.25925925925925924,
+    "profit_factor": 1.6514326202233431,
+    "closed_trades": 13,
+    "total_pnl": 63.1646570931563,
+    "by_regime": {
+      "ranging": 21.34285660276325,
+      "trending_up": 41.82180049039305
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "window": 365,
+    "strategy": "crypto_breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 363 days (12.1 months)\n  Trades: 0\n  Data points: 17443\n  Symbol: ETHUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "trend_following",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": 0.0010950475267492948,
+    "sharpe": -0.44766716766569115,
+    "max_drawdown": -0.11650095842198328,
+    "win_rate": 0.1815068493150685,
+    "profit_factor": 0.6649576068873609,
+    "closed_trades": 146,
+    "total_pnl": -798.2362773285057,
+    "by_regime": {
+      "ranging": -45.201847703027056,
+      "trending_up": -753.0344296254787
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "mean_reversion",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.002539140973997928,
+    "sharpe": 0.1337369186132199,
+    "max_drawdown": -0.00020012003526680928,
+    "win_rate": 0.5,
+    "profit_factor": null,
+    "closed_trades": 1,
+    "total_pnl": 27.3926100926465,
+    "by_regime": {
+      "ranging": 27.3926100926465
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "momentum",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.28788800753463556,
+    "sharpe": -0.7845187960008232,
+    "max_drawdown": -0.2905114126685843,
+    "win_rate": 0.16415410385259632,
+    "profit_factor": 0.5604744593017483,
+    "closed_trades": 298,
+    "total_pnl": -2368.7438484187005,
+    "by_regime": {
+      "ranging": -510.5661463354684,
+      "trending_down": -832.456563158427,
+      "trending_up": -1025.7211389248048
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "scalping",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.1454946469097131,
+    "sharpe": -0.39769049399631257,
+    "max_drawdown": -0.16364249587677024,
+    "win_rate": 0.19204152249134948,
+    "profit_factor": 0.7980255081339838,
+    "closed_trades": 288,
+    "total_pnl": -915.5305760222094,
+    "by_regime": {
+      "ranging": -570.6888784181258,
+      "trending_down": -28.52855639326239,
+      "trending_up": -274.4030301585624,
+      "unknown": -41.91011105225881
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 363 days (12.1 months)\n  Trades: 0\n  Data points: 17443\n  Symbol: SOLUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "liquidity",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.007896534546655311,
+    "sharpe": -0.06098317474842359,
+    "max_drawdown": -0.017630281620230105,
+    "win_rate": 0.23943661971830985,
+    "profit_factor": 0.9871105451777817,
+    "closed_trades": 35,
+    "total_pnl": -6.750073626973702,
+    "by_regime": {
+      "ranging": 76.64862467192862,
+      "trending_down": -66.33549932769984,
+      "trending_up": -17.063198971202482
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "mtf_trend",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.25298295394650705,
+    "sharpe": -0.6613698775259941,
+    "max_drawdown": -0.25452624956577063,
+    "win_rate": 0.1902497027348395,
+    "profit_factor": 0.7213957423932276,
+    "closed_trades": 420,
+    "total_pnl": -1782.2635105939228,
+    "by_regime": {
+      "ranging": -577.3908176266339,
+      "trending_down": -22.692694309872433,
+      "trending_up": -1182.1799986574165
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "oi_footprint",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.09569509911542154,
+    "sharpe": -0.4160620570065368,
+    "max_drawdown": -0.09837173271853263,
+    "win_rate": 0.19584569732937684,
+    "profit_factor": 0.7227601248095048,
+    "closed_trades": 168,
+    "total_pnl": -635.8690133513971,
+    "by_regime": {
+      "ranging": -378.06132391552796,
+      "trending_down": -50.58196271992114,
+      "trending_up": -207.22572671594799
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "sweep_scalper",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0028890329233347074,
+    "sharpe": -0.08367125203839787,
+    "max_drawdown": -0.005959406875313746,
+    "win_rate": 0.1111111111111111,
+    "profit_factor": 0.6740768537111173,
+    "closed_trades": 3,
+    "total_pnl": -16.868425574624805,
+    "by_regime": {
+      "ranging": -16.143850148786537,
+      "trending_up": -0.7245754258382675
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "vwap_reversal",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.00019987996831005147,
+    "sharpe": -0.14466409056784704,
+    "max_drawdown": -0.00019987996831005147,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "closed_trades": 0,
+    "total_pnl": 0.0,
+    "by_regime": {}
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "volatility_breakout",
+    "tf": "30m",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": 0.001961649394934466,
+    "sharpe": 0.03970626108285757,
+    "max_drawdown": -0.005702656043527596,
+    "win_rate": 0.2631578947368421,
+    "profit_factor": 1.4651401606622092,
+    "closed_trades": 9,
+    "total_pnl": 39.58111620704,
+    "by_regime": {
+      "ranging": 4.4762435709550985,
+      "trending_up": 35.1048726360849
+    }
+  },
+  {
+    "symbol": "SOLUSDT",
+    "window": 365,
+    "strategy": "crypto_breakout",
+    "tf": "30m",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 363 days (12.1 months)\n  Trades: 0\n  Data points: 17443\n  Symbol: SOLUSDT\n  This may be normal for some strategies in certain market conditions."
+  }
+]

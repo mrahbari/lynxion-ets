@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SFPUSDT",
+  "timeframe": "1m",
+  "checksum": "d0c0fff79e0ce6989a106388289d0c00445e7a609ae5f9420fc168580400eab4",
+  "download_timestamp": "2026-06-12T18:24:57.284884",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778685900",
+    "end": "1778749440"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SFP-USDT.csv"
+}

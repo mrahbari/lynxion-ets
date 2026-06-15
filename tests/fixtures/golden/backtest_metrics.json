@@ -1,0 +1,16 @@
+{
+  "final_equity": 9986.649015,
+  "initial_capital": 10000.0,
+  "losing_trades": 75,
+  "max_drawdown": -0.000282,
+  "max_drawdown_reached": 0.000282,
+  "profit_factor": 0.847836,
+  "sharpe_ratio": -1.299027,
+  "sortino_ratio": -2.049394,
+  "total_fees": 0.48506,
+  "total_return": -0.001335,
+  "total_trades": 396,
+  "total_volume": 454.484781,
+  "win_rate": 0.103535,
+  "winning_trades": 41
+}

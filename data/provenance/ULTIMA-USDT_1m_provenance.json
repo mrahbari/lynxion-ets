@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ULTIMAUSDT",
+  "timeframe": "1m",
+  "checksum": "e04611ec39ad13ad83258daa8c184959130f0e196fdba7ffab6bcac853d9e5c9",
+  "download_timestamp": "2026-06-12T18:33:29.801466",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686440",
+    "end": "1778719980"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ULTIMA-USDT.csv"
+}

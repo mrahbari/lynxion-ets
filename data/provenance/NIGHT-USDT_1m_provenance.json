@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "NIGHTUSDT",
+  "timeframe": "1m",
+  "checksum": "26ac4d9f0f12233b81c0f9c89ff4deac0eef5a62bf45ba6d02393d2e58d15b04",
+  "download_timestamp": "2026-06-12T18:31:51.225795",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686380",
+    "end": "1778749860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/NIGHT-USDT.csv"
+}

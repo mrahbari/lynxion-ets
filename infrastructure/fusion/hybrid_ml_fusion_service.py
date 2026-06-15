@@ -7,7 +7,7 @@ from datetime import datetime
 import numpy as np
 import statistics
 
-from domain.entities.trading_entities import Signal
+from domain.entities import Signal
 from domain.entities.engine_entities import EngineResult
 from domain.value_objects import Symbol, Percentage, Money
 from domain.ports.engine_ports import FusionPort

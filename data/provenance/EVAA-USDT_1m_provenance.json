@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "EVAAUSDT",
+  "timeframe": "1m",
+  "checksum": "87515def119e3624f25c071cc86384b51f4b24c9c342b437b10ab991f7b54557",
+  "download_timestamp": "2026-06-12T18:31:08.598125",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778719860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/EVAA-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "IOUSDT",
+  "timeframe": "1m",
+  "checksum": "6210e23394f8f96b34fa8e36b0d75355c6992d1bcc6f75b44781d15f915dc315",
+  "download_timestamp": "2026-06-12T18:27:51.207851",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778749620"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/IO-USDT.csv"
+}

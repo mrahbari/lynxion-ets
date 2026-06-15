@@ -1,8 +1,8 @@
 from typing import Dict, List, Optional
-from domain.entities.trading_entities import Order
+from domain.entities import Order
 from domain.ports.broker_ports import BrokerPort
 from domain.value_objects import Symbol
-from domain.entities.trading_entities import Position
+from domain.entities import Position
 
 class BrokerManager(BrokerPort):
     def __init__(self, brokers: Dict[str, BrokerPort], broker_mapping: Dict[str, str]):

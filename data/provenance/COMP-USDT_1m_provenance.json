@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "COMPUSDT",
+  "timeframe": "1m",
+  "checksum": "055dc86c0b72d0ce50ba6587eccd392a48bd2459ac5c223ff8e3da1369c5011f",
+  "download_timestamp": "2026-06-12T18:31:07.115969",
+  "row_count": 1061,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778749860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/COMP-USDT.csv"
+}

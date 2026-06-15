@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "IRYSUSDT",
+  "timeframe": "1m",
+  "checksum": "b92951e67f04af1f6131a5d87741a3288808f0e37871b8b741eff98c9028793c",
+  "download_timestamp": "2026-06-12T18:39:51.787008",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686860",
+    "end": "1778720340"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/IRYS-USDT.csv"
+}

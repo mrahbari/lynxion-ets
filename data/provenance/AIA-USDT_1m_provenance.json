@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "AIAUSDT",
+  "timeframe": "1m",
+  "checksum": "a88ce1286f330a102ede4e97428660d1cf74635b3f1bee13325868f81ad3824d",
+  "download_timestamp": "2026-06-12T18:33:18.211457",
+  "row_count": 567,
+  "date_range": {
+    "start": "1778686020",
+    "end": "1778719980"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/AIA-USDT.csv"
+}

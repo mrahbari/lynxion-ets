@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "XRPUSDT",
+  "timeframe": "1m",
+  "checksum": "299d7feb9524061ec4b50859fa5827d495fa9f7708f33ffc412e9c4b61f24cdf",
+  "download_timestamp": "2026-06-13T10:05:37.562013",
+  "row_count": 3604,
+  "date_range": {
+    "start": "1749802200",
+    "end": "1781294640"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "3b0660b40781ad422305ade2176eb7766df8b9aa",
+  "file_path": "data/history/raw/1m/XRP-USDT.csv"
+}

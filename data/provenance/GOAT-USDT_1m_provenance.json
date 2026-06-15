@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "GOATUSDT",
+  "timeframe": "1m",
+  "checksum": "a66a230a9c6690646f614d1fb96df8511b653f5ab060a65b7ecfffa5a95022f0",
+  "download_timestamp": "2026-06-12T18:42:03.348039",
+  "row_count": 568,
+  "date_range": {
+    "start": "1778686500",
+    "end": "1778720520"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/GOAT-USDT.csv"
+}

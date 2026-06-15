@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "AIXBTUSDT",
+  "timeframe": "1m",
+  "checksum": "eb55ab53bacbd4ca3adc84c7d7ec040072dd1089cca555079ed055c58eeb829e",
+  "download_timestamp": "2026-06-12T18:32:23.148664",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686440",
+    "end": "1778749920"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/AIXBT-USDT.csv"
+}

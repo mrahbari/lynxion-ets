@@ -3,7 +3,7 @@ Domain ports for the enterprise hedge fund trading system following hexagonal ar
 """
 from abc import abstractmethod
 from typing import Protocol, List, Optional, Dict, Any
-from domain.entities.signal_entities import MarketObservation, InterpretedSignal, FusedSignal, ExecutionIntent, Order, Position, Balance
+from domain.entities import MarketObservation, InterpretedSignal, FusedSignal, ExecutionIntent, Order, Position, Balance
 from domain.value_objects import Symbol, Money, Percentage
 
 
@@ -92,30 +92,6 @@ class RiskManagementPort(Protocol):
         pass
 
 
-class EnginePort(Protocol):
-    """Port for engine operations in hexagonal architecture"""
-
-    @abstractmethod
-    def process_signal(self, signal: InterpretedSignal) -> InterpretedSignal:
-        """Process a signal through the engine"""
-        pass
-
-    @abstractmethod
-    def should_process_signal(self, signal: InterpretedSignal) -> bool:
-        """Check if the engine should process this signal"""
-        pass
-
-    @abstractmethod
-    def update_with_market_data(self, data: Dict[str, Any]):
-        """Update the engine with new market data"""
-        pass
-
-    @abstractmethod
-    def get_engine_name(self) -> str:
-        """Get the name of the engine"""
-        pass
-
-
 class ObservationProcessorPort(Protocol):
     """Port for processing raw market observations into interpreted signals"""
 
@@ -123,6 +99,25 @@ class ObservationProcessorPort(Protocol):
     def process_observation(self, observation: MarketObservation) -> Optional[InterpretedSignal]:
         """Process a raw market observation into an interpreted signal"""
         pass
+
+
+class EnginePort(ObservationProcessorPort, Protocol):
+    """Canonical engine port (E3.T7.1 — Option A: Retire & Redefine).
+
+    The engine layer's real, live responsibility is to interpret a raw
+    ``MarketObservation`` into an ``InterpretedSignal`` — the
+    Watcher -> Engine -> Fusion -> Strategy -> Risk -> Broker flow implemented by
+    ``infrastructure.engines.engine_service.EngineService``. This port therefore
+    extends :class:`ObservationProcessorPort` and exposes the single
+    ``process_observation`` operation as the canonical engine contract.
+
+    The legacy signal-chain methods (``process_signal`` / ``should_process_signal``
+    / ``update_with_market_data`` / ``get_engine_name``) described a per-signal
+    engine pipeline that was never wired into production. They are retired from the
+    canonical contract; their only remaining implementers are deprecated dead
+    engine modules slated for physical removal in E8.
+    """
+    pass
 
 
 class StrategyPort(Protocol):

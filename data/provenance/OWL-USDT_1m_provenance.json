@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "OWLUSDT",
+  "timeframe": "1m",
+  "checksum": "8c581481861e82275b098c1bdd6290179c314704a4a65605738f7c4e8e27aefa",
+  "download_timestamp": "2026-06-12T18:28:22.493603",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778719680"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/OWL-USDT.csv"
+}

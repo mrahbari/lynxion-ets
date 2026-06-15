@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "KAIAUSDT",
+  "timeframe": "1m",
+  "checksum": "f91d1b2c14c9ee86a451b2201007f987621cfc6614f5f5df27702c724a08a9d6",
+  "download_timestamp": "2026-06-12T18:36:32.740773",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686620",
+    "end": "1778750160"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/KAIA-USDT.csv"
+}

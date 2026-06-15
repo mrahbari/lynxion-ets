@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Optional, Dict, Any, List
-from domain.entities.trading_entities import Signal, Order, Position
+from domain.entities import Signal, Order, Position
 from domain.value_objects import Symbol, Money
 
 

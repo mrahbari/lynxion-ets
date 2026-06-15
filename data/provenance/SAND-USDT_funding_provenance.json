@@ -1,0 +1,18 @@
+{
+  "source": "ccxt:fundingRateHistory",
+  "exchange": "binance",
+  "symbol": "SANDUSDT",
+  "data_class": "funding",
+  "checksum": "bec27a8bdd52aa3877c040684df38c573aeaf4411d4eab97a581a6349de51d1b",
+  "download_timestamp": "2026-06-11T21:01:41.170741+00:00",
+  "row_count": 3285,
+  "date_range": {
+    "start": "1686614400",
+    "end": "1781193600"
+  },
+  "columns": [
+    "timestamp",
+    "funding_rate"
+  ],
+  "file_path": "./data/history/raw/funding/SAND-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SHELLUSDT",
+  "timeframe": "1m",
+  "checksum": "f72eb4e60c7cda60627154670c37ee6de3cfa3fac4fc166254cdd50efa14acaa",
+  "download_timestamp": "2026-06-12T18:31:41.973050",
+  "row_count": 1061,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778749860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SHELL-USDT.csv"
+}

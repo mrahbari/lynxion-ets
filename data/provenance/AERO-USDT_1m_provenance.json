@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "AEROUSDT",
+  "timeframe": "1m",
+  "checksum": "ae91a218944c279d8d59eaad55a84015532e46262239d7d83db02c210f334744",
+  "download_timestamp": "2026-06-12T18:32:35.038263",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686440",
+    "end": "1778719920"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/AERO-USDT.csv"
+}

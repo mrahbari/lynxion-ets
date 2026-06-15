@@ -5,13 +5,15 @@ import asyncio
 import aiohttp
 import time
 import random
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from collections import deque
 import ccxt.async_support as ccxt_async
 from application.configs.sync_settings import settings
 from application.configs.symbol_config import get_symbol_config
+from application.dto import MarketDataDTO, market_data_to_domain
 from domain.ports.sync import DataDownloader
-from utils.logger import logger, OperationType, StatusType
+from shared.sync_logger import logger, OperationType, StatusType
 
 
 class RateLimitState:
@@ -206,13 +208,27 @@ class DataDownloaderAdapter(DataDownloader):
                         # Convert timestamp from milliseconds to seconds and filter by range
                         ts_sec = ts // 1000
                         if start_ts <= ts_sec <= end_ts:
+                            # E4.T4 (Phase 2A): translate the raw CCXT row through the
+                            # DTO + mapper choke point (validates Symbol, builds the
+                            # canonical MarketData). Emitted shape is unchanged; the
+                            # original integer ts_sec is preserved to avoid tz drift.
+                            md = market_data_to_domain(MarketDataDTO(
+                                symbol=symbol,
+                                price=c,
+                                timestamp=datetime.fromtimestamp(ts_sec, tz=timezone.utc),
+                                open=o,
+                                high=h,
+                                low=l,
+                                close=c,
+                                volume=v,
+                            ))
                             formatted_data.append({
                                 'timestamp': ts_sec,
-                                'open': o,
-                                'high': h,
-                                'low': l,
-                                'close': c,
-                                'volume': v
+                                'open': md.open,
+                                'high': md.high,
+                                'low': md.low,
+                                'close': md.close,
+                                'volume': md.volume
                             })
 
                     # If we got data from this exchange, return it

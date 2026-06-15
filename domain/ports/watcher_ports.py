@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from typing import Protocol, List, Optional, Dict, Any
-from domain.entities.trading_entities import Signal
+from domain.entities import Signal
 from domain.value_objects import Symbol
 
 

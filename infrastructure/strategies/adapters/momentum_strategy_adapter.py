@@ -3,7 +3,7 @@ Infrastructure implementation of the Momentum Strategy following hexagonal archi
 Ensures momentum trades only occur when continuation probability is high.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Signal, SignalType
+from domain.entities import Signal, SignalType
 from domain.value_objects import Symbol, Percentage
 from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger
@@ -246,9 +246,8 @@ class MomentumStrategyAdapter(BaseStrategyAdapter):
                 signal_type=final_signal_type,
                 confidence=confidence,
                 score=final_score,
-                strategy_name=self.name,
                 timestamp=datetime.now(),
-                source_engine="HighContinuationProbabilityMomentum",
+                source_layer="HighContinuationProbabilityMomentum",
                 metadata={
                     "current_momentum": current_momentum,
                     "momentum_window": self.momentum_window,

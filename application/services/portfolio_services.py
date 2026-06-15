@@ -2,7 +2,7 @@
 Application service for portfolio management in the enterprise hedge fund trading system.
 """
 from typing import List, Dict, Any, Optional
-from domain.entities.trading_entities import Position, Portfolio
+from domain.entities import Position, Portfolio
 from domain.value_objects import Symbol, Money, Percentage
 from domain.ports.portfolio_ports import (
     PortfolioManagementPort, PositionSizingPort, PortfolioOptimizationPort

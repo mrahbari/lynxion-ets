@@ -18,7 +18,7 @@ from domain.ports.execution_ports import ExecutionPort
 from domain.ports.broker_ports import BrokerPort
 from domain.ports.optimization_ports import IDataLoader
 from domain.value_objects import Symbol
-from domain.entities.trading_entities import Balance, Position
+from domain.entities import Balance, Position
 
 
 class LiveExecutionEngine:
@@ -244,7 +244,7 @@ class BrokerAPIService(BrokerPort):
     def get_position(self, symbol: Symbol) -> Position:
         """Get position for a symbol."""
         # For demonstration - return mock position
-        from domain.entities.trading_entities import PositionSide, Money
+        from domain.entities import PositionSide, Money
         position = Position(
             symbol=symbol,
             side=PositionSide.FLAT,

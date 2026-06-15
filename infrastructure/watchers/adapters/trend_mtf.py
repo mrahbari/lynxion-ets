@@ -1,19 +1,18 @@
 from .base_watcher import BaseWatcher
-from domain.entities.signal_entities import MarketObservation
+from domain.entities import MarketObservation
 from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
 import numpy as np
 from decimal import Decimal
 from infrastructure.logging.forensic_logger import forensic_logger
-from application.configs.configs import Configs
-from utils.config_helper import cfg_get, cfg_get_bool, cfg_get_int, cfg_get_float, cfg_get_list, cfg_get_str
+from shared.config_helper import cfg_get, cfg_get_bool, cfg_get_int, cfg_get_float, cfg_get_list, cfg_get_str
 
 
 class TrendMTFWatcher(BaseWatcher):
     """Multi-Timeframe Trend Watcher - analyzes trends across multiple timeframes, returns raw market observations"""
 
-    def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, short_period: int = 5, medium_period: int = 15, long_period: int = 30):
+    def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, short_period: int = 5, medium_period: int = 15, long_period: int = 30, watcher_config=None):
         # Convert symbol string to Symbol object if needed
         symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
         super().__init__(name, symbol_obj)
@@ -22,8 +21,9 @@ class TrendMTFWatcher(BaseWatcher):
         self.broker_service = broker_service
         self.target_broker = target_broker
 
-        # Configuration from environment with defaults
-        self.enabled = cfg_get_bool(Configs.watcher, 'trend_mtf_watcher_enabled', True)
+        # Configuration injected via constructor (E1.T4); falls back to the
+        # typed settings aggregate (same values as the legacy Configs.watcher).
+        self.enabled = cfg_get_bool(watcher_config, 'trend_mtf_watcher_enabled', True)
 
         # Only set logger if enabled, otherwise use mock logger
         if self.enabled:

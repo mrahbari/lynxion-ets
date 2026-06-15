@@ -3,11 +3,11 @@ Multi-Broker Service for handling exchange switching and symbol availability che
 This service provides exchange switching capabilities similar to the downloader's approach.
 """
 import threading
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional, Set
 
-from application.configs.configs import Configs
-from domain.entities.trading_entities import Order
+from domain.entities import Order
 from domain.ports.execution_ports import ExecutionPort
 from domain.value_objects import Symbol
 from infrastructure.brokers.broker_adapters import (
@@ -26,7 +26,10 @@ class MultiBrokerExecutionService(ExecutionPort):
     # Duplicate prevention is now handled by the shared PendingOrdersTracker
     # See infrastructure/shared/pending_orders_tracker.py
 
-    def __init__(self, primary_broker: Optional[str] = None):
+    def __init__(self, settings, primary_broker: Optional[str] = None):
+        # Settings injected by the composition root (E1.T4); same values as before,
+        # without importing bootstrap.settings.loaders here.
+        self._settings = settings
         self.logger = EnhancedLogger("MultiBrokerExecutionService")
 
         # Initialize all broker adapters
@@ -46,8 +49,7 @@ class MultiBrokerExecutionService(ExecutionPort):
         if primary_broker:
             self.primary_broker = primary_broker.lower()
         else:
-            self.primary_broker = Configs.get_env_var('DEFAULT_BROKER',
-                                                      'bingx').lower()  # Default to bingx as requested
+            self.primary_broker = self._settings.broker.default_broker.lower()  # Default to bingx as requested
 
         # Define the order of exchanges to try for symbol availability
         all_exchanges = [self.primary_broker, "binance", "bingx", "mexc", "phemex"]
@@ -64,14 +66,37 @@ class MultiBrokerExecutionService(ExecutionPort):
         if self.primary_broker not in self.exchange_order and self.primary_broker in self.brokers:
             self.exchange_order.insert(0, self.primary_broker)
 
+        # B5: map each placed order_id -> (exchange, symbol) so cancel/status can route to
+        # the originating adapter (the layer previously had no such mapping).
+        self._order_exchange_map = {}
+        self._order_map_lock = threading.Lock()
+
+        # B3 startup recovery: rebuild the order->exchange map and surface in-flight orders
+        # from the durable live order journal, so cancel/status survive a restart and
+        # in-flight orders can be reconciled against the broker.
+        try:
+            from infrastructure.execution.live_order_journal import live_order_journal
+            rec = live_order_journal.recover()
+            self._order_exchange_map.update(rec.get("order_exchange_map", {}))
+            in_flight = rec.get("in_flight", [])
+            if in_flight:
+                self.logger.warning(
+                    f"♻️ STARTUP RECOVERY: {len(in_flight)} in-flight order(s) from journal "
+                    f"need broker reconciliation: {[o.get('order_id') or o.get('order_ref') for o in in_flight]}")
+            elif rec.get("total_orders"):
+                self.logger.info(
+                    f"♻️ STARTUP RECOVERY: loaded {rec['total_orders']} journaled order(s); none in-flight")
+        except Exception as e:
+            self.logger.warning(f"Startup recovery from live order journal skipped: {e}")
+
     def _initialize_brokers(self):
         """Initialize all available broker adapters."""
         # Initialize Binance
         try:
             binance_config = {
-                'api_key': Configs.broker.binance_api_key if Configs.broker and Configs.broker.binance_api_key else '',
-                'secret_key': Configs.broker.binance_secret_key if Configs.broker and Configs.broker.binance_secret_key else '',
-                'testnet': Configs.broker.binance_testnet if Configs.broker and hasattr(Configs.broker,
+                'api_key': self._settings.broker.binance_api_key if self._settings.broker and self._settings.broker.binance_api_key else '',
+                'secret_key': self._settings.broker.binance_secret_key if self._settings.broker and self._settings.broker.binance_secret_key else '',
+                'testnet': self._settings.broker.binance_testnet if self._settings.broker and hasattr(self._settings.broker,
                                                                                         'binance_testnet') else True
             }
             if binance_config['api_key'] and binance_config['secret_key']:
@@ -88,10 +113,10 @@ class MultiBrokerExecutionService(ExecutionPort):
         # Initialize BingX
         try:
             bingx_config = {
-                'api_key': Configs.broker.bingx_api_key if Configs.broker and Configs.broker.bingx_api_key else '',
-                'secret_key': Configs.broker.bingx_secret_key if Configs.broker and Configs.broker.bingx_secret_key else '',
-                'passphrase': Configs.broker.bingx_passphrase if Configs.broker and Configs.broker.bingx_passphrase else '',
-                'testnet': Configs.broker.bingx_testnet if Configs.broker and hasattr(Configs.broker,
+                'api_key': self._settings.broker.bingx_api_key if self._settings.broker and self._settings.broker.bingx_api_key else '',
+                'secret_key': self._settings.broker.bingx_secret_key if self._settings.broker and self._settings.broker.bingx_secret_key else '',
+                'passphrase': self._settings.broker.bingx_passphrase if self._settings.broker and self._settings.broker.bingx_passphrase else '',
+                'testnet': self._settings.broker.bingx_testnet if self._settings.broker and hasattr(self._settings.broker,
                                                                                       'bingx_testnet') else True
             }
             required_keys = ['api_key', 'secret_key']
@@ -105,9 +130,9 @@ class MultiBrokerExecutionService(ExecutionPort):
 
         # Initialize MEXC
         try:
-            mexc_api_key = Configs.broker.mexc_api_key if Configs.broker and Configs.broker.mexc_api_key else ''
-            mexc_secret_key = Configs.broker.mexc_secret_key if Configs.broker and Configs.broker.mexc_secret_key else ''
-            mexc_testnet = Configs.broker.mexc_testnet if Configs.broker and hasattr(Configs.broker,
+            mexc_api_key = self._settings.broker.mexc_api_key if self._settings.broker and self._settings.broker.mexc_api_key else ''
+            mexc_secret_key = self._settings.broker.mexc_secret_key if self._settings.broker and self._settings.broker.mexc_secret_key else ''
+            mexc_testnet = self._settings.broker.mexc_testnet if self._settings.broker and hasattr(self._settings.broker,
                                                                                      'mexc_testnet') else True
 
             if mexc_api_key and mexc_secret_key:
@@ -126,9 +151,9 @@ class MultiBrokerExecutionService(ExecutionPort):
 
         # Initialize Phemex
         try:
-            phemex_api_key = Configs.broker.phemex_api_key if Configs.broker and Configs.broker.phemex_api_key else ''
-            phemex_secret_key = Configs.broker.phemex_secret_key if Configs.broker and Configs.broker.phemex_secret_key else ''
-            phemex_testnet = Configs.broker.phemex_testnet if Configs.broker and hasattr(Configs.broker,
+            phemex_api_key = self._settings.broker.phemex_api_key if self._settings.broker and self._settings.broker.phemex_api_key else ''
+            phemex_secret_key = self._settings.broker.phemex_secret_key if self._settings.broker and self._settings.broker.phemex_secret_key else ''
+            phemex_testnet = self._settings.broker.phemex_testnet if self._settings.broker and hasattr(self._settings.broker,
                                                                                          'phemex_testnet') else True
 
             if phemex_api_key and phemex_secret_key:
@@ -205,7 +230,7 @@ class MultiBrokerExecutionService(ExecutionPort):
 
         # First, check if the symbol is in the approved symbols list
         # This is the primary validation - if a symbol is not approved, it's not available
-        from utils.symbol_validator import symbol_validator
+        from infrastructure.services.symbol_validator import symbol_validator
         from domain.value_objects import Symbol as DomainSymbol
 
         # Create a domain symbol object for validation
@@ -274,7 +299,7 @@ class MultiBrokerExecutionService(ExecutionPort):
 
         # First, check if the symbol is in the approved symbols list
         # This is the primary validation - if a symbol is not approved, it's not available
-        from utils.symbol_validator import symbol_validator
+        from infrastructure.services.symbol_validator import symbol_validator
         from domain.value_objects import Symbol as DomainSymbol
 
         # Create a domain symbol object for validation
@@ -322,7 +347,7 @@ class MultiBrokerExecutionService(ExecutionPort):
 
         # First, check if the symbol is in the approved symbols list
         # This is the primary validation - if a symbol is not approved, it's not available for trading
-        from utils.symbol_validator import symbol_validator
+        from infrastructure.services.symbol_validator import symbol_validator
         if not symbol_validator.is_symbol_approved(order.symbol):
             self.logger.info(
                 f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order execution denied.")
@@ -332,8 +357,8 @@ class MultiBrokerExecutionService(ExecutionPort):
         # to avoid processing symbols that will be rejected later. This improves efficiency.
 
         # Check if duplicate same-direction trade prevention is enabled
-        prevent_same_direction = Configs.execution.prevent_same_direction_trade_per_symbol if Configs.execution and hasattr(
-            Configs.execution, 'prevent_same_direction_trade_per_symbol') else True
+        prevent_same_direction = self._settings.execution.prevent_same_direction_trade_per_symbol if self._settings.execution and hasattr(
+            self._settings.execution, 'prevent_same_direction_trade_per_symbol') else True
 
         if prevent_same_direction:
             # Determine the intended side of the new order
@@ -358,14 +383,14 @@ class MultiBrokerExecutionService(ExecutionPort):
 
         # Check for broker-specific order placement settings
         # Check if any specific broker is enabled for exclusive order placement
-        bingx_order_placement_enabled = Configs.broker.bingx_order_placement_enabled if Configs.broker and hasattr(
-            Configs.broker, 'bingx_order_placement_enabled') else False
-        binance_order_placement_enabled = Configs.broker.binance_order_placement_enabled if Configs.broker and hasattr(
-            Configs.broker, 'binance_order_placement_enabled') else False
-        mexc_order_placement_enabled = Configs.broker.mexc_order_placement_enabled if Configs.broker and hasattr(
-            Configs.broker, 'mexc_order_placement_enabled') else False
-        phemex_order_placement_enabled = Configs.broker.phemex_order_placement_enabled if Configs.broker and hasattr(
-            Configs.broker, 'phemex_order_placement_enabled') else False
+        bingx_order_placement_enabled = self._settings.broker.bingx_order_placement_enabled if self._settings.broker and hasattr(
+            self._settings.broker, 'bingx_order_placement_enabled') else False
+        binance_order_placement_enabled = self._settings.broker.binance_order_placement_enabled if self._settings.broker and hasattr(
+            self._settings.broker, 'binance_order_placement_enabled') else False
+        mexc_order_placement_enabled = self._settings.broker.mexc_order_placement_enabled if self._settings.broker and hasattr(
+            self._settings.broker, 'mexc_order_placement_enabled') else False
+        phemex_order_placement_enabled = self._settings.broker.phemex_order_placement_enabled if self._settings.broker and hasattr(
+            self._settings.broker, 'phemex_order_placement_enabled') else False
 
         # Determine which broker to use based on environment variables
         # Priority: Check each broker in order, first one enabled gets priority
@@ -407,28 +432,93 @@ class MultiBrokerExecutionService(ExecutionPort):
 
             self.logger.info(f"🎯 EXECUTING ORDER ON {best_exchange.upper()}: {order}")
 
+            journal_ref = None
             try:
-                # Check if broker is connected before attempting to place order
-                if hasattr(broker, 'connected'):
-                    if not broker.connected:
-                        self.logger.error(f"❌ BROKER NOT CONNECTED: Cannot place order on {best_exchange.upper()}")
-                        return None
-                elif hasattr(broker, 'connect') and callable(getattr(broker, 'connect')):
-                    # Try to connect if not connected
-                    try:
-                        if not getattr(broker, 'connected', False):
-                            broker.connect()
-                    except Exception as conn_error:
-                        self.logger.error(f"❌ FAILED TO CONNECT TO BROKER {best_exchange.upper()}: {conn_error}")
-                        return None
+                from shared.live_execution_guard import live_execution_guard
+                # Only a real (LIVE/TESTNET) send needs a connected broker. PAPER orders are
+                # filled by the paper-trading engine and must NOT be gated by connectivity
+                # (Phase-10 found paper orders were dropped here before reaching the guard).
+                if live_execution_guard.evaluate(best_exchange, self._settings, order).is_real_send:
+                    if hasattr(broker, 'connected'):
+                        if not broker.connected:
+                            self.logger.error(f"❌ BROKER NOT CONNECTED: Cannot place order on {best_exchange.upper()}")
+                            return None
+                    elif hasattr(broker, 'connect') and callable(getattr(broker, 'connect')):
+                        # Try to connect if not connected
+                        try:
+                            if not getattr(broker, 'connected', False):
+                                broker.connect()
+                        except Exception as conn_error:
+                            self.logger.error(f"❌ FAILED TO CONNECT TO BROKER {best_exchange.upper()}: {conn_error}")
+                            return None
 
-                order_id = broker.place_order(order)
+                    # B3: write a durable INTENT record BEFORE the send (closes the lost-write
+                    # window). The client_order_id is generated here so the journal and the
+                    # adapter idempotency key (B2) match; a crash after send leaves a recoverable
+                    # INTENT/SUBMITTED record for startup reconciliation.
+                    try:
+                        from infrastructure.execution.live_order_journal import live_order_journal
+                        coid = getattr(order, 'client_order_id', None) or ('x' + uuid.uuid4().hex[:30])
+                        try:
+                            order.client_order_id = coid
+                        except Exception:
+                            pass
+                        sym = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
+                        side_name = getattr(order.side, 'name', str(order.side))
+                        journal_ref = live_order_journal.record_intent(
+                            sym, side_name, order.quantity, best_exchange, coid)
+                    except Exception:
+                        journal_ref = None
+
+                # === LIVE_EXECUTION_GUARD — single, race-free execution-safety enforcement point (Phase-9) ===
+                # Atomically: evaluate -> write the Execution Truth Ledger (BEFORE any send)
+                # -> send, all under the guard lock so the kill switch / circuit breaker
+                # cannot interleave between decision and send. Enforces paper_trading override,
+                # testnet-only-selects-endpoint, explicit LIVE_TRADING opt-in for live sends,
+                # per-broker order-placement permission, kill switch and circuit breaker.
+                from shared.live_execution_guard import live_execution_guard
+                guard_decision, order_id = live_execution_guard.authorize_and_send(
+                    broker_name=best_exchange, settings=self._settings, order=order,
+                    send_fn=lambda: broker.place_order(order))
+                if not guard_decision.allowed:
+                    self.logger.error(
+                        f"🛑 LIVE_EXECUTION_GUARD BLOCKED order on {best_exchange.upper()}: {guard_decision.reason}")
+                    return None
+                if guard_decision.simulate:
+                    self.logger.warning(
+                        f"🧪 PAPER MODE — order SIMULATED on {best_exchange.upper()} "
+                        f"(NOT sent to exchange): {order_id} [{guard_decision.reason}]")
+                    if prevent_same_direction and intended_position_side:
+                        self._add_pending_order(order.symbol, intended_position_side, order_id)
+                    return order_id
+                self.logger.info(
+                    f"🔐 LIVE_EXECUTION_GUARD authorized {guard_decision.mode.value.upper()} send "
+                    f"on {best_exchange.upper()}: {guard_decision.reason}")
+                # === end LIVE_EXECUTION_GUARD ===
 
                 # Check if order_id is valid before proceeding
                 if order_id is None or order_id == "":
                     self.logger.error(
                         f"❌ ORDER PLACEMENT FAILED ON {best_exchange.upper()}: Broker returned invalid order ID: {order_id}")
+                    if journal_ref:
+                        try:
+                            from infrastructure.execution.live_order_journal import live_order_journal
+                            live_order_journal.record_failed(journal_ref, "broker returned no order id")
+                        except Exception:
+                            pass
                     return None
+
+                # B3: durable SUBMITTED record (broker accepted; carries the exchange order_id).
+                if journal_ref:
+                    try:
+                        from infrastructure.execution.live_order_journal import live_order_journal
+                        live_order_journal.record_submitted(journal_ref, order_id, best_exchange)
+                    except Exception:
+                        pass
+
+                # B5: record order_id -> (exchange, symbol) for cancel/status routing.
+                with self._order_map_lock:
+                    self._order_exchange_map[str(order_id)] = (best_exchange, order.symbol)
 
                 # NOW we have a valid order ID from the broker, so we can add to pending orders
                 if prevent_same_direction and intended_position_side:
@@ -441,6 +531,15 @@ class MultiBrokerExecutionService(ExecutionPort):
 
                 return order_id
             except Exception as e:
+                # Send failures are recorded (ledger + circuit breaker) inside
+                # authorize_and_send before the exception propagates here. Also mark the
+                # journal intent FAILED so startup recovery does not treat it as in-flight.
+                if journal_ref:
+                    try:
+                        from infrastructure.execution.live_order_journal import live_order_journal
+                        live_order_journal.record_failed(journal_ref, str(e))
+                    except Exception:
+                        pass
                 self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {best_exchange.upper()}: {e}")
                 # Still return None instead of raising to prevent system crashes
                 return None
@@ -454,7 +553,7 @@ class MultiBrokerExecutionService(ExecutionPort):
 
         # First, check if the symbol is in the approved symbols list
         # This is the primary validation - if a symbol is not approved, it's not available for trading
-        from utils.symbol_validator import symbol_validator
+        from infrastructure.services.symbol_validator import symbol_validator
         if not symbol_validator.is_symbol_approved(order.symbol):
             symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
             self.logger.info(
@@ -492,7 +591,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                 position_side = "LONG" if hasattr(order, 'side') and order.side.name == 'BUY' else "SHORT"
 
                 # Create a temporary fused signal for risk adjustment factors (if available from order)
-                from domain.entities.signal_entities import FusedSignal, SignalType
+                from domain.entities import FusedSignal, SignalType
                 from domain.value_objects import Percentage
                 from datetime import datetime
 
@@ -509,8 +608,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                 )
 
                 # Calculate risk-adjusted position size (even if we don't use it, we get risk factors)
-                portfolio_value = Configs.position_sizing.default_account_balance if Configs.position_sizing and hasattr(
-                    Configs.position_sizing, 'default_account_balance') else 10000.0
+                portfolio_value = self._settings.position_sizing.default_account_balance if self._settings.position_sizing and hasattr(
+                    self._settings.position_sizing, 'default_account_balance') else 10000.0
                 _, risk_factors = risk_service.calculate_position_size(
                     symbol=getattr(order, 'symbol', 'UNKNOWN'),
                     price=current_price,
@@ -563,7 +662,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                     tp_price = current_price * (1 - tp_multiplier)  # TP below for SELL (take profit when price falls)
 
             # Create enhanced order with SL/TP if they were missing
-            from domain.entities.trading_entities import Order as DomainOrder
+            from domain.entities import Order as DomainOrder
             from domain.value_objects import Money
             from datetime import datetime
 
@@ -722,7 +821,7 @@ class MultiBrokerExecutionService(ExecutionPort):
 
         # First, check if the symbol is in the approved symbols list
         # This is the primary validation - if a symbol is not approved, it's not available
-        from utils.symbol_validator import symbol_validator
+        from infrastructure.services.symbol_validator import symbol_validator
         from domain.value_objects import Symbol as DomainSymbol
 
         # Create a domain symbol object for validation
@@ -784,8 +883,8 @@ class MultiBrokerExecutionService(ExecutionPort):
         """Send a Telegram notification about a successfully placed order."""
         try:
             # Check if Telegram notifications are enabled
-            telegram_notifications_enabled = Configs.monitoring.telegram_notifications_enabled if Configs.monitoring and hasattr(
-                Configs.monitoring, 'telegram_notifications_enabled') else True
+            telegram_notifications_enabled = self._settings.monitoring.telegram_notifications_enabled if self._settings.monitoring and hasattr(
+                self._settings.monitoring, 'telegram_notifications_enabled') else True
             if not telegram_notifications_enabled:
                 return  # Skip notifications if disabled
 
@@ -794,8 +893,8 @@ class MultiBrokerExecutionService(ExecutionPort):
 
             # Create Telegram service instance
             telegram_service = TelegramNotificationService(
-                bot_token=Configs.monitoring.telegram_bot_token if Configs.monitoring and Configs.monitoring.telegram_bot_token else '',
-                chat_id=Configs.monitoring.telegram_chat_id if Configs.monitoring and Configs.monitoring.telegram_chat_id else ''
+                bot_token=self._settings.monitoring.telegram_bot_token if self._settings.monitoring and self._settings.monitoring.telegram_bot_token else '',
+                chat_id=self._settings.monitoring.telegram_chat_id if self._settings.monitoring and self._settings.monitoring.telegram_chat_id else ''
             )
 
             # Prepare notification message
@@ -838,29 +937,41 @@ class MultiBrokerExecutionService(ExecutionPort):
         except Exception as e:
             self.logger.error(f"❌ Error sending Telegram notification: {e}")
 
-    def cancel_order(self, order_id: str) -> bool:
-        """
-        Cancel an order - this is more complex as we need to know which exchange the order was placed on.
-        For now, we'll try to cancel on all exchanges.
-        """
-        results = []
-        for exchange_name, broker in self.brokers.items():
-            try:
-                # We need to pass a symbol, but we don't know which symbol was used for the order
-                # This is a limitation - in a real system, order tracking would store exchange info
-                # For now, we'll return False as we can't properly cancel without knowing the exchange
-                self.logger.warning(f"Cannot cancel order {order_id} without knowing original exchange")
-                return False
-            except Exception as e:
-                self.logger.error(f"Error canceling order {order_id} on {exchange_name}: {e}")
-                results.append(False)
+    def _lookup_order(self, order_id: str):
+        """Return (exchange, symbol) for a placed order_id, or (None, None) if unknown."""
+        with self._order_map_lock:
+            return self._order_exchange_map.get(str(order_id), (None, None))
 
-        return any(results)
+    def cancel_order(self, order_id: str) -> bool:
+        """B5: cancel via the originating exchange, looked up from the order->exchange map."""
+        exchange, symbol = self._lookup_order(order_id)
+        if exchange is None or exchange not in self.brokers:
+            self.logger.error(f"❌ Cannot cancel {order_id}: no exchange mapping (unknown order)")
+            return False
+        try:
+            ok = bool(self.brokers[exchange].cancel_order(order_id, symbol))
+            self.logger.info(f"Cancel {order_id} on {exchange.upper()}: {ok}")
+            return ok
+        except Exception as e:
+            self.logger.error(f"Error canceling {order_id} on {exchange.upper()}: {e}")
+            return False
 
     def get_execution_status(self, execution_id: str) -> str:
+        """B5: real status via the originating exchange's adapter (looked up from the map).
+
+        B6: the status read (idempotent) is retried with bounded backoff on transient faults.
         """
-        Get execution status - similar issue as cancel_order, we need to know which exchange.
-        """
-        # This is complex without order tracking - return unknown status
-        self.logger.warning(f"Cannot get status for execution {execution_id} without knowing original exchange")
-        return "unknown"
+        exchange, symbol = self._lookup_order(execution_id)
+        if exchange is None or exchange not in self.brokers:
+            self.logger.warning(f"Cannot get status for {execution_id}: no exchange mapping")
+            return "unknown"
+        try:
+            from shared.retry import retry_with_backoff
+            return retry_with_backoff(
+                lambda: self.brokers[exchange].get_order_status(execution_id, symbol),
+                max_attempts=3, base_delay=0.5,
+                on_retry=lambda a, e, d: self.logger.warning(
+                    f"status read for {execution_id} failed (attempt {a}): {e}; retrying in {d}s"))
+        except Exception as e:
+            self.logger.error(f"Error getting status for {execution_id} on {exchange.upper()}: {e}")
+            return "unknown"

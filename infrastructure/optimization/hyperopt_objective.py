@@ -10,7 +10,7 @@ from infrastructure.optimization.hyperopt_space import parameter_space
 from infrastructure.backtest.realistic_backtester import RealisticBacktester
 from hyperopt import fmin, tpe, rand, anneal, Trials, STATUS_OK
 from domain.ports.engine_ports import StrategyPort
-from domain.entities.trading_entities import SignalType
+from domain.entities import SignalType
 
 
 class HyperoptObjective:

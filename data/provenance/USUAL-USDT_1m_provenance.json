@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "USUALUSDT",
+  "timeframe": "1m",
+  "checksum": "565340ec511a9476d8ac406f302bdb8a0e24a20a01d664178599ab80aecd536a",
+  "download_timestamp": "2026-06-12T18:41:36.659736",
+  "row_count": 1066,
+  "date_range": {
+    "start": "1778686560",
+    "end": "1778750460"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/USUAL-USDT.csv"
+}

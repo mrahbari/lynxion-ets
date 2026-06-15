@@ -8,7 +8,7 @@ import traceback
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from domain.ports.data_ports import DataProviderPort
-from domain.entities.trading_entities import MarketData
+from domain.entities import MarketData
 from domain.value_objects import Symbol
 from infrastructure.data.csv_history_loader import CSVHistoryLoaderAdapter
 from infrastructure.data_sync.data_downloader_adapter import DataDownloaderAdapter
@@ -18,7 +18,8 @@ from shared.logger import EnhancedLogger
 from infrastructure.brokers.multi_broker_service import MultiBrokerExecutionService
 from infrastructure.data.improved_data_cache import improved_data_cache as data_cache
 from infrastructure.data.configurable_historical_data_provider import ConfigurableHistoricalDataProvider
-from application.configs.configs import Configs
+from infrastructure.data._edp_pricing import _EdpPricingMixin
+from infrastructure.data._edp_availability import _EdpAvailabilityMixin
 
 
 def _convert_period_to_ms(period: str) -> int:
@@ -41,27 +42,35 @@ def _convert_period_to_ms(period: str) -> int:
     return int(start_time.timestamp() * 1000)  # Convert to milliseconds
 
 
-class EnhancedDataProviderAdapter(DataProviderPort):
+class EnhancedDataProviderAdapter(DataProviderPort, _EdpPricingMixin, _EdpAvailabilityMixin):
     """
     Enhanced data provider that can automatically download historical data
     for new symbols that are not found in the local data directory.
     """
 
-    def __init__(self, csv_base_path: str = None, download_enabled: bool = True, broker_service=None,
+    def __init__(self, settings, csv_base_path: str = None, download_enabled: bool = True, broker_service=None,
                  historical_data_source: str = None, fallback_sources: list = None):
         """
         Initialize the enhanced data provider.
 
         Args:
+            settings: Injected settings object (E1.T4 — supplied by the composition root;
+                this adapter no longer imports bootstrap.settings.loaders).
             csv_base_path: Path to CSV historical data files
             download_enabled: Whether to enable automatic downloading of missing data
             broker_service: Broker service to use for symbol availability checks
             historical_data_source: Preferred data source for historical data ('bingx', 'binance', 'mexc', 'phemex', 'multi')
             fallback_sources: List of fallback data sources in order of preference
         """
+        # Settings injected by the composition root (E1.T4); same values as before,
+        # without importing bootstrap.settings.loaders here.
+        self._settings = settings
+        _settings = settings
         # Use environment variable or default for base path
         if csv_base_path is None:
-            csv_base_path = Configs.data.csv_data_path if Configs.data and hasattr(Configs.data, 'csv_data_path') else './data/history/raw/1m'
+            csv_base_path = _settings.data.csv_data_path if _settings.data and hasattr(_settings.data, 'csv_data_path') else './data/history/raw/1m'
+        # Default broker resolved once and reused by the broker-selection paths.
+        self._default_broker = _settings.broker.default_broker.lower() if _settings.broker and hasattr(_settings.broker, 'default_broker') else 'bingx'.lower()
 
         self.csv_base_path = csv_base_path
         self.download_enabled = download_enabled
@@ -70,6 +79,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
         # Initialize configurable historical data provider for fetching data from multiple sources
         self.historical_data_provider = ConfigurableHistoricalDataProvider(
+            settings=_settings,
             preferred_data_source=historical_data_source,
             fallback_sources=fallback_sources
         )
@@ -84,7 +94,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
         self._cache_lock = threading.Lock()
         self._cache_timeout = timedelta(minutes=2)  # Cache timeout of 2 minutes for symbol availability
         if self.download_enabled:
-            self.file_repo = FileRepositoryAdapter()
+            self.file_repo = FileRepositoryAdapter(raw_retention_days=self._settings.data.raw_retention_days)
             self.data_downloader = DataDownloaderAdapter()
             self.sync_manager = SyncManager(self.file_repo, self.data_downloader)
             self.download_lock = threading.Lock()
@@ -317,196 +327,12 @@ class EnhancedDataProviderAdapter(DataProviderPort):
 
         return data
 
-    def _estimate_base_price_intelligently(self, symbol: str) -> float:
-        """
-        Estimate a reasonable base price by fetching real market data from exchange.
-        This method connects to a real exchange API to get current prices instead of using hardcoded values.
-        """
-        # Try to get real price from exchange first
-        real_price = self._get_real_price_from_exchange(symbol)
-        if real_price is not None and real_price > 0:
-            return real_price
-
-        # If real data is not available, fall back to a more intelligent approach
-        # that doesn't use hardcoded ranges
-        return self._calculate_price_by_market_category(symbol)
-
-    def _calculate_price_by_market_category(self, symbol: str) -> float:
-        """Calculate price based on market category by fetching from exchange or using intelligent estimation."""
-        # Try to get real price from exchange first
-        real_price = self._get_real_price_from_exchange(symbol)
-        if real_price is not None and real_price > 0:
-            return real_price
-
-        # If exchange data is not available, use a more intelligent approach
-        # that doesn't rely on hardcoded coin lists
-        base_currency = symbol
-        if 'USDT' in symbol or 'BUSD' in symbol or 'USDC' in symbol:
-            # Standard format like BTCUSDT, ETHUSDT, etc.
-            quote_part = 'USDT' if 'USDT' in symbol else 'BUSD' if 'BUSD' in symbol else 'USDC'
-            base_currency = symbol.replace(quote_part, '')
-
-        # Use market cap ranking estimation instead of hardcoded lists
-        # This is a more scalable approach that doesn't require maintaining coin lists
-        base_hash = abs(hash(base_currency.upper())) % 100000
-        # Use the hash to create a reasonable price range based on market patterns
-        # rather than hardcoded coin categories
-        if len(base_currency) <= 3:
-            # Likely major coin - higher price range
-            return max(0.01, (base_hash % 50000) / 1000.0)  # $0.01 to $50
-        else:
-            # Likely smaller coin - lower price range
-            return max(0.0001, (base_hash % 10000) / 10000.0)  # $0.0001 to $1
-
-    def _get_real_price_from_exchange(self, symbol: str) -> Optional[float]:
-        """Fetch real price from exchange API with caching."""
-        # Try to get price from cache first (use a short TTL for prices)
-        broker_name = self._get_broker_name()
-        cache_key = f"{broker_name}_price_{symbol}"
-        cached_price = data_cache.get(broker_name, f"price_{symbol}", "tick")  # Use "tick" as timeframe for prices
-        if cached_price and len(cached_price) > 0:
-            price = cached_price[0].get('price')
-            self.logger.debug(f"Using cached price {price} for {symbol} from {broker_name}")
-            return price
-
-        # Try to get price via broker service if available
-        if self.broker_service:
-            broker = None  # Initialize broker variable to avoid UnboundLocalError
-            try:
-                broker_service_type = self._get_broker_type(self.broker_service)
-                self.logger.debug(f"Fetching price for {symbol} using broker service: {broker_service_type}")
-
-                # Check if the broker service itself has get_available_symbols method (like BrokerExecutionService)
-                if hasattr(self.broker_service, 'get_available_symbols'):
-                    self.logger.debug(f"Checking symbol {symbol} availability via broker service {broker_service_type}")
-                    available_symbols = self.broker_service.get_available_symbols()
-                    if symbol not in available_symbols:
-                        self.logger.debug(f"Symbol {symbol} not available on broker service")
-                        return None
-                    else:
-                        self.logger.debug(f"Symbol {symbol} found in broker service available symbols")
-                    broker = self.broker_service  # Set broker for later use
-                # Check if it's a BrokerExecutionService and try to access its internal broker
-                elif hasattr(self.broker_service, 'broker'):
-                    # Access the internal broker directly
-                    broker = self.broker_service.broker
-                    broker_type = self._get_broker_type(broker)
-                    self.logger.debug(f"Accessing internal broker {broker_type} for symbol {symbol}")
-                elif hasattr(self.broker_service, 'get_broker_by_name'):
-                    default_broker = Configs.broker.default_broker.lower() if Configs.broker and hasattr(Configs.broker, 'default_broker') else 'bingx'.lower()
-                    broker = self.broker_service.get_broker_by_name(default_broker)
-                    broker_type = self._get_broker_type(broker)
-                    self.logger.debug(f"Got broker {broker_type} by name '{default_broker}' for symbol {symbol}")
-                elif hasattr(self.broker_service, 'get_broker'):
-                    broker = self.broker_service.get_broker('spot')
-                    broker_type = self._get_broker_type(broker)
-                    self.logger.debug(f"Got broker {broker_type} by instrument type 'spot' for symbol {symbol}")
-                else:
-                    broker = self.broker_service
-                    broker_type = self._get_broker_type(broker)
-                    self.logger.debug(f"Using broker service {broker_type} as broker instance for symbol {symbol}")
-
-                if broker:
-                    # Try to get ticker data directly from broker
-                    # This assumes the broker has a method to get ticker data
-                    # For now, we'll try to use the broker's available symbols to verify the symbol exists
-                    if hasattr(broker, 'get_available_symbols'):
-                        broker_type = self._get_broker_type(broker)
-                        self.logger.debug(f"Checking symbol {symbol} availability via broker {broker_type}")
-                        available_symbols = broker.get_available_symbols()
-                        if symbol not in available_symbols:
-                            self.logger.debug(f"Symbol {symbol} not available on broker")
-                            return None
-                        else:
-                            self.logger.debug(f"Symbol {symbol} found in broker available symbols")
-                    # If symbol is available, we could potentially get price data from broker
-                    # For now, we'll continue with the direct API approach for price fetching
-            except Exception as e:
-                self.logger.error(f"Could not fetch price via broker service: {e}")
-                import traceback
-                self.logger.error(f"Traceback: {traceback.format_exc()}")
-
-        # Try alternative method using requests with exponential backoff
-        try:
-            import requests
-            import time
-            import random
-
-            # Use a generic approach - try Binance API as fallback with exponential backoff
-            api_url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
-
-            # Exponential backoff parameters
-            max_retries = 3
-            base_delay = 1  # Start with 1 second
-
-            for attempt in range(max_retries):
-                try:
-                    self.logger.debug(f"Attempt {attempt + 1}/{max_retries} - Using fallback API call for price of {symbol}: {api_url}")
-                    # Use session with proper connection management
-                    with requests.Session() as session:
-                        response = session.get(api_url, timeout=10)  # Increased timeout
-
-                    if response.status_code == 200:
-                        data = response.json()
-                        if 'price' in data:
-                            price = float(data['price'])
-                            self.logger.debug(f"Successfully fetched price {price} for {symbol} from direct API")
-
-                            # Cache the price with a short TTL (30 seconds for price data)
-                            data_cache.set(broker_name, f"price_{symbol}", "tick", [{'price': price}], ttl=30)
-                            return price
-                    elif response.status_code == 400:
-                        # Symbol not found on exchange - don't retry
-                        self.logger.debug(f"Symbol {symbol} not found on exchange: {response.text}")
-                        return None
-                    elif response.status_code in [429, 502, 503, 504]:  # Rate limiting or server errors
-                        if attempt < max_retries - 1:  # Don't sleep on the last attempt
-                            # Calculate delay with exponential backoff and jitter
-                            delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
-                            self.logger.warning(f"API call failed with status {response.status_code}, retrying in {delay:.2f}s (attempt {attempt + 1})")
-                            time.sleep(delay)
-                        else:
-                            self.logger.warning(f"API call failed after {max_retries} attempts with status {response.status_code}")
-                    else:
-                        # Other HTTP errors - don't retry
-                        self.logger.debug(f"API call failed with status {response.status_code}: {response.text}")
-                        return None
-
-                except requests.exceptions.Timeout:
-                    if attempt < max_retries - 1:
-                        delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
-                        self.logger.warning(f"API call timed out, retrying in {delay:.2f}s (attempt {attempt + 1})")
-                        time.sleep(delay)
-                    else:
-                        self.logger.warning(f"API call timed out after {max_retries} attempts")
-                except requests.exceptions.ConnectionError:
-                    if attempt < max_retries - 1:
-                        delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
-                        self.logger.warning(f"Connection error, retrying in {delay:.2f}s (attempt {attempt + 1})")
-                        time.sleep(delay)
-                    else:
-                        self.logger.warning(f"Connection error after {max_retries} attempts")
-                except Exception as api_error:
-                    if attempt < max_retries - 1:
-                        delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
-                        self.logger.warning(f"API error: {api_error}, retrying in {delay:.2f}s (attempt {attempt + 1})")
-                        time.sleep(delay)
-                    else:
-                        self.logger.warning(f"API error after {max_retries} attempts: {api_error}")
-                        break
-
-        except Exception as e:
-            self.logger.debug(f"Could not fetch real price for {symbol} from direct API: {e}")
-            pass
-
-        return None
-
     def is_symbol_available(self, symbol: str) -> bool:
         """Check if a symbol is available on the exchange with exchange switching capability."""
 
         # First, check if the symbol is in the approved symbols list
         # This is the primary validation - if a symbol is not approved, it's not available
-        from utils.symbol_validator import symbol_validator
+        from infrastructure.services.symbol_validator import symbol_validator
         from domain.value_objects import Symbol as DomainSymbol
 
         # Create a domain symbol object for validation
@@ -561,272 +387,6 @@ class EnhancedDataProviderAdapter(DataProviderPort):
             self.logger.debug(f"Cache is empty after refresh, falling back to single symbol check for {symbol}")
             return self._check_single_symbol(symbol)
 
-    def _refresh_available_symbols_cache(self):
-        """Refresh the cache of available symbols."""
-        try:
-            # Get the broker from the broker service and call its get_available_symbols method
-            if self.broker_service:
-                # Log the type of broker service for debugging
-                broker_service_type = self._get_broker_type(self.broker_service)
-                self.logger.debug(f"Refreshing symbol cache - Broker service type: {broker_service_type}")
-
-                # Check if the broker service itself has get_available_symbols method (like BrokerExecutionService)
-                if hasattr(self.broker_service, 'get_available_symbols'):
-                    self.logger.debug(f"Calling get_available_symbols on broker service {broker_service_type}")
-                    available_symbols = self.broker_service.get_available_symbols()
-                    self._available_symbols_cache = available_symbols
-                    self._cache_timestamp = time.time()
-
-                    self.logger.debug(f"Refreshed symbol availability cache with {len(available_symbols)} symbols from broker service")
-                    return
-                # Check if it's a BrokerExecutionService and try to access its internal broker
-                elif hasattr(self.broker_service, 'broker'):
-                    # Access the internal broker directly
-                    broker = self.broker_service.broker
-                    broker_type = self._get_broker_type(broker)
-                    self.logger.debug(f"Accessed internal broker: {broker_type}")
-                elif hasattr(self.broker_service, 'get_broker_by_name'):
-                    # Get the default broker from environment or use 'bingx' as default
-                    default_broker = Configs.broker.default_broker.lower() if Configs.broker and hasattr(Configs.broker, 'default_broker') else 'bingx'.lower()
-                    broker = self.broker_service.get_broker_by_name(default_broker)
-                    broker_type = self._get_broker_type(broker)
-                    self.logger.debug(f"Got broker by name '{default_broker}': {broker_type}")
-                elif hasattr(self.broker_service, 'get_broker'):
-                    # If it's a broker manager, get the default broker
-                    broker = self.broker_service.get_broker('spot')  # Use 'spot' as default instrument type
-                    broker_type = self._get_broker_type(broker)
-                    self.logger.debug(f"Got broker by instrument type 'spot': {broker_type}")
-                else:
-                    # If it's already a broker instance
-                    broker = self.broker_service
-                    broker_type = self._get_broker_type(broker)
-                    self.logger.debug(f"Using broker service as broker instance: {broker_type}")
-
-                if broker and hasattr(broker, 'get_available_symbols'):
-                    broker_type = self._get_broker_type(broker)
-                    self.logger.debug(f"Calling get_available_symbols on broker {broker_type}")
-                    available_symbols = broker.get_available_symbols()
-                    self._available_symbols_cache = available_symbols
-                    self._cache_timestamp = time.time()
-
-                    self.logger.debug(f"Refreshed symbol availability cache with {len(available_symbols)} symbols from broker")
-                    return
-                else:
-                    broker_type = self._get_broker_type(broker)
-                    self.logger.warning(f"Broker does not support get_available_symbols method. Broker type: {broker_type}")
-                    # Log what methods the broker actually has
-                    if broker:
-                        methods = [method for method in dir(broker) if not method.startswith('_')]
-                        self.logger.debug(f"Available methods on broker: {methods}")
-            else:
-                self.logger.warning("No broker service provided for symbol availability check")
-
-        except Exception as e:
-            self.logger.error(f"Error refreshing symbol availability cache: {e}")
-            import traceback
-            self.logger.error(f"Traceback: {traceback.format_exc()}")
-            # If we can't refresh the cache, keep the old one or try alternative method
-            pass
-
-    def _get_broker_type(self, broker_obj) -> str:
-        """Helper method to get broker type name safely."""
-        return type(broker_obj).__name__ if broker_obj else "None"
-
-    def _check_single_symbol(self, symbol: str) -> bool:
-        """Check a single symbol availability using direct API call with exchange switching."""
-
-        # First, check if the symbol is in the approved symbols list
-        # This is the primary validation - if a symbol is not approved, it's not available
-        from utils.symbol_validator import symbol_validator
-        from domain.value_objects import Symbol as DomainSymbol
-
-        # Create a domain symbol object for validation
-        domain_symbol = DomainSymbol(symbol)
-        if not symbol_validator.is_symbol_approved(domain_symbol):
-            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
-
-            # Cache this negative result
-            cache_key = f"symbol_check_{symbol}"
-            current_time = datetime.now()
-            with self._cache_lock:
-                self._symbol_availability_cache[cache_key] = (current_time, False)
-
-            return False
-
-        # Check if we have a recent result for this symbol in our cache
-        cache_key = f"symbol_check_{symbol}"
-        current_time = datetime.now()
-        with self._cache_lock:
-            if cache_key in self._symbol_availability_cache:
-                timestamp, result = self._symbol_availability_cache[cache_key]
-                if current_time - timestamp < self._cache_timeout:
-                    self.logger.debug(f"Symbol {symbol} availability found in cache: {result}")
-                    return result
-
-        # First check if the symbol is in the cached available symbols
-        if symbol in self._available_symbols_cache:
-            self.logger.debug(f"Symbol {symbol} found in cache")
-
-            # Cache this positive result
-            with self._cache_lock:
-                self._symbol_availability_cache[cache_key] = (current_time, True)
-
-            return True
-
-        # If not in cache, check if broker service is available to check symbol
-        if self.broker_service:
-            # Check if this is a MultiBrokerExecutionService that supports exchange switching
-            if hasattr(self.broker_service, 'is_symbol_available'):
-                try:
-                    return self.broker_service.is_symbol_available(symbol)
-                except Exception as e:
-                    self.logger.debug(f"MultiBroker service failed for symbol {symbol}, falling back: {e}")
-
-            # Log broker service type for debugging
-            broker_service_type = self._get_broker_type(self.broker_service)
-            self.logger.debug(f"Checking symbol {symbol} using broker service: {broker_service_type}")
-
-            try:
-                # Check if the broker service itself has get_available_symbols method (like BrokerExecutionService)
-                if hasattr(self.broker_service, 'get_available_symbols'):
-                    self.logger.debug(f"Broker service {broker_service_type} has get_available_symbols method")
-                    available_symbols = self.broker_service.get_available_symbols()
-                    self.logger.debug(f"Got {len(available_symbols)} available symbols from broker service, checking for {symbol}")
-                    if symbol in available_symbols:
-                        self.logger.debug(f"Symbol {symbol} found in broker service available symbols")
-                        return True
-                    else:
-                        # If symbol not found in broker service, continue to fallback
-                        self.logger.debug(f"Symbol {symbol} not found in broker service available symbols")
-                else:
-                    # If broker service doesn't have the method, try to access internal broker
-                    broker = None
-                    if hasattr(self.broker_service, 'broker'):
-                        # Access the internal broker directly
-                        broker = self.broker_service.broker
-                        broker_type = self._get_broker_type(broker)
-                        self.logger.debug(f"Accessing internal broker: {broker_type}")
-                    elif hasattr(self.broker_service, 'get_broker_by_name'):
-                        default_broker = Configs.broker.default_broker.lower() if Configs.broker and hasattr(Configs.broker, 'default_broker') else 'bingx'.lower()
-                        broker = self.broker_service.get_broker_by_name(default_broker)
-                        broker_type = self._get_broker_type(broker)
-                        self.logger.debug(f"Got broker by name '{default_broker}': {broker_type}")
-                    elif hasattr(self.broker_service, 'get_broker'):
-                        broker = self.broker_service.get_broker('spot')
-                        broker_type = self._get_broker_type(broker)
-                        self.logger.debug(f"Got broker by instrument type 'spot': {broker_type}")
-                    else:
-                        broker = self.broker_service
-                        broker_type = self._get_broker_type(broker)
-                        self.logger.debug(f"Using broker service as broker instance: {broker_type}")
-
-                    if broker and hasattr(broker, 'get_available_symbols'):
-                        # Get fresh symbols from broker and check
-                        available_symbols = broker.get_available_symbols()
-                        broker_type = self._get_broker_type(broker)
-                        self.logger.debug(f"Got {len(available_symbols)} available symbols from broker {broker_type}, checking for {symbol}")
-                        if symbol in available_symbols:
-                            self.logger.debug(f"Symbol {symbol} found in broker available symbols")
-                            return True
-                    else:
-                        # Log which broker type doesn't support the method
-                        broker_type = self._get_broker_type(broker)
-                        self.logger.warning(f"Broker {broker_type} does not support get_available_symbols method for symbol {symbol}")
-            except Exception as e:
-                self.logger.error(f"Could not check symbol availability via broker service: {e}")
-                import traceback
-                self.logger.error(f"Traceback: {traceback.format_exc()}")
-
-        # Fallback to direct API call with exchange switching
-        result = self._check_symbol_via_multiple_exchanges(symbol)
-
-        # Cache the result
-        current_time = datetime.now()
-        with self._cache_lock:
-            self._symbol_availability_cache[cache_key] = (current_time, result)
-
-        return result
-
-    def _check_symbol_via_multiple_exchanges(self, symbol: str) -> bool:
-        """Check symbol availability across multiple exchanges with fallback."""
-
-        # First, check if the symbol is in the approved symbols list
-        # This is the primary validation - if a symbol is not approved, it's not available
-        from utils.symbol_validator import symbol_validator
-        from domain.value_objects import Symbol as DomainSymbol
-
-        # Create a domain symbol object for validation
-        domain_symbol = DomainSymbol(symbol)
-        if not symbol_validator.is_symbol_approved(domain_symbol):
-            self.logger.info(f"❌ SYMBOL REJECTED: {symbol} is not in approved symbols list. Not available for trading.")
-            return False
-
-        import requests
-
-        # Define exchange order for checking
-        exchange_configs = [
-            {
-                'name': 'binance',
-                'url': f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}",
-                'success_check': lambda resp: resp.status_code == 200
-            },
-            {
-                'name': 'bingx',
-                'url': f"https://open-api.bingx.com/openApi/quote/v1/ticker/price?symbol={symbol}",
-                'success_check': lambda resp: resp.status_code == 200 and 'data' in resp.json()
-            },
-            {
-                'name': 'mexc',
-                'url': f"https://api.mexc.com/api/v3/ticker/price?symbol={symbol}",
-                'success_check': lambda resp: resp.status_code == 200
-            },
-            {
-                'name': 'phemex',
-                'url': f"https://api.phemex.com/md/ticker/24hr?symbol={symbol}",
-                'success_check': lambda resp: resp.status_code == 200
-            }
-        ]
-
-        for config in exchange_configs:
-            try:
-                self.logger.debug(f"Trying {config['name']} API for symbol {symbol}")
-                # Use session with proper connection management
-                with requests.Session() as session:
-                    response = session.get(config['url'], timeout=5)
-
-                if config['success_check'](response):
-                    self.logger.debug(f"Symbol {symbol} found on {config['name']}")
-                    return True
-            except Exception as e:
-                self.logger.debug(f"Failed to check {symbol} on {config['name']}: {e}")
-                continue
-
-        self.logger.debug(f"Symbol {symbol} not found on any exchange")
-        return False
-
-    def _format_symbol_for_exchange(self, symbol: str) -> str:
-        """Format symbol for exchange API (e.g., BTCUSDT -> BTC/USDT)."""
-        if '/' in symbol:
-            return symbol  # Already in correct format
-        elif 'USDT' in symbol:
-            base = symbol.replace('USDT', '')
-            return f"{base}/USDT"
-        elif 'BUSD' in symbol:
-            base = symbol.replace('BUSD', '')
-            return f"{base}/BUSD"
-        elif 'USDC' in symbol:
-            base = symbol.replace('USDC', '')
-            return f"{base}/USDC"
-        else:
-            # For other quote currencies or unknown format
-            # Try to identify common quote currencies
-            for quote in ['USD', 'EUR', 'GBP', 'JPY', 'BTC', 'ETH']:
-                if symbol.endswith(quote):
-                    base = symbol[:-len(quote)]
-                    return f"{base}/{quote}"
-            # If no known quote currency found, assume it's base/USDT format
-            return f"{symbol}/USDT"
-    
     def _download_symbol_data_sync(self, symbol: str, timeframe: str = '1m', period: str = '30d') -> bool:
         """Download historical data for a symbol using a thread-safe async approach."""
         import asyncio
@@ -915,7 +475,7 @@ class EnhancedDataProviderAdapter(DataProviderPort):
         return self.csv_provider.unsubscribe_from_market_data(subscription_id)
 
 
-def create_enhanced_data_provider(csv_base_path: str = None, download_enabled: bool = True, broker_service=None,
+def create_enhanced_data_provider(settings, csv_base_path: str = None, download_enabled: bool = True, broker_service=None,
                                  historical_data_source: str = None, fallback_sources: list = None) -> DataProviderPort:
     """
     Factory function to create the enhanced data provider.
@@ -931,6 +491,7 @@ def create_enhanced_data_provider(csv_base_path: str = None, download_enabled: b
         Configured enhanced data provider instance
     """
     return EnhancedDataProviderAdapter(
+        settings=settings,
         csv_base_path=csv_base_path,
         download_enabled=download_enabled,
         broker_service=broker_service,

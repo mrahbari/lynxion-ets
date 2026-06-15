@@ -37,5 +37,6 @@ pytest>=6.2.4
 pytest-asyncio>=0.16.0
 
 # Utilities
+setuptools<70.0.0  # Required for pkg_resources used by hyperopt
 python-dotenv>=0.19.0
 schedule>=1.2.0

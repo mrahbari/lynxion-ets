@@ -24,7 +24,8 @@ correlation_id_ctx: ContextVar[str] = ContextVar('correlation_id', default=None)
 
 def create_logger(name: str):
     """Create a basic logger with rotating file handler and colored console output."""
-    os.makedirs("logs", exist_ok=True)
+    from shared.log_paths import logs_dir, log_path
+    logs_dir()  # ensure <project-root>/logs exists (anchored, not cwd-relative)
     logger = logging.getLogger(name)
 
     # Check if logger already has handlers to prevent duplicate handlers
@@ -35,11 +36,23 @@ def create_logger(name: str):
 
     # Create the rotating file handler with a safer approach to prevent rotation errors
     # Ensure the main log file exists first to avoid issues during rotation
-    log_file_path = "logs/system.log"
+    log_file_path = log_path("system.log")  # project-root-anchored
 
-    # Touch the main log file to ensure it exists
-    if not os.path.exists(log_file_path):
-        open(log_file_path, 'a').close()
+    # Ensure the directory exists right before we try to touch the file
+    # this provides extra safety against race conditions or transient FS issues
+    try:
+        log_dir = os.path.dirname(log_file_path)
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir, exist_ok=True)
+
+        # Touch the main log file to ensure it exists
+        if not os.path.exists(log_file_path):
+            with open(log_file_path, 'a'):
+                pass
+    except (OSError, IOError) as e:
+        # If we can't create the log file, we'll continue anyway 
+        # (RotatingFileHandler might still succeed or we'll at least have console logs)
+        print(f"⚠️ Warning: Could not initialize log file at {log_file_path}: {e}", file=sys.stderr)
 
     # Create the rotating file handler
     # The backupCount specifies how many backup files to keep, but the rotation
@@ -328,12 +341,22 @@ class EnhancedLogger:
     def warning(self, message: str, **context):
         """Log a warning message with optional context"""
         message = self._add_correlation_and_trace_info(message, **context)
-        
+
         if context:
             context_str = " | ".join([f"{k}={v}" for k, v in context.items()])
             self.logger.warning(f"{message} | {context_str}")
         else:
             self.logger.warning(message)
+
+    def critical(self, message: str, **context):
+        """Log a critical message with optional context (was missing; reconcile-halt logging used it)."""
+        message = self._add_correlation_and_trace_info(message, **context)
+
+        if context:
+            context_str = " | ".join([f"{k}={v}" for k, v in context.items()])
+            self.logger.critical(f"{message} | {context_str}")
+        else:
+            self.logger.critical(message)
 
     def debug(self, message: str, **context):
         """Log a debug message with optional context"""

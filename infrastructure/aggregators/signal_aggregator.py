@@ -7,10 +7,10 @@ import threading
 import time
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
-from domain.entities.signal_entities import FusedSignal, ExecutionIntent
+from domain.entities import FusedSignal, ExecutionIntent
 from domain.value_objects import Symbol
 from shared.logger import EnhancedLogger
-from shared.event_system import event_router, EventType, SignalEvent
+from infrastructure.messaging.event_system import event_router, EventType, SignalEvent
 from infrastructure.strategies.strategy_manager import strategy_manager
 from infrastructure.services.broker_execution_service import BrokerExecutionService
 

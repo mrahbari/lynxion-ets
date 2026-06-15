@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SKYAIUSDT",
+  "timeframe": "1m",
+  "checksum": "8a1095b652e35408c7f06095eeb7fb2a0f63786d4a916e08522f43d7a28cde55",
+  "download_timestamp": "2026-06-12T18:28:44.538092",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686200",
+    "end": "1778719680"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SKYAI-USDT.csv"
+}

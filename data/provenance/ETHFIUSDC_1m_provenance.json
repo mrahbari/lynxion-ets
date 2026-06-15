@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ETHFIUSDC",
+  "timeframe": "1m",
+  "checksum": "ba266fc2d2e11e5e52a7f7f81a348338fa5598e27b14fd2fb56d87c768ea82b9",
+  "download_timestamp": "2026-06-12T18:29:21.637792",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686200",
+    "end": "1778749740"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ETHFIUSDC.csv"
+}

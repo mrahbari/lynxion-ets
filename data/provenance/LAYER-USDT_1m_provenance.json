@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "LAYERUSDT",
+  "timeframe": "1m",
+  "checksum": "ba31108bcb06ce35995f654886f3560bbf6e782480b2f93be29ae5b1b63ee7d6",
+  "download_timestamp": "2026-06-12T18:36:31.718784",
+  "row_count": 1066,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778750160"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/LAYER-USDT.csv"
+}

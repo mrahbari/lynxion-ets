@@ -9,14 +9,13 @@ import requests
 import pandas as pd
 
 from domain.ports.data_ports import DataProviderPort
-from domain.entities.trading_entities import MarketData
+from domain.entities import MarketData
 from domain.value_objects import Symbol
 from shared.logger import EnhancedLogger
 from infrastructure.brokers.broker_adapters import (
     BingXBrokerAdapter, BinanceBrokerAdapter, MEXCBrokerAdapter, PhemexBrokerAdapter
 )
 from infrastructure.brokers.multi_broker_service import MultiBrokerExecutionService
-from application.configs.configs import Configs
 
 
 class ConfigurableHistoricalDataProvider(DataProviderPort):
@@ -25,24 +24,27 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
     This helps avoid rate limits by distributing requests across multiple data sources.
     """
     
-    def __init__(self, preferred_data_source: str = None, fallback_sources: List[str] = None):
+    def __init__(self, settings, preferred_data_source: str = None, fallback_sources: List[str] = None):
         """
         Initialize the configurable historical data provider.
 
         Args:
+            settings: Injected settings object (E1.T4 — supplied by the composition root;
+                this adapter no longer imports bootstrap.settings.loaders).
             preferred_data_source: Primary data source ('bingx', 'binance', 'mexc', 'phemex', 'multi')
             fallback_sources: List of fallback data sources in order of preference
         """
+        self._settings = settings
         self.logger = EnhancedLogger("ConfigurableHistoricalDataProvider")
 
         # Determine preferred data source
         if preferred_data_source is None:
             # Default to binance for historical data to avoid BingX rate limits
-            preferred_data_source = Configs.data.preferred_historical_data_source if Configs.data and hasattr(Configs.data, 'preferred_historical_data_source') else 'binance'
+            preferred_data_source = self._settings.data.preferred_historical_data_source if self._settings.data and hasattr(self._settings.data, 'preferred_historical_data_source') else 'binance'
 
         # Set default fallbacks if not provided
         if fallback_sources is None:
-            fallback_sources = (Configs.data.historical_data_fallback_sources if Configs.data and Configs.data.historical_data_fallback_sources else 'binance,mexc,phemex').split(',')
+            fallback_sources = (self._settings.data.historical_data_fallback_sources if self._settings.data and self._settings.data.historical_data_fallback_sources else 'binance,mexc,phemex').split(',')
 
         self.preferred_data_source = preferred_data_source.lower()
         self.fallback_sources = [source.strip().lower() for source in fallback_sources]
@@ -56,7 +58,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
         # Track symbols that have failed to fetch data recently to avoid repeated attempts
         self.failed_symbols_cache = {}  # symbol -> timestamp of last failure
-        self.failed_symbols_cache_duration = Configs.data.failed_symbols_cache_duration if Configs.data and hasattr(Configs.data, 'failed_symbols_cache_duration') else 300  # 5 minutes default
+        self.failed_symbols_cache_duration = self._settings.data.failed_symbols_cache_duration if self._settings.data and hasattr(self._settings.data, 'failed_symbols_cache_duration') else 300  # 5 minutes default
 
         self.logger.info(f"Configurable Historical Data Provider initialized with preferred source: {self.preferred_data_source}")
         self.logger.info(f"Fallback sources: {self.fallback_sources}")
@@ -67,8 +69,8 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         # NOTE: For historical data fetching, we can use public endpoints without API keys
         try:
             # Check if API keys are provided, but still initialize the adapter as it can use public endpoints
-            api_key = Configs.broker.binance_api_key if Configs.broker and hasattr(Configs.broker, 'binance_api_key') else None
-            secret_key = Configs.broker.binance_secret_key if Configs.broker and hasattr(Configs.broker, 'binance_secret_key') else None
+            api_key = self._settings.broker.binance_api_key if self._settings.broker and hasattr(self._settings.broker, 'binance_api_key') else None
+            secret_key = self._settings.broker.binance_secret_key if self._settings.broker and hasattr(self._settings.broker, 'binance_secret_key') else None
 
             # Initialize Binance adapter even without API keys for public endpoint access
             self.brokers['binance'] = BinanceBrokerAdapter(
@@ -84,10 +86,10 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         try:
             # Initialize BingX adapter even without API keys for public endpoint access
             bingx_config = {
-                'api_key': Configs.broker.bingx_api_key if Configs.broker and hasattr(Configs.broker, 'bingx_api_key') else '',
-                'secret_key': Configs.broker.bingx_secret_key if Configs.broker and hasattr(Configs.broker, 'bingx_secret_key') else '',
-                'passphrase': Configs.broker.bingx_passphrase if Configs.broker and hasattr(Configs.broker, 'bingx_passphrase') else '',
-                'testnet': Configs.broker.bingx_testnet if Configs.broker and hasattr(Configs.broker, 'bingx_testnet') else True
+                'api_key': self._settings.broker.bingx_api_key if self._settings.broker and hasattr(self._settings.broker, 'bingx_api_key') else '',
+                'secret_key': self._settings.broker.bingx_secret_key if self._settings.broker and hasattr(self._settings.broker, 'bingx_secret_key') else '',
+                'passphrase': self._settings.broker.bingx_passphrase if self._settings.broker and hasattr(self._settings.broker, 'bingx_passphrase') else '',
+                'testnet': self._settings.broker.bingx_testnet if self._settings.broker and hasattr(self._settings.broker, 'bingx_testnet') else True
             }
 
             self.brokers['bingx'] = BingXBrokerAdapter(bingx_config)
@@ -99,9 +101,9 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         # NOTE: For historical data fetching, we can use public endpoints without API keys
         try:
             # Initialize MEXC adapter even without API keys for public endpoint access
-            api_key = Configs.broker.mexc_api_key if Configs.broker and hasattr(Configs.broker, 'mexc_api_key') else None
-            secret_key = Configs.broker.mexc_secret_key if Configs.broker and hasattr(Configs.broker, 'mexc_secret_key') else None
-            testnet = Configs.broker.mexc_testnet if Configs.broker and hasattr(Configs.broker, 'mexc_testnet') else True
+            api_key = self._settings.broker.mexc_api_key if self._settings.broker and hasattr(self._settings.broker, 'mexc_api_key') else None
+            secret_key = self._settings.broker.mexc_secret_key if self._settings.broker and hasattr(self._settings.broker, 'mexc_secret_key') else None
+            testnet = self._settings.broker.mexc_testnet if self._settings.broker and hasattr(self._settings.broker, 'mexc_testnet') else True
 
             base_url = "https://api-testnet.mexc.com" if testnet else "https://api.mexc.com"
             self.brokers['mexc'] = MEXCBrokerAdapter(
@@ -117,9 +119,9 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         # NOTE: For historical data fetching, we can use public endpoints without API keys
         try:
             # Initialize Phemex adapter even without API keys for public endpoint access
-            api_key = Configs.broker.phemex_api_key if Configs.broker and hasattr(Configs.broker, 'phemex_api_key') else None
-            secret_key = Configs.broker.phemex_secret_key if Configs.broker and hasattr(Configs.broker, 'phemex_secret_key') else None
-            testnet = Configs.broker.phemex_testnet if Configs.broker and hasattr(Configs.broker, 'phemex_testnet') else True
+            api_key = self._settings.broker.phemex_api_key if self._settings.broker and hasattr(self._settings.broker, 'phemex_api_key') else None
+            secret_key = self._settings.broker.phemex_secret_key if self._settings.broker and hasattr(self._settings.broker, 'phemex_secret_key') else None
+            testnet = self._settings.broker.phemex_testnet if self._settings.broker and hasattr(self._settings.broker, 'phemex_testnet') else True
 
             base_url = "https://testnet-api.phemex.com" if testnet else "https://api.phemex.com"
             self.brokers['phemex'] = PhemexBrokerAdapter(
@@ -133,7 +135,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
         # Initialize MultiBrokerExecutionService as an option
         try:
-            self.brokers['multi'] = MultiBrokerExecutionService()
+            self.brokers['multi'] = MultiBrokerExecutionService(settings=self._settings)
             self.logger.info("✅ MultiBroker service initialized for historical data")
         except Exception as e:
             self.logger.warning(f"⚠️ Could not initialize MultiBroker service for historical data: {e}")
@@ -240,7 +242,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             # Try to load from CSV cache if available
             from infrastructure.data.csv_history_loader import CSVHistoryLoaderAdapter
             # Use the same base path as configured in the environment variable
-            csv_data_path = Configs.data.csv_data_path if Configs.data and hasattr(Configs.data, 'csv_data_path') else './data/history/raw/1m'
+            csv_data_path = self._settings.data.csv_data_path if self._settings.data and hasattr(self._settings.data, 'csv_data_path') else './data/history/raw/1m'
             # Extract the base path correctly (ensure we keep the relative path structure)
             # If path starts with ./ then keep it relative, otherwise handle absolute paths
             if csv_data_path.startswith('./'):
@@ -301,7 +303,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             # Save to CSV cache for future use
             from infrastructure.data.csv_history_loader import CSVHistoryLoaderAdapter
             # Use the same base path as configured in the environment variable
-            csv_data_path = Configs.data.csv_data_path if Configs.data and hasattr(Configs.data, 'csv_data_path') else './data/history/raw/1m'
+            csv_data_path = self._settings.data.csv_data_path if self._settings.data and hasattr(self._settings.data, 'csv_data_path') else './data/history/raw/1m'
             # Extract the base path correctly (ensure we keep the relative path structure)
             # If path starts with ./ then keep it relative, otherwise handle absolute paths
             if csv_data_path.startswith('./'):
@@ -454,7 +456,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
             # Add API key to headers
             headers = {
-                'X-BX-APIKEY': Configs.broker.bingx_api_key if Configs.broker and hasattr(Configs.broker, 'bingx_api_key') else ''
+                'X-BX-APIKEY': self._settings.broker.bingx_api_key if self._settings.broker and hasattr(self._settings.broker, 'bingx_api_key') else ''
             }
 
             # Use session with proper connection management
@@ -643,7 +645,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             # Fallback to other sources if needed
             try:
                 url = f"https://open-api.bingx.com/openApi/quote/v1/ticker/price?symbol={symbol_str}"
-                headers = {'X-BX-APIKEY': Configs.broker.bingx_api_key if Configs.broker and hasattr(Configs.broker, 'bingx_api_key') else ''}
+                headers = {'X-BX-APIKEY': self._settings.broker.bingx_api_key if self._settings.broker and hasattr(self._settings.broker, 'bingx_api_key') else ''}
                 with requests.Session() as session:
                     response = session.get(url, headers=headers, timeout=5)
                     response.raise_for_status()
@@ -673,7 +675,8 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
 
 def create_configurable_historical_data_provider(
-    preferred_data_source: str = None, 
+    settings,
+    preferred_data_source: str = None,
     fallback_sources: List[str] = None
 ) -> DataProviderPort:
     """
@@ -687,6 +690,7 @@ def create_configurable_historical_data_provider(
         Configured historical data provider instance
     """
     return ConfigurableHistoricalDataProvider(
+        settings=settings,
         preferred_data_source=preferred_data_source,
         fallback_sources=fallback_sources
     )

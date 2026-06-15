@@ -1,0 +1,797 @@
+{
+  "verdict": {
+    "verdict": "INSUFFICIENT_DATA",
+    "summary": "INSUFFICIENT_DATA \u2014 no (strategy,regime) cell reaches 5 trades; cannot judge edge. Gather more data before deciding.",
+    "passing": [],
+    "failing": [
+      {
+        "strategy": "trend_following",
+        "regime": "ranging",
+        "trade_count": 1,
+        "expectancy": -177.34930385740228,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -177.349 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "trending_down",
+        "trade_count": 1,
+        "expectancy": -734.819646480639,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -734.82 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "trending_up",
+        "trade_count": 1,
+        "expectancy": -432.0960488553406,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -432.096 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "unknown",
+        "trade_count": 1,
+        "expectancy": -6.115074799021783,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -6.11507 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "mean_reversion",
+        "regime": "ranging",
+        "trade_count": 1,
+        "expectancy": -177.34930385740228,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -177.349 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "mean_reversion",
+        "regime": "trending_down",
+        "trade_count": 1,
+        "expectancy": -734.819646480639,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -734.82 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "mean_reversion",
+        "regime": "trending_up",
+        "trade_count": 1,
+        "expectancy": -432.0960488553406,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -432.096 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "mean_reversion",
+        "regime": "unknown",
+        "trade_count": 1,
+        "expectancy": -6.115074799021783,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -6.11507 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "momentum",
+        "regime": "ranging",
+        "trade_count": 1,
+        "expectancy": -177.34930385740228,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -177.349 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "momentum",
+        "regime": "trending_down",
+        "trade_count": 1,
+        "expectancy": -734.819646480639,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -734.82 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "momentum",
+        "regime": "trending_up",
+        "trade_count": 1,
+        "expectancy": -432.0960488553406,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -432.096 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "momentum",
+        "regime": "unknown",
+        "trade_count": 1,
+        "expectancy": -6.115074799021783,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -6.11507 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "breakout",
+        "regime": "ranging",
+        "trade_count": 1,
+        "expectancy": -177.34930385740228,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -177.349 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "breakout",
+        "regime": "trending_down",
+        "trade_count": 1,
+        "expectancy": -734.819646480639,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -734.82 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "breakout",
+        "regime": "trending_up",
+        "trade_count": 1,
+        "expectancy": -432.0960488553406,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -432.096 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "breakout",
+        "regime": "unknown",
+        "trade_count": 1,
+        "expectancy": -6.115074799021783,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -6.11507 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "liquidity",
+        "regime": "ranging",
+        "trade_count": 1,
+        "expectancy": -177.34930385740228,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -177.349 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "liquidity",
+        "regime": "trending_down",
+        "trade_count": 1,
+        "expectancy": -734.819646480639,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -734.82 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "liquidity",
+        "regime": "trending_up",
+        "trade_count": 1,
+        "expectancy": -432.0960488553406,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -432.096 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "liquidity",
+        "regime": "unknown",
+        "trade_count": 1,
+        "expectancy": -6.115074799021783,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -6.11507 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "mtf_trend",
+        "regime": "ranging",
+        "trade_count": 1,
+        "expectancy": -177.34930385740228,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -177.349 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "mtf_trend",
+        "regime": "trending_down",
+        "trade_count": 1,
+        "expectancy": -734.819646480639,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -734.82 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "mtf_trend",
+        "regime": "trending_up",
+        "trade_count": 1,
+        "expectancy": -432.0960488553406,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -432.096 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "mtf_trend",
+        "regime": "unknown",
+        "trade_count": 1,
+        "expectancy": -6.115074799021783,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -6.11507 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "oi_footprint",
+        "regime": "ranging",
+        "trade_count": 1,
+        "expectancy": -177.34930385740228,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -177.349 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "oi_footprint",
+        "regime": "trending_down",
+        "trade_count": 1,
+        "expectancy": -734.819646480639,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -734.82 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "oi_footprint",
+        "regime": "trending_up",
+        "trade_count": 1,
+        "expectancy": -432.0960488553406,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -432.096 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "oi_footprint",
+        "regime": "unknown",
+        "trade_count": 1,
+        "expectancy": -6.115074799021783,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -6.11507 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "sweep_scalper",
+        "regime": "ranging",
+        "trade_count": 1,
+        "expectancy": -177.34930385740228,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -177.349 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "sweep_scalper",
+        "regime": "trending_down",
+        "trade_count": 1,
+        "expectancy": -734.819646480639,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -734.82 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "sweep_scalper",
+        "regime": "trending_up",
+        "trade_count": 1,
+        "expectancy": -432.0960488553406,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -432.096 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "sweep_scalper",
+        "regime": "unknown",
+        "trade_count": 1,
+        "expectancy": -6.115074799021783,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -6.11507 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "vwap_reversal",
+        "regime": "ranging",
+        "trade_count": 1,
+        "expectancy": -177.34930385740228,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -177.349 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "vwap_reversal",
+        "regime": "trending_down",
+        "trade_count": 1,
+        "expectancy": -734.819646480639,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -734.82 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "vwap_reversal",
+        "regime": "trending_up",
+        "trade_count": 1,
+        "expectancy": -432.0960488553406,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -432.096 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "vwap_reversal",
+        "regime": "unknown",
+        "trade_count": 1,
+        "expectancy": -6.115074799021783,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -6.11507 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "ranging",
+        "trade_count": 1,
+        "expectancy": -177.34930385740228,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -177.349 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "trending_down",
+        "trade_count": 1,
+        "expectancy": -734.819646480639,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -734.82 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "trending_up",
+        "trade_count": 1,
+        "expectancy": -432.0960488553406,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -432.096 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "unknown",
+        "trade_count": 1,
+        "expectancy": -6.115074799021783,
+        "profit_factor": 0.0,
+        "passed": false,
+        "reasons": [
+          "trades 1 < min 5",
+          "expectancy -6.11507 <= min 0.0",
+          "profit_factor 0 <= min 1.0"
+        ]
+      }
+    ]
+  },
+  "attribution": {
+    "total_pnl": -13503.800739924032,
+    "total_trades": 40,
+    "by_strategy": {
+      "trend_following": -1350.3800739924036,
+      "mean_reversion": -1350.3800739924036,
+      "momentum": -1350.3800739924036,
+      "breakout": -1350.3800739924036,
+      "liquidity": -1350.3800739924036,
+      "mtf_trend": -1350.3800739924036,
+      "oi_footprint": -1350.3800739924036,
+      "sweep_scalper": -1350.3800739924036,
+      "vwap_reversal": -1350.3800739924036,
+      "crypto_breakout": -1350.3800739924036
+    },
+    "by_regime": {
+      "ranging": -1773.4930385740224,
+      "trending_down": -7348.196464806389,
+      "trending_up": -4320.960488553406,
+      "unknown": -61.15074799021783
+    },
+    "cells": [
+      {
+        "strategy": "trend_following",
+        "regime": "ranging",
+        "pnl": -177.34930385740228,
+        "trade_count": 1
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "trending_down",
+        "pnl": -734.819646480639,
+        "trade_count": 1
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "trending_up",
+        "pnl": -432.0960488553406,
+        "trade_count": 1
+      },
+      {
+        "strategy": "trend_following",
+        "regime": "unknown",
+        "pnl": -6.115074799021783,
+        "trade_count": 1
+      },
+      {
+        "strategy": "mean_reversion",
+        "regime": "ranging",
+        "pnl": -177.34930385740228,
+        "trade_count": 1
+      },
+      {
+        "strategy": "mean_reversion",
+        "regime": "trending_down",
+        "pnl": -734.819646480639,
+        "trade_count": 1
+      },
+      {
+        "strategy": "mean_reversion",
+        "regime": "trending_up",
+        "pnl": -432.0960488553406,
+        "trade_count": 1
+      },
+      {
+        "strategy": "mean_reversion",
+        "regime": "unknown",
+        "pnl": -6.115074799021783,
+        "trade_count": 1
+      },
+      {
+        "strategy": "momentum",
+        "regime": "ranging",
+        "pnl": -177.34930385740228,
+        "trade_count": 1
+      },
+      {
+        "strategy": "momentum",
+        "regime": "trending_down",
+        "pnl": -734.819646480639,
+        "trade_count": 1
+      },
+      {
+        "strategy": "momentum",
+        "regime": "trending_up",
+        "pnl": -432.0960488553406,
+        "trade_count": 1
+      },
+      {
+        "strategy": "momentum",
+        "regime": "unknown",
+        "pnl": -6.115074799021783,
+        "trade_count": 1
+      },
+      {
+        "strategy": "breakout",
+        "regime": "ranging",
+        "pnl": -177.34930385740228,
+        "trade_count": 1
+      },
+      {
+        "strategy": "breakout",
+        "regime": "trending_down",
+        "pnl": -734.819646480639,
+        "trade_count": 1
+      },
+      {
+        "strategy": "breakout",
+        "regime": "trending_up",
+        "pnl": -432.0960488553406,
+        "trade_count": 1
+      },
+      {
+        "strategy": "breakout",
+        "regime": "unknown",
+        "pnl": -6.115074799021783,
+        "trade_count": 1
+      },
+      {
+        "strategy": "liquidity",
+        "regime": "ranging",
+        "pnl": -177.34930385740228,
+        "trade_count": 1
+      },
+      {
+        "strategy": "liquidity",
+        "regime": "trending_down",
+        "pnl": -734.819646480639,
+        "trade_count": 1
+      },
+      {
+        "strategy": "liquidity",
+        "regime": "trending_up",
+        "pnl": -432.0960488553406,
+        "trade_count": 1
+      },
+      {
+        "strategy": "liquidity",
+        "regime": "unknown",
+        "pnl": -6.115074799021783,
+        "trade_count": 1
+      },
+      {
+        "strategy": "mtf_trend",
+        "regime": "ranging",
+        "pnl": -177.34930385740228,
+        "trade_count": 1
+      },
+      {
+        "strategy": "mtf_trend",
+        "regime": "trending_down",
+        "pnl": -734.819646480639,
+        "trade_count": 1
+      },
+      {
+        "strategy": "mtf_trend",
+        "regime": "trending_up",
+        "pnl": -432.0960488553406,
+        "trade_count": 1
+      },
+      {
+        "strategy": "mtf_trend",
+        "regime": "unknown",
+        "pnl": -6.115074799021783,
+        "trade_count": 1
+      },
+      {
+        "strategy": "oi_footprint",
+        "regime": "ranging",
+        "pnl": -177.34930385740228,
+        "trade_count": 1
+      },
+      {
+        "strategy": "oi_footprint",
+        "regime": "trending_down",
+        "pnl": -734.819646480639,
+        "trade_count": 1
+      },
+      {
+        "strategy": "oi_footprint",
+        "regime": "trending_up",
+        "pnl": -432.0960488553406,
+        "trade_count": 1
+      },
+      {
+        "strategy": "oi_footprint",
+        "regime": "unknown",
+        "pnl": -6.115074799021783,
+        "trade_count": 1
+      },
+      {
+        "strategy": "sweep_scalper",
+        "regime": "ranging",
+        "pnl": -177.34930385740228,
+        "trade_count": 1
+      },
+      {
+        "strategy": "sweep_scalper",
+        "regime": "trending_down",
+        "pnl": -734.819646480639,
+        "trade_count": 1
+      },
+      {
+        "strategy": "sweep_scalper",
+        "regime": "trending_up",
+        "pnl": -432.0960488553406,
+        "trade_count": 1
+      },
+      {
+        "strategy": "sweep_scalper",
+        "regime": "unknown",
+        "pnl": -6.115074799021783,
+        "trade_count": 1
+      },
+      {
+        "strategy": "vwap_reversal",
+        "regime": "ranging",
+        "pnl": -177.34930385740228,
+        "trade_count": 1
+      },
+      {
+        "strategy": "vwap_reversal",
+        "regime": "trending_down",
+        "pnl": -734.819646480639,
+        "trade_count": 1
+      },
+      {
+        "strategy": "vwap_reversal",
+        "regime": "trending_up",
+        "pnl": -432.0960488553406,
+        "trade_count": 1
+      },
+      {
+        "strategy": "vwap_reversal",
+        "regime": "unknown",
+        "pnl": -6.115074799021783,
+        "trade_count": 1
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "ranging",
+        "pnl": -177.34930385740228,
+        "trade_count": 1
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "trending_down",
+        "pnl": -734.819646480639,
+        "trade_count": 1
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "trending_up",
+        "pnl": -432.0960488553406,
+        "trade_count": 1
+      },
+      {
+        "strategy": "crypto_breakout",
+        "regime": "unknown",
+        "pnl": -6.115074799021783,
+        "trade_count": 1
+      }
+    ],
+    "reconciled": true,
+    "unattributed_trades": 0,
+    "unknown_regime_trades": 10
+  },
+  "ledger_path": "data/results_storage/edge_ledger.json"
+}

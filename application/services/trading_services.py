@@ -4,7 +4,7 @@ Application services for the enterprise hedge fund trading system.
 These services orchestrate domain objects and coordinate between different ports.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Signal, Order, Position
+from domain.entities import Signal, Order, Position
 from domain.value_objects import Symbol, Money, Percentage
 from domain.ports.trading_ports import (
     SignalPort, OrderManagementPort, MarketDataPort, 

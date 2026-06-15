@@ -2,11 +2,11 @@
 Infrastructure implementation of the VWAP Reversal Strategy following hexagonal architecture.
 """
 from typing import Dict, Any, Optional, List
-from domain.entities.trading_entities import Signal, SignalType
+from domain.entities import Signal, SignalType
 from domain.value_objects import Symbol, Percentage
 from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 import numpy as np
 from infrastructure.strategies.strategy_adapters import BaseStrategyAdapter
@@ -27,7 +27,8 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
         self.lookback = self.config.get("lookback", 200)
         self.std_mult = self.config.get("std_mult", 2.0)
         self.session_reset_hour = self.config.get("session_reset_hour", 0)  # Hour to reset VWAP (0 = midnight UTC)
-        self.deviation_threshold = self.config.get("deviation_threshold", 0.02)  # Minimum deviation from VWAP
+        self.deviation_threshold = self.config.get("deviation_threshold", 0.02)  # Legacy fixed band (now a fallback only)
+        self.min_deviation_floor = self.config.get("min_deviation_floor", 0.001)  # Absolute floor for the sigma band
         self.trend_exhaustion_threshold = self.config.get("trend_exhaustion_threshold", 0.005)  # Threshold for trend exhaustion
         self.rejection_confirmation_bars = self.config.get("rejection_confirmation_bars", 2)  # Bars to confirm rejection
 
@@ -35,6 +36,7 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
         self.session_vwap = None
         self.session_start_bar = 0
         self.last_session_hour = None
+        self.last_session_anchor = None  # Real-time session anchor (UTC day for reset_hour=0)
 
         # Trend tracking
         self.trend_direction = None  # None, 'bullish', 'bearish'
@@ -42,8 +44,25 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
 
     def _should_reset_session(self, current_bar_index: int) -> bool:
         """Determine if we should reset the session VWAP based on time"""
-        # For simulation purposes, we'll use the bar index to simulate time
-        # In a real system, this would use actual timestamps
+        # Prefer the bar's REAL timestamp when available so the session is anchored to
+        # an actual trading day (the design intent — see session_reset_hour, default
+        # midnight UTC). The old `current_bar_index % 24` placeholder made a "session"
+        # only 24 bars (24 minutes on 1m), so the session VWAP hugged price and the
+        # deviation gate could never be reached -> the strategy never fired. (Type-C
+        # implementation defect: simulated time, not real time.)
+        ts = None
+        if self.data_buffer:
+            ts = self.data_buffer[-1].get('timestamp')
+        if isinstance(ts, (int, float)):
+            ts = datetime.utcfromtimestamp(ts)
+        if isinstance(ts, datetime):
+            # Anchor day = most recent calendar day whose session_reset_hour has passed.
+            anchor = ts.date() if ts.hour >= self.session_reset_hour else (ts - timedelta(days=1)).date()
+            should_reset = self.last_session_anchor is not None and anchor != self.last_session_anchor
+            self.last_session_anchor = anchor
+            return should_reset
+
+        # Fallback (no real timestamp available): legacy simulated-hour progression.
         current_hour = (current_bar_index % 24)  # Simulate hour progression
 
         # Reset if we've crossed the session boundary
@@ -97,6 +116,12 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
 
         x = np.arange(len(recent_prices))
         slope, _ = np.polyfit(x, recent_prices, 1) if len(recent_prices) > 1 else (0, 0)
+        # Normalize slope to a FRACTIONAL per-bar change. np.polyfit returns slope in
+        # absolute price units ($/bar — ~$5 for BTC), but trend_exhaustion_threshold
+        # (0.005) is a small fractional constant, so abs(slope) <= threshold (the
+        # flat-trend clause) was unreachable -> mean-reversion regime fired ~0.07% of
+        # bars and the strategy never traded. Scale-invariant unit-bug fix (type C).
+        slope = (slope / current_price) if current_price else slope
 
         # Determine trend direction
         current_trend_direction = None
@@ -212,6 +237,17 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
             # Calculate deviation from VWAP
             price_deviation = (current_price - self.session_vwap) / self.session_vwap if self.session_vwap != 0 else 0
 
+            # Significant-deviation band. The strategy carries std_mult (=2.0) and
+            # lookback (=200) for the canonical VWAP +/- std_mult*sigma reversion band,
+            # but the gate used a fixed deviation_threshold (0.02 = 2%) that is
+            # structurally unreachable: the max observed deviation from a daily session
+            # VWAP on 1m crypto is ~1.1% (2-sigma ~0.21%). Wire the intended sigma band
+            # (self-calibrating across assets/timeframes); keep an absolute floor so a
+            # collapsed-volatility session can't trigger on noise. Type-B fidelity fix.
+            _recent = np.array(closes[-self.lookback:]) if len(closes) >= self.lookback else np.array(closes)
+            _dispersion = float(np.std(_recent / self.session_vwap - 1.0)) if self.session_vwap else 0.0
+            sig_threshold = max(self.min_deviation_floor, self.std_mult * _dispersion)
+
             # Check for rejection patterns near VWAP
             rejection_patterns = self._check_rejection_pattern(highs, lows, closes, self.session_vwap)
 
@@ -225,10 +261,10 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
             # 2. VWAP hasn't been broken recently (indicating intact level)
             # 3. Price is significantly deviated from VWAP
             # 4. There's evidence of rejection/failure near VWAP
-            if is_mean_reversion_regime and not self.vwap_broken and abs(price_deviation) >= self.deviation_threshold:
+            if is_mean_reversion_regime and not self.vwap_broken and abs(price_deviation) >= sig_threshold:
 
                 # Bullish setup: price significantly below VWAP with rejection
-                if (price_deviation < -self.deviation_threshold and
+                if (price_deviation < -sig_threshold and
                     (rejection_patterns['bullish_rejection'] or rejection_patterns['failure_swings'])):
 
                     final_signal_type = SignalType.BUY
@@ -239,7 +275,7 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
                     final_score = min(1.0, strength * 5)
 
                 # Bearish setup: price significantly above VWAP with rejection
-                elif (price_deviation > self.deviation_threshold and
+                elif (price_deviation > sig_threshold and
                       (rejection_patterns['bearish_rejection'] or rejection_patterns['failure_swings'])):
 
                     final_signal_type = SignalType.SELL
@@ -250,7 +286,7 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
                     final_score = max(-1.0, -strength * 5)
 
             # Block trades during strong trend continuation
-            if self.trend_direction and abs(price_deviation) < self.deviation_threshold * 0.5:
+            if self.trend_direction and abs(price_deviation) < sig_threshold * 0.5:
                 # If we're in a strong trend and not significantly deviated, don't trade
                 final_signal_type = SignalType.HOLD
                 final_confidence_factor = 0.1  # Very low confidence based on config
@@ -262,9 +298,8 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
                 signal_type=final_signal_type,
                 confidence=confidence,
                 score=final_score,
-                strategy_name=self.name,
                 timestamp=datetime.now(),
-                source_engine="SessionAnchoredVWAPReversal",
+                source_layer="SessionAnchoredVWAPReversal",
                 metadata={
                     "current_price": current_price,
                     "session_vwap": self.session_vwap,

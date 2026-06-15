@@ -1,8 +1,15 @@
 """
+DEPRECATED (E3.T1 -- Option A: Retire & Redefine). Legacy mock backtest stack
+(BasicBacktestEngineAdapter + MockHistoricalDataProviderAdapter + metrics calc):
+reachable via the trading_system_modes legacy mode, runs on MOCK data, has no
+fees/slippage/SL-TP, and is NOT golden-tested. The canonical engine is
+RealisticBacktester behind BacktestEnginePort
+(infrastructure/backtest/backtest_engine_adapter.py). Physical removal -> E8.
+
 Infrastructure implementations of backtesting services.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Signal, Order, Fill, Position
+from domain.entities import Signal, Order, Fill, Position
 from domain.value_objects import Symbol, Money
 from domain.ports.backtest_ports import (
     BacktestEnginePort, HistoricalDataProviderPort, BacktestMetricsPort
@@ -171,7 +178,7 @@ class BasicBacktestEngineAdapter(BacktestEnginePort):
     
     def _create_signal(self, symbol: Symbol, signal_type: str) -> Signal:
         """Create a mock signal for backtesting"""
-        from domain.entities.trading_entities import SignalType
+        from domain.entities import SignalType
         from domain.value_objects import Percentage
         from decimal import Decimal
         
@@ -183,7 +190,8 @@ class BasicBacktestEngineAdapter(BacktestEnginePort):
             signal_type=signal_type_enum,
             confidence=Percentage(Decimal('0.6')),  # 60% confidence
             score=0.5 if signal_type == 'BUY' else -0.5,
-            strategy_name="MockStrategy",
+            source_layer="backtest",
+            metadata={"strategy_name": "MockStrategy"},
             timestamp=datetime.now()
         )
     

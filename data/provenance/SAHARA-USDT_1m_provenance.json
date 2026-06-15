@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SAHARAUSDT",
+  "timeframe": "1m",
+  "checksum": "3073316515a9e146abf463dd21fe7deb2ffcfff070529e0c54ee11482bedf27d",
+  "download_timestamp": "2026-06-12T18:39:39.104584",
+  "row_count": 1069,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778750340"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SAHARA-USDT.csv"
+}

@@ -13,7 +13,7 @@ from application.configs.sync_settings import settings
 from application.data_sync.ports import FileRepository
 from domain.ports.sync import DataDownloader
 from application.data_sync.sync_manager import SyncManager
-from utils.logger import logger, OperationType, StatusType
+from shared.sync_logger import logger, OperationType, StatusType
 
 
 class WatcherRetuneUseCase:
@@ -228,56 +228,7 @@ class WatcherRetuneUseCase:
         return success
 
 
-async def run_with_resources(args):
-    """Run the watcher retune with proper resource management"""
-    from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
-    from infrastructure.data_sync.data_downloader_adapter import DataDownloaderAdapter
-    from application.data_sync.sync_manager import SyncManager
-
-    file_repo = FileRepositoryAdapter()
-    data_downloader = DataDownloaderAdapter()
-    sync_manager = SyncManager(file_repo, data_downloader)
-    watcher_retune = WatcherRetuneUseCase(file_repo, data_downloader, sync_manager)
-
-    # Use context manager for proper resource cleanup
-    async with data_downloader:
-        # Use the synchronous method
-        success = watcher_retune.request_repair_sync(
-            args.symbol,
-            args.start_ts,
-            args.end_ts,
-            args.timeout
-        )
-
-        return success
-
-
-def main():
-    """Main entry point for the watcher retune command line tool"""
-    parser = argparse.ArgumentParser(description='Run watcher retune operations')
-    parser.add_argument('--symbol', type=str, required=True,
-                        help='Symbol to repair (e.g. BTC-USDT)')
-    parser.add_argument('--from', dest='start_ts', type=int, required=True,
-                        help='Start timestamp for the repair interval')
-    parser.add_argument('--to', dest='end_ts', type=int, required=True,
-                        help='End timestamp for the repair interval')
-    parser.add_argument('--timeout', type=int, default=300,
-                        help='Maximum time to wait in seconds (default: 300)')
-
-    args = parser.parse_args()
-
-    print(f"Requesting priority repair for {args.symbol} from {args.start_ts} to {args.end_ts}")
-
-    # Run with proper resource management
-    success = asyncio.run(run_with_resources(args))
-
-    if success:
-        print("Repair completed successfully - data is now gap-free!")
-        return 0
-    else:
-        print("Repair timed out - data may still have gaps.")
-        return 1
-
-
-if __name__ == "__main__":
-    exit(main())
+# Entry-point wiring (composition root) moved to
+# interface/cli/watcher_retune_cli.py (E5 entry-point rewiring), where it may
+# legally build the container and resolve the infrastructure adapters. This module
+# now exposes only the reusable WatcherRetuneUseCase and imports no infrastructure.

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "OFCUSDT",
+  "timeframe": "1m",
+  "checksum": "2541dc404b5094f65ad119973b29f5564b333f09fdccaa66259beb95d1e0a556",
+  "download_timestamp": "2026-06-12T18:43:15.434419",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778687040",
+    "end": "1778720580"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/OFC-USDT.csv"
+}

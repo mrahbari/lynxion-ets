@@ -12,7 +12,7 @@ import time
 import requests
 from decimal import Decimal
 
-from domain.entities.trading_entities import OrderSide
+from domain.entities import OrderSide
 from domain.value_objects import Symbol, Money
 from shared.logger import logger
 

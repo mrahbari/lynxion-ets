@@ -5,17 +5,19 @@ from datetime import datetime
 from typing import Dict, Optional
 import threading
 from infrastructure.logging.forensic_logger import forensic_logger
-from application.configs.configs import Configs
 
 
 class TradeTracker:
     """Tracks active trades and logs their closures."""
 
-    def __init__(self):
+    def __init__(self, forensic_logging_enabled: bool = True):
         self.active_trades: Dict[str, Dict] = {}
         self.lock = threading.Lock()
-        # Check if forensic logging is enabled
-        self.forensic_logging_enabled = Configs.monitoring.forensic_logging_enabled if Configs.monitoring and hasattr(Configs.monitoring, 'forensic_logging_enabled') else True
+        # Whether to emit forensic logs on trade closure. Injected by the
+        # composition root from settings.monitoring.forensic_logging_enabled;
+        # default True mirrors the settings-schema default for the unwired/test
+        # path, so this module no longer imports bootstrap.settings.loaders (E1).
+        self.forensic_logging_enabled = forensic_logging_enabled
         
     def register_trade(self, trade_id: str, symbol: str, side: str, price: float, quantity: float, 
                       sl: float, tp: float, timestamp: datetime):

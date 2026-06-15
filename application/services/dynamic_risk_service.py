@@ -5,7 +5,7 @@ This service provides more dynamic risk adjustment mechanisms that adapt to mark
 from typing import Dict, List, Optional, Any
 import numpy as np
 from datetime import datetime, timedelta
-from domain.entities.trading_entities import Signal, Order, Position
+from domain.entities import Signal, Order, Position
 from domain.value_objects import Symbol, Money, Percentage
 from domain.ports.engine_ports import RiskGovernorPort
 from domain.ports.trading_ports import RiskManagementPort

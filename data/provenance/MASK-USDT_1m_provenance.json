@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "MASKUSDT",
+  "timeframe": "1m",
+  "checksum": "5cb7d08f445bee7c7b077de8fb2084c55ff7bc06d12e95f9dd72549666d3132e",
+  "download_timestamp": "2026-06-12T18:37:37.943465",
+  "row_count": 1064,
+  "date_range": {
+    "start": "1778686440",
+    "end": "1778750220"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/MASK-USDT.csv"
+}

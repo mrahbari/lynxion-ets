@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
-from domain.entities.signal_entities import MarketObservation
+from domain.entities import MarketObservation
 from shared.logger import logger
 from domain.value_objects import Symbol, Percentage
 from infrastructure.brokers.broker_manager import BrokerManager

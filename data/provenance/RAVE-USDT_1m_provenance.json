@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "RAVEUSDT",
+  "timeframe": "1m",
+  "checksum": "1bfa5fc301df40d0003be52071aab316ad04790427a782d3d58ba735431646c5",
+  "download_timestamp": "2026-06-12T18:36:29.301615",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686620",
+    "end": "1778720160"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/RAVE-USDT.csv"
+}

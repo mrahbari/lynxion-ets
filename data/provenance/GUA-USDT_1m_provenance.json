@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "GUAUSDT",
+  "timeframe": "1m",
+  "checksum": "096e0e55a27d9686f76d308ff4204e5e614fdec1e939e4d081347fd1d9b5aa5b",
+  "download_timestamp": "2026-06-12T18:25:54.974855",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686020",
+    "end": "1778719500"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/GUA-USDT.csv"
+}

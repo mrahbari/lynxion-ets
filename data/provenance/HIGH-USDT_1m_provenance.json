@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "HIGHUSDT",
+  "timeframe": "1m",
+  "checksum": "a571e19a16fc37968fd29f22f157ee520db5be0782692ac47d65cd40b866c825",
+  "download_timestamp": "2026-06-12T18:30:08.457949",
+  "row_count": 1061,
+  "date_range": {
+    "start": "1778686200",
+    "end": "1778749800"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/HIGH-USDT.csv"
+}

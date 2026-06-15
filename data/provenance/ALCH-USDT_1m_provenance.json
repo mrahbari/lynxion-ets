@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ALCHUSDT",
+  "timeframe": "1m",
+  "checksum": "0afeee2725e70bc28540f2ce724d40978539e24e02f93e2f0cda96b084d70a66",
+  "download_timestamp": "2026-06-12T18:29:08.715047",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686200",
+    "end": "1778719740"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ALCH-USDT.csv"
+}

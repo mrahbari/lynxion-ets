@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from typing import Protocol, List, Optional, Dict, Any
-from domain.entities.trading_entities import Order, Fill
+from domain.entities import Order, Fill
 from domain.value_objects import Symbol
 
 

@@ -10,7 +10,7 @@ from typing import List, Set, Dict, Optional
 from pathlib import Path
 from domain.value_objects import Symbol
 from shared.logger import EnhancedLogger
-from application.configs.configs import Configs
+from bootstrap.settings.loaders import load_settings
 
 
 class CentralizedSymbolManager:
@@ -121,7 +121,7 @@ class CentralizedSymbolManager:
     def _create_unified_symbol_list(self) -> List[str]:
         """Create a unified list of symbols from all sources."""
         # Get symbols from environment variable (WFO_COINS)
-        wfo_coins_str = ','.join(Configs.wfo.coins) if Configs.wfo and Configs.wfo.coins else ""
+        wfo_coins_str = ','.join(load_settings().wfo.coins) if load_settings().wfo and load_settings().wfo.coins else ""
         env_symbols = []
         if wfo_coins_str:
             env_symbols = [s.strip().upper().replace("/", "").replace("-", "")

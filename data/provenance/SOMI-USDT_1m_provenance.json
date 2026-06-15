@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SOMIUSDT",
+  "timeframe": "1m",
+  "checksum": "90ff222d3f48971f461bc5c61f099bc06b03209dfa54970853b28f00b037e6b1",
+  "download_timestamp": "2026-06-12T18:31:01.010899",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778749860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SOMI-USDT.csv"
+}

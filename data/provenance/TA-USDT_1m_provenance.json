@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "TAUSDT",
+  "timeframe": "1m",
+  "checksum": "a205a97ca357be9fdd278c1ac9eaff9b8914d57836d33d5f8bb136fd8c888a23",
+  "download_timestamp": "2026-06-12T18:30:55.616442",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778719800"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/TA-USDT.csv"
+}

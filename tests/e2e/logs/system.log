@@ -1,0 +1,581 @@
+2026-06-11 09:57:30,939 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_6493d3e0 - sell 0.01@100.0205
+2026-06-11 09:57:30,946 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_6493d3e0 at 2023-11-19 08:13:20
+2026-06-11 09:57:30,948 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_6c7b170d
+2026-06-11 09:57:30,949 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_6c7b170d - sell 0.01@99.4136
+2026-06-11 09:57:30,950 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_6c7b170d at 2023-11-19 09:13:20
+2026-06-11 09:57:30,951 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_30cd5f43
+2026-06-11 09:57:30,957 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_30cd5f43 - sell 0.01@98.78
+2026-06-11 09:57:30,959 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_30cd5f43 at 2023-11-19 10:13:20
+2026-06-11 09:57:30,960 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_49d2d895
+2026-06-11 09:57:30,961 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_49d2d895 - sell 0.01@98.1334
+2026-06-11 09:57:30,962 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_49d2d895 at 2023-11-19 11:13:20
+2026-06-11 09:57:30,963 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_b96d80bf
+2026-06-11 09:57:30,964 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_b96d80bf - sell 0.01@97.4881
+2026-06-11 09:57:30,965 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_b96d80bf at 2023-11-19 12:13:20
+2026-06-11 09:57:30,966 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_ae67f64e
+2026-06-11 09:57:30,967 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_ae67f64e - sell 0.01@96.8585
+2026-06-11 09:57:30,967 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_ae67f64e at 2023-11-19 13:13:20
+2026-06-11 09:57:30,969 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_ffa1c5ad
+2026-06-11 09:57:30,970 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_ffa1c5ad - sell 0.01@96.2591
+2026-06-11 09:57:30,971 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_ffa1c5ad at 2023-11-19 14:13:20
+2026-06-11 09:57:30,972 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_6d5dddf1
+2026-06-11 09:57:30,973 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_6d5dddf1 - sell 0.01@95.7039
+2026-06-11 09:57:30,974 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_6d5dddf1 at 2023-11-19 15:13:20
+2026-06-11 09:57:30,975 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_598d9ff2
+2026-06-11 09:57:30,976 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_598d9ff2 - sell 0.01@95.2065
+2026-06-11 09:57:30,976 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_598d9ff2 at 2023-11-19 16:13:20
+2026-06-11 09:57:30,977 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_9e9faeaf
+2026-06-11 09:57:30,978 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_9e9faeaf - sell 0.01@94.7794
+2026-06-11 09:57:30,979 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_9e9faeaf at 2023-11-19 17:13:20
+2026-06-11 09:57:30,980 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_27832ce1
+2026-06-11 09:57:30,981 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_27832ce1 - sell 0.01@94.434
+2026-06-11 09:57:30,982 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_27832ce1 at 2023-11-19 18:13:20
+2026-06-11 09:57:30,983 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f69fddec
+2026-06-11 09:57:30,984 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f69fddec - sell 0.01@94.1803
+2026-06-11 09:57:30,986 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f69fddec at 2023-11-19 19:13:20
+2026-06-11 09:57:30,987 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_718b6901
+2026-06-11 09:57:30,988 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_718b6901 - sell 0.01@94.0268
+2026-06-11 09:57:30,989 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_718b6901 at 2023-11-19 20:13:20
+2026-06-11 09:57:30,990 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_42b7fa59
+2026-06-11 09:57:30,991 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_42b7fa59 - sell 0.01@93.98
+2026-06-11 09:57:30,992 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_42b7fa59 at 2023-11-19 21:13:20
+2026-06-11 09:57:30,993 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_2ff1bff1
+2026-06-11 09:57:30,994 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_2ff1bff1 - sell 0.01@94.0447
+2026-06-11 09:57:30,995 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_2ff1bff1 at 2023-11-19 22:13:20
+2026-06-11 09:57:30,996 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_0fef591e
+2026-06-11 09:57:30,997 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_0fef591e - sell 0.01@94.2236
+2026-06-11 09:57:30,998 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_0fef591e at 2023-11-19 23:13:20
+2026-06-11 09:57:30,999 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_9bb5974f
+2026-06-11 09:57:31,000 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_9bb5974f - sell 0.01@94.5172
+2026-06-11 09:57:31,001 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_9bb5974f at 2023-11-20 00:13:20
+2026-06-11 09:57:31,002 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_463a4adf
+2026-06-11 09:57:31,003 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_463a4adf - sell 0.01@94.9241
+2026-06-11 09:57:31,004 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_463a4adf at 2023-11-20 01:13:20
+2026-06-11 09:57:31,005 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_2690b253
+2026-06-11 09:57:31,006 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_2690b253 - sell 0.01@95.4407
+2026-06-11 09:57:31,007 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_2690b253 at 2023-11-20 02:13:20
+2026-06-11 09:57:31,009 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_be39aec0
+2026-06-11 09:57:31,010 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_be39aec0 - sell 0.01@96.0615
+2026-06-11 09:57:31,011 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_be39aec0 at 2023-11-20 03:13:20
+2026-06-11 09:57:31,012 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f37bdd0f
+2026-06-11 09:57:31,013 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f37bdd0f - buy 0.01@96.7788
+2026-06-11 09:57:31,014 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f37bdd0f at 2023-11-20 04:13:20
+2026-06-11 09:57:31,015 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_82627da0
+2026-06-11 09:57:31,016 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_82627da0 - buy 0.01@97.5836
+2026-06-11 09:57:31,017 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_82627da0 at 2023-11-20 05:13:20
+2026-06-11 09:57:31,018 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_46c051e5
+2026-06-11 09:57:31,019 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_46c051e5 - buy 0.01@98.465
+2026-06-11 09:57:31,020 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_46c051e5 at 2023-11-20 06:13:20
+2026-06-11 09:57:31,021 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_5d614cfd
+2026-06-11 09:57:31,022 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_5d614cfd - buy 0.01@99.4107
+2026-06-11 09:57:31,023 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_5d614cfd at 2023-11-20 07:13:20
+2026-06-11 09:57:31,024 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_07cd2786
+2026-06-11 09:57:31,025 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_07cd2786 - buy 0.01@100.4075
+2026-06-11 09:57:31,026 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_07cd2786 at 2023-11-20 08:13:20
+2026-06-11 09:57:31,028 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_8cd87bb6
+2026-06-11 09:57:31,028 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_8cd87bb6 - buy 0.01@101.4412
+2026-06-11 09:57:31,029 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_8cd87bb6 at 2023-11-20 09:13:20
+2026-06-11 09:57:31,030 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_63e124eb
+2026-06-11 09:57:31,032 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_63e124eb - buy 0.01@102.4971
+2026-06-11 09:57:31,033 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_63e124eb at 2023-11-20 10:13:20
+2026-06-11 09:57:31,034 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f6f7772f
+2026-06-11 09:57:31,035 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f6f7772f - buy 0.01@103.5599
+2026-06-11 09:57:31,036 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f6f7772f at 2023-11-20 11:13:20
+2026-06-11 09:57:31,037 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f72f2ef6
+2026-06-11 09:57:31,038 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f72f2ef6 - buy 0.01@104.6148
+2026-06-11 09:57:31,039 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f72f2ef6 at 2023-11-20 12:13:20
+2026-06-11 09:57:31,040 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_1edf5f7b
+2026-06-11 09:57:31,041 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_1edf5f7b - buy 0.01@105.6469
+2026-06-11 09:57:31,042 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_1edf5f7b at 2023-11-20 13:13:20
+2026-06-11 09:57:31,043 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_3e6fa736
+2026-06-11 09:57:31,045 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_3e6fa736 - buy 0.01@106.642
+2026-06-11 09:57:31,046 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_3e6fa736 at 2023-11-20 14:13:20
+2026-06-11 09:57:31,047 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_5dbbcd32
+2026-06-11 09:57:31,049 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_5dbbcd32 - buy 0.01@107.5869
+2026-06-11 09:57:31,049 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_5dbbcd32 at 2023-11-20 15:13:20
+2026-06-11 09:57:31,051 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_51c48b41
+2026-06-11 09:57:31,051 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_51c48b41 - buy 0.01@108.4693
+2026-06-11 09:57:31,052 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_51c48b41 at 2023-11-20 16:13:20
+2026-06-11 09:57:31,053 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_af0338f9
+2026-06-11 09:57:31,054 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_af0338f9 - buy 0.01@109.2784
+2026-06-11 09:57:31,055 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_af0338f9 at 2023-11-20 17:13:20
+2026-06-11 09:57:31,056 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_14f9110d
+2026-06-11 09:57:31,057 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_14f9110d - buy 0.01@110.005
+2026-06-11 09:57:31,058 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_14f9110d at 2023-11-20 18:13:20
+2026-06-11 09:57:31,059 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_8356b872
+2026-06-11 09:57:31,060 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_8356b872 - buy 0.01@110.6415
+2026-06-11 09:57:31,061 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_8356b872 at 2023-11-20 19:13:20
+2026-06-11 09:57:31,062 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_b03d6190
+2026-06-11 09:57:31,063 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_b03d6190 - buy 0.01@111.1823
+2026-06-11 09:57:31,064 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_b03d6190 at 2023-11-20 20:13:20
+2026-06-11 09:57:31,065 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_b9d55afc
+2026-06-11 09:57:31,066 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_b9d55afc - buy 0.01@111.6239
+2026-06-11 09:57:31,067 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_b9d55afc at 2023-11-20 21:13:20
+2026-06-11 09:57:31,068 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_67399056
+2026-06-11 09:57:31,069 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_67399056 - buy 0.01@111.9645
+2026-06-11 09:57:31,070 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_67399056 at 2023-11-20 22:13:20
+2026-06-11 09:57:31,070 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_2c5c4ee9
+2026-06-11 09:57:31,071 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_2c5c4ee9 - buy 0.01@112.2048
+2026-06-11 09:57:31,072 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_2c5c4ee9 at 2023-11-20 23:13:20
+2026-06-11 09:57:31,073 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_05d2d3cf
+2026-06-11 09:57:31,074 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_05d2d3cf - buy 0.01@112.3473
+2026-06-11 09:57:31,075 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_05d2d3cf at 2023-11-21 00:13:20
+2026-06-11 09:57:31,076 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_2d4feafc
+2026-06-11 09:57:31,077 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_2d4feafc - buy 0.01@112.3965
+2026-06-11 09:57:31,078 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_2d4feafc at 2023-11-21 01:13:20
+2026-06-11 09:57:31,080 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_804b7f72
+2026-06-11 09:57:31,080 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_804b7f72 - buy 0.01@112.3589
+2026-06-11 09:57:31,082 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_804b7f72 at 2023-11-21 02:13:20
+2026-06-11 09:57:31,083 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_d4bb0eb4
+2026-06-11 09:57:31,084 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_d4bb0eb4 - buy 0.01@112.2425
+2026-06-11 09:57:31,084 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_d4bb0eb4 at 2023-11-21 03:13:20
+2026-06-11 09:57:31,085 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_009e8433
+2026-06-11 09:57:31,086 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_009e8433 - buy 0.01@112.0572
+2026-06-11 09:57:31,087 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_009e8433 at 2023-11-21 04:13:20
+2026-06-11 09:57:31,088 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_0016269e
+2026-06-11 09:57:31,089 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_0016269e - buy 0.01@111.814
+2026-06-11 09:57:31,090 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_0016269e at 2023-11-21 05:13:20
+2026-06-11 09:57:31,091 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_d59b6318
+2026-06-11 09:57:31,092 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_d59b6318 - buy 0.01@111.525
+2026-06-11 09:57:31,093 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_d59b6318 at 2023-11-21 06:13:20
+2026-06-11 09:57:31,094 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_ff8d0549
+2026-06-11 09:57:31,095 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_ff8d0549 - buy 0.01@111.2034
+2026-06-11 09:57:31,096 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_ff8d0549 at 2023-11-21 07:13:20
+2026-06-11 09:57:31,098 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_31be9ca6
+2026-06-11 09:57:31,099 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_31be9ca6 - buy 0.01@110.8627
+2026-06-11 09:57:31,101 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_31be9ca6 at 2023-11-21 08:13:20
+2026-06-11 09:57:31,102 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_8b5c04cf
+2026-06-11 09:57:31,103 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_8b5c04cf - sell 0.01@110.5169
+2026-06-11 09:57:31,104 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_8b5c04cf at 2023-11-21 09:13:20
+2026-06-11 09:57:31,106 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_c7da5200
+2026-06-11 09:57:31,107 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_c7da5200 - sell 0.01@110.1797
+2026-06-11 09:57:31,108 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_c7da5200 at 2023-11-21 10:13:20
+2026-06-11 09:57:31,110 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_e4e396c6
+2026-06-11 09:57:31,111 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_e4e396c6 - sell 0.01@109.8649
+2026-06-11 09:57:31,112 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_e4e396c6 at 2023-11-21 11:13:20
+2026-06-11 09:57:31,114 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_6b786c46
+2026-06-11 09:57:31,115 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_6b786c46 - sell 0.01@109.5855
+2026-06-11 09:57:31,116 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_6b786c46 at 2023-11-21 12:13:20
+2026-06-11 09:57:31,118 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_bb4fc9ee
+2026-06-11 09:57:31,120 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_bb4fc9ee - sell 0.01@109.3535
+2026-06-11 09:57:31,121 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_bb4fc9ee at 2023-11-21 13:13:20
+2026-06-11 09:57:31,123 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_51504eae
+2026-06-11 09:57:31,124 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_51504eae - sell 0.01@109.1801
+2026-06-11 09:57:31,125 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_51504eae at 2023-11-21 14:13:20
+2026-06-11 09:57:31,126 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_20d13ffa
+2026-06-11 09:57:31,127 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_20d13ffa - sell 0.01@109.0748
+2026-06-11 09:57:31,128 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_20d13ffa at 2023-11-21 15:13:20
+2026-06-11 09:57:31,129 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_a72316b8
+2026-06-11 09:57:31,130 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_a72316b8 - sell 0.01@109.0458
+2026-06-11 09:57:31,131 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_a72316b8 at 2023-11-21 16:13:20
+2026-06-11 09:57:31,132 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f5c8c3bd
+2026-06-11 09:57:31,133 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f5c8c3bd - sell 0.01@109.0994
+2026-06-11 09:57:31,134 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f5c8c3bd at 2023-11-21 17:13:20
+2026-06-11 09:57:31,135 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_c1c97d8a
+2026-06-11 09:57:31,135 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_c1c97d8a - sell 0.01@109.2401
+2026-06-11 09:57:31,136 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_c1c97d8a at 2023-11-21 18:13:20
+2026-06-11 09:57:31,137 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_24574eb2
+2026-06-11 09:57:31,138 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_24574eb2 - sell 0.01@109.4705
+2026-06-11 09:57:31,139 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_24574eb2 at 2023-11-21 19:13:20
+2026-06-11 09:57:31,140 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_5767f928
+2026-06-11 09:57:31,141 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_5767f928 - sell 0.01@109.7909
+2026-06-11 09:57:31,142 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_5767f928 at 2023-11-21 20:13:20
+2026-06-11 09:57:31,143 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_064a9681
+2026-06-11 09:57:31,144 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_064a9681 - sell 0.01@110.1999
+2026-06-11 09:57:31,145 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_064a9681 at 2023-11-21 21:13:20
+2026-06-11 09:57:31,146 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_a6b2c0ed
+2026-06-11 09:57:31,147 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_a6b2c0ed - buy 0.01@110.6938
+2026-06-11 09:57:31,147 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_a6b2c0ed at 2023-11-21 22:13:20
+2026-06-11 09:57:31,148 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_da82d555
+2026-06-11 09:57:31,149 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_da82d555 - buy 0.01@111.2671
+2026-06-11 09:57:31,150 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_da82d555 at 2023-11-21 23:13:20
+2026-06-11 09:57:31,151 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_03fcde64
+2026-06-11 09:57:31,152 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_03fcde64 - buy 0.01@111.9123
+2026-06-11 09:57:31,153 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_03fcde64 at 2023-11-22 00:13:20
+2026-06-11 09:57:31,154 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_82544978
+2026-06-11 09:57:31,155 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_82544978 - buy 0.01@112.6203
+2026-06-11 09:57:31,156 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_82544978 at 2023-11-22 01:13:20
+2026-06-11 09:57:31,157 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_617e2602
+2026-06-11 09:57:31,158 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_617e2602 - buy 0.01@113.3805
+2026-06-11 09:57:31,159 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_617e2602 at 2023-11-22 02:13:20
+2026-06-11 09:57:31,160 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_eec049d2
+2026-06-11 09:57:31,161 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_eec049d2 - buy 0.01@114.1808
+2026-06-11 09:57:31,162 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_eec049d2 at 2023-11-22 03:13:20
+2026-06-11 09:57:31,163 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_88c92b58
+2026-06-11 09:57:31,164 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_88c92b58 - buy 0.01@115.0082
+2026-06-11 09:57:31,165 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_88c92b58 at 2023-11-22 04:13:20
+2026-06-11 09:57:31,166 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_133bff66
+2026-06-11 09:57:31,167 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_133bff66 - buy 0.01@115.8488
+2026-06-11 09:57:31,168 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_133bff66 at 2023-11-22 05:13:20
+2026-06-11 09:57:31,169 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_d6407c01
+2026-06-11 09:57:31,170 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_d6407c01 - buy 0.01@116.6882
+2026-06-11 09:57:31,171 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_d6407c01 at 2023-11-22 06:13:20
+2026-06-11 09:57:31,173 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_55806902
+2026-06-11 09:57:31,174 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_55806902 - buy 0.01@117.5118
+2026-06-11 09:57:31,175 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_55806902 at 2023-11-22 07:13:20
+2026-06-11 09:57:31,176 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_5f3b2749
+2026-06-11 09:57:31,177 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_5f3b2749 - buy 0.01@118.305
+2026-06-11 09:57:31,178 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_5f3b2749 at 2023-11-22 08:13:20
+2026-06-11 09:57:31,179 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_679a79a8
+2026-06-11 09:57:31,180 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_679a79a8 - buy 0.01@119.0534
+2026-06-11 09:57:31,181 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_679a79a8 at 2023-11-22 09:13:20
+2026-06-11 09:57:31,182 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_c320db7a
+2026-06-11 09:57:31,183 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_c320db7a - buy 0.01@119.7435
+2026-06-11 09:57:31,184 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_c320db7a at 2023-11-22 10:13:20
+2026-06-11 09:57:31,185 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_0168547b
+2026-06-11 09:57:31,186 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_0168547b - buy 0.01@120.3625
+2026-06-11 09:57:31,187 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_0168547b at 2023-11-22 11:13:20
+2026-06-11 09:57:31,188 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_105fbd7a
+2026-06-11 09:57:31,189 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_105fbd7a - buy 0.01@120.8988
+2026-06-11 09:57:31,190 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_105fbd7a at 2023-11-22 12:13:20
+2026-06-11 09:57:31,191 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_1b0cc7a5
+2026-06-11 09:57:31,192 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_1b0cc7a5 - buy 0.01@121.3424
+2026-06-11 09:57:31,193 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_1b0cc7a5 at 2023-11-22 13:13:20
+2026-06-11 09:57:31,194 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_3e7b7c65
+2026-06-11 09:57:31,195 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_3e7b7c65 - buy 0.01@121.6847
+2026-06-11 09:57:31,196 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_3e7b7c65 at 2023-11-22 14:13:20
+2026-06-11 09:57:31,197 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f9d87f6c
+2026-06-11 09:57:31,198 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f9d87f6c - buy 0.01@121.919
+2026-06-11 09:57:31,199 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f9d87f6c at 2023-11-22 15:13:20
+2026-06-11 09:57:31,200 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_3c770580
+2026-06-11 09:57:31,201 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_3c770580 - buy 0.01@122.0403
+2026-06-11 09:57:31,202 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_3c770580 at 2023-11-22 16:13:20
+2026-06-11 09:57:31,203 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_63cb0ed0
+2026-06-11 09:57:31,204 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_63cb0ed0 - buy 0.01@122.0459
+2026-06-11 09:57:31,205 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_63cb0ed0 at 2023-11-22 17:13:20
+2026-06-11 09:57:31,207 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_1dcbec7b
+2026-06-11 09:57:31,208 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_1dcbec7b - buy 0.01@121.9352
+2026-06-11 09:57:31,209 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_1dcbec7b at 2023-11-22 18:13:20
+2026-06-11 09:57:31,210 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f8b2a3a3
+2026-06-11 09:57:31,211 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f8b2a3a3 - buy 0.01@121.7094
+2026-06-11 09:57:31,212 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f8b2a3a3 at 2023-11-22 19:13:20
+2026-06-11 09:57:31,213 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_7210ee9b
+2026-06-11 09:57:31,214 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_7210ee9b - buy 0.01@121.3721
+2026-06-11 09:57:31,215 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_7210ee9b at 2023-11-22 20:13:20
+2026-06-11 09:57:31,216 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_c3332d44
+2026-06-11 09:57:31,217 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_c3332d44 - buy 0.01@120.9286
+2026-06-11 09:57:31,218 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_c3332d44 at 2023-11-22 21:13:20
+2026-06-11 09:57:31,219 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_28eccc0e
+2026-06-11 09:57:31,220 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_28eccc0e - buy 0.01@120.3865
+2026-06-11 09:57:31,221 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_28eccc0e at 2023-11-22 22:13:20
+2026-06-11 09:57:31,222 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_16a812f5
+2026-06-11 09:57:31,223 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_16a812f5 - buy 0.01@119.7548
+2026-06-11 09:57:31,223 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_16a812f5 at 2023-11-22 23:13:20
+2026-06-11 09:57:31,224 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_fbc37f35
+2026-06-11 09:57:31,225 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_fbc37f35 - sell 0.01@119.0443
+2026-06-11 09:57:31,226 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_fbc37f35 at 2023-11-23 00:13:20
+2026-06-11 09:57:31,228 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_41e2aaae
+2026-06-11 09:57:31,229 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_41e2aaae - sell 0.01@118.267
+2026-06-11 09:57:31,229 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_41e2aaae at 2023-11-23 01:13:20
+2026-06-11 09:57:31,230 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_1e542ed0
+2026-06-11 09:57:31,231 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_1e542ed0 - sell 0.01@117.4362
+2026-06-11 09:57:31,232 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_1e542ed0 at 2023-11-23 02:13:20
+2026-06-11 09:57:31,233 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_1c916a3c
+2026-06-11 09:57:31,235 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_1c916a3c - sell 0.01@116.5659
+2026-06-11 09:57:31,236 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_1c916a3c at 2023-11-23 03:13:20
+2026-06-11 09:57:31,237 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_6b1778b2
+2026-06-11 09:57:31,238 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_6b1778b2 - sell 0.01@115.6708
+2026-06-11 09:57:31,239 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_6b1778b2 at 2023-11-23 04:13:20
+2026-06-11 09:57:31,240 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f9f2f23d
+2026-06-11 09:57:31,241 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f9f2f23d - sell 0.01@114.7659
+2026-06-11 09:57:31,242 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f9f2f23d at 2023-11-23 05:13:20
+2026-06-11 09:57:31,243 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_7e09a9b2
+2026-06-11 09:57:31,244 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_7e09a9b2 - sell 0.01@113.866
+2026-06-11 09:57:31,245 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_7e09a9b2 at 2023-11-23 06:13:20
+2026-06-11 09:57:31,246 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_b6b07907
+2026-06-11 09:57:31,246 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_b6b07907 - sell 0.01@112.9859
+2026-06-11 09:57:31,247 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_b6b07907 at 2023-11-23 07:13:20
+2026-06-11 09:57:31,248 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_11a5f956
+2026-06-11 09:57:31,249 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_11a5f956 - sell 0.01@112.1396
+2026-06-11 09:57:31,250 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_11a5f956 at 2023-11-23 08:13:20
+2026-06-11 09:57:31,251 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_4ceb5239
+2026-06-11 09:57:31,252 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_4ceb5239 - sell 0.01@111.3403
+2026-06-11 09:57:31,253 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_4ceb5239 at 2023-11-23 09:13:20
+2026-06-11 09:57:31,254 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_763937ce
+2026-06-11 09:57:31,254 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_763937ce - sell 0.01@110.6001
+2026-06-11 09:57:31,255 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_763937ce at 2023-11-23 10:13:20
+2026-06-11 09:57:31,256 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_9508d11a
+2026-06-11 09:57:31,257 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_9508d11a - sell 0.01@109.9297
+2026-06-11 09:57:31,258 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_9508d11a at 2023-11-23 11:13:20
+2026-06-11 09:57:31,259 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_5cbe69b8
+2026-06-11 09:57:31,260 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_5cbe69b8 - sell 0.01@109.3382
+2026-06-11 09:57:31,261 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_5cbe69b8 at 2023-11-23 12:13:20
+2026-06-11 09:57:31,262 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f8e01e6b
+2026-06-11 09:57:31,263 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f8e01e6b - sell 0.01@108.8331
+2026-06-11 09:57:31,264 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f8e01e6b at 2023-11-23 13:13:20
+2026-06-11 09:57:31,265 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_758e25ce
+2026-06-11 09:57:31,266 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_758e25ce - sell 0.01@108.4198
+2026-06-11 09:57:31,267 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_758e25ce at 2023-11-23 14:13:20
+2026-06-11 09:57:31,268 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_26b168e9
+2026-06-11 09:57:31,269 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_26b168e9 - sell 0.01@108.1018
+2026-06-11 09:57:31,270 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_26b168e9 at 2023-11-23 15:13:20
+2026-06-11 09:57:31,272 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_34a6e78f
+2026-06-11 09:57:31,273 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_34a6e78f - sell 0.01@107.8807
+2026-06-11 09:57:31,274 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_34a6e78f at 2023-11-23 16:13:20
+2026-06-11 09:57:31,275 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_c620686f
+2026-06-11 09:57:31,276 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_c620686f - sell 0.01@107.7559
+2026-06-11 09:57:31,277 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_c620686f at 2023-11-23 17:13:20
+2026-06-11 09:57:31,279 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_40ccd050
+2026-06-11 09:57:31,279 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_40ccd050 - sell 0.01@107.7247
+2026-06-11 09:57:31,281 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_40ccd050 at 2023-11-23 18:13:20
+2026-06-11 09:57:31,283 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_58a84454
+2026-06-11 09:57:31,285 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_58a84454 - sell 0.01@107.7825
+2026-06-11 09:57:31,286 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_58a84454 at 2023-11-23 19:13:20
+2026-06-11 09:57:31,287 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_41796f88
+2026-06-11 09:57:31,289 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_41796f88 - sell 0.01@107.9229
+2026-06-11 09:57:31,290 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_41796f88 at 2023-11-23 20:13:20
+2026-06-11 09:57:31,291 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_3e6f6e84
+2026-06-11 09:57:31,292 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_3e6f6e84 - sell 0.01@108.1376
+2026-06-11 09:57:31,293 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_3e6f6e84 at 2023-11-23 21:13:20
+2026-06-11 09:57:31,294 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f240f9ad
+2026-06-11 09:57:31,295 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f240f9ad - sell 0.01@108.417
+2026-06-11 09:57:31,296 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f240f9ad at 2023-11-23 22:13:20
+2026-06-11 09:57:31,297 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_a21a3876
+2026-06-11 09:57:31,298 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_a21a3876 - sell 0.01@108.7498
+2026-06-11 09:57:31,299 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_a21a3876 at 2023-11-23 23:13:20
+2026-06-11 09:57:31,301 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_c271fc18
+2026-06-11 09:57:31,302 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_c271fc18 - sell 0.01@109.1239
+2026-06-11 09:57:31,304 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_c271fc18 at 2023-11-24 00:13:20
+2026-06-11 09:57:31,306 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_6004caf8
+2026-06-11 09:57:31,308 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_6004caf8 - sell 0.01@109.5263
+2026-06-11 09:57:31,310 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_6004caf8 at 2023-11-24 01:13:20
+2026-06-11 09:57:31,311 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_8c67a44e
+2026-06-11 09:57:31,312 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_8c67a44e - buy 0.01@109.9434
+2026-06-11 09:57:31,314 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_8c67a44e at 2023-11-24 02:13:20
+2026-06-11 09:57:31,315 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_845813ef
+2026-06-11 09:57:31,316 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_845813ef - buy 0.01@110.3613
+2026-06-11 09:57:31,317 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_845813ef at 2023-11-24 03:13:20
+2026-06-11 09:57:31,318 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_eb412f71
+2026-06-11 09:57:31,319 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_eb412f71 - buy 0.01@110.7662
+2026-06-11 09:57:31,320 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_eb412f71 at 2023-11-24 04:13:20
+2026-06-11 09:57:31,321 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_52388426
+2026-06-11 09:57:31,322 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_52388426 - buy 0.01@111.1446
+2026-06-11 09:57:31,323 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_52388426 at 2023-11-24 05:13:20
+2026-06-11 09:57:31,325 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_1fc95a27
+2026-06-11 09:57:31,326 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_1fc95a27 - buy 0.01@111.4835
+2026-06-11 09:57:31,327 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_1fc95a27 at 2023-11-24 06:13:20
+2026-06-11 09:57:31,328 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_775cb4c2
+2026-06-11 09:57:31,329 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_775cb4c2 - buy 0.01@111.771
+2026-06-11 09:57:31,330 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_775cb4c2 at 2023-11-24 07:13:20
+2026-06-11 09:57:31,331 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_6f988782
+2026-06-11 09:57:31,332 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_6f988782 - buy 0.01@111.996
+2026-06-11 09:57:31,332 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_6f988782 at 2023-11-24 08:13:20
+2026-06-11 09:57:31,333 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f66fe446
+2026-06-11 09:57:31,334 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f66fe446 - buy 0.01@112.1491
+2026-06-11 09:57:31,335 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f66fe446 at 2023-11-24 09:13:20
+2026-06-11 09:57:31,336 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f5603859
+2026-06-11 09:57:31,337 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f5603859 - buy 0.01@112.2222
+2026-06-11 09:57:31,338 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f5603859 at 2023-11-24 10:13:20
+2026-06-11 09:57:31,339 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_8de24e0c
+2026-06-11 09:57:31,340 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_8de24e0c - buy 0.01@112.2093
+2026-06-11 09:57:31,341 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_8de24e0c at 2023-11-24 11:13:20
+2026-06-11 09:57:31,343 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_9eabcd2a
+2026-06-11 09:57:31,344 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_9eabcd2a - buy 0.01@112.1059
+2026-06-11 09:57:31,345 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_9eabcd2a at 2023-11-24 12:13:20
+2026-06-11 09:57:31,346 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_adc6ae67
+2026-06-11 09:57:31,347 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_adc6ae67 - buy 0.01@111.9097
+2026-06-11 09:57:31,349 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_adc6ae67 at 2023-11-24 13:13:20
+2026-06-11 09:57:31,350 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_c06a463a
+2026-06-11 09:57:31,351 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_c06a463a - buy 0.01@111.6205
+2026-06-11 09:57:31,352 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_c06a463a at 2023-11-24 14:13:20
+2026-06-11 09:57:31,353 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_2e1ff908
+2026-06-11 09:57:31,354 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_2e1ff908 - buy 0.01@111.2399
+2026-06-11 09:57:31,356 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_2e1ff908 at 2023-11-24 15:13:20
+2026-06-11 09:57:31,357 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_ab633125
+2026-06-11 09:57:31,359 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_ab633125 - buy 0.01@110.7718
+2026-06-11 09:57:31,360 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_ab633125 at 2023-11-24 16:13:20
+2026-06-11 09:57:31,362 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_c6b2f4de
+2026-06-11 09:57:31,363 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_c6b2f4de - sell 0.01@110.2219
+2026-06-11 09:57:31,364 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_c6b2f4de at 2023-11-24 17:13:20
+2026-06-11 09:57:31,366 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_b2823125
+2026-06-11 09:57:31,367 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_b2823125 - sell 0.01@109.5978
+2026-06-11 09:57:31,368 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_b2823125 at 2023-11-24 18:13:20
+2026-06-11 09:57:31,370 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f7164696
+2026-06-11 09:57:31,371 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f7164696 - sell 0.01@108.9088
+2026-06-11 09:57:31,372 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f7164696 at 2023-11-24 19:13:20
+2026-06-11 09:57:31,373 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_dc23fa99
+2026-06-11 09:57:31,374 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_dc23fa99 - sell 0.01@108.1659
+2026-06-11 09:57:31,376 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_dc23fa99 at 2023-11-24 20:13:20
+2026-06-11 09:57:31,378 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_146f1319
+2026-06-11 09:57:31,379 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_146f1319 - sell 0.01@107.3811
+2026-06-11 09:57:31,380 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_146f1319 at 2023-11-24 21:13:20
+2026-06-11 09:57:31,381 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_37f862d7
+2026-06-11 09:57:31,383 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_37f862d7 - sell 0.01@106.5677
+2026-06-11 09:57:31,384 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_37f862d7 at 2023-11-24 22:13:20
+2026-06-11 09:57:31,385 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_fc817a25
+2026-06-11 09:57:31,386 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_fc817a25 - sell 0.01@105.7397
+2026-06-11 09:57:31,387 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_fc817a25 at 2023-11-24 23:13:20
+2026-06-11 09:57:31,389 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_4d8eae0c
+2026-06-11 09:57:31,390 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_4d8eae0c - sell 0.01@104.9119
+2026-06-11 09:57:31,391 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_4d8eae0c at 2023-11-25 00:13:20
+2026-06-11 09:57:31,392 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_84a02f6c
+2026-06-11 09:57:31,393 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_84a02f6c - sell 0.01@104.0988
+2026-06-11 09:57:31,394 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_84a02f6c at 2023-11-25 01:13:20
+2026-06-11 09:57:31,396 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_15cf0a3d
+2026-06-11 09:57:31,397 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_15cf0a3d - sell 0.01@103.3155
+2026-06-11 09:57:31,398 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_15cf0a3d at 2023-11-25 02:13:20
+2026-06-11 09:57:31,399 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_c5782627
+2026-06-11 09:57:31,400 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_c5782627 - sell 0.01@102.5762
+2026-06-11 09:57:31,401 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_c5782627 at 2023-11-25 03:13:20
+2026-06-11 09:57:31,402 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_14ab19e1
+2026-06-11 09:57:31,403 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_14ab19e1 - sell 0.01@101.8947
+2026-06-11 09:57:31,404 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_14ab19e1 at 2023-11-25 04:13:20
+2026-06-11 09:57:31,406 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_9b1f2066
+2026-06-11 09:57:31,409 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_9b1f2066 - sell 0.01@101.284
+2026-06-11 09:57:31,412 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_9b1f2066 at 2023-11-25 05:13:20
+2026-06-11 09:57:31,416 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_5685c8ae
+2026-06-11 09:57:31,417 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_5685c8ae - sell 0.01@100.7557
+2026-06-11 09:57:31,419 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_5685c8ae at 2023-11-25 06:13:20
+2026-06-11 09:57:31,420 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_2d318d19
+2026-06-11 09:57:31,421 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_2d318d19 - sell 0.01@100.3201
+2026-06-11 09:57:31,422 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_2d318d19 at 2023-11-25 07:13:20
+2026-06-11 09:57:31,423 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_7107a9de
+2026-06-11 09:57:31,424 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_7107a9de - sell 0.01@99.9859
+2026-06-11 09:57:31,425 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_7107a9de at 2023-11-25 08:13:20
+2026-06-11 09:57:31,426 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_582f5741
+2026-06-11 09:57:31,427 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_582f5741 - sell 0.01@99.7599
+2026-06-11 09:57:31,428 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_582f5741 at 2023-11-25 09:13:20
+2026-06-11 09:57:31,429 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_aa8da891
+2026-06-11 09:57:31,430 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_aa8da891 - sell 0.01@99.6472
+2026-06-11 09:57:31,431 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_aa8da891 at 2023-11-25 10:13:20
+2026-06-11 09:57:31,432 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_94ca0705
+2026-06-11 09:57:31,433 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_94ca0705 - sell 0.01@99.6506
+2026-06-11 09:57:31,434 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_94ca0705 at 2023-11-25 11:13:20
+2026-06-11 09:57:31,435 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_7b6e4993
+2026-06-11 09:57:31,436 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_7b6e4993 - sell 0.01@99.771
+2026-06-11 09:57:31,437 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_7b6e4993 at 2023-11-25 12:13:20
+2026-06-11 09:57:31,438 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_d5c85456
+2026-06-11 09:57:31,439 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_d5c85456 - sell 0.01@100.0071
+2026-06-11 09:57:31,440 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_d5c85456 at 2023-11-25 13:13:20
+2026-06-11 09:57:31,441 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_d7e1e9b5
+2026-06-11 09:57:31,442 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_d7e1e9b5 - sell 0.01@100.3555
+2026-06-11 09:57:31,443 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_d7e1e9b5 at 2023-11-25 14:13:20
+2026-06-11 09:57:31,444 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_11f923d8
+2026-06-11 09:57:31,445 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_11f923d8 - sell 0.01@100.811
+2026-06-11 09:57:31,446 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_11f923d8 at 2023-11-25 15:13:20
+2026-06-11 09:57:31,447 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_de38ad8f
+2026-06-11 09:57:31,448 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_de38ad8f - sell 0.01@101.3662
+2026-06-11 09:57:31,449 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_de38ad8f at 2023-11-25 16:13:20
+2026-06-11 09:57:31,450 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_ee7b5c46
+2026-06-11 09:57:31,451 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_ee7b5c46 - buy 0.01@102.0122
+2026-06-11 09:57:31,452 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_ee7b5c46 at 2023-11-25 17:13:20
+2026-06-11 09:57:31,453 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_d05d02b8
+2026-06-11 09:57:31,454 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_d05d02b8 - buy 0.01@102.7383
+2026-06-11 09:57:31,455 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_d05d02b8 at 2023-11-25 18:13:20
+2026-06-11 09:57:31,456 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_28f24a0c
+2026-06-11 09:57:31,457 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_28f24a0c - buy 0.01@103.5326
+2026-06-11 09:57:31,458 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_28f24a0c at 2023-11-25 19:13:20
+2026-06-11 09:57:31,459 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_9a9ba140
+2026-06-11 09:57:31,460 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_9a9ba140 - buy 0.01@104.382
+2026-06-11 09:57:31,461 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_9a9ba140 at 2023-11-25 20:13:20
+2026-06-11 09:57:31,462 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_46b8ca44
+2026-06-11 09:57:31,463 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_46b8ca44 - buy 0.01@105.2726
+2026-06-11 09:57:31,464 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_46b8ca44 at 2023-11-25 21:13:20
+2026-06-11 09:57:31,465 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_d02dca53
+2026-06-11 09:57:31,466 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_d02dca53 - buy 0.01@106.1899
+2026-06-11 09:57:31,467 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_d02dca53 at 2023-11-25 22:13:20
+2026-06-11 09:57:31,468 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_32c81f73
+2026-06-11 09:57:31,469 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_32c81f73 - buy 0.01@107.119
+2026-06-11 09:57:31,470 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_32c81f73 at 2023-11-25 23:13:20
+2026-06-11 09:57:31,471 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_060cd2cc
+2026-06-11 09:57:31,472 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_060cd2cc - buy 0.01@108.0451
+2026-06-11 09:57:31,472 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_060cd2cc at 2023-11-26 00:13:20
+2026-06-11 09:57:31,473 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_36804c08
+2026-06-11 09:57:31,474 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_36804c08 - buy 0.01@108.9538
+2026-06-11 09:57:31,475 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_36804c08 at 2023-11-26 01:13:20
+2026-06-11 09:57:31,477 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_3c4fbed9
+2026-06-11 09:57:31,477 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_3c4fbed9 - buy 0.01@109.8311
+2026-06-11 09:57:31,478 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_3c4fbed9 at 2023-11-26 02:13:20
+2026-06-11 09:57:31,479 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_6a2140bf
+2026-06-11 09:57:31,480 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_6a2140bf - buy 0.01@110.664
+2026-06-11 09:57:31,481 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_6a2140bf at 2023-11-26 03:13:20
+2026-06-11 09:57:31,483 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_a30b5e73
+2026-06-11 09:57:31,485 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_a30b5e73 - buy 0.01@111.4406
+2026-06-11 09:57:31,486 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_a30b5e73 at 2023-11-26 04:13:20
+2026-06-11 09:57:31,487 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f9b16975
+2026-06-11 09:57:31,487 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f9b16975 - buy 0.01@112.1503
+2026-06-11 09:57:31,488 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f9b16975 at 2023-11-26 05:13:20
+2026-06-11 09:57:31,489 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_7336d68e
+2026-06-11 09:57:31,490 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_7336d68e - buy 0.01@112.7841
+2026-06-11 09:57:31,491 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_7336d68e at 2023-11-26 06:13:20
+2026-06-11 09:57:31,492 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_b5c5f505
+2026-06-11 09:57:31,493 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_b5c5f505 - buy 0.01@113.3348
+2026-06-11 09:57:31,494 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_b5c5f505 at 2023-11-26 07:13:20
+2026-06-11 09:57:31,495 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_d0d803d4
+2026-06-11 09:57:31,496 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_d0d803d4 - buy 0.01@113.797
+2026-06-11 09:57:31,497 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_d0d803d4 at 2023-11-26 08:13:20
+2026-06-11 09:57:31,498 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_34f4f9a6
+2026-06-11 09:57:31,499 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_34f4f9a6 - buy 0.01@114.1674
+2026-06-11 09:57:31,500 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_34f4f9a6 at 2023-11-26 09:13:20
+2026-06-11 09:57:31,501 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_c3bac3ca
+2026-06-11 09:57:31,502 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_c3bac3ca - buy 0.01@114.4446
+2026-06-11 09:57:31,503 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_c3bac3ca at 2023-11-26 10:13:20
+2026-06-11 09:57:31,504 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_3316d838
+2026-06-11 09:57:31,505 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_3316d838 - buy 0.01@114.6293
+2026-06-11 09:57:31,506 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_3316d838 at 2023-11-26 11:13:20
+2026-06-11 09:57:31,507 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_180ff988
+2026-06-11 09:57:31,508 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_180ff988 - buy 0.01@114.7243
+2026-06-11 09:57:31,509 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_180ff988 at 2023-11-26 12:13:20
+2026-06-11 09:57:31,510 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_20555f66
+2026-06-11 09:57:31,511 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_20555f66 - buy 0.01@114.7343
+2026-06-11 09:57:31,512 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_20555f66 at 2023-11-26 13:13:20
+2026-06-11 09:57:31,514 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_0228d34c
+2026-06-11 09:57:31,515 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_0228d34c - buy 0.01@114.6659
+2026-06-11 09:57:31,516 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_0228d34c at 2023-11-26 14:13:20
+2026-06-11 09:57:31,517 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_4294e52d
+2026-06-11 09:57:31,518 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_4294e52d - buy 0.01@114.5273
+2026-06-11 09:57:31,519 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_4294e52d at 2023-11-26 15:13:20
+2026-06-11 09:57:31,521 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_7146751b
+2026-06-11 09:57:31,522 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_7146751b - buy 0.01@114.3285
+2026-06-11 09:57:31,523 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_7146751b at 2023-11-26 16:13:20
+2026-06-11 09:57:31,524 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_13ca53f4
+2026-06-11 09:57:31,525 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_13ca53f4 - buy 0.01@114.0805
+2026-06-11 09:57:31,526 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_13ca53f4 at 2023-11-26 17:13:20
+2026-06-11 09:57:31,527 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_6f55de0a
+2026-06-11 09:57:31,528 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_6f55de0a - buy 0.01@113.7957
+2026-06-11 09:57:31,529 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_6f55de0a at 2023-11-26 18:13:20
+2026-06-11 09:57:31,530 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_24fc53b6
+2026-06-11 09:57:31,531 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_24fc53b6 - buy 0.01@113.487
+2026-06-11 09:57:31,532 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_24fc53b6 at 2023-11-26 19:13:20
+2026-06-11 09:57:31,533 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_95f6c021
+2026-06-11 09:57:31,534 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_95f6c021 - buy 0.01@113.1681
+2026-06-11 09:57:31,535 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_95f6c021 at 2023-11-26 20:13:20
+2026-06-11 09:57:31,536 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_751bb9dd
+2026-06-11 09:57:31,537 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_751bb9dd - sell 0.01@112.8529
+2026-06-11 09:57:31,538 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_751bb9dd at 2023-11-26 21:13:20
+2026-06-11 09:57:31,539 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_f2bd9022
+2026-06-11 09:57:31,540 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_f2bd9022 - sell 0.01@112.5552
+2026-06-11 09:57:31,541 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_f2bd9022 at 2023-11-26 22:13:20
+2026-06-11 09:57:31,542 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_b325c14f
+2026-06-11 09:57:31,544 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_b325c14f - sell 0.01@112.2884
+2026-06-11 09:57:31,545 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_b325c14f at 2023-11-26 23:13:20
+2026-06-11 09:57:31,546 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_d0d1cb63
+2026-06-11 09:57:31,547 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_d0d1cb63 - sell 0.01@112.0656
+2026-06-11 09:57:31,548 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_d0d1cb63 at 2023-11-27 00:13:20
+2026-06-11 09:57:31,549 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_9f579812
+2026-06-11 09:57:31,549 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_9f579812 - sell 0.01@111.8985
+2026-06-11 09:57:31,550 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_9f579812 at 2023-11-27 01:13:20
+2026-06-11 09:57:31,551 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_6b816142
+2026-06-11 09:57:31,552 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_6b816142 - sell 0.01@111.7982
+2026-06-11 09:57:31,553 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_6b816142 at 2023-11-27 02:13:20
+2026-06-11 09:57:31,554 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_46c1b7aa
+2026-06-11 09:57:31,555 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_46c1b7aa - sell 0.01@111.774
+2026-06-11 09:57:31,556 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_46c1b7aa at 2023-11-27 03:13:20
+2026-06-11 09:57:31,558 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_505a4121
+2026-06-11 09:57:31,559 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_505a4121 - sell 0.01@111.8338
+2026-06-11 09:57:31,560 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_505a4121 at 2023-11-27 04:13:20
+2026-06-11 09:57:31,561 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_76ee399a
+2026-06-11 09:57:31,562 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_76ee399a - sell 0.01@111.9838
+2026-06-11 09:57:31,562 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_76ee399a at 2023-11-27 05:13:20
+2026-06-11 09:57:31,563 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_6ab844d4
+2026-06-11 09:57:31,564 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_6ab844d4 - sell 0.01@112.2281
+2026-06-11 09:57:31,565 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_6ab844d4 at 2023-11-27 06:13:20
+2026-06-11 09:57:31,566 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_a46bc4c6
+2026-06-11 09:57:31,567 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_a46bc4c6 - sell 0.01@112.5689
+2026-06-11 09:57:31,568 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_a46bc4c6 at 2023-11-27 07:13:20
+2026-06-11 09:57:31,569 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_b1fcc1e6
+2026-06-11 09:57:31,570 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_b1fcc1e6 - sell 0.01@113.0064
+2026-06-11 09:57:31,571 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_b1fcc1e6 at 2023-11-27 08:13:20
+2026-06-11 09:57:31,572 - INFO - RealisticBacktester - [TRACE] Accepting execution intent: intent_3bd8f596
+2026-06-11 09:57:31,573 - INFO - RealisticBacktester - [TRACE] Executing trade from intent: intent_3bd8f596 - buy 0.01@113.5388
+2026-06-11 09:57:31,574 - INFO - RealisticBacktester - [TRACE] Execution intent accepted: intent_3bd8f596 at 2023-11-27 09:13:20

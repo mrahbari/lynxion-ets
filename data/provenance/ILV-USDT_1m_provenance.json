@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ILVUSDT",
+  "timeframe": "1m",
+  "checksum": "d9eced8f6d50bf3772e50f01974739098b78187bc9b33e97be8324fefe82c987",
+  "download_timestamp": "2026-06-12T18:39:04.313030",
+  "row_count": 1072,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778750340"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ILV-USDT.csv"
+}

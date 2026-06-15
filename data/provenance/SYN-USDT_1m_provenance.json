@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SYNUSDT",
+  "timeframe": "1m",
+  "checksum": "0817251f401c99381e4495db82b6d4aafe45d1f8ee4d262a53d33bae5dec247f",
+  "download_timestamp": "2026-06-12T18:28:16.595962",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778749680"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SYN-USDT.csv"
+}

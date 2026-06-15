@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "BILLUSDT",
+  "timeframe": "1m",
+  "checksum": "b92eef65c8d5201f18d8172e05a8a83ca881bf58e0d42d068cca5ec304f2fbdd",
+  "download_timestamp": "2026-06-12T18:41:43.175715",
+  "row_count": 574,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778720460"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/BILL-USDT.csv"
+}

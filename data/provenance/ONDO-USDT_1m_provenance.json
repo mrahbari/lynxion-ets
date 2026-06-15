@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ONDOUSDT",
+  "timeframe": "1m",
+  "checksum": "5e61aeb669d11f39608d6031add456a57b15f068840fe8cdbdc4ffce682d508f",
+  "download_timestamp": "2026-06-12T18:43:31.812052",
+  "row_count": 1072,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778750580"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ONDO-USDT.csv"
+}

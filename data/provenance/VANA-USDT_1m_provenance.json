@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "VANAUSDT",
+  "timeframe": "1m",
+  "checksum": "ef1ed3ba8b9e98a71d4f1205df4dbdd90aab4d3d0e15ff57385ee2571ac0eabc",
+  "download_timestamp": "2026-06-12T18:25:41.142657",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778685960",
+    "end": "1778749500"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/VANA-USDT.csv"
+}

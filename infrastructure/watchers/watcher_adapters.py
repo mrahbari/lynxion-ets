@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 
-from domain.entities.trading_entities import Signal
+from domain.entities import Signal
 from domain.value_objects import Symbol, Percentage
 from domain.ports.watcher_ports import WatcherPort
 from shared.logger import EnhancedLogger

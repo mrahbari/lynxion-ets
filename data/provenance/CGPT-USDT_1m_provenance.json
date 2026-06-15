@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "CGPTUSDT",
+  "timeframe": "1m",
+  "checksum": "be2fb10890f9bbb96f68f4434af5f5a16092600c0698a2130978d98019b2abd0",
+  "download_timestamp": "2026-06-12T18:33:58.919392",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686500",
+    "end": "1778749980"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/CGPT-USDT.csv"
+}

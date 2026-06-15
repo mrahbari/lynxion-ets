@@ -2,7 +2,7 @@
 Application service for execution in the enterprise hedge fund trading system.
 """
 from typing import List, Optional
-from domain.entities.trading_entities import Order, Fill
+from domain.entities import Order, Fill
 from domain.ports.execution_ports import ExecutionPort, ExecutionAlgorithmPort
 from shared.logger import logger
 

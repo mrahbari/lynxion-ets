@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 import logging
 from domain.value_objects import Symbol
-from domain.entities.signal_entities import MarketObservation
+from domain.entities import MarketObservation
 from infrastructure.watchers.base_watcher import BaseWatcherAdapter
 from shared.logger import EnhancedLogger
 

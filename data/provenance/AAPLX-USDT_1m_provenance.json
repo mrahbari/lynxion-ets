@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "AAPLXUSDT",
+  "timeframe": "1m",
+  "checksum": "0b751c86ca19e68e0b8181109f5ee1492fc148bd3b5aee9dcf062bc537b4738d",
+  "download_timestamp": "2026-06-12T18:29:53.009248",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778719740"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/AAPLX-USDT.csv"
+}

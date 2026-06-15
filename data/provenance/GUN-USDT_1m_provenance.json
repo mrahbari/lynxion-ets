@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "GUNUSDT",
+  "timeframe": "1m",
+  "checksum": "8a7b1275db9a583a108772e1f052fce3abc4ef111d45a81b4090b746706ef91f",
+  "download_timestamp": "2026-06-12T18:40:20.320571",
+  "row_count": 1070,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778750400"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/GUN-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "TIAUSDT",
+  "timeframe": "1m",
+  "checksum": "5fade6053840a24b547823bd394af7f690b0ff07a2a14c63244fc95f283bfa7c",
+  "download_timestamp": "2026-06-12T18:25:21.486730",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778685960",
+    "end": "1778749500"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/TIA-USDT.csv"
+}

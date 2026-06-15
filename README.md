@@ -100,7 +100,7 @@ Lynxion ETS follows **Hexagonal Architecture**, separating core business logic f
 
 * **Strategy Management**: Health monitoring, auto-restart, performance tracking
 * **Signal Processing**: Conflict resolution, adaptive weighting, validation
-* **Engine Performance**: Detailed metrics and optimization tracking
+* **Engine (`EngineService`)**: Canonical engine layer — interprets raw market observations into signals
 * **Fusion Intelligence**: Adaptive weights with diversity metrics and explainability
 * **Watcher Orchestration**: Health monitoring, auto-restart, dynamic registration
 * **Resource Optimization**: Instance pooling and limitation systems
@@ -120,25 +120,24 @@ Lynxion ETS follows **Hexagonal Architecture**, separating core business logic f
 The system implements a complete automated trading workflow with proper validation and monitoring:
 
 ```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Watcher   │───►│   Engine    │───►│   Fusion    │───►│  Strategy   │───►│   Broker    │
-│             │    │             │    │             │    │             │    │             │
-│ • Health    │    │ • Performance│   │ • Adaptive  │    │ • Health    │    │ • Order     │
-│   Monitoring│    │   Tracking  │    │   Weights   │    │   Monitoring│    │   Execution │
-│ • Auto-     │    │ • Validation│    │ • Diversity │    │ • Auto-     │    │ • Risk      │
-│   Restart   │    │ • Optimization│  │   Metrics   │    │   Restart   │    │   Management│
-│ • Signal    │    │             │    │ • Explain-  │    │ • Performance│   │             │
-│   Validation│    │             │    │   ability   │    │   Tracking  │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+Watcher  --->  Engine (EngineService)  --->  Fusion  --->  Strategy  --->  Risk  --->  Broker
+
+  Watcher   :  domain-specific market analysis; emits raw market observations
+  Engine    :  EngineService interprets each observation into an InterpretedSignal (canonical engine layer)
+  Fusion    :  adaptive weighting + signal aggregation (diversity, explainability, conflict resolution)
+  Strategy  :  strategy selection + execution intent
+  Risk      :  ATR-based stops/sizing + portfolio risk controls + kill-switch
+  Broker    :  order execution + monitoring
 ```
 
 ### Workflow Components
 
-* **Watcher Layer**: Health monitoring, auto-restart, signal validation, error isolation, symbol filtering
-* **Engine Layer**: Performance tracking, validation, optimization, processing metrics
-* **Fusion Layer**: Adaptive weights, diversity metrics, explainability, conflict resolution
-* **Strategy Layer**: Health monitoring, auto-restart, performance tracking, resource optimization
-* **Broker Layer**: Order execution, risk management, performance monitoring
+* **Watcher Layer**: Owns domain-specific market analysis (trend, volatility, liquidity, order-flow, regime); emits raw market observations; health monitoring, auto-restart, signal validation, symbol filtering
+* **Engine Layer** (`EngineService`): The single canonical engine — interprets each raw market observation into an `InterpretedSignal`. The legacy multi-engine signal-filter chain was retired in E3 and physically removed in E8 (see the Engine System note below).
+* **Fusion Layer**: Adaptive weighting and signal aggregation — diversity metrics, explainability, conflict resolution
+* **Strategy Layer**: Strategy selection and execution intent; health monitoring, auto-restart, performance tracking
+* **Risk Layer**: ATR-based stop-loss/take-profit and position sizing, portfolio risk controls, kill-switch
+* **Broker Layer**: Order execution and monitoring
 
 ### Symbol Validation System
 
@@ -195,18 +194,20 @@ All strategies inherit from a shared base adapter and are fully isolated with en
 
 ### Engine System
 
-* Enhanced with performance tracking and optimization
-* `EnginePerformanceTracker` – Detailed metrics and optimization
-* Processing time monitoring and adaptive optimization
+* **`EngineService`** is the single, canonical engine layer. It transforms each raw `MarketObservation` emitted by a watcher into an `InterpretedSignal` (direction, strength, confidence) that Fusion consumes.
+* Exposed to the rest of the system behind `EnginePort` via the pure-delegation `EngineServiceAdapter` — not a per-signal engine chain.
+
+> **Retired in E3/E8 — legacy multi-engine chain.** The old "signal-filter chain" engines (`TrendEngine`, `VolatilityEngine`, `CorrelationEngine`, `OrderFlowEngine`, `LiquidityEngine`, `MLWeightEngine`, `ATRRiskEngine`, `RegimeEngine`) were never wired into the live path and were physically removed in E8. Their responsibilities now live in the layers that actually own them: **Watchers** (domain-specific market analysis), **Fusion** (adaptive weighting / aggregation), **Risk** (ATR & risk controls) and the **regime classifier**. **Correlation / pairs (cointegration) trading is deferred to a future backlog epic.**
 
 ### Fusion System
 
-* `AdvancedFusionServiceAdapter` – Adaptive weights with diversity metrics
+* `FusionService` / `AdvancedFusionWeighting` – Adaptive weighting and signal aggregation with diversity metrics
 * Enhanced explainability and conflict resolution
 * Market regime awareness and correlation adjustment
 
 ### Watcher System
 
+* **Owns domain-specific market analysis** — trend (multi-timeframe), volatility, liquidity, order-flow, market-pulse, anomaly and regime watchers each emit raw `MarketObservation`s into the pipeline
 * Enhanced with comprehensive health monitoring
 * Auto-restart capabilities and error isolation
 * `WatcherManager` for centralized management
@@ -908,6 +909,7 @@ After downloading raw 1-minute data, generate higher timeframes:
 ```bash
 # Update multi-timeframe data from raw 1-minute data
 python runner_multitimeframe_update.py --symbols YOUR_SYMBOL --timeframes 5m 15m 30m 1h 4h 1d
+python runner_multitimeframe_update.py --symbols BTCUSDT --timeframes 5m 15m 30m 1h 4h 1d
 
 # Or update all symbols
 python runner_multitimeframe_update.py --all --timeframes 5m 15m 30m 1h 4h 1d

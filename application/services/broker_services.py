@@ -2,7 +2,7 @@
 Application service for broker management in the enterprise hedge fund trading system.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Order, Fill, Position, Balance
+from domain.entities import Order, Fill, Position, Balance
 from domain.value_objects import Symbol, Money
 from domain.ports.broker_ports import BrokerPort, BrokerAdapterManagerPort
 from shared.logger import logger

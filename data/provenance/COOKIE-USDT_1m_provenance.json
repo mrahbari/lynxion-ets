@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "COOKIEUSDT",
+  "timeframe": "1m",
+  "checksum": "21cf1f2dfceb96941912334833ccf372c2216ff9f89f1297f8893d1b55b6f1f8",
+  "download_timestamp": "2026-06-12T18:26:47.358937",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778749560"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/COOKIE-USDT.csv"
+}

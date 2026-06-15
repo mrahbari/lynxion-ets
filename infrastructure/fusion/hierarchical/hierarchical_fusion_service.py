@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 
-from domain.entities.signal_entities import MarketObservation, FusedSignal, SignalType
+from domain.entities import MarketObservation, FusedSignal, SignalType
 from domain.value_objects import Symbol, Percentage
 from .watcher_classifier import WatcherClassifier, WatcherRole, ObservationClassifier
 from .confidence_thresholds import ConfidenceThresholds, ConfidenceValidator, RegimeConfidenceManager

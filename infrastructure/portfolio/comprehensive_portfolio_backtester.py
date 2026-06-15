@@ -16,8 +16,8 @@ warnings.filterwarnings('ignore')
 from infrastructure.backtest.realistic_backtester import RealisticBacktester
 from infrastructure.data.csv_history_loader import CSVHistoryLoaderAdapter
 from shared.logger import EnhancedLogger
+from shared.mock_data_guard import assert_mock_data_allowed
 from shared.experiment_tracking import generate_run_id, save_experiment_results
-from application.configs.configs import Configs
 
 
 class ComprehensivePortfolioBacktester:
@@ -32,14 +32,21 @@ class ComprehensivePortfolioBacktester:
                  slippage_factor: float = 0.0005,
                  risk_per_trade: float = 0.02,
                  max_drawdown_limit: float = 0.15,
-                 max_correlation_limit: float = 0.7):
-        
+                 max_correlation_limit: float = 0.7,
+                 use_mock_data: bool = False):
+
         self.initial_capital = initial_capital
         self.fee_rate = fee_rate
         self.slippage_factor = slippage_factor
         self.risk_per_trade = risk_per_trade
         self.max_drawdown_limit = max_drawdown_limit
         self.max_correlation_limit = max_correlation_limit
+        # E-P5.2 T3: explicit, unit-test-only opt-in for mock data. This is NOT
+        # wired from settings/profile by the composition root (the container no
+        # longer passes it), so any real validation/backtest run leaves it False
+        # and mock generation is a hard error. A unit test may construct this
+        # class with use_mock_data=True to exercise the mock path explicitly.
+        self.use_mock_data = use_mock_data
         
         self.logger = EnhancedLogger("ComprehensivePortfolioBacktester")
         
@@ -180,7 +187,19 @@ class ComprehensivePortfolioBacktester:
         return df
     
     def generate_mock_data(self, symbol: str, start_date: datetime, end_date: datetime) -> pd.DataFrame:
-        """Generate mock price data for testing when real data is not available."""
+        """Generate mock price data — UNIT-TEST USE ONLY.
+
+        E-P5.2 T3: validation/production must never run on fabricated data. This
+        raises unless mock data was explicitly enabled in-code — either by
+        constructing the backtester with ``use_mock_data=True`` or inside a
+        ``shared.mock_data_guard.allow_mock_data()`` context. Wired runs never
+        set either, so reaching this method in validation/production is a hard
+        error.
+        """
+        assert_mock_data_allowed(
+            explicit=self.use_mock_data,
+            context="ComprehensivePortfolioBacktester.generate_mock_data",
+        )
         import numpy as np
         import pandas as pd
         from datetime import timedelta
@@ -1066,8 +1085,10 @@ class ComprehensivePortfolioBacktester:
 
         self.logger.info(f"Generated run ID: {run_id}")
 
-        # Determine if we should allow mock data based on environment variable
-        use_mock_data = Configs.infrastructure.use_mock_data if Configs.infrastructure and hasattr(Configs.infrastructure, 'use_mock_data') else False
+        # E-P5.2 T3: mock fallback is gated by the explicit unit-test-only flag
+        # (self.use_mock_data), never by settings. False in any wired run, so
+        # missing/insufficient data raises instead of fabricating it.
+        use_mock_data = self.use_mock_data
 
         # Load data for all symbols
         data_dict = self.load_data_for_symbols(symbols, start_date, end_date, mock_data_if_missing=use_mock_data)

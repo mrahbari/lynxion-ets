@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ROSEUSDT",
+  "timeframe": "1m",
+  "checksum": "743fed97477369c67df2af86f639c21655c9694aaaabc8d346838c85018a42b7",
+  "download_timestamp": "2026-06-12T18:31:13.373171",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778749860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ROSE-USDT.csv"
+}

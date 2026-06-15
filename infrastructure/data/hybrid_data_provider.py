@@ -3,11 +3,10 @@ Hybrid Data Provider that can switch between Mock and CSV providers based on con
 """
 from typing import List, Dict, Any, Optional
 from domain.ports.data_ports import DataProviderPort
-from domain.entities.trading_entities import MarketData
+from domain.entities import MarketData
 from domain.value_objects import Symbol
 from infrastructure.data.data_adapters import MockDataProviderAdapter
 from infrastructure.data.csv_history_loader import CSVHistoryLoaderAdapter
-from application.configs.configs import Configs
 
 
 class HybridDataProviderAdapter(DataProviderPort):
@@ -16,21 +15,26 @@ class HybridDataProviderAdapter(DataProviderPort):
     This allows for easy switching between development and production modes.
     """
 
-    def __init__(self, use_mock: bool = None, csv_base_path: str = None):
+    def __init__(self, settings, use_mock: bool = None, csv_base_path: str = None):
         """
         Initialize the hybrid data provider.
 
         Args:
+            settings: Injected settings object (E1.T4 — supplied by the composition root;
+                this adapter no longer imports bootstrap.settings.loaders).
             use_mock: If True, use mock data; if False, use CSV data; if None, determine from environment
             csv_base_path: Path to CSV historical data files (defaults to './data/history/raw/1m' or env var)
         """
-        # Determine base path - from parameter, configuration, or default
-        if csv_base_path is None:
-            csv_base_path = Configs.data.csv_data_path if Configs.data and hasattr(Configs.data, 'csv_data_path') else './data/history/raw/1m'
-
-        # Determine whether to use mock based on configuration or parameter
-        if use_mock is None:
-            use_mock = Configs.infrastructure.use_mock_data if Configs.infrastructure and hasattr(Configs.infrastructure, 'use_mock_data') else False
+        # Settings injected by the composition root (E1.T4); same values as before,
+        # without importing bootstrap.settings.loaders here.
+        if csv_base_path is None or use_mock is None:
+            _settings = settings
+            # Determine base path - from parameter, configuration, or default
+            if csv_base_path is None:
+                csv_base_path = _settings.data.csv_data_path if _settings.data and hasattr(_settings.data, 'csv_data_path') else './data/history/raw/1m'
+            # Determine whether to use mock based on configuration or parameter
+            if use_mock is None:
+                use_mock = _settings.infrastructure.use_mock_data if _settings.infrastructure and hasattr(_settings.infrastructure, 'use_mock_data') else False
 
         self.use_mock = use_mock
         self.csv_base_path = csv_base_path
@@ -67,15 +71,16 @@ class HybridDataProviderAdapter(DataProviderPort):
         self.provider = CSVHistoryLoaderAdapter(base_path=self.csv_base_path)
 
 
-def create_data_provider(use_mock: bool = None, csv_base_path: str = None) -> DataProviderPort:
+def create_data_provider(settings, use_mock: bool = None, csv_base_path: str = None) -> DataProviderPort:
     """
     Factory function to create the appropriate data provider based on configuration.
 
     Args:
+        settings: Injected settings object (E1.T4 — supplied by the composition root).
         use_mock: Whether to use mock data; if None, checks environment variable
         csv_base_path: Path to CSV historical data files (defaults to env var or './data/history/raw/1m')
 
     Returns:
         Configured data provider instance
     """
-    return HybridDataProviderAdapter(use_mock=use_mock, csv_base_path=csv_base_path)
+    return HybridDataProviderAdapter(settings=settings, use_mock=use_mock, csv_base_path=csv_base_path)

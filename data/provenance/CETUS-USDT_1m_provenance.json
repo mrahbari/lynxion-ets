@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "CETUSUSDT",
+  "timeframe": "1m",
+  "checksum": "f4e519b346e17426e6fc1d90a958ef64b100f5fdb8686b7a4a7341ff8a24c798",
+  "download_timestamp": "2026-06-12T18:32:41.802652",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686440",
+    "end": "1778749920"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/CETUS-USDT.csv"
+}

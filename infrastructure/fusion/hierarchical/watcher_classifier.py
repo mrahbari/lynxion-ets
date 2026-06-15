@@ -4,7 +4,7 @@ Implements the hedge-fund-grade multi-watcher architecture with role-based decis
 """
 from enum import Enum
 from typing import Dict, List, Set, Optional
-from domain.entities.signal_entities import MarketObservation
+from domain.entities import MarketObservation
 
 
 class WatcherRole(Enum):

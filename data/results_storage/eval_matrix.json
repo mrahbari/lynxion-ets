@@ -1,0 +1,476 @@
+[
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "trend_following",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.05482614790246098,
+    "sharpe": -0.4372970835426117,
+    "sortino": -0.028415288193688333,
+    "max_drawdown": -0.0549275415385544,
+    "win_rate": 0.17073170731707318,
+    "profit_factor": 0.22923868201450734,
+    "total_trades_raw": 205,
+    "closed_trades": 102,
+    "total_pnl": -347.82555088983133,
+    "total_fees": 398.97698312945903,
+    "by_regime": {
+      "ranging": -25.817728867962604,
+      "trending_up": -322.0078220218687
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 14,
+        "expectancy": -1.8441234905687574,
+        "win_rate": 0.42857142857142855,
+        "avg_rr": 0.593764592053457,
+        "profit_factor": 0.4453234440400928
+      },
+      {
+        "regime": "trending_up",
+        "trades": 88,
+        "expectancy": -3.6591797957030536,
+        "win_rate": 0.32954545454545453,
+        "avg_rr": 0.41582398720559144,
+        "profit_factor": 0.2043880615078331
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "mean_reversion",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0014670158598688431,
+    "sharpe": -0.08570173418271101,
+    "sortino": -0.0007690550718361806,
+    "max_drawdown": -0.0014670158598688431,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_trades_raw": 5,
+    "closed_trades": 2,
+    "total_pnl": -8.670262916860072,
+    "total_fees": 10.00097537367169,
+    "by_regime": {
+      "trending_down": -8.670262916860072
+    },
+    "cells": [
+      {
+        "regime": "trending_down",
+        "trades": 2,
+        "expectancy": -4.335131458430036,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "momentum",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.004390872900680188,
+    "sharpe": -0.08561886066640366,
+    "sortino": -0.0013926037855764122,
+    "max_drawdown": -0.004464170524796966,
+    "win_rate": 0.15384615384615385,
+    "profit_factor": 0.3474838255592826,
+    "total_trades_raw": 13,
+    "closed_trades": 6,
+    "total_pnl": -29.923924830221196,
+    "total_fees": 25.98165813142606,
+    "by_regime": {
+      "ranging": 3.9095808573230446,
+      "trending_up": -33.83350568754424
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 2,
+        "expectancy": 1.9547904286615223,
+        "win_rate": 0.5,
+        "avg_rr": 1.4209138730805202,
+        "profit_factor": 1.4209138730805202
+      },
+      {
+        "regime": "trending_up",
+        "trades": 4,
+        "expectancy": -8.45837642188606,
+        "win_rate": 0.25,
+        "avg_rr": 0.22456035190017504,
+        "profit_factor": 0.07485345063339167
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "scalping",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 126950\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "breakout",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 126950\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "liquidity",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.00019987693519306048,
+    "sharpe": -0.05362272693693869,
+    "sortino": 0.0,
+    "max_drawdown": -0.00019987693519306048,
+    "win_rate": 0.5,
+    "profit_factor": 0.0,
+    "total_trades_raw": 1,
+    "closed_trades": 0,
+    "total_pnl": 0.0,
+    "total_fees": 1.9987693519307737,
+    "by_regime": {},
+    "cells": []
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "mtf_trend",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.2019791782316057,
+    "sharpe": -1.2221517071396,
+    "sortino": -0.1870422165964789,
+    "max_drawdown": -0.2019791782316057,
+    "win_rate": 0.0456140350877193,
+    "profit_factor": 0.05604541507268686,
+    "total_trades_raw": 855,
+    "closed_trades": 427,
+    "total_pnl": -1254.5887550206169,
+    "total_fees": 1528.3749062286392,
+    "by_regime": {
+      "ranging": -251.31778973560654,
+      "trending_up": -1003.2709652850103
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 84,
+        "expectancy": -2.991878449233411,
+        "win_rate": 0.09523809523809523,
+        "avg_rr": 0.16856526997893712,
+        "profit_factor": 0.0177437126293618
+      },
+      {
+        "regime": "trending_up",
+        "trades": 343,
+        "expectancy": -2.9249882369825375,
+        "win_rate": 0.09037900874635568,
+        "avg_rr": 0.6559710854533994,
+        "profit_factor": 0.06517661425979289
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "oi_footprint",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.18544490861505072,
+    "sharpe": -1.3649143558043617,
+    "sortino": -0.24348484837193018,
+    "max_drawdown": -0.20965517914523235,
+    "win_rate": 0.028089887640449437,
+    "profit_factor": 0.026943503980846287,
+    "total_trades_raw": 890,
+    "closed_trades": 445,
+    "total_pnl": -1306.4925590393557,
+    "total_fees": 1587.925129092832,
+    "by_regime": {
+      "ranging": -648.2670737229263,
+      "trending_down": -210.12874694171407,
+      "trending_up": -448.09673837471536
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 212,
+        "expectancy": -3.057863555296822,
+        "win_rate": 0.04716981132075472,
+        "avg_rr": 0.35013616537079173,
+        "profit_factor": 0.01733347353320751
+      },
+      {
+        "regime": "trending_down",
+        "trades": 84,
+        "expectancy": -2.501532701687072,
+        "win_rate": 0.10714285714285714,
+        "avg_rr": 0.5152422249630555,
+        "profit_factor": 0.06182906699556666
+      },
+      {
+        "regime": "trending_up",
+        "trades": 149,
+        "expectancy": -3.007360660232989,
+        "win_rate": 0.040268456375838924,
+        "avg_rr": 0.5656250535030445,
+        "profit_factor": 0.02373251972740047
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "sweep_scalper",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.04376555986885469,
+    "sharpe": -0.5569256581171024,
+    "sortino": -0.038212647645608354,
+    "max_drawdown": -0.04376555986885469,
+    "win_rate": 0.10052910052910052,
+    "profit_factor": 0.07816574826056284,
+    "total_trades_raw": 189,
+    "closed_trades": 93,
+    "total_pnl": -249.78644274754453,
+    "total_fees": 369.88534784498586,
+    "by_regime": {
+      "ranging": -92.31166950529257,
+      "trending_down": -75.67354680131243,
+      "trending_up": -81.80122644093952
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 39,
+        "expectancy": -2.3669658847510915,
+        "win_rate": 0.23076923076923078,
+        "avg_rr": 0.34582918458940265,
+        "profit_factor": 0.1037487553768208
+      },
+      {
+        "regime": "trending_down",
+        "trades": 21,
+        "expectancy": -3.603502228633925,
+        "win_rate": 0.14285714285714285,
+        "avg_rr": 0.25711042281748264,
+        "profit_factor": 0.04285173713624711
+      },
+      {
+        "regime": "trending_up",
+        "trades": 33,
+        "expectancy": -2.478825043664834,
+        "win_rate": 0.21212121212121213,
+        "avg_rr": 0.296888505661675,
+        "profit_factor": 0.07993152075506635
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "vwap_reversal",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0006474107835330869,
+    "sharpe": -0.08715541983832338,
+    "sortino": -0.0057228357082352915,
+    "max_drawdown": -0.0007606203418057703,
+    "win_rate": 0.2,
+    "profit_factor": 0.704548879700449,
+    "total_trades_raw": 5,
+    "closed_trades": 2,
+    "total_pnl": -0.474741948841517,
+    "total_fees": 10.00595114198204,
+    "by_regime": {
+      "trending_down": -0.474741948841517
+    },
+    "cells": [
+      {
+        "regime": "trending_down",
+        "trades": 2,
+        "expectancy": -0.2373709744207585,
+        "win_rate": 0.5,
+        "avg_rr": 0.704548879700449,
+        "profit_factor": 0.704548879700449
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "volatility_breakout",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.11947001787535591,
+    "sharpe": -1.0346253567901738,
+    "sortino": -0.14524904708816638,
+    "max_drawdown": -0.11947001787535591,
+    "win_rate": 0.02286902286902287,
+    "profit_factor": 0.016503396683328876,
+    "total_trades_raw": 481,
+    "closed_trades": 240,
+    "total_pnl": -741.9077561893582,
+    "total_fees": 903.5046102433973,
+    "by_regime": {
+      "ranging": -301.6694307162965,
+      "trending_up": -440.2383254730617
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 98,
+        "expectancy": -3.0782594971050665,
+        "win_rate": 0.030612244897959183,
+        "avg_rr": 0.49995991943331713,
+        "profit_factor": 0.015788207982104754
+      },
+      {
+        "regime": "trending_up",
+        "trades": 142,
+        "expectancy": -3.1002698976976175,
+        "win_rate": 0.056338028169014086,
+        "avg_rr": 0.2846306325570797,
+        "profit_factor": 0.016992873585497295
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 90,
+    "strategy": "crypto_breakout",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 88 days (2.9 months)\n  Trades: 0\n  Data points: 126950\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "trend_following",
+    "status": "ok",
+    "verdict": "NO_GO",
+    "total_return": -0.13080096785050846,
+    "sharpe": -0.45062001594760803,
+    "sortino": -0.03325214776972732,
+    "max_drawdown": -0.13089428900731764,
+    "win_rate": 0.1765834932821497,
+    "profit_factor": 0.2743886199529723,
+    "total_trades_raw": 521,
+    "closed_trades": 260,
+    "total_pnl": -821.6641396001359,
+    "total_fees": 971.0224711957463,
+    "by_regime": {
+      "ranging": -126.20510475774711,
+      "trending_up": -695.4590348423887
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 38,
+        "expectancy": -3.3211869673091345,
+        "win_rate": 0.34210526315789475,
+        "avg_rr": 0.45661777647391744,
+        "profit_factor": 0.23744124376643705
+      },
+      {
+        "regime": "trending_up",
+        "trades": 222,
+        "expectancy": -3.1326983551458953,
+        "win_rate": 0.35585585585585583,
+        "avg_rr": 0.5081260609298728,
+        "profit_factor": 0.2807129986955241
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "mean_reversion",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0014670200183065389,
+    "sharpe": -0.06030756446058769,
+    "sortino": -0.0003808256974084769,
+    "max_drawdown": -0.0014670200183065389,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "total_trades_raw": 5,
+    "closed_trades": 2,
+    "total_pnl": -8.67022481151199,
+    "total_fees": 10.00065450627752,
+    "by_regime": {
+      "trending_down": -8.67022481151199
+    },
+    "cells": [
+      {
+        "regime": "trending_down",
+        "trades": 2,
+        "expectancy": -4.335112405755995,
+        "win_rate": 0.0,
+        "avg_rr": 0.0,
+        "profit_factor": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "momentum",
+    "status": "ok",
+    "verdict": "INSUFFICIENT_DATA",
+    "total_return": -0.0020169191921882886,
+    "sharpe": -0.011801883399915858,
+    "sortino": -0.00031811613073218464,
+    "max_drawdown": -0.007733901206305169,
+    "win_rate": 0.26666666666666666,
+    "profit_factor": 1.2278703879881627,
+    "total_trades_raw": 45,
+    "closed_trades": 22,
+    "total_pnl": 25.920334681870997,
+    "total_fees": 90.37886172478733,
+    "by_regime": {
+      "ranging": 78.2898193030688,
+      "trending_up": -52.3694846211978
+    },
+    "cells": [
+      {
+        "regime": "ranging",
+        "trades": 12,
+        "expectancy": 6.524151608589066,
+        "win_rate": 0.75,
+        "avg_rr": 0.9863830836207149,
+        "profit_factor": 2.959149250862145
+      },
+      {
+        "regime": "trending_up",
+        "trades": 10,
+        "expectancy": -5.23694846211978,
+        "win_rate": 0.3,
+        "avg_rr": 0.6773261591070289,
+        "profit_factor": 0.2902826396172981
+      }
+    ]
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "scalping",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 178 days (5.9 months)\n  Trades: 0\n  Data points: 256371\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  },
+  {
+    "symbol": "BTCUSDT",
+    "window": 180,
+    "strategy": "breakout",
+    "status": "error",
+    "error": "Zero trade strategy detected during backtest.\n  Duration: 178 days (5.9 months)\n  Trades: 0\n  Data points: 256371\n  Symbol: BTCUSDT\n  This may be normal for some strategies in certain market conditions."
+  }
+]

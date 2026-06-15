@@ -1,0 +1,318 @@
+{
+  "short_term_reversal": {
+    "intended_regime": [
+      "ranging"
+    ],
+    "symbols": {
+      "BTC-USDT": {
+        "timeframe": "15m",
+        "bars": 35000,
+        "horizon": 8,
+        "signals_total": 1441,
+        "all": {
+          "n": 1441,
+          "expectancy": -0.0033195432948827635,
+          "win_rate": 0.24566273421235255
+        },
+        "in_regime": {
+          "n": 546,
+          "expectancy": -0.003271132027977907,
+          "win_rate": 0.24175824175824176
+        },
+        "half1": {
+          "n": 277,
+          "expectancy": -0.0031570872192629865,
+          "win_rate": 0.2527075812274368
+        },
+        "half2": {
+          "n": 269,
+          "expectancy": -0.0033885685038665056,
+          "win_rate": 0.23048327137546468
+        },
+        "wfo_folds": [
+          {
+            "n": 141,
+            "expectancy": -0.0030845283527422777,
+            "win_rate": 0.24822695035460993
+          },
+          {
+            "n": 136,
+            "expectancy": -0.003232313691170486,
+            "win_rate": 0.25735294117647056
+          },
+          {
+            "n": 129,
+            "expectancy": -0.004262486546692443,
+            "win_rate": 0.20930232558139536
+          },
+          {
+            "n": 140,
+            "expectancy": -0.002583315450119748,
+            "win_rate": 0.25
+          }
+        ],
+        "wfo_positive_folds": 0,
+        "wfo_total_folds": 4
+      },
+      "ETH-USDT": {
+        "timeframe": "15m",
+        "bars": 35000,
+        "horizon": 8,
+        "signals_total": 1120,
+        "all": {
+          "n": 1120,
+          "expectancy": -0.003594157370355796,
+          "win_rate": 0.3357142857142857
+        },
+        "in_regime": {
+          "n": 422,
+          "expectancy": -0.0029772736335744445,
+          "win_rate": 0.34360189573459715
+        },
+        "half1": {
+          "n": 189,
+          "expectancy": -0.003156881666353752,
+          "win_rate": 0.3492063492063492
+        },
+        "half2": {
+          "n": 233,
+          "expectancy": -0.002831582997543162,
+          "win_rate": 0.33905579399141633
+        },
+        "wfo_folds": [
+          {
+            "n": 70,
+            "expectancy": -0.002887375738582103,
+            "win_rate": 0.3
+          },
+          {
+            "n": 119,
+            "expectancy": -0.003315414565042957,
+            "win_rate": 0.37815126050420167
+          },
+          {
+            "n": 93,
+            "expectancy": -0.0029303143276089914,
+            "win_rate": 0.3333333333333333
+          },
+          {
+            "n": 140,
+            "expectancy": -0.0027659971854280033,
+            "win_rate": 0.34285714285714286
+          }
+        ],
+        "wfo_positive_folds": 0,
+        "wfo_total_folds": 4
+      },
+      "SOL-USDT": {
+        "timeframe": "15m",
+        "bars": 35000,
+        "horizon": 8,
+        "signals_total": 977,
+        "all": {
+          "n": 977,
+          "expectancy": -0.003621467774699652,
+          "win_rate": 0.3623336745138178
+        },
+        "in_regime": {
+          "n": 402,
+          "expectancy": -0.004372892324923858,
+          "win_rate": 0.3482587064676617
+        },
+        "half1": {
+          "n": 174,
+          "expectancy": -0.004341384612777481,
+          "win_rate": 0.3850574712643678
+        },
+        "half2": {
+          "n": 228,
+          "expectancy": -0.0043969376841934615,
+          "win_rate": 0.3201754385964912
+        },
+        "wfo_folds": [
+          {
+            "n": 94,
+            "expectancy": -0.0028311518091215077,
+            "win_rate": 0.4148936170212766
+          },
+          {
+            "n": 80,
+            "expectancy": -0.006115908157073248,
+            "win_rate": 0.35
+          },
+          {
+            "n": 111,
+            "expectancy": -0.005646283625279602,
+            "win_rate": 0.3153153153153153
+          },
+          {
+            "n": 117,
+            "expectancy": -0.0032116607657271265,
+            "win_rate": 0.3247863247863248
+          }
+        ],
+        "wfo_positive_folds": 0,
+        "wfo_total_folds": 4
+      }
+    }
+  },
+  "donchian_breakout": {
+    "intended_regime": [
+      "breakout",
+      "trending_down",
+      "trending_up"
+    ],
+    "symbols": {
+      "BTC-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 524,
+        "all": {
+          "n": 524,
+          "expectancy": -0.0028117524037557387,
+          "win_rate": 0.30916030534351147
+        },
+        "in_regime": {
+          "n": 360,
+          "expectancy": -0.0024719535739936667,
+          "win_rate": 0.3055555555555556
+        },
+        "half1": {
+          "n": 181,
+          "expectancy": -0.002311843783358871,
+          "win_rate": 0.27071823204419887
+        },
+        "half2": {
+          "n": 179,
+          "expectancy": -0.002633852300836672,
+          "win_rate": 0.3407821229050279
+        },
+        "wfo_folds": [
+          {
+            "n": 75,
+            "expectancy": -0.0029413770481856757,
+            "win_rate": 0.25333333333333335
+          },
+          {
+            "n": 106,
+            "expectancy": -0.0018664193035285849,
+            "win_rate": 0.2830188679245283
+          },
+          {
+            "n": 85,
+            "expectancy": -0.0018604006452237192,
+            "win_rate": 0.36470588235294116
+          },
+          {
+            "n": 94,
+            "expectancy": -0.0033332500745292338,
+            "win_rate": 0.3191489361702128
+          }
+        ],
+        "wfo_positive_folds": 0,
+        "wfo_total_folds": 4
+      },
+      "ETH-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 465,
+        "all": {
+          "n": 465,
+          "expectancy": -0.0017627648465037204,
+          "win_rate": 0.3935483870967742
+        },
+        "in_regime": {
+          "n": 323,
+          "expectancy": -0.0013721293135936649,
+          "win_rate": 0.3931888544891641
+        },
+        "half1": {
+          "n": 187,
+          "expectancy": -0.000845529970527401,
+          "win_rate": 0.42245989304812837
+        },
+        "half2": {
+          "n": 136,
+          "expectancy": -0.002096203410309778,
+          "win_rate": 0.35294117647058826
+        },
+        "wfo_folds": [
+          {
+            "n": 83,
+            "expectancy": -0.0018902551396654606,
+            "win_rate": 0.3614457831325301
+          },
+          {
+            "n": 104,
+            "expectancy": -1.1758922080680041e-05,
+            "win_rate": 0.47115384615384615
+          },
+          {
+            "n": 66,
+            "expectancy": 0.000685664653292828,
+            "win_rate": 0.3939393939393939
+          },
+          {
+            "n": 70,
+            "expectancy": -0.004719107584563663,
+            "win_rate": 0.3142857142857143
+          }
+        ],
+        "wfo_positive_folds": 1,
+        "wfo_total_folds": 4
+      },
+      "SOL-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 515,
+        "all": {
+          "n": 515,
+          "expectancy": -0.0016289533454935821,
+          "win_rate": 0.40194174757281553
+        },
+        "in_regime": {
+          "n": 347,
+          "expectancy": -0.0037746830745014975,
+          "win_rate": 0.37175792507204614
+        },
+        "half1": {
+          "n": 195,
+          "expectancy": -0.002977203605792636,
+          "win_rate": 0.37435897435897436
+        },
+        "half2": {
+          "n": 152,
+          "expectancy": -0.004797765287647735,
+          "win_rate": 0.3684210526315789
+        },
+        "wfo_folds": [
+          {
+            "n": 105,
+            "expectancy": -0.005791468568793944,
+            "win_rate": 0.34285714285714286
+          },
+          {
+            "n": 90,
+            "expectancy": 0.0003061055177088894,
+            "win_rate": 0.4111111111111111
+          },
+          {
+            "n": 73,
+            "expectancy": -0.0030508728537392556,
+            "win_rate": 0.3698630136986301
+          },
+          {
+            "n": 79,
+            "expectancy": -0.006411982346828989,
+            "win_rate": 0.3670886075949367
+          }
+        ],
+        "wfo_positive_folds": 1,
+        "wfo_total_folds": 4
+      }
+    }
+  }
+}

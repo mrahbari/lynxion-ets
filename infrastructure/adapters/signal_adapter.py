@@ -3,7 +3,7 @@ Signal port adapter to connect strategy selection to signal processing.
 This adapter follows hexagonal architecture by only depending on domain interfaces,
 not directly on application services.
 """
-from domain.entities.trading_entities import Signal
+from domain.entities import Signal
 from domain.value_objects import Symbol
 from domain.ports.trading_ports import SignalPort
 from domain.ports.engine_ports import StrategyPort

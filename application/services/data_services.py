@@ -2,7 +2,7 @@
 Application service for data management in the enterprise hedge fund trading system.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import MarketData
+from domain.entities import MarketData
 from domain.value_objects import Symbol
 from domain.ports.data_ports import DataProviderPort, DataCachePort, DataAggregatorPort
 from shared.logger import logger

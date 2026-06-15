@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ALTUSDT",
+  "timeframe": "1m",
+  "checksum": "7689f96738bdb3f222a5fd0f23a9bb65376d38f4f7ed6edb11753e8251e702eb",
+  "download_timestamp": "2026-06-12T18:36:00.296470",
+  "row_count": 1064,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778750100"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ALT-USDT.csv"
+}

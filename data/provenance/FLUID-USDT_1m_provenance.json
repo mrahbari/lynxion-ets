@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "FLUIDUSDT",
+  "timeframe": "1m",
+  "checksum": "33127725a3afe208dd4fe882794911718ac8d20988478f754b42c1467d18f2dc",
+  "download_timestamp": "2026-06-12T18:35:48.754815",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686560",
+    "end": "1778720100"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/FLUID-USDT.csv"
+}

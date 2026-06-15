@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "BCHUSDT",
+  "timeframe": "1m",
+  "checksum": "ff934dc4873b91d3328634b69101e672400f174c01d49cacf04cb7bab6cda01c",
+  "download_timestamp": "2026-06-12T22:06:16.687592",
+  "row_count": 1190,
+  "date_range": {
+    "start": "1778687040",
+    "end": "1781294760"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "file_path": "data/history/raw/1m/BCH-USDT.csv"
+}

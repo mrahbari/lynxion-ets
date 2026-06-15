@@ -2,7 +2,7 @@
 Use cases for data service functionality in the enterprise hedge fund trading system.
 """
 from typing import List, Dict, Any
-from domain.entities.trading_entities import MarketData
+from domain.entities import MarketData
 from domain.value_objects import Symbol
 from application.services.data_services import DataRetrievalService
 

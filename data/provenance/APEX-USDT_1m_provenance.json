@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "APEXUSDT",
+  "timeframe": "1m",
+  "checksum": "a1d9c1479bb8ef74548687905068db14a078d102d876940383d19999e886dbe3",
+  "download_timestamp": "2026-06-12T18:33:42.163523",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686500",
+    "end": "1778719980"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/APEX-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ICNTUSDT",
+  "timeframe": "1m",
+  "checksum": "7025536ed2d59670a725ec47f9af518ebdf35193613c28fc254bac5e813bac1b",
+  "download_timestamp": "2026-06-12T18:40:08.716530",
+  "row_count": 573,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778720400"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ICNT-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "TAIKOUSDT",
+  "timeframe": "1m",
+  "checksum": "a6aa16f9c9919073f4530e6516f2457ec529199b0e17a0f71c274ea60a1e679e",
+  "download_timestamp": "2026-06-12T18:27:24.157053",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778719620"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/TAIKO-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ACEUSDT",
+  "timeframe": "1m",
+  "checksum": "aa1dad9010a9fc2a9be1c2bbbfb90176ed5584d8ac7f733f4b6377abba0f2071",
+  "download_timestamp": "2026-06-12T18:35:16.902293",
+  "row_count": 1061,
+  "date_range": {
+    "start": "1778686500",
+    "end": "1778750100"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ACE-USDT.csv"
+}

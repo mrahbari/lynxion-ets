@@ -15,7 +15,7 @@ from application.configs.symbol_config import get_symbols
 from domain.sync.entities import SyncJob
 from application.data_sync.ports import FileRepository
 from domain.ports.sync import DataDownloader
-from utils.logger import logger, OperationType, StatusType
+from shared.sync_logger import logger, OperationType, StatusType
 
 
 class PriorityJobQueue:

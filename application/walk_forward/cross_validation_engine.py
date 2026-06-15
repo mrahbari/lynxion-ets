@@ -3,7 +3,7 @@
 from typing import Dict, Any, List, Callable
 import pandas as pd
 import numpy as np
-from infrastructure.backtest.realistic_backtester import RealisticBacktester
+from domain.ports.backtest_ports import BacktestEnginePort
 from application.walk_forward.sliding_window_splitter import SlidingWindowSplitter, WalkForwardWindow
 
 
@@ -14,7 +14,8 @@ class CrossValidationEngine:
                  n_splits: int = 5,
                  min_train_size: int = 30,
                  test_size: int = 15,
-                 backtester_class: type = RealisticBacktester):
+                 *,
+                 backtester_class: Callable[[], BacktestEnginePort]):
         """
         Initialize the cross-validation engine.
         

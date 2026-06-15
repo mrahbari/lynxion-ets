@@ -12,7 +12,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, mean_squared_error
 from datetime import datetime
 
-from domain.entities.trading_entities import Signal
+from domain.entities import Signal
 from domain.value_objects import Symbol, Percentage
 from domain.ports.engine_ports import FusionPort
 from shared.logger import logger
@@ -260,9 +260,10 @@ class MLSignalFusionService(FusionPort):
             signal_type=signal_type,
             confidence=Percentage(str(max(0.1, min(1.0, final_confidence)))),  # Clamp between 0.1 and 1.0
             score=max(-1.0, min(1.0, final_score)),  # Clamp between -1.0 and 1.0
-            strategy_name="MLFusionService",
+            source_layer="fusion",
             timestamp=datetime.now(),
             metadata={
+                'strategy_name': "MLFusionService",
                 'original_signals_count': len(signals),
                 'ml_fusion_method': self.method.value,
                 'ml_direction_prediction': direction_prediction,
@@ -303,7 +304,7 @@ class MLSignalFusionService(FusionPort):
         fused_confidence = sum(weighted_confidences) / total_weight if total_weight > 0 else 0.5
         
         # Create the fused signal
-        from domain.entities.trading_entities import Signal as DomainSignal
+        from domain.entities import Signal as DomainSignal
         from domain.value_objects import Percentage as DomainPercentage
         from decimal import Decimal
         
@@ -312,9 +313,10 @@ class MLSignalFusionService(FusionPort):
             signal_type=fused_signal_type,
             confidence=DomainPercentage(Decimal(str(max(0.1, min(1.0, fused_confidence))))),  # Clamp to [0.1, 1.0]
             score=max(-1.0, min(1.0, fused_score)),  # Clamp to [-1, 1]
-            strategy_name="FallbackFusionService",
+            source_layer="fusion",
             timestamp=datetime.now(),
             metadata={
+                'strategy_name': "FallbackFusionService",
                 'original_signals_count': len(signals),
                 'fusion_method': 'traditional_weighted',
                 'ml_fusion_failed': True

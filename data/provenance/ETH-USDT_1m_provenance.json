@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ETHUSDT",
+  "timeframe": "1m",
+  "checksum": "e4acaef17bb5c882e12399801d650bae7e8dcc45575113357816d1d9e9172b37",
+  "download_timestamp": "2026-06-13T08:54:43.190916",
+  "row_count": 27335,
+  "date_range": {
+    "start": "1749632400",
+    "end": "1781333640"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "dc8fc1a458d07f57f20b128bc93d9372e4b260dc",
+  "file_path": "data/history/raw/1m/ETH-USDT.csv"
+}

@@ -1,0 +1,5 @@
+{"ts": "2026-06-12T21:24:02.364319+00:00", "order_ref": "a5f73b16e4af4fbd90ab16ce3ff2defe", "status": "INTENT", "symbol": "BTCUSDT", "side": "BUY", "quantity": "0.001", "exchange": "bingx", "client_order_id": "x7587ceab7734432abf026257f0200c", "order_id": null}
+{"ts": "2026-06-12T21:24:17.858003+00:00", "order_ref": "a5f73b16e4af4fbd90ab16ce3ff2defe", "status": "SUBMITTED", "order_id": "2065545688332111872", "exchange": "bingx"}
+{"ts": "2026-06-12T21:24:26.172877+00:00", "order_ref": "39b6e4567f54485ba30d8b2b034acd11", "status": "INTENT", "symbol": "ETHUSDT", "side": "BUY", "quantity": "0.0023992466365561215", "exchange": "bingx", "client_order_id": "xede64a6c793b4711810e55e48eb3a3", "order_id": null}
+{"ts": "2026-06-12T21:24:53.504699+00:00", "order_ref": "39b6e4567f54485ba30d8b2b034acd11", "status": "SUBMITTED", "order_id": "2065545800978534400", "exchange": "bingx"}
+{"ts": "2026-06-13T06:35:46.470686+00:00", "order_ref": "8d623f66a21a48d7a06376e972ce9035", "status": "INTENT", "symbol": "BTCUSDT", "side": "BUY", "quantity": "0.001", "exchange": "bingx", "client_order_id": "x93966d0b49d14666ac20eb9af772c7", "order_id": null}

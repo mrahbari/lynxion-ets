@@ -1,7 +1,7 @@
 """
 Use cases for engine functionality in the enterprise hedge fund trading system.
 """
-from domain.entities.trading_entities import Signal
+from domain.entities import Signal
 from application.services.engine_services import EngineOrchestrationService
 
 

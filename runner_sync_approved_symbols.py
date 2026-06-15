@@ -138,23 +138,15 @@ def update_approved_symbols_file(symbols, file_path):
 
 
 def main():
-    print("🚀 Fetching BingX perpetual futures symbols...")
+    """Backward-compatible entry point.
 
-    symbols = fetch_available_symbols()
-
-    if not symbols:
-        print("❌ No symbols fetched. Exiting.")
-        return 1
-
-    print(f"\n🎯 Total perpetual symbols fetched: {len(symbols)}")
-
-    symbols_file_path = os.path.join(
-        os.path.dirname(__file__),
-        "application", "configs", "approved_symbols.json"
-    )
-
-    success = update_approved_symbols_file(symbols, symbols_file_path)
-    return 0 if success else 1
+    E2.T3: process I/O now lives in :mod:`interface.cli.sync_approved_symbols`.
+    This job has no domain ports to inject, so there is no container wiring;
+    the shim simply delegates. The fetch/update helpers above are consumed by
+    the CLI.
+    """
+    from interface.cli.sync_approved_symbols import main as cli_main
+    return cli_main()
 
 
 if __name__ == "__main__":

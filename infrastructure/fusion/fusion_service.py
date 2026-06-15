@@ -5,7 +5,7 @@ Following the correct architecture: Watcher → Engine → Fusion → Strategy �
 """
 import os
 from typing import List, Optional, Dict, Any
-from domain.entities.signal_entities import InterpretedSignal, FusedSignal, MarketObservation
+from domain.entities import InterpretedSignal, FusedSignal, MarketObservation
 from domain.value_objects import Symbol, Percentage
 from datetime import datetime
 from decimal import Decimal
@@ -17,7 +17,6 @@ from .hierarchical.confidence_thresholds import ConfidenceThresholds
 from infrastructure.logging.forensic_logger import forensic_logger
 import numpy as np
 from scipy import stats
-from application.configs.configs import Configs
 
 
 class PerformanceAdaptiveFusionService:
@@ -307,11 +306,20 @@ class PerformanceAdaptiveFusionService:
 class FusionService:
     """Service to aggregate interpreted signals into fused signals with hierarchical decision making"""
 
-    def __init__(self):
+    def __init__(self,
+                 correlation_consensus_weight: float = 0.6,
+                 correlation_confidence_weight: float = 0.4):
         self.logger = None  # Will be set by the calling component if needed
         self.hierarchical_service = hierarchical_fusion_service
         self.watcher_classifier = WatcherClassifier()
         self.confidence_thresholds = ConfidenceThresholds()
+
+        # Correlation-factor weights, injectable at construction. Defaults mirror
+        # the long-standing hardcoded fallback (these keys are absent from the
+        # settings.fusion schema, so the loader path always resolved to these),
+        # so this module no longer imports bootstrap.settings.loaders (E1).
+        self.correlation_consensus_weight = correlation_consensus_weight
+        self.correlation_confidence_weight = correlation_confidence_weight
 
         # Add the redesigned fusion service
         self.performance_adaptive_fusion = PerformanceAdaptiveFusionService()
@@ -441,7 +449,7 @@ class FusionService:
                 avg_strength = 0.0
 
             # Determine dominant bias based on average direction
-            from domain.entities.signal_entities import SignalType
+            from domain.entities import SignalType
             if avg_direction > 0.01:  # Lowered threshold from 0.1 to 0.01 to avoid neutral signals
                 dominant_bias = SignalType.BUY
             elif avg_direction < -0.01:  # Lowered threshold from -0.1 to -0.01
@@ -563,9 +571,10 @@ class FusionService:
 
         # Combine consensus ratio and confidence to get correlation factor
         # Higher consensus and higher confidence of agreeing signals = higher correlation
-        import os
-        consensus_weight = Configs.fusion.correlation_consensus_weight if Configs.fusion and hasattr(Configs.fusion, 'correlation_consensus_weight') else 0.6
-        confidence_weight = Configs.fusion.correlation_confidence_weight if Configs.fusion and hasattr(Configs.fusion, 'correlation_confidence_weight') else 0.4
+        # Correlation-factor weights injected at construction (self.correlation_*),
+        # default-mirrored from the prior hardcoded fallback.
+        consensus_weight = self.correlation_consensus_weight
+        confidence_weight = self.correlation_confidence_weight
         correlation_factor = consensus_weight * consensus_ratio + confidence_weight * avg_agreeing_confidence
 
         # Ensure correlation factor is between 0.5 and 1.5 to avoid extreme adjustments
@@ -710,7 +719,7 @@ class FusionService:
                 avg_strength = 0.0
 
             # Determine dominant bias based on average direction
-            from domain.entities.signal_entities import SignalType
+            from domain.entities import SignalType
             if avg_direction > 0.01:  # Lowered threshold from 0.1 to 0.01 to avoid neutral signals
                 dominant_bias = SignalType.BUY
             elif avg_direction < -0.01:  # Lowered threshold from -0.1 to -0.01
@@ -791,5 +800,17 @@ class FusionService:
         return self.hierarchical_service.fuse_signals_hierarchically(observations_with_watchers, symbol)
 
 
-# Global fusion service instance
-fusion_service = FusionService()
+# Module-level singleton retired (E2.T6). The canonical instance is now created
+# in bootstrap/container.py (container-scoped). This lazy accessor preserves
+# backward compatibility for ``from ... import fusion_service`` without
+# instantiating at import time. New code should resolve from the container.
+_fusion_service_singleton = None
+
+
+def __getattr__(name):
+    global _fusion_service_singleton
+    if name == "fusion_service":
+        if _fusion_service_singleton is None:
+            _fusion_service_singleton = FusionService()
+        return _fusion_service_singleton
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

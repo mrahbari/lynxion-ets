@@ -2,7 +2,7 @@
 Infrastructure implementations of portfolio management services.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Position, Portfolio
+from domain.entities import Position, Portfolio
 from domain.value_objects import Symbol, Money, Percentage
 from domain.ports.portfolio_ports import (
     PortfolioManagementPort, PositionSizingPort, PortfolioOptimizationPort

@@ -7,7 +7,6 @@ import shutil
 import tempfile
 from datetime import datetime, timedelta
 from typing import List, Tuple, Dict, Any, Optional
-from application.configs.sync_settings import settings
 from domain.ports.sync import FileRepository as DomainFileRepository
 from application.data_sync.ports import FileRepository as AppFileRepository
 import pandas as pd
@@ -16,14 +15,25 @@ import pandas as pd
 class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
     """Infrastructure adapter implementing both application and domain file repository ports"""
 
-    def __init__(self, base_data_dir: Optional[str] = None):
+    # Mirrors the settings schema default (application/configs/schemas/data.py);
+    # used only when a caller does not inject a value (e.g. test fixtures).
+    DEFAULT_RAW_RETENTION_DAYS = 180
+
+    def __init__(self, base_data_dir: Optional[str] = None,
+                 raw_retention_days: int = DEFAULT_RAW_RETENTION_DAYS):
         """
-        Initialize the file repository adapter
+        Initialize the file repository adapter.
+
+        Config is injected via constructor (E1.T4): the composition root and the
+        wired sync entrypoints pass ``raw_retention_days`` from settings, so this
+        adapter no longer imports ``bootstrap.settings.loaders``. The default
+        mirrors the settings schema default for the unwired/test path.
 
         Args:
-            base_data_dir: Base directory for data files (defaults to settings.data_dir)
+            base_data_dir: Base directory for data files (defaults to "./data/history").
+            raw_retention_days: Retention window for raw files (injected from settings).
         """
-        self.base_data_dir = base_data_dir or settings.data_dir
+        self.base_data_dir = base_data_dir or "./data/history"
         # Use the existing project data directory structure
         if self.base_data_dir == "./data/history":
             self.base_data_dir = os.path.join(os.getcwd(), "data", "history")
@@ -35,7 +45,7 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
 
         # Configuration attributes that were missing
         self.temp_file_suffix = ".tmp"
-        self.raw_retention_days = getattr(settings, 'raw_retention_days', 365)  # Default to 1 year
+        self.raw_retention_days = raw_retention_days
 
         # Create directories if they don't exist
         for directory in [self.raw_dir, self.processed_dir, self.index_dir, self.reports_dir]:
@@ -46,7 +56,14 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
         # Normalize symbol format to ensure consistent file naming
         # Convert formats like BTC/USDT or BTCUSDT to BTC-USDT
         normalized_symbol = self._normalize_symbol_for_file(symbol)
-        return os.path.join(self.raw_dir, f"{normalized_symbol}.csv")
+        raw_dir = self.raw_dir
+        # Timeframe-suitability evaluation hook (Rehab dim 9): when BACKTEST_TIMEFRAME
+        # is set, read resampled higher-TF data from .../raw/<tf>/ instead of the
+        # default .../raw/1m/. Unset -> canonical 1m behavior, unchanged.
+        _tf = os.environ.get("BACKTEST_TIMEFRAME")
+        if _tf:
+            raw_dir = os.path.join(os.path.dirname(raw_dir.rstrip(os.sep)), _tf)
+        return os.path.join(raw_dir, f"{normalized_symbol}.csv")
 
     def _normalize_symbol_for_file(self, symbol: str) -> str:
         """Normalize symbol format for consistent file naming"""
@@ -479,7 +496,7 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
         df.set_index('timestamp', inplace=True)
         
         # Define timeframes to aggregate
-        timeframes = {'5m': '5T', '15m': '15T', '30m': '30T', '1h': '1H', '4h': '4H', '1d': '1D'}
+        timeframes = {'5m': '5min', '15m': '15min', '30m': '30min', '1h': '1h', '4h': '4h', '1d': '1d'}
         
         for tf_name, tf_spec in timeframes.items():
             # Create timeframe directory if it doesn't exist
@@ -509,6 +526,8 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
         # Optionally clean up old files beyond retention period
         if cleanup_old:
             self._cleanup_retention(symbol)
+            
+        return True
     
     def _cleanup_retention(self, symbol: str) -> None:
         """Clean up old data files based on retention settings"""
@@ -553,7 +572,8 @@ class FileRepositoryAdapter(AppFileRepository, DomainFileRepository):
             if df.empty:
                 return
 
-            cutoff_date = datetime.now() - timedelta(days=self.raw_retention_days)
+            from datetime import timezone
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=self.raw_retention_days)
             df_filtered = df[df['timestamp'] >= cutoff_date]
 
             if len(df_filtered) != len(df):

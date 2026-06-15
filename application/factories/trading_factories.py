@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional
-from domain.entities.trading_entities import Signal, Order, Position
+from domain.entities import Signal, Order, Position
 from domain.value_objects import Symbol, Money
 from domain.ports.engine_ports import StrategyPort, EnginePort, FusionPort
 from domain.ports.trading_ports import (
@@ -16,7 +16,7 @@ class SignalFactory:
     def create_signal(symbol: Symbol, signal_type: str, confidence: float, score: float, 
                      strategy_name: str, source_engine: Optional[str] = None, 
                      metadata: Optional[Dict] = None) -> Signal:
-        from domain.entities.trading_entities import SignalType
+        from domain.entities import SignalType
         from domain.value_objects import Percentage
         from datetime import datetime
         
@@ -42,7 +42,7 @@ class OrderFactory:
     def create_order(symbol: Symbol, side: str, quantity: float, 
                     order_type: str = "MARKET", price: Optional[float] = None,
                     parent_signal: Optional[Signal] = None) -> Order:
-        from domain.entities.trading_entities import OrderSide
+        from domain.entities import OrderSide
         from domain.value_objects import Money
         from datetime import datetime
         from decimal import Decimal
@@ -67,7 +67,7 @@ class PositionFactory:
     @staticmethod
     def create_position(symbol: Symbol, side: str, quantity: float, 
                        entry_price: float, strategy_name: Optional[str] = None) -> Position:
-        from domain.entities.trading_entities import PositionSide
+        from domain.entities import PositionSide
         from domain.value_objects import Money
         from datetime import datetime
         from decimal import Decimal

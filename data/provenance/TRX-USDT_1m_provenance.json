@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "TRXUSDT",
+  "timeframe": "1m",
+  "checksum": "38340ee78d43dd1fb51f6872acf29e2d9fbba58cddab62c07e982208fc77daf3",
+  "download_timestamp": "2026-06-13T10:05:45.470014",
+  "row_count": 3607,
+  "date_range": {
+    "start": "1749802200",
+    "end": "1781294760"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "3b0660b40781ad422305ade2176eb7766df8b9aa",
+  "file_path": "data/history/raw/1m/TRX-USDT.csv"
+}

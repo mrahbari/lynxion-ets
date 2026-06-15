@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "GMXUSDT",
+  "timeframe": "1m",
+  "checksum": "d31fd8ed470437aa1fb827c66faa1d5fae674748a2b1c23afae29603644fea7e",
+  "download_timestamp": "2026-06-12T18:43:29.095135",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778687100",
+    "end": "1778750580"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/GMX-USDT.csv"
+}

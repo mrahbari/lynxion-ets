@@ -15,7 +15,7 @@ import signal
 from application.configs.sync_settings import settings
 from application.data_sync.sync_manager import SyncManager
 from application.configs.symbol_config import get_symbols
-from utils.logger import logger
+from shared.sync_logger import logger
 
 
 class SyncLoop:
@@ -146,39 +146,7 @@ class SyncLoop:
         return result
 
 
-async def run_with_resources(args):
-    """Run the sync loop with proper resource management"""
-    from infrastructure.data_sync.file_repository_adapter import FileRepositoryAdapter
-    from infrastructure.data_sync.data_downloader_adapter import DataDownloaderAdapter
-
-    file_repo = FileRepositoryAdapter()
-    data_downloader = DataDownloaderAdapter()
-    sync_manager = SyncManager(file_repo, data_downloader)
-    loop = SyncLoop(sync_manager)
-
-    # Use context manager for proper resource cleanup
-    async with data_downloader:
-        if args.one_cycle:
-            await loop.run_single_cycle(args.symbol)
-        else:
-            await loop.run_continuous_sync()
-
-
-def main():
-    """Main entry point for the sync loop"""
-    parser = argparse.ArgumentParser(description='Run the sync loop')
-    parser.add_argument('--one-cycle', action='store_true',
-                        help='Run a single sync cycle and exit')
-    parser.add_argument('--symbol', type=str,
-                        help='Specific symbol to sync (e.g. BTC-USDT)')
-    parser.add_argument('--dry-run', action='store_true',
-                        help='Run in dry-run mode (not implemented in this version)')
-
-    args = parser.parse_args()
-
-    # Run with proper resource management
-    asyncio.run(run_with_resources(args))
-
-
-if __name__ == "__main__":
-    main()
+# Entry-point wiring (composition root) moved to interface/cli/sync_loop_cli.py
+# (E5 entry-point rewiring), where it may legally build the container and resolve
+# the infrastructure adapters. This module now exposes only the reusable SyncLoop
+# application class and imports no infrastructure.

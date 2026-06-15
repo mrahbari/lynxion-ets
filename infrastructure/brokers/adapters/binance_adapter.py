@@ -2,7 +2,7 @@ from typing import Dict, Optional, List, Any
 from datetime import datetime
 import logging
 
-from domain.entities.trading_entities import Order, Position, Balance, OrderSide
+from domain.entities import Order, Position, Balance, OrderSide
 from domain.ports.broker_ports import BrokerPort
 from domain.value_objects import Symbol, Money
 from infrastructure.data.adapters.rest_client import RestClient

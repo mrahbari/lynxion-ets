@@ -2,8 +2,8 @@
 Infrastructure implementation of the Breakout Strategy following hexagonal architecture.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Signal, SignalType
-from domain.entities.signal_entities import FusedSignal, ExecutionIntent, OrderSide
+from domain.entities import Signal, SignalType
+from domain.entities import FusedSignal, ExecutionIntent, OrderSide
 from domain.value_objects import Symbol, Percentage
 from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger
@@ -30,7 +30,12 @@ class BreakoutStrategyAdapter(BaseStrategyAdapter):
         # Use configuration values or defaults
         self.lookback_period = self.config.get("lookback_period", 20)
         self.consolidation_period = self.config.get("consolidation_period", 10)
-        self.breakout_threshold = self.config.get("breakout_threshold", 0.02)
+        # Confirmation margin a close must clear beyond the prior range to count as a
+        # breakout. The old default 0.02 (2%) is impossible for a single bar on the
+        # configured 1m timeframe (~0.05%/bar) -> the strategy emitted 0 signals.
+        # 0.001 (0.1%) is a realistic per-bar confirmation margin that preserves the
+        # "price breaks the consolidation range" hypothesis (signal-starvation fix).
+        self.breakout_threshold = self.config.get("breakout_threshold", 0.001)
         self.atr_period = self.config.get("atr_period", 14)
 
         # Range tracking for preventing re-entry until new structure forms
@@ -49,13 +54,18 @@ class BreakoutStrategyAdapter(BaseStrategyAdapter):
         if len(highs) < self.consolidation_period or len(lows) < self.consolidation_period:
             return {"is_defined": False, "range_high": None, "range_low": None, "compression_ratio": 0}
 
-        # Calculate recent price range vs historical range for compression
-        recent_highs = highs[-self.consolidation_period:]
-        recent_lows = lows[-self.consolidation_period:]
+        # Calculate recent price range vs historical range for compression.
+        # EXCLUDE the current (potential breakout) bar: the range must be the PRIOR
+        # consolidation so current price can actually break it. Including the current
+        # bar made range_high = max(highs incl. current high) >= current close, so a
+        # breakout (current_price > range_high) was structurally impossible — the
+        # strategy emitted 0 signals (signal starvation). Fidelity fix, not a tune.
+        recent_highs = highs[-self.consolidation_period - 1:-1]
+        recent_lows = lows[-self.consolidation_period - 1:-1]
         recent_range = max(recent_highs) - min(recent_lows) if recent_highs and recent_lows else 0
 
-        historical_highs = highs[-self.lookback_period:]
-        historical_lows = lows[-self.lookback_period:]
+        historical_highs = highs[-self.lookback_period - 1:-1]
+        historical_lows = lows[-self.lookback_period - 1:-1]
         historical_range = max(historical_highs) - min(historical_lows) if historical_highs and historical_lows else 0
 
         # Calculate compression ratio (how much tighter the recent range is compared to historical)
@@ -199,14 +209,40 @@ class BreakoutStrategyAdapter(BaseStrategyAdapter):
 
             current_price = closes[-1]
 
-            # STEP 1: Define the range (Setup phase)
+            # STEP 1: Define / LATCH the consolidation range (Setup phase).
+            # The range must PERSIST so a LATER bar can break it. Recomputing the range
+            # every bar created a catch-22 — a real break expands the window and
+            # collapses is_defined → 0 breakouts ever. Latch a defined range and test
+            # breaks against the STORED range on subsequent bars. The adapter's
+            # range_high/range_low/range_broken fields were designed for this but were
+            # never wired (dead state). Hypothesis-preserving fix.
             range_info = self._define_range(highs, lows, closes)
+            if not hasattr(self, "_latch_age"):
+                self._latch_age = 0
 
-            if not range_info["is_defined"]:
-                self.logger.debug(f"No valid range defined for {self.name}, skipping breakout analysis")
+            if self.range_high is None:
+                # No active range: establish (latch) one if eligible, then WAIT for a break.
+                if range_info["is_defined"]:
+                    self.range_high = range_info["range_high"]
+                    self.range_low = range_info["range_low"]
+                    self._latch_compression = range_info["compression_ratio"]
+                    self._latch_age = 0
                 return None
+            # Active latched range: expire it after range_validity_bars, else test the
+            # STORED boundaries for a break on this (later) bar.
+            self._latch_age += 1
+            if self._latch_age > self.range_validity_bars:
+                self.range_high = None
+                self.range_low = None
+                return None
+            _span = (self.range_high - self.range_low) if (self.range_high is not None
+                     and self.range_low is not None) else 0
+            range_info = {"is_defined": True, "range_high": self.range_high,
+                          "range_low": self.range_low,
+                          "compression_ratio": getattr(self, "_latch_compression", 2.0),
+                          "recent_range": _span, "historical_range": _span}
 
-            # STEP 2: Check if market is eligible for breakout trading
+            # STEP 2: use the latched range boundaries
             range_high = range_info["range_high"]
             range_low = range_info["range_low"]
 
@@ -268,6 +304,12 @@ class BreakoutStrategyAdapter(BaseStrategyAdapter):
                     self.range_broken = True
                     self.entry_allowed = False  # Prevent re-entry until new structure
 
+            # A confirmed breakout consumes the latched range: clear it so a NEW
+            # consolidation must form before the next breakout.
+            if final_signal_type != SignalType.HOLD:
+                self.range_high = None
+                self.range_low = None
+
             confidence = Percentage(Decimal(str(min(1.0, max(0.1, final_confidence_factor)))))
 
             signal = Signal(
@@ -275,9 +317,8 @@ class BreakoutStrategyAdapter(BaseStrategyAdapter):
                 signal_type=final_signal_type,
                 confidence=confidence,
                 score=final_score,
-                strategy_name=self.name,
                 timestamp=datetime.now(),
-                source_engine="StructureBasedBreakout",
+                source_layer="StructureBasedBreakout",
                 metadata={
                     "range_high": range_high,
                     "range_low": range_low,
@@ -355,7 +396,7 @@ class BreakoutStrategyAdapter(BaseStrategyAdapter):
         # For breakout strategy, we need to check if the market conditions align with breakout patterns
 
         # Determine the side based on fused signal direction and bias
-        from domain.entities.signal_entities import OrderSide
+        from domain.entities import OrderSide
 
         # Check for consistency between direction and dominant bias
         direction_side = None
@@ -401,7 +442,7 @@ class BreakoutStrategyAdapter(BaseStrategyAdapter):
                                           max(Decimal('0.0'),
                                               fused_signal.confidence.value * Decimal('0.8')))),  # Slightly reduce confidence
             risk_parameters=risk_parameters,
-            timestamp=datetime.now(),
+            timestamp=getattr(fused_signal, 'timestamp', None) or datetime.now(),  # E-P5.2: simulated time
             fused_signal=fused_signal,
             metadata={
                 'strategy_reasoning': f'Signal aligned with {self.get_strategy_name()} strategy criteria',

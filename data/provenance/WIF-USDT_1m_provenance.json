@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "WIFUSDT",
+  "timeframe": "1m",
+  "checksum": "dcf8a44dc9fd31a6d1163b3dbc94e727d4c48a1075070e418702bdf858275c5b",
+  "download_timestamp": "2026-06-12T18:25:32.352881",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778685960",
+    "end": "1778749500"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/WIF-USDT.csv"
+}

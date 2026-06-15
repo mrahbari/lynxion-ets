@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "LINKUSDC",
+  "timeframe": "1m",
+  "checksum": "9a1bbe8f4d18ef4a9a176e1a42c1d98fea294fcf350777e65000477b17b47fdb",
+  "download_timestamp": "2026-06-12T18:40:57.597544",
+  "row_count": 1067,
+  "date_range": {
+    "start": "1778686440",
+    "end": "1778750400"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/LINKUSDC.csv"
+}

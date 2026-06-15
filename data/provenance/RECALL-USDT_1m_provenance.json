@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "RECALLUSDT",
+  "timeframe": "1m",
+  "checksum": "d74c9ab52406eba2643808cd6f48ff633bf6b90549cf2f6b57b8077011bf6071",
+  "download_timestamp": "2026-06-12T18:34:25.349435",
+  "row_count": 566,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778720040"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/RECALL-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ZETAUSDT",
+  "timeframe": "1m",
+  "checksum": "ac6e5e215984069c3bea496ad5e4e787f9e6dfa8ed7d160db29804ad3af5af7d",
+  "download_timestamp": "2026-06-12T18:32:41.043988",
+  "row_count": 561,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778719920"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ZETA-USDT.csv"
+}

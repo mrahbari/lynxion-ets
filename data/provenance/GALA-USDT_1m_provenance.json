@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "GALAUSDT",
+  "timeframe": "1m",
+  "checksum": "1210a485dd89f900a0cfb36efa7af0565fc9c1e0a58bef9a37bbc1b86a14764e",
+  "download_timestamp": "2026-06-12T18:24:30.001803",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778685900",
+    "end": "1778749440"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/GALA-USDT.csv"
+}

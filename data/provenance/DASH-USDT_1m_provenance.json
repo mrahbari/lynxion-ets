@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "DASHUSDT",
+  "timeframe": "1m",
+  "checksum": "39f9a264d7085239ea496d41df96efd5e6050774f45d0e0ed19d49f7d937b758",
+  "download_timestamp": "2026-06-12T22:06:32.666201",
+  "row_count": 1188,
+  "date_range": {
+    "start": "1778686200",
+    "end": "1781294760"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "file_path": "data/history/raw/1m/DASH-USDT.csv"
+}

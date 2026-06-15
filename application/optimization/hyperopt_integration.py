@@ -11,7 +11,7 @@ import traceback
 from datetime import datetime
 from dataclasses import dataclass
 
-from domain.entities.trading_entities import Signal, Order
+from domain.entities import Signal, Order
 from domain.value_objects import Symbol, Money, Percentage
 from shared.logger import logger
 

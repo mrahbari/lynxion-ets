@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "DOTUSDC",
+  "timeframe": "1m",
+  "checksum": "60766c29453c96b3eca69cbf7556cecf90e82594c612918ebb531bb092e580ca",
+  "download_timestamp": "2026-06-12T18:30:10.153301",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778749800"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/DOTUSDC.csv"
+}

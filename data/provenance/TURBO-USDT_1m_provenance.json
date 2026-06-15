@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "TURBOUSDT",
+  "timeframe": "1m",
+  "checksum": "3e97ab2a447a0713f462e6409929e049b6498ff689be47c16783b5cdfe4b480c",
+  "download_timestamp": "2026-06-12T18:42:19.962986",
+  "row_count": 1067,
+  "date_range": {
+    "start": "1778686560",
+    "end": "1778750520"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/TURBO-USDT.csv"
+}

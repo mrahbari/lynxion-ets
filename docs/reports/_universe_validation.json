@@ -1,0 +1,1513 @@
+{
+  "trend_following": {
+    "intended_regime": [
+      "trending_down",
+      "trending_up"
+    ],
+    "symbols": {
+      "BNB-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 92,
+        "in_regime_n": 69,
+        "in_regime_expectancy": -0.0013579489021086865,
+        "in_regime_win_rate": 0.34782608695652173,
+        "cost_adjusted_total_return": -0.09369847424549936,
+        "max_drawdown": -0.11561367299621494,
+        "wfo_fold_expectancy": [
+          -0.001983160200593617,
+          -0.004152041273708108,
+          -0.0027360511844052218,
+          0.0006707342783355914
+        ],
+        "wfo_positive_folds": 1
+      },
+      "XRP-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 130,
+        "in_regime_n": 92,
+        "in_regime_expectancy": 0.00185190776413169,
+        "in_regime_win_rate": 0.4673913043478261,
+        "cost_adjusted_total_return": 0.1703755143001155,
+        "max_drawdown": -0.17265086991633197,
+        "wfo_fold_expectancy": [
+          -0.00798863499675411,
+          0.0005815273416792652,
+          0.003912597450704592,
+          0.009308371731463731
+        ],
+        "wfo_positive_folds": 3
+      },
+      "DOGE-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 98,
+        "in_regime_n": 58,
+        "in_regime_expectancy": 0.0011905659083252327,
+        "in_regime_win_rate": 0.3620689655172414,
+        "cost_adjusted_total_return": 0.0690528226828635,
+        "max_drawdown": -0.3006646450601406,
+        "wfo_fold_expectancy": [
+          -0.01599728207896135,
+          -0.00828490930438623,
+          0.007663881335502305,
+          0.01185273502192871
+        ],
+        "wfo_positive_folds": 2
+      },
+      "ADA-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 126,
+        "in_regime_n": 91,
+        "in_regime_expectancy": -0.0029867580299604212,
+        "in_regime_win_rate": 0.38461538461538464,
+        "cost_adjusted_total_return": -0.27179498072639835,
+        "max_drawdown": -0.45164674129488036,
+        "wfo_fold_expectancy": [
+          -0.006479168128530448,
+          -0.007996150198528253,
+          -0.002001316045914229,
+          0.0037024222472477396
+        ],
+        "wfo_positive_folds": 1
+      },
+      "LINK-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 110,
+        "in_regime_n": 91,
+        "in_regime_expectancy": -0.0010502026945253605,
+        "in_regime_win_rate": 0.4065934065934066,
+        "cost_adjusted_total_return": -0.0955684452018078,
+        "max_drawdown": -0.261825007518655,
+        "wfo_fold_expectancy": [
+          -0.007704454849950049,
+          -0.002699044096267721,
+          0.0035563587631972653,
+          -0.0003788318727921275
+        ],
+        "wfo_positive_folds": 1
+      },
+      "TRX-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 72,
+        "in_regime_n": 45,
+        "in_regime_expectancy": -0.0029432203074431797,
+        "in_regime_win_rate": 0.35555555555555557,
+        "cost_adjusted_total_return": -0.13244491383494308,
+        "max_drawdown": -0.13399712365120534,
+        "wfo_fold_expectancy": [
+          -0.004266680080511242,
+          -0.002262377872731251,
+          -0.00047795006985738517,
+          -0.004186201381427414
+        ],
+        "wfo_positive_folds": 0
+      },
+      "SUI-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 123,
+        "in_regime_n": 97,
+        "in_regime_expectancy": -0.0003464367212921594,
+        "in_regime_win_rate": 0.3711340206185567,
+        "cost_adjusted_total_return": -0.03360436196533946,
+        "max_drawdown": -0.29720071190436276,
+        "wfo_fold_expectancy": [
+          -0.004631800783284172,
+          -0.0027701038054873867,
+          0.017945758586332492,
+          -0.013509123268380129
+        ],
+        "wfo_positive_folds": 1
+      },
+      "AVAX-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 108,
+        "in_regime_n": 83,
+        "in_regime_expectancy": -0.002978398926541164,
+        "in_regime_win_rate": 0.3493975903614458,
+        "cost_adjusted_total_return": -0.24720711090291658,
+        "max_drawdown": -0.26113009470411574,
+        "wfo_fold_expectancy": [
+          -0.0025164120994773283,
+          -0.0006467070001475022,
+          0.001141475149438804,
+          -0.010603418122342115
+        ],
+        "wfo_positive_folds": 1
+      }
+    }
+  },
+  "mean_reversion": {
+    "intended_regime": [
+      "ranging"
+    ],
+    "symbols": {
+      "BNB-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 0,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "XRP-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 1,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "DOGE-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 1,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "ADA-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 0,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "LINK-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 3,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "TRX-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 1,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "SUI-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 0,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "AVAX-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 0,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      }
+    }
+  },
+  "momentum": {
+    "intended_regime": [
+      "trending_down",
+      "trending_up"
+    ],
+    "symbols": {
+      "BNB-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 121,
+        "in_regime_n": 58,
+        "in_regime_expectancy": -0.0029504280742247294,
+        "in_regime_win_rate": 0.41379310344827586,
+        "cost_adjusted_total_return": -0.1711248283050343,
+        "max_drawdown": -0.21346995699439306,
+        "wfo_fold_expectancy": [
+          0.001539595540816944,
+          -0.005664910443470581,
+          -0.0026558519187952676,
+          -0.0034775067204265296
+        ],
+        "wfo_positive_folds": 1
+      },
+      "XRP-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 283,
+        "in_regime_n": 139,
+        "in_regime_expectancy": 0.003882430600940567,
+        "in_regime_win_rate": 0.5323741007194245,
+        "cost_adjusted_total_return": 0.5396578535307388,
+        "max_drawdown": -0.3237076470200889,
+        "wfo_fold_expectancy": [
+          0.0007890180196161049,
+          -0.005245784034465181,
+          0.0028732026173286917,
+          0.013120871748870317
+        ],
+        "wfo_positive_folds": 3
+      },
+      "DOGE-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 315,
+        "in_regime_n": 162,
+        "in_regime_expectancy": -0.0017105334322324512,
+        "in_regime_win_rate": 0.41358024691358025,
+        "cost_adjusted_total_return": -0.2771064160216571,
+        "max_drawdown": -0.6389416467334401,
+        "wfo_fold_expectancy": [
+          -0.0103612640448922,
+          -0.004351581702634113,
+          0.0075063731123584535,
+          0.002199514521325226
+        ],
+        "wfo_positive_folds": 2
+      },
+      "ADA-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 310,
+        "in_regime_n": 162,
+        "in_regime_expectancy": -0.001815516604661511,
+        "in_regime_win_rate": 0.4382716049382716,
+        "cost_adjusted_total_return": -0.2941136899551648,
+        "max_drawdown": -0.5305059727156516,
+        "wfo_fold_expectancy": [
+          -0.0047168808460434815,
+          -0.006078975009219036,
+          0.005232455234098001,
+          0.001150791697203955
+        ],
+        "wfo_positive_folds": 2
+      },
+      "LINK-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 312,
+        "in_regime_n": 179,
+        "in_regime_expectancy": -0.001346285190688687,
+        "in_regime_win_rate": 0.44692737430167595,
+        "cost_adjusted_total_return": -0.24098504913327498,
+        "max_drawdown": -0.4099221307257504,
+        "wfo_fold_expectancy": [
+          -0.0013676853659121708,
+          -0.004923313507618025,
+          -0.0015877471936463837,
+          0.00136536239259144
+        ],
+        "wfo_positive_folds": 1
+      },
+      "TRX-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 96,
+        "in_regime_n": 32,
+        "in_regime_expectancy": -0.0035233682851073546,
+        "in_regime_win_rate": 0.375,
+        "cost_adjusted_total_return": -0.11274778512343535,
+        "max_drawdown": -0.12056461505639904,
+        "wfo_fold_expectancy": [
+          -0.006855097476677014,
+          -0.006323485967503737,
+          -0.0020841656500531843,
+          -0.0026836916975322717
+        ],
+        "wfo_positive_folds": 0
+      },
+      "SUI-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 314,
+        "in_regime_n": 165,
+        "in_regime_expectancy": -0.003421693456956508,
+        "in_regime_win_rate": 0.45454545454545453,
+        "cost_adjusted_total_return": -0.5645794203978238,
+        "max_drawdown": -0.6464434934446533,
+        "wfo_fold_expectancy": [
+          -0.005578829688633631,
+          -0.005230024891272636,
+          0.005004175453507572,
+          -0.005592104842151687
+        ],
+        "wfo_positive_folds": 1
+      },
+      "AVAX-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 294,
+        "in_regime_n": 173,
+        "in_regime_expectancy": -0.0026296265007503187,
+        "in_regime_win_rate": 0.41040462427745666,
+        "cost_adjusted_total_return": -0.45492538462980514,
+        "max_drawdown": -0.5376640223196132,
+        "wfo_fold_expectancy": [
+          -0.004178766146063234,
+          -0.004526566104382488,
+          0.0018623403994115911,
+          -0.0026825787103591852
+        ],
+        "wfo_positive_folds": 1
+      }
+    }
+  },
+  "breakout": {
+    "intended_regime": [
+      "breakout"
+    ],
+    "symbols": {
+      "BNB-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 3,
+        "in_regime_n": 1,
+        "in_regime_expectancy": -0.0005470676308494838,
+        "in_regime_win_rate": 0.0,
+        "cost_adjusted_total_return": -0.0005470676308494838,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          -0.0005470676308494838
+        ],
+        "wfo_positive_folds": 0
+      },
+      "XRP-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 10,
+        "in_regime_n": 6,
+        "in_regime_expectancy": -0.008849968494330552,
+        "in_regime_win_rate": 0.16666666666666666,
+        "cost_adjusted_total_return": -0.05309981096598331,
+        "max_drawdown": -0.04613472992459537,
+        "wfo_fold_expectancy": [
+          null,
+          -0.009257770777729601,
+          -0.009940482981555298,
+          -0.008214595476322936
+        ],
+        "wfo_positive_folds": 0
+      },
+      "DOGE-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 10,
+        "in_regime_n": 3,
+        "in_regime_expectancy": 0.012485660101551714,
+        "in_regime_win_rate": 1.0,
+        "cost_adjusted_total_return": 0.03745698030465514,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          0.005195718654434298,
+          0.01613063082511042
+        ],
+        "wfo_positive_folds": 2
+      },
+      "ADA-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 9,
+        "in_regime_n": 3,
+        "in_regime_expectancy": -0.0010078531354452195,
+        "in_regime_win_rate": 0.3333333333333333,
+        "cost_adjusted_total_return": -0.003023559406335658,
+        "max_drawdown": -0.003346320346320309,
+        "wfo_fold_expectancy": [
+          null,
+          -0.010456766619070343,
+          -0.0033463203463203082,
+          0.010779527559054994
+        ],
+        "wfo_positive_folds": 1
+      },
+      "LINK-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 16,
+        "in_regime_n": 2,
+        "in_regime_expectancy": -0.006013029892940837,
+        "in_regime_win_rate": 0.0,
+        "cost_adjusted_total_return": -0.012026059785881674,
+        "max_drawdown": -0.004601281024819822,
+        "wfo_fold_expectancy": [
+          null,
+          -0.007424778761061852,
+          -0.004601281024819822,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "TRX-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 5,
+        "in_regime_n": 2,
+        "in_regime_expectancy": -0.005964929116533471,
+        "in_regime_win_rate": 0.0,
+        "cost_adjusted_total_return": -0.011929858233066942,
+        "max_drawdown": -0.007507888805409596,
+        "wfo_fold_expectancy": [
+          null,
+          -0.004421969427657347,
+          null,
+          -0.007507888805409596
+        ],
+        "wfo_positive_folds": 0
+      },
+      "SUI-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 11,
+        "in_regime_n": 2,
+        "in_regime_expectancy": -0.0011363246224587093,
+        "in_regime_win_rate": 0.5,
+        "cost_adjusted_total_return": -0.0022726492449174187,
+        "max_drawdown": -0.0056859422522416315,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          0.003413293007324213,
+          -0.0056859422522416315
+        ],
+        "wfo_positive_folds": 1
+      },
+      "AVAX-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 10,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      }
+    }
+  },
+  "liquidity": {
+    "intended_regime": [
+      "ranging"
+    ],
+    "symbols": {
+      "BNB-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 13,
+        "in_regime_n": 4,
+        "in_regime_expectancy": -0.0042865585721318725,
+        "in_regime_win_rate": 0.0,
+        "cost_adjusted_total_return": -0.01714623428852749,
+        "max_drawdown": -0.011927039014648288,
+        "wfo_fold_expectancy": [
+          -0.0048766688058026475,
+          -0.003696448338461096,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "XRP-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 11,
+        "in_regime_n": 5,
+        "in_regime_expectancy": -0.00454286988118857,
+        "in_regime_win_rate": 0.2,
+        "cost_adjusted_total_return": -0.022714349405942847,
+        "max_drawdown": -0.02469016785832377,
+        "wfo_fold_expectancy": [
+          -0.004025613434132743,
+          -0.0034153590548274522,
+          -0.007222150048717166,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "DOGE-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 15,
+        "in_regime_n": 8,
+        "in_regime_expectancy": -0.003124773486895401,
+        "in_regime_win_rate": 0.125,
+        "cost_adjusted_total_return": -0.02499818789516321,
+        "max_drawdown": -0.030466030244859412,
+        "wfo_fold_expectancy": [
+          -0.0017204362792810964,
+          -0.004669084006079967,
+          -0.007057838486597795,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "ADA-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 21,
+        "in_regime_n": 8,
+        "in_regime_expectancy": -0.0015325664547670968,
+        "in_regime_win_rate": 0.25,
+        "cost_adjusted_total_return": -0.012260531638136774,
+        "max_drawdown": -0.00774401172398667,
+        "wfo_fold_expectancy": [
+          -0.003503874909385131,
+          0.0021001787173435113,
+          null,
+          -0.001222694717641636
+        ],
+        "wfo_positive_folds": 1
+      },
+      "LINK-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 20,
+        "in_regime_n": 7,
+        "in_regime_expectancy": -0.002883121973528705,
+        "in_regime_win_rate": 0.42857142857142855,
+        "cost_adjusted_total_return": -0.020181853814700935,
+        "max_drawdown": -0.027041751262317667,
+        "wfo_fold_expectancy": [
+          -0.003917643956107406,
+          0.001601226993864933,
+          -0.005284843869002236,
+          -0.0008276611151340073
+        ],
+        "wfo_positive_folds": 1
+      },
+      "TRX-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 14,
+        "in_regime_n": 3,
+        "in_regime_expectancy": 0.0009127192513510911,
+        "in_regime_win_rate": 0.6666666666666666,
+        "cost_adjusted_total_return": 0.002738157754053273,
+        "max_drawdown": -0.0004856321839079242,
+        "wfo_fold_expectancy": [
+          0.0007009622501850513,
+          0.002522827687776146,
+          null,
+          -0.0004856321839079242
+        ],
+        "wfo_positive_folds": 2
+      },
+      "SUI-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 24,
+        "in_regime_n": 10,
+        "in_regime_expectancy": -0.0036083292324148404,
+        "in_regime_win_rate": 0.2,
+        "cost_adjusted_total_return": -0.036083292324148405,
+        "max_drawdown": -0.05104284130431695,
+        "wfo_fold_expectancy": [
+          -0.0016071112584833888,
+          -0.008346130787434137,
+          null,
+          -0.0015046718347145249
+        ],
+        "wfo_positive_folds": 0
+      },
+      "AVAX-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 19,
+        "in_regime_n": 8,
+        "in_regime_expectancy": -0.005668839080231827,
+        "in_regime_win_rate": 0.125,
+        "cost_adjusted_total_return": -0.04535071264185462,
+        "max_drawdown": -0.05586422615536803,
+        "wfo_fold_expectancy": [
+          -0.006735503986571978,
+          -0.004336596354497364,
+          null,
+          -0.003
+        ],
+        "wfo_positive_folds": 0
+      }
+    }
+  },
+  "mtf_trend": {
+    "intended_regime": [
+      "trending_down",
+      "trending_up"
+    ],
+    "symbols": {
+      "BNB-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 382,
+        "in_regime_n": 252,
+        "in_regime_expectancy": -0.002889521365091153,
+        "in_regime_win_rate": 0.25,
+        "cost_adjusted_total_return": -0.7281593840029705,
+        "max_drawdown": -0.7320214494438932,
+        "wfo_fold_expectancy": [
+          -0.001933698211022407,
+          -0.0032453595663761887,
+          -0.00392573510924023,
+          -0.0013567084349796162
+        ],
+        "wfo_positive_folds": 0
+      },
+      "XRP-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 410,
+        "in_regime_n": 261,
+        "in_regime_expectancy": -0.0027100213017601958,
+        "in_regime_win_rate": 0.30268199233716475,
+        "cost_adjusted_total_return": -0.7073155597594111,
+        "max_drawdown": -0.8808537618874664,
+        "wfo_fold_expectancy": [
+          -0.004215875042836285,
+          -0.001680658555934364,
+          -0.007048051510918221,
+          0.004366910212634318
+        ],
+        "wfo_positive_folds": 1
+      },
+      "DOGE-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 409,
+        "in_regime_n": 237,
+        "in_regime_expectancy": -0.004971713496987504,
+        "in_regime_win_rate": 0.29957805907172996,
+        "cost_adjusted_total_return": -1.1782960987860385,
+        "max_drawdown": -1.163952882254142,
+        "wfo_fold_expectancy": [
+          -0.008114775618666732,
+          -0.0012321972350298038,
+          -0.009834214205683858,
+          -0.0012892105411791393
+        ],
+        "wfo_positive_folds": 0
+      },
+      "ADA-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 428,
+        "in_regime_n": 298,
+        "in_regime_expectancy": -0.0027555940181976466,
+        "in_regime_win_rate": 0.4429530201342282,
+        "cost_adjusted_total_return": -0.8211670174228987,
+        "max_drawdown": -1.0381213886851566,
+        "wfo_fold_expectancy": [
+          -0.0009444480388491729,
+          -0.0023053890895971215,
+          -0.010391982978961788,
+          0.002081985431636203
+        ],
+        "wfo_positive_folds": 1
+      },
+      "LINK-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 443,
+        "in_regime_n": 323,
+        "in_regime_expectancy": -0.004840480606765339,
+        "in_regime_win_rate": 0.33746130030959753,
+        "cost_adjusted_total_return": -1.5634752359852044,
+        "max_drawdown": -1.5666384427292535,
+        "wfo_fold_expectancy": [
+          -0.004789793548239474,
+          -0.002819936693701656,
+          -0.01169036198979397,
+          -0.001783534572744454
+        ],
+        "wfo_positive_folds": 0
+      },
+      "TRX-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 394,
+        "in_regime_n": 261,
+        "in_regime_expectancy": -0.005766594246072109,
+        "in_regime_win_rate": 0.13793103448275862,
+        "cost_adjusted_total_return": -1.5050810982248204,
+        "max_drawdown": -1.5023970261966337,
+        "wfo_fold_expectancy": [
+          -0.0035791620229658175,
+          -0.009391182408115085,
+          -0.004535630866193401,
+          -0.004746249207661273
+        ],
+        "wfo_positive_folds": 0
+      },
+      "SUI-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 427,
+        "in_regime_n": 292,
+        "in_regime_expectancy": -0.0017427533489595187,
+        "in_regime_win_rate": 0.410958904109589,
+        "cost_adjusted_total_return": -0.5088839778961795,
+        "max_drawdown": -1.0225491256368833,
+        "wfo_fold_expectancy": [
+          0.0032943901990193855,
+          -0.0021303015401195405,
+          -0.009962601888086366,
+          0.0023814865420746043
+        ],
+        "wfo_positive_folds": 2
+      },
+      "AVAX-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 458,
+        "in_regime_n": 341,
+        "in_regime_expectancy": -0.00472270111827193,
+        "in_regime_win_rate": 0.3548387096774194,
+        "cost_adjusted_total_return": -1.610441081330728,
+        "max_drawdown": -1.611856672957659,
+        "wfo_fold_expectancy": [
+          -0.0035821022854256378,
+          -0.004183340745810342,
+          -0.005818314359234193,
+          -0.004831821025854509
+        ],
+        "wfo_positive_folds": 0
+      }
+    }
+  },
+  "oi_footprint": {
+    "intended_regime": [],
+    "symbols": {
+      "BNB-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 124,
+        "in_regime_n": 124,
+        "in_regime_expectancy": -0.0024292600369672434,
+        "in_regime_win_rate": 0.3467741935483871,
+        "cost_adjusted_total_return": -0.3012282445839382,
+        "max_drawdown": -0.30086214756334717,
+        "wfo_fold_expectancy": [
+          -0.0013003989789709951,
+          -0.004107696523273159,
+          0.00015370510982116135,
+          -0.004944880510472092
+        ],
+        "wfo_positive_folds": 1
+      },
+      "XRP-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 110,
+        "in_regime_n": 110,
+        "in_regime_expectancy": 0.0037775951961374777,
+        "in_regime_win_rate": 0.4818181818181818,
+        "cost_adjusted_total_return": 0.41553547157512255,
+        "max_drawdown": -0.12016703170703735,
+        "wfo_fold_expectancy": [
+          0.0036640249429396115,
+          0.0017806949330254661,
+          9.124929820860286e-05,
+          0.010774419909191911
+        ],
+        "wfo_positive_folds": 4
+      },
+      "DOGE-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 124,
+        "in_regime_n": 124,
+        "in_regime_expectancy": 0.0008707553707906498,
+        "in_regime_win_rate": 0.4274193548387097,
+        "cost_adjusted_total_return": 0.10797366597804058,
+        "max_drawdown": -0.2984765713203032,
+        "wfo_fold_expectancy": [
+          -0.0024357565979198632,
+          -0.007739980186153942,
+          0.007456503655524726,
+          0.004287183020201103
+        ],
+        "wfo_positive_folds": 2
+      },
+      "ADA-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 134,
+        "in_regime_n": 134,
+        "in_regime_expectancy": -0.002367615920629532,
+        "in_regime_win_rate": 0.4701492537313433,
+        "cost_adjusted_total_return": -0.3172605333643573,
+        "max_drawdown": -0.3592240162985466,
+        "wfo_fold_expectancy": [
+          -0.003312823467958811,
+          -0.004931535230506032,
+          0.002380968337129216,
+          -0.004171485725785961
+        ],
+        "wfo_positive_folds": 1
+      },
+      "LINK-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 112,
+        "in_regime_n": 112,
+        "in_regime_expectancy": 0.0004284778630609092,
+        "in_regime_win_rate": 0.5267857142857143,
+        "cost_adjusted_total_return": 0.04798952066282183,
+        "max_drawdown": -0.2790032522695941,
+        "wfo_fold_expectancy": [
+          -0.004855078755952134,
+          -0.0011376408363435399,
+          0.0019996440803819278,
+          0.005972518244129424
+        ],
+        "wfo_positive_folds": 2
+      },
+      "TRX-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 140,
+        "in_regime_n": 140,
+        "in_regime_expectancy": -0.002395485292335893,
+        "in_regime_win_rate": 0.3142857142857143,
+        "cost_adjusted_total_return": -0.33536794092702504,
+        "max_drawdown": -0.33565465985873844,
+        "wfo_fold_expectancy": [
+          -0.0015681887459928169,
+          -0.003654302123877063,
+          -0.003527310740419327,
+          -0.0007640749404957846
+        ],
+        "wfo_positive_folds": 0
+      },
+      "SUI-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 127,
+        "in_regime_n": 127,
+        "in_regime_expectancy": -0.0009601301597970082,
+        "in_regime_win_rate": 0.47244094488188976,
+        "cost_adjusted_total_return": -0.12193653029422004,
+        "max_drawdown": -0.43913058473885525,
+        "wfo_fold_expectancy": [
+          0.007505751296900613,
+          -0.0023382939318842165,
+          -0.001558659465971838,
+          -0.007585820910023798
+        ],
+        "wfo_positive_folds": 1
+      },
+      "AVAX-USDT": {
+        "timeframe": "1h",
+        "bars": 1000,
+        "horizon": 6,
+        "signals_total": 132,
+        "in_regime_n": 132,
+        "in_regime_expectancy": -0.0011880462125683597,
+        "in_regime_win_rate": 0.45454545454545453,
+        "cost_adjusted_total_return": -0.15682210005902347,
+        "max_drawdown": -0.3337352868396335,
+        "wfo_fold_expectancy": [
+          -0.003373459436521386,
+          -0.006276357900638484,
+          0.00439480872751356,
+          -0.00069345671124772
+        ],
+        "wfo_positive_folds": 1
+      }
+    }
+  },
+  "sweep_scalper": {
+    "intended_regime": [
+      "breakout"
+    ],
+    "symbols": {
+      "BNB-USDT": {
+        "timeframe": "1m",
+        "bars": 4328,
+        "horizon": 15,
+        "signals_total": 2734,
+        "in_regime_n": 284,
+        "in_regime_expectancy": -0.0025799052712559773,
+        "in_regime_win_rate": 0.3274647887323944,
+        "cost_adjusted_total_return": -0.7326930970366976,
+        "max_drawdown": -0.7926014494350982,
+        "wfo_fold_expectancy": [
+          -0.0034246330416088395,
+          -0.0021247454886948753,
+          -0.0045550624098696,
+          -0.0013742674105309547
+        ],
+        "wfo_positive_folds": 0
+      },
+      "XRP-USDT": {
+        "timeframe": "1m",
+        "bars": 3604,
+        "horizon": 15,
+        "signals_total": 2436,
+        "in_regime_n": 243,
+        "in_regime_expectancy": -0.012835042784289421,
+        "in_regime_win_rate": 0.32510288065843623,
+        "cost_adjusted_total_return": -3.1189153965823295,
+        "max_drawdown": -3.46499600707994,
+        "wfo_fold_expectancy": [
+          -0.003401522205023105,
+          -0.003029877748096959,
+          -0.0347705545788126,
+          -0.0042318388690736125
+        ],
+        "wfo_positive_folds": 0
+      },
+      "DOGE-USDT": {
+        "timeframe": "1m",
+        "bars": 3606,
+        "horizon": 15,
+        "signals_total": 2414,
+        "in_regime_n": 221,
+        "in_regime_expectancy": -0.0068876314817635014,
+        "in_regime_win_rate": 0.3167420814479638,
+        "cost_adjusted_total_return": -1.5221665574697338,
+        "max_drawdown": -1.567103058421033,
+        "wfo_fold_expectancy": [
+          -0.005845813567811721,
+          -0.005826723409356612,
+          -0.013268709665195838,
+          -0.00358301937906872
+        ],
+        "wfo_positive_folds": 0
+      },
+      "ADA-USDT": {
+        "timeframe": "1m",
+        "bars": 3607,
+        "horizon": 15,
+        "signals_total": 2410,
+        "in_regime_n": 173,
+        "in_regime_expectancy": -0.0013630064451898582,
+        "in_regime_win_rate": 0.3352601156069364,
+        "cost_adjusted_total_return": -0.23580011501784548,
+        "max_drawdown": -0.5650535762840503,
+        "wfo_fold_expectancy": [
+          -0.005494612570666101,
+          -0.0057457726977843925,
+          0.01411835431814773,
+          -0.003421595749533389
+        ],
+        "wfo_positive_folds": 1
+      },
+      "LINK-USDT": {
+        "timeframe": "1m",
+        "bars": 3608,
+        "horizon": 15,
+        "signals_total": 2281,
+        "in_regime_n": 98,
+        "in_regime_expectancy": -0.005469039224941305,
+        "in_regime_win_rate": 0.2857142857142857,
+        "cost_adjusted_total_return": -0.535965844044248,
+        "max_drawdown": -0.5322088417732411,
+        "wfo_fold_expectancy": [
+          -0.008024824577275155,
+          -0.004478984469556505,
+          -0.009993309838953985,
+          -0.008252171049063093
+        ],
+        "wfo_positive_folds": 0
+      },
+      "TRX-USDT": {
+        "timeframe": "1m",
+        "bars": 3607,
+        "horizon": 15,
+        "signals_total": 1924,
+        "in_regime_n": 137,
+        "in_regime_expectancy": -0.0020249101952328178,
+        "in_regime_win_rate": 0.35766423357664234,
+        "cost_adjusted_total_return": -0.277412696746896,
+        "max_drawdown": -0.3939967588874855,
+        "wfo_fold_expectancy": [
+          -0.0024896085407121768,
+          -0.003395852518401057,
+          5.587153187528336e-05,
+          null
+        ],
+        "wfo_positive_folds": 1
+      },
+      "SUI-USDT": {
+        "timeframe": "1m",
+        "bars": 3477,
+        "horizon": 15,
+        "signals_total": 2433,
+        "in_regime_n": 126,
+        "in_regime_expectancy": -0.0026683478206436326,
+        "in_regime_win_rate": 0.3412698412698413,
+        "cost_adjusted_total_return": -0.33621182540109773,
+        "max_drawdown": -0.6947365893430751,
+        "wfo_fold_expectancy": [
+          -0.0019399300197877607,
+          -0.004667362892990469,
+          0.0025293653805308555,
+          -0.003807725223984683
+        ],
+        "wfo_positive_folds": 1
+      },
+      "AVAX-USDT": {
+        "timeframe": "1m",
+        "bars": 3607,
+        "horizon": 15,
+        "signals_total": 2214,
+        "in_regime_n": 108,
+        "in_regime_expectancy": -0.006957933715848715,
+        "in_regime_win_rate": 0.25,
+        "cost_adjusted_total_return": -0.7514568413116612,
+        "max_drawdown": -0.7463669771528316,
+        "wfo_fold_expectancy": [
+          -0.005869749597662999,
+          -0.007023168532532309,
+          -0.007888281754676525,
+          -0.005460817737864195
+        ],
+        "wfo_positive_folds": 0
+      }
+    }
+  },
+  "vwap_reversal": {
+    "intended_regime": [
+      "ranging"
+    ],
+    "symbols": {
+      "BNB-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 18,
+        "in_regime_n": 1,
+        "in_regime_expectancy": 0.0020768514205868373,
+        "in_regime_win_rate": 1.0,
+        "cost_adjusted_total_return": 0.0020768514205868373,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          0.0020768514205868373,
+          null
+        ],
+        "wfo_positive_folds": 1
+      },
+      "XRP-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 8,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "DOGE-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 34,
+        "in_regime_n": 3,
+        "in_regime_expectancy": 0.0057365068287930825,
+        "in_regime_win_rate": 0.6666666666666666,
+        "cost_adjusted_total_return": 0.01720952048637925,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          -4.4278974592209044e-05,
+          0.008626899730485728,
+          null
+        ],
+        "wfo_positive_folds": 1
+      },
+      "ADA-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 12,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "LINK-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 7,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "TRX-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 5,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "SUI-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 9,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "AVAX-USDT": {
+        "timeframe": "5m",
+        "bars": 1000,
+        "horizon": 12,
+        "signals_total": 14,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      }
+    }
+  },
+  "volatility_breakout": {
+    "intended_regime": [
+      "breakout"
+    ],
+    "symbols": {
+      "BNB-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 10,
+        "in_regime_n": 3,
+        "in_regime_expectancy": -0.002852352864706861,
+        "in_regime_win_rate": 0.0,
+        "cost_adjusted_total_return": -0.008557058594120584,
+        "max_drawdown": -0.004375503294223207,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          -0.00400499548163555,
+          -0.0005470676308494838
+        ],
+        "wfo_positive_folds": 0
+      },
+      "XRP-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 7,
+        "in_regime_n": 3,
+        "in_regime_expectancy": 0.003175776130383865,
+        "in_regime_win_rate": 0.6666666666666666,
+        "cost_adjusted_total_return": 0.009527328391151595,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          0.0028708070527186883,
+          null,
+          0.003785714285714218
+        ],
+        "wfo_positive_folds": 2
+      },
+      "DOGE-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 6,
+        "in_regime_n": 2,
+        "in_regime_expectancy": -0.010838852048893262,
+        "in_regime_win_rate": 0.5,
+        "cost_adjusted_total_return": -0.021677704097786524,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          -0.030116246168356474,
+          null,
+          0.00843854207056995
+        ],
+        "wfo_positive_folds": 1
+      },
+      "ADA-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 3,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "LINK-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 3,
+        "in_regime_n": 1,
+        "in_regime_expectancy": -0.004601281024819822,
+        "in_regime_win_rate": 0.0,
+        "cost_adjusted_total_return": -0.004601281024819822,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          -0.004601281024819822,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "TRX-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 11,
+        "in_regime_n": 3,
+        "in_regime_expectancy": -0.008566172573542447,
+        "in_regime_win_rate": 0.0,
+        "cost_adjusted_total_return": -0.02569851772062734,
+        "max_drawdown": -0.021276548292969995,
+        "wfo_fold_expectancy": [
+          null,
+          -0.004421969427657347,
+          null,
+          -0.010638274146484994
+        ],
+        "wfo_positive_folds": 0
+      },
+      "SUI-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 6,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      },
+      "AVAX-USDT": {
+        "timeframe": "15m",
+        "bars": 1000,
+        "horizon": 8,
+        "signals_total": 4,
+        "in_regime_n": 0,
+        "in_regime_expectancy": null,
+        "in_regime_win_rate": null,
+        "cost_adjusted_total_return": 0.0,
+        "max_drawdown": 0.0,
+        "wfo_fold_expectancy": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "wfo_positive_folds": 0
+      }
+    }
+  }
+}

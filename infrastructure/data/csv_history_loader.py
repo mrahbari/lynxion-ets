@@ -9,8 +9,9 @@ import hashlib
 import json
 import logging
 from domain.ports.data_ports import DataProviderPort
-from domain.entities.trading_entities import MarketData
+from domain.entities import MarketData
 from domain.value_objects import Symbol
+from application.dto import MarketDataDTO, market_data_to_domain
 
 
 class CSVHistoryLoaderAdapter(DataProviderPort):
@@ -74,8 +75,11 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
             "file_path": str(file_path)
         }
 
-        # Save provenance data to JSON file
-        provenance_file = self.provenance_dir / f"{symbol}_{timeframe}_provenance.json"
+        # Save provenance data to JSON file. Use the SAME formatted symbol as the
+        # CSV data files (e.g. BTCUSDT -> BTC-USDT) so provenance file names match
+        # the data file naming convention everywhere (integrity across all places).
+        formatted_symbol = symbol if '-USDT' in symbol else symbol.replace('USDT', '-USDT')
+        provenance_file = self.provenance_dir / f"{formatted_symbol}_{timeframe}_provenance.json"
         with open(provenance_file, 'w') as f:
             json.dump(provenance_data, f, indent=2, default=str)
 
@@ -125,13 +129,27 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
         for idx, row in df.iterrows():
             # Convert datetime index back to Unix timestamp
             unix_timestamp = int(idx.timestamp())
+            # E4.T4 (Phase 2A): translate the raw row through the DTO + mapper
+            # choke point so the canonical MarketData entity (with its validated
+            # Symbol) is the source of truth for the emitted record. The output
+            # dict shape is unchanged (parity preserved).
+            md = market_data_to_domain(MarketDataDTO(
+                symbol=symbol.value,
+                price=float(row['close']),
+                timestamp=idx,
+                open=float(row['open']),
+                high=float(row['high']),
+                low=float(row['low']),
+                close=float(row['close']),
+                volume=float(row['volume']),
+            ))
             result.append({
                 'timestamp': unix_timestamp,
-                'open': float(row['open']),
-                'high': float(row['high']),
-                'low': float(row['low']),
-                'close': float(row['close']),
-                'volume': float(row['volume'])
+                'open': md.open,
+                'high': md.high,
+                'low': md.low,
+                'close': md.close,
+                'volume': md.volume
             })
 
         return result
@@ -536,8 +554,11 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
         # Save to CSV file with the correct format: e.g., SOL-USDT.csv in the timeframe directory
         file_path = timeframe_dir / f"{formatted_symbol}.csv"
 
-        # If file already exists, load it and merge with new data
-        if file_path.exists():
+        # If file already exists AND is non-empty, load it and merge with new data.
+        # An empty/0-byte file makes pd.read_csv raise EmptyDataError ("No columns to
+        # parse from file"); treat it like a non-existent file and just write the new
+        # data (avoids the noisy per-symbol warning + redundant overwrite). (Type-B fix.)
+        if file_path.exists() and file_path.stat().st_size > 0:
             try:
                 existing_df = pd.read_csv(file_path)
 

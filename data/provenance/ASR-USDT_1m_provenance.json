@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ASRUSDT",
+  "timeframe": "1m",
+  "checksum": "6092812ccafb5520a2d6ca493f99d0f25800f17293bed69b2028bf6bc5ef6c8f",
+  "download_timestamp": "2026-06-12T18:27:56.558885",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1778749620"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ASR-USDT.csv"
+}

@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 from datetime import datetime
 import pandas as pd
 
-from domain.entities.trading_entities import Signal, Order
+from domain.entities import Signal, Order
 from domain.value_objects import Symbol
 from shared.logger import logger
 from infrastructure.backtest.realistic_backtester import RealisticBacktester
@@ -46,7 +46,7 @@ class SymbolWatcher:
         
         # Convert signal value to actual Signal object
         if signal_value != 0:  # Only create signal if there's actually a signal
-            from domain.entities.trading_entities import SignalType
+            from domain.entities import SignalType
             from domain.value_objects import Percentage
             from decimal import Decimal
 

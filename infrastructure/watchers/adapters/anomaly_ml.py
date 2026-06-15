@@ -1,5 +1,5 @@
 from .base_watcher import BaseWatcher
-from domain.entities.signal_entities import MarketObservation
+from domain.entities import MarketObservation
 from domain.value_objects import Symbol, Percentage
 from shared.logger import logger
 from datetime import datetime
@@ -7,14 +7,13 @@ import numpy as np
 from typing import List, Optional
 from decimal import Decimal
 from infrastructure.logging.forensic_logger import forensic_logger
-from application.configs.configs import Configs
 
 
 class AnomalyMLWatcher(BaseWatcher):
     """ML-based Anomaly Detection Watcher - detects unusual market patterns, returns raw market observations"""
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 50,
-                 contamination: float = 0.1):
+                 contamination: float = 0.1, watcher_config=None):
         # Convert symbol string to Symbol object if needed
         self.volume_history = []  # Initialize as empty list instead of None
         symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
@@ -24,8 +23,9 @@ class AnomalyMLWatcher(BaseWatcher):
         self.broker_service = broker_service
         self.target_broker = target_broker
 
-        # Configuration from environment with defaults
-        self.enabled = Configs.watcher.anomaly_ml_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'anomaly_ml_watcher_enabled') else True
+        # Configuration injected via constructor (E1.T4); falls back to the
+        # typed settings aggregate (same values as the legacy Configs.watcher).
+        self.enabled = watcher_config.anomaly_ml_watcher_enabled if watcher_config and hasattr(watcher_config, 'anomaly_ml_watcher_enabled') else True
 
         # Only set logger if enabled, otherwise use mock logger
         if self.enabled:

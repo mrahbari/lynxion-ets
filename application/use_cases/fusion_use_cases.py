@@ -2,7 +2,7 @@
 Use cases for fusion functionality in the enterprise hedge fund trading system.
 """
 from typing import List, Optional
-from domain.entities.trading_entities import Signal
+from domain.entities import Signal
 from application.services.fusion_services import AdvancedFusionService
 
 

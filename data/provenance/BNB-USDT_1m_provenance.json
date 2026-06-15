@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "BNBUSDT",
+  "timeframe": "1m",
+  "checksum": "676a0e4d0f599c95d9a7ebf6a0f8e9394848a37e95e3b77c9caf441bb8da288d",
+  "download_timestamp": "2026-06-13T10:05:35.578718",
+  "row_count": 4328,
+  "date_range": {
+    "start": "1749802200",
+    "end": "1781337600"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "3b0660b40781ad422305ade2176eb7766df8b9aa",
+  "file_path": "data/history/raw/1m/BNB-USDT.csv"
+}

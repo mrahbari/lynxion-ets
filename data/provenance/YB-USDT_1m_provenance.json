@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "YBUSDT",
+  "timeframe": "1m",
+  "checksum": "0c5267b28e00894f75f3cb911aea9f8e9afa0d9b5e7ba9b667e21e9535c4075e",
+  "download_timestamp": "2026-06-12T18:31:35.838787",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686380",
+    "end": "1778749860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/YB-USDT.csv"
+}

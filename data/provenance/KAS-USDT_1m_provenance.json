@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "KASUSDT",
+  "timeframe": "1m",
+  "checksum": "6059c4037b84232357c11c586310a7b88a52a777779a2228896a571e1acabae8",
+  "download_timestamp": "2026-06-12T18:38:16.127633",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686800",
+    "end": "1778720280"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/KAS-USDT.csv"
+}

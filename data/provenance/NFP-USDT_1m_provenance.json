@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "NFPUSDT",
+  "timeframe": "1m",
+  "checksum": "9d344270eb709cc146d3c7aa21a4e8ffad5f1f1715023ea4e1fa228c970cdabe",
+  "download_timestamp": "2026-06-12T18:30:39.193197",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778749800"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/NFP-USDT.csv"
+}

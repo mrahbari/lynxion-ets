@@ -1,0 +1,18 @@
+{
+  "source": "ccxt:fundingRateHistory",
+  "exchange": "binance",
+  "symbol": "FLOWUSDT",
+  "data_class": "funding",
+  "checksum": "b8f5d9514344bf23869972f9593c3c7151bb6af9002309a051d4a9611a30f409",
+  "download_timestamp": "2026-06-11T21:01:36.701751+00:00",
+  "row_count": 4155,
+  "date_range": {
+    "start": "1686614400",
+    "end": "1781208000"
+  },
+  "columns": [
+    "timestamp",
+    "funding_rate"
+  ],
+  "file_path": "./data/history/raw/funding/FLOW-USDT.csv"
+}

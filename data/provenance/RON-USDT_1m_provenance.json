@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "RONUSDT",
+  "timeframe": "1m",
+  "checksum": "fc1dbbfbf8375d9656e2e182750515aeb493646cc8ff8c8c1f1e7c6cf8b4fa08",
+  "download_timestamp": "2026-06-12T18:43:05.283104",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778687040",
+    "end": "1778720580"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/RON-USDT.csv"
+}

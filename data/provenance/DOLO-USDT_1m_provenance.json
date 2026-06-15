@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "DOLOUSDT",
+  "timeframe": "1m",
+  "checksum": "730728e55aeb83d9c69a0c69d7965de686295b7944dbd50b26255382300a8597",
+  "download_timestamp": "2026-06-12T18:27:21.283941",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778749620"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/DOLO-USDT.csv"
+}

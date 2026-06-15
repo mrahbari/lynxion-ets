@@ -2,7 +2,7 @@
 Infrastructure implementation of the Mean Reversion Strategy following hexagonal architecture.
 """
 from typing import List, Optional, Dict, Any
-from domain.entities.trading_entities import Signal, SignalType
+from domain.entities import Signal, SignalType
 from domain.value_objects import Symbol, Percentage
 from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger
@@ -36,7 +36,13 @@ class MeanReversionStrategyAdapter(BaseStrategyAdapter):
         self.volatility_expansion_window = self.config.get("volatility_expansion_window", 20)
         self.momentum_window = self.config.get("momentum_window", 10)
         self.range_definition_window = self.config.get("range_definition_window", 50)
-        self.failed_expansion_threshold = self.config.get("failed_expansion_threshold", 3)  # Number of failed attempts to break range
+        # Number of prior failed range-break attempts required before entry. The core
+        # hypothesis is "revert from a range extreme with rejection + oversold RSI";
+        # demanding 3 prior failed breaks is an arbitrary engineering constant (type-B
+        # miscalibration) that, conjoined with rejection AND RSI, never co-occurs on 1m
+        # (suppressed the hypothesis). 1 keeps the "range is holding" confirmation
+        # without the arbitrary strictness. Not optimization — fidelity restoration.
+        self.failed_expansion_threshold = self.config.get("failed_expansion_threshold", 1)
         self.momentum_threshold = self.config.get("momentum_threshold", 0.005)  # Threshold for considering momentum high
 
     def _is_volatility_expanding(self, closes: List[float]) -> bool:
@@ -83,12 +89,20 @@ class MeanReversionStrategyAdapter(BaseStrategyAdapter):
 
     def _define_range_boundaries(self, highs: List[float], lows: List[float]) -> Dict[str, float]:
         """Define range boundaries based on swing highs and lows"""
-        if len(highs) < self.range_definition_window:
+        # EXCLUDE the most recent bars (the ones tested for rejection/failed-expansion)
+        # so the range is the PRIOR consolidation. Computing bounds over a window that
+        # INCLUDED those bars made upper_bound = max(highs incl. them) >= every tested
+        # bar's high, so `current_high > upper_bound` (rejection) and failed-expansion
+        # were structurally impossible — both helpers returned 0/False on every bar
+        # (implementation bug, NOT the hypothesis). Excluding the test window restores
+        # the intended "price probes the established range and is rejected" behavior.
+        exclude = 20  # covers the current bar (rejection) + failed-expansion lookback
+        win = self.range_definition_window
+        if len(highs) < win + exclude or len(lows) < win + exclude:
             return {"upper_bound": None, "lower_bound": None, "middle": None}
 
-        # Use recent highs and lows to define range
-        recent_highs = highs[-self.range_definition_window:]
-        recent_lows = lows[-self.range_definition_window:]
+        recent_highs = highs[-(win + exclude):-exclude]
+        recent_lows = lows[-(win + exclude):-exclude]
 
         # Find highest high and lowest low in the range
         upper_bound = max(recent_highs) if recent_highs else None
@@ -254,9 +268,8 @@ class MeanReversionStrategyAdapter(BaseStrategyAdapter):
                 signal_type=final_signal_type,
                 confidence=confidence,
                 score=final_score,
-                strategy_name=self.name,
                 timestamp=datetime.now(),
-                source_engine="RangeBoundMeanReversion",
+                source_layer="RangeBoundMeanReversion",
                 metadata={
                     "current_price": current_price,
                     "range_upper_bound": range_bounds['upper_bound'],

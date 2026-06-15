@@ -2,7 +2,7 @@
 Use cases for broker functionality in the enterprise hedge fund trading system.
 """
 from typing import List, Dict, Any
-from domain.entities.trading_entities import Order
+from domain.entities import Order
 from domain.value_objects import Symbol
 from application.services.broker_services import BrokerManagementService
 

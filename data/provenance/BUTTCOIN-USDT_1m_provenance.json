@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "BUTTCOINUSDT",
+  "timeframe": "1m",
+  "checksum": "7a6b4f88d25fb2669ceb45945736e0ac3493f8c9298cbcc74256a8f1e31b047c",
+  "download_timestamp": "2026-06-12T18:39:08.818716",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686800",
+    "end": "1778720340"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/BUTTCOIN-USDT.csv"
+}

@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "NEARUSDT",
+  "timeframe": "1m",
+  "checksum": "94df412118654099b3869456a921eb57a48024e807ebd280bf6c43aba41fda61",
+  "download_timestamp": "2026-06-12T18:40:39.388985",
+  "row_count": 1140,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1781276640"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/NEAR-USDT.csv"
+}

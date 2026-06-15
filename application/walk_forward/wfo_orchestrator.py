@@ -44,7 +44,8 @@ class WFOOrchestrator:
         self.cv_engine = CrossValidationEngine(
             n_splits=self.config.get('cv_n_splits', 5),
             min_train_size=self.config.get('cv_min_train_size', 30),
-            test_size=self.config.get('cv_test_size', 15)
+            test_size=self.config.get('cv_test_size', 15),
+            backtester_class=RealisticBacktester
         )
 
         # Corrected initialization with proper config format

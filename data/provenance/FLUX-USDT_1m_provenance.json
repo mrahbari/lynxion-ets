@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "FLUXUSDT",
+  "timeframe": "1m",
+  "checksum": "2d436550f47b8c6b0b74c96c6a3e923faff5968aa0277e9f4aa0f056d872c52e",
+  "download_timestamp": "2026-06-12T18:28:48.696027",
+  "row_count": 1059,
+  "date_range": {
+    "start": "1778686200",
+    "end": "1778749680"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/FLUX-USDT.csv"
+}

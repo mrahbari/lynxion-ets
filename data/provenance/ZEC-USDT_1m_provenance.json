@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ZECUSDT",
+  "timeframe": "1m",
+  "checksum": "b3f945faf28a7f652b19133af94cb5ad47a1ca23a0ce5fbc26d2df552733736e",
+  "download_timestamp": "2026-06-12T22:06:24.616713",
+  "row_count": 1189,
+  "date_range": {
+    "start": "1778686500",
+    "end": "1781294760"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "file_path": "data/history/raw/1m/ZEC-USDT.csv"
+}

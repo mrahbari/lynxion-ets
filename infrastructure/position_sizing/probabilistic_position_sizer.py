@@ -678,5 +678,27 @@ class AdvancedPositionSizingService:
         }
 
 
-# Global instance
-position_sizing_service = AdvancedPositionSizingService()
+# Module-level singleton retired (E3.T3, following the E2.T6 pattern). This
+# module is a DEPRECATED shim: the canonical sizing engine is now
+# ``infrastructure.position_sizing.position_sizing_engine_adapter.PositionSizingEngineAdapter``
+# behind ``domain.ports.portfolio_ports.PositionSizingEnginePort`` (resolved from
+# the composition root as ``position_sizing_engine``). This lazy accessor keeps
+# ``from ... import position_sizing_service`` working without instantiating at
+# import time. (Physical removal of this module is deferred to E8.)
+#
+# NOTE: ``AdvancedPositionSizingService.get_optimal_size`` routes through
+# ``EvidenceWeightedPositionSizer.calculate_size``, which constructs
+# ``PositionSizeResult`` with fields the dataclass does not define and therefore
+# raises ``TypeError``. This is a PRE-EXISTING bug (unreachable today) and is
+# intentionally excluded from the consolidated adapter; it is left untouched for
+# E8 cleanup.
+_position_sizing_service_singleton = None
+
+
+def __getattr__(name):
+    global _position_sizing_service_singleton
+    if name == "position_sizing_service":
+        if _position_sizing_service_singleton is None:
+            _position_sizing_service_singleton = AdvancedPositionSizingService()
+        return _position_sizing_service_singleton
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

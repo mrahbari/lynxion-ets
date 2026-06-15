@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "MEGAUSDT",
+  "timeframe": "1m",
+  "checksum": "edc574c3d314e4e16dbd156ffbce6d0c67418bd648754f5a4a171cd6ae66586a",
+  "download_timestamp": "2026-06-12T18:34:12.752517",
+  "row_count": 1063,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778750040"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/MEGA-USDT.csv"
+}

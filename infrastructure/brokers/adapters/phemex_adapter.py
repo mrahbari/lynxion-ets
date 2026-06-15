@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 import logging
 
-from domain.entities.trading_entities import Order, Position, Balance, OrderSide
+from domain.entities import Order, Position, Balance, OrderSide
 from domain.ports.broker_ports import BrokerPort
 from domain.value_objects import Symbol, Money
 from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper

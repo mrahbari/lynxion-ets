@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "COAIUSDT",
+  "timeframe": "1m",
+  "checksum": "1748e0e525a6e689b4d023f5d17d612ccef76e91776d50dfa67de284a587ab47",
+  "download_timestamp": "2026-06-12T18:26:31.817779",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686020",
+    "end": "1778719560"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/COAI-USDT.csv"
+}

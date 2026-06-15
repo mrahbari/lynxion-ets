@@ -9,17 +9,65 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 
-from domain.entities.signal_entities import FusedSignal, ExecutionIntent
+from domain.entities import FusedSignal, ExecutionIntent
 from domain.value_objects import Symbol, Percentage, Money
 from domain.ports.strategy_ports import StrategyPort
 from shared.logger import EnhancedLogger
 from infrastructure.strategies.strategy_config import StrategyConfig
 from infrastructure.logging.forensic_logger import forensic_logger
-from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager
 
 
 class BaseStrategyAdapter(StrategyPort):
     """Base class for strategy adapters implementing StrategyPort with intent discipline"""
+
+    # --- Standard indicator helpers (Phase-B fidelity fix) ---
+    # Several adapters' generate_signal() call self.calculate_ema/rsi/atr, but these
+    # were never defined on the base class → AttributeError at runtime (BROKEN:
+    # trend_following, mean_reversion, scalping, oi_footprint). Implemented here as
+    # standard textbook indicators (NO optimization/tuning) to restore the intended
+    # behavior. Signatures match the existing call sites and mtf_trend's local EMA.
+    @staticmethod
+    def calculate_ema(prices: List[float], period: int) -> Optional[float]:
+        """Exponential moving average over `prices` (None if insufficient data)."""
+        if prices is None or period < 1 or len(prices) < period:
+            return None
+        multiplier = 2 / (period + 1)
+        ema = float(prices[0])
+        for price in prices[1:]:
+            ema = (float(price) * multiplier) + (ema * (1 - multiplier))
+        return ema
+
+    @staticmethod
+    def calculate_rsi(prices: List[float], period: int = 14) -> Optional[float]:
+        """Wilder-style RSI over the last `period` deltas (None if insufficient)."""
+        if prices is None or period < 1 or len(prices) < period + 1:
+            return None
+        deltas = np.diff(np.asarray(prices, dtype=float))
+        gains = np.clip(deltas, 0, None)[-period:]
+        losses = (-np.clip(deltas, None, 0))[-period:]
+        avg_loss = float(losses.mean())
+        if avg_loss == 0:
+            return 100.0
+        rs = float(gains.mean()) / avg_loss
+        return float(100 - (100 / (1 + rs)))
+
+    @staticmethod
+    def calculate_atr(bars, period: int = 14) -> Optional[float]:
+        """Average True Range over a buffer of bar dicts (high/low/close)."""
+        if bars is None or period < 1 or len(bars) < period + 1:
+            return None
+        trs, prev_close = [], None
+        for b in bars:
+            try:
+                hi, lo, cl = float(b['high']), float(b['low']), float(b['close'])
+            except (KeyError, TypeError, ValueError):
+                continue
+            tr = (hi - lo) if prev_close is None else max(hi - lo, abs(hi - prev_close), abs(lo - prev_close))
+            trs.append(tr)
+            prev_close = cl
+        if len(trs) < period:
+            return None
+        return float(np.mean(trs[-period:]))
 
     def __init__(self, name: str):
         self.name = name
@@ -56,6 +104,7 @@ class BaseStrategyAdapter(StrategyPort):
         self.last_intent_timestamp = {}  # Track last intent per symbol
         self.intent_count_today = {}     # Track daily intent count per symbol
         self.consecutive_losses = {}     # Track consecutive losses per symbol
+        self.last_loss_time = {}         # E-P5.2: time of last loss, for time-based pause recovery
         self.last_entry_bar_index = {}   # Track last entry bar index per symbol
         self.current_positions = {}      # Track current positions per symbol (TEMPORARY - will be phased out)
         self.last_exit_time = {}         # Track last exit time per symbol for cooldown
@@ -98,7 +147,7 @@ class BaseStrategyAdapter(StrategyPort):
                                           max(Decimal('0.0'),
                                               fused_signal.confidence.value * Decimal('0.8')))),  # Slightly reduce confidence
             risk_parameters=risk_parameters,
-            timestamp=datetime.now(),
+            timestamp=getattr(fused_signal, 'timestamp', None) or datetime.now(),  # E-P5.2: simulated time
             fused_signal=fused_signal,
             metadata={
                 'strategy_reasoning': f'Signal aligned with {strategy_name} strategy criteria',
@@ -178,20 +227,28 @@ class BaseStrategyAdapter(StrategyPort):
         """
         symbol = fused_signal.symbol.value
 
+        # E-P5.2: use the SIGNAL's timestamp (simulated time in a backtest) for
+        # time-based discipline, not wall-clock. With datetime.now() every bar of
+        # a backtest looked like the same real-world day, so the daily-trade limit
+        # capped every backtest at ~10 trades and cooldowns never elapsed. Falls
+        # back to now() when a signal has no timestamp, preserving live behavior
+        # (live signals are stamped ~now).
+        current_time = getattr(fused_signal, 'timestamp', None) or datetime.now()
+
         # 1. Check minimum bars between entries (LEGITIMATE - timing discipline)
         if not self._passes_min_bars_check(symbol):
             return False, f"Insufficient bars elapsed since last entry for {symbol}"
 
         # 2. Check daily trade limit (LEGITIMATE - volume discipline)
-        if not self._passes_daily_trade_limit_check(symbol):
+        if not self._passes_daily_trade_limit_check(symbol, current_time):
             return False, f"Daily trade limit exceeded for {symbol}"
 
         # 3. Check consecutive losses (LEGITIMATE - risk management)
-        if not self._passes_consecutive_losses_check(symbol):
+        if not self._passes_consecutive_losses_check(symbol, current_time):
             return False, f"Too many consecutive losses for {symbol}, triggering safety pause"
 
         # 4. Check cooldown after exit (LEGITIMATE - timing discipline)
-        if not self._passes_exit_cooldown_check(symbol):
+        if not self._passes_exit_cooldown_check(symbol, current_time):
             return False, f"Cooldown period after exit not elapsed for {symbol}"
 
         # 5. Check market conditions (volatility, flat markets) (LEGITIMATE - market suitability)
@@ -230,13 +287,13 @@ class BaseStrategyAdapter(StrategyPort):
 
         return passes_check
 
-    def _passes_daily_trade_limit_check(self, symbol: str) -> bool:
+    def _passes_daily_trade_limit_check(self, symbol: str, current_time: datetime = None) -> bool:
         """Check if daily trade limit is not exceeded."""
         max_daily_trades = self.config.get('max_trades_per_day', 10)  # Use default value of 10 if not specified
         if max_daily_trades <= 0:
             return True
 
-        today = datetime.now().date()
+        today = (current_time or datetime.now()).date()
         daily_count = self.intent_count_today.get((symbol, today), 0)
         passes_check = daily_count < max_daily_trades
 
@@ -246,22 +303,39 @@ class BaseStrategyAdapter(StrategyPort):
 
         return passes_check
 
-    def _passes_consecutive_losses_check(self, symbol: str) -> bool:
-        """Check if consecutive loss limit is not exceeded."""
+    def _passes_consecutive_losses_check(self, symbol: str, current_time: datetime = None) -> bool:
+        """Check if consecutive loss limit is not exceeded.
+
+        E-P5.2: the safety pause is TEMPORARY. After
+        ``consecutive_loss_pause_minutes`` of (simulated) time has elapsed since
+        the last loss, the streak is cleared and trading resumes. Previously the
+        counter only reset on a profitable trade — but a paused strategy can't
+        produce a profitable trade, so the pause was permanent (no recovery),
+        which silently killed backtests after 3 losses and is not credible.
+        """
         max_consecutive_losses = self.config.get('max_consecutive_losses', 3)  # Use default value of 3 if not specified
         if max_consecutive_losses <= 0:
             return True
 
         consecutive_loss_count = self.consecutive_losses.get(symbol, 0)
-        passes_check = consecutive_loss_count < max_consecutive_losses
+        if consecutive_loss_count < max_consecutive_losses:
+            return True
 
-        if not passes_check:
-            self.logger.debug(f"Consecutive losses check failed for {symbol}: "
-                            f"consecutive_losses={consecutive_loss_count}, limit={max_consecutive_losses}")
+        # Streak hit the limit -> paused. Recover after the cool-off elapses.
+        pause_minutes = self.config.get('consecutive_loss_pause_minutes', 240)  # 4h default
+        last_loss = self.last_loss_time.get(symbol)
+        now = current_time or datetime.now()
+        if last_loss is not None and (now - last_loss).total_seconds() >= pause_minutes * 60:
+            self.consecutive_losses[symbol] = 0
+            self.logger.info(f"Consecutive-loss pause elapsed for {symbol} after "
+                            f"{pause_minutes}min; resuming trading.")
+            return True
 
-        return passes_check
+        self.logger.debug(f"Consecutive losses check failed for {symbol}: "
+                        f"consecutive_losses={consecutive_loss_count}, limit={max_consecutive_losses}")
+        return False
 
-    def _passes_exit_cooldown_check(self, symbol: str) -> bool:
+    def _passes_exit_cooldown_check(self, symbol: str, current_time: datetime = None) -> bool:
         """Check if cooldown period after exit has elapsed."""
         cooldown_minutes = self.config.get('cooldown_after_exit_minutes', 30)  # Use default value of 30 if not specified
         if cooldown_minutes <= 0:
@@ -271,7 +345,7 @@ class BaseStrategyAdapter(StrategyPort):
         if last_exit is None:
             return True
 
-        time_since_exit = datetime.now() - last_exit
+        time_since_exit = (current_time or datetime.now()) - last_exit
         passes_check = time_since_exit.total_seconds() >= (cooldown_minutes * 60)
 
         if not passes_check:
@@ -356,11 +430,16 @@ class BaseStrategyAdapter(StrategyPort):
         """Record intent emission for discipline tracking."""
         symbol = fused_signal.symbol.value
 
+        # E-P5.2: record against the SIGNAL's (simulated) time so the daily
+        # counter buckets by the bar's day, not wall-clock. Fallback to now()
+        # preserves live behavior.
+        current_time = getattr(fused_signal, 'timestamp', None) or datetime.now()
+
         # Update last intent timestamp
-        self.last_intent_timestamp[symbol] = datetime.now()
+        self.last_intent_timestamp[symbol] = current_time
 
         # Update daily intent count
-        today = datetime.now().date()
+        today = current_time.date()
         daily_key = (symbol, today)
         current_count = self.intent_count_today.get(daily_key, 0)
         self.intent_count_today[daily_key] = current_count + 1
@@ -373,10 +452,10 @@ class BaseStrategyAdapter(StrategyPort):
         self.logger.info(f"Intent emitted for {symbol}: {execution_intent.side.name} "
                         f"with confidence {float(execution_intent.intent_confidence.value):.2%}")
 
-    def record_position_closed(self, symbol: str):
+    def record_position_closed(self, symbol: str, exit_time: datetime = None):
         """Record that a position has been closed."""
         # Only update exit time and reset consecutive losses - don't modify position state
-        self.last_exit_time[symbol] = datetime.now()
+        self.last_exit_time[symbol] = exit_time or datetime.now()  # E-P5.2: simulated time
 
         # Reset consecutive losses counter for this symbol
         self.consecutive_losses[symbol] = 0
@@ -388,8 +467,15 @@ class BaseStrategyAdapter(StrategyPort):
         NOTE: This method no longer modifies position state as strategies should not track positions."""
         self.logger.info(f"Position status reset attempt for {symbol} ignored - strategies should not track position state")
 
-    def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True):
-        """Record the result of a trade for consecutive loss tracking."""
+    def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True,
+                            exit_time: datetime = None):
+        """Record the result of a trade for consecutive loss tracking.
+
+        E-P5.2: ``exit_time`` (the trade's simulated close time) drives the
+        cooldown and the consecutive-loss pause-recovery clock. Falls back to
+        wall-clock when absent, preserving live behavior.
+        """
+        now = exit_time or datetime.now()
         if is_profitable:
             # Reset consecutive losses counter
             self.consecutive_losses[symbol] = 0
@@ -397,10 +483,11 @@ class BaseStrategyAdapter(StrategyPort):
             # Increment consecutive losses counter
             current_losses = self.consecutive_losses.get(symbol, 0)
             self.consecutive_losses[symbol] = current_losses + 1
+            self.last_loss_time[symbol] = now  # E-P5.2: pause-recovery clock
 
         # Optionally update exit time after recording the trade result (but don't modify position state)
         if position_closed:
-            self.last_exit_time[symbol] = datetime.now()
+            self.last_exit_time[symbol] = now
 
         self.logger.debug(f"Trade result recorded for {symbol}: {'profit' if is_profitable else 'loss'}, "
                          f"consecutive_losses={self.consecutive_losses[symbol]}, "
@@ -455,13 +542,29 @@ class BaseStrategyAdapter(StrategyPort):
         return self.__class__.__name__
 
     def update_with_market_data(self, data: Dict[str, Any]):
-        """Update strategy with new market data"""
-        # Base implementation - can be overridden by specific strategies
-        pass
+        """Authoritative market-data feed: buffer bars for self-contained signal
+        generation (Direction-B).
+
+        Previously a no-op, which left ``data_buffer`` empty for every strategy
+        except the two that overrode this — so ``generate_signal()`` (each
+        strategy's REAL trading logic) could never run. Lazily initialises the
+        buffer and appends each bar (dict) or extends (list), capped to bound
+        memory. This is what lets the backtest evaluate strategies through their
+        own ``generate_signal``.
+        """
+        if not hasattr(self, 'data_buffer') or self.data_buffer is None:
+            self.data_buffer = []
+        limit = getattr(self, 'buffer_size_limit', 1000)
+        if isinstance(data, list):
+            self.data_buffer.extend(data)
+        elif isinstance(data, dict):
+            self.data_buffer.append(data)
+        if len(self.data_buffer) > limit:
+            self.data_buffer = self.data_buffer[-limit:]
 
     def _determine_side(self, fused_signal: FusedSignal):
         """Determine order side based on fused signal direction"""
-        from domain.entities.signal_entities import OrderSide
+        from domain.entities import OrderSide
 
         # Check for consistency between direction and dominant bias
         direction_side = None
@@ -512,7 +615,7 @@ class BaseStrategyAdapter(StrategyPort):
             # Use bias as fallback
             return bias_side
 
-    def _calculate_comprehensive_risk_parameters(self, fused_signal: FusedSignal, risk_manager: EnterpriseRiskManager = None) -> Dict[str, Any]:
+    def _calculate_comprehensive_risk_parameters(self, fused_signal: FusedSignal, risk_manager=None) -> Dict[str, Any]:
         """Calculate comprehensive risk parameters based on the fused signal using advanced risk management"""
         # Get strategy-specific configuration
         current_price = 1.0  # Default price if not available
@@ -649,10 +752,57 @@ class MeanReversionStrategy(BaseStrategyAdapter):
 class VolatilityBreakoutStrategy(BaseStrategyAdapter):
     """Volatility breakout strategy implementation"""
 
-    def __init__(self):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__("volatility_breakout")
         self.atr_period = 14
         self.atr_multiplier = 1.5
+        self.lookback = 20
+
+    def generate_signal(self, symbol):
+        """ATR volatility-breakout signal from the strategy's own data buffer
+        (Direction-B fidelity fix — this strategy previously had NO signal logic).
+        Long when price breaks the prior-N high by > atr_multiplier×ATR (volatility
+        expansion up); short on the symmetric downside break. No optimization."""
+        from domain.entities import Signal
+        from domain.enums.signal_type import SignalType
+        from domain.value_objects import Percentage
+        from decimal import Decimal
+        from datetime import datetime
+        buf = getattr(self, 'data_buffer', None) or []
+        need = max(self.atr_period + 1, self.lookback) + 1
+        if len(buf) < need:
+            return None
+        try:
+            highs = [b['high'] for b in buf]
+            lows = [b['low'] for b in buf]
+            closes = [b['close'] for b in buf]
+            atr = self.calculate_atr(buf, self.atr_period)
+            if not atr or atr <= 0:
+                return None
+            current = closes[-1]
+            prior_high = max(highs[-self.lookback - 1:-1])
+            prior_low = min(lows[-self.lookback - 1:-1])
+            up_break = current - prior_high
+            dn_break = prior_low - current
+            sig_type, score, conf = SignalType.HOLD, 0.0, 0.3
+            if up_break > self.atr_multiplier * atr:
+                sig_type = SignalType.BUY
+                score = min(1.0, up_break / (self.atr_multiplier * atr))
+                conf = min(1.0, 0.4 + (up_break / atr) / 10.0)
+            elif dn_break > self.atr_multiplier * atr:
+                sig_type = SignalType.SELL
+                score = -min(1.0, dn_break / (self.atr_multiplier * atr))
+                conf = min(1.0, 0.4 + (dn_break / atr) / 10.0)
+            return Signal(
+                symbol=symbol, signal_type=sig_type,
+                confidence=Percentage(Decimal(str(round(max(0.1, min(1.0, conf)), 4)))),
+                score=float(score), timestamp=datetime.now(),
+                source_layer="VolatilityBreakoutATR",
+                metadata={"atr": atr, "prior_high": prior_high, "prior_low": prior_low,
+                          "current": current, "atr_multiplier": self.atr_multiplier})
+        except Exception as e:
+            self.logger.error(f"Error in {self.name} strategy: {e}")
+            return None
 
     def should_execute(self, fused_signal: FusedSignal) -> bool:
         """Specific implementation for volatility breakout strategy"""

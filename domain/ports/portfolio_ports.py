@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from typing import Protocol, List, Optional, Dict, Any
-from domain.entities.trading_entities import Position, Portfolio
+from domain.entities import Position, Portfolio
 from domain.value_objects import Symbol, Money, Percentage
 
 
@@ -38,4 +38,26 @@ class PortfolioOptimizationPort(Protocol):
     @abstractmethod
     def optimize_allocation(self, assets: List[Symbol], constraints: Dict[str, Any]) -> Dict[Symbol, Percentage]:
         """Optimize portfolio allocation based on constraints and objectives"""
+        pass
+
+
+class PositionSizingEnginePort(Protocol):
+    """Canonical position-sizing engine: named, pluggable algorithms (E3.T3).
+
+    Distinct from ``PositionSizingPort`` (the risk-governed request interface
+    whose adapters return ``0.0`` because the Risk module owns live sizing). This
+    port exposes the actual sizing algorithms (kelly, fixed_risk, atr,
+    volatility_target, probabilistic) behind a single adapter, preserving each
+    formula exactly.
+    """
+
+    @abstractmethod
+    def compute_size(self, algorithm: str, entry_price: float, stop_loss: float,
+                     portfolio_equity: float, risk_per_trade: float, **kwargs) -> float:
+        """Compute a position size (in units) using the named algorithm."""
+        pass
+
+    @abstractmethod
+    def available_algorithms(self) -> List[str]:
+        """Return the list of supported algorithm names."""
         pass

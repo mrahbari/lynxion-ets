@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "RLCUSDT",
+  "timeframe": "1m",
+  "checksum": "75173b4bf325f91b0289dede2b73d690bf0c9d91d535a88060cfbde319df11df",
+  "download_timestamp": "2026-06-12T18:36:44.022072",
+  "row_count": 1067,
+  "date_range": {
+    "start": "1778686200",
+    "end": "1778750160"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/RLC-USDT.csv"
+}

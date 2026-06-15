@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "STEEMUSDT",
+  "timeframe": "1m",
+  "checksum": "7b9696a7252b212e54f2d8586cd02003428030751c16b5b3ed91d1975a69cee2",
+  "download_timestamp": "2026-06-12T18:30:47.149308",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778749800"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/STEEM-USDT.csv"
+}

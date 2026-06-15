@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "CATIUSDT",
+  "timeframe": "1m",
+  "checksum": "b5820aca9bedd0eeb46b9f757d69f8d94841f6bd98be268c4d7a75fc4ccab4bd",
+  "download_timestamp": "2026-06-12T18:43:16.270867",
+  "row_count": 1068,
+  "date_range": {
+    "start": "1778686560",
+    "end": "1778750580"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/CATI-USDT.csv"
+}

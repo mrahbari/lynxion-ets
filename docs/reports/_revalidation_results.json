@@ -1,0 +1,1045 @@
+{
+  "trend_following": {
+    "intended_regime": [
+      "trending_down",
+      "trending_up"
+    ],
+    "invalidated_as_implemented": false,
+    "symbols": {
+      "BTC-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 747,
+        "all": {
+          "n": 747,
+          "expectancy": -0.0027943540772005773,
+          "win_rate": 0.29852744310575635
+        },
+        "in_regime": {
+          "n": 582,
+          "expectancy": -0.002126013193053156,
+          "win_rate": 0.31099656357388317
+        },
+        "half1_in_regime": {
+          "n": 287,
+          "expectancy": -0.002643907022648879,
+          "win_rate": 0.2578397212543554
+        },
+        "half2_in_regime": {
+          "n": 295,
+          "expectancy": -0.0016221639418871484,
+          "win_rate": 0.36271186440677966
+        },
+        "regime_coverage": {
+          "unknown": 1,
+          "trending_up": 288,
+          "trending_down": 294,
+          "breakout": 92,
+          "ranging": 72
+        }
+      },
+      "ETH-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 789,
+        "all": {
+          "n": 789,
+          "expectancy": -0.002683601949693054,
+          "win_rate": 0.3548795944233207
+        },
+        "in_regime": {
+          "n": 635,
+          "expectancy": -0.002865109547902174,
+          "win_rate": 0.33700787401574805
+        },
+        "half1_in_regime": {
+          "n": 358,
+          "expectancy": -0.0024970873362864933,
+          "win_rate": 0.3435754189944134
+        },
+        "half2_in_regime": {
+          "n": 277,
+          "expectancy": -0.0033407483629144972,
+          "win_rate": 0.3285198555956679
+        },
+        "regime_coverage": {
+          "trending_up": 326,
+          "ranging": 92,
+          "trending_down": 309,
+          "breakout": 62
+        }
+      },
+      "SOL-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 898,
+        "all": {
+          "n": 898,
+          "expectancy": -0.0018794243007991364,
+          "win_rate": 0.41648106904231624
+        },
+        "in_regime": {
+          "n": 714,
+          "expectancy": -0.001607594936302013,
+          "win_rate": 0.42016806722689076
+        },
+        "half1_in_regime": {
+          "n": 412,
+          "expectancy": -0.003651910717591224,
+          "win_rate": 0.38349514563106796
+        },
+        "half2_in_regime": {
+          "n": 302,
+          "expectancy": 0.0011813391759203538,
+          "win_rate": 0.47019867549668876
+        },
+        "regime_coverage": {
+          "unknown": 3,
+          "trending_up": 351,
+          "trending_down": 363,
+          "breakout": 66,
+          "ranging": 115
+        }
+      }
+    }
+  },
+  "mean_reversion": {
+    "intended_regime": [
+      "ranging"
+    ],
+    "invalidated_as_implemented": false,
+    "symbols": {
+      "BTC-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 1,
+        "all": {
+          "n": 1,
+          "expectancy": -0.001772412351096598,
+          "win_rate": 0.0
+        },
+        "in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half1_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half2_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "regime_coverage": {
+          "trending_down": 1
+        }
+      },
+      "ETH-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 4,
+        "all": {
+          "n": 4,
+          "expectancy": 0.007877365270566337,
+          "win_rate": 1.0
+        },
+        "in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half1_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half2_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "regime_coverage": {
+          "trending_up": 4
+        }
+      },
+      "SOL-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 9,
+        "all": {
+          "n": 9,
+          "expectancy": -0.014753878656540993,
+          "win_rate": 0.2222222222222222
+        },
+        "in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half1_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half2_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "regime_coverage": {
+          "trending_down": 5,
+          "trending_up": 4
+        }
+      }
+    }
+  },
+  "momentum": {
+    "intended_regime": [
+      "trending_down",
+      "trending_up"
+    ],
+    "invalidated_as_implemented": false,
+    "symbols": {
+      "BTC-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 1334,
+        "all": {
+          "n": 1334,
+          "expectancy": -0.0027599085032901974,
+          "win_rate": 0.3395802098950525
+        },
+        "in_regime": {
+          "n": 702,
+          "expectancy": -0.002859135001173298,
+          "win_rate": 0.32763532763532766
+        },
+        "half1_in_regime": {
+          "n": 307,
+          "expectancy": -0.0035817728029337143,
+          "win_rate": 0.2703583061889251
+        },
+        "half2_in_regime": {
+          "n": 395,
+          "expectancy": -0.002297489924868368,
+          "win_rate": 0.3721518987341772
+        },
+        "regime_coverage": {
+          "trending_up": 329,
+          "ranging": 473,
+          "trending_down": 373,
+          "breakout": 159
+        }
+      },
+      "ETH-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 2133,
+        "all": {
+          "n": 2133,
+          "expectancy": -0.0029726780949593168,
+          "win_rate": 0.37365213314580403
+        },
+        "in_regime": {
+          "n": 1157,
+          "expectancy": -0.002547127243454473,
+          "win_rate": 0.3759723422644771
+        },
+        "half1_in_regime": {
+          "n": 634,
+          "expectancy": -0.0028168171548875283,
+          "win_rate": 0.3990536277602524
+        },
+        "half2_in_regime": {
+          "n": 523,
+          "expectancy": -0.0022201991290212862,
+          "win_rate": 0.3479923518164436
+        },
+        "regime_coverage": {
+          "unknown": 8,
+          "trending_up": 574,
+          "ranging": 786,
+          "trending_down": 583,
+          "breakout": 182
+        }
+      },
+      "SOL-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 2481,
+        "all": {
+          "n": 2481,
+          "expectancy": -0.0029739760887711572,
+          "win_rate": 0.40386940749697703
+        },
+        "in_regime": {
+          "n": 1331,
+          "expectancy": -0.0035346394820834717,
+          "win_rate": 0.391435011269722
+        },
+        "half1_in_regime": {
+          "n": 767,
+          "expectancy": -0.0035228303305834163,
+          "win_rate": 0.38852672750977835
+        },
+        "half2_in_regime": {
+          "n": 564,
+          "expectancy": -0.0035506990905950714,
+          "win_rate": 0.3953900709219858
+        },
+        "regime_coverage": {
+          "unknown": 11,
+          "trending_up": 664,
+          "ranging": 956,
+          "trending_down": 667,
+          "breakout": 183
+        }
+      }
+    }
+  },
+  "breakout": {
+    "intended_regime": [
+      "breakout"
+    ],
+    "invalidated_as_implemented": false,
+    "symbols": {
+      "BTC-USDT": {
+        "timeframe": "15m",
+        "bars": 35000,
+        "horizon": 8,
+        "signals_total": 210,
+        "all": {
+          "n": 210,
+          "expectancy": -0.0029941700694323756,
+          "win_rate": 0.3523809523809524
+        },
+        "in_regime": {
+          "n": 80,
+          "expectancy": -0.004450009207566224,
+          "win_rate": 0.3375
+        },
+        "half1_in_regime": {
+          "n": 37,
+          "expectancy": -0.002152454771372327,
+          "win_rate": 0.43243243243243246
+        },
+        "half2_in_regime": {
+          "n": 43,
+          "expectancy": -0.0064269746526632995,
+          "win_rate": 0.2558139534883721
+        },
+        "regime_coverage": {
+          "breakout": 80,
+          "trending_down": 68,
+          "trending_up": 53,
+          "ranging": 9
+        }
+      },
+      "ETH-USDT": {
+        "timeframe": "15m",
+        "bars": 35000,
+        "horizon": 8,
+        "signals_total": 341,
+        "all": {
+          "n": 341,
+          "expectancy": -0.002402311749087148,
+          "win_rate": 0.3489736070381232
+        },
+        "in_regime": {
+          "n": 105,
+          "expectancy": -0.0016438581091735296,
+          "win_rate": 0.4
+        },
+        "half1_in_regime": {
+          "n": 48,
+          "expectancy": 0.0010854235523092598,
+          "win_rate": 0.4583333333333333
+        },
+        "half2_in_regime": {
+          "n": 57,
+          "expectancy": -0.003942200560948509,
+          "win_rate": 0.3508771929824561
+        },
+        "regime_coverage": {
+          "breakout": 105,
+          "trending_down": 113,
+          "trending_up": 95,
+          "ranging": 28
+        }
+      },
+      "SOL-USDT": {
+        "timeframe": "15m",
+        "bars": 35000,
+        "horizon": 8,
+        "signals_total": 429,
+        "all": {
+          "n": 429,
+          "expectancy": -0.002777895236035319,
+          "win_rate": 0.36363636363636365
+        },
+        "in_regime": {
+          "n": 91,
+          "expectancy": -0.0036787943928456163,
+          "win_rate": 0.32967032967032966
+        },
+        "half1_in_regime": {
+          "n": 38,
+          "expectancy": 0.0007428351228850097,
+          "win_rate": 0.3684210526315789
+        },
+        "half2_in_regime": {
+          "n": 53,
+          "expectancy": -0.00684901932865248,
+          "win_rate": 0.3018867924528302
+        },
+        "regime_coverage": {
+          "trending_down": 149,
+          "breakout": 91,
+          "trending_up": 142,
+          "ranging": 47
+        }
+      }
+    }
+  },
+  "liquidity": {
+    "intended_regime": [
+      "ranging"
+    ],
+    "invalidated_as_implemented": false,
+    "symbols": {
+      "BTC-USDT": {
+        "timeframe": "5m",
+        "bars": 30000,
+        "horizon": 12,
+        "signals_total": 139,
+        "all": {
+          "n": 139,
+          "expectancy": -0.002487943609128943,
+          "win_rate": 0.2589928057553957
+        },
+        "in_regime": {
+          "n": 34,
+          "expectancy": -0.0027788981830813957,
+          "win_rate": 0.17647058823529413
+        },
+        "half1_in_regime": {
+          "n": 25,
+          "expectancy": -0.002141591416205985,
+          "win_rate": 0.2
+        },
+        "half2_in_regime": {
+          "n": 9,
+          "expectancy": -0.004549194757735316,
+          "win_rate": 0.1111111111111111
+        },
+        "regime_coverage": {
+          "ranging": 34,
+          "trending_down": 41,
+          "trending_up": 37,
+          "breakout": 27
+        }
+      },
+      "ETH-USDT": {
+        "timeframe": "5m",
+        "bars": 30000,
+        "horizon": 12,
+        "signals_total": 179,
+        "all": {
+          "n": 179,
+          "expectancy": -0.0034042992155574035,
+          "win_rate": 0.3128491620111732
+        },
+        "in_regime": {
+          "n": 42,
+          "expectancy": -0.0029492025555103497,
+          "win_rate": 0.23809523809523808
+        },
+        "half1_in_regime": {
+          "n": 32,
+          "expectancy": -0.004516168455031383,
+          "win_rate": 0.1875
+        },
+        "half2_in_regime": {
+          "n": 10,
+          "expectancy": 0.002065088322956958,
+          "win_rate": 0.4
+        },
+        "regime_coverage": {
+          "trending_down": 54,
+          "ranging": 42,
+          "trending_up": 48,
+          "breakout": 35
+        }
+      },
+      "SOL-USDT": {
+        "timeframe": "5m",
+        "bars": 30000,
+        "horizon": 12,
+        "signals_total": 171,
+        "all": {
+          "n": 171,
+          "expectancy": -0.0038380366890997716,
+          "win_rate": 0.3508771929824561
+        },
+        "in_regime": {
+          "n": 51,
+          "expectancy": -0.003616397433844769,
+          "win_rate": 0.35294117647058826
+        },
+        "half1_in_regime": {
+          "n": 27,
+          "expectancy": -0.003784994048631127,
+          "win_rate": 0.25925925925925924
+        },
+        "half2_in_regime": {
+          "n": 24,
+          "expectancy": -0.0034267262422101176,
+          "win_rate": 0.4583333333333333
+        },
+        "regime_coverage": {
+          "ranging": 51,
+          "trending_down": 54,
+          "breakout": 20,
+          "trending_up": 46
+        }
+      }
+    }
+  },
+  "mtf_trend": {
+    "intended_regime": [
+      "trending_down",
+      "trending_up"
+    ],
+    "invalidated_as_implemented": true,
+    "symbols": {
+      "BTC-USDT": {
+        "timeframe": "15m",
+        "bars": 35000,
+        "horizon": 8,
+        "signals_total": 15935,
+        "all": {
+          "n": 15935,
+          "expectancy": -0.0030181832794291237,
+          "win_rate": 0.2333228741763414
+        },
+        "in_regime": {
+          "n": 9945,
+          "expectancy": -0.003074690306786455,
+          "win_rate": 0.22493715434891906
+        },
+        "half1_in_regime": {
+          "n": 4818,
+          "expectancy": -0.003229650078302262,
+          "win_rate": 0.20797011207970112
+        },
+        "half2_in_regime": {
+          "n": 5127,
+          "expectancy": -0.002929069831037837,
+          "win_rate": 0.24088160717768675
+        },
+        "regime_coverage": {
+          "ranging": 3020,
+          "breakout": 2970,
+          "trending_down": 5038,
+          "trending_up": 4907
+        }
+      },
+      "ETH-USDT": {
+        "timeframe": "15m",
+        "bars": 35000,
+        "horizon": 8,
+        "signals_total": 15956,
+        "all": {
+          "n": 15956,
+          "expectancy": -0.0028257587704941475,
+          "win_rate": 0.29637753823013285
+        },
+        "in_regime": {
+          "n": 10112,
+          "expectancy": -0.002772023745329135,
+          "win_rate": 0.2915348101265823
+        },
+        "half1_in_regime": {
+          "n": 5142,
+          "expectancy": -0.00297506070483201,
+          "win_rate": 0.3045507584597433
+        },
+        "half2_in_regime": {
+          "n": 4970,
+          "expectancy": -0.002561960154632197,
+          "win_rate": 0.27806841046277664
+        },
+        "regime_coverage": {
+          "trending_down": 5021,
+          "breakout": 2636,
+          "ranging": 3208,
+          "trending_up": 5091
+        }
+      },
+      "SOL-USDT": {
+        "timeframe": "15m",
+        "bars": 35000,
+        "horizon": 8,
+        "signals_total": 16207,
+        "all": {
+          "n": 16207,
+          "expectancy": -0.0030282405794667786,
+          "win_rate": 0.319429875979515
+        },
+        "in_regime": {
+          "n": 11037,
+          "expectancy": -0.0031369988603163956,
+          "win_rate": 0.30968560297182207
+        },
+        "half1_in_regime": {
+          "n": 5676,
+          "expectancy": -0.00324945263554545,
+          "win_rate": 0.3347427766032417
+        },
+        "half2_in_regime": {
+          "n": 5361,
+          "expectancy": -0.0030179375605215598,
+          "win_rate": 0.2831561275881365
+        },
+        "regime_coverage": {
+          "trending_down": 5726,
+          "breakout": 2147,
+          "ranging": 3023,
+          "trending_up": 5311
+        }
+      }
+    }
+  },
+  "oi_footprint": {
+    "intended_regime": [],
+    "invalidated_as_implemented": true,
+    "symbols": {
+      "BTC-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 1132,
+        "all": {
+          "n": 1132,
+          "expectancy": -0.0033556917335137654,
+          "win_rate": 0.3365724381625442
+        },
+        "in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half1_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half2_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "regime_coverage": {
+          "unknown": 1,
+          "ranging": 404,
+          "trending_up": 344,
+          "trending_down": 331,
+          "breakout": 52
+        }
+      },
+      "ETH-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 1186,
+        "all": {
+          "n": 1186,
+          "expectancy": -0.002143332450042013,
+          "win_rate": 0.40219224283305227
+        },
+        "in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half1_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half2_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "regime_coverage": {
+          "unknown": 5,
+          "trending_up": 333,
+          "ranging": 476,
+          "trending_down": 328,
+          "breakout": 44
+        }
+      },
+      "SOL-USDT": {
+        "timeframe": "1h",
+        "bars": 8700,
+        "horizon": 6,
+        "signals_total": 1158,
+        "all": {
+          "n": 1158,
+          "expectancy": -0.0035307226215628416,
+          "win_rate": 0.41882556131260795
+        },
+        "in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half1_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half2_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "regime_coverage": {
+          "unknown": 5,
+          "trending_up": 311,
+          "ranging": 464,
+          "trending_down": 331,
+          "breakout": 47
+        }
+      }
+    }
+  },
+  "sweep_scalper": {
+    "intended_regime": [
+      "breakout"
+    ],
+    "invalidated_as_implemented": true,
+    "symbols": {
+      "BTC-USDT": {
+        "timeframe": "1m",
+        "bars": 2794,
+        "horizon": 15,
+        "signals_total": 1545,
+        "all": {
+          "n": 1545,
+          "expectancy": -0.0034108783593838014,
+          "win_rate": 0.04724919093851133
+        },
+        "in_regime": {
+          "n": 128,
+          "expectancy": -0.003322104452137922,
+          "win_rate": 0.046875
+        },
+        "half1_in_regime": {
+          "n": 88,
+          "expectancy": -0.0034633887755596542,
+          "win_rate": 0.03409090909090909
+        },
+        "half2_in_regime": {
+          "n": 40,
+          "expectancy": -0.003011278940610111,
+          "win_rate": 0.075
+        },
+        "regime_coverage": {
+          "unknown": 16,
+          "ranging": 632,
+          "trending_up": 386,
+          "trending_down": 383,
+          "breakout": 128
+        }
+      },
+      "ETH-USDT": {
+        "timeframe": "1m",
+        "bars": 27335,
+        "horizon": 15,
+        "signals_total": 17072,
+        "all": {
+          "n": 17072,
+          "expectancy": -0.002799191520152871,
+          "win_rate": 0.1253514526710403
+        },
+        "in_regime": {
+          "n": 1213,
+          "expectancy": -0.0026729762044638695,
+          "win_rate": 0.2201154163231657
+        },
+        "half1_in_regime": {
+          "n": 568,
+          "expectancy": -0.0026124146542636202,
+          "win_rate": 0.21654929577464788
+        },
+        "half2_in_regime": {
+          "n": 645,
+          "expectancy": -0.0027263079261906015,
+          "win_rate": 0.22325581395348837
+        },
+        "regime_coverage": {
+          "unknown": 24,
+          "trending_down": 4461,
+          "ranging": 7328,
+          "trending_up": 4046,
+          "breakout": 1213
+        }
+      },
+      "SOL-USDT": {
+        "timeframe": "1m",
+        "bars": 1307,
+        "horizon": 15,
+        "signals_total": 783,
+        "all": {
+          "n": 783,
+          "expectancy": -0.0006642720070087904,
+          "win_rate": 0.09067688378033206
+        },
+        "in_regime": {
+          "n": 40,
+          "expectancy": -0.0020580525430545474,
+          "win_rate": 0.375
+        },
+        "half1_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "half2_in_regime": {
+          "n": 40,
+          "expectancy": -0.0020580525430545474,
+          "win_rate": 0.375
+        },
+        "regime_coverage": {
+          "unknown": 18,
+          "ranging": 303,
+          "trending_up": 217,
+          "trending_down": 205,
+          "breakout": 40
+        }
+      }
+    }
+  },
+  "vwap_reversal": {
+    "intended_regime": [
+      "ranging"
+    ],
+    "invalidated_as_implemented": false,
+    "symbols": {
+      "BTC-USDT": {
+        "timeframe": "5m",
+        "bars": 30000,
+        "horizon": 12,
+        "signals_total": 43,
+        "all": {
+          "n": 43,
+          "expectancy": -0.003363947550397305,
+          "win_rate": 0.37209302325581395
+        },
+        "in_regime": {
+          "n": 5,
+          "expectancy": -0.003411427388689802,
+          "win_rate": 0.4
+        },
+        "half1_in_regime": {
+          "n": 5,
+          "expectancy": -0.003411427388689802,
+          "win_rate": 0.4
+        },
+        "half2_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "regime_coverage": {
+          "trending_down": 14,
+          "breakout": 15,
+          "trending_up": 9,
+          "ranging": 5
+        }
+      },
+      "ETH-USDT": {
+        "timeframe": "5m",
+        "bars": 30000,
+        "horizon": 12,
+        "signals_total": 36,
+        "all": {
+          "n": 36,
+          "expectancy": -0.003962809781618416,
+          "win_rate": 0.4444444444444444
+        },
+        "in_regime": {
+          "n": 4,
+          "expectancy": -0.0007211856878209624,
+          "win_rate": 0.25
+        },
+        "half1_in_regime": {
+          "n": 4,
+          "expectancy": -0.0007211856878209624,
+          "win_rate": 0.25
+        },
+        "half2_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "regime_coverage": {
+          "breakout": 11,
+          "trending_up": 5,
+          "trending_down": 16,
+          "ranging": 4
+        }
+      },
+      "SOL-USDT": {
+        "timeframe": "5m",
+        "bars": 30000,
+        "horizon": 12,
+        "signals_total": 38,
+        "all": {
+          "n": 38,
+          "expectancy": -0.0016012320596314488,
+          "win_rate": 0.47368421052631576
+        },
+        "in_regime": {
+          "n": 7,
+          "expectancy": 0.0013204307097385115,
+          "win_rate": 0.5714285714285714
+        },
+        "half1_in_regime": {
+          "n": 7,
+          "expectancy": 0.0013204307097385115,
+          "win_rate": 0.5714285714285714
+        },
+        "half2_in_regime": {
+          "n": 0,
+          "expectancy": null,
+          "win_rate": null
+        },
+        "regime_coverage": {
+          "trending_down": 14,
+          "breakout": 9,
+          "trending_up": 8,
+          "ranging": 7
+        }
+      }
+    }
+  },
+  "volatility_breakout": {
+    "intended_regime": [
+      "breakout"
+    ],
+    "invalidated_as_implemented": false,
+    "symbols": {
+      "BTC-USDT": {
+        "timeframe": "15m",
+        "bars": 35000,
+        "horizon": 8,
+        "signals_total": 288,
+        "all": {
+          "n": 288,
+          "expectancy": -0.0022431871594434717,
+          "win_rate": 0.3333333333333333
+        },
+        "in_regime": {
+          "n": 74,
+          "expectancy": -0.0021781487283935737,
+          "win_rate": 0.40540540540540543
+        },
+        "half1_in_regime": {
+          "n": 38,
+          "expectancy": -0.0001626351542949264,
+          "win_rate": 0.5
+        },
+        "half2_in_regime": {
+          "n": 36,
+          "expectancy": -0.004305635278831033,
+          "win_rate": 0.3055555555555556
+        },
+        "regime_coverage": {
+          "breakout": 74,
+          "trending_up": 95,
+          "trending_down": 62,
+          "ranging": 57
+        }
+      },
+      "ETH-USDT": {
+        "timeframe": "15m",
+        "bars": 35000,
+        "horizon": 8,
+        "signals_total": 279,
+        "all": {
+          "n": 279,
+          "expectancy": -0.0025772092273822988,
+          "win_rate": 0.36917562724014336
+        },
+        "in_regime": {
+          "n": 64,
+          "expectancy": 0.0013390472454180074,
+          "win_rate": 0.515625
+        },
+        "half1_in_regime": {
+          "n": 30,
+          "expectancy": 0.006431802404760136,
+          "win_rate": 0.6333333333333333
+        },
+        "half2_in_regime": {
+          "n": 34,
+          "expectancy": -0.003154560248119166,
+          "win_rate": 0.4117647058823529
+        },
+        "regime_coverage": {
+          "breakout": 64,
+          "ranging": 61,
+          "trending_up": 83,
+          "trending_down": 71
+        }
+      },
+      "SOL-USDT": {
+        "timeframe": "15m",
+        "bars": 35000,
+        "horizon": 8,
+        "signals_total": 207,
+        "all": {
+          "n": 207,
+          "expectancy": -0.0011608641568930883,
+          "win_rate": 0.40096618357487923
+        },
+        "in_regime": {
+          "n": 38,
+          "expectancy": 0.0034170587761086306,
+          "win_rate": 0.5263157894736842
+        },
+        "half1_in_regime": {
+          "n": 19,
+          "expectancy": 0.013477507834122647,
+          "win_rate": 0.5789473684210527
+        },
+        "half2_in_regime": {
+          "n": 19,
+          "expectancy": -0.006643390281905389,
+          "win_rate": 0.47368421052631576
+        },
+        "regime_coverage": {
+          "trending_down": 54,
+          "breakout": 38,
+          "ranging": 46,
+          "trending_up": 69
+        }
+      }
+    }
+  }
+}

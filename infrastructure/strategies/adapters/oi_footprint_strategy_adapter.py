@@ -2,7 +2,7 @@
 Infrastructure implementation of the OI Footprint Strategy following hexagonal architecture.
 """
 from typing import Dict, Any, Optional, List
-from domain.entities.trading_entities import Signal, SignalType
+from domain.entities import Signal, SignalType
 from domain.value_objects import Symbol, Percentage
 from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger
@@ -88,9 +88,8 @@ class OIFootprintStrategyAdapter(BaseStrategyAdapter):
                 signal_type=final_signal_type,
                 confidence=confidence,
                 score=final_score,
-                strategy_name=self.name,
                 timestamp=datetime.now(),
-                source_engine="OIFootprintTechnical",
+                source_layer="OIFootprintTechnical",
                 metadata={
                     "current_price": current_price,
                     "current_volume": current_volume,

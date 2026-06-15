@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "HYPEUSDT",
+  "timeframe": "1m",
+  "checksum": "60bbda4461849b554bbb88cebfe1528a18bcc92d846315c360a30f7dff8dfb16",
+  "download_timestamp": "2026-06-12T22:06:18.426301",
+  "row_count": 681,
+  "date_range": {
+    "start": "1778687040",
+    "end": "1781294760"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "file_path": "data/history/raw/1m/HYPE-USDT.csv"
+}

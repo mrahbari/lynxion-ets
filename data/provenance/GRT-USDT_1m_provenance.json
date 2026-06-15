@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "GRTUSDT",
+  "timeframe": "1m",
+  "checksum": "cfe2e6e766198cf2f74ee2d291609148de249895137f7e31b8bf0bec9581175f",
+  "download_timestamp": "2026-06-12T18:42:08.044625",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686980",
+    "end": "1778750520"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/GRT-USDT.csv"
+}

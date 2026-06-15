@@ -1,0 +1,18 @@
+{
+  "source": "ccxt:fundingRateHistory",
+  "exchange": "binance",
+  "symbol": "LTCUSDT",
+  "data_class": "funding",
+  "checksum": "bf9d391cd3305210c0d20940c71178d117c4e380667e5e52c9955836e22f7a41",
+  "download_timestamp": "2026-06-11T21:01:15.722528+00:00",
+  "row_count": 3285,
+  "date_range": {
+    "start": "1686614400",
+    "end": "1781193600"
+  },
+  "columns": [
+    "timestamp",
+    "funding_rate"
+  ],
+  "file_path": "./data/history/raw/funding/LTC-USDT.csv"
+}

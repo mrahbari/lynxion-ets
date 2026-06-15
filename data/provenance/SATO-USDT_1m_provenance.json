@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SATOUSDT",
+  "timeframe": "1m",
+  "checksum": "1d9d849c45d1783f9ccdd63f3ccedcdee932d21010f30d56d5061131e898d54e",
+  "download_timestamp": "2026-06-12T18:29:18.621998",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686200",
+    "end": "1778719740"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SATO-USDT.csv"
+}

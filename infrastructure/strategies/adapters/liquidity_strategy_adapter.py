@@ -2,7 +2,7 @@
 Infrastructure implementation of the Liquidity Strategy following hexagonal architecture.
 """
 from typing import Dict, Any, Optional, List
-from domain.entities.trading_entities import Signal, SignalType
+from domain.entities import Signal, SignalType
 from domain.value_objects import Symbol, Percentage
 from domain.ports.engine_ports import StrategyPort
 from shared.logger import logger
@@ -69,6 +69,9 @@ class LiquidityStrategyAdapter(BaseStrategyAdapter):
                 swing_highs.append({
                     'index': i,
                     'level': highs[i],
+                    'type': 'high',  # REQUIRED by _detect_sweeps; without it the level
+                                     # defaulted to 'high' for BOTH highs and lows, so swing
+                                     # lows were never swept -> 0 BUY signals (SELL-only bug).
                     'timestamp': i,  # Using index as proxy for time
                     'active': True,
                     'swept': False,
@@ -79,6 +82,7 @@ class LiquidityStrategyAdapter(BaseStrategyAdapter):
                 swing_lows.append({
                     'index': i,
                     'level': lows[i],
+                    'type': 'low',  # see note above — restores swing-low sweeps -> BUY signals
                     'timestamp': i,  # Using index as proxy for time
                     'active': True,
                     'swept': False,
@@ -260,9 +264,8 @@ class LiquidityStrategyAdapter(BaseStrategyAdapter):
                 signal_type=final_signal_type,
                 confidence=confidence,
                 score=final_score,
-                strategy_name=self.name,
                 timestamp=datetime.now(),
-                source_engine="TrueLiquiditySweep",
+                source_layer="TrueLiquiditySweep",
                 metadata={
                     "current_price": current_price,
                     "current_session": self.current_session,

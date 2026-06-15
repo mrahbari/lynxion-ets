@@ -56,7 +56,7 @@ class FileRepository(ABC):
         pass
     
     @abstractmethod
-    def compact_and_aggregate(self, symbol: str, cleanup_old: bool = True) -> None:
+    def compact_and_aggregate(self, symbol: str, cleanup_old: bool = True) -> bool:
         """Compact and aggregate data"""
         pass
     

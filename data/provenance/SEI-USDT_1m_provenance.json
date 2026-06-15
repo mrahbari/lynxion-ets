@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SEIUSDT",
+  "timeframe": "1m",
+  "checksum": "b0e61e323bb13de2d23e89e28d3cccf8b1623e7c4e254f81976db8fcabe1a77c",
+  "download_timestamp": "2026-06-12T18:33:32.932024",
+  "row_count": 1063,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778749980"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SEI-USDT.csv"
+}

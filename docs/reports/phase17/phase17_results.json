@@ -1,0 +1,344 @@
+{
+  "BTC": {
+    "bars": 213823,
+    "span": "2024-06-01->2026-06-13",
+    "horizon_bars": 6,
+    "tf": "5m",
+    "IC_forward_return": {
+      "flow_k (FlowImbalance)": -0.03184979256831264,
+      "imb_1bar": -0.0230562450759833,
+      "intensity_z (Liquidity)": 0.00432027294273952,
+      "avgtrade_z": 0.003797728614885252,
+      "OHLCV_recent_ret (baseline)": -0.045365164324286916
+    },
+    "IC_forward_absreturn(volatility)": {
+      "intensity_z (Liquidity)": 0.1388527955829395,
+      "flow_k_abs": -0.09891897104079986,
+      "OHLCV_recent_absret (baseline)": 0.23331563319606208
+    },
+    "flow_vs_OHLCV_redundancy": {
+      "corr(flow_k, recent_ret)": 0.5813281416084636
+    },
+    "familyA_flow": {
+      "signals": 213812,
+      "n": 213812,
+      "expectancy": -0.0030464846990491757,
+      "win": 0.11587749985968981,
+      "wfo": {
+        "fold_exp": [
+          -0.003047,
+          -0.003056,
+          -0.003045,
+          -0.003038
+        ],
+        "folds_pos": 0,
+        "folds_n": 4,
+        "all_pos": false,
+        "all_neg": true
+      }
+    },
+    "familyA_flow_contrarian": {
+      "n": 213812,
+      "expectancy": -0.0029535153009508245,
+      "win": 0.12378631695134043,
+      "wfo": {
+        "fold_exp": [
+          -0.002953,
+          -0.002944,
+          -0.002955,
+          -0.002962
+        ],
+        "folds_pos": 0,
+        "folds_n": 4,
+        "all_pos": false,
+        "all_neg": true
+      }
+    },
+    "familyB_flow_in_expansion": {
+      "signals": 73586,
+      "n": 73586,
+      "expectancy": -0.0030868868319493233,
+      "win": 0.15111570135623625,
+      "wfo": {
+        "fold_exp": [
+          -0.003093,
+          -0.003141,
+          -0.003066,
+          -0.003046
+        ],
+        "folds_pos": 0,
+        "folds_n": 4,
+        "all_pos": false,
+        "all_neg": true
+      }
+    },
+    "familyB_flow_in_contraction": {
+      "signals": 140132,
+      "n": 140132,
+      "expectancy": -0.0030251057676179277,
+      "win": 0.0974509747951931,
+      "wfo": {
+        "fold_exp": [
+          -0.003023,
+          -0.00301,
+          -0.003034,
+          -0.003034
+        ],
+        "folds_pos": 0,
+        "folds_n": 4,
+        "all_pos": false,
+        "all_neg": true
+      }
+    },
+    "funding_x_flow_fwdreturn": {
+      "extreme_pos_funding|flow_buy": {
+        "n": 23062,
+        "expectancy": -7.991688459091676e-05,
+        "win": 0.4846934350880236
+      },
+      "extreme_pos_funding|flow_sell": {
+        "n": 28581,
+        "expectancy": 5.702216195373269e-05,
+        "win": 0.5188761764808789
+      },
+      "extreme_neg_funding|flow_buy": {
+        "n": 10700,
+        "expectancy": -3.33688969713121e-05,
+        "win": 0.4918691588785047
+      },
+      "extreme_neg_funding|flow_sell": {
+        "n": 10708,
+        "expectancy": 0.00010607295237244046,
+        "win": 0.5157825924542399
+      }
+    }
+  },
+  "ETH": {
+    "bars": 213823,
+    "span": "2024-06-01->2026-06-13",
+    "horizon_bars": 6,
+    "tf": "5m",
+    "IC_forward_return": {
+      "flow_k (FlowImbalance)": -0.028675543891647566,
+      "imb_1bar": -0.018818685953982218,
+      "intensity_z (Liquidity)": 0.003655988318792621,
+      "avgtrade_z": 0.0013227159068556916,
+      "OHLCV_recent_ret (baseline)": -0.04711243387136692
+    },
+    "IC_forward_absreturn(volatility)": {
+      "intensity_z (Liquidity)": 0.13602976463510028,
+      "flow_k_abs": -0.06675113449034088,
+      "OHLCV_recent_absret (baseline)": 0.21434560190607566
+    },
+    "flow_vs_OHLCV_redundancy": {
+      "corr(flow_k, recent_ret)": 0.575335941008033
+    },
+    "familyA_flow": {
+      "signals": 213812,
+      "n": 213812,
+      "expectancy": -0.00304051995263578,
+      "win": 0.17984023347613792,
+      "wfo": {
+        "fold_exp": [
+          -0.003035,
+          -0.003034,
+          -0.00306,
+          -0.003033
+        ],
+        "folds_pos": 0,
+        "folds_n": 4,
+        "all_pos": false,
+        "all_neg": true
+      }
+    },
+    "familyA_flow_contrarian": {
+      "n": 213812,
+      "expectancy": -0.00295948004736422,
+      "win": 0.1907376573812508,
+      "wfo": {
+        "fold_exp": [
+          -0.002965,
+          -0.002966,
+          -0.00294,
+          -0.002967
+        ],
+        "folds_pos": 0,
+        "folds_n": 4,
+        "all_pos": false,
+        "all_neg": true
+      }
+    },
+    "familyB_flow_in_expansion": {
+      "signals": 73765,
+      "n": 73765,
+      "expectancy": -0.00305112841512867,
+      "win": 0.21527824849183216,
+      "wfo": {
+        "fold_exp": [
+          -0.003057,
+          -0.003035,
+          -0.003044,
+          -0.003069
+        ],
+        "folds_pos": 0,
+        "folds_n": 4,
+        "all_pos": false,
+        "all_neg": true
+      }
+    },
+    "familyB_flow_in_contraction": {
+      "signals": 139953,
+      "n": 139953,
+      "expectancy": -0.0030348282498637576,
+      "win": 0.16128271634048574,
+      "wfo": {
+        "fold_exp": [
+          -0.003022,
+          -0.003034,
+          -0.003068,
+          -0.003015
+        ],
+        "folds_pos": 0,
+        "folds_n": 4,
+        "all_pos": false,
+        "all_neg": true
+      }
+    },
+    "funding_x_flow_fwdreturn": {
+      "extreme_pos_funding|flow_buy": {
+        "n": 24025,
+        "expectancy": -3.9829121620620057e-05,
+        "win": 0.49685744016649325
+      },
+      "extreme_pos_funding|flow_sell": {
+        "n": 30400,
+        "expectancy": 7.328949044123547e-05,
+        "win": 0.5180263157894737
+      },
+      "extreme_neg_funding|flow_buy": {
+        "n": 10641,
+        "expectancy": 3.528334229251746e-05,
+        "win": 0.4945023963913166
+      },
+      "extreme_neg_funding|flow_sell": {
+        "n": 10767,
+        "expectancy": 9.999592229759552e-05,
+        "win": 0.5267948360731866
+      }
+    }
+  },
+  "SOL": {
+    "bars": 213823,
+    "span": "2024-06-01->2026-06-13",
+    "horizon_bars": 6,
+    "tf": "5m",
+    "IC_forward_return": {
+      "flow_k (FlowImbalance)": -0.02553324701042013,
+      "imb_1bar": -0.01719170881398437,
+      "intensity_z (Liquidity)": -0.0006252680434364563,
+      "avgtrade_z": 0.00357934449227418,
+      "OHLCV_recent_ret (baseline)": -0.03243943451820877
+    },
+    "IC_forward_absreturn(volatility)": {
+      "intensity_z (Liquidity)": 0.12170093608425198,
+      "flow_k_abs": -0.06194414548731163,
+      "OHLCV_recent_absret (baseline)": 0.18654332165618265
+    },
+    "flow_vs_OHLCV_redundancy": {
+      "corr(flow_k, recent_ret)": 0.5750927116303424
+    },
+    "familyA_flow": {
+      "signals": 213812,
+      "n": 213812,
+      "expectancy": -0.0030559612077791015,
+      "win": 0.23121246702710793,
+      "wfo": {
+        "fold_exp": [
+          -0.003103,
+          -0.003062,
+          -0.00305,
+          -0.003009
+        ],
+        "folds_pos": 0,
+        "folds_n": 4,
+        "all_pos": false,
+        "all_neg": true
+      }
+    },
+    "familyA_flow_contrarian": {
+      "n": 213812,
+      "expectancy": -0.0029440387922208986,
+      "win": 0.24452790301760424,
+      "wfo": {
+        "fold_exp": [
+          -0.002897,
+          -0.002938,
+          -0.00295,
+          -0.002991
+        ],
+        "folds_pos": 0,
+        "folds_n": 4,
+        "all_pos": false,
+        "all_neg": true
+      }
+    },
+    "familyB_flow_in_expansion": {
+      "signals": 76489,
+      "n": 76489,
+      "expectancy": -0.003025075339980991,
+      "win": 0.26054726823464813,
+      "wfo": {
+        "fold_exp": [
+          -0.003096,
+          -0.002972,
+          -0.003058,
+          -0.002973
+        ],
+        "folds_pos": 0,
+        "folds_n": 4,
+        "all_pos": false,
+        "all_neg": true
+      }
+    },
+    "familyB_flow_in_contraction": {
+      "signals": 137229,
+      "n": 137229,
+      "expectancy": -0.0030731343615722573,
+      "win": 0.21497642626558527,
+      "wfo": {
+        "fold_exp": [
+          -0.003107,
+          -0.003112,
+          -0.003045,
+          -0.003029
+        ],
+        "folds_pos": 0,
+        "folds_n": 4,
+        "all_pos": false,
+        "all_neg": true
+      }
+    },
+    "funding_x_flow_fwdreturn": {
+      "extreme_pos_funding|flow_buy": {
+        "n": 23403,
+        "expectancy": -9.888411005352146e-05,
+        "win": 0.48549331282314234
+      },
+      "extreme_pos_funding|flow_sell": {
+        "n": 29584,
+        "expectancy": 9.312510648682785e-05,
+        "win": 0.5115941049215792
+      },
+      "extreme_neg_funding|flow_buy": {
+        "n": 9603,
+        "expectancy": -7.630156558426118e-06,
+        "win": 0.4877642403415599
+      },
+      "extreme_neg_funding|flow_sell": {
+        "n": 11805,
+        "expectancy": 0.0001084335477705282,
+        "win": 0.5113934773401101
+      }
+    }
+  }
+}

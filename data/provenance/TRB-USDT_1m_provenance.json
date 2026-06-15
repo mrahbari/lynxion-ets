@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "TRBUSDT",
+  "timeframe": "1m",
+  "checksum": "1058ea4980fd9eaeb9f74e929b6f0a827a1a3a4a7da0832c63c0f513afc5e672",
+  "download_timestamp": "2026-06-12T18:27:02.554626",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778749620"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/TRB-USDT.csv"
+}

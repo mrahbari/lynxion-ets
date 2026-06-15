@@ -1,0 +1,18 @@
+{
+  "source": "ccxt:fundingRateHistory",
+  "exchange": "binance",
+  "symbol": "ALGOUSDT",
+  "data_class": "funding",
+  "checksum": "523af29732652817b9f3a903e58054cf1ceb0feb8f4702b881c29649a7feda0b",
+  "download_timestamp": "2026-06-11T21:01:24.970771+00:00",
+  "row_count": 3285,
+  "date_range": {
+    "start": "1686614400",
+    "end": "1781193600"
+  },
+  "columns": [
+    "timestamp",
+    "funding_rate"
+  ],
+  "file_path": "./data/history/raw/funding/ALGO-USDT.csv"
+}

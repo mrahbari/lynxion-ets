@@ -1,0 +1,18 @@
+{
+  "source": "ccxt:fundingRateHistory",
+  "exchange": "binance",
+  "symbol": "TONUSDT",
+  "data_class": "funding",
+  "checksum": "332c397b2fc214deda4d638760a02b353bb7c016d9efa0cdf59064e9e84aab7d",
+  "download_timestamp": "2026-06-11T21:01:22.774645+00:00",
+  "row_count": 4995,
+  "date_range": {
+    "start": "1709280000",
+    "end": "1781208000"
+  },
+  "columns": [
+    "timestamp",
+    "funding_rate"
+  ],
+  "file_path": "./data/history/raw/funding/TON-USDT.csv"
+}

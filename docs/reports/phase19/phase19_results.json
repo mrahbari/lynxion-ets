@@ -1,0 +1,1262 @@
+{
+  "BTC": {
+    "n_funding_points": 2218,
+    "span": "2024-06-01->2026-06-10",
+    "h4": {
+      "funding_only_extneg_long": {
+        "n": 223,
+        "gross": 0.0008956806514958023,
+        "net": -0.0021043193485041976,
+        "win": 0.5246636771300448,
+        "wfo": {
+          "fold_net": [
+            -0.00108,
+            -0.00167,
+            -0.00314,
+            -0.00231
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "funding_only_extpos_short": {
+        "n": 537,
+        "gross": 0.00022797339600776463,
+        "net": -0.0027720266039922355,
+        "win": 0.5027932960893855,
+        "wfo": {
+          "fold_net": [
+            -0.00304,
+            -0.0026,
+            -0.00253,
+            -0.00181
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "flow_only_contrarian": {
+        "n": 2218,
+        "gross": -0.0001444800699728017,
+        "net": -0.0031444800699728017,
+        "win": 0.5049594229035167,
+        "wfo": {
+          "fold_net": [
+            -0.00303,
+            -0.00355,
+            -0.00327,
+            -0.00272
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capitulation(extneg&sellflow->long)": {
+        "n": 125,
+        "gross": 0.00021292335514593543,
+        "net": -0.0027870766448540646,
+        "win": 0.536,
+        "wfo": {
+          "fold_net": [
+            -0.00188,
+            -0.00375,
+            -0.00327,
+            -0.00263
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_exhaustion(extpos&buyflow->short)": {
+        "n": 234,
+        "gross": 0.00023059371033109821,
+        "net": -0.002769406289668902,
+        "win": 0.5299145299145299,
+        "wfo": {
+          "fold_net": [
+            -0.0028,
+            -0.00326,
+            -0.00198,
+            -0.0028
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capit+liqexp(extneg&sellflow&liq>0->long)": {
+        "n": 64,
+        "gross": 0.0011095296877067068,
+        "net": -0.0018904703122932932,
+        "win": 0.5625,
+        "wfo": {
+          "fold_net": [
+            -0.0009,
+            -0.00204,
+            null,
+            -0.00155
+          ],
+          "folds_pos": 0,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      }
+    },
+    "h12": {
+      "funding_only_extneg_long": {
+        "n": 223,
+        "gross": 0.002717612322799091,
+        "net": -0.0002823876772009089,
+        "win": 0.547085201793722,
+        "wfo": {
+          "fold_net": [
+            0.00135,
+            0.00482,
+            -0.0043,
+            -0.0012
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "funding_only_extpos_short": {
+        "n": 537,
+        "gross": 0.0003542264041191883,
+        "net": -0.002645773595880812,
+        "win": 0.48789571694599626,
+        "wfo": {
+          "fold_net": [
+            -0.00318,
+            -0.00321,
+            -0.00156,
+            0.00174
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "flow_only_contrarian": {
+        "n": 2218,
+        "gross": -0.0002589821799099744,
+        "net": -0.0032589821799099746,
+        "win": 0.5081154192966637,
+        "wfo": {
+          "fold_net": [
+            -0.00326,
+            -0.00372,
+            -0.00293,
+            -0.00313
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capitulation(extneg&sellflow->long)": {
+        "n": 125,
+        "gross": 0.002955694723980165,
+        "net": -4.430527601983515e-05,
+        "win": 0.568,
+        "wfo": {
+          "fold_net": [
+            0.00081,
+            0.0062,
+            -0.00595,
+            -0.00087
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_exhaustion(extpos&buyflow->short)": {
+        "n": 234,
+        "gross": 0.0003085247222509628,
+        "net": -0.0026914752777490373,
+        "win": 0.5042735042735043,
+        "wfo": {
+          "fold_net": [
+            -0.00332,
+            -0.00367,
+            -0.00017,
+            -0.00078
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capit+liqexp(extneg&sellflow&liq>0->long)": {
+        "n": 64,
+        "gross": 0.0032969450664356308,
+        "net": 0.0002969450664356307,
+        "win": 0.59375,
+        "wfo": {
+          "fold_net": [
+            0.00027,
+            0.00984,
+            null,
+            -0.00142
+          ],
+          "folds_pos": 2,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      }
+    },
+    "h24": {
+      "funding_only_extneg_long": {
+        "n": 223,
+        "gross": 0.003492618019588299,
+        "net": 0.0004926180195882991,
+        "win": 0.5964125560538116,
+        "wfo": {
+          "fold_net": [
+            0.00767,
+            -0.00104,
+            -0.00275,
+            -0.00069
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "funding_only_extpos_short": {
+        "n": 537,
+        "gross": 0.00013806978009901034,
+        "net": -0.0028619302199009897,
+        "win": 0.4972067039106145,
+        "wfo": {
+          "fold_net": [
+            -0.00423,
+            -0.00315,
+            -0.00091,
+            0.0057
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "flow_only_contrarian": {
+        "n": 2218,
+        "gross": 3.376420705876831e-05,
+        "net": -0.0029662357929412316,
+        "win": 0.49639314697926057,
+        "wfo": {
+          "fold_net": [
+            -0.00296,
+            -0.00282,
+            -0.0021,
+            -0.00399
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capitulation(extneg&sellflow->long)": {
+        "n": 125,
+        "gross": 0.0037231180403407933,
+        "net": 0.0007231180403407932,
+        "win": 0.6,
+        "wfo": {
+          "fold_net": [
+            0.00574,
+            -0.00046,
+            -0.00297,
+            0.00029
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_exhaustion(extpos&buyflow->short)": {
+        "n": 234,
+        "gross": 0.0006824921246883379,
+        "net": -0.002317507875311662,
+        "win": 0.5085470085470085,
+        "wfo": {
+          "fold_net": [
+            -0.00505,
+            0.00022,
+            0.0013,
+            -0.00065
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capit+liqexp(extneg&sellflow&liq>0->long)": {
+        "n": 64,
+        "gross": 0.004666998602349439,
+        "net": 0.0016669986023494388,
+        "win": 0.609375,
+        "wfo": {
+          "fold_net": [
+            0.0049,
+            0.00469,
+            null,
+            0.0004
+          ],
+          "folds_pos": 3,
+          "folds_n": 3,
+          "all_pos": true
+        }
+      }
+    },
+    "h72": {
+      "funding_only_extneg_long": {
+        "n": 223,
+        "gross": 0.00819297299022238,
+        "net": 0.0051929729902223795,
+        "win": 0.6053811659192825,
+        "wfo": {
+          "fold_net": [
+            0.01958,
+            -0.00335,
+            -0.0002,
+            0.004
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "funding_only_extpos_short": {
+        "n": 537,
+        "gross": -0.000509197553632382,
+        "net": -0.003509197553632382,
+        "win": 0.4972067039106145,
+        "wfo": {
+          "fold_net": [
+            -0.00909,
+            -0.00143,
+            0.00474,
+            0.00861
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "flow_only_contrarian": {
+        "n": 2218,
+        "gross": -6.349303918360429e-05,
+        "net": -0.0030634930391836043,
+        "win": 0.49594229035166815,
+        "wfo": {
+          "fold_net": [
+            -0.0035,
+            -0.00209,
+            -0.00305,
+            -0.00361
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capitulation(extneg&sellflow->long)": {
+        "n": 125,
+        "gross": 0.00935480498939207,
+        "net": 0.0063548049893920695,
+        "win": 0.592,
+        "wfo": {
+          "fold_net": [
+            0.02353,
+            0.00068,
+            -0.00443,
+            0.0049
+          ],
+          "folds_pos": 3,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_exhaustion(extpos&buyflow->short)": {
+        "n": 234,
+        "gross": -0.0019515906661842584,
+        "net": -0.0049515906661842584,
+        "win": 0.49145299145299143,
+        "wfo": {
+          "fold_net": [
+            -0.01291,
+            0.00294,
+            0.00668,
+            -0.00546
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capit+liqexp(extneg&sellflow&liq>0->long)": {
+        "n": 64,
+        "gross": 0.010689561936769442,
+        "net": 0.007689561936769442,
+        "win": 0.59375,
+        "wfo": {
+          "fold_net": [
+            0.02813,
+            -0.00643,
+            null,
+            0.00822
+          ],
+          "folds_pos": 2,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      }
+    }
+  },
+  "ETH": {
+    "n_funding_points": 2218,
+    "span": "2024-06-01->2026-06-10",
+    "h4": {
+      "funding_only_extneg_long": {
+        "n": 222,
+        "gross": -2.829704844608656e-06,
+        "net": -0.0030028297048446087,
+        "win": 0.5225225225225225,
+        "wfo": {
+          "fold_net": [
+            0.0024,
+            -0.00511,
+            -0.00112,
+            -0.0035
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "funding_only_extpos_short": {
+        "n": 566,
+        "gross": 0.00013225496817604256,
+        "net": -0.0028677450318239576,
+        "win": 0.49646643109540634,
+        "wfo": {
+          "fold_net": [
+            -0.0024,
+            -0.00301,
+            -0.00351,
+            -0.00442
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "flow_only_contrarian": {
+        "n": 2218,
+        "gross": -0.0006497868218280461,
+        "net": -0.003649786821828046,
+        "win": 0.4932371505861136,
+        "wfo": {
+          "fold_net": [
+            -0.00243,
+            -0.00429,
+            -0.00411,
+            -0.00377
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capitulation(extneg&sellflow->long)": {
+        "n": 104,
+        "gross": 0.001019161043510501,
+        "net": -0.001980838956489499,
+        "win": 0.5769230769230769,
+        "wfo": {
+          "fold_net": [
+            0.00995,
+            -0.00059,
+            -0.00258,
+            -0.00411
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_exhaustion(extpos&buyflow->short)": {
+        "n": 223,
+        "gross": -0.00012992313530505207,
+        "net": -0.003129923135305052,
+        "win": 0.4798206278026906,
+        "wfo": {
+          "fold_net": [
+            -0.00186,
+            -0.00481,
+            -0.00345,
+            -0.00443
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capit+liqexp(extneg&sellflow&liq>0->long)": {
+        "n": 55,
+        "gross": 0.0009955306093194915,
+        "net": -0.002004469390680509,
+        "win": 0.5818181818181818,
+        "wfo": {
+          "fold_net": [
+            null,
+            0.00234,
+            -0.00243,
+            -0.00412
+          ],
+          "folds_pos": 1,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      }
+    },
+    "h12": {
+      "funding_only_extneg_long": {
+        "n": 222,
+        "gross": 0.0026838535636780265,
+        "net": -0.00031614643632197357,
+        "win": 0.527027027027027,
+        "wfo": {
+          "fold_net": [
+            0.00933,
+            0.00508,
+            -0.00828,
+            -0.00167
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "funding_only_extpos_short": {
+        "n": 566,
+        "gross": -0.00032455943993305936,
+        "net": -0.0033245594399330595,
+        "win": 0.49469964664310956,
+        "wfo": {
+          "fold_net": [
+            -0.00318,
+            -0.00184,
+            -0.0062,
+            0.00015
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "flow_only_contrarian": {
+        "n": 2218,
+        "gross": -0.0014088966191620452,
+        "net": -0.004408896619162045,
+        "win": 0.48692515779981965,
+        "wfo": {
+          "fold_net": [
+            -0.00326,
+            -0.00595,
+            -0.00357,
+            -0.00485
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capitulation(extneg&sellflow->long)": {
+        "n": 104,
+        "gross": 0.003119816438003828,
+        "net": 0.0001198164380038281,
+        "win": 0.5673076923076923,
+        "wfo": {
+          "fold_net": [
+            0.0148,
+            0.00952,
+            -0.00782,
+            -0.00315
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_exhaustion(extpos&buyflow->short)": {
+        "n": 223,
+        "gross": -0.001569982017953867,
+        "net": -0.004569982017953867,
+        "win": 0.484304932735426,
+        "wfo": {
+          "fold_net": [
+            -0.00421,
+            -0.00524,
+            -0.00665,
+            0.00558
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capit+liqexp(extneg&sellflow&liq>0->long)": {
+        "n": 55,
+        "gross": 0.0010392629918143112,
+        "net": -0.001960737008185689,
+        "win": 0.5272727272727272,
+        "wfo": {
+          "fold_net": [
+            null,
+            0.00321,
+            -0.00449,
+            -0.00349
+          ],
+          "folds_pos": 1,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      }
+    },
+    "h24": {
+      "funding_only_extneg_long": {
+        "n": 222,
+        "gross": 0.005902853859420339,
+        "net": 0.002902853859420339,
+        "win": 0.581081081081081,
+        "wfo": {
+          "fold_net": [
+            0.01302,
+            0.0103,
+            -0.00628,
+            0.00117
+          ],
+          "folds_pos": 3,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "funding_only_extpos_short": {
+        "n": 566,
+        "gross": -0.00041556133391759735,
+        "net": -0.0034155613339175972,
+        "win": 0.5106007067137809,
+        "wfo": {
+          "fold_net": [
+            -0.00369,
+            -0.00083,
+            -0.00759,
+            0.00505
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "flow_only_contrarian": {
+        "n": 2218,
+        "gross": -0.0010043176598533174,
+        "net": -0.004004317659853317,
+        "win": 0.47610459873760147,
+        "wfo": {
+          "fold_net": [
+            -0.00265,
+            -0.00472,
+            -0.00256,
+            -0.00608
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capitulation(extneg&sellflow->long)": {
+        "n": 104,
+        "gross": 0.005131920747138548,
+        "net": 0.002131920747138548,
+        "win": 0.5673076923076923,
+        "wfo": {
+          "fold_net": [
+            0.02337,
+            0.01322,
+            -0.00716,
+            -0.00235
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_exhaustion(extpos&buyflow->short)": {
+        "n": 223,
+        "gross": -0.0018113515033936968,
+        "net": -0.004811351503393697,
+        "win": 0.4798206278026906,
+        "wfo": {
+          "fold_net": [
+            -0.00301,
+            -0.00616,
+            -0.01068,
+            0.01237
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capit+liqexp(extneg&sellflow&liq>0->long)": {
+        "n": 55,
+        "gross": 0.006821831517565594,
+        "net": 0.003821831517565594,
+        "win": 0.6,
+        "wfo": {
+          "fold_net": [
+            null,
+            -0.00423,
+            0.01151,
+            0.00295
+          ],
+          "folds_pos": 2,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      }
+    },
+    "h72": {
+      "funding_only_extneg_long": {
+        "n": 222,
+        "gross": 0.011146725885525706,
+        "net": 0.008146725885525705,
+        "win": 0.5765765765765766,
+        "wfo": {
+          "fold_net": [
+            0.01815,
+            0.02102,
+            -0.00393,
+            0.0055
+          ],
+          "folds_pos": 3,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "funding_only_extpos_short": {
+        "n": 566,
+        "gross": -0.0010788540946355771,
+        "net": -0.004078854094635577,
+        "win": 0.5053003533568905,
+        "wfo": {
+          "fold_net": [
+            -0.00666,
+            0.00367,
+            -0.01093,
+            0.0117
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "flow_only_contrarian": {
+        "n": 2218,
+        "gross": -0.0011345862603364659,
+        "net": -0.004134586260336466,
+        "win": 0.4828674481514878,
+        "wfo": {
+          "fold_net": [
+            -0.00717,
+            -0.00342,
+            0.00126,
+            -0.0072
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capitulation(extneg&sellflow->long)": {
+        "n": 104,
+        "gross": 0.007043379747918314,
+        "net": 0.004043379747918314,
+        "win": 0.5,
+        "wfo": {
+          "fold_net": [
+            0.01737,
+            0.02853,
+            -0.0077,
+            -0.00311
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_exhaustion(extpos&buyflow->short)": {
+        "n": 223,
+        "gross": -0.003487167948856778,
+        "net": -0.006487167948856778,
+        "win": 0.49327354260089684,
+        "wfo": {
+          "fold_net": [
+            -0.00959,
+            -0.00117,
+            -0.00987,
+            0.00876
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capit+liqexp(extneg&sellflow&liq>0->long)": {
+        "n": 55,
+        "gross": -0.0005873883667671658,
+        "net": -0.0035873883667671656,
+        "win": 0.4909090909090909,
+        "wfo": {
+          "fold_net": [
+            null,
+            -0.00158,
+            -0.00438,
+            -0.00604
+          ],
+          "folds_pos": 0,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      }
+    }
+  },
+  "SOL": {
+    "n_funding_points": 2218,
+    "span": "2024-06-01->2026-06-10",
+    "h4": {
+      "funding_only_extneg_long": {
+        "n": 222,
+        "gross": -0.0002558107712099746,
+        "net": -0.003255810771209975,
+        "win": 0.49099099099099097,
+        "wfo": {
+          "fold_net": [
+            null,
+            -0.00217,
+            -0.00165,
+            -0.00425
+          ],
+          "folds_pos": 0,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      },
+      "funding_only_extpos_short": {
+        "n": 551,
+        "gross": 0.0002034012664486807,
+        "net": -0.0027965987335513195,
+        "win": 0.49183303085299457,
+        "wfo": {
+          "fold_net": [
+            -0.00281,
+            -0.00194,
+            -0.00404,
+            -0.00159
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "flow_only_contrarian": {
+        "n": 2218,
+        "gross": -8.532004817202593e-05,
+        "net": -0.003085320048172026,
+        "win": 0.49864743011722273,
+        "wfo": {
+          "fold_net": [
+            -0.00224,
+            -0.00283,
+            -0.00326,
+            -0.00401
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capitulation(extneg&sellflow->long)": {
+        "n": 122,
+        "gross": -0.0017657220384115235,
+        "net": -0.004765722038411524,
+        "win": 0.45081967213114754,
+        "wfo": {
+          "fold_net": [
+            null,
+            -0.00448,
+            -0.00219,
+            -0.00548
+          ],
+          "folds_pos": 0,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      },
+      "COMBO_exhaustion(extpos&buyflow->short)": {
+        "n": 209,
+        "gross": -0.001193426936696288,
+        "net": -0.004193426936696288,
+        "win": 0.46411483253588515,
+        "wfo": {
+          "fold_net": [
+            -0.00323,
+            -0.0062,
+            -0.00631,
+            -0.00192
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capit+liqexp(extneg&sellflow&liq>0->long)": {
+        "n": 70,
+        "gross": -0.0022256670241522325,
+        "net": -0.005225667024152232,
+        "win": 0.4857142857142857,
+        "wfo": {
+          "fold_net": [
+            null,
+            -0.00107,
+            -0.0019,
+            -0.0079
+          ],
+          "folds_pos": 0,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      }
+    },
+    "h12": {
+      "funding_only_extneg_long": {
+        "n": 222,
+        "gross": 8.545845832336062e-06,
+        "net": -0.002991454154167664,
+        "win": 0.481981981981982,
+        "wfo": {
+          "fold_net": [
+            null,
+            0.00026,
+            -0.00582,
+            -0.00333
+          ],
+          "folds_pos": 1,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      },
+      "funding_only_extpos_short": {
+        "n": 551,
+        "gross": -0.000532905061832103,
+        "net": -0.003532905061832103,
+        "win": 0.4900181488203267,
+        "wfo": {
+          "fold_net": [
+            -0.00249,
+            -0.00441,
+            -0.0052,
+            -0.00258
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "flow_only_contrarian": {
+        "n": 2218,
+        "gross": -0.00022658363605350008,
+        "net": -0.0032265836360535,
+        "win": 0.5139765554553652,
+        "wfo": {
+          "fold_net": [
+            -0.00222,
+            -0.00452,
+            -0.00277,
+            -0.00339
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capitulation(extneg&sellflow->long)": {
+        "n": 122,
+        "gross": -0.0010144758696594568,
+        "net": -0.004014475869659457,
+        "win": 0.4672131147540984,
+        "wfo": {
+          "fold_net": [
+            null,
+            -0.00454,
+            -0.00217,
+            -0.0037
+          ],
+          "folds_pos": 0,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      },
+      "COMBO_exhaustion(extpos&buyflow->short)": {
+        "n": 209,
+        "gross": -0.0015616518583562518,
+        "net": -0.004561651858356252,
+        "win": 0.48325358851674644,
+        "wfo": {
+          "fold_net": [
+            -0.00307,
+            -0.00715,
+            -0.00804,
+            -0.00118
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capit+liqexp(extneg&sellflow&liq>0->long)": {
+        "n": 70,
+        "gross": -0.0036718834017580517,
+        "net": -0.006671883401758052,
+        "win": 0.4714285714285714,
+        "wfo": {
+          "fold_net": [
+            null,
+            0.0023,
+            -0.00508,
+            -0.01074
+          ],
+          "folds_pos": 1,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      }
+    },
+    "h24": {
+      "funding_only_extneg_long": {
+        "n": 222,
+        "gross": -0.003047005721180415,
+        "net": -0.006047005721180415,
+        "win": 0.44594594594594594,
+        "wfo": {
+          "fold_net": [
+            null,
+            -0.00821,
+            -0.00251,
+            -0.00539
+          ],
+          "folds_pos": 0,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      },
+      "funding_only_extpos_short": {
+        "n": 551,
+        "gross": -2.3571863475146705e-05,
+        "net": -0.003023571863475147,
+        "win": 0.515426497277677,
+        "wfo": {
+          "fold_net": [
+            -0.00215,
+            -0.00759,
+            -0.00223,
+            -0.00019
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "flow_only_contrarian": {
+        "n": 2218,
+        "gross": 0.00020049839971206652,
+        "net": -0.0027995016002879333,
+        "win": 0.5112714156898106,
+        "wfo": {
+          "fold_net": [
+            -0.00081,
+            -0.00457,
+            -0.00224,
+            -0.00357
+          ],
+          "folds_pos": 0,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capitulation(extneg&sellflow->long)": {
+        "n": 122,
+        "gross": -0.004900705173036461,
+        "net": -0.007900705173036461,
+        "win": 0.4262295081967213,
+        "wfo": {
+          "fold_net": [
+            null,
+            -0.01516,
+            0.00489,
+            -0.00769
+          ],
+          "folds_pos": 1,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      },
+      "COMBO_exhaustion(extpos&buyflow->short)": {
+        "n": 209,
+        "gross": 0.0007539714780844957,
+        "net": -0.0022460285219155045,
+        "win": 0.5406698564593302,
+        "wfo": {
+          "fold_net": [
+            0.0012,
+            -0.01001,
+            -0.00623,
+            0.00105
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capit+liqexp(extneg&sellflow&liq>0->long)": {
+        "n": 70,
+        "gross": -0.0062817302446584455,
+        "net": -0.009281730244658445,
+        "win": 0.42857142857142855,
+        "wfo": {
+          "fold_net": [
+            null,
+            -0.01426,
+            0.01162,
+            -0.01391
+          ],
+          "folds_pos": 1,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      }
+    },
+    "h72": {
+      "funding_only_extneg_long": {
+        "n": 222,
+        "gross": -0.006660434383722332,
+        "net": -0.009660434383722332,
+        "win": 0.47297297297297297,
+        "wfo": {
+          "fold_net": [
+            null,
+            -0.00383,
+            0.00134,
+            -0.01592
+          ],
+          "folds_pos": 1,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      },
+      "funding_only_extpos_short": {
+        "n": 551,
+        "gross": 0.0003003654333965126,
+        "net": -0.0026996345666034875,
+        "win": 0.5263157894736842,
+        "wfo": {
+          "fold_net": [
+            0.00281,
+            -0.01043,
+            -0.00376,
+            -0.00861
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "flow_only_contrarian": {
+        "n": 2218,
+        "gross": 0.0004720501768756157,
+        "net": -0.0025279498231243844,
+        "win": 0.49729486023444547,
+        "wfo": {
+          "fold_net": [
+            0.00119,
+            -0.00387,
+            -0.00047,
+            -0.00695
+          ],
+          "folds_pos": 1,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capitulation(extneg&sellflow->long)": {
+        "n": 122,
+        "gross": -0.00846484899062109,
+        "net": -0.011464848990621088,
+        "win": 0.45081967213114754,
+        "wfo": {
+          "fold_net": [
+            null,
+            0.00184,
+            -0.00378,
+            -0.02175
+          ],
+          "folds_pos": 1,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      },
+      "COMBO_exhaustion(extpos&buyflow->short)": {
+        "n": 209,
+        "gross": -0.0006188247242207034,
+        "net": -0.0036188247242207035,
+        "win": 0.5263157894736842,
+        "wfo": {
+          "fold_net": [
+            0.00108,
+            -0.0173,
+            0.00151,
+            -0.01224
+          ],
+          "folds_pos": 2,
+          "folds_n": 4,
+          "all_pos": false
+        }
+      },
+      "COMBO_capit+liqexp(extneg&sellflow&liq>0->long)": {
+        "n": 70,
+        "gross": -0.0035409274452687448,
+        "net": -0.006540927445268745,
+        "win": 0.45714285714285713,
+        "wfo": {
+          "fold_net": [
+            null,
+            0.00852,
+            0.01686,
+            -0.02279
+          ],
+          "folds_pos": 2,
+          "folds_n": 3,
+          "all_pos": false
+        }
+      }
+    }
+  }
+}

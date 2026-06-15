@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ORDERUSDT",
+  "timeframe": "1m",
+  "checksum": "2ed39a98d69d787f0cd926cc70f3d507778648423c23e87bf17b98426167ac2c",
+  "download_timestamp": "2026-06-12T18:26:26.555328",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686020",
+    "end": "1778719560"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ORDER-USDT.csv"
+}

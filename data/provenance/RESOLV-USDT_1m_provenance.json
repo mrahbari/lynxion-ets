@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "RESOLVUSDT",
+  "timeframe": "1m",
+  "checksum": "d9e2b18b654aa30d2086947092edc8e34d3ae56e47eb25b5516b5da2c8f8b6c1",
+  "download_timestamp": "2026-06-12T18:24:44.425044",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778685900",
+    "end": "1778749440"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/RESOLV-USDT.csv"
+}

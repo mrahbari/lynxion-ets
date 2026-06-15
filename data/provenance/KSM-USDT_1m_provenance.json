@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "KSMUSDT",
+  "timeframe": "1m",
+  "checksum": "6fe7934d17ac051ae962851b845ab7fa3a5f599b4e0034561855894e9d8e45f0",
+  "download_timestamp": "2026-06-12T18:35:17.676559",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686560",
+    "end": "1778750100"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/KSM-USDT.csv"
+}

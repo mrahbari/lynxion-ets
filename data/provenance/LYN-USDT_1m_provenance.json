@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "LYNUSDT",
+  "timeframe": "1m",
+  "checksum": "a67bcd0f6e3b8a1de197e00e0ef9ae7dc0dfb5900267e153bbf1235b8d27bbe4",
+  "download_timestamp": "2026-06-12T18:24:33.828208",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778685900",
+    "end": "1778719440"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/LYN-USDT.csv"
+}

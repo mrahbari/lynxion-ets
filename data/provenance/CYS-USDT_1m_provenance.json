@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "CYSUSDT",
+  "timeframe": "1m",
+  "checksum": "2d366460808b005910616e3e43f059e679ac3a2fcbbd82436e41c576bfa41c9a",
+  "download_timestamp": "2026-06-12T18:30:04.183023",
+  "row_count": 563,
+  "date_range": {
+    "start": "1778686080",
+    "end": "1778719800"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/CYS-USDT.csv"
+}

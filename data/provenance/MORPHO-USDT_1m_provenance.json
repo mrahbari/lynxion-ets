@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "MORPHOUSDT",
+  "timeframe": "1m",
+  "checksum": "63bcd907321dc225d2fb62a6ff3ec8035377e7e8ca85b9d36bd320735691f372",
+  "download_timestamp": "2026-06-12T18:26:28.118180",
+  "row_count": 1061,
+  "date_range": {
+    "start": "1778685960",
+    "end": "1778749560"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/MORPHO-USDT.csv"
+}

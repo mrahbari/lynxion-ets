@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ELSAUSDT",
+  "timeframe": "1m",
+  "checksum": "47fe018ae4ad3c5640b6f39ebb9188a42ccc61a68021e69587980232e35ef569",
+  "download_timestamp": "2026-06-12T18:40:28.222652",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686920",
+    "end": "1778720400"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/ELSA-USDT.csv"
+}

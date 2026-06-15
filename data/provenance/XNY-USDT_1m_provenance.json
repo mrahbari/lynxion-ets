@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "XNYUSDT",
+  "timeframe": "1m",
+  "checksum": "4e6f15713c4e970b6d251f97a51cf272e7677e50cf5be76b12bce6cc850086ec",
+  "download_timestamp": "2026-06-12T18:29:35.804034",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686260",
+    "end": "1778719740"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/XNY-USDT.csv"
+}

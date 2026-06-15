@@ -6,26 +6,28 @@ import re
 from typing import List
 from domain.value_objects import Symbol
 from shared.logger import EnhancedLogger
-from utils.symbol_validator import symbol_validator
-from application.configs.configs import Configs
+from infrastructure.services.symbol_validator import symbol_validator
 
 
 class SymbolValidationService:
     """Service class for validating and filtering symbols before processing."""
     
-    def __init__(self, logger: EnhancedLogger = None):
+    def __init__(self, logger: EnhancedLogger = None, data_config=None):
         self.logger = logger or EnhancedLogger("SymbolValidationService")
+        # Data config injected via constructor (E1.T4); supplied by the caller, which
+        # threads settings.data down from the composition root. No loaders import here.
+        self._data_config = data_config
     
     def filter_stablecoin_pairs(self, symbols):
         """Filter out stablecoin-stablecoin pairs from the symbol list."""
         # Check if filtering is enabled
-        filter_stablecoin_pairs = Configs.data.filter_out_stablecoin_pairs if Configs.data and hasattr(Configs.data, 'filter_out_stablecoin_pairs') else True
+        filter_stablecoin_pairs = self._data_config.filter_out_stablecoin_pairs if self._data_config and hasattr(self._data_config, 'filter_out_stablecoin_pairs') else True
 
         if not filter_stablecoin_pairs:
             return symbols
 
         # Get allowed stablecoins from configs
-        allowed_stablecoins_raw = Configs.data.allowed_stablecoins if Configs.data and Configs.data.allowed_stablecoins else 'USDT,BUSD,USDC,DAI,PAX,TUSD,USDD,FDUSD'
+        allowed_stablecoins_raw = self._data_config.allowed_stablecoins if self._data_config and self._data_config.allowed_stablecoins else 'USDT,BUSD,USDC,DAI,PAX,TUSD,USDD,FDUSD'
 
         # Handle both string and list formats
         if isinstance(allowed_stablecoins_raw, list):
@@ -81,7 +83,7 @@ class SymbolValidationService:
                     continue  # Skip this symbol
 
             # Check using regex pattern if provided - improved to catch more stablecoin pairs
-            excluded_pattern = Configs.data.excluded_symbols_pattern if Configs.data and Configs.data.excluded_symbols_pattern else r'(?:USDT|USDC|BUSD|DAI|PAX|TUSD|USDD|FDUSD)(?:USDT|USDC|BUSD|DAI|PAX|TUSD|USDD|FDUSD)|BTC/BTC|ETH/ETH'
+            excluded_pattern = self._data_config.excluded_symbols_pattern if self._data_config and self._data_config.excluded_symbols_pattern else r'(?:USDT|USDC|BUSD|DAI|PAX|TUSD|USDD|FDUSD)(?:USDT|USDC|BUSD|DAI|PAX|TUSD|USDD|FDUSD)|BTC/BTC|ETH/ETH'
             if re.search(excluded_pattern, symbol_upper):
                 self.logger.info(f"🚫 PATTERN FILTER: Skipping {symbol_str} (matches exclusion pattern)")
                 continue  # Skip this symbol
@@ -102,7 +104,7 @@ class SymbolValidationService:
         validated_symbols = []
 
         # Check if data validation is enabled
-        validate_data_availability = Configs.data.validate_symbol_data_availability if Configs.data and hasattr(Configs.data, 'validate_symbol_data_availability') else True
+        validate_data_availability = self._data_config.validate_symbol_data_availability if self._data_config and hasattr(self._data_config, 'validate_symbol_data_availability') else True
 
         if not validate_data_availability:
             # Still apply approved symbol validation even if data availability validation is disabled

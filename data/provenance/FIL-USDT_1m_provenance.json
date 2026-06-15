@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "FILUSDT",
+  "timeframe": "1m",
+  "checksum": "0d0015eb4c282ab5b44b15502da1dc6f3bacd9ef46d9d4822389734b3a13c03d",
+  "download_timestamp": "2026-06-12T18:40:28.961913",
+  "row_count": 1064,
+  "date_range": {
+    "start": "1778686620",
+    "end": "1778750400"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/FIL-USDT.csv"
+}

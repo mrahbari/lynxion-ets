@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "BLUAIUSDT",
+  "timeframe": "1m",
+  "checksum": "8b74d01c4a842759ecec2574563b893d66d6c3f0cacddbef65de0b8ef72dd905",
+  "download_timestamp": "2026-06-12T18:34:32.103831",
+  "row_count": 559,
+  "date_range": {
+    "start": "1778686560",
+    "end": "1778720040"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/BLUAI-USDT.csv"
+}

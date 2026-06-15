@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "ADAUSDT",
+  "timeframe": "1m",
+  "checksum": "8b1ff1a0f90c18029202a7162d4d226c0c2767e9becfa189bd8baee96de9c4ed",
+  "download_timestamp": "2026-06-13T10:05:41.665018",
+  "row_count": 3607,
+  "date_range": {
+    "start": "1749802200",
+    "end": "1781294700"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "3b0660b40781ad422305ade2176eb7766df8b9aa",
+  "file_path": "data/history/raw/1m/ADA-USDT.csv"
+}

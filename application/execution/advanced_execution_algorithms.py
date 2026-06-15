@@ -9,7 +9,7 @@ import pandas as pd
 from enum import Enum
 from shared.logger import logger
 from shared.metrics import metrics_collector, time_operation
-from domain.entities.trading_entities import Order, Symbol
+from domain.entities import Order, Symbol
 from domain.value_objects import Money
 
 

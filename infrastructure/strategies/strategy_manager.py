@@ -7,7 +7,7 @@ import time
 from typing import Dict, List, Optional, Callable, Any
 from datetime import datetime
 from domain.value_objects import Symbol
-from domain.entities.signal_entities import FusedSignal, ExecutionIntent
+from domain.entities import FusedSignal, ExecutionIntent
 from infrastructure.strategies.strategy_adapters import BaseStrategyAdapter, TrendFollowingStrategy, MeanReversionStrategy, VolatilityBreakoutStrategy
 import numpy as np
 from scipy import stats
@@ -868,5 +868,18 @@ class StrategyManager:
         return status_report
 
 
-# Global strategy manager instance
-strategy_manager = StrategyManager()
+# Module-level singleton retired (E2.T6). The canonical instance is now created
+# in bootstrap/container.py (container-scoped: independent per container). This
+# lazy accessor preserves backward compatibility for callers that still do
+# ``from infrastructure.strategies.strategy_manager import strategy_manager``
+# without instantiating at import time. New code should resolve from the container.
+_strategy_manager_singleton = None
+
+
+def __getattr__(name):
+    global _strategy_manager_singleton
+    if name == "strategy_manager":
+        if _strategy_manager_singleton is None:
+            _strategy_manager_singleton = StrategyManager()
+        return _strategy_manager_singleton
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

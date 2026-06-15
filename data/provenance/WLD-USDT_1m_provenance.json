@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "WLDUSDT",
+  "timeframe": "1m",
+  "checksum": "7f9523068500748a5cc849e07933a27779d5aca30f70223d1ab55afcb7d66f5d",
+  "download_timestamp": "2026-06-12T22:06:31.727168",
+  "row_count": 1118,
+  "date_range": {
+    "start": "1778686140",
+    "end": "1781294760"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "file_path": "data/history/raw/1m/WLD-USDT.csv"
+}

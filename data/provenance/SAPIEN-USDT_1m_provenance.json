@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "SAPIENUSDT",
+  "timeframe": "1m",
+  "checksum": "830a9cb3e494a88b9ebad47158327e17eb9b7645b04871778a0d6ca61b31095d",
+  "download_timestamp": "2026-06-12T18:31:10.901457",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778749860"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/SAPIEN-USDT.csv"
+}

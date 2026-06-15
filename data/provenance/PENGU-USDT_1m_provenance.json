@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "PENGUUSDT",
+  "timeframe": "1m",
+  "checksum": "9eef39d4e13611d1370d8445b493d6b03db953c15bc8159faec11db3e0749bc7",
+  "download_timestamp": "2026-06-12T18:37:17.222008",
+  "row_count": 1066,
+  "date_range": {
+    "start": "1778686320",
+    "end": "1778750220"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/PENGU-USDT.csv"
+}

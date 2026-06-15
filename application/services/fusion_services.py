@@ -2,7 +2,7 @@
 Application service for signal fusion in the enterprise hedge fund trading system.
 """
 from typing import List, Optional
-from domain.entities.trading_entities import Signal
+from domain.entities import Signal
 from domain.ports.engine_ports import FusionPort
 from shared.logger import logger
 

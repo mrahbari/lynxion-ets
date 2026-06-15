@@ -7,13 +7,15 @@ import requests
 from typing import List
 from domain.value_objects import Symbol
 from shared.logger import EnhancedLogger
-from application.configs.configs import Configs
 
 
 class SymbolDiscoveryService:
     """Service class for discovering symbols to monitor based on various market conditions."""
-    
-    def __init__(self, logger: EnhancedLogger = None):
+
+    def __init__(self, settings, logger: EnhancedLogger = None):
+        # Settings injected by the composition root (E1.T4); read the same fields
+        # off self._settings instead of importing bootstrap.settings.loaders.
+        self._settings = settings
         self.logger = logger or EnhancedLogger("SymbolDiscoveryService")
     
     def discover_symbols_automatically(self) -> List[Symbol]:
@@ -21,16 +23,16 @@ class SymbolDiscoveryService:
         self.logger.info("🔍 Discovering symbols to monitor automatically...")
 
         # Check which watcher types are enabled to determine appropriate discovery method
-        market_pulse_enabled = Configs.watcher.market_pulse_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'market_pulse_watcher_enabled') else True
-        volatility_enabled = Configs.watcher.volatility_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'volatility_watcher_enabled') else True
-        trend_mtf_enabled = Configs.watcher.trend_mtf_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'trend_mtf_watcher_enabled') else True
-        anomaly_ml_enabled = Configs.watcher.anomaly_ml_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'anomaly_ml_watcher_enabled') else True
-        orderflow_ws_enabled = Configs.watcher.orderflow_ws_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'orderflow_ws_watcher_enabled') else True
-        cmc_screener_enabled = Configs.watcher.cmc_screener_enabled if Configs.watcher and hasattr(Configs.watcher, 'cmc_screener_enabled') else True
-        funding_rate_enabled = Configs.watcher.funding_rate_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'funding_rate_watcher_enabled') else True
-        liquidity_enabled = Configs.watcher.liquidity_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'liquidity_watcher_enabled') else True
-        historical_candle_enabled = Configs.watcher.historical_candle_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'historical_candle_watcher_enabled') else True
-        tick_watcher_enabled = Configs.watcher.tick_watcher_enabled if Configs.watcher and hasattr(Configs.watcher, 'tick_watcher_enabled') else False
+        market_pulse_enabled = self._settings.watcher.market_pulse_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'market_pulse_watcher_enabled') else True
+        volatility_enabled = self._settings.watcher.volatility_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'volatility_watcher_enabled') else True
+        trend_mtf_enabled = self._settings.watcher.trend_mtf_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'trend_mtf_watcher_enabled') else True
+        anomaly_ml_enabled = self._settings.watcher.anomaly_ml_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'anomaly_ml_watcher_enabled') else True
+        orderflow_ws_enabled = self._settings.watcher.orderflow_ws_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'orderflow_ws_watcher_enabled') else True
+        cmc_screener_enabled = self._settings.watcher.cmc_screener_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'cmc_screener_enabled') else True
+        funding_rate_enabled = self._settings.watcher.funding_rate_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'funding_rate_watcher_enabled') else True
+        liquidity_enabled = self._settings.watcher.liquidity_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'liquidity_watcher_enabled') else True
+        historical_candle_enabled = self._settings.watcher.historical_candle_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'historical_candle_watcher_enabled') else True
+        tick_watcher_enabled = self._settings.watcher.tick_watcher_enabled if self._settings.watcher and hasattr(self._settings.watcher, 'tick_watcher_enabled') else False
 
         # If multiple watchers are enabled, use comprehensive discovery that covers all types
         enabled_watchers = []
@@ -150,7 +152,7 @@ class SymbolDiscoveryService:
 
         # If still no symbols found, use fallback symbols
         if not discovered_symbols:
-            fallback_symbols_str = Configs.data.fallback_watchlist_symbols if Configs.data and Configs.data.fallback_watchlist_symbols else "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,AVAXUSDT,TRXUSDT,DOTUSDT,LINKUSDT"
+            fallback_symbols_str = self._settings.data.fallback_watchlist_symbols if self._settings.data and self._settings.data.fallback_watchlist_symbols else "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,AVAXUSDT,TRXUSDT,DOTUSDT,LINKUSDT"
             fallback_symbols = [s.strip() for s in fallback_symbols_str.split(",")]
             discovered_symbols = fallback_symbols
 
@@ -167,7 +169,7 @@ class SymbolDiscoveryService:
 
         # Filter out stablecoin-to-stablecoin pairs (e.g., USDTUSDT, USDCUSDT, etc.)
         from .symbol_validation_service import SymbolValidationService
-        validation_service = SymbolValidationService(self.logger)
+        validation_service = SymbolValidationService(self.logger, data_config=self._settings.data)
         filtered_symbols = validation_service.filter_stablecoin_pairs(discovered_symbols)
 
         # Filter symbols and handle invalid ones gracefully
@@ -434,8 +436,8 @@ class SymbolDiscoveryService:
             from dotenv import load_dotenv
             load_dotenv()
 
-            cmc_api_key = Configs.data.cmc_api_key if Configs.data and Configs.data.cmc_api_key else None
-            cmc_listings_url = Configs.data.cmc_listings_url if Configs.data and Configs.data.cmc_listings_url else "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+            cmc_api_key = self._settings.data.cmc_api_key if self._settings.data and self._settings.data.cmc_api_key else None
+            cmc_listings_url = self._settings.data.cmc_listings_url if self._settings.data and self._settings.data.cmc_listings_url else "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
 
             if not cmc_api_key:
                 self.logger.warning("CMC_API_KEY not found, skipping market cap discovery")
@@ -459,8 +461,12 @@ class SymbolDiscoveryService:
 
                 if 'data' in data:
                     # Extract symbols from the top coins with filtering
-                    excluded_coins_str = Configs.data.cmc_excluded_coins if Configs.data and Configs.data.cmc_excluded_coins else "BTC,ETH,SOL,ADA,DOT,XRP,DOGE,LINK,BNB,AVAX,MATIC,BTCUSDT,ETHUSDT,SOLUSDT,ADAUSDT,DOTUSDT,XRPUSDT,DOGEUSDT,LINKUSDT,BNBUSDT,AVAXUSDT,MATICUSDT"
-                    excluded_coins = set(coin.strip().upper() for coin in excluded_coins_str.split(',') if coin.strip())
+                    excluded_coins_cfg = self._settings.data.cmc_excluded_coins if self._settings.data and self._settings.data.cmc_excluded_coins else "BTC,ETH,SOL,ADA,DOT,XRP,DOGE,LINK,BNB,AVAX,MATIC,BTCUSDT,ETHUSDT,SOLUSDT,ADAUSDT,DOTUSDT,XRPUSDT,DOGEUSDT,LINKUSDT,BNBUSDT,AVAXUSDT,MATICUSDT"
+                    # cmc_excluded_coins may be configured as a comma-string OR a list; the
+                    # old code assumed a string and called .split(',') -> crashed with
+                    # "'list' object has no attribute 'split'". Handle both. (Type-A defect.)
+                    excluded_iter = excluded_coins_cfg.split(',') if isinstance(excluded_coins_cfg, str) else excluded_coins_cfg
+                    excluded_coins = set(str(coin).strip().upper() for coin in excluded_iter if str(coin).strip())
 
                     discovered_symbols = []
                     for coin in data['data']:

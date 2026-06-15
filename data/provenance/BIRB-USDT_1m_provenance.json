@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "BIRBUSDT",
+  "timeframe": "1m",
+  "checksum": "18c99eb9f06fc78348507b73c4040f4fdb2499ea94c73c7f3ec819a2c380c8a0",
+  "download_timestamp": "2026-06-12T18:33:01.486584",
+  "row_count": 560,
+  "date_range": {
+    "start": "1778686440",
+    "end": "1778719980"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/BIRB-USDT.csv"
+}

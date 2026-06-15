@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "HANAUSDT",
+  "timeframe": "1m",
+  "checksum": "d1f36999d9ac1033954859214f11f7c597a550205c8c2e4a144ca77b0b0380ea",
+  "download_timestamp": "2026-06-12T18:39:44.349188",
+  "row_count": 567,
+  "date_range": {
+    "start": "1778686380",
+    "end": "1778720340"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/HANA-USDT.csv"
+}

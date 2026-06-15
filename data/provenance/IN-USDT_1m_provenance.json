@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "INUSDT",
+  "timeframe": "1m",
+  "checksum": "d239da49da965f55447b595139f823b9ff79cabf646c04d3c481998019278008",
+  "download_timestamp": "2026-06-12T18:37:05.083526",
+  "row_count": 561,
+  "date_range": {
+    "start": "1778686620",
+    "end": "1778720220"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/IN-USDT.csv"
+}

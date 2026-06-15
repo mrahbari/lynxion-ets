@@ -1,0 +1,22 @@
+{
+  "source": "CSV",
+  "symbol": "PLUMEUSDT",
+  "timeframe": "1m",
+  "checksum": "9c3a7f944c7f2951b329243897f473b9d4bae9b02a9292def94e265703e4d7c0",
+  "download_timestamp": "2026-06-12T18:41:06.777051",
+  "row_count": 1060,
+  "date_range": {
+    "start": "1778686920",
+    "end": "1778750460"
+  },
+  "columns": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "file_path": "data/history/raw/1m/PLUME-USDT.csv"
+}
