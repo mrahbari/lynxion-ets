@@ -276,6 +276,7 @@ The system now includes advanced enhancements across all core components:
 ## Prerequisites
 
 * Python **3.10+**
+* **Redis Server** (required for caching and IPC)
 * pip
 * 8GB RAM recommended (for optimization)
 * Exchange API keys (optional for backtesting)
@@ -288,27 +289,51 @@ The system now includes advanced enhancements across all core components:
 git clone git@github.com:mrahbari/lynxion-ets.git
 cd lynxion-ets
 
-python -m venv venv
+# Create and activate virtual environment
+python3 -m venv venv
 source venv/bin/activate   # Windows: venv\Scripts\activate
 
+# Install core dependencies
+pip install --upgrade pip setuptools
 pip install -r requirements.txt
+
+# Critical: Install pydantic (required for configuration) 
+# and fix hyperopt compatibility by downgrading setuptools
+pip install pydantic pydantic-settings
+pip install "setuptools<70.0.0"
 ```
 
 ---
 
 ## Environment Setup
 
+1. **Configure Environment Variables**:
 ```bash
 cp .env.example .env
 ```
+Edit `.env` to include your exchange API keys and Redis URL (default: `redis://localhost:6379/0`).
 
-Edit `.env`:
+2. **Ensure Redis is Running**:
+The system requires a running Redis instance.
+```bash
+# On Linux/Ubuntu:
+sudo service redis-server start
+# Or using Docker:
+docker run -d -p 6379:6379 redis
+```
 
-```env
-BINANCE_API_KEY=your_key
-BINANCE_SECRET_KEY=your_secret
+---
 
-WFO_COINS=BTCUSDT,ETHUSDT,BNBUSDT
+## Quick Verification
+
+Before running the full system, verify your configuration and dependencies:
+
+```bash
+# Activate venv if not already active
+source venv/bin/activate
+
+# Run the config-test mode
+python run_trading_system.py --mode config-test
 ```
 
 ---
@@ -1077,6 +1102,14 @@ data/
 **Missing data**
 
 * Run history downloader
+
+**ModuleNotFoundError: No module named 'pkg_resources'**
+
+* This is caused by `setuptools` version 70+. Run `pip install "setuptools<70.0.0"` to fix.
+
+**ModuleNotFoundError: No module named 'pydantic'**
+
+* Run `pip install pydantic pydantic-settings` to ensure the configuration system can load.
 
 Logs are available in `logs/`.
 
