@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "TAOUSDT",
   "timeframe": "1m",
-  "checksum": "8f2b81d8d74a28dff299520ae1bd7ff62d05a69c3092b4de515acd9608830ffa",
-  "download_timestamp": "2026-06-12T18:42:28.384127",
-  "row_count": 1130,
+  "checksum": "9712bc9ab7bd514d8fb5c8aa6d7215bdd0a4aa26e61b370b82b945d9fec004bb",
+  "download_timestamp": "2026-06-20T15:05:09.552693",
+  "row_count": 9714,
   "date_range": {
-    "start": "1778687040",
-    "end": "1781276700"
+    "start": "1766620860",
+    "end": "1781960700"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/TAO-USDT.csv"
 }

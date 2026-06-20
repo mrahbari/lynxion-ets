@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "ENJUSDT",
   "timeframe": "1m",
-  "checksum": "182e1e10086384116a3fb0e9afb1120bbbc1a5ea104dd134f3d10b04c7056b63",
-  "download_timestamp": "2026-06-12T22:06:19.422049",
-  "row_count": 1189,
+  "checksum": "5dba38b1247bb0cf1a8f5448b7916054e378c5f00633e3e40782cc83245067aa",
+  "download_timestamp": "2026-06-20T15:04:33.070552",
+  "row_count": 10543,
   "date_range": {
-    "start": "1778686560",
-    "end": "1781294760"
+    "start": "1766007540",
+    "end": "1781960640"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/ENJ-USDT.csv"
 }

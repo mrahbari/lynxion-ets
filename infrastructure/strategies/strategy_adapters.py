@@ -77,7 +77,7 @@ class BaseStrategyAdapter(StrategyPort):
         self.config = {
             'enabled': StrategyConfig.get_strategy_enabled(name),
             'max_position_size': StrategyConfig.get_strategy_max_position_size(name, 0.05),
-            'min_confidence': StrategyConfig.get_strategy_min_confidence(name, 0.3),
+            'min_confidence': StrategyConfig.get_strategy_min_confidence(name, 0.5),
             'max_confidence': StrategyConfig.get_strategy_max_confidence(name, 0.95),
             'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade(name, 0.02),
             'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier(name, 1.5),
@@ -500,7 +500,7 @@ class BaseStrategyAdapter(StrategyPort):
             return False
 
         # Get strategy-specific configuration
-        min_confidence = self.config.get('min_confidence', 0.3)  # Use default value of 0.3 if not specified
+        min_confidence = self.config.get('min_confidence', 0.5)  # Use default value of 0.5 if not specified
 
         # Check signal confidence against strategy threshold
         confidence = float(fused_signal.confidence.value)
@@ -673,7 +673,7 @@ class TrendFollowingStrategy(BaseStrategyAdapter):
             return False
 
         # Get strategy-specific configuration
-        min_confidence = self.config.get('min_confidence', 0.3)  # Use default value of 0.3 if not specified
+        min_confidence = self.config.get('min_confidence', 0.5)  # Use default value of 0.5 if not specified
 
         # Check if signal meets trend-following criteria
         confidence = float(fused_signal.confidence.value)
@@ -723,7 +723,7 @@ class MeanReversionStrategy(BaseStrategyAdapter):
             return False
 
         # Get strategy-specific configuration
-        min_confidence = self.config.get('min_confidence', 0.3)  # Use default value of 0.3 if not specified
+        min_confidence = self.config.get('min_confidence', 0.5)  # Use default value of 0.5 if not specified
 
         # Check if signal meets mean reversion criteria
         confidence = float(fused_signal.confidence.value)
@@ -811,7 +811,7 @@ class VolatilityBreakoutStrategy(BaseStrategyAdapter):
             return False
 
         # Get strategy-specific configuration
-        min_confidence = self.config.get('min_confidence', 0.3)  # Use default value of 0.3 if not specified
+        min_confidence = self.config.get('min_confidence', 0.5)  # Use default value of 0.5 if not specified
 
         # Check if signal meets volatility breakout criteria
         confidence = float(fused_signal.confidence.value)

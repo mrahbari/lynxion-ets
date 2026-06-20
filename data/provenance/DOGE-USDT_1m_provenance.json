@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "DOGEUSDT",
   "timeframe": "1m",
-  "checksum": "7d073682b4cd8d31d2b8a761b7d8ff2cd02258724e3cac99ed6f5e4fa855c7d6",
-  "download_timestamp": "2026-06-13T10:05:39.784017",
-  "row_count": 3606,
+  "checksum": "feb43b2ced8b7a38f629e088ae57afac53571abba17e11fe2d453968a0a4e9fd",
+  "download_timestamp": "2026-06-20T15:05:13.080309",
+  "row_count": 1358,
   "date_range": {
-    "start": "1749802200",
-    "end": "1781294760"
+    "start": "1779309120",
+    "end": "1781960700"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "3b0660b40781ad422305ade2176eb7766df8b9aa",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/DOGE-USDT.csv"
 }

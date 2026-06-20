@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "AAVEUSDT",
   "timeframe": "1m",
-  "checksum": "687c93b74362e9132daf3c70a7c8c9f424ea0b1e82cee4a1d562fa4d1ff6d3cb",
-  "download_timestamp": "2026-06-12T18:37:51.632723",
-  "row_count": 1063,
+  "checksum": "be02cc1e5929cc88bad659fbf276f0b19522545462ed60f545889251fa047bcf",
+  "download_timestamp": "2026-06-15T21:49:53.892992",
+  "row_count": 134,
   "date_range": {
-    "start": "1778686500",
-    "end": "1778750220"
+    "start": "1781544360",
+    "end": "1781552940"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/AAVE-USDT.csv"
 }

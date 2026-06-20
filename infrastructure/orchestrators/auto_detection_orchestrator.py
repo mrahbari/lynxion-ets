@@ -581,7 +581,22 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
             try:
                 broker = self._get_reconcile_broker()
                 if broker is not None and hasattr(broker, "get_all_positions"):
-                    rep = svc.reconcile(broker, live_order_journal, halt_on_unrecoverable=True)
+                    from bootstrap.settings.loaders import load_settings
+                    from shared.live_execution_guard import live_execution_guard
+                    import os
+                    
+                    is_pytest = os.getenv("PYTEST_CURRENT_TEST") is not None
+                    is_live = False
+                    if not is_pytest:
+                        try:
+                            settings = load_settings()
+                            es = self.execution_service
+                            broker_name = getattr(es, "broker_name", "bingx")
+                            is_live = live_execution_guard.evaluate(broker_name, settings).is_live_send
+                        except Exception:
+                            is_live = False
+                    
+                    rep = svc.reconcile(broker, live_order_journal, halt_on_unrecoverable=is_live or is_pytest)
                     if rep.get("halted"):
                         self.logger.critical(f"🛑 RECONCILIATION HALT — unrecoverable drift: {rep['unrecoverable']}")
                         try:

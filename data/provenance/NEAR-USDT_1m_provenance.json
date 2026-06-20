@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "NEARUSDT",
   "timeframe": "1m",
-  "checksum": "94df412118654099b3869456a921eb57a48024e807ebd280bf6c43aba41fda61",
-  "download_timestamp": "2026-06-12T18:40:39.388985",
-  "row_count": 1140,
+  "checksum": "df6a4759f13fc59d8959ffc6ec6371ee0ccbb69f6780b204f69f9e3539f7c868",
+  "download_timestamp": "2026-06-15T21:49:50.092936",
+  "row_count": 134,
   "date_range": {
-    "start": "1778686320",
-    "end": "1781276640"
+    "start": "1781544360",
+    "end": "1781552940"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/NEAR-USDT.csv"
 }

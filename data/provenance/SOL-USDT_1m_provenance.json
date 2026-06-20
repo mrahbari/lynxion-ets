@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "SOLUSDT",
   "timeframe": "1m",
-  "checksum": "8f8101b5d9776f9ec440b3dc31df81f594754e5dcc5642e2fe8532b3352fc37b",
-  "download_timestamp": "2026-06-13T08:48:43.268697",
-  "row_count": 1307,
+  "checksum": "2641a4379974bf4e9066a8ce5f8afa963934346b2b8edd40faf07a941d8ba6cb",
+  "download_timestamp": "2026-06-20T15:04:41.969598",
+  "row_count": 1358,
   "date_range": {
-    "start": "1778686440",
-    "end": "1781333280"
+    "start": "1779309120",
+    "end": "1781960640"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "c9b36563dc76023ad100b868b3dbaf724edd68cc",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/SOL-USDT.csv"
 }

@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "ETCUSDT",
   "timeframe": "1m",
-  "checksum": "c8d1df683611cced1c98a10b2606f34fda9e3532337a4a123b575b5b5341e6a2",
-  "download_timestamp": "2026-06-12T18:33:25.108752",
-  "row_count": 1059,
+  "checksum": "ae1528f362f9881843f02f6e56c43a5280f7c56dead126348e5a40285d3eddf5",
+  "download_timestamp": "2026-06-20T15:05:14.204813",
+  "row_count": 394,
   "date_range": {
-    "start": "1778686500",
-    "end": "1778749980"
+    "start": "1781544360",
+    "end": "1781960700"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/ETC-USDT.csv"
 }

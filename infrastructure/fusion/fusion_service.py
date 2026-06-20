@@ -336,10 +336,15 @@ class FusionService:
             # Convert interpreted signals back to observation format for hierarchical processing
             observations_with_watchers = []
             for signal in interpreted_signals:
+                # Retrieve the original observation type from metadata if available to pass classification
+                obs_type = signal.metadata.get('observation_type') if signal.metadata else None
+                if not obs_type:
+                    obs_type = f"{signal.signal_type.value.lower()}_signal"
+
                 # Create a mock observation from the interpreted signal for hierarchical processing
                 mock_observation = MarketObservation(
                     symbol=signal.symbol,
-                    observation_type=f"{signal.signal_type.value.lower()}_signal",
+                    observation_type=obs_type,
                     observation_value=signal.direction,
                     confidence=signal.confidence,
                     timestamp=signal.timestamp,

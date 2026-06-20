@@ -316,7 +316,7 @@ class BrokerExecutionService(ExecutionPort):
                 # NOTE: the multi-broker path enforces LIVE_EXECUTION_GUARD internally
                 # (it knows the routed exchange), so it is not re-evaluated here.
                 if self.use_multi_broker:
-                    order_id = self.broker.execute_order(order)
+                    return self.broker.execute_order(order)
                 else:
                     # === LIVE_EXECUTION_GUARD — single, race-free execution-safety enforcement point (Phase-9) ===
                     # Single-broker send path (concrete broker = self.broker_type). Atomically
@@ -442,7 +442,7 @@ class BrokerExecutionService(ExecutionPort):
         risk_service = AdvancedRiskManagementService()
 
         # Try to get fused signal information from the order, otherwise create a default one
-        from domain.entities import FusedSignal, SignalBias
+        from domain.entities import FusedSignal, SignalType
         from domain.value_objects import Percentage
 
         # Check if order has parent signal information
@@ -451,7 +451,7 @@ class BrokerExecutionService(ExecutionPort):
             parent_signal = order.parent_signal
             direction = getattr(parent_signal, 'direction', 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1)
             confidence = getattr(parent_signal, 'confidence', Percentage(0.6))
-            dominant_bias = getattr(parent_signal, 'dominant_bias', SignalBias.BULLISH if hasattr(order, 'side') and order.side.name == 'BUY' else SignalBias.BEARISH)
+            dominant_bias = getattr(parent_signal, 'dominant_bias', SignalType.BUY if hasattr(order, 'side') and order.side.name == 'BUY' else SignalType.SELL)
             regime_context = getattr(parent_signal, 'regime_context', "normal")
             dominance_score = getattr(parent_signal, 'dominance_score', 0.5)
         elif hasattr(order, 'fused_signal') and order.fused_signal:
@@ -459,7 +459,7 @@ class BrokerExecutionService(ExecutionPort):
             fused_signal_attr = order.fused_signal
             direction = getattr(fused_signal_attr, 'direction', 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1)
             confidence = getattr(fused_signal_attr, 'confidence', Percentage(0.6))
-            dominant_bias = getattr(fused_signal_attr, 'dominant_bias', SignalBias.BULLISH if hasattr(order, 'side') and order.side.name == 'BUY' else SignalBias.BEARISH)
+            dominant_bias = getattr(fused_signal_attr, 'dominant_bias', SignalType.BUY if hasattr(order, 'side') and order.side.name == 'BUY' else SignalType.SELL)
             regime_context = getattr(fused_signal_attr, 'regime_context', "normal")
             dominance_score = getattr(fused_signal_attr, 'dominance_score', 0.5)
         elif hasattr(order, 'metadata') and order.metadata:
@@ -468,15 +468,15 @@ class BrokerExecutionService(ExecutionPort):
             direction = metadata.get('signal_direction', 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1)
             confidence_val = metadata.get('signal_confidence', 0.6)
             confidence = Percentage(confidence_val)
-            dominant_bias_str = metadata.get('dominant_bias', 'BULLISH' if hasattr(order, 'side') and order.side.name == 'BUY' else 'BEARISH')
-            dominant_bias = SignalBias.BULLISH if 'BULLISH' in dominant_bias_str.upper() else SignalBias.BEARISH
+            dominant_bias_str = metadata.get('dominant_bias', 'BUY' if hasattr(order, 'side') and order.side.name == 'BUY' else 'SELL')
+            dominant_bias = SignalType.BUY if 'BUY' in dominant_bias_str.upper() or 'BULLISH' in dominant_bias_str.upper() else SignalType.SELL
             regime_context = metadata.get('regime_context', "normal")
             dominance_score = metadata.get('dominance_score', 0.5)
         else:
             # Create default values based on order information
             direction = 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1
             confidence = Percentage(0.6)  # Default confidence
-            dominant_bias = SignalBias.BULLISH if hasattr(order, 'side') and order.side.name == 'BUY' else SignalBias.BEARISH
+            dominant_bias = SignalType.BUY if hasattr(order, 'side') and order.side.name == 'BUY' else SignalType.SELL
             regime_context = "normal"
             dominance_score = 0.5
 

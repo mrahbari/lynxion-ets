@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "XMRUSDT",
   "timeframe": "1m",
-  "checksum": "d33673e0dd8ee26c6b5d40b348cddf0bee557b817da62adfc3b48d3113165094",
-  "download_timestamp": "2026-06-12T22:06:29.813146",
-  "row_count": 691,
+  "checksum": "3513cb47acc92787b03667b64783267169eb147776100a2d226e2a05594452ea",
+  "download_timestamp": "2026-06-20T15:04:44.636468",
+  "row_count": 47,
   "date_range": {
-    "start": "1778686500",
-    "end": "1781294760"
+    "start": "1781957880",
+    "end": "1781960640"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/XMR-USDT.csv"
 }

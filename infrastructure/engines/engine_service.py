@@ -41,7 +41,7 @@ class EngineService:
                 confidence=observation.confidence,
                 timestamp=observation.timestamp,
                 source_watcher=observation.metadata.get('watcher_name') if observation.metadata else None,
-                metadata=observation.metadata or {}
+                metadata={**(observation.metadata or {}), 'observation_type': observation.observation_type}
             )
 
             if self.logger:
@@ -134,10 +134,9 @@ class EngineService:
         if 'single_candle' in observation.observation_type.lower():
             return 0.0
 
-        # For other observation types, normalize to [-1, 1] range
-        # This is a simple approach - in a real system, this would be more sophisticated
-        # based on the specific observation type and its meaning
         normalized_value = max(-1.0, min(1.0, float(obs_value)))
+        if 'anomaly' in observation.observation_type.lower():
+            return -normalized_value
         return normalized_value
 
     def _calculate_strength(self, observation: MarketObservation) -> float:

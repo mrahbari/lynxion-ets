@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "FETUSDT",
   "timeframe": "1m",
-  "checksum": "0c49a26ab300ecbe9d94f932fd99d97a3ce0faaa42f0817df905f48d880abde7",
-  "download_timestamp": "2026-06-12T22:06:22.225099",
-  "row_count": 1192,
+  "checksum": "508fa73b1d229c9b89a126e195030ecdc9cee9856b5184f704423422e38a4ca5",
+  "download_timestamp": "2026-06-20T15:04:48.306856",
+  "row_count": 9218,
   "date_range": {
-    "start": "1778686380",
-    "end": "1781294760"
+    "start": "1766620800",
+    "end": "1781960640"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/FET-USDT.csv"
 }

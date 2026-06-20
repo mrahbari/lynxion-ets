@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "WLDUSDT",
   "timeframe": "1m",
-  "checksum": "7f9523068500748a5cc849e07933a27779d5aca30f70223d1ab55afcb7d66f5d",
-  "download_timestamp": "2026-06-12T22:06:31.727168",
-  "row_count": 1118,
+  "checksum": "3d873d3cccebefbc74cf7f2e93c978ac0d0df9bf3d40a901018a6c0b0172130f",
+  "download_timestamp": "2026-06-20T15:05:08.047542",
+  "row_count": 7655,
   "date_range": {
-    "start": "1778686140",
-    "end": "1781294760"
+    "start": "1766007660",
+    "end": "1781960700"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/WLD-USDT.csv"
 }

@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "IOTAUSDT",
   "timeframe": "1m",
-  "checksum": "736c53922d88327de878d5ebf3dc50d72b8eb97e065475ec44af1a6ed7c2be4b",
-  "download_timestamp": "2026-06-12T18:38:31.847207",
-  "row_count": 1130,
+  "checksum": "5f16a90ef8a1ea59198989ebcd45dd08f00df7193326316ba405cf8b0d5a1962",
+  "download_timestamp": "2026-06-15T21:49:57.984001",
+  "row_count": 3192,
   "date_range": {
-    "start": "1778686800",
-    "end": "1781276700"
+    "start": "1766673600",
+    "end": "1781552940"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/IOTA-USDT.csv"
 }

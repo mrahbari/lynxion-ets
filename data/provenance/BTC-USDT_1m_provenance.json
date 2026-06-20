@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "BTCUSDT",
   "timeframe": "1m",
-  "checksum": "a17f81afdf5706cbcc44bc6371ad269adf1477e55f3d9f59ca246ff7ae745abe",
-  "download_timestamp": "2026-06-15T13:39:50.329773",
-  "row_count": 2827,
+  "checksum": "70bb65a876f0b7a446a46c51d3fb5bef3f63323bfe32523de075ce4f4e10c14c",
+  "download_timestamp": "2026-06-20T15:05:15.287921",
+  "row_count": 1359,
   "date_range": {
-    "start": "1778686080",
-    "end": "1781523540"
+    "start": "1779309120",
+    "end": "1781960700"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "a4687e30354bc67e9b7302ec4629abef9c7a0cc5",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/BTC-USDT.csv"
 }

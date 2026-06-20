@@ -821,7 +821,7 @@ class StrategyManager:
             'name': strategy_name,
             'enabled': StrategyConfig.get_strategy_enabled(strategy_name),
             'max_position_size': StrategyConfig.get_strategy_max_position_size(strategy_name, 0.05),
-            'min_confidence': StrategyConfig.get_strategy_min_confidence(strategy_name, 0.3),
+            'min_confidence': StrategyConfig.get_strategy_min_confidence(strategy_name, 0.5),
             'max_confidence': StrategyConfig.get_strategy_max_confidence(strategy_name, 0.95),
             'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade(strategy_name, 0.02),
             'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier(strategy_name, 1.5),

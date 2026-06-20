@@ -90,9 +90,8 @@
     ]
   ],
   "result": {
-    "error": "'SyncLogger' object has no attribute 'error'",
-    "message": "Error syncing data for BTCUSDT: 'SyncLogger' object has no attribute 'error'",
-    "rows_written": 0,
-    "success": false
+    "message": "Successfully synchronized 10 rows for BTCUSDT",
+    "rows_written": 10,
+    "success": true
   }
 }

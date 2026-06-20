@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "QNTUSDT",
   "timeframe": "1m",
-  "checksum": "f1fe7795b3dfcf14248c7e25f7f7a1b43953720321eab6553b6b282e27401127",
-  "download_timestamp": "2026-06-12T18:27:01.726941",
-  "row_count": 1060,
+  "checksum": "bb67be2c1b51cf70ab0bc29a742bc075de7024faf124a05cc65d073e41d42e6b",
+  "download_timestamp": "2026-06-15T21:50:06.732053",
+  "row_count": 8800,
   "date_range": {
-    "start": "1778686080",
-    "end": "1778749620"
+    "start": "1766007420",
+    "end": "1781553000"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/QNT-USDT.csv"
 }

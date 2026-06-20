@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "ALGOUSDT",
   "timeframe": "1m",
-  "checksum": "570fdd753fd633b8e7c78b49a51c474ee26730f29762872f81e9ba8b89ca5481",
-  "download_timestamp": "2026-06-12T18:30:32.193292",
-  "row_count": 1059,
+  "checksum": "f3620a21f4c67d67820f64e079d7d8acd21a66fdc3fc2ea44449eb8bacf8ba1b",
+  "download_timestamp": "2026-06-20T15:05:49.365820",
+  "row_count": 670,
   "date_range": {
-    "start": "1778686320",
-    "end": "1778749800"
+    "start": "1779309120",
+    "end": "1781960700"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/ALGO-USDT.csv"
 }

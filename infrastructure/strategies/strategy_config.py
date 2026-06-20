@@ -33,7 +33,7 @@ class StrategyConfig:
         return default
 
     @staticmethod
-    def get_strategy_min_confidence(strategy_name: str = None, default: float = 0.3) -> float:
+    def get_strategy_min_confidence(strategy_name: str = None, default: float = 0.5) -> float:
         """Get minimum confidence threshold for a strategy"""
         if load_settings().strategy:
             try:
@@ -215,7 +215,7 @@ def get_trend_following_config() -> dict:
     return {
         'enabled': True,  # Use static value since we don't have dynamic strategy configs
         'max_position_size': StrategyConfig.get_strategy_max_position_size('TREND_FOLLOWING', 0.05),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('TREND_FOLLOWING', 0.3),
+        'min_confidence': StrategyConfig.get_strategy_min_confidence('TREND_FOLLOWING', 0.5),
         'max_confidence': StrategyConfig.get_strategy_max_confidence('TREND_FOLLOWING', 0.95),
         'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('TREND_FOLLOWING', 0.02),
         'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('TREND_FOLLOWING', 1.5),
@@ -236,7 +236,7 @@ def get_mean_reversion_config() -> dict:
     return {
         'enabled': True,  # Use static value since we don't have dynamic strategy configs
         'max_position_size': StrategyConfig.get_strategy_max_position_size('MEAN_REVERSION', 0.04),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('MEAN_REVERSION', 0.35),
+        'min_confidence': StrategyConfig.get_strategy_min_confidence('MEAN_REVERSION', 0.5),
         'max_confidence': StrategyConfig.get_strategy_max_confidence('MEAN_REVERSION', 0.90),
         'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('MEAN_REVERSION', 0.02),
         'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('MEAN_REVERSION', 1.2),
@@ -258,7 +258,7 @@ def get_volatility_breakout_config() -> dict:
     return {
         'enabled': True,  # Use static value since we don't have dynamic strategy configs
         'max_position_size': StrategyConfig.get_strategy_max_position_size('VOLATILITY_BREAKOUT', 0.03),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('VOLATILITY_BREAKOUT', 0.4),
+        'min_confidence': StrategyConfig.get_strategy_min_confidence('VOLATILITY_BREAKOUT', 0.5),
         'max_confidence': StrategyConfig.get_strategy_max_confidence('VOLATILITY_BREAKOUT', 0.95),
         'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('VOLATILITY_BREAKOUT', 0.015),
         'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('VOLATILITY_BREAKOUT', 1.0),
@@ -278,7 +278,7 @@ def get_momentum_config() -> dict:
     return {
         'enabled': StrategyConfig.get_strategy_enabled('MOMENTUM'),
         'max_position_size': StrategyConfig.get_strategy_max_position_size('MOMENTUM', 0.04),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('MOMENTUM', 0.3),
+        'min_confidence': StrategyConfig.get_strategy_min_confidence('MOMENTUM', 0.5),
         'max_confidence': StrategyConfig.get_strategy_max_confidence('MOMENTUM', 0.90),
         'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('MOMENTUM', 0.018),
         'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('MOMENTUM', 1.3),
@@ -319,7 +319,7 @@ def get_breakout_config() -> dict:
     return {
         'enabled': StrategyConfig.get_strategy_enabled('BREAKOUT'),
         'max_position_size': StrategyConfig.get_strategy_max_position_size('BREAKOUT', 0.05),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('BREAKOUT', 0.35),
+        'min_confidence': StrategyConfig.get_strategy_min_confidence('BREAKOUT', 0.5),
         'max_confidence': StrategyConfig.get_strategy_max_confidence('BREAKOUT', 0.95),
         'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('BREAKOUT', 0.02),
         'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('BREAKOUT', 1.4),
@@ -338,7 +338,7 @@ def get_liquidity_config() -> dict:
     return {
         'enabled': StrategyConfig.get_strategy_enabled('LIQUIDITY'),
         'max_position_size': StrategyConfig.get_strategy_max_position_size('LIQUIDITY', 0.03),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('LIQUIDITY', 0.4),
+        'min_confidence': StrategyConfig.get_strategy_min_confidence('LIQUIDITY', 0.5),
         'max_confidence': StrategyConfig.get_strategy_max_confidence('LIQUIDITY', 0.90),
         'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('LIQUIDITY', 0.015),
         'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('LIQUIDITY', 1.1),
@@ -357,7 +357,7 @@ def get_mtf_trend_config() -> dict:
     return {
         'enabled': StrategyConfig.get_strategy_enabled('MTF_TREND'),
         'max_position_size': StrategyConfig.get_strategy_max_position_size('MTF_TREND', 0.06),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('MTF_TREND', 0.45),
+        'min_confidence': StrategyConfig.get_strategy_min_confidence('MTF_TREND', 0.5),
         'max_confidence': StrategyConfig.get_strategy_max_confidence('MTF_TREND', 0.95),
         'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('MTF_TREND', 0.025),
         'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('MTF_TREND', 1.6),
@@ -416,7 +416,7 @@ def get_vwap_reversal_config() -> dict:
     return {
         'enabled': StrategyConfig.get_strategy_enabled('VWAP_REVERSAL'),
         'max_position_size': StrategyConfig.get_strategy_max_position_size('VWAP_REVERSAL', 0.03),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('VWAP_REVERSAL', 0.4),
+        'min_confidence': StrategyConfig.get_strategy_min_confidence('VWAP_REVERSAL', 0.5),
         'max_confidence': StrategyConfig.get_strategy_max_confidence('VWAP_REVERSAL', 0.90),
         'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('VWAP_REVERSAL', 0.018),
         'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('VWAP_REVERSAL', 1.0),

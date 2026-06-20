@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "CCUSDT",
   "timeframe": "1m",
-  "checksum": "2f5f9683efecd6103df7760d7deb449488c1d70632372c9e5ea9d5dc49c6f3b0",
-  "download_timestamp": "2026-06-12T22:05:01.927710",
-  "row_count": 678,
+  "checksum": "71c1c26ab48841f95545a9e4f492c67ca8d6e8e24e72e07574a2447fa8dfa7c0",
+  "download_timestamp": "2026-06-20T15:05:50.267353",
+  "row_count": 38,
   "date_range": {
-    "start": "1778686440",
-    "end": "1781294640"
+    "start": "1781958480",
+    "end": "1781960700"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "950674f3588ac00f3161aec0a1b3c3f135ef0f59",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/CC-USDT.csv"
 }

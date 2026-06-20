@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "PAXGUSDT",
   "timeframe": "1m",
-  "checksum": "b9f4a71c1211bfc4e54bf98ae54d22d5024ce85b58df19dd735bef05031e134e",
-  "download_timestamp": "2026-06-12T22:00:16.881146",
-  "row_count": 1186,
+  "checksum": "d04e7139ae5e948b202280144d9ebff4d529a9f6a5e98ca760fd6924a571ac15",
+  "download_timestamp": "2026-06-20T15:04:43.725567",
+  "row_count": 10445,
   "date_range": {
-    "start": "1778686140",
-    "end": "1781294400"
+    "start": "1766620920",
+    "end": "1781960640"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "950674f3588ac00f3161aec0a1b3c3f135ef0f59",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/PAXG-USDT.csv"
 }

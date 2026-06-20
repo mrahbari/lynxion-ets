@@ -20,7 +20,7 @@ class StrategyConfig(BaseModel):
     max_position_size: float = Field(default=0.05, description="Maximum position size")
     min_volume_filter: float = Field(default=10000.0, description="Minimum volume filter")
     signal_cooldown_minutes: int = Field(default=30, description="Signal cooldown in minutes")
-    min_confidence_threshold: float = Field(default=0.3, description="Minimum confidence threshold")
+    min_confidence_threshold: float = Field(default=0.5, description="Minimum confidence threshold")
     high_confidence_threshold: float = Field(default=0.7, description="High confidence threshold")
     neutral_buffer: float = Field(default=0.03, description="Neutral buffer")
     strong_directional_bias_threshold: float = Field(default=0.3, description="Strong directional bias threshold")

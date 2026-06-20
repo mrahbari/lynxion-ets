@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "AVAXUSDT",
   "timeframe": "1m",
-  "checksum": "cd3fea7aaca82783cfec82edacfc50f98188eecf56a536bc15b99831b2747b3e",
-  "download_timestamp": "2026-06-13T10:05:48.881192",
-  "row_count": 3607,
+  "checksum": "5036ef0cf1d87baf1c9f938708fe9d80c12de541472c96c25f3f26304ee9ead6",
+  "download_timestamp": "2026-06-20T15:05:12.057147",
+  "row_count": 1358,
   "date_range": {
-    "start": "1749802200",
-    "end": "1781294760"
+    "start": "1779309120",
+    "end": "1781960700"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "3b0660b40781ad422305ade2176eb7766df8b9aa",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/AVAX-USDT.csv"
 }

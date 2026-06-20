@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "XLMUSDT",
   "timeframe": "1m",
-  "checksum": "3fdc44d8bce24e4f3c22fa1c6a2be2dc48aab4d6cd42fd0fbbae98b0a4096d9c",
-  "download_timestamp": "2026-06-12T22:06:21.434111",
-  "row_count": 1190,
+  "checksum": "f3bdfad5832e84001ff484579d7df4069e33b54bfdaa7be4e7739e166fa4f7df",
+  "download_timestamp": "2026-06-20T15:04:39.886391",
+  "row_count": 33,
   "date_range": {
-    "start": "1778686440",
-    "end": "1781294760"
+    "start": "1781958720",
+    "end": "1781960640"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/XLM-USDT.csv"
 }

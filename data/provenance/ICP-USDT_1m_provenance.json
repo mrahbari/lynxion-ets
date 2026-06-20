@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "ICPUSDT",
   "timeframe": "1m",
-  "checksum": "ffbc08fe067fe4c59ca46717a904688e3682ba7b706c2c1f058dfb7c79b4d76a",
-  "download_timestamp": "2026-06-12T18:43:17.092474",
-  "row_count": 1072,
+  "checksum": "7244463833120af3cf158ce9d950e855aabe3c31f4c394844419233ca6698368",
+  "download_timestamp": "2026-06-15T21:50:04.912393",
+  "row_count": 8392,
   "date_range": {
-    "start": "1778686320",
-    "end": "1778750580"
+    "start": "1766007480",
+    "end": "1781553000"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "bee23c9c6a5080403d7dd32aa84109b2904afe66",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/ICP-USDT.csv"
 }

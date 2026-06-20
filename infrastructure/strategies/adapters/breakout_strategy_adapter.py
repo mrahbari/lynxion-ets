@@ -380,7 +380,7 @@ class BreakoutStrategyAdapter(BaseStrategyAdapter):
 
         # Use the fused signal to determine if we should execute
         # Check signal confidence against strategy threshold
-        min_confidence = self.config.get('min_confidence', 0.3)
+        min_confidence = self.config.get('min_confidence', 0.5)
         confidence = float(fused_signal.confidence.value)
 
         if confidence < min_confidence:

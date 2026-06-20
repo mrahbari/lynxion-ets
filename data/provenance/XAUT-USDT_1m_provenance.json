@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "XAUTUSDT",
   "timeframe": "1m",
-  "checksum": "61b0dd696dd598a3cd37209165da82629946b40761be928731effe601c22e84e",
-  "download_timestamp": "2026-06-12T22:05:05.390342",
-  "row_count": 1190,
+  "checksum": "4c7f7512cbf3dd23474e845a787dd2a73475931e3815ed761d3c82b7a72f0e07",
+  "download_timestamp": "2026-06-20T15:04:47.251289",
+  "row_count": 10924,
   "date_range": {
-    "start": "1778686380",
-    "end": "1781294700"
+    "start": "1766350200",
+    "end": "1781960640"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "950674f3588ac00f3161aec0a1b3c3f135ef0f59",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/XAUT-USDT.csv"
 }

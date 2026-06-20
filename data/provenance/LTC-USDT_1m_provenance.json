@@ -2,12 +2,12 @@
   "source": "CSV",
   "symbol": "LTCUSDT",
   "timeframe": "1m",
-  "checksum": "3f4776b87cd830ff71fb3dae8a0ce895d4c61d16daaaeda59f67bff4f3fff9f4",
-  "download_timestamp": "2026-06-12T22:06:23.025911",
-  "row_count": 1192,
+  "checksum": "17c5ffdbfab60eb6ab9cb254a652a57dbc738498257821ff82f818e55d0e57bc",
+  "download_timestamp": "2026-06-15T21:50:07.307801",
+  "row_count": 1100,
   "date_range": {
-    "start": "1778686260",
-    "end": "1781294760"
+    "start": "1779309120",
+    "end": "1781553000"
   },
   "columns": [
     "timestamp",
@@ -17,6 +17,6 @@
     "close",
     "volume"
   ],
-  "git_commit": "7385096d0272004bc888e4c1c0e1b4adbc49c005",
+  "git_commit": "26782252b780cbeb2f9e51411897dfdad0a7445d",
   "file_path": "data/history/raw/1m/LTC-USDT.csv"
 }
