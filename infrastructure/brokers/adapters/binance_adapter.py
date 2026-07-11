@@ -83,8 +83,8 @@ class BinanceBrokerAdapter(BrokerPort):
             return None
 
         try:
-            # Convert our Order type to Binance format
-            binance_side = "BUY" if order.side == OrderSide.BUY else "SELL"
+            side_str = order.side.value if hasattr(order.side, 'value') else str(order.side)
+            binance_side = "BUY" if side_str.upper() == "BUY" else "SELL"
 
             response = self.client.place_order(
                 symbol=order.symbol.value,
@@ -186,11 +186,13 @@ class BinanceBrokerAdapter(BrokerPort):
         logging.warning("Binance spot trading doesn't have positions. Only futures positions are available.")
         return []
 
-    def get_position(self, symbol: Symbol) -> Optional[Position]:
+    def get_position(self, symbol) -> Optional[Position]:
         """Get specific position"""
+        from domain.value_objects import Symbol as DomainSymbol
+        symbol_obj = symbol if hasattr(symbol, 'value') else DomainSymbol(str(symbol))
         positions = self.get_positions()
         for pos in positions:
-            if pos.symbol == symbol:
+            if pos.symbol == symbol_obj:
                 return pos
         return None
 

@@ -853,7 +853,7 @@ Structured progression from shadow to full deployment:
 
 ```bash
 # Download historical data for all configured symbols (downloads only 1m as base)
-python runner_history_download.py --start 365d --end today --timeframes 1m
+python runner_history_download.py --start 30d --end today --timeframes 1m
 
 # Download historical data for a specific symbol (downloads only 1m as base)
 python runner_history_download.py --start 90d --end today --symbols MATICUSDT --timeframes 1m

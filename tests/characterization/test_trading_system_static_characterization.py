@@ -103,10 +103,11 @@ def test_four_background_services_are_registered():
             if isinstance(arg, ast.Tuple) and arg.elts and isinstance(arg.elts[0], ast.Constant):
                 append_labels.append(arg.elts[0].value)
 
-    assert len(append_labels) == 4
+    assert len(append_labels) == 5
     assert set(append_labels) == {
-        "auto_retune", "risk_monitoring", "performance_monitoring", "dashboard",
+        "auto_retune", "risk_monitoring", "performance_monitoring", "broker_reconciliation", "dashboard",
     }
+
 
 
 @pytest.mark.unit

@@ -109,8 +109,18 @@ def test_container_firewall_matches_direct():
 
     data = {"confidence": 0.97}
     hist = []
-    assert fw.apply_firewall_controls("WATCHER", data, hist) == \
-        RandomnessExposureFirewall().apply_firewall_controls("WATCHER", data, hist)
+    res1, alerts1 = fw.apply_firewall_controls("WATCHER", data, hist)
+    res2, alerts2 = RandomnessExposureFirewall().apply_firewall_controls("WATCHER", data, hist)
+    assert res1 == res2
+    assert len(alerts1) == len(alerts2)
+    for a1, a2 in zip(alerts1, alerts2):
+        assert a1.component == a2.component
+        assert a1.risk_type == a2.risk_type
+        assert a1.severity == a2.severity
+        assert a1.metric_value == a2.metric_value
+        assert a1.threshold == a2.threshold
+        assert a1.mitigation_action == a2.mitigation_action
+
 
 
 # --- Container resolvability + port conformance for all five services ---------

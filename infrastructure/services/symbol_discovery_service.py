@@ -18,6 +18,19 @@ class SymbolDiscoveryService:
         self._settings = settings
         self.logger = logger or EnhancedLogger("SymbolDiscoveryService")
     
+    def _get_exchange(self):
+        """Resolve the default exchange object to fetch tickers/data from."""
+        try:
+            broker_name = self._settings.broker.default_broker.lower() if self._settings.broker and hasattr(self._settings.broker, 'default_broker') else 'binance'
+            ccxt_name = broker_name
+            
+            if hasattr(ccxt, ccxt_name):
+                self.logger.info(f"Using dynamic exchange CCXT.{ccxt_name} for symbol discovery")
+                return getattr(ccxt, ccxt_name)({'enableRateLimit': True})
+        except Exception as e:
+            self.logger.warning(f"Error resolving dynamic exchange, falling back to CCXT.binance: {e}")
+        return ccxt.binance({'enableRateLimit': True})
+
     def discover_symbols_automatically(self) -> List[Symbol]:
         """Dynamically discover symbols to monitor based on market conditions or other criteria."""
         self.logger.info("🔍 Discovering symbols to monitor automatically...")
@@ -207,224 +220,198 @@ class SymbolDiscoveryService:
     def discover_trend_oriented_symbols(self) -> List[Symbol]:
         """Discover symbols with strong trend characteristics for trend watchers"""
         try:
-            # This would connect to exchange APIs to get trending symbols
-            # For now, we'll simulate by finding symbols with strong directional moves
-            exchange = ccxt.binance()
+            exchange = self._get_exchange()
             tickers = exchange.fetch_tickers()
 
-            # Find symbols with strong trending characteristics (significant price changes)
+            from .symbol_validator import symbol_validator
             trending_symbols = []
             for symbol, ticker in tickers.items():
-                if symbol.endswith('/USDT') and 'change' in ticker and ticker['change']:
-                    # Look for symbols with strong directional movement (indicative of trending)
-                    change_abs = abs(ticker['change'])
-                    if change_abs > 3.0 and ticker['quoteVolume'] and ticker[
-                        'quoteVolume'] > 1000000:  # 3%+ change and high volume
-                        formatted_symbol = symbol.replace('/', '')
-                        try:
-                            valid_symbol = Symbol(formatted_symbol)
-                            trending_symbols.append(valid_symbol)
-                        except ValueError:
-                            continue  # Skip invalid symbols
-                        if len(trending_symbols) >= 10:  # Limit to top 10 trending symbols
-                            break
+                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                try:
+                    valid_symbol = Symbol(formatted_symbol)
+                    if symbol_validator.is_symbol_approved(valid_symbol):
+                        if 'change' in ticker and ticker['change'] is not None:
+                            change_abs = abs(ticker['change'])
+                            if change_abs > 3.0 and ticker.get('quoteVolume') and ticker['quoteVolume'] > 1000000:
+                                trending_symbols.append(valid_symbol)
+                                if len(trending_symbols) >= 10:
+                                    break
+                except ValueError:
+                    continue
 
             return trending_symbols
         except Exception as e:
             self.logger.warning(f"Error in trend-oriented symbol discovery: {e}")
-            return []  # Fall back to general discovery
+            return []
 
     def discover_volatility_oriented_symbols(self) -> List[Symbol]:
         """Discover symbols with volatility opportunities for volatility watchers"""
         try:
-            exchange = ccxt.binance()
+            exchange = self._get_exchange()
             tickers = exchange.fetch_tickers()
 
-            # Find symbols with high volatility (large differences between high/low)
+            from .symbol_validator import symbol_validator
             volatile_symbols = []
             for symbol, ticker in tickers.items():
-                if (symbol.endswith('/USDT') and
-                        'high' in ticker and ticker['high'] is not None and
-                        'low' in ticker and ticker['low'] is not None and
-                        'open' in ticker and ticker['open'] is not None and
-                        'quoteVolume' in ticker and ticker['quoteVolume'] is not None):
-
-                    if ticker['open'] != 0:
-                        volatility = abs((ticker['high'] - ticker['low']) / ticker['open']) * 100
-                        # Look for symbols with high volatility but also good volume
-                        if volatility > 5.0 and ticker['quoteVolume'] > 500000:
-                            formatted_symbol = symbol.replace('/', '')
-                            try:
-                                valid_symbol = Symbol(formatted_symbol)
-                                volatile_symbols.append(valid_symbol)
-                            except ValueError:
-                                continue  # Skip invalid symbols
-                            if len(volatile_symbols) >= 10:  # Limit to top 10 volatile symbols
-                                break
+                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                try:
+                    valid_symbol = Symbol(formatted_symbol)
+                    if symbol_validator.is_symbol_approved(valid_symbol):
+                        if ('high' in ticker and ticker['high'] is not None and
+                                'low' in ticker and ticker['low'] is not None and
+                                'open' in ticker and ticker['open'] is not None and
+                                'quoteVolume' in ticker and ticker['quoteVolume'] is not None):
+                            if ticker['open'] != 0:
+                                volatility = abs((ticker['high'] - ticker['low']) / ticker['open']) * 100
+                                if volatility > 5.0 and ticker['quoteVolume'] > 500000:
+                                    volatile_symbols.append(valid_symbol)
+                                    if len(volatile_symbols) >= 10:
+                                        break
+                except ValueError:
+                    continue
 
             return volatile_symbols
         except Exception as e:
             self.logger.warning(f"Error in volatility-oriented symbol discovery: {e}")
-            return []  # Fall back to general discovery
+            return []
 
     def discover_momentum_oriented_symbols(self) -> List[Symbol]:
         """Discover symbols with momentum opportunities for market pulse watchers"""
         try:
-            exchange = ccxt.binance()
+            exchange = self._get_exchange()
             tickers = exchange.fetch_tickers()
 
-            # Find symbols with strong momentum (recent significant price changes with volume)
+            from .symbol_validator import symbol_validator
             momentum_symbols = []
             for symbol, ticker in tickers.items():
-                if (symbol.endswith('/USDT') and
-                        'change' in ticker and ticker['change'] and
-                        'quoteVolume' in ticker and ticker['quoteVolume']):
-                    # Look for symbols with significant recent changes and high volume (momentum)
-                    if abs(ticker['change']) > 2.5 and ticker['quoteVolume'] > 2000000:
-                        formatted_symbol = symbol.replace('/', '')
-                        try:
-                            valid_symbol = Symbol(formatted_symbol)
-                            momentum_symbols.append(valid_symbol)
-                        except ValueError:
-                            continue  # Skip invalid symbols
-                        if len(momentum_symbols) >= 10:  # Limit to top 10 momentum symbols
-                            break
+                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                try:
+                    valid_symbol = Symbol(formatted_symbol)
+                    if symbol_validator.is_symbol_approved(valid_symbol):
+                        if ('change' in ticker and ticker['change'] is not None and
+                                'quoteVolume' in ticker and ticker['quoteVolume'] is not None):
+                            if abs(ticker['change']) > 2.5 and ticker['quoteVolume'] > 2000000:
+                                momentum_symbols.append(valid_symbol)
+                                if len(momentum_symbols) >= 10:
+                                    break
+                except ValueError:
+                    continue
 
             return momentum_symbols
         except Exception as e:
             self.logger.warning(f"Error in momentum-oriented symbol discovery: {e}")
-            return []  # Fall back to general discovery
+            return []
 
     def discover_anomaly_oriented_symbols(self) -> List[Symbol]:
         """Discover symbols with unusual patterns for anomaly watchers"""
         try:
-            exchange = ccxt.binance()
+            exchange = self._get_exchange()
             tickers = exchange.fetch_tickers()
 
-            # Find symbols with unusual characteristics (high volatility, low correlation with market, etc.)
+            from .symbol_validator import symbol_validator
             anomaly_symbols = []
             for symbol, ticker in tickers.items():
-                if (symbol.endswith('/USDT') and
-                        'change' in ticker and ticker['change'] and
-                        'high' in ticker and 'low' in ticker and 'open' in ticker and
-                        'quoteVolume' in ticker and ticker['quoteVolume']):
-
-                    # Look for symbols with unusual patterns (high volatility + significant change)
-                    change_abs = abs(ticker['change'])
-                    volatility = abs((ticker['high'] - ticker['low']) / ticker['open']) * 100 if ticker[
-                                                                                                     'open'] != 0 else 0
-
-                    # Unusual = high volatility AND significant change (potential anomaly)
-                    if change_abs > 4.0 and volatility > 6.0 and ticker['quoteVolume'] > 1000000:
-                        formatted_symbol = symbol.replace('/', '')
-                        try:
-                            valid_symbol = Symbol(formatted_symbol)
-                            anomaly_symbols.append(valid_symbol)
-                        except ValueError:
-                            continue  # Skip invalid symbols
-                        if len(anomaly_symbols) >= 10:  # Limit to top 10 anomaly symbols
-                            break
+                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                try:
+                    valid_symbol = Symbol(formatted_symbol)
+                    if symbol_validator.is_symbol_approved(valid_symbol):
+                        if ('change' in ticker and ticker['change'] is not None and
+                                'high' in ticker and ticker['high'] is not None and
+                                'low' in ticker and ticker['low'] is not None and
+                                'open' in ticker and ticker['open'] is not None and
+                                'quoteVolume' in ticker and ticker['quoteVolume'] is not None):
+                            change_abs = abs(ticker['change'])
+                            volatility = abs((ticker['high'] - ticker['low']) / ticker['open']) * 100 if ticker['open'] != 0 else 0
+                            if change_abs > 4.0 and volatility > 6.0 and ticker['quoteVolume'] > 1000000:
+                                anomaly_symbols.append(valid_symbol)
+                                if len(anomaly_symbols) >= 10:
+                                    break
+                except ValueError:
+                    continue
 
             return anomaly_symbols
         except Exception as e:
             self.logger.warning(f"Error in anomaly-oriented symbol discovery: {e}")
-            return []  # Fall back to general discovery
+            return []
 
     def discover_orderflow_oriented_symbols(self) -> List[Symbol]:
         """Discover symbols with significant order flow for order flow watchers"""
         try:
-            exchange = ccxt.binance()
+            exchange = self._get_exchange()
             tickers = exchange.fetch_tickers()
 
-            # Find symbols with high volume (indicative of significant order flow)
+            from .symbol_validator import symbol_validator
             high_volume_symbols = []
             for symbol, ticker in tickers.items():
-                if symbol.endswith('/USDT') and 'quoteVolume' in ticker and ticker['quoteVolume']:
-                    # Look for symbols with very high volume (indicative of significant order flow)
-                    if ticker['quoteVolume'] > 50000000:  # Very high volume threshold
-                        formatted_symbol = symbol.replace('/', '')
-                        try:
-                            valid_symbol = Symbol(formatted_symbol)
-                            high_volume_symbols.append(valid_symbol)
-                        except ValueError:
-                            continue  # Skip invalid symbols
-                        if len(high_volume_symbols) >= 10:  # Limit to top 10 high-volume symbols
-                            break
+                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                try:
+                    valid_symbol = Symbol(formatted_symbol)
+                    if symbol_validator.is_symbol_approved(valid_symbol):
+                        if 'quoteVolume' in ticker and ticker['quoteVolume'] is not None:
+                            if ticker['quoteVolume'] > 50000000:
+                                high_volume_symbols.append(valid_symbol)
+                                if len(high_volume_symbols) >= 10:
+                                    break
+                except ValueError:
+                    continue
 
             return high_volume_symbols
         except Exception as e:
             self.logger.warning(f"Error in order flow-oriented symbol discovery: {e}")
-            return []  # Fall back to general discovery
+            return []
 
     def discover_liquidity_oriented_symbols(self) -> List[Symbol]:
         """Discover symbols with liquidity opportunities for liquidity watchers"""
         try:
-            exchange = ccxt.binance()
+            exchange = self._get_exchange()
             tickers = exchange.fetch_tickers()
 
-            # Find symbols with high volume and tight spreads (good liquidity conditions)
+            from .symbol_validator import symbol_validator
             liquid_symbols = []
             for symbol, ticker in tickers.items():
-                if (symbol.endswith('/USDT') and
-                        'quoteVolume' in ticker and ticker['quoteVolume'] and
-                        'high' in ticker and 'low' in ticker and ticker['high'] and ticker['low']):
-
-                    # Look for symbols with high volume and relatively tight volatility (good liquidity conditions)
-                    if ticker['quoteVolume'] > 10000000 and ticker['high'] != 0:  # High volume
-                        volatility = abs((ticker['high'] - ticker['low']) / ticker['high']) * 100
-                        if volatility < 8.0:  # Not too volatile (better liquidity conditions)
-                            formatted_symbol = symbol.replace('/', '')
-                            try:
-                                valid_symbol = Symbol(formatted_symbol)
-                                liquid_symbols.append(valid_symbol)
-                            except ValueError:
-                                continue  # Skip invalid symbols
-                            if len(liquid_symbols) >= 10:  # Limit to top 10 liquid symbols
-                                break
+                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                try:
+                    valid_symbol = Symbol(formatted_symbol)
+                    if symbol_validator.is_symbol_approved(valid_symbol):
+                        if ('quoteVolume' in ticker and ticker['quoteVolume'] is not None and
+                                'high' in ticker and ticker['high'] is not None and
+                                'low' in ticker and ticker['low'] is not None):
+                            if ticker['quoteVolume'] > 10000000 and ticker['high'] != 0:
+                                volatility = abs((ticker['high'] - ticker['low']) / ticker['high']) * 100
+                                if volatility < 8.0:
+                                    liquid_symbols.append(valid_symbol)
+                                    if len(liquid_symbols) >= 10:
+                                        break
+                except ValueError:
+                    continue
 
             return liquid_symbols
         except Exception as e:
             self.logger.warning(f"Error in liquidity-oriented symbol discovery: {e}")
-            return []  # Fall back to general discovery
+            return []
 
     def discover_funding_oriented_symbols(self) -> List[Symbol]:
         """Discover symbols with significant funding rate opportunities for funding rate watchers"""
         try:
-            exchange = ccxt.binance()  # Use Binance as example, but this would connect to funding rate APIs
-
-            # For funding rate discovery, we want perpetual futures with:
-            # 1. High absolute funding rates (potential reversal opportunities)
-            # 2. High funding rate acceleration (changing rapidly)
-
-            # In a real implementation, this would connect to funding rate APIs
-            # For now, we'll simulate by checking available perpetual symbols
-            # Fetch available perpetual symbols
+            exchange = self._get_exchange()
             markets = exchange.load_markets()
+
+            from .symbol_validator import symbol_validator
             perp_symbols = []
-
             for symbol, market in markets.items():
-                if (symbol.endswith('USDT') and
-                        market.get('swap', False) and  # Check if it's a swap/perpetual
-                        market.get('active', True)):  # Check if active
+                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                try:
+                    valid_symbol = Symbol(formatted_symbol)
+                    if symbol_validator.is_symbol_approved(valid_symbol):
+                        if market.get('swap', False) and market.get('active', True):
+                            perp_symbols.append(valid_symbol)
+                            if len(perp_symbols) >= 20:
+                                break
+                except ValueError:
+                    continue
 
-                    # Add to perpetual symbols list
-                    formatted_symbol = symbol.replace('/', '')
-                    try:
-                        valid_symbol = Symbol(formatted_symbol)
-                        perp_symbols.append(valid_symbol)
-                    except ValueError:
-                        continue  # Skip invalid symbols
-
-                    if len(perp_symbols) >= 20:  # Limit to top 20 perpetual symbols
-                        break
-
-            # For demonstration, return top perpetual symbols
-            # In a real implementation, we'd filter based on current funding rate extremes
-            return perp_symbols[:10]  # Return top 10 perpetual symbols
-
+            return perp_symbols[:10]
         except Exception as e:
-            # If we can't get real perpetual data, fall back to general market cap discovery
-            # but with preference for symbols that are likely to have perpetuals
             self.logger.warning(f"Using fallback for funding-oriented discovery: {e}")
             return self.discover_by_market_cap()
 
@@ -516,35 +503,24 @@ class SymbolDiscoveryService:
 
     def get_active_symbols_from_exchange(self) -> List[Symbol]:
         """Get active symbols from exchange based on volume and price changes."""
-        # In a real implementation, this would connect to exchange APIs
-        # to get recent symbols with high volume or price volatility
         try:
-            # Use a public exchange to get top volume symbols
-            exchange = ccxt.binance()
+            exchange = self._get_exchange()
             tickers = exchange.fetch_tickers()
 
-            # Filter for USDT pairs and sort by volume
+            from .symbol_validator import symbol_validator
             usdt_pairs = {}
             for symbol, ticker in tickers.items():
-                if symbol.endswith('/USDT') and 'quoteVolume' in ticker and ticker['quoteVolume']:
-                    usdt_pairs[symbol] = ticker['quoteVolume']
+                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                try:
+                    valid_symbol = Symbol(formatted_symbol)
+                    if symbol_validator.is_symbol_approved(valid_symbol):
+                        if 'quoteVolume' in ticker and ticker['quoteVolume'] is not None:
+                            usdt_pairs[valid_symbol] = ticker['quoteVolume']
+                except ValueError:
+                    continue
 
-            # Sort by volume and return top symbols
             sorted_symbols = sorted(usdt_pairs.items(), key=lambda x: x[1], reverse=True)
-            top_symbols = []
-            for pair, volume in sorted_symbols[:15]:  # Get top 15
-                # Convert from exchange format to our format
-                formatted = pair.replace('/', '').replace('USDT', 'USDT')  # Already in correct format
-                if formatted.endswith('USDT'):
-                    # Validate and convert to Symbol object
-                    try:
-                        valid_symbol = Symbol(formatted)
-                        top_symbols.append(valid_symbol)
-                    except ValueError:
-                        continue  # Skip invalid symbols
-                    if len(top_symbols) >= 10:  # Limit to 10
-                        break
-
+            top_symbols = [pair for pair, volume in sorted_symbols[:10]]
             return top_symbols
         except Exception as e:
             self.logger.warning(f"Error getting active symbols from exchange: {e}")
@@ -553,98 +529,80 @@ class SymbolDiscoveryService:
     def discover_historical_candle_oriented_symbols(self) -> List[Symbol]:
         """Discover symbols with reliable historical data for historical candle watchers."""
         try:
-            exchange = ccxt.binance()
+            exchange = self._get_exchange()
             tickers = exchange.fetch_tickers()
 
-            # Find symbols with consistent historical data availability (high volume + consistent trading)
+            from .symbol_validator import symbol_validator
             historical_oriented_symbols = []
             for symbol, ticker in tickers.items():
-                if (symbol.endswith('/USDT') and
-                        'quoteVolume' in ticker and ticker['quoteVolume'] and
-                        'count' in ticker and ticker['count'] and  # Number of trades (indicates data continuity)
-                        'high' in ticker and ticker['high'] and
-                        'low' in ticker and ticker['low']):
+                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                try:
+                    valid_symbol = Symbol(formatted_symbol)
+                    if symbol_validator.is_symbol_approved(valid_symbol):
+                        if ('quoteVolume' in ticker and ticker['quoteVolume'] is not None and
+                                'count' in ticker and ticker['count'] is not None and
+                                'high' in ticker and ticker['high'] is not None and
+                                'low' in ticker and ticker['low'] is not None):
+                            volume = ticker['quoteVolume']
+                            trade_count = ticker['count']
+                            if volume > 5000000 and trade_count > 2000:
+                                historical_oriented_symbols.append(valid_symbol)
+                                if len(historical_oriented_symbols) >= 10:
+                                    break
+                except ValueError:
+                    continue
 
-                    # Look for symbols with good liquidity and consistent trading for reliable historical data
-                    volume = ticker['quoteVolume']
-                    trade_count = ticker['count']
-
-                    # High volume and consistent trading indicates reliable historical data
-                    if volume > 5000000 and trade_count > 2000:  # Good volume and consistent trading
-                        formatted_symbol = symbol.replace('/', '')  # Convert BTC/USDT to BTCUSDT
-                        try:
-                            valid_symbol = Symbol(formatted_symbol)
-                            historical_oriented_symbols.append(valid_symbol)
-                        except ValueError:
-                            continue  # Skip invalid symbols
-
-                        if len(historical_oriented_symbols) >= 10:  # Limit to top 10 symbols
-                            break
-
-            # If we don't have enough symbols, fall back to major coins with high volume
             if len(historical_oriented_symbols) < 5:
                 major_symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT',
                                  'ADAUSDT', 'DOGEUSDT', 'AVAXUSDT', 'MATICUSDT', 'DOTUSDT']
-                historical_oriented_symbols = [Symbol(sym) for sym in major_symbols]
+                historical_oriented_symbols = [Symbol(sym) for sym in major_symbols if symbol_validator.is_symbol_approved(Symbol(sym))]
 
             return historical_oriented_symbols
         except Exception as e:
             self.logger.warning(f"Error in historical candle-oriented symbol discovery: {e}")
-            # Fall back to general discovery if specific discovery fails
             return self.discover_by_market_cap()
 
     def discover_tick_oriented_symbols(self) -> List[Symbol]:
         """Discover symbols with high tick frequency and trading activity for tick watchers."""
         try:
-            exchange = ccxt.binance()
+            exchange = self._get_exchange()
             tickers = exchange.fetch_tickers()
 
-            # Find symbols with high tick frequency (high volume + high number of trades)
+            from .symbol_validator import symbol_validator
             tick_oriented_symbols = []
             for symbol, ticker in tickers.items():
-                if (symbol.endswith('/USDT') and
-                        'quoteVolume' in ticker and ticker['quoteVolume'] and
-                        'count' in ticker and ticker['count']):  # 'count' represents number of trades
+                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                try:
+                    valid_symbol = Symbol(formatted_symbol)
+                    if symbol_validator.is_symbol_approved(valid_symbol):
+                        if ('quoteVolume' in ticker and ticker['quoteVolume'] is not None and
+                                'count' in ticker and ticker['count'] is not None):
+                            volume = ticker['quoteVolume']
+                            trade_count = ticker['count']
+                            if volume > 10000000 and trade_count > 5000:
+                                tick_oriented_symbols.append(valid_symbol)
+                                if len(tick_oriented_symbols) >= 10:
+                                    break
+                except ValueError:
+                    continue
 
-                    # High volume indicates frequent trading
-                    volume = ticker['quoteVolume']
-
-                    # High trade count indicates frequent ticks
-                    trade_count = ticker['count']
-
-                    # Look for symbols with both high volume and high trade frequency
-                    if volume > 10000000 and trade_count > 5000:  # High volume and frequent trades
-                        formatted_symbol = symbol.replace('/', '')  # Convert BTC/USDT to BTCUSDT
-                        try:
-                            valid_symbol = Symbol(formatted_symbol)
-                            tick_oriented_symbols.append(valid_symbol)
-                        except ValueError:
-                            continue  # Skip invalid symbols
-
-                        if len(tick_oriented_symbols) >= 10:  # Limit to top 10 tick-active symbols
-                            break
-
-            # If we don't have enough symbols with trade count data, fall back to high-volume symbols
             if len(tick_oriented_symbols) < 5:
                 high_volume_symbols = []
                 for symbol, ticker in tickers.items():
-                    if (symbol.endswith('/USDT') and
-                            'quoteVolume' in ticker and ticker['quoteVolume'] and
-                            ticker['quoteVolume'] > 20000000):  # Even higher volume threshold
-                        formatted_symbol = symbol.replace('/', '')
-                        try:
-                            valid_symbol = Symbol(formatted_symbol)
-                            high_volume_symbols.append(valid_symbol)
-                        except ValueError:
-                            continue  # Skip invalid symbols
-
-                        if len(high_volume_symbols) >= 10:
-                            break
-
+                    formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                    try:
+                        valid_symbol = Symbol(formatted_symbol)
+                        if symbol_validator.is_symbol_approved(valid_symbol):
+                            if 'quoteVolume' in ticker and ticker['quoteVolume'] is not None:
+                                if ticker['quoteVolume'] > 20000000:
+                                    high_volume_symbols.append(valid_symbol)
+                                    if len(high_volume_symbols) >= 10:
+                                        break
+                    except ValueError:
+                        continue
                 tick_oriented_symbols = high_volume_symbols
 
             return tick_oriented_symbols
         except Exception as e:
             self.logger.warning(f"Error in tick-oriented symbol discovery: {e}")
-            # Fall back to general discovery if tick-specific discovery fails
             return self.discover_by_market_cap()

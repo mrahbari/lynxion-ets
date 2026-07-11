@@ -25,6 +25,8 @@ class MonitoringAnalysisService:
         self.watchers = {}
         self.symbols = []
         self.last_observations = {}
+        self.on_update_symbols = None
+        self.auto_discover_symbols = False
     
     def set_watchers_and_symbols(self, watchers: Dict, symbols: List[Symbol]):
         """Set the watchers and symbols to monitor."""
@@ -43,7 +45,11 @@ class MonitoringAnalysisService:
 
         # Start periodic symbol updates if auto-discovery is enabled
         if getattr(self, 'auto_discover_symbols', False):
-            self.start_periodic_symbol_updates(update_interval_minutes=360)  # Update every 6 hours to reduce excessive reconnections
+            # Check if there is a watcher configuration for update interval
+            interval = 30
+            if hasattr(self, '_settings') and self._settings.watcher and hasattr(self._settings.watcher, 'data_refresh_interval_minutes'):
+                interval = self._settings.watcher.data_refresh_interval_minutes
+            self.start_periodic_symbol_updates(update_interval_minutes=interval)
 
         self.logger.log_auto_detection_status(len(self.symbols), 0, 0)
 
@@ -82,6 +88,8 @@ class MonitoringAnalysisService:
 
                 # Update symbol-specific counts
                 for symbol in self.symbols:
+                    if symbol.value not in symbol_analysis_count:
+                        symbol_analysis_count[symbol.value] = 0
                     symbol_analysis_count[symbol.value] += 1
 
                 # Count signals found and track which symbols generated them
@@ -90,8 +98,11 @@ class MonitoringAnalysisService:
                         signals_found += 1
                         # Track which symbol generated the signal
                         symbol_val = opportunity.get('symbol')
-                        if symbol_val and symbol_val in symbol_signal_count:
+                        if symbol_val:
+                            if symbol_val not in symbol_signal_count:
+                                symbol_signal_count[symbol_val] = 0
                             symbol_signal_count[symbol_val] += 1
+
 
                 # Log periodic detailed reports
                 current_time = time.time()
@@ -524,6 +535,6 @@ class MonitoringAnalysisService:
 
     def _update_symbol_list(self):
         """Dynamically update the list of symbols to monitor based on market conditions."""
-        # This would need to be implemented based on the original logic
-        # For now, we'll just log that this method exists
         self.logger.info("🔄 Updating symbol list based on market conditions")
+        if hasattr(self, 'on_update_symbols') and self.on_update_symbols:
+            self.on_update_symbols()

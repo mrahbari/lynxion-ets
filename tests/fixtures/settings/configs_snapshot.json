@@ -61,7 +61,7 @@
     "cache_dir": "./cache",
     "cache_enabled": true,
     "cmc_api_call_interval": 4.0,
-    "cmc_api_key": "6c592bff518f4ae0b5d6a8b4f4979928",
+    "cmc_api_key": "26d9a49c-cbd2-4374-8530-b482863f6967",
     "cmc_cache_ttl_seconds": 300,
     "cmc_categories_url": "https://pro-api.coinmarketcap.com/v1/cryptocurrency/categories/list",
     "cmc_change_confidence_weight": 0.2,

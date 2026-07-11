@@ -361,13 +361,13 @@ class MultiBrokerExecutionService(ExecutionPort):
             self._settings.execution, 'prevent_same_direction_trade_per_symbol') else True
 
         if prevent_same_direction:
-            # Determine the intended side of the new order
             order_side = getattr(order, 'side', None)
             intended_position_side = None
-            if order_side and hasattr(order_side, 'name'):
-                if order_side.name == 'BUY':
+            if order_side:
+                order_side_str = order_side.name if hasattr(order_side, 'name') else (order_side.value if hasattr(order_side, 'value') else str(order_side))
+                if order_side_str.upper() in ('BUY', 'LONG'):
                     intended_position_side = 'LONG'
-                elif order_side.name == 'SELL':
+                elif order_side_str.upper() in ('SELL', 'SHORT'):
                     intended_position_side = 'SHORT'
 
             # Check for pending orders in the same direction using the shared tracker
@@ -588,7 +588,9 @@ class MultiBrokerExecutionService(ExecutionPort):
 
                 # Calculate dynamic SL/TP values based on advanced risk management principles
                 # First, determine the position side for risk calculations
-                position_side = "LONG" if hasattr(order, 'side') and order.side.name == 'BUY' else "SHORT"
+                order_side_name = order.side.name if hasattr(order.side, 'name') else (order.side.value if hasattr(order.side, 'value') else str(order.side)) if hasattr(order, 'side') and order.side is not None else ""
+                is_buy_side = order_side_name.upper() in ('BUY', 'LONG')
+                position_side = "LONG" if is_buy_side else "SHORT"
 
                 # Create a temporary fused signal for risk adjustment factors (if available from order)
                 from domain.entities import FusedSignal, SignalType
@@ -633,7 +635,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                     sl_multiplier = 0.02  # 2% stop loss
                     tp_multiplier = 0.03  # 3% take profit
 
-                    if hasattr(order, 'side') and order.side.name == 'BUY':
+                    if is_buy_side:
                         # For BUY orders: SL below entry, TP above entry
                         sl_price = current_price * (1 - sl_multiplier)
                         tp_price = current_price * (1 + tp_multiplier)
@@ -652,7 +654,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                 tp_multiplier = 0.03  # 3% take profit (1:1.5 risk/reward ratio)
 
                 # Calculate SL and TP prices based on order side
-                if hasattr(order, 'side') and order.side.name == 'BUY':
+                if is_buy_side:
                     # For BUY orders: SL below entry, TP above entry
                     sl_price = current_price * (1 - sl_multiplier)
                     tp_price = current_price * (1 + tp_multiplier)
@@ -743,7 +745,8 @@ class MultiBrokerExecutionService(ExecutionPort):
 
                     # For BUY orders: SL should be below entry price
                     # For SELL orders: SL should be above entry price (for short positions)
-                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+                    order_side_name = order.side.name if hasattr(order.side, 'name') else (order.side.value if hasattr(order.side, 'value') else str(order.side)) if hasattr(order, 'side') and order.side is not None else ""
+                    is_buy_order = order_side_name.upper() in ('BUY', 'LONG')
 
                     if is_buy_order:
                         # For BUY orders, SL should be below entry price (but not too far below)
@@ -780,7 +783,8 @@ class MultiBrokerExecutionService(ExecutionPort):
 
                     # For BUY orders: TP should be above entry price
                     # For SELL orders: TP should be below entry price (for short positions)
-                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+                    order_side_name = order.side.name if hasattr(order.side, 'name') else (order.side.value if hasattr(order.side, 'value') else str(order.side)) if hasattr(order, 'side') and order.side is not None else ""
+                    is_buy_order = order_side_name.upper() in ('BUY', 'LONG')
 
                     if is_buy_order:
                         # For BUY orders, TP should be above entry price (but not too far above)
@@ -975,3 +979,31 @@ class MultiBrokerExecutionService(ExecutionPort):
         except Exception as e:
             self.logger.error(f"Error getting status for {execution_id} on {exchange.upper()}: {e}")
             return "unknown"
+
+    def get_position(self, symbol):
+        """
+        Get position for a symbol across the appropriate exchange.
+        """
+        from domain.value_objects import Symbol as DomainSymbol
+        symbol_obj = symbol if hasattr(symbol, 'value') else DomainSymbol(str(symbol))
+        symbol_str = symbol_obj.value
+
+        exchange_name = self._find_best_exchange_for_symbol(symbol_str)
+        if exchange_name:
+            broker = self.brokers.get(exchange_name)
+            if broker and hasattr(broker, 'get_position'):
+                try:
+                    return broker.get_position(symbol_obj)
+                except Exception as e:
+                    self.logger.warning(f"Error getting position for {symbol_str} on {exchange_name}: {e}")
+        
+        # Fallback: check all brokers
+        for name, broker in self.brokers.items():
+            if hasattr(broker, 'get_position'):
+                try:
+                    pos = broker.get_position(symbol_obj)
+                    if pos is not None:
+                        return pos
+                except:
+                    continue
+        return None

@@ -214,7 +214,9 @@ class BrokerExecutionService(ExecutionPort):
                 # Check if there's already an active position in the same direction for this symbol
                 # This requires checking the current positions, which may be done through the broker
                 try:
-                    current_position = self.broker.get_position(order.symbol) if hasattr(self.broker, 'get_position') else None
+                    from domain.value_objects import Symbol as DomainSymbol
+                    symbol_obj = DomainSymbol(order.symbol) if isinstance(order.symbol, str) else order.symbol
+                    current_position = self.broker.get_position(symbol_obj) if hasattr(self.broker, 'get_position') else None
                 except Exception as pos_error:
                     self.logger.warning(f"⚠️ Could not get position for {order.symbol.value}, proceeding with order: {pos_error}")
                     current_position = None
@@ -222,10 +224,11 @@ class BrokerExecutionService(ExecutionPort):
                 # Determine the intended side of the new order
                 order_side = getattr(order, 'side', None)
                 intended_position_side = None
-                if order_side and hasattr(order_side, 'name'):
-                    if order_side.name == 'BUY':
+                if order_side:
+                    order_side_str = order_side.name if hasattr(order_side, 'name') else (order_side.value if hasattr(order_side, 'value') else str(order_side))
+                    if order_side_str.upper() in ('BUY', 'LONG'):
                         intended_position_side = 'LONG'
-                    elif order_side.name == 'SELL':
+                    elif order_side_str.upper() in ('SELL', 'SHORT'):
                         intended_position_side = 'SHORT'
 
                 # Check both existing positions and pending orders in the same direction
@@ -234,7 +237,8 @@ class BrokerExecutionService(ExecutionPort):
 
                 # Check for existing position in the same direction
                 if current_position and hasattr(current_position, 'side') and current_position.side is not None:
-                    if intended_position_side and hasattr(current_position.side, 'name') and current_position.side.name == intended_position_side:
+                    pos_side_str = current_position.side.name if hasattr(current_position.side, 'name') else (current_position.side.value if hasattr(current_position.side, 'value') else str(current_position.side))
+                    if intended_position_side and pos_side_str.upper() == intended_position_side.upper():
                         position_duplicate = True
 
                 # Check for pending orders in the same direction
@@ -244,7 +248,8 @@ class BrokerExecutionService(ExecutionPort):
                 # If either condition is true, prevent the trade
                 if position_duplicate or pending_duplicate:
                     if position_duplicate:
-                        self.logger.info(f"❌ DUPLICATE REJECTED: Active {current_position.side.name} position exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
+                        pos_side_name = current_position.side.name if hasattr(current_position.side, 'name') else str(current_position.side)
+                        self.logger.info(f"❌ DUPLICATE REJECTED: Active {pos_side_name} position exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
                     else:
                         self.logger.info(f"⚠️ DUPLICATE CHECK BLOCKED: Internal pending flag set for {intended_position_side} order on {order.symbol.value} — broker confirmation needed.")
                     # Return a failure status instead of raising an exception to prevent system crashes
@@ -440,43 +445,48 @@ class BrokerExecutionService(ExecutionPort):
 
         # Create risk management service instance
         risk_service = AdvancedRiskManagementService()
+        market_data = None
 
-        # Try to get fused signal information from the order, otherwise create a default one
+        # Determine if it's a buy order using robust parsing
         from domain.entities import FusedSignal, SignalType
         from domain.value_objects import Percentage
+
+        # Determine if it's a buy order using robust parsing
+        order_side_name = order.side.name if hasattr(order.side, 'name') else (order.side.value if hasattr(order.side, 'value') else str(order.side)) if hasattr(order, 'side') and order.side is not None else ""
+        is_buy_side = order_side_name.upper() in ('BUY', 'LONG')
 
         # Check if order has parent signal information
         if hasattr(order, 'parent_signal') and order.parent_signal:
             # Use information from the parent signal if available
             parent_signal = order.parent_signal
-            direction = getattr(parent_signal, 'direction', 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1)
+            direction = getattr(parent_signal, 'direction', 0.1 if is_buy_side else -0.1)
             confidence = getattr(parent_signal, 'confidence', Percentage(0.6))
-            dominant_bias = getattr(parent_signal, 'dominant_bias', SignalType.BUY if hasattr(order, 'side') and order.side.name == 'BUY' else SignalType.SELL)
+            dominant_bias = getattr(parent_signal, 'dominant_bias', SignalType.BUY if is_buy_side else SignalType.SELL)
             regime_context = getattr(parent_signal, 'regime_context', "normal")
             dominance_score = getattr(parent_signal, 'dominance_score', 0.5)
         elif hasattr(order, 'fused_signal') and order.fused_signal:
             # Check if order has fused signal directly attached
             fused_signal_attr = order.fused_signal
-            direction = getattr(fused_signal_attr, 'direction', 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1)
+            direction = getattr(fused_signal_attr, 'direction', 0.1 if is_buy_side else -0.1)
             confidence = getattr(fused_signal_attr, 'confidence', Percentage(0.6))
-            dominant_bias = getattr(fused_signal_attr, 'dominant_bias', SignalType.BUY if hasattr(order, 'side') and order.side.name == 'BUY' else SignalType.SELL)
+            dominant_bias = getattr(fused_signal_attr, 'dominant_bias', SignalType.BUY if is_buy_side else SignalType.SELL)
             regime_context = getattr(fused_signal_attr, 'regime_context', "normal")
             dominance_score = getattr(fused_signal_attr, 'dominance_score', 0.5)
         elif hasattr(order, 'metadata') and order.metadata:
             # Check if order has signal information in metadata
             metadata = order.metadata
-            direction = metadata.get('signal_direction', 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1)
+            direction = metadata.get('signal_direction', 0.1 if is_buy_side else -0.1)
             confidence_val = metadata.get('signal_confidence', 0.6)
             confidence = Percentage(confidence_val)
-            dominant_bias_str = metadata.get('dominant_bias', 'BUY' if hasattr(order, 'side') and order.side.name == 'BUY' else 'SELL')
+            dominant_bias_str = metadata.get('dominant_bias', 'BUY' if is_buy_side else 'SELL')
             dominant_bias = SignalType.BUY if 'BUY' in dominant_bias_str.upper() or 'BULLISH' in dominant_bias_str.upper() else SignalType.SELL
             regime_context = metadata.get('regime_context', "normal")
             dominance_score = metadata.get('dominance_score', 0.5)
         else:
             # Create default values based on order information
-            direction = 0.1 if hasattr(order, 'side') and order.side.name == 'BUY' else -0.1
+            direction = 0.1 if is_buy_side else -0.1
             confidence = Percentage(0.6)  # Default confidence
-            dominant_bias = SignalType.BUY if hasattr(order, 'side') and order.side.name == 'BUY' else SignalType.SELL
+            dominant_bias = SignalType.BUY if is_buy_side else SignalType.SELL
             regime_context = "normal"
             dominance_score = 0.5
 
@@ -504,7 +514,7 @@ class BrokerExecutionService(ExecutionPort):
             )
 
             # Determine position side based on order side
-            position_side = 'LONG' if hasattr(order, 'side') and order.side.name == 'BUY' else 'SHORT'
+            position_side = 'LONG' if is_buy_side else 'SHORT'
 
             # Try to get real market data for more accurate risk calculations
             market_data = None
@@ -586,7 +596,8 @@ class BrokerExecutionService(ExecutionPort):
 
                     # For BUY orders: SL should be below entry price
                     # For SELL orders: SL should be above entry price (for short positions)
-                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+                    order_side_name = order.side.name if hasattr(order.side, 'name') else (order.side.value if hasattr(order.side, 'value') else str(order.side)) if hasattr(order, 'side') and order.side is not None else ""
+                    is_buy_order = order_side_name.upper() in ('BUY', 'LONG')
                     self.logger.debug(f"Order side: {'BUY' if is_buy_order else 'SELL'}")
 
                     if is_buy_order:
@@ -629,7 +640,8 @@ class BrokerExecutionService(ExecutionPort):
 
                     # For BUY orders: TP should be above entry price
                     # For SELL orders: TP should be below entry price (for short positions)
-                    is_buy_order = hasattr(order, 'side') and order.side.name == 'BUY'
+                    order_side_name = order.side.name if hasattr(order.side, 'name') else (order.side.value if hasattr(order.side, 'value') else str(order.side)) if hasattr(order, 'side') and order.side is not None else ""
+                    is_buy_order = order_side_name.upper() in ('BUY', 'LONG')
 
                     if is_buy_order:
                         # For BUY orders, TP should be above entry price (but not too far above)

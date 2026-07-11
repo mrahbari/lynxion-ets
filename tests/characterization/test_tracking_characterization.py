@@ -140,7 +140,14 @@ def test_shadow_kpis_match_legacy(tmp_path):
     assert adapter_kpis["metrics"]["win_rate_deviation"]["value"] == pytest.approx(0.10)
 
     # Alerts derived from the KPIs must also match.
-    assert adapter.check_alerts(adapter_kpis) == legacy.check_alerts(legacy_kpis)
+    alerts_adapter = adapter.check_alerts(adapter_kpis)
+    alerts_legacy = legacy.check_alerts(legacy_kpis)
+    for a in alerts_adapter:
+        a.pop("timestamp", None)
+    for a in alerts_legacy:
+        a.pop("timestamp", None)
+    assert alerts_adapter == alerts_legacy
+
 
 
 # --- Container wiring: one tracking adapter resolvable behind the port --------

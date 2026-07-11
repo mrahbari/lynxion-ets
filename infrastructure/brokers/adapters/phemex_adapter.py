@@ -186,8 +186,8 @@ class PhemexBrokerAdapter(BrokerPort):
 
         path = "/orders"
 
-        # Convert our order type to Phemex format
-        side = "Buy" if order.side == OrderSide.BUY else "Sell"
+        side_str = order.side.value if hasattr(order.side, 'value') else str(order.side)
+        side = "Buy" if side_str.upper() == "BUY" else "Sell"
 
         # Format symbol for Phemex
         symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
@@ -341,11 +341,13 @@ class PhemexBrokerAdapter(BrokerPort):
 
         return positions
 
-    def get_position(self, symbol: Symbol) -> Optional[Position]:
+    def get_position(self, symbol) -> Optional[Position]:
         """Get specific position"""
+        from domain.value_objects import Symbol as DomainSymbol
+        symbol_obj = symbol if hasattr(symbol, 'value') else DomainSymbol(str(symbol))
         positions = self.get_positions()
         for pos in positions:
-            if pos.symbol == symbol:
+            if pos.symbol == symbol_obj:
                 return pos
         return None
 

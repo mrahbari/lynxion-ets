@@ -174,13 +174,15 @@ class BingXBrokerAdapter(BrokerPort):
                 )
         return balances
 
-    def get_position(self, symbol: Symbol) -> Optional[Position]:
+    def get_position(self, symbol) -> Optional[Position]:
+        from domain.value_objects import Symbol as DomainSymbol
+        symbol_obj = symbol if hasattr(symbol, 'value') else DomainSymbol(str(symbol))
         if not self.connected:
             self.connect()
 
         positions = self.get_all_positions()
         for pos in positions:
-            if pos.symbol == symbol:
+            if pos.symbol == symbol_obj:
                 return pos
         return None
 
@@ -254,6 +256,7 @@ class _BingXBroker:
 
         # Set default timeout for all requests
         self.default_timeout = 10  # 10 seconds
+        self._contract_precisions = {}
 
     def _generate_signature(self, params_str: str) -> str:
         """Generate signature for BingX API authentication."""
@@ -342,6 +345,72 @@ class _BingXBroker:
             self.logger.error(f"Error in _make_request: {str(e)}\nFull traceback:\n{traceback.format_exc()}")
             raise ValueError(f"Request preparation failed: {str(e)}") from e
 
+    def _fetch_all_contracts(self) -> None:
+        """Fetch all swap contracts and cache their precisions."""
+        try:
+            # signed=False because contracts endpoint is public
+            response = self._make_request('GET', '/openApi/swap/v2/quote/contracts', signed=False)
+            if response.get('code') == 0:
+                data = response.get('data', [])
+                for contract_info in data:
+                    symbol = contract_info.get('symbol')
+                    if symbol:
+                        self._contract_precisions[symbol] = {
+                            'pricePrecision': int(contract_info.get('pricePrecision', 4)),
+                            'quantityPrecision': int(contract_info.get('quantityPrecision', 4))
+                        }
+                self.logger.info(f"Successfully cached precision info for {len(self._contract_precisions)} BingX contracts.")
+        except Exception as e:
+            self.logger.error(f"Failed to fetch and cache contract precisions: {e}")
+
+    def _get_contract_precision(self, symbol: str) -> Dict[str, int]:
+        """Get the cached precision info for the symbol, fetching it if not present."""
+        if not hasattr(self, '_contract_precisions'):
+            self._contract_precisions = {}
+        api_symbol = symbol
+        if '-' not in symbol:
+            if symbol.endswith('USDT'):
+                api_symbol = symbol[:-4] + '-' + symbol[-4:]
+            elif symbol.endswith('USDC'):
+                api_symbol = symbol[:-4] + '-' + symbol[-4:]
+                
+        if not self._contract_precisions:
+            if hasattr(self, 'api_key') and hasattr(self, 'base_url') and self.api_key:
+                self._fetch_all_contracts()
+            
+        if api_symbol in self._contract_precisions:
+            return self._contract_precisions[api_symbol]
+            
+        if hasattr(self, 'api_key') and hasattr(self, 'base_url') and self.api_key:
+            try:
+                response = self._make_request('GET', '/openApi/swap/v2/quote/contracts', params={'symbol': api_symbol}, signed=False)
+                if response.get('code') == 0:
+                    data = response.get('data', [])
+                    if data and isinstance(data, list):
+                        contract_info = data[0]
+                        precision_info = {
+                            'pricePrecision': int(contract_info.get('pricePrecision', 4)),
+                            'quantityPrecision': int(contract_info.get('quantityPrecision', 4))
+                        }
+                        self._contract_precisions[api_symbol] = precision_info
+                        return precision_info
+            except Exception as e:
+                self.logger.warning(f"Failed to fetch contract precision for {api_symbol}: {e}")
+            
+        return {'pricePrecision': 4, 'quantityPrecision': 4}
+
+    def _format_price(self, symbol: str, price: float) -> str:
+        """Format price according to the symbol's actual pricePrecision on the exchange."""
+        precision_info = self._get_contract_precision(symbol)
+        precision = precision_info.get('pricePrecision', 4)
+        return f"{price:.{precision}f}"
+
+    def _format_quantity(self, symbol: str, quantity: float) -> str:
+        """Format quantity according to the symbol's actual quantityPrecision on the exchange."""
+        precision_info = self._get_contract_precision(symbol)
+        precision = precision_info.get('quantityPrecision', 4)
+        return f"{quantity:.{precision}f}"
+
     def execute_order(self, order: Order) -> Dict[str, Any]:
         """Execute order on BingX."""
         try:
@@ -377,9 +446,10 @@ class _BingXBroker:
             else:
                 # For BingX, if position_side is not specified, determine it based on order side
                 # For LONG positions with BUY orders or SHORT positions with SELL orders
-                if order.side == OrderSide.BUY:
+                side_upper = side_value.upper()
+                if side_upper == 'BUY':
                     position_side_value = 'LONG'
-                elif order.side == OrderSide.SELL:
+                elif side_upper == 'SELL':
                     position_side_value = 'SHORT'
                 else:
                     position_side_value = 'BOTH'
@@ -391,7 +461,7 @@ class _BingXBroker:
                 'symbol': symbol_formatted,
                 'side': side_value.upper(),
                 'type': order_type_value.upper(),
-                'quantity': str(round(float(order.quantity), 6)),
+                'quantity': self._format_quantity(symbol_formatted, float(order.quantity)),
                 'positionSide': position_side_value,
                 'clientOrderID': client_order_id,
             }
@@ -404,8 +474,8 @@ class _BingXBroker:
                 else:
                     # If it's already a numeric value, use it directly
                     price_value = order.price
-                # Format price using the new API-compliant formatting function
-                formatted_price = format_price_for_api(float(price_value))
+                # Format price using exchange-specific precision
+                formatted_price = self._format_price(symbol_formatted, float(price_value))
                 order_data['price'] = formatted_price
 
             # Add Stop Loss and Take Profit parameters if they exist in the order
@@ -433,7 +503,7 @@ class _BingXBroker:
                     if sl_float <= 0:
                         self.logger.warning(f"Invalid stop loss price: {sl_float}, skipping...")
                     else:
-                        formatted_sl_price = format_price_for_api(sl_float)
+                        formatted_sl_price = self._format_price(symbol_formatted, sl_float)
                         order_data['stopLossPrice'] = formatted_sl_price  # Changed from 'stopLoss' to 'stopLossPrice'
                         self.logger.debug(f"Added stop loss price: {formatted_sl_price}")
 
@@ -455,7 +525,7 @@ class _BingXBroker:
                     if tp_float <= 0:
                         self.logger.warning(f"Invalid take profit price: {tp_float}, skipping...")
                     else:
-                        formatted_tp_price = format_price_for_api(tp_float)
+                        formatted_tp_price = self._format_price(symbol_formatted, tp_float)
                         order_data['takeProfitPrice'] = formatted_tp_price  # Changed from 'takeProfit' to 'takeProfitPrice'
                         self.logger.debug(f"Added take profit price: {formatted_tp_price}")
 
@@ -489,7 +559,7 @@ class _BingXBroker:
                     'symbol': symbol_formatted,
                     'side': side_value.upper(),
                     'type': order_type_value.upper(),
-                    'quantity': str(round(float(order.quantity), 6)),
+                    'quantity': self._format_quantity(symbol_formatted, float(order.quantity)),
                     'positionSide': position_side_value,
                     'clientOrderID': client_order_id,
                 }
@@ -499,7 +569,7 @@ class _BingXBroker:
                         price_value = order.price.amount
                     else:
                         price_value = order.price
-                    formatted_price = format_price_for_api(float(price_value))
+                    formatted_price = self._format_price(symbol_formatted, float(price_value))
                     main_order_data['price'] = formatted_price
 
                 # Place the main market order
@@ -530,7 +600,7 @@ class _BingXBroker:
                         sl_response = self._place_conditional_order(
                             symbol=symbol_formatted,
                             side=sl_side,
-                            quantity=str(round(float(order.quantity), 6)),
+                            quantity=self._format_quantity(symbol_formatted, float(order.quantity)),
                             stop_price=order_data.get('stopLossPrice'),
                             order_type=sl_order_type,
                             position_side=position_side_value
@@ -556,7 +626,7 @@ class _BingXBroker:
                         tp_response = self._place_conditional_order(
                             symbol=symbol_formatted,
                             side=tp_side,
-                            quantity=str(round(float(order.quantity), 6)),
+                            quantity=self._format_quantity(symbol_formatted, float(order.quantity)),
                             stop_price=order_data.get('takeProfitPrice'),
                             order_type=tp_order_type,
                             position_side=position_side_value
@@ -574,7 +644,7 @@ class _BingXBroker:
                             f"{conditional_errors} — unwinding position (B1)")
                         unwound = self._unwind_position(
                             symbol_formatted, side_value.upper(),
-                            str(round(float(order.quantity), 6)), position_side_value)
+                            self._format_quantity(symbol_formatted, float(order.quantity)), position_side_value)
                         if not unwound:
                             try:
                                 from shared.live_execution_guard import live_execution_guard
@@ -633,7 +703,7 @@ class _BingXBroker:
                          position_side: str) -> bool:
         """B1: flatten a just-opened position when its protective SL/TP could not be attached.
 
-        Places a reduceOnly MARKET order in the opposite direction. Returns True if the
+        Places a MARKET order in the opposite direction. Returns True if the
         exchange accepted the close. This is a protective unwind of an already-authorized
         entry, so it bypasses the guard (it only ever reduces risk).
         """
@@ -645,8 +715,9 @@ class _BingXBroker:
                 'type': 'MARKET',
                 'quantity': quantity,
                 'positionSide': position_side,
-                'reduceOnly': 'true',
             }
+            if position_side.upper() not in ('LONG', 'SHORT'):
+                unwind_data['reduceOnly'] = 'true'
             resp = self._make_request('POST', '/openApi/swap/v2/trade/order',
                                       data=unwind_data, signed=True)
             if resp.get('code') == 0:

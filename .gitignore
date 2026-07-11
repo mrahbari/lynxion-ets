@@ -34,3 +34,6 @@ htmlcov/
 
 # Other
 /tasks/
+/data/provenance/
+/data/research_cache/
+/data/results_storage/

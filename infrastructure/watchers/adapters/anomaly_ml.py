@@ -131,15 +131,19 @@ class AnomalyMLWatcher(BaseWatcher):
             # For neutral state, confidence is based on how close to normal we are
             confidence = min(0.5, (1.0 - anomaly_magnitude))
         elif anomaly_score > 0:
-            observation_type = 'anomaly_positive'  # General positive anomaly
-            observation_value = abs(anomaly_score)
+            if recent_change >= 0:
+                observation_type = 'anomaly_positive'  # General positive anomaly (price went up)
+                observation_value = abs(anomaly_score)
+            else:
+                observation_type = 'anomaly_negative'  # General negative anomaly (price went down)
+                observation_value = -abs(anomaly_score)
             # Confidence increases with anomaly magnitude
             confidence = min(0.95, max(0.15, anomaly_magnitude))
         else:
-            observation_type = 'anomaly_negative'  # General negative anomaly
-            observation_value = -abs(anomaly_score)
-            # Confidence increases with anomaly magnitude
-            confidence = min(0.95, max(0.15, anomaly_magnitude))
+            observation_type = 'anomaly_normal'
+            observation_value = 0.0
+            # For neutral state, confidence is based on how close to normal we are
+            confidence = min(0.5, (1.0 - anomaly_magnitude))
 
         # Convert confidence to Percentage object for domain compatibility
         confidence_percentage = Percentage(Decimal(str(confidence)))

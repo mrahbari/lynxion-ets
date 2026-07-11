@@ -9,6 +9,7 @@ import logging
 from domain.entities import Order, Position, Balance, OrderSide
 from domain.ports.broker_ports import BrokerPort
 from domain.value_objects import Symbol, Money
+from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 
 
 class MEXCBrokerAdapter(BrokerPort):
@@ -173,8 +174,8 @@ class MEXCBrokerAdapter(BrokerPort):
 
         path = "/api/v3/order"
 
-        # Convert our order type to MEXC format
-        side = "BUY" if order.side == OrderSide.BUY else "SELL"
+        side_str = order.side.value if hasattr(order.side, 'value') else str(order.side)
+        side = "BUY" if side_str.upper() == "BUY" else "SELL"
 
         # Format symbol for MEXC
         symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
@@ -303,11 +304,13 @@ class MEXCBrokerAdapter(BrokerPort):
         logging.warning("MEXC spot trading doesn't have positions. Only futures positions are available.")
         return []
 
-    def get_position(self, symbol: Symbol) -> Optional[Position]:
+    def get_position(self, symbol) -> Optional[Position]:
         """Get specific position"""
+        from domain.value_objects import Symbol as DomainSymbol
+        symbol_obj = symbol if hasattr(symbol, 'value') else DomainSymbol(str(symbol))
         positions = self.get_positions()
         for pos in positions:
-            if pos.symbol == symbol:
+            if pos.symbol == symbol_obj:
                 return pos
         return None
 
