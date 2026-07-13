@@ -9,6 +9,16 @@ from datetime import datetime
 from domain.value_objects import Symbol
 from domain.entities import FusedSignal, ExecutionIntent
 from infrastructure.strategies.strategy_adapters import BaseStrategyAdapter, TrendFollowingStrategy, MeanReversionStrategy, VolatilityBreakoutStrategy
+from infrastructure.strategies.adapters.trend_follow_strategy_adapter import TrendFollowStrategyAdapter
+from infrastructure.strategies.adapters.mean_reversion_strategy_adapter import MeanReversionStrategyAdapter
+from infrastructure.strategies.adapters.scalping_strategy_adapter import ScalpingStrategyAdapter
+from infrastructure.strategies.adapters.breakout_strategy_adapter import BreakoutStrategyAdapter
+from infrastructure.strategies.adapters.liquidity_strategy_adapter import LiquidityStrategyAdapter
+from infrastructure.strategies.adapters.vwap_reversal_strategy_adapter import VWAPReversalStrategyAdapter
+from infrastructure.strategies.adapters.momentum_strategy_adapter import MomentumStrategyAdapter
+from infrastructure.strategies.adapters.mtf_trend_strategy_adapter import MTFTrendStrategyAdapter
+from infrastructure.strategies.adapters.oi_footprint_strategy_adapter import OIFootprintStrategyAdapter
+from infrastructure.strategies.adapters.sweep_scalper_strategy_adapter import SweepScalperAdapter
 import numpy as np
 from scipy import stats
 from shared.logger import EnhancedLogger
@@ -375,8 +385,17 @@ class StrategyManager:
         """Register default strategies with the manager based on configuration."""
         # Define available strategies with their classes
         available_strategies = {
-            'trend_following': TrendFollowingStrategy,
-            'mean_reversion': MeanReversionStrategy,
+            'trend_following': TrendFollowStrategyAdapter,
+            'mean_reversion': MeanReversionStrategyAdapter,
+            'scalping': ScalpingStrategyAdapter,
+            'breakout': BreakoutStrategyAdapter,
+            'liquidity': LiquidityStrategyAdapter,
+            'vwap_reversal': VWAPReversalStrategyAdapter,
+            'momentum': MomentumStrategyAdapter,
+            'mtf_trend': MTFTrendStrategyAdapter,
+            'oi_footprint': OIFootprintStrategyAdapter,
+            'sweep_scalper': SweepScalperAdapter,
+            'crypto_breakout': BreakoutStrategyAdapter,
             'volatility_breakout': VolatilityBreakoutStrategy
         }
 
@@ -565,8 +584,14 @@ class StrategyManager:
         # Return the top-ranked execution intent
         if ranked_evaluations:
             top_evaluation = ranked_evaluations[0]
+            intent = top_evaluation['intent']
+            if intent.metadata is None:
+                intent.metadata = {}
+            intent.metadata['performance_score'] = top_evaluation['performance_score']
+            intent.metadata['risk_adjusted_score'] = top_evaluation['risk_adjusted_score']
+            intent.metadata['regime_compatibility'] = top_evaluation['regime_compatibility']
             self.logger.info(f"Selected strategy {top_evaluation['strategy_name']} with risk-adjusted score: {top_evaluation['risk_adjusted_score']:.3f}")
-            return top_evaluation['intent']
+            return intent
 
         return None
 
@@ -590,33 +615,41 @@ class StrategyManager:
 
     def _calculate_regime_compatibility_score(self, strategy_name: str, regime_context: str) -> float:
         """Calculate how compatible a strategy is with the current regime."""
+        # Normalize inputs
+        regime = str(regime_context).lower()
+        strat = str(strategy_name).lower()
+        
         # Different strategies perform differently in different regimes
-        if regime_context == "trending":
-            if "trend" in strategy_name.lower() or "momentum" in strategy_name.lower():
-                return 1.2  # Boost trend-following strategies in trending regime
-            elif "mean" in strategy_name.lower() or "reversion" in strategy_name.lower():
-                return 0.7  # Reduce mean reversion in trending regime
+        if 'trending' in regime or 'trend' in regime:
+            if "trend" in strat or "momentum" in strat or "mtf_trend" in strat:
+                return 1.2  # Boost trend-following/momentum strategies in trending regime
+            elif "mean" in strat or "reversion" in strat or "scalp" in strat or "reversal" in strat:
+                return 0.7  # Reduce mean reversion / scalping / counter-trend in trending regime
             else:
                 return 1.0  # Neutral
-        elif regime_context == "mean_reverting":
-            if "mean" in strategy_name.lower() or "reversion" in strategy_name.lower():
-                return 1.2  # Boost mean reversion strategies
-            elif "trend" in strategy_name.lower() or "momentum" in strategy_name.lower():
-                return 0.7  # Reduce trend-following in mean reverting regime
+        elif 'mean_reverting' in regime or 'revert' in regime or 'ranging' in regime or 'stable' in regime:
+            if "mean" in strat or "reversion" in strat or "scalp" in strat or "reversal" in strat or "liquidity" in strat:
+                return 1.2  # Boost mean reversion / range-based strategies
+            elif "trend" in strat or "momentum" in strat:
+                return 0.7  # Reduce trend-following/momentum in mean reverting / ranging regime
             else:
                 return 1.0  # Neutral
-        elif regime_context == "volatile":
-            # In volatile markets, conservative strategies might perform better
-            if "breakout" in strategy_name.lower():
-                return 1.1  # Breakout strategies might work in volatile markets
+        elif 'volatile' in regime or 'breakout' in regime:
+            # In volatile or breakout markets, breakout strategies perform better
+            if "breakout" in strat or "sweep_scalper" in strat:
+                return 1.2  # Breakout strategies work well
+            elif "mean" in strat or "reversion" in strat:
+                return 0.7  # Reduce mean reversion in high volatility/breakout
             else:
-                return 0.9  # Reduce aggressive strategies
-        elif regime_context == "choppy":
-            # In choppy markets, range-bound strategies might work better
-            if "range" in strategy_name.lower() or "scalp" in strategy_name.lower():
+                return 1.0  # Neutral
+        elif 'choppy' in regime:
+            # In choppy markets, range-bound and scalping strategies might work better
+            if "scalp" in strat or "sweep_scalper" in strat or "liquidity" in strat:
                 return 1.1
-            else:
+            elif "trend" in strat or "momentum" in strat:
                 return 0.8  # Reduce trend-following in choppy markets
+            else:
+                return 1.0
         else:
             # Default for other regimes
             return 1.0
@@ -779,8 +812,17 @@ class StrategyManager:
             # If the strategy isn't already registered and is now enabled, register it
             if strategy_name not in self.strategies:
                 strategy_class_map = {
-                    'trend_following': TrendFollowingStrategy,
-                    'mean_reversion': MeanReversionStrategy,
+                    'trend_following': TrendFollowStrategyAdapter,
+                    'mean_reversion': MeanReversionStrategyAdapter,
+                    'scalping': ScalpingStrategyAdapter,
+                    'breakout': BreakoutStrategyAdapter,
+                    'liquidity': LiquidityStrategyAdapter,
+                    'vwap_reversal': VWAPReversalStrategyAdapter,
+                    'momentum': MomentumStrategyAdapter,
+                    'mtf_trend': MTFTrendStrategyAdapter,
+                    'oi_footprint': OIFootprintStrategyAdapter,
+                    'sweep_scalper': SweepScalperAdapter,
+                    'crypto_breakout': BreakoutStrategyAdapter,
                     'volatility_breakout': VolatilityBreakoutStrategy
                 }
                 
@@ -853,7 +895,12 @@ class StrategyManager:
 
     def get_all_strategies_status(self) -> Dict[str, Dict[str, Any]]:
         """Get status of all strategies (enabled/disabled)."""
-        all_strategy_names = ['trend_following', 'mean_reversion', 'volatility_breakout']
+        all_strategy_names = [
+            'trend_following', 'mean_reversion', 'volatility_breakout',
+            'scalping', 'breakout', 'liquidity', 'vwap_reversal',
+            'momentum', 'mtf_trend', 'oi_footprint', 'sweep_scalper',
+            'crypto_breakout'
+        ]
         status_report = {}
         
         for name in all_strategy_names:

@@ -24,8 +24,13 @@ class LiquidityStrategyAdapter(BaseStrategyAdapter):
         from infrastructure.strategies.strategy_config import get_liquidity_config
         system_config = get_liquidity_config()
 
-        # Merge with any passed config, prioritizing passed config
-        self.config = {**system_config.get('parameters', {}), **(config or {})}
+        # NOTE: system_config contains execution settings (like min_confidence, max_position_size)
+        # at the top level, and mathematical model params inside the nested 'parameters' dict.
+        # We must extract and merge both so that key settings are correctly loaded into self.config
+        # and do not fall back to obsolete system defaults.
+        params = system_config.get('parameters', {})
+        top_level = {k: v for k, v in system_config.items() if k != 'parameters'}
+        self.config = {**top_level, **params, **(config or {})}
 
         self.lookback_period = self.config.get("lookback_period", 50)
         self.swing_threshold = self.config.get("swing_threshold", 0.005)  # 0.5% threshold for swing detection

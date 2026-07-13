@@ -15,7 +15,7 @@ class INotificationService(ABC):
     """Port for notification services following hexagonal architecture."""
 
     @abstractmethod
-    def send_notification(self, message: str, subject: str = "Alert", notification_type: str = "info") -> bool:
+    def send_notification(self, message: str, subject: str = "Alert", notification_type: str = "info", parse_mode: str = None) -> bool:
         """Send a notification."""
         pass
 
@@ -36,7 +36,7 @@ class EmailNotificationService(INotificationService):
         }
         self.logger = EnhancedLogger("EmailNotificationService")
 
-    def send_notification(self, message: str, subject: str = "Alert", notification_type: str = "info") -> bool:
+    def send_notification(self, message: str, subject: str = "Alert", notification_type: str = "info", parse_mode: str = None) -> bool:
         """Send an email notification."""
         try:
             msg = MIMEText(message)
@@ -66,11 +66,24 @@ class TelegramNotificationService(INotificationService):
         }
         self.logger = EnhancedLogger("TelegramNotificationService")
 
-    def send_notification(self, message: str, subject: str = "Alert", notification_type: str = "info") -> bool:
+    def send_notification(self, message: str, subject: str = "Alert", notification_type: str = "info", parse_mode: str = None) -> bool:
         """Send a Telegram notification."""
         try:
             url = f"https://api.telegram.org/bot{self.config['bot_token']}/sendMessage"
-            data = {"chat_id": self.config["chat_id"], "text": f"{subject}: {message}"}
+            
+            # Formulate text
+            if parse_mode == "HTML":
+                text = f"<b>{subject}</b>\n\n{message}"
+            else:
+                text = f"{subject}: {message}"
+                
+            data = {
+                "chat_id": self.config["chat_id"],
+                "text": text
+            }
+            if parse_mode:
+                data["parse_mode"] = parse_mode
+                
             response = requests.post(url, data=data)
 
             if response.status_code == 200:

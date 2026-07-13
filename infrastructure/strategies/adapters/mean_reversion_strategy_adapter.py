@@ -21,8 +21,13 @@ class MeanReversionStrategyAdapter(BaseStrategyAdapter):
         from infrastructure.strategies.strategy_config import get_mean_reversion_config
         system_config = get_mean_reversion_config()
 
-        # Merge with any passed config, prioritizing passed config
-        self.config = {**system_config.get('parameters', {}), **(config or {})}
+        # NOTE: system_config contains execution settings (like min_confidence, max_position_size)
+        # at the top level, and mathematical model params inside the nested 'parameters' dict.
+        # We must extract and merge both so that key settings are correctly loaded into self.config
+        # and do not fall back to obsolete system defaults.
+        params = system_config.get('parameters', {})
+        top_level = {k: v for k, v in system_config.items() if k != 'parameters'}
+        self.config = {**top_level, **params, **(config or {})}
 
         # Use configuration values or defaults
         self.lookback_period = self.config.get("lookback_period", 20)
@@ -161,19 +166,15 @@ class MeanReversionStrategyAdapter(BaseStrategyAdapter):
         range_size = range_bounds['upper_bound'] - range_bounds['lower_bound']
         threshold = range_size * 0.05  # 5% of range size as threshold
 
-        # Check for rejection near upper bound (price went above but closed below)
-        near_upper_bound = abs(current_high - range_bounds['upper_bound']) <= threshold
+        # Check for rejection near upper bound (price approached or went above but closed below)
         upper_rejection = (
-            near_upper_bound and
-            current_high > range_bounds['upper_bound'] and
+            current_high >= range_bounds['upper_bound'] - threshold and
             current_close < range_bounds['upper_bound']
         )
 
-        # Check for rejection near lower bound (price went below but closed above)
-        near_lower_bound = abs(current_low - range_bounds['lower_bound']) <= threshold
+        # Check for rejection near lower bound (price approached or went below but closed above)
         lower_rejection = (
-            near_lower_bound and
-            current_low < range_bounds['lower_bound'] and
+            current_low <= range_bounds['lower_bound'] + threshold and
             current_close > range_bounds['lower_bound']
         )
 

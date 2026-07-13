@@ -17,7 +17,17 @@ class MTFTrendStrategyAdapter(BaseStrategyAdapter):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__("MTFTrend")
-        self.config = config or {}
+        # Get configuration from the centralized config system
+        from infrastructure.strategies.strategy_config import get_mtf_trend_config
+        system_config = get_mtf_trend_config()
+
+        # NOTE: system_config contains execution settings (like min_confidence, max_position_size)
+        # at the top level, and mathematical model params inside the nested 'parameters' dict.
+        # We must extract and merge both so that key settings are correctly loaded into self.config
+        # and do not fall back to obsolete system defaults.
+        params = system_config.get('parameters', {})
+        top_level = {k: v for k, v in system_config.items() if k != 'parameters'}
+        self.config = {**top_level, **params, **(config or {})}
         self.timeframes = ["3m", "15m", "1h", "4h", "1D"]
         self.trend_period = self.config.get("trend_period", 50)
         self.weighting = self.config.get("tf_weights", {

@@ -727,7 +727,7 @@ class MeanReversionStrategy(BaseStrategyAdapter):
 
         # Check if signal meets mean reversion criteria
         confidence = float(fused_signal.confidence.value)
-        is_reverting = 'mean' in fused_signal.regime_context.lower() or 'revert' in fused_signal.regime_context.lower()
+        is_reverting = 'mean' in fused_signal.regime_context.lower() or 'revert' in fused_signal.regime_context.lower() or 'ranging' in fused_signal.regime_context.lower() or 'stable' in fused_signal.regime_context.lower()
 
         # Log specific rejection reason
         if confidence < min_confidence:

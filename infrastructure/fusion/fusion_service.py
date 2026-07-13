@@ -620,24 +620,31 @@ class FusionService:
         """Get regime compatibility factor for a signal"""
         # Different signals may perform differently in different regimes
         # This is a simplified version - in a real system, this would be based on historical performance
-        if regime_context == "trending":
+        reg_lower = str(regime_context).lower()
+        if reg_lower == "trending" or "trend" in reg_lower:
             # Trend-following signals perform better in trending markets
             if "trend" in getattr(signal, 'source_watcher', '').lower() or \
                "momentum" in getattr(signal, 'source_watcher', '').lower():
                 return 1.2  # Boost trend-following signals in trending regime
             else:
                 return 0.8  # Reduce weight for counter-trend signals in trending regime
-        elif regime_context == "mean_reverting":
-            # Mean reversion signals perform better in mean reverting markets
+        elif reg_lower == "mean_reverting" or "revert" in reg_lower or "ranging" in reg_lower or "stable" in reg_lower:
+            # Mean reversion signals perform better in mean reverting / ranging / stable markets
             if "mean" in getattr(signal, 'source_watcher', '').lower() or \
                "rsi" in getattr(signal, 'source_watcher', '').lower() or \
-               "bollinger" in getattr(signal, 'source_watcher', '').lower():
-                return 1.2  # Boost mean reversion signals in mean reverting regime
+               "bollinger" in getattr(signal, 'source_watcher', '').lower() or \
+               "liquidity" in getattr(signal, 'source_watcher', '').lower():
+                return 1.2  # Boost mean reversion signals
             else:
-                return 0.8  # Reduce weight for trend-following signals in mean reverting regime
-        elif regime_context == "volatile":
-            # In volatile markets, all signals might be less reliable
-            return 0.9
+                return 0.8  # Reduce weight for trend-following signals
+        elif reg_lower == "volatile" or "breakout" in reg_lower:
+            # In volatile or breakout markets, breakout/volatility signals perform better
+            if "breakout" in getattr(signal, 'source_watcher', '').lower() or \
+               "volatility" in getattr(signal, 'source_watcher', '').lower() or \
+               "anomaly" in getattr(signal, 'source_watcher', '').lower():
+                return 1.2
+            else:
+                return 0.9
         else:
             # Default factor for other regimes
             return 1.0

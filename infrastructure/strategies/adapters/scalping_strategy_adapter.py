@@ -26,8 +26,13 @@ class ScalpingStrategyAdapter(BaseStrategyAdapter):
         from infrastructure.strategies.strategy_config import get_scalping_config
         system_config = get_scalping_config()
 
-        # Merge with any passed config, prioritizing passed config
-        self.config = {**system_config.get('parameters', {}), **(config or {})}
+        # NOTE: system_config contains execution settings (like min_confidence, max_position_size)
+        # at the top level, and mathematical model params inside the nested 'parameters' dict.
+        # We must extract and merge both so that key settings are correctly loaded into self.config
+        # and do not fall back to obsolete system defaults.
+        params = system_config.get('parameters', {})
+        top_level = {k: v for k, v in system_config.items() if k != 'parameters'}
+        self.config = {**top_level, **params, **(config or {})}
 
         # Use configuration values or defaults
         self.lookback_period = self.config.get("lookback_period", 5)
@@ -39,7 +44,7 @@ class ScalpingStrategyAdapter(BaseStrategyAdapter):
         self.ma_slow = self.config.get("ma_slow", 10)
 
         # Scalping-specific parameters for market micro-conditions
-        self.min_spread_threshold = self.config.get("min_spread_threshold", 0.0005)  # Minimum spread threshold (0.05%)
+        self.min_spread_threshold = self.config.get("min_spread_threshold", 0.00005)  # Minimum spread threshold (0.005%)
         self.max_volatility_threshold = self.config.get("max_volatility_threshold", 0.02)  # Maximum volatility threshold (2%)
         self.min_volume_threshold = self.config.get("min_volume_threshold", 100)  # Legacy absolute floor (kept for config compat)
         self.min_volume_ratio = self.config.get("min_volume_ratio", 0.5)  # Relative liquidity floor: recent vol vs baseline
