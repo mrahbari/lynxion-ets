@@ -281,7 +281,7 @@
     "fixed_fractional_default_percentage": 0.02,
     "fixed_fractional_percentage": 0.02,
     "fixed_fractional_risk_per_unit": 0.02,
-    "fixed_position_amount": 4.0,
+    "fixed_position_amount": 40.0,
     "fixed_position_size_enabled": true,
     "kelly_default_percentage": 0.02,
     "kelly_fraction": 0.25,
