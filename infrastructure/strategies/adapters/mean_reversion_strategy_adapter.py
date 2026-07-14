@@ -301,3 +301,37 @@ class MeanReversionStrategyAdapter(BaseStrategyAdapter):
             import traceback
             traceback.print_exc()
             return None
+
+    def should_execute(self, fused_signal) -> bool:
+        """Check if the mean reversion strategy should execute based on the fused signal"""
+        from infrastructure.strategies.strategy_config import StrategyConfig
+        
+        # First check if strategy is enabled
+        if not StrategyConfig.get_strategy_enabled(self.name):
+            return False
+
+        # Get strategy-specific configuration
+        min_confidence = self.config.get('min_confidence', 0.5)
+
+        # Check if signal meets mean reversion criteria
+        confidence = float(fused_signal.confidence.value)
+        is_reverting = any(term in fused_signal.regime_context.lower() for term in ['mean', 'revert', 'ranging', 'stable'])
+
+        # Log specific rejection reason
+        if confidence < min_confidence:
+            self.logger.info(f"Trade rejected: "
+                           f"confidence={confidence:.2f} < "
+                           f"MEAN_REVERSION_MIN_CONFIDENCE_THRESHOLD={min_confidence:.2f} "
+                           f"source=mean_reversion_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+        elif not is_reverting:
+            self.logger.info(f"Trade rejected: "
+                           f"regime_context='{fused_signal.regime_context}' does not indicate mean-reverting/ranging market "
+                           f"source=mean_reversion_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+
+        return True

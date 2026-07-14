@@ -191,6 +191,13 @@ class MultiBrokerExecutionService(ExecutionPort):
         from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
         return PendingOrdersTracker.has_pending_order_in_direction(symbol, side)
 
+    @classmethod
+    def _has_any_pending_order(cls, symbol: Symbol) -> bool:
+        """Check if there's any pending order for the symbol."""
+        # Use the shared pending orders tracker to ensure consistency across all broker services
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        return len(PendingOrdersTracker.get_pending_orders_for_symbol(symbol)) > 0
+
     def get_available_symbols(self) -> Set[str]:
         """
         Get available symbols from all configured brokers.
@@ -370,16 +377,15 @@ class MultiBrokerExecutionService(ExecutionPort):
                 elif order_side_str.upper() in ('SELL', 'SHORT'):
                     intended_position_side = 'SHORT'
 
-            # Check for pending orders in the same direction using the shared tracker
-            if intended_position_side:
-                pending_duplicate = self._has_pending_order_in_direction(order.symbol, intended_position_side)
+            # Check for any pending orders on the symbol using the shared tracker
+            pending_duplicate = self._has_any_pending_order(order.symbol)
 
-                # If there's a pending order in the same direction, prevent the trade
-                if pending_duplicate:
-                    self.logger.info(
-                        f"⚠️ DUPLICATE CHECK BLOCKED: Internal pending flag set for {intended_position_side} order on {order.symbol.value} — broker confirmation needed.")
-                    # Return None instead of raising an exception to prevent system crashes
-                    return None  # Indicate that the order was not placed due to duplicate prevention
+            # If there's a pending order, prevent the trade
+            if pending_duplicate:
+                self.logger.info(
+                    f"⚠️ CONFLICT CHECK BLOCKED: Internal pending order exists on {order.symbol.value} — broker confirmation needed.")
+                # Return None instead of raising an exception to prevent system crashes
+                return None  # Indicate that the order was not placed due to duplicate prevention
 
         # Check for broker-specific order placement settings
         # Check if any specific broker is enabled for exclusive order placement

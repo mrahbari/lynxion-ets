@@ -188,6 +188,12 @@ class BrokerExecutionService(ExecutionPort):
         from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
         return PendingOrdersTracker.has_pending_order_in_direction(symbol, side)
 
+    @classmethod
+    def _has_any_pending_order(cls, symbol: Symbol) -> bool:
+        """Check if there's any pending order for the symbol."""
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        return len(PendingOrdersTracker.get_pending_orders_for_symbol(symbol)) > 0
+
     def execute_order(self, order: Order) -> str:
         """Execute an order through the configured broker."""
         try:
@@ -231,27 +237,26 @@ class BrokerExecutionService(ExecutionPort):
                     elif order_side_str.upper() in ('SELL', 'SHORT'):
                         intended_position_side = 'SHORT'
 
-                # Check both existing positions and pending orders in the same direction
+                # Check both existing positions and pending orders for the symbol
                 position_duplicate = False
                 pending_duplicate = False
 
-                # Check for existing position in the same direction
+                # Check for existing position in any direction
                 if current_position and hasattr(current_position, 'side') and current_position.side is not None:
                     pos_side_str = current_position.side.name if hasattr(current_position.side, 'name') else (current_position.side.value if hasattr(current_position.side, 'value') else str(current_position.side))
-                    if intended_position_side and pos_side_str.upper() == intended_position_side.upper():
+                    if pos_side_str.upper() in ('LONG', 'SHORT', 'BUY', 'SELL'):
                         position_duplicate = True
 
-                # Check for pending orders in the same direction
-                if intended_position_side:
-                    pending_duplicate = self._has_pending_order_in_direction(order.symbol, intended_position_side)
+                # Check for pending orders on the symbol
+                pending_duplicate = self._has_any_pending_order(order.symbol)
 
                 # If either condition is true, prevent the trade
                 if position_duplicate or pending_duplicate:
                     if position_duplicate:
                         pos_side_name = current_position.side.name if hasattr(current_position.side, 'name') else str(current_position.side)
-                        self.logger.info(f"❌ DUPLICATE REJECTED: Active {pos_side_name} position exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
+                        self.logger.info(f"❌ CONFLICT REJECTED: Active {pos_side_name} position exists for {order.symbol.value}. Preventing conflicting trade.")
                     else:
-                        self.logger.info(f"⚠️ DUPLICATE CHECK BLOCKED: Internal pending flag set for {intended_position_side} order on {order.symbol.value} — broker confirmation needed.")
+                        self.logger.info(f"⚠️ CONFLICT CHECK BLOCKED: Internal pending order exists on {order.symbol.value} — broker confirmation needed.")
                     # Return a failure status instead of raising an exception to prevent system crashes
                     return None  # Indicate that the order was not placed due to duplicate prevention
 

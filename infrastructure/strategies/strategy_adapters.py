@@ -139,13 +139,14 @@ class BaseStrategyAdapter(StrategyPort):
         risk_parameters = self._calculate_comprehensive_risk_parameters(fused_signal)
 
         # Create execution intent
+        from infrastructure.statistical_validation.confidence_calibrator import confidence_calibrator
+        calibrated_conf = confidence_calibrator.calibrate_confidence(float(fused_signal.confidence.value))
+
         execution_intent = ExecutionIntent(
             symbol=fused_signal.symbol,
             strategy_name=strategy_name,
             side=self._determine_side(fused_signal),
-            intent_confidence=Percentage(min(Decimal('1.0'),
-                                          max(Decimal('0.0'),
-                                              fused_signal.confidence.value * Decimal('0.8')))),  # Slightly reduce confidence
+            intent_confidence=Percentage(Decimal(str(calibrated_conf))),
             risk_parameters=risk_parameters,
             timestamp=getattr(fused_signal, 'timestamp', None) or datetime.now(),  # E-P5.2: simulated time
             fused_signal=fused_signal,

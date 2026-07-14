@@ -300,6 +300,7 @@ class _ForensicDecisionLoggingMixin:
             "strategy": strategy,
             "decision": decision,
             "confidence": confidence,
+            "raw_confidence": decision_reasons.get("fused_signal_confidence") if decision_reasons else confidence,
             "trade_id": trade_id,
             "timestamp": timestamp.isoformat() + "Z",
             "was_profitable": None  # This would be updated later when trade closes

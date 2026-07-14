@@ -313,3 +313,45 @@ class TrendFollowStrategyAdapter(BaseStrategyAdapter):
             import traceback
             traceback.print_exc()
             return None
+
+    def should_execute(self, fused_signal) -> bool:
+        """Check if the trend follow strategy should execute based on the fused signal"""
+        from infrastructure.strategies.strategy_config import StrategyConfig
+        
+        # First check if strategy is enabled
+        if not StrategyConfig.get_strategy_enabled(self.name):
+            return False
+
+        # Get strategy-specific configuration
+        min_confidence = self.config.get('min_confidence', 0.5)
+
+        # Check if signal meets trend-following criteria
+        confidence = float(fused_signal.confidence.value)
+        is_trending = 'trend' in fused_signal.regime_context.lower()
+        has_direction = abs(fused_signal.direction) > 0.1
+
+        # Log specific rejection reason
+        if confidence < min_confidence:
+            self.logger.info(f"Trade rejected: "
+                           f"confidence={confidence:.2f} < "
+                           f"TREND_FOLLOWING_MIN_CONFIDENCE_THRESHOLD={min_confidence:.2f} "
+                           f"source=trend_following_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+        elif not is_trending:
+            self.logger.info(f"Trade rejected: "
+                           f"regime_context='{fused_signal.regime_context}' does not indicate trending market "
+                           f"source=trend_following_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+        elif not has_direction:
+            self.logger.info(f"Trade rejected: "
+                           f"direction={fused_signal.direction:.3f} is too weak (abs<{0.1}) "
+                           f"source=trend_following_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+
+        return True

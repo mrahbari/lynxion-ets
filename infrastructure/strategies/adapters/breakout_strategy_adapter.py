@@ -384,17 +384,7 @@ class BreakoutStrategyAdapter(BaseStrategyAdapter):
             return None
 
         # Use the fused signal to determine if we should execute
-        # Check signal confidence against strategy threshold
-        min_confidence = self.config.get('min_confidence', 0.5)
-        confidence = float(fused_signal.confidence.value)
-
-        if confidence < min_confidence:
-            self.logger.info(f"Trade rejected: "
-                           f"confidence={confidence:.2f} < "
-                           f"STRATEGY_MIN_CONFIDENCE_THRESHOLD={min_confidence:.2f} "
-                           f"source=crypto_breakout_strategy "
-                           f"strategy={self.name} "
-                           f"symbol={fused_signal.symbol.value}")
+        if not self.should_execute(fused_signal):
             return None
 
         # Determine if we should execute based on the fused signal characteristics
@@ -439,13 +429,14 @@ class BreakoutStrategyAdapter(BaseStrategyAdapter):
         risk_parameters = self._calculate_comprehensive_risk_parameters(fused_signal)
 
         # Create execution intent with the determined side
+        from infrastructure.statistical_validation.confidence_calibrator import confidence_calibrator
+        calibrated_conf = confidence_calibrator.calibrate_confidence(float(fused_signal.confidence.value))
+
         execution_intent = ExecutionIntent(
             symbol=fused_signal.symbol,
             strategy_name=self.get_strategy_name(),
             side=final_side,
-            intent_confidence=Percentage(min(Decimal('1.0'),
-                                          max(Decimal('0.0'),
-                                              fused_signal.confidence.value * Decimal('0.8')))),  # Slightly reduce confidence
+            intent_confidence=Percentage(Decimal(str(calibrated_conf))),
             risk_parameters=risk_parameters,
             timestamp=getattr(fused_signal, 'timestamp', None) or datetime.now(),  # E-P5.2: simulated time
             fused_signal=fused_signal,
@@ -548,3 +539,37 @@ class BreakoutStrategyAdapter(BaseStrategyAdapter):
         }
 
         return base_risk_params
+
+    def should_execute(self, fused_signal) -> bool:
+        """Check if the breakout strategy should execute based on the fused signal"""
+        from infrastructure.strategies.strategy_config import StrategyConfig
+        
+        # First check if strategy is enabled
+        if not StrategyConfig.get_strategy_enabled(self.name):
+            return False
+
+        # Get strategy-specific configuration
+        min_confidence = self.config.get('min_confidence', 0.5)
+
+        # Check if signal meets breakout criteria
+        confidence = float(fused_signal.confidence.value)
+        is_volatile = 'volatile' in fused_signal.regime_context.lower() or 'breakout' in fused_signal.regime_context.lower()
+
+        # Log specific rejection reason
+        if confidence < min_confidence:
+            self.logger.info(f"Trade rejected: "
+                           f"confidence={confidence:.2f} < "
+                           f"STRATEGY_MIN_CONFIDENCE_THRESHOLD={min_confidence:.2f} "
+                           f"source=crypto_breakout_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+        elif not is_volatile:
+            self.logger.info(f"Trade rejected: "
+                           f"regime_context='{fused_signal.regime_context}' does not indicate volatile/breakout market "
+                           f"source=crypto_breakout_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+
+        return True

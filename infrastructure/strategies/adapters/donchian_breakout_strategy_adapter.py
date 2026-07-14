@@ -77,3 +77,38 @@ class DonchianBreakoutStrategyAdapter(BaseStrategyAdapter):
             metadata={"prior_high": prior_high, "prior_low": prior_low, "atr": atr,
                       "atr_median": atr_med, "expanding": expanding, "regime_required": "breakout"},
         )
+
+    def should_execute(self, fused_signal) -> bool:
+        """Check if the Donchian breakout strategy should execute based on the fused signal"""
+        from infrastructure.strategies.strategy_config import StrategyConfig
+        
+        # First check if strategy is enabled
+        if not StrategyConfig.get_strategy_enabled(self.name):
+            return False
+
+        # Get strategy-specific configuration
+        min_confidence = getattr(self, "config", {}).get('min_confidence', 0.5)
+
+        # Check if signal meets breakout criteria
+        confidence = float(fused_signal.confidence.value)
+        is_volatile = 'volatile' in fused_signal.regime_context.lower() or 'breakout' in fused_signal.regime_context.lower()
+
+        # Log specific rejection reason
+        if confidence < min_confidence:
+            self.logger.info(f"Trade rejected: "
+                           f"confidence={confidence:.2f} < "
+                           f"DONCHIAN_BREAKOUT_MIN_CONFIDENCE_THRESHOLD={min_confidence:.2f} "
+                           f"source=donchian_breakout_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+        elif not is_volatile:
+            self.logger.info(f"Trade rejected: "
+                           f"regime_context='{fused_signal.regime_context}' does not indicate volatile/breakout market "
+                           f"source=donchian_breakout_strategy "
+                           f"strategy={self.name} "
+                           f"symbol={fused_signal.symbol.value}")
+            return False
+
+        return True
+
