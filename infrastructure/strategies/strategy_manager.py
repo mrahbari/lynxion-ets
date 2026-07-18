@@ -8,14 +8,12 @@ from typing import Dict, List, Optional, Callable, Any
 from datetime import datetime
 from domain.value_objects import Symbol
 from domain.entities import FusedSignal, ExecutionIntent
-from infrastructure.strategies.strategy_adapters import BaseStrategyAdapter, TrendFollowingStrategy, MeanReversionStrategy, VolatilityBreakoutStrategy
+from infrastructure.strategies.strategy_adapters import BaseStrategyAdapter, VolatilityBreakoutStrategy
 from infrastructure.strategies.adapters.trend_follow_strategy_adapter import TrendFollowStrategyAdapter
 from infrastructure.strategies.adapters.mean_reversion_strategy_adapter import MeanReversionStrategyAdapter
-from infrastructure.strategies.adapters.scalping_strategy_adapter import ScalpingStrategyAdapter
 from infrastructure.strategies.adapters.breakout_strategy_adapter import BreakoutStrategyAdapter
 from infrastructure.strategies.adapters.liquidity_strategy_adapter import LiquidityStrategyAdapter
 from infrastructure.strategies.adapters.vwap_reversal_strategy_adapter import VWAPReversalStrategyAdapter
-from infrastructure.strategies.adapters.momentum_strategy_adapter import MomentumStrategyAdapter
 from infrastructure.strategies.adapters.mtf_trend_strategy_adapter import MTFTrendStrategyAdapter
 from infrastructure.strategies.adapters.oi_footprint_strategy_adapter import OIFootprintStrategyAdapter
 from infrastructure.strategies.adapters.sweep_scalper_strategy_adapter import SweepScalperAdapter
@@ -383,15 +381,12 @@ class StrategyManager:
 
     def _register_default_strategies(self):
         """Register default strategies with the manager based on configuration."""
-        # Define available strategies with their classes
         available_strategies = {
             'trend_following': TrendFollowStrategyAdapter,
             'mean_reversion': MeanReversionStrategyAdapter,
-            'scalping': ScalpingStrategyAdapter,
             'breakout': BreakoutStrategyAdapter,
             'liquidity': LiquidityStrategyAdapter,
             'vwap_reversal': VWAPReversalStrategyAdapter,
-            'momentum': MomentumStrategyAdapter,
             'mtf_trend': MTFTrendStrategyAdapter,
             'oi_footprint': OIFootprintStrategyAdapter,
             'sweep_scalper': SweepScalperAdapter,

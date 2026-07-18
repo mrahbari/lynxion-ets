@@ -142,6 +142,11 @@ class Container:
         self.register("statistical_authority_engine", self._build_statistical_authority_engine)
         self.register("statistical_historical_data_tracker", self._build_statistical_historical_data_tracker)
         self.register("decision_defensibility_validator", self._build_decision_defensibility_validator)
+        self.register("market_structure_engine", self._build_market_structure_engine)
+        self.register("setup_engine", self._build_setup_engine)
+        self.register("execution_confirmation_engine", self._build_execution_confirmation_engine)
+        self.register("execution_optimizer", self._build_execution_optimizer)
+        self.register("decision_pipeline", self._build_decision_pipeline)
 
     # Factories use local imports so importing this module has no heavy/side effects.
 
@@ -637,3 +642,26 @@ class Container:
     def _build_decision_defensibility_validator(self):
         from infrastructure.statistical_validation.decision_defensibility_validator import DecisionDefensibilityValidator
         return DecisionDefensibilityValidator()
+
+    def _build_market_structure_engine(self):
+        from infrastructure.market_structure.market_structure_engine import MarketStructureEngine
+        return MarketStructureEngine()
+
+    def _build_setup_engine(self):
+        from infrastructure.strategies.setup_engine import SetupEngine
+        return SetupEngine()
+
+    def _build_execution_confirmation_engine(self):
+        from infrastructure.execution.execution_confirmation_engine import ExecutionConfirmationEngine
+        return ExecutionConfirmationEngine()
+
+    def _build_execution_optimizer(self):
+        from infrastructure.execution.execution_optimizer import ExecutionOptimizer
+        return ExecutionOptimizer()
+
+    def _build_decision_pipeline(self):
+        from infrastructure.strategies.decision_pipeline import DecisionPipeline
+        return DecisionPipeline(
+            confirmation_engine=self.resolve("execution_confirmation_engine"),
+            optimizer=self.resolve("execution_optimizer")
+        )

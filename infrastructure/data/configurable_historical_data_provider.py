@@ -389,6 +389,26 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             # Default to direct API call
             return self._fetch_binance_historical(symbol, period, timeframe)
 
+    def _handle_http_error(self, e: Exception, symbol: str, source: str) -> Exception:
+        """Helper to decode requests HTTPError and return a detailed, user-friendly exception."""
+        import requests
+        if isinstance(e, requests.exceptions.HTTPError) and e.response is not None:
+            try:
+                err_json = e.response.json()
+                if isinstance(err_json, dict):
+                    msg = err_json.get('msg') or err_json.get('message') or ''
+                    code = err_json.get('code')
+                    
+                    # Custom mapping for known code errors (e.g. Binance -1121)
+                    if code == -1121 or 'invalid symbol' in msg.lower() or 'invalid_symbol' in msg.lower():
+                        detailed_msg = f"Invalid symbol '{symbol}' on {source} (code {code}: {msg})"
+                    else:
+                        detailed_msg = f"{source} API error (code {code}: {msg})"
+                    return Exception(detailed_msg)
+            except Exception:
+                pass
+        return e
+
     def _fetch_binance_historical(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
         """Fetch historical data from Binance API directly."""
         try:
@@ -434,8 +454,9 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             return converted_data
 
         except Exception as e:
-            self.logger.error(f"Error fetching historical data from Binance for {symbol}: {e}")
-            raise
+            detailed_e = self._handle_http_error(e, symbol, "Binance")
+            self.logger.error(f"Error fetching historical data from Binance for {symbol}: {detailed_e}")
+            raise detailed_e
 
     def _fetch_bingx_historical(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
         """Fetch historical data from BingX API directly."""
@@ -490,8 +511,9 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             return converted_data
 
         except Exception as e:
-            self.logger.error(f"Error fetching historical data from BingX for {symbol}: {e}")
-            raise
+            detailed_e = self._handle_http_error(e, symbol, "BingX")
+            self.logger.error(f"Error fetching historical data from BingX for {symbol}: {detailed_e}")
+            raise detailed_e
 
     def _fetch_mexc_historical(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
         """Fetch historical data from MEXC API directly."""
@@ -537,8 +559,9 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             return converted_data
 
         except Exception as e:
-            self.logger.error(f"Error fetching historical data from MEXC for {symbol}: {e}")
-            raise
+            detailed_e = self._handle_http_error(e, symbol, "MEXC")
+            self.logger.error(f"Error fetching historical data from MEXC for {symbol}: {detailed_e}")
+            raise detailed_e
 
     def _fetch_phemex_historical(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
         """Fetch historical data from Phemex API directly."""
@@ -588,8 +611,9 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             return converted_data
 
         except Exception as e:
-            self.logger.error(f"Error fetching historical data from Phemex for {symbol}: {e}")
-            raise
+            detailed_e = self._handle_http_error(e, symbol, "Phemex")
+            self.logger.error(f"Error fetching historical data from Phemex for {symbol}: {detailed_e}")
+            raise detailed_e
 
     def _convert_timeframe_to_phemex(self, timeframe: str) -> str:
         """Convert our timeframe format to Phemex format."""

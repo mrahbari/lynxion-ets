@@ -71,8 +71,16 @@ class RiskEnforcement:
             size = float(getattr(order, "quantity", 0) or 0)
             sl = float(order.stop_loss_price.amount) if getattr(order, "stop_loss_price", None) else fill_price * 0.99
             tp = float(order.take_profit_price.amount) if getattr(order, "take_profit_price", None) else fill_price * 1.01
+            
+            # Extract setup type from order's parent_execution_intent metadata if available
+            setup_type = None
+            if hasattr(order, 'parent_execution_intent') and order.parent_execution_intent:
+                intent = order.parent_execution_intent
+                if intent.metadata:
+                    setup_type = intent.metadata.get("setup_type")
+                    
             with self._lock:
-                self._rm.enter_position(symbol, fill_price, size, direction, sl, tp)
+                self._rm.enter_position(symbol, fill_price, size, direction, sl, tp, setup_type=setup_type)
         except Exception:
             pass  # exposure feedback must never break execution
 

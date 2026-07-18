@@ -165,6 +165,19 @@ class SignalProcessor:
             if self.logger:
                 self.logger.info(f"Processing observation from {event.source_component} for {observation.symbol.value}")
 
+            # Record price for rolling correlation calculation (E3.T5)
+            try:
+                from application.containers.container import container
+                risk_engine = container.resolve("risk_engine")
+                risk_engine._risk_manager.record_price(observation.symbol.value, float(observation.close))
+            except Exception:
+                pass
+
+            # Update last market data heartbeat
+            if not hasattr(self, '_last_market_data_times'):
+                self._last_market_data_times = {}
+            self._last_market_data_times[observation.symbol.value] = datetime.now()
+
             # Process observation through engine
             interpreted_signal = engine_service.process_observation(observation)
 
@@ -295,72 +308,64 @@ class SignalProcessor:
 
             # Calculate quantity based on risk parameters
             risk_params = execution_intent.risk_parameters
-            position_size_pct = risk_params.get('max_position_size', 0.02)  # Default 2%
-
-            # Fixed Position Size Configuration (for testing purposes)
             fixed_position_size_enabled = load_settings().position_sizing.fixed_position_size_enabled if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'fixed_position_size_enabled') else False
-            fixed_position_amount = load_settings().position_sizing.fixed_position_amount if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'fixed_position_amount') else 10.0  # Default to $10 for testing
+            fixed_position_amount = load_settings().position_sizing.fixed_position_amount if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'fixed_position_amount') else 10.0
 
-            # Calculate quantity based on risk parameters and account balance
             try:
-                if fixed_position_size_enabled:
-                    # Use fixed position size for testing
-                    # Check if current_price is valid before division
-                    if current_price is None or current_price <= 0:
-                        # Use fallback price if current_price is invalid
-                        fallback_price = 50000.0
-                        quantity = fixed_position_amount / fallback_price
-                        if self.logger:
-                            self.logger.info(f"Using fixed position size with fallback price: ${fixed_position_amount} at ${fallback_price} = {quantity} units")
-                    else:
-                        quantity = fixed_position_amount / current_price
-                        if self.logger:
-                            self.logger.info(f"Using fixed position size: ${fixed_position_amount} at ${current_price} = {quantity} units")
-                else:
-                    # In a real implementation, we'd get portfolio metrics from portfolio service
-                    # For now, using a default account balance from environment variable
-                    account_balance = load_settings().position_sizing.default_account_balance if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'default_account_balance') else 10000.0  # Default to $10,000 if not available
-                    position_value = account_balance * position_size_pct
+                from application.containers.container import container
+                risk_engine = container.resolve("risk_engine")
+                from domain.entities.position import Portfolio, Position as DomainPosition
+                from domain.value_objects import Money as DomainMoney, Symbol as DomainSymbol
+                from domain.enums.position_side import PositionSide
+                from decimal import Decimal
+                from datetime import datetime
 
-                    # Calculate quantity based on position value and current price
-                    # Check if current_price is valid before division
-                    if current_price is None or current_price <= 0:
-                        # Use fallback price if current_price is invalid
-                        fallback_price = 50000.0
-                        quantity = position_value / fallback_price
-                        if self.logger:
-                            self.logger.info(f"Using calculated position size with fallback price: ${position_value} at ${fallback_price} = {quantity} units")
-                    else:
-                        quantity = position_value / current_price
+                risk_mgr = risk_engine._risk_manager
+                active_positions = []
+                for sym_str, pos in risk_mgr.positions.items():
+                    active_positions.append(DomainPosition(
+                        symbol=DomainSymbol(sym_str),
+                        side=PositionSide.LONG if pos.direction.value == "long" else PositionSide.SHORT,
+                        quantity=Decimal(str(pos.size)),
+                        entry_price=DomainMoney(amount=Decimal(str(pos.entry_price)), currency="USDT"),
+                        timestamp=pos.entry_time
+                    ))
+                
+                equity_val = risk_mgr.starting_equity + risk_mgr.total_pnl
+                portfolio_obj = Portfolio(
+                    positions=active_positions,
+                    cash_balance=DomainMoney(amount=Decimal(str(equity_val)), currency="USDT"),
+                    total_value=DomainMoney(amount=Decimal(str(equity_val)), currency="USDT"),
+                    timestamp=datetime.now()
+                )
 
-                    # Apply any quantity adjustments from risk parameters
-                    # Check if position_quantity in risk_params is significantly different from calculated quantity
-                    if 'position_quantity' in risk_params:
-                        risk_position_quantity = risk_params['position_quantity']
-                        # If there's a significant difference (>5% relative difference), log a warning
-                        if quantity != 0 and abs(risk_position_quantity - quantity) / quantity > 0.05:
-                            if self.logger:
-                                self.logger.warning(f"⚠️ Quantity mismatch: Risk params quantity={risk_position_quantity}, Calculated quantity={quantity}, Diff={abs(risk_position_quantity - quantity) / quantity:.2%}")
+                # Fetch volatility/ATR if available
+                atr = execution_intent.metadata.get("atr") if execution_intent.metadata else None
 
-                        # Use the risk parameter quantity as the authoritative value
-                        quantity = risk_position_quantity
-
-            except Exception as e:
-                # If portfolio service fails, use a default quantity
-                if fixed_position_size_enabled:
-                    # Use fixed position size for testing with fallback price
-                    fallback_price = 50000.0
-                    quantity = fixed_position_amount / fallback_price
-                    if self.logger:
-                        self.logger.info(f"Using fixed position size (fallback): ${fixed_position_amount} at ${fallback_price} = {quantity} units")
-                else:
-                    # Use default account balance from environment variable
-                    default_account_balance = load_settings().position_sizing.default_account_balance if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'default_account_balance') else 1000.0  # Default to $1,000 if not available
-                    fallback_price = 50000.0
-                    quantity = position_size_pct * default_account_balance / fallback_price
-
+                quantity = risk_engine.calculate_dynamic_size(
+                    intent=execution_intent,
+                    portfolio=portfolio_obj,
+                    volatility=atr
+                )
                 if self.logger:
-                    self.logger.error(f"Error calculating quantity, using fallback: {e}")
+                    self.logger.info(f"NGDP dynamically sized quantity: {quantity:.6f} for {execution_intent.symbol.value}")
+            except Exception as e:
+                if self.logger:
+                    self.logger.error(f"Error in NGDP calculation, falling back to static sizing: {e}")
+                
+                if fixed_position_size_enabled:
+                    fallback_price = 50000.0
+                    p = current_price if current_price and current_price > 0 else fallback_price
+                    quantity = fixed_position_amount / p
+                else:
+                    position_size_pct = risk_params.get('max_position_size', 0.02)
+                    account_balance = load_settings().position_sizing.default_account_balance if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'default_account_balance') else 10000.0
+                    position_value = account_balance * position_size_pct
+                    p = current_price if current_price and current_price > 0 else 50000.0
+                    quantity = position_value / p
+
+                if 'position_quantity' in risk_params:
+                    quantity = risk_params['position_quantity']
 
             # Ensure minimum quantity to avoid issues with small trades
             if quantity < 0.001:
@@ -499,6 +504,58 @@ class SignalProcessor:
                         self.logger.warning(f"TP price scale mismatch for {execution_intent.symbol.value}: TP={tp_amount}, Entry={entry_price}, Ratio={tp_distance_ratio:.2f}. Recalculating...")
                     from domain.value_objects import Money
                     take_profit_price = Money(amount=float(tp_price), currency='USDT')
+
+            # --- MARKET DATA SAFETY HEARTBEAT GUARD (LIVE ONLY) ---
+            is_live = not hasattr(execution_service_to_use, 'is_backtest') or not getattr(execution_service_to_use, 'is_backtest', False)
+            if is_live:
+                last_time = getattr(self, '_last_market_data_times', {}).get(execution_intent.symbol.value)
+                if last_time:
+                    elapsed = (datetime.now() - last_time).total_seconds()
+                    if elapsed > 15.0:
+                        if self.logger:
+                            self.logger.warning(
+                                f"❌ HEARTBEAT GUARD VETO: Market data heartbeat is stale by {elapsed:.1f}s (> 15s) for "
+                                f"{execution_intent.symbol.value}. Submission rejected."
+                            )
+                        return None
+                else:
+                    if self.logger:
+                        self.logger.warning(
+                            f"❌ HEARTBEAT GUARD VETO: No market data heartbeat recorded for "
+                            f"{execution_intent.symbol.value}. Submission rejected."
+                        )
+                    return None
+
+            # --- LIQUIDITY DEPTH PROTECTION GUARD ---
+            max_liquidity = 999999.0
+            if hasattr(execution_service_to_use, 'broker') and hasattr(execution_service_to_use.broker, 'fetch_order_book'):
+                try:
+                    order_book = execution_service_to_use.broker.fetch_order_book(execution_intent.symbol.value)
+                    if isinstance(order_book, dict):
+                        if order_side.name == 'BUY':
+                            # Check asks (seller liquidity)
+                            asks = order_book.get('asks', [])[:3]
+                            max_liquidity = sum(float(ask[1]) for ask in asks)
+                        else:
+                            # Check bids (buyer liquidity)
+                            bids = order_book.get('bids', [])[:3]
+                            max_liquidity = sum(float(bid[1]) for bid in bids)
+                except Exception as e:
+                    if self.logger:
+                        self.logger.debug(f"Could not fetch order book depth: {e}")
+
+            # Safety liquidity threshold check
+            if quantity > max_liquidity:
+                if self.logger:
+                    self.logger.warning(
+                        f"⚠️ LIQUIDITY DEPTH GUARD: Requested size {quantity:.6f} exceeds top 3 levels "
+                        f"liquidity {max_liquidity:.6f} for {execution_intent.symbol.value}. Scaling down to {max_liquidity:.6f}."
+                    )
+                quantity = max_liquidity
+                if quantity < 0.001:
+                    if self.logger:
+                        self.logger.warning("Scaled size below minimum 0.001. Submission rejected.")
+                    return None
 
             # Log comprehensive order details before execution
             if self.logger:

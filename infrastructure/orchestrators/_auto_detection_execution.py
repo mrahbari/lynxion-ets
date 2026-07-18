@@ -129,43 +129,63 @@ class _AutoDetectionExecutionMixin:
                         import random
                         current_price = random.uniform(0.01, 500.0)
 
-            # Use risk parameters from the execution intent
-            risk_params = execution_intent.risk_parameters
-            position_size_pct = risk_params.get('max_position_size', 0.02)  # Default 2%
-
-            # Fixed Position Size Configuration (for testing purposes)
-            fixed_position_size_enabled = self._settings.position_sizing.fixed_position_size_enabled if self._settings.position_sizing and hasattr(self._settings.position_sizing, 'fixed_position_size_enabled') else False
-            fixed_position_amount = self._settings.position_sizing.fixed_position_amount if self._settings.position_sizing and hasattr(self._settings.position_sizing, 'fixed_position_amount') else 10.0  # Default to $10 for testing
-
             # Calculate quantity based on risk parameters and account balance
+            risk_params = execution_intent.risk_parameters
+            fixed_position_size_enabled = self._settings.position_sizing.fixed_position_size_enabled if self._settings.position_sizing and hasattr(self._settings.position_sizing, 'fixed_position_size_enabled') else False
+            fixed_position_amount = self._settings.position_sizing.fixed_position_amount if self._settings.position_sizing and hasattr(self._settings.position_sizing, 'fixed_position_amount') else 10.0
+
             try:
+                from application.containers.container import container
+                risk_engine = container.resolve("risk_engine")
+                from domain.entities.position import Portfolio, Position as DomainPosition
+                from domain.value_objects import Money as DomainMoney, Symbol as DomainSymbol
+                from domain.enums.position_side import PositionSide
+                from decimal import Decimal
+                from datetime import datetime
+
+                risk_mgr = risk_engine._risk_manager
+                active_positions = []
+                for sym_str, pos in risk_mgr.positions.items():
+                    active_positions.append(DomainPosition(
+                        symbol=DomainSymbol(sym_str),
+                        side=PositionSide.LONG if pos.direction.value == "long" else PositionSide.SHORT,
+                        quantity=Decimal(str(pos.size)),
+                        entry_price=DomainMoney(amount=Decimal(str(pos.entry_price)), currency="USDT"),
+                        timestamp=pos.entry_time
+                    ))
+                
+                equity_val = risk_mgr.starting_equity + risk_mgr.total_pnl
+                portfolio_obj = Portfolio(
+                    positions=active_positions,
+                    cash_balance=DomainMoney(amount=Decimal(str(equity_val)), currency="USDT"),
+                    total_value=DomainMoney(amount=Decimal(str(equity_val)), currency="USDT"),
+                    timestamp=datetime.now()
+                )
+
+                # Fetch volatility/ATR if available
+                atr = execution_intent.metadata.get("atr") if execution_intent.metadata else None
+
+                quantity = risk_engine.calculate_dynamic_size(
+                    intent=execution_intent,
+                    portfolio=portfolio_obj,
+                    volatility=atr
+                )
+                self.logger.info(f"NGDP dynamically sized quantity: {quantity:.6f} for {execution_intent.symbol.value}")
+            except Exception as e:
+                self.logger.error(f"Error in NGDP calculation, falling back to static sizing: {e}")
+                
                 if fixed_position_size_enabled:
-                    # Use fixed position size for testing
-                    quantity = fixed_position_amount / current_price
-                    self.logger.info(f"Using fixed position size: ${fixed_position_amount} at ${current_price} = {quantity} units")
+                    p = current_price if current_price and current_price > 0 else 50000.0
+                    quantity = fixed_position_amount / p
                 else:
-                    # In a real implementation, we'd get portfolio metrics from portfolio service
-                    # For now, using a default account balance from environment variable
-                    account_balance = self._settings.position_sizing.default_account_balance if self._settings.position_sizing and hasattr(self._settings.position_sizing, 'default_account_balance') else 10000.0  # Default to $10,000 if not available
+                    position_size_pct = risk_params.get('max_position_size', 0.02)
+                    account_balance = self._settings.position_sizing.default_account_balance if self._settings.position_sizing and hasattr(self._settings.position_sizing, 'default_account_balance') else 10000.0
                     position_value = account_balance * position_size_pct
+                    p = current_price if current_price and current_price > 0 else 50000.0
+                    quantity = position_value / p
 
-                    # Calculate quantity based on position value and current price
-                    quantity = position_value / current_price
-
-                    # Apply any quantity adjustments from risk parameters
-                    if 'position_quantity' in risk_params:
-                        quantity = risk_params['position_quantity']
-
-            except:
-                # If portfolio service fails, use a default quantity
-                if fixed_position_size_enabled:
-                    # Use fixed position size for testing
-                    quantity = fixed_position_amount / current_price
-                    self.logger.info(f"Using fixed position size (fallback): ${fixed_position_amount} at ${current_price} = {quantity} units")
-                else:
-                    # Use default account balance from environment variable
-                    default_account_balance = self._settings.position_sizing.default_account_balance if self._settings.position_sizing and hasattr(self._settings.position_sizing, 'default_account_balance') else 1000.0  # Default to $1,000 if not available
-                    quantity = position_size_pct * default_account_balance / current_price
+                if 'position_quantity' in risk_params:
+                    quantity = risk_params['position_quantity']
 
             # Ensure minimum quantity to avoid issues with small trades
             if quantity < 0.001:
@@ -183,6 +203,57 @@ class _AutoDetectionExecutionMixin:
 
             # Determine position side based on order side for futures trading
             position_side = "LONG" if order_side.name == 'BUY' else "SHORT"
+            
+            # Use self.execution_service for guards
+            execution_service_to_use = self.execution_service
+
+            # --- MARKET DATA SAFETY HEARTBEAT GUARD (LIVE ONLY) ---
+            is_live = not hasattr(execution_service_to_use, 'is_backtest') or not getattr(execution_service_to_use, 'is_backtest', False)
+            if is_live:
+                from infrastructure.messaging.event_system import signal_processor
+                last_time = getattr(signal_processor, '_last_market_data_times', {}).get(symbol_value)
+                if last_time:
+                    elapsed = (datetime.now() - last_time).total_seconds()
+                    if elapsed > 15.0:
+                        self.logger.warning(
+                            f"❌ HEARTBEAT GUARD VETO: Market data heartbeat is stale by {elapsed:.1f}s (> 15s) for "
+                            f"{symbol_value}. Submission rejected."
+                        )
+                        return {'status': 'failed', 'error': 'HEARTBEAT_STALE'}
+                else:
+                    self.logger.warning(
+                        f"❌ HEARTBEAT GUARD VETO: No market data heartbeat recorded for "
+                        f"{symbol_value}. Submission rejected."
+                    )
+                    return {'status': 'failed', 'error': 'HEARTBEAT_MISSING'}
+
+            # --- LIQUIDITY DEPTH PROTECTION GUARD ---
+            max_liquidity = 999999.0
+            if hasattr(execution_service_to_use, 'broker') and hasattr(execution_service_to_use.broker, 'fetch_order_book'):
+                try:
+                    order_book = execution_service_to_use.broker.fetch_order_book(symbol_value)
+                    if isinstance(order_book, dict):
+                        if order_side.name == 'BUY':
+                            # Check asks (seller liquidity)
+                            asks = order_book.get('asks', [])[:3]
+                            max_liquidity = sum(float(ask[1]) for ask in asks)
+                        else:
+                            # Check bids (buyer liquidity)
+                            bids = order_book.get('bids', [])[:3]
+                            max_liquidity = sum(float(bid[1]) for bid in bids)
+                except Exception as e:
+                    self.logger.debug(f"Could not fetch order book depth: {e}")
+
+            # Safety liquidity threshold check
+            if quantity > max_liquidity:
+                self.logger.warning(
+                    f"⚠️ LIQUIDITY DEPTH GUARD: Requested size {quantity:.6f} exceeds top 3 levels "
+                    f"liquidity {max_liquidity:.6f} for {symbol_value}. Scaling down to {max_liquidity:.6f}."
+                )
+                quantity = max_liquidity
+                if quantity < 0.001:
+                    self.logger.warning("Scaled size below minimum 0.001. Submission rejected.")
+                    return {'status': 'failed', 'error': 'INSUFFICIENT_LIQUIDITY'}
 
             # Create order with risk parameters from the execution intent (set by Strategy layer)
             # The Strategy layer should have already calculated all risk parameters including SL/TP

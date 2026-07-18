@@ -2,13 +2,9 @@
 Infrastructure implementation of the MTF Trend Strategy following hexagonal architecture.
 """
 from typing import Dict, Any, Optional, List
-from domain.entities import Signal, SignalType
-from domain.value_objects import Symbol, Percentage
-from domain.ports.engine_ports import StrategyPort
-from shared.logger import logger
+from domain.entities import Signal, SignalType, FusedSignal, ExecutionIntent
+from domain.value_objects import Symbol
 from datetime import datetime
-from decimal import Decimal
-import numpy as np
 from infrastructure.strategies.strategy_adapters import BaseStrategyAdapter
 
 
@@ -21,185 +17,121 @@ class MTFTrendStrategyAdapter(BaseStrategyAdapter):
         from infrastructure.strategies.strategy_config import get_mtf_trend_config
         system_config = get_mtf_trend_config()
 
-        # NOTE: system_config contains execution settings (like min_confidence, max_position_size)
-        # at the top level, and mathematical model params inside the nested 'parameters' dict.
-        # We must extract and merge both so that key settings are correctly loaded into self.config
-        # and do not fall back to obsolete system defaults.
+        # Extract and merge config settings
         params = system_config.get('parameters', {})
         top_level = {k: v for k, v in system_config.items() if k != 'parameters'}
         self.config = {**top_level, **params, **(config or {})}
-        self.timeframes = ["3m", "15m", "1h", "4h", "1D"]
-        self.trend_period = self.config.get("trend_period", 50)
-        self.weighting = self.config.get("tf_weights", {
-            "3m": 0.10,
-            "15m": 0.20,
-            "1h": 0.25,
-            "4h": 0.25,
-            "1D": 0.20
-        })
 
-    def compute_trend(self, df):
-        """Compute trend for a dataframe"""
-        # This method would operate on actual market data when available
-        # For now, returning neutral as mock
-        return 0
+        from infrastructure.market_structure.market_structure_engine import MarketStructureEngine
+        from infrastructure.strategies.setup_engine import SetupEngine
+        from infrastructure.strategies.decision_pipeline import DecisionPipeline
 
-    # update_with_market_data inherits the base authoritative feed (lazy-inits
-    # data_buffer + caps at buffer_size_limit). Local override removed: it referenced
-    # self.data_buffer without initialising it (AttributeError) and duplicated the feed.
+        self.market_structure_engine = MarketStructureEngine()
+        self.setup_engine = SetupEngine()
+        self.pipeline = DecisionPipeline()
 
     def generate_signal(self, symbol: Symbol) -> Optional[Signal]:
-        """Generate signal using multi-timeframe trend analysis with real market data"""
-        if len(self.data_buffer) < 50:  # Need sufficient data for analysis
-            self.logger.debug(f"Not enough data for {self.name}: {len(self.data_buffer)}, need at least 50")
+        """Generate signal using trend following setups."""
+        if len(self.data_buffer) < 25:
             return None
 
         try:
-            # Extract closing prices for analysis
-            closes = [item['close'] for item in self.data_buffer if 'close' in item]
+            closes = [float(item['close']) for item in self.data_buffer]
+            highs = [float(item.get('high', item['close'])) for item in self.data_buffer]
+            lows = [float(item.get('low', item['close'])) for item in self.data_buffer]
+            volumes = [float(item.get('volume', 0.0)) for item in self.data_buffer]
 
-            if len(closes) < 50:
-                self.logger.debug(f"Not enough close prices for {self.name}: {len(closes)}")
-                return None
-
-            current_price = closes[-1]
-
-            # Calculate moving averages with different periods to represent different timeframes
-            ma_short = self.calculate_ema(closes, 20)  # Short timeframe
-            ma_medium = self.calculate_ema(closes, 50)  # Medium timeframe
-            ma_long = self.calculate_ema(closes, 100)  # Long timeframe
-
-            if not (ma_short and ma_medium and ma_long):
-                self.logger.debug(f"Could not calculate all moving averages for {self.name}")
-                return None
-
-            # Determine trend alignment across timeframes (multi-timeframe confirmation)
-            trend_aligned = (ma_short > ma_medium > ma_long) or (ma_short < ma_medium < ma_long)
-            trend_direction = "BULLISH" if ma_short > ma_long else "BEARISH"
-
-            # Calculate momentum to confirm trend direction
-            momentum_period = min(10, len(closes) - 1)
-            if momentum_period > 0:
-                momentum = (current_price - closes[-momentum_period - 1]) / closes[-momentum_period - 1]
-            else:
-                momentum = 0
-
-            # Determine signal based on multi-timeframe alignment and momentum
-            final_signal_type = SignalType.HOLD
-            final_confidence_factor = 0.5  # Default for neutral strategy
-            final_score = 0.0
-
-            if trend_aligned and trend_direction == "BULLISH" and momentum > 0:
-                final_signal_type = SignalType.BUY
-                final_confidence_factor = min(1.0, 0.6 + (momentum * 5))  # Higher confidence in aligned trend with positive momentum
-                final_score = min(1.0, momentum * 10)
-            elif trend_aligned and trend_direction == "BEARISH" and momentum < 0:
-                final_signal_type = SignalType.SELL
-                final_confidence_factor = min(1.0, 0.6 + (abs(momentum) * 5))  # Higher confidence in aligned trend with negative momentum
-                final_score = max(-1.0, momentum * 10)
-
-            confidence = Percentage(Decimal(str(min(1.0, max(0.1, final_confidence_factor)))))
-
-            signal = Signal(
+            struct = self.market_structure_engine.calculate_market_structure(closes, highs, lows, volumes)
+            setups = self.setup_engine.scan_for_setups(
                 symbol=symbol,
-                signal_type=final_signal_type,
-                confidence=confidence,
-                score=final_score,
+                prices=closes,
+                highs=highs,
+                lows=lows,
+                val=struct["val"],
+                vah=struct["vah"],
+                poc=struct["poc"]
+            )
+
+            # Filter setups to only match NGTREND_FOLLOW setups
+            setup = next((s for s in setups if s.setup_type == "NGTREND_FOLLOW"), None)
+            if not setup:
+                return None
+
+            from domain.value_objects import Percentage
+            from decimal import Decimal
+
+            signal_type = SignalType.BUY if setup.direction == "BUY" else SignalType.SELL
+            return Signal(
+                symbol=symbol,
+                signal_type=signal_type,
+                confidence=Percentage(Decimal("0.8")),
+                score=1.0 if setup.direction == "BUY" else -1.0,
                 timestamp=datetime.now(),
-                source_layer="MTFTrendTechnical",
+                source_layer="strategy",
                 metadata={
-                    "ma_short": ma_short,
-                    "ma_medium": ma_medium,
-                    "ma_long": ma_long,
-                    "trend_aligned": trend_aligned,
-                    "trend_direction": trend_direction,
-                    "momentum": momentum,
-                    "current_price": current_price
+                    "setup": setup,
+                    "struct": struct
                 }
             )
 
-            if final_signal_type != SignalType.HOLD:
-                self.logger.info(f"{self.name} generated signal: {signal.signal_type.name} with confidence {float(signal.confidence.value):.3f} for {symbol.value}")
-
-            return signal
-
-        except Exception as e:
-            self.logger.error(f"Error in {self.name} strategy: {e}")
-            import traceback
-            traceback.print_exc()
+        except Exception:
             return None
 
-    def calculate_ema(self, prices: List[float], period: int) -> Optional[float]:
-        """Calculate Exponential Moving Average"""
-        if len(prices) < period:
+    def evaluate_fused_signal(self, fused_signal: FusedSignal) -> Optional[ExecutionIntent]:
+        """Evaluate fused signal using trend following confirmation and optimization."""
+        self.ensure_data_buffer(fused_signal.symbol)
+        setup = fused_signal.metadata.get("setup") if fused_signal.metadata else None
+
+        if not self.data_buffer and not setup:
             return None
 
-        multiplier = 2 / (period + 1)
-        ema = prices[0]
+        if not self.data_buffer and setup:
+            trigger_price = float(setup.trigger_price)
+            closes = [trigger_price]
+            highs = [trigger_price]
+            lows = [trigger_price]
+            volumes = [0.0]
+        else:
+            closes = [float(item['close']) for item in self.data_buffer]
+            highs = [float(item.get('high', item['close'])) for item in self.data_buffer]
+            lows = [float(item.get('low', item['close'])) for item in self.data_buffer]
+            volumes = [float(item.get('volume', 0.0)) for item in self.data_buffer]
 
-        for price in prices[1:]:
-            ema = (price * multiplier) + (ema * (1 - multiplier))
+        if not setup:
+            struct = self.market_structure_engine.calculate_market_structure(closes, highs, lows, volumes)
+            setups = self.setup_engine.scan_for_setups(
+                symbol=fused_signal.symbol,
+                prices=closes,
+                highs=highs,
+                lows=lows,
+                val=struct["val"],
+                vah=struct["vah"],
+                poc=struct["poc"]
+            )
+            setup = next((s for s in setups if s.setup_type == "NGTREND_FOLLOW"), None)
 
-        return ema
-
-    def calculate_sma(self, prices: List[float], period: int) -> Optional[float]:
-        """Calculate Simple Moving Average"""
-        if len(prices) < period:
+        if not setup:
             return None
-        return sum(prices[-period:]) / period
 
-    def calculate_position_size(self, signal: Signal, account_balance: float) -> float:
-        """Request position size - this should be handled by the risk manager"""
-        # According to the risk governance rules, the Strategy module should only
-        # request risk parameters but not calculate them. The actual calculation
-        # must be done by the Risk module.
+        latest_bar = self.data_buffer[-1] if self.data_buffer else {}
+        current_price = closes[-1]
+        max_position_size = float(self.config.get("max_position_size", 0.05))
 
-        # Return a default value that will be overridden by the risk manager
-        # This is just a placeholder to maintain interface compatibility
-        return 0.0
+        return self.pipeline.process_execution_intent(
+            setup=setup,
+            fused_signal=fused_signal,
+            latest_bar=latest_bar,
+            current_price=current_price,
+            max_position_size=max_position_size,
+            strategy_name=self.name
+        )
 
-    def get_strategy_name(self) -> str:
-        """Get the name of the strategy"""
-        return self.name
-
-    def should_execute(self, fused_signal) -> bool:
-        """Check if the multi-timeframe trend strategy should execute based on the fused signal"""
+    def should_execute(self, fused_signal: FusedSignal) -> bool:
+        """Verify the regime context is trending."""
         from infrastructure.strategies.strategy_config import StrategyConfig
-        
-        # First check if strategy is enabled
         if not StrategyConfig.get_strategy_enabled(self.name):
             return False
 
-        # Get strategy-specific configuration
-        min_confidence = self.config.get('min_confidence', 0.5)
-
-        # Check if signal meets trend-following criteria
-        confidence = float(fused_signal.confidence.value)
         is_trending = 'trend' in fused_signal.regime_context.lower()
         has_direction = abs(fused_signal.direction) > 0.1
-
-        # Log specific rejection reason
-        if confidence < min_confidence:
-            self.logger.info(f"Trade rejected: "
-                           f"confidence={confidence:.2f} < "
-                           f"MTF_TREND_MIN_CONFIDENCE_THRESHOLD={min_confidence:.2f} "
-                           f"source=mtf_trend_strategy "
-                           f"strategy={self.name} "
-                           f"symbol={fused_signal.symbol.value}")
-            return False
-        elif not is_trending:
-            self.logger.info(f"Trade rejected: "
-                           f"regime_context='{fused_signal.regime_context}' does not indicate trending market "
-                           f"source=mtf_trend_strategy "
-                           f"strategy={self.name} "
-                           f"symbol={fused_signal.symbol.value}")
-            return False
-        elif not has_direction:
-            self.logger.info(f"Trade rejected: "
-                           f"direction={fused_signal.direction:.3f} is too weak (abs<{0.1}) "
-                           f"source=mtf_trend_strategy "
-                           f"strategy={self.name} "
-                           f"symbol={fused_signal.symbol.value}")
-            return False
-
-        return True
+        return is_trending and has_direction

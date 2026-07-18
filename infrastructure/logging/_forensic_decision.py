@@ -307,3 +307,46 @@ class _ForensicDecisionLoggingMixin:
         })
 
         return log_entry
+
+    def log_position_sizing(self,
+                            symbol: str,
+                            portfolio_equity: float,
+                            target_risk_pct: float,
+                            volatility_factor: float,
+                            atr_normalization: float,
+                            drawdown_multiplier: float,
+                            correlation_penalty: float,
+                            setup_confidence: float,
+                            final_position_size: float,
+                            timestamp: datetime = None) -> Dict[str, Any]:
+        """Log dynamic position sizing decision for explainability."""
+        if not self.enabled:
+            return None
+
+        if timestamp is None:
+            timestamp = datetime.utcnow()
+
+        log_entry = {
+            "trace_id": str(uuid4()),
+            "layer": "POSITION_SIZING",
+            "symbol": symbol,
+            "portfolio_equity": portfolio_equity,
+            "target_risk_pct": target_risk_pct,
+            "volatility_factor": volatility_factor,
+            "atr_normalization": atr_normalization,
+            "drawdown_multiplier": drawdown_multiplier,
+            "correlation_penalty": correlation_penalty,
+            "setup_confidence": setup_confidence,
+            "final_position_size": final_position_size,
+            "timestamp": timestamp.isoformat() + "Z"
+        }
+
+        self._log_structured(log_entry)
+        self.enhanced_logger.info(
+            f"POSITION SIZING AUDIT: {symbol} | Equity: ${portfolio_equity:.2f} | "
+            f"Risk: {target_risk_pct:.2%} | Volatility: {volatility_factor:.4f} | "
+            f"ATR Norm: {atr_normalization:.4f} | Drawdown Mult: {drawdown_multiplier:.4f} | "
+            f"Corr Penalty: {correlation_penalty:.4f} | Confidence: {setup_confidence:.2%} | "
+            f"Final Size: {final_position_size:.6f}"
+        )
+        return log_entry

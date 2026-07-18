@@ -72,6 +72,7 @@ class RealisticBacktester:
         self.position_value = 0  # Current position value in quote currency
         self.cash = initial_capital  # Available cash
         self.equity = initial_capital  # Total equity (cash + position value)
+        self.avg_entry_price = 0.0  # Average entry price of current position
         self.total_trades = 0
         self.winning_trades = 0
         self.losing_trades = 0
@@ -814,8 +815,11 @@ class RealisticBacktester:
                 f"  Symbol: {symbol}\n"
                 f"  This strategy should be rejected from optimization."
             )
-            self.logger.error("FAIL-FAST TRIGGERED: Pathological overtrading detected - rejecting from optimization")
-            raise ValueError(error_msg)
+            if duration_months >= 1.0:
+                self.logger.error("FAIL-FAST TRIGGERED: Pathological overtrading detected - rejecting from optimization")
+                raise ValueError(error_msg)
+            else:
+                self.logger.warning("Pathological overtrading detected, but allowing for short validation period (< 1 month)")
         elif not overall_passed:
             # For backtesting, we should log warnings but not necessarily fail fast
             # Different strategies may legitimately have few trades depending on market conditions
@@ -867,33 +871,75 @@ class RealisticBacktester:
         # Extract risk parameters from domain intent
         risk_params = domain_intent.risk_parameters
 
-        # Calculate position size based on risk parameters
-        # Use the equity and risk percentage from risk parameters if available
-        # Default to a reasonable position sizing approach
-        risk_percentage = risk_params.get('risk_per_trade', 0.02)  # 2% risk per trade
-        equity = getattr(self, 'equity', 10000.0)  # Use current equity or default
-        risk_amount = equity * risk_percentage
-
-        # Calculate stop loss distance based on ATR or other risk parameters
-        atr = market_row.get('atr', 0.01 * execution_price)  # Default to 1% if no ATR
+        atr = market_row.get('atr', 0.01 * execution_price)
         atr_multiplier = risk_params.get('atr_multiplier', 1.5)
         stop_loss_distance = atr_multiplier * atr
 
-        # Calculate position size based on risk amount and stop loss distance
-        if stop_loss_distance > 0:
-            position_size = risk_amount / stop_loss_distance
-        else:
-            # Fallback: use a percentage of equity divided by price
-            position_size = (equity * risk_percentage) / execution_price
+        # Calculate position size based on risk parameters with NGDP (Dynamic Position Sizing)
+        try:
+            from application.containers.container import container
+            risk_engine = container.resolve("risk_engine")
+            
+            # Record price for rolling correlation calculation (E3.T5)
+            risk_engine._risk_manager.record_price(domain_intent.symbol.value, float(execution_price))
+            
+            from domain.entities.position import Portfolio, Position as DomainPosition
+            from domain.value_objects import Money as DomainMoney, Symbol as DomainSymbol
+            from domain.enums.position_side import PositionSide
+            from decimal import Decimal
+            from datetime import datetime
+
+            risk_mgr = risk_engine._risk_manager
+            
+            # Sync backtester capital/equity state to the risk manager
+            risk_mgr.starting_equity = float(self.equity)
+            risk_mgr.total_pnl = 0.0
+            
+            active_positions = []
+            if abs(self.position) > 0.0:
+                side = PositionSide.LONG if self.position > 0.0 else PositionSide.SHORT
+                active_positions.append(DomainPosition(
+                    symbol=domain_intent.symbol,
+                    side=side,
+                    quantity=Decimal(str(abs(self.position))),
+                    entry_price=DomainMoney(amount=Decimal(str(self.avg_entry_price)), currency="USDT"),
+                    timestamp=datetime.now()
+                ))
+            
+            portfolio_obj = Portfolio(
+                positions=active_positions,
+                cash_balance=DomainMoney(amount=Decimal(str(self.cash)), currency="USDT"),
+                total_value=DomainMoney(amount=Decimal(str(self.equity)), currency="USDT"),
+                timestamp=datetime.now()
+            )
+
+            vol = market_row.get('atr')
+            position_size = risk_engine.calculate_dynamic_size(
+                intent=domain_intent,
+                portfolio=portfolio_obj,
+                volatility=vol
+            )
+        except Exception as e:
+            risk_percentage = risk_params.get('risk_per_trade', 0.02)
+            equity = getattr(self, 'equity', 10000.0)
+            risk_amount = equity * risk_percentage
+            atr = market_row.get('atr', 0.01 * execution_price)
+            atr_multiplier = risk_params.get('atr_multiplier', 1.5)
+            stop_loss_distance = atr_multiplier * atr
+            if stop_loss_distance > 0:
+                position_size = risk_amount / stop_loss_distance
+            else:
+                position_size = (equity * risk_percentage) / execution_price
 
         # Apply position size limits
+        equity = getattr(self, 'equity', 10000.0)
         max_position_by_equity = (equity * getattr(self, 'max_position_size', 0.20)) / execution_price
         position_size = min(position_size, max_position_by_equity)
 
         # Ensure minimum order size
         min_order_size = getattr(self, 'min_order_size', 0.001)
         if position_size < min_order_size:
-            position_size = min_order_size  # Use minimum size if calculated size is too small
+            position_size = min_order_size
 
         # Calculate stop loss and take profit prices based on risk parameters
         sl_price = None
@@ -950,6 +996,7 @@ class RealisticBacktester:
         self.position_value = 0
         self.cash = self.initial_capital
         self.equity = self.initial_capital
+        self.avg_entry_price = 0.0
         self.total_trades = 0
         self.winning_trades = 0
         self.losing_trades = 0
@@ -1192,57 +1239,141 @@ class RealisticBacktester:
             fees = trade_value * self.fee_rate
 
         # Execute the trade
+        trade_pnl = 0.0
         if side.lower() == 'buy':
-            # Buy: reduce cash, increase position
-            self.cash -= (size * execution_price + fees)
-            self.position += size
-            self.position_value += (size * execution_price)
+            if self.position < 0:
+                # Buy to close/reduce short position
+                size_to_buy = min(size, -self.position)
+                self.cash -= (size_to_buy * execution_price + fees)
+                self.position += size_to_buy
+                self.position_value += (size_to_buy * execution_price)
+                
+                # Calculate PnL and manage active positions manually
+                trade_pnl += self._close_active_positions_manually(direction_to_close=-1, size_to_close=size_to_buy, execution_price=execution_price, timestamp=timestamp)
+                
+                # If we reversed, open a long position with the remainder
+                remaining_size = size - size_to_buy
+                if remaining_size > 0:
+                    remaining_fees = remaining_size * execution_price * self.fee_rate
+                    self.cash -= (remaining_size * execution_price + remaining_fees)
+                    self.position += remaining_size
+                    self.position_value += (remaining_size * execution_price)
+                    
+                    # Update average entry price for the new long position
+                    self.avg_entry_price = execution_price
+                    
+                    if sl_price is not None or tp_price is not None:
+                        if sl_price is None:
+                            sl_price = execution_price * 0.98
+                        if tp_price is None:
+                            tp_price = execution_price * 1.04
+                        self.active_positions.append({
+                            'entry_price': execution_price,
+                            'size': remaining_size,
+                            'direction': 1,  # Long
+                            'stop_loss': sl_price,
+                            'take_profit': tp_price,
+                            'timestamp': timestamp,
+                            'entry_regime': self._current_regime
+                        })
+            else:
+                # Buy to open/increase long position
+                self.cash -= (size * execution_price + fees)
+                old_position = self.position
+                self.position += size
+                self.position_value += (size * execution_price)
+                
+                # Update average entry price
+                if old_position > 0:
+                    self.avg_entry_price = (self.avg_entry_price * old_position + size * execution_price) / self.position
+                else:
+                    self.avg_entry_price = execution_price
 
-            # Add long position to active positions with SL/TP if provided
-            if sl_price is not None or tp_price is not None:
-                # Set default SL/TP if not provided
-                if sl_price is None:
-                    sl_price = execution_price * 0.98  # 2% stop loss
-                if tp_price is None:
-                    tp_price = execution_price * 1.04  # 4% take profit
-
-                self.active_positions.append({
-                    'entry_price': execution_price,
-                    'size': size,
-                    'direction': 1,  # Long
-                    'stop_loss': sl_price,
-                    'take_profit': tp_price,
-                    'timestamp': timestamp,
-                    'entry_regime': self._current_regime  # E-P5.2 T2
-                })
+                if sl_price is not None or tp_price is not None:
+                    if sl_price is None:
+                        sl_price = execution_price * 0.98
+                    if tp_price is None:
+                        tp_price = execution_price * 1.04
+                    self.active_positions.append({
+                        'entry_price': execution_price,
+                        'size': size,
+                        'direction': 1,  # Long
+                        'stop_loss': sl_price,
+                        'take_profit': tp_price,
+                        'timestamp': timestamp,
+                        'entry_regime': self._current_regime
+                    })
         else:  # sell
-            # For sell orders, we might be closing positions
             if self.position > 0:
-                # Determine whether we're reducing/fully closing position
+                # Sell to close/reduce long position
                 size_to_sell = min(size, self.position)
-
-                # Reduce position
                 self.cash += (size_to_sell * execution_price - fees)
                 self.position -= size_to_sell
                 self.position_value -= (size_to_sell * execution_price)
+                
+                # Calculate PnL and manage active positions manually
+                trade_pnl += self._close_active_positions_manually(direction_to_close=1, size_to_close=size_to_sell, execution_price=execution_price, timestamp=timestamp)
+                
+                # If we reversed, open a short position with the remainder
+                remaining_size = size - size_to_sell
+                if remaining_size > 0:
+                    remaining_fees = remaining_size * execution_price * self.fee_rate
+                    self.cash += (remaining_size * execution_price - remaining_fees)
+                    self.position -= remaining_size
+                    self.position_value -= (remaining_size * execution_price)
+                    
+                    # Update average entry price for the new short position
+                    self.avg_entry_price = execution_price
+                    
+                    if sl_price is not None or tp_price is not None:
+                        if sl_price is None:
+                            sl_price = execution_price * 1.02
+                        if tp_price is None:
+                            tp_price = execution_price * 0.96
+                        self.active_positions.append({
+                            'entry_price': execution_price,
+                            'size': remaining_size,
+                            'direction': -1,  # Short
+                            'stop_loss': sl_price,
+                            'take_profit': tp_price,
+                            'timestamp': timestamp,
+                            'entry_regime': self._current_regime
+                        })
             else:
-                # Sell to open short position
+                # Sell to open/increase short position
                 self.cash += (size * execution_price - fees)
-                self.position -= size  # negative position indicates short
+                old_position = self.position
+                self.position -= size
                 self.position_value -= (size * execution_price)
+                
+                # Update average entry price
+                if old_position < 0:
+                    self.avg_entry_price = (self.avg_entry_price * abs(old_position) + size * execution_price) / abs(self.position)
+                else:
+                    self.avg_entry_price = execution_price
+
+                if sl_price is not None or tp_price is not None:
+                    if sl_price is None:
+                        sl_price = execution_price * 1.02
+                    if tp_price is None:
+                        tp_price = execution_price * 0.96
+                    self.active_positions.append({
+                        'entry_price': execution_price,
+                        'size': size,
+                        'direction': -1,  # Short
+                        'stop_loss': sl_price,
+                        'take_profit': tp_price,
+                        'timestamp': timestamp,
+                        'entry_regime': self._current_regime
+                    })
 
         # Update equity
         self.equity = self.cash + self.position_value
+        if self.position == 0:
+            self.avg_entry_price = 0.0
 
-        # Calculate PnL for this trade (if closing a position)
-        trade_pnl = 0
-        if ((side.lower() == 'sell' and self.position >= 0) or
-                (side.lower() == 'buy' and self.position <= 0)):  # New position or reversal
-            pass  # Don't calculate PnL for new positions
-        else:  # Closing or reducing position
-            # Find matching position from trade history to calculate PnL
-            # For simplicity, we'll calculate based on average position
-            pass
+        # Note: trade_pnl is already calculated above in the close/reduce flow
+        # and statistics are handled below
 
         # Update trade statistics
         self.total_trades += 1
@@ -1422,6 +1553,14 @@ class RealisticBacktester:
                 timestamp = datetime.utcfromtimestamp(timestamp)
             elif hasattr(timestamp, 'to_pydatetime'):
                 timestamp = timestamp.to_pydatetime()
+
+            # Mark to market for the current candle (before exits or new orders are processed)
+            if self.position != 0:
+                self.position_value = self.position * row['close']
+                self.equity = self.cash + self.position_value
+            else:
+                self.position_value = 0.0
+                self.equity = self.cash
 
             # E-P5.2 T2: regime in effect at this bar (drives entry/exit-regime
             # tagging for P&L attribution). Set before SL/TP so a close stamps
@@ -1749,42 +1888,146 @@ class RealisticBacktester:
         fees = trade_value * self.fee_rate
 
         # Execute the trade
+        trade_pnl = 0.0
         if intent.side == OrderSide.BUY:
-            # Buy: reduce cash, increase position
-            self.cash -= (intent.size * execution_price + fees)
-            self.position += intent.size
-            self.position_value += (intent.size * execution_price)
+            if self.position < 0:
+                # Buy to close/reduce short position
+                size_to_buy = min(intent.size, -self.position)
+                self.cash -= (size_to_buy * execution_price + fees)
+                self.position += size_to_buy
+                self.position_value += (size_to_buy * execution_price)
+                
+                # Calculate PnL and manage active positions manually
+                trade_pnl += self._close_active_positions_manually(direction_to_close=-1, size_to_close=size_to_buy, execution_price=execution_price, timestamp=intent.timestamp)
+                
+                # If we reversed, open a long position with the remainder
+                remaining_size = intent.size - size_to_buy
+                if remaining_size > 0:
+                    remaining_fees = remaining_size * execution_price * self.fee_rate
+                    self.cash -= (remaining_size * execution_price + remaining_fees)
+                    self.position += remaining_size
+                    self.position_value += (remaining_size * execution_price)
+                    
+                    # Update average entry price for the new long position
+                    self.avg_entry_price = execution_price
+                    
+                    if intent.stop_loss is not None or intent.take_profit is not None:
+                        sl_price = intent.stop_loss
+                        tp_price = intent.take_profit
+                        if sl_price is None:
+                            sl_price = execution_price * 0.98
+                        if tp_price is None:
+                            tp_price = execution_price * 1.04
+                        self.active_positions.append({
+                            'entry_price': execution_price,
+                            'size': remaining_size,
+                            'direction': 1,  # Long
+                            'stop_loss': sl_price,
+                            'take_profit': tp_price,
+                            'timestamp': intent.timestamp,
+                            'entry_regime': self._current_regime
+                        })
+            else:
+                # Buy to open/increase long position
+                self.cash -= (intent.size * execution_price + fees)
+                old_position = self.position
+                self.position += intent.size
+                self.position_value += (intent.size * execution_price)
+                
+                # Update average entry price
+                if old_position > 0:
+                    self.avg_entry_price = (self.avg_entry_price * old_position + intent.size * execution_price) / self.position
+                else:
+                    self.avg_entry_price = execution_price
 
-            # Add long position to active positions with SL/TP if provided
-            if intent.stop_loss is not None or intent.take_profit is not None:
-                # Set default SL/TP if not provided
-                sl_price = intent.stop_loss
-                tp_price = intent.take_profit
-
-                self.active_positions.append({
-                    'entry_price': execution_price,
-                    'size': intent.size,
-                    'direction': 1,  # Long
-                    'stop_loss': sl_price,
-                    'take_profit': tp_price,
-                    'timestamp': intent.timestamp,
-                    'entry_regime': self._current_regime  # E-P5.2 T2
-                })
+                if intent.stop_loss is not None or intent.take_profit is not None:
+                    sl_price = intent.stop_loss
+                    tp_price = intent.take_profit
+                    if sl_price is None:
+                        sl_price = execution_price * 0.98
+                    if tp_price is None:
+                        tp_price = execution_price * 1.04
+                    self.active_positions.append({
+                        'entry_price': execution_price,
+                        'size': intent.size,
+                        'direction': 1,  # Long
+                        'stop_loss': sl_price,
+                        'take_profit': tp_price,
+                        'timestamp': intent.timestamp,
+                        'entry_regime': self._current_regime
+                    })
         else:  # SELL
-            # For sell orders, we might be closing positions
             if self.position > 0:
-                # Determine whether we're reducing/fully closing position
+                # Sell to close/reduce long position
                 size_to_sell = min(intent.size, self.position)
-
-                # Reduce position
                 self.cash += (size_to_sell * execution_price - fees)
                 self.position -= size_to_sell
                 self.position_value -= (size_to_sell * execution_price)
+                
+                # Calculate PnL and manage active positions manually
+                trade_pnl += self._close_active_positions_manually(direction_to_close=1, size_to_close=size_to_sell, execution_price=execution_price, timestamp=intent.timestamp)
+                
+                # If we reversed, open a short position with the remainder
+                remaining_size = intent.size - size_to_sell
+                if remaining_size > 0:
+                    remaining_fees = remaining_size * execution_price * self.fee_rate
+                    self.cash += (remaining_size * execution_price - remaining_fees)
+                    self.position -= remaining_size
+                    self.position_value -= (remaining_size * execution_price)
+                    
+                    # Update average entry price for the new short position
+                    self.avg_entry_price = execution_price
+                    
+                    if intent.stop_loss is not None or intent.take_profit is not None:
+                        sl_price = intent.stop_loss
+                        tp_price = intent.take_profit
+                        if sl_price is None:
+                            sl_price = execution_price * 1.02
+                        if tp_price is None:
+                            tp_price = execution_price * 0.96
+                        self.active_positions.append({
+                            'entry_price': execution_price,
+                            'size': remaining_size,
+                            'direction': -1,  # Short
+                            'stop_loss': sl_price,
+                            'take_profit': tp_price,
+                            'timestamp': intent.timestamp,
+                            'entry_regime': self._current_regime
+                        })
             else:
-                # Sell to open short position
+                # Sell to open/increase short position
                 self.cash += (intent.size * execution_price - fees)
-                self.position -= intent.size  # negative position indicates short
+                old_position = self.position
+                self.position -= intent.size
                 self.position_value -= (intent.size * execution_price)
+                
+                # Update average entry price
+                if old_position < 0:
+                    self.avg_entry_price = (self.avg_entry_price * abs(old_position) + intent.size * execution_price) / abs(self.position)
+                else:
+                    self.avg_entry_price = execution_price
+
+                if intent.stop_loss is not None or intent.take_profit is not None:
+                    sl_price = intent.stop_loss
+                    tp_price = intent.take_profit
+                    if sl_price is None:
+                        sl_price = execution_price * 1.02
+                    if tp_price is None:
+                        tp_price = execution_price * 0.96
+                    self.active_positions.append({
+                        'entry_price': execution_price,
+                        'size': intent.size,
+                        'direction': -1,  # Short
+                        'stop_loss': sl_price,
+                        'take_profit': tp_price,
+                        'timestamp': intent.timestamp,
+                        'entry_regime': self._current_regime
+                    })
+
+        # Update equity
+        self.equity = self.cash + self.position_value
+        if self.position == 0:
+            self.avg_entry_price = 0.0
 
         # Update equity
         self.equity = self.cash + self.position_value
@@ -1798,6 +2041,7 @@ class RealisticBacktester:
             "size": intent.size,
             "price": execution_price,
             "fees": fees,
+            "pnl": trade_pnl,  # Record PnL for closed/reduced positions
             "equity": self.equity,
             "position": self.position,
             "position_value": self.position_value,
@@ -1808,7 +2052,10 @@ class RealisticBacktester:
         self.trades.append(trade_record)
 
         # Update statistics
-        # Note: PnL is calculated when positions are closed, not when opened
+        if trade_pnl > 0:
+            self.winning_trades += 1
+        elif trade_pnl < 0:
+            self.losing_trades += 1
 
         # Update max equity and drawdown tracking
         if self.equity > self.max_equity:
@@ -2070,9 +2317,11 @@ class RealisticBacktester:
 
                 # Update trading state
                 self.position -= direction * size
-                self.position_value -= direction * size * entry_price
+                self.position_value = self.position * candle_data['close'] if self.position != 0 else 0.0
                 self.cash += direction * size * exit_price - total_cost
                 self.equity = self.cash + self.position_value
+                if self.position == 0:
+                    self.avg_entry_price = 0.0
 
                 # Update trade statistics
                 self.total_trades += 1
@@ -2398,6 +2647,53 @@ class RealisticBacktester:
         self.equity_curve.clear()
 
         return metrics
+
+    def _close_active_positions_manually(self, direction_to_close: int, size_to_close: float, execution_price: float, timestamp: datetime) -> float:
+        """
+        Close active positions manually using FIFO, returning the calculated PnL.
+        """
+        pnl = 0.0
+        remaining_size = size_to_close
+        positions_to_remove = []
+        
+        for i, pos in enumerate(self.active_positions):
+            if pos['direction'] == direction_to_close and not pos.get('closed', False):
+                close_size = min(remaining_size, pos['size'])
+                
+                # Calculate PnL for this chunk
+                chunk_pnl = 0.0
+                if direction_to_close == 1:  # Closing a long
+                    chunk_pnl = (execution_price - pos['entry_price']) * close_size
+                else:  # Closing a short
+                    chunk_pnl = (pos['entry_price'] - execution_price) * close_size
+                
+                pnl += chunk_pnl
+                
+                # Deduct exit fees/slippage for this chunk
+                fees = self.fee_rate * abs(close_size * execution_price)
+                slippage = abs(chunk_pnl) * self.slippage_factor
+                pnl -= (fees + slippage)
+                
+                # Reduce position size
+                pos['size'] -= close_size
+                remaining_size -= close_size
+                
+                # Record partial/full close
+                if pos['size'] <= 1e-8:
+                    pos['closed'] = True
+                    pos['close_price'] = execution_price
+                    pos['close_time'] = timestamp
+                    pos['pnl'] = pnl
+                    positions_to_remove.append(i)
+                
+                if remaining_size <= 1e-8:
+                    break
+                    
+        # Remove fully closed positions in reverse order
+        for i in reversed(positions_to_remove):
+            del self.active_positions[i]
+            
+        return pnl
 
 
 # Example strategy functions
