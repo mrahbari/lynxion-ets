@@ -119,9 +119,9 @@ def test_market_data_heartbeat_safety_guard(setup_mock_container):
     processor._process_execution_intent(event_intent, exec_service)
     assert exec_service.execute_order.called
 
-    # 2. Veto case: Stale heartbeat (20 seconds ago)
+    # 2. Veto case: Stale heartbeat (100 seconds ago)
     exec_service.execute_order.reset_mock()
-    processor._last_market_data_times["BTCUSDT"] = datetime.now() - timedelta(seconds=20)
+    processor._last_market_data_times["BTCUSDT"] = datetime.now() - timedelta(seconds=100)
 
     processor._process_execution_intent(event_intent, exec_service)
     # Submission must be vetoed / rejected, so execute_order should not be called

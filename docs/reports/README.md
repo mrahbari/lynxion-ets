@@ -65,3 +65,15 @@ Audit and analysis reports for the Lynxion ETS codebase.
 **Scope:** Execution planning only — no implementation code written.
 
 **Builds on:** Phase 1 (features), Phase 2 (target), Phase 3 (draft graph), Phase 3.5 (gaps). All gaps/partials promoted to explicit tasks (E3.T7–T10, E5.T7–T10).
+
+## Architectural Flow & Validation (production verification)
+
+| File | Contents |
+|------|----------|
+| [`../architecture_flow.md`](../architecture_flow.md) | **System Architecture Flow** — Mermaid diagram and detailed analysis of the event-driven signal flow mapping: Watcher → Engine → Fusion → Strategy → Execution → Broker. |
+| [`../../tasks/Post-Validation%20Production%20Audit.md`](../../tasks/Post-Validation%20Production%20Audit.md) | **Post-Validation Production Audit** — Deep forensic root cause analysis mapping system behavior to code paths, including signal bursts, heartbeat staleness, dynamic position sizing limits, and contradictions. |
+| [`final_operational_audit_report.md`](./final_operational_audit_report.md) | **Final Operational Audit Report** — Statistical evaluation of strategy diversity, mathematical trace of SOLUSDT position sizing, configurable notional order cap design, and startup signal replay analysis. |
+| [`stop_loss_take_profit_lifecycle_audit.md`](./stop_loss_take_profit_lifecycle_audit.md) | **Stop Loss / Take Profit Lifecycle Audit Report** — Investigation of SL/TP transitions, modifications table, risk consistency calculations, and root cause analysis. |
+
+
+

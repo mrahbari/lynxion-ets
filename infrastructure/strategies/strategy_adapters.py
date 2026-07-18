@@ -620,7 +620,42 @@ class BaseStrategyAdapter(StrategyPort):
         if len(self.data_buffer) > limit:
             self.data_buffer = self.data_buffer[-limit:]
 
+    def _is_setup_fresh(self, setup, latest_bar) -> bool:
+        """Verify that the selected setup belongs to the latest candle in its data buffer."""
+        if not setup or not latest_bar:
+            return False
+
+        # 1. Compare trigger price as equivalent candle identity
+        trigger_price = getattr(setup, 'trigger_price', None)
+        close_price = latest_bar.get('close')
+        if trigger_price is not None and close_price is not None:
+            if abs(float(trigger_price) - float(close_price)) < 1e-6:
+                return True
+
+        # 2. Normalize and check timestamps if available
+        setup_ts = getattr(setup, 'timestamp', None)
+        bar_ts = latest_bar.get('timestamp')
+        if setup_ts and bar_ts:
+            from datetime import datetime
+            def to_dt(t):
+                if hasattr(t, 'to_datetime'):
+                    return t.to_datetime().replace(tzinfo=None)
+                if isinstance(t, datetime):
+                    return t.replace(tzinfo=None)
+                if isinstance(t, (int, float)):
+                    if t > 1e11:  # ms
+                        return datetime.fromtimestamp(t / 1000.0)
+                    return datetime.fromtimestamp(t)
+                return None
+            s_dt = to_dt(setup_ts)
+            b_dt = to_dt(bar_ts)
+            if s_dt and b_dt and abs((s_dt - b_dt).total_seconds()) < 5.0:
+                return True
+
+        return False
+
     def _determine_side(self, fused_signal: FusedSignal):
+
         """Determine order side based on fused signal direction"""
         from domain.entities import OrderSide
 

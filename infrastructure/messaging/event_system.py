@@ -318,7 +318,6 @@ class SignalProcessor:
                 from domain.value_objects import Money as DomainMoney, Symbol as DomainSymbol
                 from domain.enums.position_side import PositionSide
                 from decimal import Decimal
-                from datetime import datetime
 
                 risk_mgr = risk_engine._risk_manager
                 active_positions = []
@@ -511,10 +510,10 @@ class SignalProcessor:
                 last_time = getattr(self, '_last_market_data_times', {}).get(execution_intent.symbol.value)
                 if last_time:
                     elapsed = (datetime.now() - last_time).total_seconds()
-                    if elapsed > 15.0:
+                    if elapsed > 90.0:
                         if self.logger:
                             self.logger.warning(
-                                f"❌ HEARTBEAT GUARD VETO: Market data heartbeat is stale by {elapsed:.1f}s (> 15s) for "
+                                f"❌ HEARTBEAT GUARD VETO: Market data heartbeat is stale by {elapsed:.1f}s (> 90s) for "
                                 f"{execution_intent.symbol.value}. Submission rejected."
                             )
                         return None

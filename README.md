@@ -130,6 +130,8 @@ Watcher  --->  Engine (EngineService)  --->  Fusion  --->  Strategy  --->  Risk 
   Broker    :  order execution + monitoring
 ```
 
+For a detailed diagram and walkthrough of the event-driven signal flow, refer to the [System Architecture Flow](docs/architecture_flow.md) document.
+
 ### Workflow Components
 
 * **Watcher Layer**: Owns domain-specific market analysis (trend, volatility, liquidity, order-flow, regime); emits raw market observations; health monitoring, auto-restart, signal validation, symbol filtering

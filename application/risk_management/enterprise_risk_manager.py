@@ -196,14 +196,17 @@ class EnterpriseRiskManager:
             position_size = risk_amount / risk_per_unit
 
         # Apply portfolio-level constraints
+        # Apply a safety buffer of 0.99 (0.1% - 1% standard range) to prevent minor price/rounding discrepancies
+        # between sizing and validation phases from triggering limit violations.
+        sizing_buffer = 0.99
         # 1. Ensure we don't exceed max position exposure limit
-        max_position_by_exposure = self.max_position_exposure / entry_price if entry_price > 0 else float('inf')
+        max_position_by_exposure = (self.max_position_exposure * sizing_buffer) / entry_price if entry_price > 0 else float('inf')
         position_size = min(position_size, max_position_by_exposure)
 
         # 2. Ensure we don't exceed remaining portfolio exposure capacity
         current_total_exposure = self.get_total_exposure()
         remaining_portfolio_capacity = self.max_portfolio_exposure - current_total_exposure
-        max_position_by_portfolio = remaining_portfolio_capacity / entry_price if entry_price > 0 else float('inf')
+        max_position_by_portfolio = (remaining_portfolio_capacity * sizing_buffer) / entry_price if entry_price > 0 else float('inf')
         position_size = min(position_size, max_position_by_portfolio)
 
         # 3. Ensure position size is positive

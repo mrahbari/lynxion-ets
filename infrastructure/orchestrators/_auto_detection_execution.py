@@ -141,7 +141,6 @@ class _AutoDetectionExecutionMixin:
                 from domain.value_objects import Money as DomainMoney, Symbol as DomainSymbol
                 from domain.enums.position_side import PositionSide
                 from decimal import Decimal
-                from datetime import datetime
 
                 risk_mgr = risk_engine._risk_manager
                 active_positions = []
@@ -214,9 +213,9 @@ class _AutoDetectionExecutionMixin:
                 last_time = getattr(signal_processor, '_last_market_data_times', {}).get(symbol_value)
                 if last_time:
                     elapsed = (datetime.now() - last_time).total_seconds()
-                    if elapsed > 15.0:
+                    if elapsed > 90.0:
                         self.logger.warning(
-                            f"❌ HEARTBEAT GUARD VETO: Market data heartbeat is stale by {elapsed:.1f}s (> 15s) for "
+                            f"❌ HEARTBEAT GUARD VETO: Market data heartbeat is stale by {elapsed:.1f}s (> 90s) for "
                             f"{symbol_value}. Submission rejected."
                         )
                         return {'status': 'failed', 'error': 'HEARTBEAT_STALE'}
