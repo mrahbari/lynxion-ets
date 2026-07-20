@@ -60,6 +60,11 @@ class LiquidityStrategyAdapter(BaseStrategyAdapter):
             if not setup:
                 return None
 
+            latest_bar = self.data_buffer[-1] if self.data_buffer else {}
+            if not self._is_setup_fresh(setup, latest_bar):
+                return None
+
+
             from domain.value_objects import Percentage
             from decimal import Decimal
 
@@ -107,6 +112,9 @@ class LiquidityStrategyAdapter(BaseStrategyAdapter):
             return None
 
         latest_bar = self.data_buffer[-1] if self.data_buffer else {}
+        if not self._is_setup_fresh(setup, latest_bar):
+            return None
+
         current_price = closes[-1]
         max_position_size = float(self.config.get("max_position_size", 0.05))
 

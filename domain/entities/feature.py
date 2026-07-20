@@ -62,3 +62,45 @@ class FeatureSnapshot:
             "depth_total": str(self.depth_total),
             "regime_context": self.regime_context
         }
+
+
+@dataclass(frozen=True)
+class DerivativesFeatureVector:
+    """Immutable domain model for calculated derivatives features at timestamp T."""
+    symbol: Symbol
+    timestamp: ExchangeTimestamp
+    is_warmed_up: bool
+
+    # Derived Features
+    funding_annualized: Optional[float] = None
+    funding_sma_24h: Optional[float] = None
+    oi_change_1h_pct: Optional[float] = None
+    oi_to_volume_ratio_24h: Optional[float] = None
+
+    # Research Features
+    funding_zscore_30d: Optional[float] = None
+    funding_percentile_90d: Optional[float] = None
+    oi_zscore_14d: Optional[float] = None
+    price_oi_divergence_score: Optional[float] = None
+
+    # Production Features
+    funding_capitulation_gate: Optional[int] = None  # -1, 0, +1
+    oi_liquidation_vulnerability_index: Optional[float] = None  # [0.0, 100.0]
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Deterministic serialization."""
+        return {
+            "symbol": self.symbol.value,
+            "timestamp": self.timestamp.millis,
+            "is_warmed_up": self.is_warmed_up,
+            "funding_annualized": self.funding_annualized,
+            "funding_sma_24h": self.funding_sma_24h,
+            "oi_change_1h_pct": self.oi_change_1h_pct,
+            "oi_to_volume_ratio_24h": self.oi_to_volume_ratio_24h,
+            "funding_zscore_30d": self.funding_zscore_30d,
+            "funding_percentile_90d": self.funding_percentile_90d,
+            "oi_zscore_14d": self.oi_zscore_14d,
+            "price_oi_divergence_score": self.price_oi_divergence_score,
+            "funding_capitulation_gate": self.funding_capitulation_gate,
+            "oi_liquidation_vulnerability_index": self.oi_liquidation_vulnerability_index,
+        }

@@ -942,27 +942,33 @@ class RealisticBacktester:
             position_size = min_order_size
 
         # Calculate stop loss and take profit prices based on risk parameters
-        sl_price = None
-        tp_price = None
+        # Try to use strategy-specified SL/TP if available to ensure risk consistency (Phase 11)
+        sl_price = float(risk_params.get('stop_loss')) if risk_params.get('stop_loss') is not None else None
+        tp_price = float(risk_params.get('take_profit')) if risk_params.get('take_profit') is not None else None
 
-        # E-P5.2 Priority-1 FIX (bug #2): compare against the DOMAIN OrderSide
-        # (domain_intent.side is a domain enum). The old `== OrderSide.BUY`
-        # compared it to the INFRASTRUCTURE OrderSide enum (a different class),
-        # which is never equal, so EVERY adapted intent took the SELL branch and
-        # got short geometry (SL above / TP below) — inverting SL/TP for every
-        # BUY/long position. (Line below for infra_side already used DomainOrderSide.)
-        if domain_intent.side == DomainOrderSide.BUY:
-            # For BUY: SL below entry, TP above entry
-            sl_price = execution_price - stop_loss_distance
-            risk_reward_ratio = risk_params.get('risk_reward_ratio', 1.5)
-            tp_distance = stop_loss_distance * risk_reward_ratio
-            tp_price = execution_price + tp_distance
-        else:  # SELL
-            # For SELL: SL above entry, TP below entry
-            sl_price = execution_price + stop_loss_distance
-            risk_reward_ratio = risk_params.get('risk_reward_ratio', 1.5)
-            tp_distance = stop_loss_distance * risk_reward_ratio
-            tp_price = execution_price - tp_distance
+        if sl_price is None or tp_price is None:
+            # E-P5.2 Priority-1 FIX (bug #2): compare against the DOMAIN OrderSide
+            # (domain_intent.side is a domain enum). The old `== OrderSide.BUY`
+            # compared it to the INFRASTRUCTURE OrderSide enum (a different class),
+            # which is never equal, so EVERY adapted intent took the SELL branch and
+            # got short geometry (SL above / TP below) — inverting SL/TP for every
+            # BUY/long position. (Line below for infra_side already used DomainOrderSide.)
+            if domain_intent.side == DomainOrderSide.BUY:
+                # For BUY: SL below entry, TP above entry
+                if sl_price is None:
+                    sl_price = execution_price - stop_loss_distance
+                if tp_price is None:
+                    risk_reward_ratio = risk_params.get('risk_reward_ratio', 1.5)
+                    tp_distance = stop_loss_distance * risk_reward_ratio
+                    tp_price = execution_price + tp_distance
+            else:  # SELL
+                # For SELL: SL above entry, TP below entry
+                if sl_price is None:
+                    sl_price = execution_price + stop_loss_distance
+                if tp_price is None:
+                    risk_reward_ratio = risk_params.get('risk_reward_ratio', 1.5)
+                    tp_distance = stop_loss_distance * risk_reward_ratio
+                    tp_price = execution_price - tp_distance
 
         # Convert Domain OrderSide to Infrastructure OrderSide
         if domain_intent.side == DomainOrderSide.BUY:

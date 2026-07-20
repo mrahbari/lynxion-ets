@@ -173,11 +173,6 @@ class SignalProcessor:
             except Exception:
                 pass
 
-            # Update last market data heartbeat
-            if not hasattr(self, '_last_market_data_times'):
-                self._last_market_data_times = {}
-            self._last_market_data_times[observation.symbol.value] = datetime.now()
-
             # Process observation through engine
             interpreted_signal = engine_service.process_observation(observation)
 
@@ -417,92 +412,71 @@ class SignalProcessor:
                         if self.logger:
                             self.logger.warning(f"⚠️ Signal contradiction: Bias={bias_str} vs Order={order_side.name} for {execution_intent.symbol.value}")
 
+            # Validate SL/TP prices from strategy
+            is_valid = True
+            invalid_reason = ""
+            
+            # Extract amounts
+            sl_amount = float(stop_loss_price.amount) if stop_loss_price and hasattr(stop_loss_price, 'amount') else None
+            tp_amount = float(take_profit_price.amount) if take_profit_price and hasattr(take_profit_price, 'amount') else None
+            
             if order_side.name == 'BUY':
-                # For BUY orders, SL should be below entry, TP should be above entry
-                if (stop_loss_price is None or
-                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) <= 0) or
-                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) >= entry_price)):
-                    # Recalculate SL if not set or invalid (above entry for BUY)
-                    from domain.value_objects import Money
-                    stop_loss_price = Money(amount=float(sl_price), currency='USDT')
-                else:
-                    # Validate existing SL price for BUY order
-                    sl_amount = float(stop_loss_price.amount)
-                    if sl_amount >= entry_price:
-                        if self.logger:
-                            self.logger.warning(f"Invalid SL for BUY: SL({sl_amount}) >= Entry({entry_price}), recalculating...")
-                        from domain.value_objects import Money
-                        stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+                if sl_amount is None or sl_amount <= 0 or sl_amount >= entry_price:
+                    is_valid = False
+                    invalid_reason = f"Invalid Stop Loss for BUY order: SL={sl_amount}, Entry={entry_price}"
+                elif tp_amount is None or tp_amount <= 0 or tp_amount <= entry_price:
+                    is_valid = False
+                    invalid_reason = f"Invalid Take Profit for BUY order: TP={tp_amount}, Entry={entry_price}"
+            else: # SELL
+                if sl_amount is None or sl_amount <= 0 or sl_amount <= entry_price:
+                    is_valid = False
+                    invalid_reason = f"Invalid Stop Loss for SELL order: SL={sl_amount}, Entry={entry_price}"
+                elif tp_amount is None or tp_amount <= 0 or tp_amount >= entry_price:
+                    is_valid = False
+                    invalid_reason = f"Invalid Take Profit for SELL order: TP={tp_amount}, Entry={entry_price}"
+                    
+            # Check sanity distance ratios
+            if is_valid:
+                if sl_amount:
+                    sl_ratio = abs(sl_amount - entry_price) / entry_price
+                    if sl_ratio > 0.5:
+                        is_valid = False
+                        invalid_reason = f"Stop Loss is too far from entry (>50%): SL={sl_amount}, Entry={entry_price}, Ratio={sl_ratio:.2f}"
+                if tp_amount:
+                    tp_ratio = abs(tp_amount - entry_price) / entry_price
+                    if tp_ratio > 0.5:
+                        is_valid = False
+                        invalid_reason = f"Take Profit is too far from entry (>50%): TP={tp_amount}, Entry={entry_price}, Ratio={tp_ratio:.2f}"
 
-                if (take_profit_price is None or
-                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= 0) or
-                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= entry_price)):
-                    # Recalculate TP if not set or invalid (below entry for BUY)
-                    from domain.value_objects import Money
-                    take_profit_price = Money(amount=float(tp_price), currency='USDT')
-                else:
-                    # Validate existing TP price for BUY order
-                    tp_amount = float(take_profit_price.amount)
-                    if tp_amount <= entry_price:
-                        if self.logger:
-                            self.logger.warning(f"Invalid TP for BUY: TP({tp_amount}) <= Entry({entry_price}), recalculating...")
-                        from domain.value_objects import Money
-                        take_profit_price = Money(amount=float(tp_price), currency='USDT')
-            else:  # SELL
-                # For SELL orders, SL should be above entry, TP should be below entry
-                if (stop_loss_price is None or
-                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) <= 0) or
-                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) <= entry_price)):
-                    # Recalculate SL if not set or invalid (below entry for SELL)
-                    from domain.value_objects import Money
-                    stop_loss_price = Money(amount=float(sl_price), currency='USDT')
-                else:
-                    # Validate existing SL price for SELL order
-                    sl_amount = float(stop_loss_price.amount)
-                    if sl_amount <= entry_price:
-                        if self.logger:
-                            self.logger.warning(f"Invalid SL for SELL: SL({sl_amount}) <= Entry({entry_price}), recalculating...")
-                        from domain.value_objects import Money
-                        stop_loss_price = Money(amount=float(sl_price), currency='USDT')
-
-                if (take_profit_price is None or
-                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= 0) or
-                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) >= entry_price)):
-                    # Recalculate TP if not set or invalid (above entry for SELL)
-                    from domain.value_objects import Money
-                    take_profit_price = Money(amount=float(tp_price), currency='USDT')
-                else:
-                    # Validate existing TP price for SELL order
-                    tp_amount = float(take_profit_price.amount)
-                    if tp_amount >= entry_price:
-                        if self.logger:
-                            self.logger.warning(f"Invalid TP for SELL: TP({tp_amount}) >= Entry({entry_price}), recalculating...")
-                        from domain.value_objects import Money
-                        take_profit_price = Money(amount=float(tp_price), currency='USDT')
-
-            # Perform comprehensive validation of calculated SL/TP prices
-            # Check for symbol-price consistency (sanity check)
-            if stop_loss_price:
-                sl_amount = float(stop_loss_price.amount)
-                sl_distance_ratio = abs(sl_amount - entry_price) / entry_price
-
-                # If SL is extremely far from entry price (>50%), it's likely a calculation error
-                if sl_distance_ratio > 0.5:
+            if not is_valid:
+                if self.logger:
+                    self.logger.warning(f"❌ ORDER REJECTED: {invalid_reason}")
+                
+                # Write rejection to ExecutionTruthLedger
+                try:
+                    from shared.execution_truth_ledger import execution_truth_ledger as ledger
+                    order_ref = ledger.new_order_ref()
+                    ledger.append("decision", {
+                        "order_ref": order_ref,
+                        "symbol": execution_intent.symbol.value,
+                        "broker": "bingx",
+                        "route": "REJECTED",
+                        "decision_trace": {
+                            "rule": "SL_TP_VALIDATION",
+                            "reason": f"VETO: {invalid_reason}"
+                        },
+                        "input_flags": {
+                            "entry_price": entry_price,
+                            "stop_loss": sl_amount,
+                            "take_profit": tp_amount,
+                            "side": order_side.name
+                        }
+                    })
+                except Exception as ledger_err:
                     if self.logger:
-                        self.logger.warning(f"SL price scale mismatch for {execution_intent.symbol.value}: SL={sl_amount}, Entry={entry_price}, Ratio={sl_distance_ratio:.2f}. Recalculating...")
-                    from domain.value_objects import Money
-                    stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+                        self.logger.error(f"Failed to write rejection to ExecutionTruthLedger: {ledger_err}")
+                return None
 
-            if take_profit_price:
-                tp_amount = float(take_profit_price.amount)
-                tp_distance_ratio = abs(tp_amount - entry_price) / entry_price
-
-                # If TP is extremely far from entry price (>50%), it's likely a calculation error
-                if tp_distance_ratio > 0.5:
-                    if self.logger:
-                        self.logger.warning(f"TP price scale mismatch for {execution_intent.symbol.value}: TP={tp_amount}, Entry={entry_price}, Ratio={tp_distance_ratio:.2f}. Recalculating...")
-                    from domain.value_objects import Money
-                    take_profit_price = Money(amount=float(tp_price), currency='USDT')
 
             # --- MARKET DATA SAFETY HEARTBEAT GUARD (LIVE ONLY) ---
             is_live = not hasattr(execution_service_to_use, 'is_backtest') or not getattr(execution_service_to_use, 'is_backtest', False)
@@ -555,6 +529,42 @@ class SignalProcessor:
                     if self.logger:
                         self.logger.warning("Scaled size below minimum 0.001. Submission rejected.")
                     return None
+
+            # Configurable maximum order notional cap
+            try:
+                max_order_notional = None
+                settings = load_settings()
+                
+                # Check settings
+                if settings.risk:
+                    if hasattr(settings.risk, 'max_order_notional_amount') and settings.risk.max_order_notional_amount is not None:
+                        max_order_notional = settings.risk.max_order_notional_amount
+                
+                # Check environment override
+                import os
+                env_cap = os.getenv('MAX_ORDER_NOTIONAL_AMOUNT')
+                if env_cap is not None and env_cap.strip():
+                    max_order_notional = float(env_cap)
+                    
+                if max_order_notional is not None:
+                    max_order_notional = float(max_order_notional)
+                    execution_price = float(current_price) if current_price else 0.0
+                    if execution_price > 0:
+                        calculated_notional = quantity * execution_price
+                        if calculated_notional > max_order_notional:
+                            old_quantity = quantity
+                            new_quantity = max_order_notional / execution_price
+                            quantity = new_quantity
+                            if self.logger:
+                                self.logger.warning(
+                                    f"🛡️ ORDER CAP ENGAGED: Capping order notional from ${calculated_notional:.2f} "
+                                    f"to ${max_order_notional:.2f}. "
+                                    f"Old Qty: {old_quantity:.6f}, New Qty: {new_quantity:.6f}"
+                                )
+            except Exception as cap_err:
+                if self.logger:
+                    self.logger.warning(f"Error applying MAX_ORDER_NOTIONAL_AMOUNT cap: {cap_err}")
+
 
             # Log comprehensive order details before execution
             if self.logger:

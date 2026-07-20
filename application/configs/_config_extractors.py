@@ -77,6 +77,9 @@ class _ConfigExtractorsMixin:
             'max_correlation_limit': self.env_loader.get_float_env_var('MAX_CORRELATION', 0.7),
             'max_leverage_limit': self.env_loader.get_float_env_var('MAX_LEVERAGE', 5.0),
             'max_order_size_limit': self.env_loader.get_float_env_var('MAX_ORDER_SIZE', 0.05),
+            'max_order_notional_amount': self.env_loader.get_float_env_var('MAX_ORDER_NOTIONAL_AMOUNT', None) if self.env_loader.get_env_var('MAX_ORDER_NOTIONAL_AMOUNT', '') else None,
+
+
         }
         return risk_data
 
@@ -116,12 +119,19 @@ class _ConfigExtractorsMixin:
             'max_trend_impact_on_win_rate': self.env_loader.get_float_env_var('MAX_TREND_IMPACT_ON_WIN_RATE', 0.1),
             'max_volatility_impact_on_edge': self.env_loader.get_float_env_var('MAX_VOLATILITY_IMPACT_ON_EDGE', 0.1),
             'min_confidence_rr_factor': self.env_loader.get_float_env_var('MIN_CONFIDENCE_RR_FACTOR', 0.3),
-            'min_reward_risk_ratio': self.env_loader.get_float_env_var('MIN_REWARD_RISK_RATIO', 0.3),
+            'min_reward_risk_ratio': self.env_loader.get_float_env_var('MIN_REWARD_RISK_RATIO', 1.5),
             'ml_weights_enabled': self.env_loader.get_bool_env_var('ML_WEIGHTS_ENABLED', True),
             'regime_detection_enabled': self.env_loader.get_bool_env_var('REGIME_DETECTION_ENABLED', True),
             'signal_fusion_enabled': self.env_loader.get_bool_env_var('SIGNAL_FUSION_ENABLED', True),
             'signal_threshold': self.env_loader.get_float_env_var('SIGNAL_THRESHOLD', 0.3),
             'target_volatility': self.env_loader.get_float_env_var('TARGET_VOLATILITY', 0.2),
+            
+            # Volatility-Adapted SL/TP Parameters
+            'atr_period': self.env_loader.get_int_env_var('ATR_PERIOD', 14),
+            'atr_sl_multiplier': self.env_loader.get_float_env_var('ATR_SL_MULTIPLIER', 1.5),
+            'min_stop_distance_percent': self.env_loader.get_float_env_var('MIN_STOP_DISTANCE_PERCENT', 0.8),
+            'enable_dynamic_tp': self.env_loader.get_bool_env_var('ENABLE_DYNAMIC_TP', True),
+            'reject_low_rr_setup': self.env_loader.get_bool_env_var('REJECT_LOW_RR_SETUP', True),
             'trend_impact_on_win_rate_multiplier': self.env_loader.get_float_env_var('TREND_IMPACT_ON_WIN_RATE_MULTIPLIER', 1.5),
             'trend_max_rr_impact': self.env_loader.get_float_env_var('TREND_MAX_RR_IMPACT', 0.1),
             'trend_mtf_long_period': self.env_loader.get_int_env_var('TREND_MTF_LONG_PERIOD', 50),

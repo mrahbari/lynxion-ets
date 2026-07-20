@@ -88,17 +88,8 @@ def test_market_data_heartbeat_safety_guard(setup_mock_container):
     exec_service.is_backtest = False
     exec_service.get_current_price.return_value = 50000.0
 
-    # Simulate observation to register last market data time
-    obs = MarketObservation(
-        symbol=Symbol("BTCUSDT"),
-        observation_type="price_tick",
-        observation_value=50000.0,
-        confidence=Percentage(Decimal("1.0")),
-        timestamp=datetime.now()
-    )
-    event_obs = MagicMock()
-    event_obs.data = obs
-    processor._process_observation(event_obs, MagicMock())
+    # Register last market data time
+    processor._last_market_data_times = {"BTCUSDT": datetime.now()}
 
     # Verify heartbeat exists
     assert "BTCUSDT" in processor._last_market_data_times
@@ -112,6 +103,8 @@ def test_market_data_heartbeat_safety_guard(setup_mock_container):
         risk_parameters={"limit_price": 50000.0, "stop_loss": 49000.0},
         timestamp=datetime.now()
     )
+    intent.stop_loss_price = Money(amount=Decimal("49000.0"), currency="USDT")
+    intent.take_profit_price = Money(amount=Decimal("52000.0"), currency="USDT")
     event_intent = MagicMock()
     event_intent.data = intent
 
@@ -162,6 +155,8 @@ def test_order_book_liquidity_depth_guard(setup_mock_container):
         risk_parameters={"limit_price": 100.0, "stop_loss": 95.0, "position_quantity": 2.0},
         timestamp=datetime.now()
     )
+    intent.stop_loss_price = Money(amount=Decimal("95.0"), currency="USDT")
+    intent.take_profit_price = Money(amount=Decimal("110.0"), currency="USDT")
     event_intent = MagicMock()
     event_intent.data = intent
 

@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, List, Dict, Any
-from domain.value_objects import Symbol, Price, Side, ExchangeTimestamp, Quantity
+from domain.value_objects import Symbol, Price, Side, ExchangeTimestamp, Quantity, Money
 
 
 @dataclass
@@ -124,18 +124,27 @@ class OpenInterest:
     symbol: Symbol
     value: Quantity
     timestamp: ExchangeTimestamp
+    value_quote: Optional[Money] = None
 
     def __post_init__(self):
         if self.value.value < 0:
             raise ValueError(f"Open Interest cannot be negative: {self.value.value}")
+        if self.value_quote is not None and self.value_quote.amount < 0:
+            raise ValueError(f"Open Interest quote value cannot be negative: {self.value_quote.amount}")
 
     def to_dict(self) -> Dict[str, Any]:
         """Deterministic serialization."""
-        return {
+        d = {
             "symbol": self.symbol.value,
             "value": self.value.to_dict(),
             "timestamp": self.timestamp.millis
         }
+        if self.value_quote is not None:
+            d["value_quote"] = {
+                "amount": str(self.value_quote.amount),
+                "currency": self.value_quote.currency
+            }
+        return d
 
 
 @dataclass(frozen=True)

@@ -91,6 +91,9 @@ def load_sample_strategy(strategy_name: str, raw_signal: bool = False):
                 'close': row.get('close'), 'volume': row.get('volume', 0),
                 'timestamp': bar_ts,
             }
+            if hasattr(strategy_instance, 'config') and params:
+                for k, v in params.items():
+                    strategy_instance.config[k] = v
             strategy_instance.update_with_market_data(bar)
             sig = strategy_instance.generate_signal(mock_symbol)
             if sig is None:

@@ -239,3 +239,33 @@ class MarketDataNormalizerPort(Protocol):
     def normalize_symbol(self, raw_symbol: str, venue: ExchangeVenue) -> Symbol:
         """Translate exchange-specific symbol into a canonical Symbol."""
         pass
+
+
+from domain.entities.market_data import FundingRate, OpenInterest
+
+
+class DerivativesDataDownloaderPort(Protocol):
+    """Port for downloading historical derivatives data (Funding Rates and Open Interest)."""
+
+    @abstractmethod
+    async def fetch_funding_rates(
+        self,
+        symbol: Symbol,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        limit: int = 1000,
+    ) -> List[FundingRate]:
+        """Fetch historical funding rates from exchange REST API."""
+        pass
+
+    @abstractmethod
+    async def fetch_open_interest_history(
+        self,
+        symbol: Symbol,
+        period: str = "1h",
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        limit: int = 500,
+    ) -> List[OpenInterest]:
+        """Fetch historical Open Interest series from exchange REST API."""
+        pass

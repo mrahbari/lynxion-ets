@@ -244,6 +244,16 @@ class MonitoringAnalysisService:
                         watcher.update_data(formatted_data)
                     except Exception as e:
                         self.logger.warning(f"Error updating watcher {watcher_name} with market data: {e}")
+                
+                # Update last market data heartbeat immediately after ingestion
+                try:
+                    from infrastructure.messaging.event_system import signal_processor
+                    if not hasattr(signal_processor, '_last_market_data_times'):
+                        signal_processor._last_market_data_times = {}
+                    signal_processor._last_market_data_times[symbol_str] = datetime.now()
+                except Exception as heartbeat_err:
+                    self.logger.warning(f"Failed to update heartbeat timestamp for {symbol_str}: {heartbeat_err}")
+
 
         except Exception as e:
             self.logger.error(f"Error fetching market data for {symbol.value}: {e}")

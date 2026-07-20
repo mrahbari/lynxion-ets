@@ -48,7 +48,7 @@ class StrategyConfig(BaseModel):
     max_trend_impact_on_win_rate: float = Field(default=0.1, description="Maximum trend impact on win rate")
     max_volatility_impact_on_edge: float = Field(default=0.1, description="Maximum volatility impact on edge")
     min_confidence_rr_factor: float = Field(default=0.3, description="Minimum confidence RR factor")
-    min_reward_risk_ratio: float = Field(default=0.3, description="Minimum reward risk ratio")
+    min_reward_risk_ratio: float = Field(default=1.5, description="Minimum reward risk ratio")
     ml_weights_enabled: bool = Field(default=True, description="ML weights enabled")
     regime_detection_enabled: bool = Field(default=True, description="Regime detection enabled")
     signal_fusion_enabled: bool = Field(default=True, description="Signal fusion enabled")
@@ -76,6 +76,13 @@ class StrategyConfig(BaseModel):
     opportunity_score_reward_risk_weight: float = Field(default=0.15, description="Opportunity score reward risk weight")
     opportunity_score_regime_bonus: float = Field(default=0.15, description="Opportunity score regime bonus")
     enable_shorting: bool = Field(default=False, description="Enable shorting")
+
+    # Volatility-Adapted SL/TP Parameters
+    atr_period: int = Field(default=14, description="ATR period for volatility calculations")
+    atr_sl_multiplier: float = Field(default=1.5, description="ATR stop loss multiplier")
+    min_stop_distance_percent: float = Field(default=0.8, description="Minimum stop distance in percent (e.g. 0.8)")
+    enable_dynamic_tp: bool = Field(default=True, description="Enable dynamic take profit expansion")
+    reject_low_rr_setup: bool = Field(default=True, description="Reject setup if Reward-to-Risk ratio is below minimum")
 
     class Config:
         extra = "forbid"

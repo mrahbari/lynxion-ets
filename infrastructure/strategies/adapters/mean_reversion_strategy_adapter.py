@@ -20,7 +20,22 @@ class MeanReversionStrategyAdapter(BaseStrategyAdapter):
         # Extract and merge config settings
         params = system_config.get('parameters', {})
         top_level = {k: v for k, v in system_config.items() if k != 'parameters'}
-        self.config = {**top_level, **params, **(config or {})}
+        self.config = {**top_level, **params}
+
+        # Merge new global settings from bootstrap/settings
+        try:
+            from bootstrap.settings.loaders import load_settings
+            global_settings = load_settings().strategy
+            if global_settings:
+                for field in ['atr_period', 'atr_sl_multiplier', 'min_stop_distance_percent', 'min_reward_risk_ratio', 'enable_dynamic_tp', 'reject_low_rr_setup']:
+                    if hasattr(global_settings, field):
+                        self.config[field] = getattr(global_settings, field)
+        except Exception:
+            pass
+
+        # Apply constructor overrides
+        if config:
+            self.config.update(config)
 
         from infrastructure.market_structure.market_structure_engine import MarketStructureEngine
         from infrastructure.strategies.setup_engine import SetupEngine
@@ -49,13 +64,19 @@ class MeanReversionStrategyAdapter(BaseStrategyAdapter):
                 lows=lows,
                 val=struct["val"],
                 vah=struct["vah"],
-                poc=struct["poc"]
+                poc=struct["poc"],
+                config=self.config
             )
 
             # Filter setups to only match NGMR_REVERSION setups
             setup = next((s for s in setups if s.setup_type == "NGMR_REVERSION"), None)
             if not setup:
                 return None
+
+            latest_bar = self.data_buffer[-1] if self.data_buffer else {}
+            if not self._is_setup_fresh(setup, latest_bar):
+                return None
+
 
             from domain.value_objects import Percentage
             from decimal import Decimal
@@ -106,7 +127,8 @@ class MeanReversionStrategyAdapter(BaseStrategyAdapter):
                 lows=lows,
                 val=struct["val"],
                 vah=struct["vah"],
-                poc=struct["poc"]
+                poc=struct["poc"],
+                config=self.config
             )
             setup = next((s for s in setups if s.setup_type == "NGMR_REVERSION"), None)
 
@@ -114,6 +136,9 @@ class MeanReversionStrategyAdapter(BaseStrategyAdapter):
             return None
 
         latest_bar = self.data_buffer[-1] if self.data_buffer else {}
+        if not self._is_setup_fresh(setup, latest_bar):
+            return None
+
         current_price = closes[-1]
         max_position_size = float(self.config.get("max_position_size", 0.05))
 

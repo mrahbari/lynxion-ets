@@ -394,21 +394,21 @@ python runner_walkforward.py --strategy crypto_breakout --train-days 60 --test-d
 
 ### Backtesting
 
-The system supports 11 specialized strategies defined in the StrategyType enum:
+The system supports 11 specialized strategies defined in the StrategyType enum, each optimized for its design timeframe:
 
-* **Trend Following (`trend_following`)** – Follows trending market movements
-* **Mean Reversion (`mean_reversion`)** – Bets on price returning to mean
-* **Volatility Breakout (`volatility_breakout`)** – Captures price movements during volatility expansion
-* **Momentum (`momentum`)** – Capitalizes on momentum patterns and rate of change
-* **Scalping (`scalping`)** – Short-term quick profit strategy
-* **Breakout (`breakout`)** – Identifies resistance/support breakouts
-* **Liquidity (`liquidity`)** – Based on liquidity and volume patterns
-* **MTF Trend (`mtf_trend`)** – Multi-timeframe trend following
-* **OI Footprint (`oi_footprint`)** – Order interest footprint analysis
-* **Sweep Scalper (`sweep_scalper`)** – Sweeping liquidity strategy
-* **VWAP Reversal (`vwap_reversal`)** – VWAP-based reversal strategy
+* **Sweep Scalper (`sweep_scalper`)** [Timeframe: `1m`] – Sweeping liquidity strategy
+* **Scalping (`scalping`)** [Timeframe: `1m` / `5m`] – Short-term quick profit strategy
+* **Liquidity (`liquidity`)** [Timeframe: `5m`] – Based on liquidity and volume patterns
+* **VWAP Reversal (`vwap_reversal`)** [Timeframe: `5m`] – VWAP-based reversal strategy
+* **Breakout (`breakout`)** [Timeframe: `15m`] – Identifies resistance/support breakouts
+* **Volatility Breakout (`volatility_breakout`)** [Timeframe: `15m`] – Captures price movements during volatility expansion
+* **MTF Trend (`mtf_trend`)** [Timeframe: `15m`] – Multi-timeframe trend following (using `5m`, `15m`, and `1h` inputs)
+* **Trend Following (`trend_following`)** [Timeframe: `1h`] – Follows trending market movements
+* **Mean Reversion (`mean_reversion`)** [Timeframe: `1h`] – Bets on price returning to mean
+* **OI Footprint (`oi_footprint`)** [Timeframe: `1h`] – Order interest footprint analysis
+* **Momentum (`momentum`)** [Timeframe: `1h`] – Capitalizes on momentum patterns and rate of change
 
-Additionally, the system includes the `crypto_breakout` strategy for compatibility with existing examples.
+Additionally, the system includes the `crypto_breakout` strategy [Timeframe: `15m`] for compatibility with existing examples.
 
 #### Single Strategy Backtest
 

@@ -32,7 +32,7 @@ from domain.entities.account import Balance, TradingAccount
 from domain.entities.venue import CanonicalInstrument, SymbolMapping, InstrumentMapping
 from domain.entities.order_book import OrderBookState, OrderBookBuilder, SequenceGapError
 from domain.entities.replay import ReplaySession, ReplayEvent, ReplayCheckpoint, ReplaySessionStatus
-from domain.entities.feature import FeatureSnapshot
+from domain.entities.feature import FeatureSnapshot, DerivativesFeatureVector
 from domain.entities.research import FeatureEventRecord, RegimeStats
 from domain.entities.walk_forward import WalkForwardFold, AlphaQualificationSession
 

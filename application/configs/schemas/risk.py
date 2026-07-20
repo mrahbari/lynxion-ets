@@ -41,6 +41,10 @@ class RiskConfig(BaseModel):
     max_correlation_limit: float = Field(default=0.7, description="Maximum correlation limit")
     max_leverage_limit: float = Field(default=5.0, description="Maximum leverage limit")
     max_order_size_limit: float = Field(default=0.05, description="Maximum order size limit")
+    max_order_notional_amount: Optional[float] = Field(default=None, description="Optional maximum order notional amount cap")
+
+
+
 
     @validator('max_drawdown', 'max_risk_per_trade', 'max_correlation', 'stop_loss_percentage',
                'max_total_exposure', 'capital_per_symbol', 'max_exposure', 'per_trade',

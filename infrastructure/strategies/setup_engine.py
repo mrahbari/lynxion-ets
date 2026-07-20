@@ -15,10 +15,27 @@ class SetupEngine:
 
     def scan_for_setups(self, symbol: Symbol, prices: List[float], highs: List[float],
                          lows: List[float], val: float, vah: float, poc: float,
-                         data_buffer: Optional[List[Dict[str, Any]]] = None) -> List[CandidateSetup]:
+                         data_buffer: Optional[List[Dict[str, Any]]] = None,
+                         config: Optional[Dict[str, Any]] = None) -> List[CandidateSetup]:
         """
         Scan prices for sweeps and reversions, returning any triggered setup objects.
         """
+        # Resolve config parameters (Phase 11 Configurable Model)
+        atr_period = 14
+        atr_sl_multiplier = 1.5
+        min_stop_distance_percent = 0.008  # 0.8%
+        min_reward_risk_ratio = 1.5
+        enable_dynamic_tp = True
+        reject_low_rr_setup = True
+
+        if config:
+            atr_period = int(config.get('atr_period', 14))
+            atr_sl_multiplier = float(config.get('atr_sl_multiplier', 1.5))
+            min_stop_distance_percent = float(config.get('min_stop_distance_percent', 0.8)) / 100.0
+            min_reward_risk_ratio = float(config.get('min_reward_risk_ratio', 1.5))
+            enable_dynamic_tp = bool(config.get('enable_dynamic_tp', True))
+            reject_low_rr_setup = bool(config.get('reject_low_rr_setup', True))
+
         setups = []
         n = len(prices)
         if n < 5:
@@ -61,32 +78,82 @@ class SetupEngine:
 
         # 2. NGMR Reversion Setup detection
         threshold = 0.0005 * current_price  # 0.05% threshold
-        if abs(current_price - val) < threshold:
-            # Buy reversion to POC
-            sl = val - 0.005 * current_price
-            tp = poc
-            setups.append(CandidateSetup(
-                symbol=symbol,
-                timestamp=ts,
-                setup_type="NGMR_REVERSION",
-                direction="BUY",
-                trigger_price=Decimal(str(current_price)),
-                stop_loss_level=Decimal(str(sl)),
-                take_profit_level=Decimal(str(tp))
-            ))
-        elif abs(current_price - vah) < threshold:
-            # Sell reversion to POC
-            sl = vah + 0.005 * current_price
-            tp = poc
-            setups.append(CandidateSetup(
-                symbol=symbol,
-                timestamp=ts,
-                setup_type="NGMR_REVERSION",
-                direction="SELL",
-                trigger_price=Decimal(str(current_price)),
-                stop_loss_level=Decimal(str(sl)),
-                take_profit_level=Decimal(str(tp))
-            ))
+        if abs(current_price - val) < threshold or abs(current_price - vah) < threshold:
+            # Calculate ATR dynamically
+            atr = (min_stop_distance_percent / atr_sl_multiplier) * current_price
+            if len(prices) >= atr_period + 1:
+                tr_list = []
+                for i in range(1, len(prices)):
+                    tr = max(highs[i] - lows[i], 
+                             abs(highs[i] - prices[i-1]), 
+                             abs(lows[i] - prices[i-1]))
+                    tr_list.append(tr)
+                lookback = min(atr_period, len(tr_list))
+                if lookback > 0:
+                    atr = sum(tr_list[-lookback:]) / lookback
+
+            if abs(current_price - val) < threshold:
+                # Buy reversion to POC
+                # Hybrid SL/TP (Option C): Structural invalidation + Volatility buffer + Min stop distance floor
+                sl_structural = val - atr_sl_multiplier * atr
+                sl_limit = current_price * (1.0 - min_stop_distance_percent)
+                sl = min(sl_structural, sl_limit)
+                
+                # Take profit:
+                tp_structural = poc
+                if enable_dynamic_tp:
+                    tp_min = current_price + min_reward_risk_ratio * (current_price - sl)
+                    tp = max(tp_structural, tp_min)
+                else:
+                    tp = tp_structural
+
+                # Reward/Risk checking:
+                if not hasattr(self, 'rejected_low_rr_count'):
+                    self.rejected_low_rr_count = {}
+                rr_ratio = abs(tp - current_price) / abs(current_price - sl) if abs(current_price - sl) > 0 else 0.0
+                if not reject_low_rr_setup or rr_ratio >= min_reward_risk_ratio:
+                    setups.append(CandidateSetup(
+                        symbol=symbol,
+                        timestamp=ts,
+                        setup_type="NGMR_REVERSION",
+                        direction="BUY",
+                        trigger_price=Decimal(str(current_price)),
+                        stop_loss_level=Decimal(str(sl)),
+                        take_profit_level=Decimal(str(tp))
+                    ))
+                else:
+                    self.rejected_low_rr_count[str(symbol)] = self.rejected_low_rr_count.get(str(symbol), 0) + 1
+            elif abs(current_price - vah) < threshold:
+                # Sell reversion to POC
+                # Hybrid SL/TP (Option C): Structural invalidation + Volatility buffer + Min stop distance floor
+                sl_structural = vah + atr_sl_multiplier * atr
+                sl_limit = current_price * (1.0 + min_stop_distance_percent)
+                sl = max(sl_structural, sl_limit)
+                
+                # Take profit:
+                tp_structural = poc
+                if enable_dynamic_tp:
+                    tp_max = current_price - min_reward_risk_ratio * (sl - current_price)
+                    tp = max(0.0, min(tp_structural, tp_max))
+                else:
+                    tp = tp_structural
+
+                # Reward/Risk checking:
+                if not hasattr(self, 'rejected_low_rr_count'):
+                    self.rejected_low_rr_count = {}
+                rr_ratio = abs(current_price - tp) / abs(sl - current_price) if abs(sl - current_price) > 0 else 0.0
+                if not reject_low_rr_setup or rr_ratio >= min_reward_risk_ratio:
+                    setups.append(CandidateSetup(
+                        symbol=symbol,
+                        timestamp=ts,
+                        setup_type="NGMR_REVERSION",
+                        direction="SELL",
+                        trigger_price=Decimal(str(current_price)),
+                        stop_loss_level=Decimal(str(sl)),
+                        take_profit_level=Decimal(str(tp))
+                    ))
+                else:
+                    self.rejected_low_rr_count[str(symbol)] = self.rejected_low_rr_count.get(str(symbol), 0) + 1
 
         # 3. NGTREND_FOLLOW Setup detection
         if current_price > vah:
