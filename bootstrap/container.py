@@ -127,6 +127,8 @@ class Container:
         self.register("broker_registry", self._build_broker_registry)
         self.register("global_rate_limiter", self._build_global_rate_limiter)
         self.register("pending_orders_tracker", self._build_pending_orders_tracker)
+        # Portfolio Allocation Engine (Task 0040).
+        self.register("portfolio_allocation_engine", self._build_portfolio_allocation_engine)
         # Consolidated position-sizing engine (E3.T3).
         self.register("position_sizing_engine", self._build_position_sizing_engine)
         # Consolidated risk engine (E3.T4): portfolio risk + separated SL/TP.
@@ -591,12 +593,24 @@ class Container:
         from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
         return PendingOrdersTracker()
 
+    def _build_portfolio_allocation_engine(self):
+        from infrastructure.risk.portfolio_allocation_engine import PortfolioAllocationEngine
+        return PortfolioAllocationEngine()
+
     def _build_position_sizing_engine(self):
         from application.position_sizing.enterprise_position_sizing import PositionSizingService
         from infrastructure.position_sizing.position_sizing_engine_adapter import (
             PositionSizingEngineAdapter,
         )
-        return PositionSizingEngineAdapter(service=PositionSizingService())
+        allocation_engine = self.resolve("portfolio_allocation_engine")
+        settings = self.resolve("settings") if "settings" in self.registered_keys() else None
+        risk_cfg = getattr(settings, "risk", None) if settings else None
+        allocation_config = getattr(risk_cfg, "portfolio_allocation", None) if risk_cfg else None
+        return PositionSizingEngineAdapter(
+            service=PositionSizingService(),
+            allocation_engine=allocation_engine,
+            allocation_config=allocation_config,
+        )
 
     def _build_risk_engine(self):
         from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager

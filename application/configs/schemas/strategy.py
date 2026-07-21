@@ -77,6 +77,16 @@ class StrategyConfig(BaseModel):
     opportunity_score_regime_bonus: float = Field(default=0.15, description="Opportunity score regime bonus")
     enable_shorting: bool = Field(default=False, description="Enable shorting")
 
+    # Directional Control
+    direction_mode: str = Field(default="BOTH", description="Directional mode for signal generation ('BOTH', 'LONG_ONLY', 'SHORT_ONLY')")
+
+    @validator('direction_mode')
+    def validate_direction_mode(cls, v):
+        allowed = {"BOTH", "LONG_ONLY", "SHORT_ONLY"}
+        if v not in allowed:
+            raise ValueError(f"direction_mode must be one of {allowed}, got '{v}'")
+        return v
+
     # Volatility-Adapted SL/TP Parameters
     atr_period: int = Field(default=14, description="ATR period for volatility calculations")
     atr_sl_multiplier: float = Field(default=1.5, description="ATR stop loss multiplier")

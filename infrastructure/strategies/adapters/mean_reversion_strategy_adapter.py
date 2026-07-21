@@ -73,6 +73,13 @@ class MeanReversionStrategyAdapter(BaseStrategyAdapter):
             if not setup:
                 return None
 
+            # Directional mode enforcement (Task 0026)
+            direction_mode = self.config.get("direction_mode", "BOTH")
+            if direction_mode == "LONG_ONLY" and setup.direction == "SELL":
+                return None
+            if direction_mode == "SHORT_ONLY" and setup.direction == "BUY":
+                return None
+
             latest_bar = self.data_buffer[-1] if self.data_buffer else {}
             if not self._is_setup_fresh(setup, latest_bar):
                 return None

@@ -310,6 +310,21 @@
   },
   "risk": {
     "capital_per_symbol": 0.02,
+    "derivatives_risk_gate": {
+      "enabled": false,
+      "lvi_hard_block_threshold": 25.0,
+      "max_daily_drawdown_percent": 3.0,
+      "oi_zscore_hard_block_threshold": 2.0,
+      "oi_zscore_soft_warning_threshold": 1.0,
+      "soft_position_multiplier": 0.5
+    },
+    "portfolio_allocation": {
+      "allocation_mode": "EQUAL_WEIGHT",
+      "enabled": false,
+      "kelly_fraction": 0.25,
+      "max_cap_weight": 0.4,
+      "min_floor_weight": 0.05
+    },
     "emergency_stop_drawdown": 0.15,
     "max_correlation": 0.7,
     "max_correlation_between_pos": 0.6,
@@ -367,6 +382,7 @@
     "default_annual_volatility": 0.2,
     "default_asset_volatility": 0.2,
     "default_strategy": "crypto_breakout",
+    "direction_mode": "BOTH",
     "edge_estimation_factor": 0.55,
     "enable_dynamic_tp": true,
     "enable_shorting": false,
