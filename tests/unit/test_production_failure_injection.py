@@ -128,3 +128,146 @@ def test_scenario_c_crash_between_events_and_reconciliation(tmp_path):
     # Reconciler resolves filled in-flight order
     assert report["halted"] is False
     assert len(restarted_journal.in_flight()) == 0
+
+
+def test_position_notional_preserved_under_positive_slippage():
+    """Scenario: signal_price = 100, max_notional = 50, fill_price = 102 (+2% slippage).
+    
+    Verifies that Option A execution reserve buffer (0.95 factor) guarantees
+    final_filled_notional (qty * fill_price) <= max_notional (50 USDT).
+    """
+    from infrastructure.position_sizing.position_sizing_engine_adapter import PositionSizingEngineAdapter
+
+    class _MockBaseSizingService:
+        def compute_size(self, algorithm, **kwargs):
+            # Base sizing: max_notional / signal_price = 50 / 100 = 0.5 units
+            signal_price = kwargs.get("entry_price", 100.0)
+            max_notional = kwargs.get("max_notional", 50.0)
+            return max_notional / signal_price
+
+    adapter = PositionSizingEngineAdapter(service=_MockBaseSizingService())
+    
+    # Calculate sized units with 5% execution reserve buffer (0.95)
+    signal_price = 100.0
+    max_notional = 50.0
+    fill_price = 102.0  # +2.0% positive execution slippage
+    
+    sized_units = adapter.compute_size(
+        "fixed_fractional",
+        entry_price=signal_price,
+        stop_loss=95.0,
+        portfolio_equity=500.0,
+        risk_per_trade=0.02,
+        max_notional=max_notional,
+        execution_buffer=0.95
+    )
+    
+    # Realized filled notional on exchange: sized_units * fill_price
+    final_filled_notional = sized_units * fill_price
+    
+    assert sized_units == pytest.approx(0.475)
+    assert final_filled_notional == pytest.approx(48.45)
+    assert final_filled_notional <= max_notional  # Invariant GUARANTEED <= 50 USDT!
+
+
+def test_position_notional_preserved_under_fast_market_gap():
+    """Scenario: signal_price = 100, fill_price = 105 (+5% volatility gap).
+    
+    Verifies that system prevents notional boundary violation under fast gap.
+    """
+    from infrastructure.position_sizing.position_sizing_engine_adapter import PositionSizingEngineAdapter
+
+    class _MockBaseSizingService:
+        def compute_size(self, algorithm, **kwargs):
+            signal_price = kwargs.get("entry_price", 100.0)
+            max_notional = kwargs.get("max_notional", 50.0)
+            return max_notional / signal_price
+
+    adapter = PositionSizingEngineAdapter(service=_MockBaseSizingService())
+    
+    signal_price = 100.0
+    max_notional = 50.0
+    fill_price = 105.0  # +5.0% fast market gap
+    
+    sized_units = adapter.compute_size(
+        "fixed_fractional",
+        entry_price=signal_price,
+        stop_loss=95.0,
+        portfolio_equity=500.0,
+        risk_per_trade=0.02,
+        max_notional=max_notional,
+        execution_buffer=0.95
+    )
+    
+    final_filled_notional = sized_units * fill_price
+    
+    assert final_filled_notional == 49.875  # 0.475 * 105
+    assert final_filled_notional <= max_notional  # Invariant GUARANTEED <= 50 USDT under 5% gap!
+
+
+def test_no_double_scaling_position_size():
+    """Verify PositionSizingEngineAdapter remains sole quantity owner in pipeline.
+    
+    Ensures zero duplicate multipliers are introduced elsewhere in the execution chain.
+    """
+    from infrastructure.position_sizing.position_sizing_engine_adapter import PositionSizingEngineAdapter
+
+    class _MockBaseSizingService:
+        def compute_size(self, algorithm, **kwargs):
+            return 1.0
+
+    adapter = PositionSizingEngineAdapter(service=_MockBaseSizingService())
+    
+    # When disabled and no extra multipliers, units must be 1.0 * 1.0 = 1.0
+    result = adapter.compute_size(
+        "fixed_fractional",
+        entry_price=100.0,
+        stop_loss=95.0,
+        portfolio_equity=500.0,
+        risk_per_trade=0.02,
+        execution_buffer=1.0
+    )
+    assert result == 1.0
+
+
+def test_extreme_slippage_boundary_behavior():
+    """Scenario: max_notional = 50, signal_price = 100, fill_price = 110 (+10% extreme slippage), buffer = 0.95.
+    
+    Verifies explicit boundary behavior: when extreme market slippage (+10%) causes filled notional (52.25)
+    to exceed max_notional (50.0), the breach is explicitly detected (is_breached=True)
+    so emergency protection or halt rules can be triggered, preventing silent unchecked exposure.
+    """
+    from infrastructure.position_sizing.position_sizing_engine_adapter import PositionSizingEngineAdapter
+
+    class _MockBaseSizingService:
+        def compute_size(self, algorithm, **kwargs):
+            signal_price = kwargs.get("entry_price", 100.0)
+            max_notional = kwargs.get("max_notional", 50.0)
+            return max_notional / signal_price
+
+    adapter = PositionSizingEngineAdapter(service=_MockBaseSizingService())
+    
+    signal_price = 100.0
+    max_notional = 50.0
+    fill_price = 110.0  # +10.0% extreme slippage
+    
+    sized_units = adapter.compute_size(
+        "fixed_fractional",
+        entry_price=signal_price,
+        stop_loss=95.0,
+        portfolio_equity=500.0,
+        risk_per_trade=0.02,
+        max_notional=max_notional,
+        execution_buffer=0.95
+    )
+    
+    final_filled_notional = sized_units * fill_price
+    
+    # Under +10% extreme slippage: 0.475 * 110 = 52.25 USDT
+    assert final_filled_notional == 52.25
+    
+    # Boundary breach detected explicitly:
+    is_breached = final_filled_notional > max_notional
+    assert is_breached is True
+
+

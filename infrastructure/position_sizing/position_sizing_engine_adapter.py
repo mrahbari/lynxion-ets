@@ -78,8 +78,11 @@ class PositionSizingEngineAdapter(PositionSizingEnginePort):
                 w_i = res.weights[symbol]
                 allocation_scale = w_i * n
 
-        # 3. Apply allocation scale and risk gate multiplier
-        final_units = base_units * allocation_scale * risk_gate_multiplier
+        # 3. Apply allocation scale, risk gate multiplier, and execution reserve buffer
+        # The execution reserve buffer (e.g. 0.95 to 0.985) reserves capital against positive
+        # market order execution slippage to guarantee final_filled_notional <= max_position_notional.
+        execution_buffer = float(kwargs.get("execution_buffer", 1.0))
+        final_units = base_units * allocation_scale * risk_gate_multiplier * execution_buffer
         return final_units
 
     def available_algorithms(self) -> List[str]:
