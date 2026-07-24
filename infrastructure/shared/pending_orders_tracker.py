@@ -38,6 +38,7 @@ class PendingOrdersTracker:
     @classmethod
     def add_pending_order(cls, symbol: Symbol, side: str, order_id: str):
         """Add an order to the pending orders tracking."""
+        cls.cleanup_old_pending_orders(max_age_minutes=5)
         with cls._pending_orders_instance_lock:
             symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
             if symbol_str not in cls._pending_orders:
@@ -65,11 +66,12 @@ class PendingOrdersTracker:
     @classmethod
     def has_pending_order_in_direction(cls, symbol: Symbol, side: str) -> bool:
         """Check if there's a pending order in the same direction for the symbol."""
+        cls.cleanup_old_pending_orders(max_age_minutes=5)
         with cls._pending_orders_instance_lock:
             symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
             if symbol_str in cls._pending_orders:
                 for order_info in cls._pending_orders[symbol_str]:
-                    if order_info.side == side:
+                    if str(order_info.side).upper() == str(side).upper():
                         return True
             return False
 
@@ -87,10 +89,10 @@ class PendingOrdersTracker:
             cls._pending_orders.clear()
 
     @classmethod
-    def cleanup_old_pending_orders(cls, max_age_minutes: int = 30):
+    def cleanup_old_pending_orders(cls, max_age_minutes: int = 5):
         """Clean up pending orders that are older than max_age_minutes to prevent stale entries."""
-        import shared.logger as logger_module
-        logger = logger_module.EnhancedLogger("PendingOrdersTracker")
+        import logging
+        logger = logging.getLogger("PendingOrdersTracker")
 
         with cls._pending_orders_instance_lock:
             current_time = datetime.now()

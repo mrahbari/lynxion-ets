@@ -197,7 +197,7 @@ class StrategyConfig:
         return default
 
     @staticmethod
-    def get_strategy_cooldown_after_exit_minutes(strategy_name: str, default: int = 30) -> int:
+    def get_strategy_cooldown_after_exit_minutes(strategy_name: str, default: int = 5) -> int:
         """Get cooldown period after exit in minutes"""
         # Use a general cooldown setting from strategy config
         if load_settings().strategy:

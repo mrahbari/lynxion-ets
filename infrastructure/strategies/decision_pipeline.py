@@ -83,7 +83,9 @@ class DecisionPipeline:
                 "direction": setup.direction,
                 "trigger_price": float(setup.trigger_price),
                 "limit_price": float(optimized_order["price"]),
-                "time_in_force": optimized_order["time_in_force"]
+                "time_in_force": optimized_order["time_in_force"],
+                "watcher_name": (fused_signal.metadata.get('watcher_name') or fused_signal.metadata.get('primary_watcher') or fused_signal.metadata.get('source_watcher')) if fused_signal and fused_signal.metadata else 'N/A',
+                "primary_watcher": (fused_signal.metadata.get('primary_watcher') or fused_signal.metadata.get('watcher_name')) if fused_signal and fused_signal.metadata else 'N/A'
             }
         )
 

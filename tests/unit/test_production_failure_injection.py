@@ -98,7 +98,7 @@ def test_scenario_c_crash_between_events_and_reconciliation(tmp_path):
     
     Verifies restart behavior and BrokerReconciliationService detection.
     """
-    journal_path = str(tmp_path / "live_order_journal.jsonl")
+    journal_path = str(tmp_path / "live_order_journal.json")
     journal = LiveOrderJournal(path=journal_path)
 
     # 1. Strategy records intent and order submission before crash

@@ -412,6 +412,12 @@ class MonitoringAnalysisService:
                             signal_type=observation.observation_type
                         )
 
+                        # Ensure observation metadata has watcher_name attached
+                        if observation.metadata is None:
+                            observation.metadata = {}
+                        if 'watcher_name' not in observation.metadata:
+                            observation.metadata['watcher_name'] = watcher_name
+
                         # Emit the raw market observation to the event system for proper processing
                         if self.event_router:
                             try:

@@ -91,7 +91,7 @@ class BaseStrategyAdapter(StrategyPort):
             'max_consecutive_losses': StrategyConfig.get_strategy_max_consecutive_losses(name, 3),
             'min_atr_threshold': StrategyConfig.get_strategy_min_atr_threshold(name, 0.001),
             'avoid_flat_markets': StrategyConfig.get_strategy_avoid_flat_markets(name, True),
-            'cooldown_after_exit_minutes': StrategyConfig.get_strategy_cooldown_after_exit_minutes(name, 30)
+            'cooldown_after_exit_minutes': StrategyConfig.get_strategy_cooldown_after_exit_minutes(name, 5)
         }
 
         # Initialize with default risk parameters
@@ -210,7 +210,9 @@ class BaseStrategyAdapter(StrategyPort):
             metadata={
                 'strategy_reasoning': f'Signal aligned with {strategy_name} strategy criteria',
                 'dominant_bias': fused_signal.dominant_bias.value,
-                'regime_context': fused_signal.regime_context
+                'regime_context': fused_signal.regime_context,
+                'watcher_name': (fused_signal.metadata.get('watcher_name') or fused_signal.metadata.get('primary_watcher') or fused_signal.metadata.get('source_watcher')) if fused_signal and fused_signal.metadata else 'N/A',
+                'primary_watcher': (fused_signal.metadata.get('primary_watcher') or fused_signal.metadata.get('watcher_name')) if fused_signal and fused_signal.metadata else 'N/A'
             }
         )
 
@@ -395,7 +397,7 @@ class BaseStrategyAdapter(StrategyPort):
 
     def _passes_exit_cooldown_check(self, symbol: str, current_time: datetime = None) -> bool:
         """Check if cooldown period after exit has elapsed."""
-        cooldown_minutes = self.config.get('cooldown_after_exit_minutes', 30)  # Use default value of 30 if not specified
+        cooldown_minutes = self.config.get('cooldown_after_exit_minutes', 1)  # Default 1 minute cooldown after exit
         if cooldown_minutes <= 0:
             return True
 

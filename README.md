@@ -167,32 +167,86 @@ The system includes utilities to manage approved symbols:
 
 ### Strategy System
 
-All strategies inherit from a shared base adapter and are fully isolated with enhanced monitoring and management capabilities.
+All strategies inherit from `BaseStrategyAdapter` (implementing `StrategyPort`) and are fully isolated with enhanced monitoring, dynamic setup scoring, and management capabilities. Strategies operate downstream of `Engine` $\rightarrow$ `Fusion`, taking fused signals or setup engine candidates and converting them into validated `ExecutionIntent` objects with dynamic ATR-based SL/TP levels.
 
-**Base**
+**Base Class Features**
+* `BaseStrategyAdapter`: Provides standard technical indicators (`calculate_ema`, `calculate_rsi`, `calculate_atr`), risk parameter management, cooldown tracking, and intent discipline.
+* **Dynamic Confidence Scaling**: Confidence is dynamically mapped from candidate setup score ($Score \in [-1, 1]$) into $[0.50, 0.95]$ via $Conf = \min(0.95, \max(0.50, 0.60 + 0.35 \cdot |Score|))$.
 
-* `BaseStrategyAdapter` with health monitoring and performance tracking
-* Technical indicators: RSI, EMA, SMA, Bollinger Bands, ATR, momentum, volume
-* **Enhanced Features**: Health monitoring, auto-restart, performance tracking, error isolation
+**Available Strategies & Their Internal Logic**
 
-**Available Strategies**
+1. **TrendFollowStrategyAdapter** (`trend_following`)
+   * **Logic**: Moving Average (EMA) Crossover with Momentum & Volume Confirmation.
+   * **Mechanism**: Evaluates fast EMA (10/20) against slow EMA (50/200). Generates `BUY` when fast EMA crosses above slow EMA with positive price momentum and ATR above minimum threshold. Generates `SELL` on bearish crossovers.
+   * **Risk/Exit**: ATR-based Stop Loss ($1.5 \times \text{ATR}$) and Take Profit ($2.0\text{--}3.0 \times \text{ATR}$).
 
-* **TrendFollowStrategyAdapter** – MA crossovers with momentum confirmation
-* **MeanReversionStrategyAdapter** – RSI + Bollinger Bands
-* **ScalpingStrategyAdapter** – Fast MA crossovers with volume confirmation
-* **BreakoutStrategyAdapter** – Consolidation and breakout detection
+2. **MeanReversionStrategyAdapter** (`mean_reversion`)
+   * **Logic**: Relative Strength Index (RSI) + Bollinger Bands Reversion.
+   * **Mechanism**: Monitors price relative to 20-period 2.0$\sigma$ Bollinger Bands and 14-period RSI. Triggers `BUY` when price pierces the lower Bollinger Band with oversold RSI ($< 35$), targeting reversion to the middle SMA. Triggers `SELL` when price pierces upper band with overbought RSI ($> 65$).
+   * **Risk/Exit**: SL set beyond recent swing high/low; TP set at middle Bollinger Band (SMA/POC).
+
+3. **BreakoutStrategyAdapter** (`breakout` / `crypto_breakout`)
+   * **Logic**: Consolidation Channel & Volume Expansion Breakout.
+   * **Mechanism**: Identifies tight consolidation channels over a lookback window. Triggers `BUY` when price breaks above N-period resistance with volume exceeding $1.5\times$ moving average volume. Triggers `SELL` when breaking below support.
+   * **Risk/Exit**: SL placed inside consolidation channel; TP set at multi-R expansion level.
+
+4. **DonchianBreakoutStrategyAdapter** (`donchian_breakout`)
+   * **Logic**: Donchian Channel High/Low Channel Expansion.
+   * **Mechanism**: Computes N-period highest high and lowest low (Donchian Channels). Triggers `BUY` on fresh break of upper channel; triggers `SELL` on break of lower channel.
+   * **Risk/Exit**: ATR-scaled stop loss and channel width expansion profit targets.
+
+5. **LiquidityStrategyAdapter** (`liquidity`)
+   * **Logic**: Liquidity Pool Sweep & Stop-Hunt Reversal.
+   * **Mechanism**: Detects stop-loss sweeps beyond key equal highs/lows or liquidity pools. Triggers `BUY` when price sweeps below support and immediately reclaims the level within the bar (false breakdown / spring). Triggers `SELL` when price sweeps above resistance and rejects (upthrust).
+   * **Risk/Exit**: Tight SL placed beyond sweep wick low/high; TP targeted at opposing liquidity pool.
+
+6. **MTFTrendStrategyAdapter** (`mtf_trend`)
+   * **Logic**: Multi-Timeframe Trend Consensus Alignment.
+   * **Mechanism**: Evaluates trend direction across multiple timeframes (15m, 1h, 4h). Triggers `BUY` only when short, medium, and long timeframes align in unanimous bullish consensus. Triggers `SELL` on unanimous bearish consensus.
+   * **Risk/Exit**: Filters out conflicting market regimes; ATR trailing stop.
+
+7. **OIFootprintStrategyAdapter** (`oi_footprint`)
+   * **Logic**: Open Interest ($\Delta\text{OI}$) Delta & Volume Footprint Analysis.
+   * **Mechanism**: Analyzes Open Interest changes combined with price action:
+     * *Long Accumulation* (Price $\uparrow$ + OI $\uparrow$): Bullish continuation signal.
+     * *Short Accumulation* (Price $\downarrow$ + OI $\uparrow$): Bearish continuation signal.
+     * *Long Liquidation Flush* (Price $\downarrow$ + OI $\downarrow$): Reversal buy setup.
+     * *Short Squeeze* (Price $\uparrow$ + OI $\downarrow$): Reversal sell setup.
+   * **Risk/Exit**: Structure-based SL beyond liquidation candle extreme; TP set at high-volume nodes.
+
+8. **ShortTermReversalStrategyAdapter** (`short_term_reversal`)
+   * **Logic**: Micro-structure Overextension & VWAP Deviation Scalping.
+   * **Mechanism**: Monitors short-term price spikes that extend beyond $3\sigma$ standard deviation boundaries from short-term VWAP/EMA. Generates counter-trend scalp signals when volume and tick intensity show exhaustion.
+   * **Risk/Exit**: Tight ATR stop loss; TP set back at short-term VWAP mean.
+
+9. **SweepScalperAdapter** (`sweep_scalper`)
+   * **Logic**: Order Flow Sweep & Liquidity Vacuum Scalping.
+   * **Mechanism**: Intercepts WebSocket order book sweeps. Identifies aggressive market order series eating through multiple price levels. Emits rapid momentum scalp signals or fade signals when large limit absorption orders appear.
+   * **Risk/Exit**: Very short holding time; tight tick-based stop loss.
+
+10. **VWAPReversalStrategyAdapter** (`vwap_reversal`)
+    * **Logic**: Session VWAP Deviation & Value Area Reversion.
+    * **Mechanism**: Computes Session VWAP and Standard Deviation Bands ($\pm 1\sigma, \pm 2\sigma, \pm 3\sigma$) alongside Value Area High (VAH), Value Area Low (VAL), and Point of Control (POC). Triggers `BUY` when price extends below $-2\sigma / -3\sigma$ VWAP or VAL with bullish candle confirmation. Triggers `SELL` above $+2\sigma / +3\sigma$ VWAP or VAH.
+    * **Risk/Exit**: SL set outside extreme deviation band; TP set at Session VWAP / POC.
+
+11. **VolatilityBreakoutStrategy** (`volatility_breakout`)
+    * **Logic**: Volatility Squeeze (Bollinger inside Keltner) & Expansion Breakout.
+    * **Mechanism**: Identifies periods where Bollinger Bands contract inside Keltner Channels (volatility squeeze). Triggers signals when price breaks out of the channel with expanding ATR.
+    * **Risk/Exit**: Dynamic Keltner Channel stop loss and trailing ATR profit targets.
+
+---
 
 ### Strategy Management System
 
-* `StrategyManager` – Comprehensive strategy lifecycle management with auto-restart
-* `StrategyHealthMonitor` – Real-time health monitoring and performance tracking
-* Dynamic registration and resource optimization
+* `StrategyManager` – Comprehensive strategy lifecycle management, health monitoring, dynamic registration, and performance-ranked capital allocation (`PerformanceRankedStrategySelector`).
+* `StrategyHealthMonitor` – Real-time performance tracking (win rate, Sharpe, drawdown, expectancy) with auto-restart upon runtime failure.
+* Dynamic registration and resource optimization.
 
 ### Signal Processing System
 
-* `SignalConflictResolver` – Advanced conflict resolution algorithms
-* `SignalValidator` – Comprehensive validation with reliability weighting
-* Adaptive signal weighting based on watcher reliability
+* `SignalConflictResolver` – Advanced conflict resolution algorithms for opposing strategy signals.
+* `SignalValidator` – Comprehensive signal validation with reliability weighting.
+* Adaptive signal weighting based on historical watcher accuracy.
 
 ### Engine System
 
@@ -203,23 +257,72 @@ All strategies inherit from a shared base adapter and are fully isolated with en
 
 ### Fusion System
 
-* `FusionService` / `AdvancedFusionWeighting` – Adaptive weighting and signal aggregation with diversity metrics
-* Enhanced explainability and conflict resolution
-* Market regime awareness and correlation adjustment
+* `FusionService` / `AdvancedFusionWeighting` – Adaptive weighting and signal aggregation with diversity metrics.
+* Enhanced explainability and conflict resolution.
+* Market regime awareness and correlation adjustment.
 
 ### Watcher System
 
-* **Owns domain-specific market analysis** — trend (multi-timeframe), volatility, liquidity, order-flow, market-pulse, anomaly and regime watchers each emit raw `MarketObservation`s into the pipeline
-* Enhanced with comprehensive health monitoring
-* Auto-restart capabilities and error isolation
-* `WatcherManager` for centralized management
-* Adaptive threshold adjustments based on market conditions
+The Watcher layer **owns domain-specific market analysis**. Each watcher runs independently, monitors market streams, and emits raw `MarketObservation` objects into the pipeline (which `EngineService` then interprets into signals).
+
+**Available Watchers & Their Internal Logic**
+
+1. **HistoricalCandleWatcherAdapter** (`historical_candle`)
+   * **Logic**: Candlestick Pattern Recognition & Price Action Analysis.
+   * **Mechanism**: Analyzes historical OHLCV candle buffers for key candlestick patterns: Doji (indecision), Bullish/Bearish Engulfing (reversal), Hammer / Inverted Hammer, Spinning Tops, and Small Body candles using adaptive body-to-wick ratio thresholds.
+   * **Observation**: Emits candle pattern type, trend context, and pattern confidence score.
+
+2. **MarketPulseWatcher** (`market_pulse`)
+   * **Logic**: Multi-Indicator Sentiment & Momentum Pulse Analysis.
+   * **Mechanism**: Combines momentum, trend, and volume sub-scores using RSI (overbought $>65$, oversold $<35$), MACD histogram crossovers, and volume spike detection ($>1.5\times$ avg volume).
+   * **Observation**: Emits composite `market_pulse` observation with direction, momentum score, and volume surge flags.
+
+3. **VolatilityWatcher** (`volatility`)
+   * **Logic**: Volatility Regime & ATR Expansion/Compression Detection.
+   * **Mechanism**: Calculates Average True Range (ATR) and price standard deviation over lookback windows. Classifies market into `high` (expansion threshold $>1.5\times$ avg), `low` (compression threshold $<0.5\times$ avg), or `normal` volatility regimes.
+   * **Observation**: Emits `volatility_expansion` or `volatility_compression` observations with regime magnitude and confidence.
+
+4. **TrendMTFWatcher** (`trend_mtf`)
+   * **Logic**: Multi-Timeframe Trend Direction & Alignment Analysis.
+   * **Mechanism**: Computes price trend direction and slope across 3 distinct windows (short e.g. 5 periods, medium e.g. 15 periods, long e.g. 30 periods). Calculates trend alignment score across all timeframes.
+   * **Observation**: Emits `trend_positive`, `trend_negative`, or `trend_neutral` observations with alignment consistency metric.
+
+5. **AnomalyMLWatcher** (`anomaly_ml`)
+   * **Logic**: Statistical & Machine Learning Anomaly Detection.
+   * **Mechanism**: Normalizes price, volume, and volatility features (Z-score standardization). Uses statistical outlier detection / Isolation Forest scoring to identify unusual price spikes, flash dumps, or abnormal volume surges exceeding threshold ($>0.6$).
+   * **Observation**: Emits `anomaly_detected` observation with anomaly magnitude and cooldown tracking.
+
+6. **OrderFlowWSWatcher** (`orderflow_ws`)
+   * **Logic**: Real-Time Order Book Imbalance & WebSocket Trade Flow Delta.
+   * **Mechanism**: Processes live WebSocket order book depth and trade executions. Computes aggressive buy volume vs aggressive sell volume, order book bid/ask volume imbalance, and tick flow direction.
+   * **Observation**: Emits `order_flow_imbalance` or `order_flow_neutral` observations with buy/sell delta ratio.
+
+7. **CMCScreener** (`cmc_screener`)
+   * **Logic**: Market-Wide CoinMarketCap Screener & Universe Observation.
+   * **Mechanism**: Queries CoinMarketCap API for top crypto assets. Filters by 24h volume, price momentum, market cap rank, and volume surges to evaluate market-wide breadth and select top universe candidates.
+   * **Observation**: Emits `universe_screening` observations detailing top volume gainers and market sentiment.
+
+8. **FundingRateWatcher** (`funding_rate`)
+   * **Logic**: Perpetual Contract Funding Rate & Position Crowding Analysis.
+   * **Mechanism**: Tracks 8-hour perpetual funding rates. Identifies extreme positive funding ($>0.5\%\text{--}1.0\%$, indicating heavy long crowding) or extreme negative funding ($<-0.5\%$, indicating heavy short crowding).
+   * **Observation**: Emits `funding_rate_extreme` observations highlighting short/long squeeze conditions.
+
+9. **LiquidityWatcher** (`liquidity`)
+   * **Logic**: Order Book Depth & Liquidity Density Analysis.
+   * **Mechanism**: Evaluates order book bid/ask depth score, bid-ask spread percentage, and liquidity ratio across top order book levels to detect thin liquidity or thick wall absorption.
+   * **Observation**: Emits `high_liquidity` or `low_liquidity` observations with depth score and spread metrics.
+
+10. **TickWatcherAdapter** (`tick`)
+    * **Logic**: Micro-Structure Tick Intensity & Imbalance Tracking.
+    * **Mechanism**: Analyzes tick-by-tick price changes, tick sizes, and tick directions (up-tick vs down-tick). Calculates tick intensity (ticks per second) and tick imbalance ratio.
+    * **Observation**: Emits `high_tick_intensity` or `tick_imbalance` observations for micro-structure scalping.
 
 ### Complete Workflow Integration
 
-* **Watcher → Engine → Fusion → Strategy → Broker** flow with full monitoring
-* End-to-end error isolation and health tracking
-* Performance metrics across all system components
+* **Watcher → Engine → Fusion → Strategy → Broker** flow with full monitoring.
+* End-to-end error isolation, auto-restart health management, and performance tracking across all system components.
+* `WatcherManager` and `StrategyManager` for centralized lifecycle management.
+* Adaptive threshold adjustments based on market conditions.
 
 ### Enhanced System Components
 

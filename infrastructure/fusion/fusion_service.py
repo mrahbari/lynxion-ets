@@ -489,7 +489,10 @@ class FusionService:
                     'signal_diversity': len(unique_types),
                     'performance_weights_applied': True,
                     'regime_conditional_weights': True,
-                    'stability_controlled': True
+                    'stability_controlled': True,
+                    'watcher_name': getattr(interpreted_signals[0], 'source_watcher', 'N/A') if interpreted_signals else 'N/A',
+                    'primary_watcher': getattr(interpreted_signals[0], 'source_watcher', 'N/A') if interpreted_signals else 'N/A',
+                    'contributing_watchers': [getattr(s, 'source_watcher', 'N/A') for s in interpreted_signals if getattr(s, 'source_watcher', None)]
                 }
             )
 

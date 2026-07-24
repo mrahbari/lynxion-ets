@@ -916,6 +916,9 @@ class MultiBrokerExecutionService(ExecutionPort):
             price = getattr(order, 'price', 'N/A')
             price_amount = getattr(price, 'amount', 'N/A') if hasattr(price, 'amount') else str(price)
             strategy_name = getattr(order, 'strategy_name', 'N/A')
+            intent = getattr(order, 'parent_execution_intent', None)
+            if (strategy_name in ('N/A', 'default', '')) and intent:
+                strategy_name = getattr(intent, 'strategy_name', strategy_name)
 
             # Get TP/SL information if available
             stop_loss_price = getattr(order, 'stop_loss_price', None)
@@ -923,24 +926,16 @@ class MultiBrokerExecutionService(ExecutionPort):
             sl_value = getattr(stop_loss_price, 'amount', 'N/A') if stop_loss_price else 'N/A'
             tp_value = getattr(take_profit_price, 'amount', 'N/A') if take_profit_price else 'N/A'
 
-            # Get date and time of order placement
+            # Get real-time timestamp for live order placement alert
             from datetime import datetime
-            order_time_str = "N/A"
-            order_timestamp = getattr(order, 'timestamp', None)
-            if order_timestamp:
-                if isinstance(order_timestamp, datetime):
-                    order_time_str = order_timestamp.strftime('%Y-%m-%d %H:%M:%S')
-                else:
-                    order_time_str = str(order_timestamp)
-            else:
-                order_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            order_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
             # Extract confidence and score of the order
             confidence_str = "N/A"
             score_str = "N/A"
             regime_context = "N/A"
+            watcher_name = getattr(order, 'watcher_name', None) or getattr(order, 'source_watcher', None) or "N/A"
 
-            intent = getattr(order, 'parent_execution_intent', None)
             if intent:
                 intent_conf = getattr(intent, 'intent_confidence', None)
                 if intent_conf:
@@ -954,6 +949,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                 risk_adj_score = metadata.get('risk_adjusted_score', None)
                 perf_score = metadata.get('performance_score', None)
                 regime_context = metadata.get('regime_context', 'N/A')
+                if watcher_name in ("N/A", "default"):
+                    watcher_name = metadata.get('watcher_name') or metadata.get('source_watcher') or metadata.get('primary_watcher') or "N/A"
 
                 if perf_score is not None:
                     try:
@@ -971,6 +968,9 @@ class MultiBrokerExecutionService(ExecutionPort):
                 if fused_sig:
                     if regime_context == 'N/A':
                         regime_context = getattr(fused_sig, 'regime_context', 'N/A')
+                    if watcher_name in ("N/A", "default"):
+                        fused_meta = getattr(fused_sig, 'metadata', {}) or {}
+                        watcher_name = fused_meta.get('watcher_name') or fused_meta.get('primary_watcher') or fused_meta.get('source_watcher') or getattr(fused_sig, 'source_watcher', 'N/A')
                     if risk_adj_score_str == "N/A":
                         dom_score = getattr(fused_sig, 'dominance_score', None)
                         if dom_score is not None:
@@ -978,6 +978,22 @@ class MultiBrokerExecutionService(ExecutionPort):
                                 risk_adj_score_str = f"{float(dom_score):.3f} (Dominance)"
                             except (ValueError, TypeError):
                                 pass
+
+            # Fallback watcher resolution from strategy_name if watcher is still N/A or default
+            if watcher_name in ("N/A", "default", None) and strategy_name not in ("N/A", "default", None, ""):
+                strat_lower = strategy_name.lower()
+                if "mtf" in strat_lower or "trend" in strat_lower:
+                    watcher_name = "TrendMTFWatcher"
+                elif "vwap" in strat_lower or "reversion" in strat_lower or "mean" in strat_lower:
+                    watcher_name = "MarketPulseWatcher"
+                elif "breakout" in strat_lower or "volatility" in strat_lower:
+                    watcher_name = "VolatilityWatcher"
+                elif "liquidity" in strat_lower:
+                    watcher_name = "LiquidityWatcher"
+                elif "oi" in strat_lower or "sweep" in strat_lower:
+                    watcher_name = "OrderFlowWSWatcher"
+                elif "reversal" in strat_lower or "tick" in strat_lower:
+                    watcher_name = "TickWatcherAdapter"
 
             # Select side emoji
             side_upper = side_name.upper()
@@ -992,6 +1008,7 @@ class MultiBrokerExecutionService(ExecutionPort):
             side_name_esc = escape_html(side_name)
             quantity_esc = escape_html(quantity)
             price_amount_esc = escape_html(price_amount)
+            watcher_name_esc = escape_html(watcher_name)
             strategy_name_esc = escape_html(strategy_name)
             regime_context_esc = escape_html(regime_context)
             confidence_esc = escape_html(confidence_str)
@@ -1009,6 +1026,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                        f" ├ <b>Quantity:</b> <code>{quantity_esc}</code>\n"
                        f" └ <b>Price:</b> <code>{price_amount_esc}</code>\n\n"
                        f"⚙️ <b>Execution Details:</b>\n"
+                       f" ├ <b>Watcher:</b> <code>{watcher_name_esc}</code>\n"
                        f" ├ <b>Strategy:</b> <code>{strategy_name_esc}</code>\n"
                        f" ├ <b>Regime:</b> <code>{regime_context_esc}</code>\n"
                        f" ├ <b>Confidence:</b> <code>{confidence_esc}</code>\n"
@@ -1017,10 +1035,10 @@ class MultiBrokerExecutionService(ExecutionPort):
                        f"🛡️ <b>Risk Parameters:</b>\n"
                        f" ├ <b>Stop Loss:</b> <code>{sl_value_esc}</code>\n"
                        f" └ <b>Take Profit:</b> <code>{tp_value_esc}</code>\n\n"
-                       f"🕒 <b>Timestamp:</b> <code>{order_time_esc}</code>\n"
+                       f"🕒 <b>Time:</b> <code>{order_time_esc}</code>\n"
                        f"🆔 <b>Order ID:</b> <code>{order_id_esc}</code>")
 
-            subject = f"🚀 Order Placed: {symbol} {side_name} on {exchange_name}"
+            subject = f"🚀 {symbol} {side_name} on {exchange_name}"
 
             # Send the notification
             success = telegram_service.send_notification(message, subject, "info", parse_mode="HTML")
