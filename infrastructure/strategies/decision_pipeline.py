@@ -62,8 +62,15 @@ class DecisionPipeline:
 
         # 3. Create ExecutionIntent
         side = OrderSide.BUY if setup.direction == "BUY" else OrderSide.SELL
-        stop_loss_val = float(setup.stop_loss_level)
-        take_profit_val = float(setup.take_profit_level)
+        trig_val = float(setup.trigger_price) if hasattr(setup, 'trigger_price') and setup.trigger_price else float(optimized_order["price"])
+
+        from shared.utils import sanitize_sltp_levels
+        stop_loss_val, take_profit_val = sanitize_sltp_levels(
+            entry_price=trig_val,
+            side=side,
+            stop_loss=float(setup.stop_loss_level),
+            take_profit=float(setup.take_profit_level)
+        )
 
         intent = ExecutionIntent(
             symbol=fused_signal.symbol,

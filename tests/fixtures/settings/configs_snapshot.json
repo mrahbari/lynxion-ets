@@ -318,13 +318,6 @@
       "oi_zscore_soft_warning_threshold": 1.0,
       "soft_position_multiplier": 0.5
     },
-    "portfolio_allocation": {
-      "allocation_mode": "EQUAL_WEIGHT",
-      "enabled": false,
-      "kelly_fraction": 0.25,
-      "max_cap_weight": 0.4,
-      "min_floor_weight": 0.05
-    },
     "emergency_stop_drawdown": 0.15,
     "max_correlation": 0.7,
     "max_correlation_between_pos": 0.6,
@@ -336,7 +329,7 @@
     "max_exposure": 0.6,
     "max_leverage": 5.0,
     "max_leverage_limit": 5.0,
-    "max_order_notional_amount": 1000.0,
+    "max_order_notional_amount": 100.0,
     "max_order_size": 0.05,
     "max_order_size_limit": 0.05,
     "max_portfolio_risk": 0.02,
@@ -352,6 +345,13 @@
     "min_order_size": 0.05,
     "min_position_size": 0.05,
     "per_trade": 0.02,
+    "portfolio_allocation": {
+      "allocation_mode": "EQUAL_WEIGHT",
+      "enabled": false,
+      "kelly_fraction": 0.25,
+      "max_cap_weight": 0.4,
+      "min_floor_weight": 0.05
+    },
     "stop_loss_percentage": 0.02,
     "take_profit_percentage": 0.05
   },

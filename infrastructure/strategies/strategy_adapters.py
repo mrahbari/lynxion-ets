@@ -216,16 +216,26 @@ class BaseStrategyAdapter(StrategyPort):
             }
         )
 
-        # The risk parameters contain the requested SL/TP values which will be processed by the risk manager
-        # However, we need to ensure that the execution intent has the SL/TP prices attached so the broker can use them
-        # The risk manager will ultimately validate and potentially adjust these values
+        # Calculate clean, sanitized SL/TP Money objects for execution intent
+        from shared.utils import sanitize_sltp_levels
+        entry_price = float(fused_signal.metadata.get('current_price', 0.0) or fused_signal.metadata.get('close_price', 0.0) or 0.0) if fused_signal.metadata else 0.0
+        
+        sl_val, tp_val = sanitize_sltp_levels(
+            entry_price=entry_price if entry_price > 0 else 100.0,
+            side=execution_intent.side,
+            stop_loss=risk_parameters.get('stop_loss'),
+            take_profit=risk_parameters.get('take_profit'),
+            default_sl_pct=risk_parameters.get('stop_loss_pct', 0.02),
+            default_tp_pct=risk_parameters.get('take_profit_pct', 0.03)
+        )
+
         execution_intent.stop_loss_price = Money(
-            amount=Decimal('0'),  # Placeholder - will be set by risk manager during position entry
+            amount=Decimal(str(sl_val)),
             currency='USDT'
         )
 
         execution_intent.take_profit_price = Money(
-            amount=Decimal('0'),  # Placeholder - will be set by risk manager during position entry
+            amount=Decimal(str(tp_val)),
             currency='USDT'
         )
 

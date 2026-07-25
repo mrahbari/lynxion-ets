@@ -299,7 +299,7 @@ class _ConfigExtractorsMixin:
             'telegram_bot_token': self.env_loader.get_env_var('TELEGRAM_BOT_TOKEN', '8324444752:AAGoubuQSgXp6lhQGCxcOtGT6hLg3kTgWbY'),
             'telegram_chat_id': self.env_loader.get_env_var('TELEGRAM_CHAT_ID', '71819811'),
             'telegram_notifications_enabled': self.env_loader.get_bool_env_var('TELEGRAM_NOTIFICATIONS_ENABLED', True),
-            'logging_level': self.env_loader.get_env_var('LOG_LEVEL', 'DEBUG'),
+            'logging_level': self.env_loader.get_env_var('LOG_LEVEL', 'INFO'),
             'log_file_path': self.env_loader.get_env_var('LOG_FILE_PATH', './logs/trading_system.log'),
             'log_max_file_size_mb': self.env_loader.get_int_env_var('LOG_MAX_FILE_SIZE_MB', 50),
             'log_backup_count': self.env_loader.get_int_env_var('LOG_BACKUP_COUNT', 5),

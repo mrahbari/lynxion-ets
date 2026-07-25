@@ -24,11 +24,17 @@ BINGX_SWAP_ENDPOINTS = [
 ]
 
 
-def fetch_available_symbols():
+def fetch_available_symbols(allowed_quote_currencies: list = None):
     """
-    Fetch all BingX perpetual futures symbols (USDT-margined)
-    NOTE: COIN-margined futures endpoint not available in current BingX API
+    Fetch BingX perpetual futures symbols filtered optionally by quote currency.
+    If allowed_quote_currencies is specified (e.g. ['USDT']), only symbols ending
+    with those quote currencies are included.
     """
+    if allowed_quote_currencies is None:
+        env_quote = os.environ.get("ALLOWED_QUOTE_CURRENCIES") or os.environ.get("QUOTE_CURRENCY")
+        if env_quote:
+            allowed_quote_currencies = [q.strip().upper() for q in env_quote.split(",") if q.strip()]
+
     symbols = set()
 
     for url in BINGX_SWAP_ENDPOINTS:
@@ -57,13 +63,18 @@ def fetch_available_symbols():
                     if raw_symbol:
                         # Convert BTC-USDT -> BTCUSDT
                         symbol = raw_symbol.replace('-', '')
+                        
+                        # Apply quote currency filter if configured
+                        if allowed_quote_currencies:
+                            if not any(symbol.upper().endswith(q) for q in allowed_quote_currencies):
+                                continue
+
                         symbols.add(symbol)
 
             print(f"✅ Collected so far: {len(symbols)} symbols")
 
         except Exception as e:
             print(f"❌ Failed fetching {url}: {e}")
-            # Continue to next endpoint if current one fails
 
     return sorted(symbols)
 

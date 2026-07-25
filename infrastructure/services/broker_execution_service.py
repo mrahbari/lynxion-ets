@@ -415,6 +415,17 @@ class BrokerExecutionService(ExecutionPort):
                 if not self.use_multi_broker:
                     self._send_order_placed_notification(order, order_id)
 
+                # Release in-flight pending order lock once order is accepted by exchange
+                try:
+                    from infrastructure.shared.pending_orders_tracker.PendingOrdersTracker import PendingOrdersTracker
+                    PendingOrdersTracker.remove_pending_order(order.symbol, order_id)
+                except Exception:
+                    try:
+                        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+                        PendingOrdersTracker.remove_pending_order(order.symbol, order_id)
+                    except Exception:
+                        pass
+
                 return order_id
             except Exception as e:
                 self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {self.broker_name}: {e}")
@@ -785,21 +796,13 @@ class BrokerExecutionService(ExecutionPort):
                             except (ValueError, TypeError):
                                 pass
 
-            # Fallback watcher resolution from strategy_name if watcher is still N/A or default
-            if watcher_name in ("N/A", "default", None) and strategy_name not in ("N/A", "default", None, ""):
-                strat_lower = strategy_name.lower()
-                if "mtf" in strat_lower or "trend" in strat_lower:
-                    watcher_name = "TrendMTFWatcher"
-                elif "vwap" in strat_lower or "reversion" in strat_lower or "mean" in strat_lower:
-                    watcher_name = "MarketPulseWatcher"
-                elif "breakout" in strat_lower or "volatility" in strat_lower:
-                    watcher_name = "VolatilityWatcher"
-                elif "liquidity" in strat_lower:
-                    watcher_name = "LiquidityWatcher"
-                elif "oi" in strat_lower or "sweep" in strat_lower:
-                    watcher_name = "OrderFlowWSWatcher"
-                elif "reversal" in strat_lower or "tick" in strat_lower:
-                    watcher_name = "TickWatcherAdapter"
+            # Centralized Watcher resolution using domain WatcherType enum
+            from domain.enums import WatcherType
+            watcher_name = WatcherType.resolve_from_strategy_or_metadata(
+                watcher_name=watcher_name,
+                strategy_name=strategy_name,
+                metadata=metadata if 'metadata' in locals() else None
+            )
 
             # Select side emoji
             side_upper = side_name.upper()
@@ -825,7 +828,7 @@ class BrokerExecutionService(ExecutionPort):
             order_id_esc = escape_html(order_id)
 
             message = (f"📦 <b>Order Details:</b>\n"
-                       f" ├ <b>Side:</b> {side_emoji} <b>{side_name_esc}</b>\n"
+                       f" ├ <b>Side:</b> <code>{side_name_esc}</code>\n"
                        f" ├ <b>Symbol:</b> <code>{symbol_esc}</code>\n"
                        f" ├ <b>Quantity:</b> <code>{quantity_esc}</code>\n"
                        f" └ <b>Price:</b> <code>{price_amount_esc}</code>\n\n"
@@ -842,7 +845,7 @@ class BrokerExecutionService(ExecutionPort):
                        f"🕒 <b>Time:</b> <code>{order_time_esc}</code>\n"
                        f"🆔 <b>Order ID:</b> <code>{order_id_esc}</code>")
 
-            subject = f"🚀 {symbol} {side_name}"
+            subject = f"{side_emoji} {symbol} {side_name}"
 
             # Send the notification
             success = telegram_service.send_notification(message, subject, "info", parse_mode="HTML")

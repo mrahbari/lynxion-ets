@@ -38,7 +38,7 @@ class PendingOrdersTracker:
     @classmethod
     def add_pending_order(cls, symbol: Symbol, side: str, order_id: str):
         """Add an order to the pending orders tracking."""
-        cls.cleanup_old_pending_orders(max_age_minutes=5)
+        cls.cleanup_old_pending_orders(max_age_seconds=30)
         with cls._pending_orders_instance_lock:
             symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
             if symbol_str not in cls._pending_orders:
@@ -66,7 +66,7 @@ class PendingOrdersTracker:
     @classmethod
     def has_pending_order_in_direction(cls, symbol: Symbol, side: str) -> bool:
         """Check if there's a pending order in the same direction for the symbol."""
-        cls.cleanup_old_pending_orders(max_age_minutes=5)
+        cls.cleanup_old_pending_orders(max_age_seconds=30)
         with cls._pending_orders_instance_lock:
             symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
             if symbol_str in cls._pending_orders:
@@ -89,10 +89,15 @@ class PendingOrdersTracker:
             cls._pending_orders.clear()
 
     @classmethod
-    def cleanup_old_pending_orders(cls, max_age_minutes: int = 5):
-        """Clean up pending orders that are older than max_age_minutes to prevent stale entries."""
+    def cleanup_old_pending_orders(cls, max_age_minutes: float = 0.5, max_age_seconds: float = None):
+        """Clean up pending orders older than max_age_seconds (or max_age_minutes) to prevent stale entries."""
         import logging
         logger = logging.getLogger("PendingOrdersTracker")
+
+        if max_age_seconds is not None:
+            effective_seconds = max_age_seconds
+        else:
+            effective_seconds = max_age_minutes * 60.0
 
         with cls._pending_orders_instance_lock:
             current_time = datetime.now()
@@ -100,7 +105,7 @@ class PendingOrdersTracker:
 
             for symbol_str, orders_list in list(cls._pending_orders.items()):
                 # Filter out orders that are too old
-                cutoff_time = current_time - timedelta(minutes=max_age_minutes)
+                cutoff_time = current_time - timedelta(seconds=effective_seconds)
                 new_orders_list = [
                     order_info for order_info in orders_list
                     if order_info.timestamp > cutoff_time

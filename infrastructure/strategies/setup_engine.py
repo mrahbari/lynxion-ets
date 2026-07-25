@@ -158,8 +158,8 @@ class SetupEngine:
         # 3. NGTREND_FOLLOW Setup detection
         if current_price > vah:
             # Bullish trend following
-            sl = val if val > 0 else current_price - 0.01 * current_price
-            tp = current_price + 0.01 * current_price
+            sl = val if (0 < val < current_price and val >= current_price * 0.90) else current_price * 0.98
+            tp = current_price * 1.02
             setups.append(CandidateSetup(
                 symbol=symbol,
                 timestamp=ts,
@@ -171,8 +171,8 @@ class SetupEngine:
             ))
         elif current_price < val:
             # Bearish trend following
-            sl = vah if vah > 0 else current_price + 0.01 * current_price
-            tp = current_price - 0.01 * current_price
+            sl = vah if (vah > current_price and vah <= current_price * 1.10) else current_price * 1.02
+            tp = current_price * 0.98
             setups.append(CandidateSetup(
                 symbol=symbol,
                 timestamp=ts,
@@ -391,6 +391,22 @@ class SetupEngine:
                         stop_loss_level=Decimal(str(sl)),
                         take_profit_level=Decimal(str(tp))
                     ))
+
+        # Sanitize SL/TP levels to guarantee validity relative to trigger_price
+        from shared.utils import sanitize_sltp_levels
+        for s in setups:
+            try:
+                trig = float(s.trigger_price)
+                sl, tp = sanitize_sltp_levels(
+                    entry_price=trig,
+                    side=s.direction,
+                    stop_loss=float(s.stop_loss_level),
+                    take_profit=float(s.take_profit_level)
+                )
+                s.stop_loss_level = Decimal(str(sl))
+                s.take_profit_level = Decimal(str(tp))
+            except Exception:
+                pass
 
         return setups
 

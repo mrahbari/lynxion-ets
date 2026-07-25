@@ -416,24 +416,31 @@ class SignalProcessor:
             is_valid = True
             invalid_reason = ""
             
-            # Extract amounts
+            # Extract and sanitize SL/TP amounts using centralized shared utility
+            from shared.utils import sanitize_sltp_levels
+            from domain.value_objects import Money
+            from decimal import Decimal
+
             sl_amount = float(stop_loss_price.amount) if stop_loss_price and hasattr(stop_loss_price, 'amount') else None
             tp_amount = float(take_profit_price.amount) if take_profit_price and hasattr(take_profit_price, 'amount') else None
-            
-            if order_side.name == 'BUY':
-                if sl_amount is None or sl_amount <= 0 or sl_amount >= entry_price:
-                    is_valid = False
-                    invalid_reason = f"Invalid Stop Loss for BUY order: SL={sl_amount}, Entry={entry_price}"
-                elif tp_amount is None or tp_amount <= 0 or tp_amount <= entry_price:
-                    is_valid = False
-                    invalid_reason = f"Invalid Take Profit for BUY order: TP={tp_amount}, Entry={entry_price}"
-            else: # SELL
-                if sl_amount is None or sl_amount <= 0 or sl_amount <= entry_price:
-                    is_valid = False
-                    invalid_reason = f"Invalid Stop Loss for SELL order: SL={sl_amount}, Entry={entry_price}"
-                elif tp_amount is None or tp_amount <= 0 or tp_amount >= entry_price:
-                    is_valid = False
-                    invalid_reason = f"Invalid Take Profit for SELL order: TP={tp_amount}, Entry={entry_price}"
+
+            if sl_amount is None or sl_amount <= 0:
+                sl_amount = float(risk_params.get('stop_loss')) if risk_params and risk_params.get('stop_loss') is not None else None
+            if tp_amount is None or tp_amount <= 0:
+                tp_amount = float(risk_params.get('take_profit')) if risk_params and risk_params.get('take_profit') is not None else None
+
+            sl_amount, tp_amount = sanitize_sltp_levels(
+                entry_price=entry_price,
+                side=order_side,
+                stop_loss=sl_amount,
+                take_profit=tp_amount
+            )
+
+            # Re-attach sanitized Money objects to execution_intent
+            stop_loss_price = Money(amount=Decimal(str(sl_amount)), currency='USDT')
+            take_profit_price = Money(amount=Decimal(str(tp_amount)), currency='USDT')
+            execution_intent.stop_loss_price = stop_loss_price
+            execution_intent.take_profit_price = take_profit_price
                     
             # Check sanity distance ratios
             if is_valid:

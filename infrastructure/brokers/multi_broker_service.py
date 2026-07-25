@@ -535,6 +535,13 @@ class MultiBrokerExecutionService(ExecutionPort):
                 # Send Telegram notification about successful order placement
                 self._send_order_placed_notification(order, order_id, best_exchange.upper())
 
+                # Release in-flight pending order lock once order is accepted by exchange
+                try:
+                    from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+                    PendingOrdersTracker.remove_pending_order(order.symbol, order_id)
+                except Exception:
+                    pass
+
                 return order_id
             except Exception as e:
                 # Send failures are recorded (ledger + circuit breaker) inside
@@ -566,19 +573,32 @@ class MultiBrokerExecutionService(ExecutionPort):
                 f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order enhancement skipped.")
             return order
 
-        # Check if the order already has SL/TP parameters
-        has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
-        has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
+        # Sanitize order SL/TP parameters using centralized shared utility
+        price_val = float(order.price.amount) if hasattr(order, 'price') and order.price and hasattr(order.price, 'amount') else None
+        sl_val = float(order.stop_loss_price.amount) if hasattr(order, 'stop_loss_price') and order.stop_loss_price and hasattr(order.stop_loss_price, 'amount') else None
+        tp_val = float(order.take_profit_price.amount) if hasattr(order, 'take_profit_price') and order.take_profit_price and hasattr(order.take_profit_price, 'amount') else None
 
-        # If both SL and TP are already present, return the order as is
+        if price_val and price_val > 0:
+            from shared.utils import sanitize_sltp_levels
+            from domain.value_objects import Money
+            from decimal import Decimal
+
+            sl_clean, tp_clean = sanitize_sltp_levels(
+                entry_price=price_val,
+                side=order.side,
+                stop_loss=sl_val,
+                take_profit=tp_val
+            )
+            order.stop_loss_price = Money(amount=Decimal(str(sl_clean)), currency='USDT')
+            order.take_profit_price = Money(amount=Decimal(str(tp_clean)), currency='USDT')
+
+        # Check if the order already has valid SL/TP parameters
+        has_stop_loss = order.stop_loss_price is not None and float(order.stop_loss_price.amount) > 0
+        has_take_profit = order.take_profit_price is not None and float(order.take_profit_price.amount) > 0
+
+        # If both SL and TP are already present and valid, return the order as is
         if has_stop_loss and has_take_profit:
             return order
-
-        # If SL/TP are missing, we need to add them using advanced risk management
-        # This should ideally be done by the Strategy layer, but we'll add defaults here
-        # to ensure institutional standards are met
-        if order.price is not None and order.price.amount is not None:
-            current_price = float(order.price.amount)
 
             # Use advanced risk management system to calculate dynamic TP/SL based on market conditions
             try:
@@ -979,21 +999,13 @@ class MultiBrokerExecutionService(ExecutionPort):
                             except (ValueError, TypeError):
                                 pass
 
-            # Fallback watcher resolution from strategy_name if watcher is still N/A or default
-            if watcher_name in ("N/A", "default", None) and strategy_name not in ("N/A", "default", None, ""):
-                strat_lower = strategy_name.lower()
-                if "mtf" in strat_lower or "trend" in strat_lower:
-                    watcher_name = "TrendMTFWatcher"
-                elif "vwap" in strat_lower or "reversion" in strat_lower or "mean" in strat_lower:
-                    watcher_name = "MarketPulseWatcher"
-                elif "breakout" in strat_lower or "volatility" in strat_lower:
-                    watcher_name = "VolatilityWatcher"
-                elif "liquidity" in strat_lower:
-                    watcher_name = "LiquidityWatcher"
-                elif "oi" in strat_lower or "sweep" in strat_lower:
-                    watcher_name = "OrderFlowWSWatcher"
-                elif "reversal" in strat_lower or "tick" in strat_lower:
-                    watcher_name = "TickWatcherAdapter"
+            # Centralized Watcher resolution using domain WatcherType enum
+            from domain.enums import WatcherType
+            watcher_name = WatcherType.resolve_from_strategy_or_metadata(
+                watcher_name=watcher_name,
+                strategy_name=strategy_name,
+                metadata=metadata if 'metadata' in locals() else None
+            )
 
             # Select side emoji
             side_upper = side_name.upper()
@@ -1020,7 +1032,7 @@ class MultiBrokerExecutionService(ExecutionPort):
             order_id_esc = escape_html(order_id)
 
             message = (f"📦 <b>Order Details:</b>\n"
-                       f" ├ <b>Side:</b> {side_emoji} <b>{side_name_esc}</b>\n"
+                       f" ├ <b>Side:</b> <code>{side_name_esc}</code>\n"
                        f" ├ <b>Symbol:</b> <code>{symbol_esc}</code>\n"
                        f" ├ <b>Exchange:</b> <code>{exchange_esc}</code>\n"
                        f" ├ <b>Quantity:</b> <code>{quantity_esc}</code>\n"
@@ -1038,7 +1050,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                        f"🕒 <b>Time:</b> <code>{order_time_esc}</code>\n"
                        f"🆔 <b>Order ID:</b> <code>{order_id_esc}</code>")
 
-            subject = f"🚀 {symbol} {side_name} on {exchange_name}"
+            subject = f"{side_emoji} {symbol} {side_name} on {exchange_name}"
 
             # Send the notification
             success = telegram_service.send_notification(message, subject, "info", parse_mode="HTML")

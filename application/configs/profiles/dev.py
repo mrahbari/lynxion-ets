@@ -285,7 +285,7 @@ CONFIG = {
         default_timeframes="5m,15m,30m,1h"
     ),
     "monitoring": MonitoringConfig(
-        logging_level="DEBUG",
+        logging_level="INFO",
         alert_enabled=False,
         metrics_collection=True,
         heartbeat_interval=60,

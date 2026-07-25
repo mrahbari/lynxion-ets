@@ -32,7 +32,9 @@ def create_logger(name: str):
     if logger.handlers:
         return logger
 
-    logger.setLevel(logging.DEBUG)
+    log_level_str = os.environ.get("LOG_LEVEL", "INFO").upper()
+    log_level = getattr(logging, log_level_str, logging.INFO)
+    logger.setLevel(log_level)
 
     # Create the rotating file handler with a safer approach to prevent rotation errors
     # Ensure the main log file exists first to avoid issues during rotation
