@@ -424,6 +424,23 @@ class MultiBrokerExecutionService(ExecutionPort):
             # This ensures institutional standards are met even if the Strategy layer didn't add them
             order = self._enhance_order_with_risk_parameters(order)
 
+            # HARD-ENFORCE SINGLE ACTIVE POSITION INVARIANT AT BROKER GATE
+            if prevent_same_direction:
+                try:
+                    from domain.value_objects import Symbol as DomainSymbol
+                    domain_sym = DomainSymbol(symbol_str) if isinstance(symbol_str, str) else order.symbol
+                    if hasattr(broker, 'get_position'):
+                        pos = broker.get_position(domain_sym)
+                        if pos and hasattr(pos, 'side') and pos.side is not None:
+                            pos_side = pos.side.name if hasattr(pos.side, 'name') else str(pos.side)
+                            if pos_side.upper() in ('LONG', 'SHORT', 'BUY', 'SELL'):
+                                self.logger.warning(
+                                    f"❌ BROKER CONFLICT REJECTED: Active {pos_side} position already exists on {best_exchange.upper()} for {symbol_str}."
+                                )
+                                return None
+                except Exception as pos_error:
+                    self.logger.debug(f"Position check error on {best_exchange}: {pos_error}")
+
             # Validate the order against risk management standards
             is_valid = self._validate_order_risk(order)
             if not is_valid:
@@ -953,6 +970,8 @@ class MultiBrokerExecutionService(ExecutionPort):
             # Extract confidence and score of the order
             confidence_str = "N/A"
             score_str = "N/A"
+            perf_score_str = "N/A"
+            risk_adj_score_str = "N/A"
             regime_context = "N/A"
             watcher_name = getattr(order, 'watcher_name', None) or getattr(order, 'source_watcher', None) or "N/A"
 

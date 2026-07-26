@@ -34,6 +34,11 @@ class BrokerReconciliationService:
     def __init__(self, halt_fn: Optional[Callable[[str], None]] = None):
         # Default halt = engage the live execution guard kill switch (imported lazily).
         self._halt_fn = halt_fn
+        # In-memory tracking for active position transitions and closed position idempotency
+        self._previous_active_symbols: set[str] = set()
+        self._processed_closed_exits: set[str] = set()
+        from shared.logger import EnhancedLogger
+        self.logger = EnhancedLogger("BrokerReconciliationService")
 
     def _halt(self, reason: str) -> None:
         if self._halt_fn is not None:
@@ -44,6 +49,78 @@ class BrokerReconciliationService:
             live_execution_guard.engage_kill_switch(reason)
         except Exception:
             pass
+
+    def _process_position_closures(self, broker, current_active_symbols: set[str]) -> None:
+        """Detect exchange position closures (transition to positionAmt == 0) and propagate trade result."""
+        # Find symbols that were active in the previous cycle but are absent in current cycle
+        closed_symbols = self._previous_active_symbols - current_active_symbols
+        # Update active symbols for next cycle
+        self._previous_active_symbols = set(current_active_symbols)
+
+        if not closed_symbols:
+            return
+
+        for sym in closed_symbols:
+            try:
+                # 1. Resolve closing order from broker history
+                closing_order_id = "UNKNOWN"
+                is_profitable = False
+                realized_pnl = None
+
+                if hasattr(broker, "get_order_history"):
+                    try:
+                        history = broker.get_order_history(_mk_symbol(sym), limit=20) or []
+                        # Sort newest order first
+                        sorted_history = sorted(
+                            history,
+                            key=lambda x: int(x.get("updateTime") or x.get("time") or 0),
+                            reverse=True
+                        )
+                        for order in sorted_history:
+                            order_status = str(order.get("status", "")).upper()
+                            order_type = str(order.get("type", "")).upper()
+                            is_reduce_only = order.get("reduceOnly") in (True, "true", "TRUE")
+
+                            # Match strictly closing orders (STOP_MARKET, TAKE_PROFIT_MARKET, LIQUIDATION, or reduceOnly MARKET/LIMIT)
+                            if order_status in _TERMINAL_ORDER_STATES and (
+                                order_type in {"STOP_MARKET", "TAKE_PROFIT_MARKET", "LIQUIDATION"} or is_reduce_only
+                            ):
+                                closing_order_id = str(order.get("orderId", "UNKNOWN"))
+                                pnl_val = order.get("realizedProfit", order.get("profit"))
+                                if pnl_val is not None:
+                                    try:
+                                        realized_pnl = float(pnl_val)
+                                    except (ValueError, TypeError):
+                                        pass
+
+                                if order_type == "TAKE_PROFIT_MARKET" or (realized_pnl is not None and realized_pnl > 0):
+                                    is_profitable = True
+                                elif order_type in {"STOP_MARKET", "LIQUIDATION"} or (realized_pnl is not None and realized_pnl < 0):
+                                    is_profitable = False
+                                break
+                    except Exception as hist_err:
+                        self.logger.warning(f"Could not retrieve order history for {sym}: {hist_err}")
+
+                # 2. Derive Idempotency Key (exchange closing_order_id or fallback)
+                exit_key = f"{sym}_{closing_order_id}" if closing_order_id != "UNKNOWN" else f"{sym}_{realized_pnl}"
+                if exit_key in self._processed_closed_exits:
+                    self.logger.debug(f"Position close for {sym} ({exit_key}) already processed — skipping duplicate.")
+                    continue
+
+                # ATOMICITY: Register idempotency key BEFORE emitting to prevent duplicate propagation on crash
+                self._processed_closed_exits.add(exit_key)
+
+                # 3. Propagate to strategy_manager
+                from infrastructure.strategies.strategy_manager import strategy_manager
+                strategy_manager.record_trade_result(sym, is_profitable=is_profitable, position_closed=True)
+                self.logger.info(
+                    f"✅ POSITION CLOSED CONFIRMED for {sym}: exit_key={exit_key}, is_profitable={is_profitable}"
+                )
+            except Exception as e:
+                self.logger.error(
+                    f"❌ Failed to propagate position close event for {sym}: {e}",
+                    exc_info=True
+                )
 
     def reconcile(self, broker, journal, halt_on_unrecoverable: bool = True) -> Dict[str, Any]:
         """One reconciliation pass. Returns a structured drift report."""
@@ -61,13 +138,17 @@ class BrokerReconciliationService:
             report["errors"].append(f"get_all_positions failed: {e}")
 
         open_positions = [p for p in broker_positions
-                          if abs(float(getattr(p, "quantity", 0) or 0)) > 0]
+                          if abs(float(getattr(p, "quantity", 0) or getattr(p, "position_amt", 0) or 0)) > 0]
         report["broker_positions"] = [
             {"symbol": _sym(getattr(p, "symbol", "")),
              "quantity": str(getattr(p, "quantity", "")),
              "side": getattr(getattr(p, "side", None), "value", str(getattr(p, "side", "")))}
             for p in open_positions
         ]
+
+        # Detect position closures based on exchange position transitions
+        current_active_symbols = {b_pos["symbol"] for b_pos in report["broker_positions"] if b_pos.get("symbol")}
+        self._process_position_closures(broker, current_active_symbols)
 
         # --- 2. Local view from the journal: every symbol we have any order record for ---
         try:

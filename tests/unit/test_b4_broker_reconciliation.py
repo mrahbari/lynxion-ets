@@ -66,3 +66,104 @@ def test_default_halt_engages_kill_switch(tmp_path):
     BrokerReconciliationService().reconcile(broker, j)   # default halt -> guard kill switch
     assert live_execution_guard.is_killed() is True
     live_execution_guard.disengage_kill_switch()
+
+
+def test_entry_order_filled_does_not_trigger_trade_result(tmp_path, monkeypatch):
+    """TEST 1: Entry order FILLED while position still exists must NOT trigger record_trade_result()."""
+    j = _journal(tmp_path)
+    ref = j.record_intent("XMR-USDT", "BUY", "1.0", "bingx", "x1")
+    j.record_submitted(ref, "ENTRY_OID", "bingx")
+
+    broker = _FakeBroker(positions=[_pos("XMR-USDT", 1.0)], statuses={"ENTRY_OID": "FILLED"})
+
+    trade_results = []
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(strategy_manager, "record_trade_result", lambda sym, is_profitable, position_closed=True: trade_results.append((sym, is_profitable)))
+
+    svc = BrokerReconciliationService(halt_fn=lambda r: None)
+    svc.reconcile(broker, j)
+
+    # Assert record_trade_result was NOT called for entry fill
+    assert trade_results == []
+
+
+def test_sl_position_close_triggers_cooldown(tmp_path, monkeypatch):
+    """TEST 2: Position closure via STOP_MARKET (realizedProfit < 0) calls record_trade_result(is_profitable=False)."""
+    j = _journal(tmp_path)
+    broker = _FakeBroker(positions=[_pos("XMR-USDT", 1.0)])
+
+    svc = BrokerReconciliationService(halt_fn=lambda r: None)
+
+    # Pass 1: Position is OPEN
+    svc.reconcile(broker, j)
+
+    # Pass 2: Position drops to 0 (CLOSED) via STOP_MARKET
+    broker._positions = []
+    broker.get_order_history = lambda sym, limit=10: [
+        {"orderId": "SL_EXIT_OID", "type": "STOP_MARKET", "status": "FILLED", "realizedProfit": "-10.00"}
+    ]
+
+    trade_results = []
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(strategy_manager, "record_trade_result", lambda sym, is_profitable, position_closed=True: trade_results.append((sym, is_profitable)))
+
+    svc.reconcile(broker, j)
+
+    # Assert record_trade_result was called ONCE with is_profitable=False
+    assert trade_results == [("XMR-USDT", False)]
+
+
+def test_tp_position_close_no_cooldown(tmp_path, monkeypatch):
+    """TEST 3: Position closure via TAKE_PROFIT_MARKET calls record_trade_result(is_profitable=True)."""
+    j = _journal(tmp_path)
+    broker = _FakeBroker(positions=[_pos("XMR-USDT", 1.0)])
+
+    svc = BrokerReconciliationService(halt_fn=lambda r: None)
+
+    # Pass 1: Position OPEN
+    svc.reconcile(broker, j)
+
+    # Pass 2: Position CLOSED via TAKE_PROFIT_MARKET
+    broker._positions = []
+    broker.get_order_history = lambda sym, limit=10: [
+        {"orderId": "TP_EXIT_OID", "type": "TAKE_PROFIT_MARKET", "status": "FILLED", "realizedProfit": "15.00"}
+    ]
+
+    trade_results = []
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(strategy_manager, "record_trade_result", lambda sym, is_profitable, position_closed=True: trade_results.append((sym, is_profitable)))
+
+    svc.reconcile(broker, j)
+
+    # Assert record_trade_result was called ONCE with is_profitable=True
+    assert trade_results == [("XMR-USDT", True)]
+
+
+def test_idempotent_closed_position_event(tmp_path, monkeypatch):
+    """TEST 4: Same closed position in multiple reconciliation cycles calls record_trade_result EXACTLY ONCE."""
+    j = _journal(tmp_path)
+    broker = _FakeBroker(positions=[_pos("XMR-USDT", 1.0)])
+
+    svc = BrokerReconciliationService(halt_fn=lambda r: None)
+
+    # Pass 1: Position OPEN
+    svc.reconcile(broker, j)
+
+    # Pass 2 & 3: Position CLOSED
+    broker._positions = []
+    broker.get_order_history = lambda sym, limit=10: [
+        {"orderId": "SL_EXIT_OID", "type": "STOP_MARKET", "status": "FILLED", "realizedProfit": "-10.00"}
+    ]
+
+    trade_results = []
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(strategy_manager, "record_trade_result", lambda sym, is_profitable, position_closed=True: trade_results.append((sym, is_profitable)))
+
+    # Cycle 2
+    svc.reconcile(broker, j)
+    # Cycle 3 (Duplicate cycle)
+    svc.reconcile(broker, j)
+
+    # Assert called EXACTLY ONCE across multiple cycles
+    assert trade_results == [("XMR-USDT", False)]
+

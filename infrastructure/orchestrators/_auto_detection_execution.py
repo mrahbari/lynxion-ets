@@ -169,7 +169,7 @@ class _AutoDetectionExecutionMixin:
                     portfolio=portfolio_obj,
                     volatility=atr
                 )
-                self.logger.info(f"NGDP dynamically sized quantity: {quantity:.6f} for {execution_intent.symbol.value}")
+                self.logger.debug(f"NGDP dynamically sized quantity: {quantity:.6f} for {execution_intent.symbol.value}")
             except Exception as e:
                 self.logger.error(f"Error in NGDP calculation, falling back to static sizing: {e}")
                 

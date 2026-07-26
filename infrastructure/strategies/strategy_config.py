@@ -208,6 +208,28 @@ class StrategyConfig:
                 pass
         return default
 
+    @staticmethod
+    def get_symbol_stoploss_cooldown_minutes(strategy_name: str, default: int = 60) -> int:
+        """Get per-symbol stop loss cooldown in minutes"""
+        if load_settings().strategy:
+            try:
+                if hasattr(load_settings().strategy, 'symbol_stoploss_cooldown_minutes'):
+                    return load_settings().strategy.symbol_stoploss_cooldown_minutes
+            except AttributeError:
+                pass
+        return default
+
+    @staticmethod
+    def get_enable_symbol_stoploss_cooldown(strategy_name: str, default: bool = True) -> bool:
+        """Get whether per-symbol stop loss cooldown is enabled"""
+        if load_settings().strategy:
+            try:
+                if hasattr(load_settings().strategy, 'enable_symbol_stoploss_cooldown'):
+                    return load_settings().strategy.enable_symbol_stoploss_cooldown
+            except AttributeError:
+                pass
+        return default
+
 
 # Convenience functions for specific strategies
 def get_trend_following_config() -> dict:

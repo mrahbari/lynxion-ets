@@ -340,8 +340,8 @@
     "max_sector_exposure": 0.25,
     "max_single_asset_exposure": 0.1,
     "max_total_exposure": 0.8,
-    "max_total_positions": 5,
-    "max_total_positions_limit": 5,
+    "max_total_positions": 50,
+    "max_total_positions_limit": 50,
     "min_order_size": 0.05,
     "min_position_size": 0.05,
     "per_trade": 0.02,
@@ -386,6 +386,7 @@
     "edge_estimation_factor": 0.55,
     "enable_dynamic_tp": true,
     "enable_shorting": false,
+    "enable_symbol_stoploss_cooldown": true,
     "enabled": true,
     "enabled_engines": [
       "engine1"
@@ -425,6 +426,7 @@
     "signal_threshold": 0.3,
     "strategy_name": "crypto_breakout",
     "strong_directional_bias_threshold": 0.3,
+    "symbol_stoploss_cooldown_minutes": 60,
     "target_volatility": 0.2,
     "timeframe": "1m",
     "trend_impact_on_win_rate_multiplier": 1.5,

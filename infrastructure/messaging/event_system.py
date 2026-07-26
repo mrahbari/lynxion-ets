@@ -257,9 +257,6 @@ class SignalProcessor:
         """Process execution intent through broker layer"""
         try:
             execution_intent = event.data
-            if self.logger:
-                self.logger.info(f"📥 RECEIVED EXECUTION INTENT: Processing execution intent from {event.source_component} for {execution_intent.symbol.value} with confidence {float(execution_intent.intent_confidence.value):.2%}")
-
             # Check if we have access to the orchestrator to queue the execution intent
             # The orchestrator should be accessible through the global architecture orchestrator
             from infrastructure.orchestrators.architecture_orchestrator import architecture_orchestrator
@@ -342,7 +339,7 @@ class SignalProcessor:
                     volatility=atr
                 )
                 if self.logger:
-                    self.logger.info(f"NGDP dynamically sized quantity: {quantity:.6f} for {execution_intent.symbol.value}")
+                    self.logger.debug(f"NGDP dynamically sized quantity: {quantity:.6f} for {execution_intent.symbol.value}")
             except Exception as e:
                 if self.logger:
                     self.logger.error(f"Error in NGDP calculation, falling back to static sizing: {e}")

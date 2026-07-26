@@ -51,7 +51,7 @@ class RiskConfig(BaseModel):
     max_exposure: float = Field(default=0.6, description="Maximum exposure")
     per_trade: float = Field(default=0.02, description="Risk per trade")
     max_daily_loss: float = Field(default=0.02, description="Maximum daily loss")
-    max_total_positions: int = Field(default=5, description="Maximum total positions")
+    max_total_positions: int = Field(default=50, description="Maximum total positions")
     max_correlation_between_pos: float = Field(default=0.6, description="Maximum correlation between positions")
     max_sector_exposure: float = Field(default=0.25, description="Maximum sector exposure")
     max_single_asset_exposure: float = Field(default=0.1, description="Maximum single asset exposure")
@@ -66,7 +66,7 @@ class RiskConfig(BaseModel):
 
     # Additional fields that may be passed from config loader
     max_daily_loss_threshold: float = Field(default=0.02, description="Maximum daily loss threshold")
-    max_total_positions_limit: int = Field(default=5, description="Maximum total positions limit")
+    max_total_positions_limit: int = Field(default=50, description="Maximum total positions limit")
     max_correlation_limit: float = Field(default=0.7, description="Maximum correlation limit")
     max_leverage_limit: float = Field(default=5.0, description="Maximum leverage limit")
     max_order_size_limit: float = Field(default=0.05, description="Maximum order size limit")

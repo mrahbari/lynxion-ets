@@ -51,7 +51,7 @@ class EnterpriseRiskManager:
                  regime_risk_multipliers: Optional[Dict[str, float]] = None,
                  drawdown_decay_factor: float = 0.95,
                  enable_multi_position: bool = True,
-                 max_concurrent_positions: int = 5):
+                 max_concurrent_positions: int = 50):
 
         import os
         from shared.logger import logger
@@ -65,13 +65,16 @@ class EnterpriseRiskManager:
         else:
             self.enable_multi_position = enable_multi_position
 
-        env_max_positions = os.getenv("MAX_CONCURRENT_POSITIONS")
-        if env_max_positions is not None:
-            self.max_concurrent_positions = int(env_max_positions)
-        elif risk_config and 'max_concurrent_positions' in risk_config:
-            self.max_concurrent_positions = int(risk_config['max_concurrent_positions'])
-        else:
+        if max_concurrent_positions != 50:
             self.max_concurrent_positions = max_concurrent_positions
+        else:
+            env_max_positions = os.getenv("MAX_TOTAL_POSITIONS") or os.getenv("MAX_CONCURRENT_POSITIONS")
+            if env_max_positions is not None:
+                self.max_concurrent_positions = int(env_max_positions)
+            elif risk_config and 'max_concurrent_positions' in risk_config:
+                self.max_concurrent_positions = int(risk_config['max_concurrent_positions'])
+            else:
+                self.max_concurrent_positions = max_concurrent_positions
 
         # Use risk_config if provided, otherwise use individual parameters
         if risk_config:

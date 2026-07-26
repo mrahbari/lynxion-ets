@@ -342,7 +342,7 @@ class _ForensicDecisionLoggingMixin:
         }
 
         self._log_structured(log_entry)
-        self.enhanced_logger.info(
+        self.enhanced_logger.debug(
             f"POSITION SIZING AUDIT: {symbol} | Equity: ${portfolio_equity:.2f} | "
             f"Risk: {target_risk_pct:.2%} | Volatility: {volatility_factor:.4f} | "
             f"ATR Norm: {atr_normalization:.4f} | Drawdown Mult: {drawdown_multiplier:.4f} | "

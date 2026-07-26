@@ -765,8 +765,12 @@ class _BingXBroker:
                 'quantity': quantity,
                 'stopPrice': stop_price,
                 'positionSide': position_side,
-                'timeInForce': 'GTC'  # Good till cancelled for conditional orders
+                'workingType': 'MARK_PRICE'
             }
+            # Only include reduceOnly in One-Way mode (positionSide is BOTH or absent).
+            # In Hedge mode (LONG/SHORT), BingX API forbids the reduceOnly parameter.
+            if position_side.upper() not in ('LONG', 'SHORT'):
+                conditional_order_data['reduceOnly'] = 'true'
 
             endpoint = "/openApi/swap/v2/trade/order"
             response = self._make_request('POST', endpoint, data=conditional_order_data, signed=True)

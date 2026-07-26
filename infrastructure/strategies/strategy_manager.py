@@ -909,6 +909,24 @@ class StrategyManager:
         
         return status_report
 
+    def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True, exit_time: datetime = None):
+        """Forward trade result event to registered strategy adapters for per-symbol discipline tracking."""
+        for name, adapter in self.strategies.items():
+            if hasattr(adapter, 'record_trade_result'):
+                try:
+                    adapter.record_trade_result(symbol, is_profitable, position_closed, exit_time)
+                except Exception as e:
+                    self.logger.error(f"Error forwarding trade result to strategy {name}: {e}")
+
+    def record_position_closed(self, symbol: str, exit_time: datetime = None):
+        """Forward position closed event to registered strategy adapters."""
+        for name, adapter in self.strategies.items():
+            if hasattr(adapter, 'record_position_closed'):
+                try:
+                    adapter.record_position_closed(symbol, exit_time)
+                except Exception as e:
+                    self.logger.error(f"Error forwarding position closed to strategy {name}: {e}")
+
 
 # Module-level singleton retired (E2.T6). The canonical instance is now created
 # in bootstrap/container.py (container-scoped: independent per container). This

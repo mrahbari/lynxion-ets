@@ -91,7 +91,9 @@ class BaseStrategyAdapter(StrategyPort):
             'max_consecutive_losses': StrategyConfig.get_strategy_max_consecutive_losses(name, 3),
             'min_atr_threshold': StrategyConfig.get_strategy_min_atr_threshold(name, 0.001),
             'avoid_flat_markets': StrategyConfig.get_strategy_avoid_flat_markets(name, True),
-            'cooldown_after_exit_minutes': StrategyConfig.get_strategy_cooldown_after_exit_minutes(name, 5)
+            'cooldown_after_exit_minutes': StrategyConfig.get_strategy_cooldown_after_exit_minutes(name, 5),
+            'symbol_stoploss_cooldown_minutes': StrategyConfig.get_symbol_stoploss_cooldown_minutes(name, 60),
+            'enable_symbol_stoploss_cooldown': StrategyConfig.get_enable_symbol_stoploss_cooldown(name, True)
         }
 
         # Initialize with default risk parameters
@@ -106,6 +108,7 @@ class BaseStrategyAdapter(StrategyPort):
         self.intent_count_today = {}     # Track daily intent count per symbol
         self.consecutive_losses = {}     # Track consecutive losses per symbol
         self.last_loss_time = {}         # E-P5.2: time of last loss, for time-based pause recovery
+        self.last_sl_exit_time = {}      # Track per-symbol Stop Loss exit timestamp
         self.last_entry_bar_index = {}   # Track last entry bar index per symbol
         self.current_positions = {}      # Track current positions per symbol (TEMPORARY - will be phased out)
         self.last_exit_time = {}         # Track last exit time per symbol for cooldown
@@ -407,7 +410,36 @@ class BaseStrategyAdapter(StrategyPort):
 
     def _passes_exit_cooldown_check(self, symbol: str, current_time: datetime = None) -> bool:
         """Check if cooldown period after exit has elapsed."""
-        cooldown_minutes = self.config.get('cooldown_after_exit_minutes', 1)  # Default 1 minute cooldown after exit
+        now = current_time or datetime.now()
+
+        # 1. Per-Symbol Stop Loss Cooldown (Roadmap: Re-Entry After Stop Loss)
+        enabled = self.config.get(
+            'enable_symbol_stoploss_cooldown',
+            StrategyConfig.get_enable_symbol_stoploss_cooldown(self.name, True)
+        )
+        last_sl_exit = self.last_sl_exit_time.get(symbol)
+        if enabled and last_sl_exit is not None:
+            cooldown_minutes = self.config.get(
+                'symbol_stoploss_cooldown_minutes',
+                StrategyConfig.get_symbol_stoploss_cooldown_minutes(self.name, 60)
+            )
+            if cooldown_minutes > 0:
+                elapsed_seconds = (now - last_sl_exit).total_seconds()
+                required_seconds = cooldown_minutes * 60
+                if elapsed_seconds < required_seconds:
+                    remaining_minutes = (required_seconds - elapsed_seconds) / 60.0
+                    self.logger.info(
+                        f"⛔ SYMBOL COOLDOWN ACTIVE: Skipped signal for {symbol} | "
+                        f"Previous result = Stop Loss | "
+                        f"Remaining cooldown = {remaining_minutes:.1f} min | "
+                        f"Strategy = {self.name}"
+                    )
+                    return False
+                else:
+                    self.last_sl_exit_time[symbol] = None
+
+        # 2. General post-exit cooldown check
+        cooldown_minutes = self.config.get('cooldown_after_exit_minutes', 1)
         if cooldown_minutes <= 0:
             return True
 
@@ -415,7 +447,7 @@ class BaseStrategyAdapter(StrategyPort):
         if last_exit is None:
             return True
 
-        time_since_exit = (current_time or datetime.now()) - last_exit
+        time_since_exit = now - last_exit
         passes_check = time_since_exit.total_seconds() >= (cooldown_minutes * 60)
 
         if not passes_check:
@@ -539,7 +571,7 @@ class BaseStrategyAdapter(StrategyPort):
 
     def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True,
                             exit_time: datetime = None):
-        """Record the result of a trade for consecutive loss tracking.
+        """Record the result of a trade for per-symbol Stop Loss cooldown tracking.
 
         E-P5.2: ``exit_time`` (the trade's simulated close time) drives the
         cooldown and the consecutive-loss pause-recovery clock. Falls back to
@@ -547,13 +579,24 @@ class BaseStrategyAdapter(StrategyPort):
         """
         now = exit_time or datetime.now()
         if is_profitable:
-            # Reset consecutive losses counter
+            # TP trade: Reset consecutive losses and clear SL exit timestamp
             self.consecutive_losses[symbol] = 0
+            self.last_sl_exit_time[symbol] = None
+            self.logger.info(f"✅ Trade result for {symbol}: TAKE PROFIT. Symbol remains immediately tradable.")
         else:
-            # Increment consecutive losses counter
+            # SL trade: Increment consecutive losses and record SL exit timestamp
             current_losses = self.consecutive_losses.get(symbol, 0)
             self.consecutive_losses[symbol] = current_losses + 1
-            self.last_loss_time[symbol] = now  # E-P5.2: pause-recovery clock
+            self.last_loss_time[symbol] = now
+            self.last_sl_exit_time[symbol] = now
+            cooldown_min = self.config.get(
+                'symbol_stoploss_cooldown_minutes',
+                StrategyConfig.get_symbol_stoploss_cooldown_minutes(self.name, 60)
+            )
+            self.logger.info(
+                f"🛑 Trade result for {symbol}: STOP LOSS. "
+                f"Activated {cooldown_min}m per-symbol Stop Loss cooldown."
+            )
 
         # Optionally update exit time after recording the trade result (but don't modify position state)
         if position_closed:

@@ -93,6 +93,8 @@ class StrategyConfig(BaseModel):
     min_stop_distance_percent: float = Field(default=0.8, description="Minimum stop distance in percent (e.g. 0.8)")
     enable_dynamic_tp: bool = Field(default=True, description="Enable dynamic take profit expansion")
     reject_low_rr_setup: bool = Field(default=True, description="Reject setup if Reward-to-Risk ratio is below minimum")
+    symbol_stoploss_cooldown_minutes: int = Field(default=60, description="Per-symbol stop loss cooldown in minutes")
+    enable_symbol_stoploss_cooldown: bool = Field(default=True, description="Enable per-symbol stop loss cooldown")
 
     class Config:
         extra = "forbid"
