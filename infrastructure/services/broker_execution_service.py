@@ -188,6 +188,12 @@ class BrokerExecutionService(ExecutionPort):
         from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
         return PendingOrdersTracker.has_pending_order_in_direction(symbol, side)
 
+    @classmethod
+    def _has_any_pending_order(cls, symbol: Symbol) -> bool:
+        """Check if there's any pending order for the symbol."""
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        return len(PendingOrdersTracker.get_pending_orders_for_symbol(symbol)) > 0
+
     def execute_order(self, order: Order) -> str:
         """Execute an order through the configured broker."""
         try:
@@ -231,27 +237,26 @@ class BrokerExecutionService(ExecutionPort):
                     elif order_side_str.upper() in ('SELL', 'SHORT'):
                         intended_position_side = 'SHORT'
 
-                # Check both existing positions and pending orders in the same direction
+                # Check both existing positions and pending orders for the symbol
                 position_duplicate = False
                 pending_duplicate = False
 
-                # Check for existing position in the same direction
+                # Check for existing position in any direction
                 if current_position and hasattr(current_position, 'side') and current_position.side is not None:
                     pos_side_str = current_position.side.name if hasattr(current_position.side, 'name') else (current_position.side.value if hasattr(current_position.side, 'value') else str(current_position.side))
-                    if intended_position_side and pos_side_str.upper() == intended_position_side.upper():
+                    if pos_side_str.upper() in ('LONG', 'SHORT', 'BUY', 'SELL'):
                         position_duplicate = True
 
-                # Check for pending orders in the same direction
-                if intended_position_side:
-                    pending_duplicate = self._has_pending_order_in_direction(order.symbol, intended_position_side)
+                # Check for pending orders on the symbol
+                pending_duplicate = self._has_any_pending_order(order.symbol)
 
                 # If either condition is true, prevent the trade
                 if position_duplicate or pending_duplicate:
                     if position_duplicate:
                         pos_side_name = current_position.side.name if hasattr(current_position.side, 'name') else str(current_position.side)
-                        self.logger.info(f"❌ DUPLICATE REJECTED: Active {pos_side_name} position exists for {order.symbol.value}. Preventing duplicate same-direction trade.")
+                        self.logger.info(f"❌ CONFLICT REJECTED: Active {pos_side_name} position exists for {order.symbol.value}. Preventing conflicting trade.")
                     else:
-                        self.logger.info(f"⚠️ DUPLICATE CHECK BLOCKED: Internal pending flag set for {intended_position_side} order on {order.symbol.value} — broker confirmation needed.")
+                        self.logger.info(f"⚠️ CONFLICT CHECK BLOCKED: Internal pending order exists on {order.symbol.value} — broker confirmation needed.")
                     # Return a failure status instead of raising an exception to prevent system crashes
                     return None  # Indicate that the order was not placed due to duplicate prevention
 
@@ -409,6 +414,17 @@ class BrokerExecutionService(ExecutionPort):
                 # (MultiBrokerExecutionService handles its own notifications)
                 if not self.use_multi_broker:
                     self._send_order_placed_notification(order, order_id)
+
+                # Release in-flight pending order lock once order is accepted by exchange
+                try:
+                    from infrastructure.shared.pending_orders_tracker.PendingOrdersTracker import PendingOrdersTracker
+                    PendingOrdersTracker.remove_pending_order(order.symbol, order_id)
+                except Exception:
+                    try:
+                        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+                        PendingOrdersTracker.remove_pending_order(order.symbol, order_id)
+                    except Exception:
+                        pass
 
                 return order_id
             except Exception as e:
@@ -716,6 +732,9 @@ class BrokerExecutionService(ExecutionPort):
             price = getattr(order, 'price', 'N/A')
             price_amount = getattr(price, 'amount', 'N/A') if hasattr(price, 'amount') else str(price)
             strategy_name = getattr(order, 'strategy_name', 'N/A')
+            intent = getattr(order, 'parent_execution_intent', None)
+            if (strategy_name in ('N/A', 'default', '')) and intent:
+                strategy_name = getattr(intent, 'strategy_name', strategy_name)
 
             # Get TP/SL information if available
             stop_loss_price = getattr(order, 'stop_loss_price', None)
@@ -723,26 +742,118 @@ class BrokerExecutionService(ExecutionPort):
             sl_value = getattr(stop_loss_price, 'amount', 'N/A') if stop_loss_price else 'N/A'
             tp_value = getattr(take_profit_price, 'amount', 'N/A') if take_profit_price else 'N/A'
 
-            message = (f"\n✅ ORDER PLACED\n"
-                      f"Symbol: {symbol}\n"
-                      f"Side: {side_name}\n"
-                      f"Quantity: {quantity}\n"
-                      f"Price: {price_amount}\n"
-                      f"Stop Loss: {sl_value}\n"
-                      f"Take Profit: {tp_value}\n"
-                      f"Strategy: {strategy_name}\n"
-                      f"Order ID: {order_id}")
+            # Get real-time timestamp for live order placement alert
+            from datetime import datetime
+            order_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            subject = f"Order Placed: {symbol} {side_name}"
+            # Extract confidence and score of the order
+            confidence_str = "N/A"
+            perf_score_str = "N/A"
+            risk_adj_score_str = "N/A"
+            regime_context = "N/A"
+            watcher_name = getattr(order, 'watcher_name', None) or getattr(order, 'source_watcher', None) or "N/A"
+
+            if intent:
+                intent_conf = getattr(intent, 'intent_confidence', None)
+                if intent_conf:
+                    conf_val = getattr(intent_conf, 'value', intent_conf)
+                    try:
+                        confidence_str = f"{float(conf_val) * 100:.1f}%"
+                    except (ValueError, TypeError):
+                        confidence_str = str(conf_val)
+
+                metadata = getattr(intent, 'metadata', {}) or {}
+                risk_adj_score = metadata.get('risk_adjusted_score', None)
+                perf_score = metadata.get('performance_score', None)
+                regime_context = metadata.get('regime_context', 'N/A')
+                if watcher_name in ("N/A", "default"):
+                    watcher_name = metadata.get('watcher_name') or metadata.get('source_watcher') or metadata.get('primary_watcher') or "N/A"
+
+                if perf_score is not None:
+                    try:
+                        perf_score_str = f"{float(perf_score):.3f}"
+                    except (ValueError, TypeError):
+                        perf_score_str = str(perf_score)
+
+                if risk_adj_score is not None:
+                    try:
+                        risk_adj_score_str = f"{float(risk_adj_score):.3f}"
+                    except (ValueError, TypeError):
+                        risk_adj_score_str = str(risk_adj_score)
+
+                fused_sig = getattr(intent, 'fused_signal', None)
+                if fused_sig:
+                    if regime_context == 'N/A':
+                        regime_context = getattr(fused_sig, 'regime_context', 'N/A')
+                    if watcher_name in ("N/A", "default"):
+                        fused_meta = getattr(fused_sig, 'metadata', {}) or {}
+                        watcher_name = fused_meta.get('watcher_name') or fused_meta.get('primary_watcher') or fused_meta.get('source_watcher') or getattr(fused_sig, 'source_watcher', 'N/A')
+                    if risk_adj_score_str == "N/A":
+                        dom_score = getattr(fused_sig, 'dominance_score', None)
+                        if dom_score is not None:
+                            try:
+                                risk_adj_score_str = f"{float(dom_score):.3f} (Dominance)"
+                            except (ValueError, TypeError):
+                                pass
+
+            # Centralized Watcher resolution using domain WatcherType enum
+            from domain.enums import WatcherType
+            watcher_name = WatcherType.resolve_from_strategy_or_metadata(
+                watcher_name=watcher_name,
+                strategy_name=strategy_name,
+                metadata=metadata if 'metadata' in locals() else None
+            )
+
+            # Select side emoji
+            side_upper = side_name.upper()
+            side_emoji = "🟩" if "BUY" in side_upper or "LONG" in side_upper else "🟥" if "SELL" in side_upper or "SHORT" in side_upper else "⬜"
+
+            # Escape special characters to prevent Telegram HTML parse errors
+            def escape_html(val):
+                return str(val).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+            symbol_esc = escape_html(symbol)
+            side_name_esc = escape_html(side_name)
+            quantity_esc = escape_html(quantity)
+            price_amount_esc = escape_html(price_amount)
+            watcher_name_esc = escape_html(watcher_name)
+            strategy_name_esc = escape_html(strategy_name)
+            regime_context_esc = escape_html(regime_context)
+            confidence_esc = escape_html(confidence_str)
+            perf_score_esc = escape_html(perf_score_str)
+            risk_adj_score_esc = escape_html(risk_adj_score_str)
+            sl_value_esc = escape_html(sl_value)
+            tp_value_esc = escape_html(tp_value)
+            order_time_esc = escape_html(order_time_str)
+            order_id_esc = escape_html(order_id)
+
+            message = (f"📦 <b>Order Details:</b>\n"
+                       f" ├ <b>Side:</b> <code>{side_name_esc}</code>\n"
+                       f" ├ <b>Symbol:</b> <code>{symbol_esc}</code>\n"
+                       f" ├ <b>Quantity:</b> <code>{quantity_esc}</code>\n"
+                       f" └ <b>Price:</b> <code>{price_amount_esc}</code>\n\n"
+                       f"⚙️ <b>Execution Details:</b>\n"
+                       f" ├ <b>Watcher:</b> <code>{watcher_name_esc}</code>\n"
+                       f" ├ <b>Strategy:</b> <code>{strategy_name_esc}</code>\n"
+                       f" ├ <b>Regime:</b> <code>{regime_context_esc}</code>\n"
+                       f" ├ <b>Confidence:</b> <code>{confidence_esc}</code>\n"
+                       f" ├ <b>Performance Score:</b> <code>{perf_score_esc}</code>\n"
+                       f" └ <b>Risk-Adjusted Priority:</b> <code>{risk_adj_score_esc}</code>\n\n"
+                       f"🛡️ <b>Risk Parameters:</b>\n"
+                       f" ├ <b>Stop Loss:</b> <code>{sl_value_esc}</code>\n"
+                       f" └ <b>Take Profit:</b> <code>{tp_value_esc}</code>\n\n"
+                       f"🕒 <b>Time:</b> <code>{order_time_esc}</code>\n"
+                       f"🆔 <b>Order ID:</b> <code>{order_id_esc}</code>")
+
+            subject = f"{side_emoji} {symbol} {side_name}"
 
             # Send the notification
-            success = telegram_service.send_notification(message, subject, "info")
+            success = telegram_service.send_notification(message, subject, "info", parse_mode="HTML")
 
             if success:
                 self.logger.info(f"🔔 Telegram notification sent for order {order_id}")
             else:
                 self.logger.warning(f"⚠️ Failed to send Telegram notification for order {order_id}")
-
         except ImportError as e:
             self.logger.error(f"❌ ImportError sending Telegram notification: {e}")
         except Exception as e:

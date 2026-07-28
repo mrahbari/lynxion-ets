@@ -18,12 +18,13 @@ This adapter deliberately wraps a single engine instance so the portfolio-risk
 view and the SL/TP view share consistent position state while remaining distinct
 ports.
 """
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 
 from domain.ports.risk_ports import PortfolioRiskEnginePort, StopLossTakeProfitPort
+from domain.ports.portfolio_ports import PositionSizingPort
 
 
-class ConsolidatedRiskEngineAdapter(PortfolioRiskEnginePort, StopLossTakeProfitPort):
+class ConsolidatedRiskEngineAdapter(PortfolioRiskEnginePort, StopLossTakeProfitPort, PositionSizingPort):
     """Single, container-managed risk engine.
 
     Delegates to the canonical ``EnterpriseRiskManager`` without altering any
@@ -37,6 +38,80 @@ class ConsolidatedRiskEngineAdapter(PortfolioRiskEnginePort, StopLossTakeProfitP
 
     def __init__(self, risk_manager):
         self._risk_manager = risk_manager
+
+    # --- PositionSizingPort (capital allocation / dynamic sizing) -------------
+
+    def calculate_position_size(self, symbol: Any, account_balance: float, risk_percentage: float) -> float:
+        """Compatibility method for standard interface."""
+        return self._risk_manager.calculate_position_size(
+            entry_price=1.0,
+            stop_loss=0.98,
+            portfolio_equity=account_balance,
+            risk_percentage=risk_percentage
+        )
+
+    def calculate_dynamic_size(
+        self,
+        intent: Any,
+        portfolio: Any,
+        volatility: Optional[float] = None
+    ) -> float:
+        """Calculate dynamic position size based on drawdown, correlation, and volatility (NGDP)."""
+        limit_price = float(intent.risk_parameters.get('limit_price', 0.0))
+        stop_loss = float(intent.risk_parameters.get('stop_loss', 0.0))
+        
+        if limit_price <= 0.0:
+            return 0.0
+
+        portfolio_equity = float(portfolio.total_value.amount)
+        
+        # 1. Volatility
+        vol = volatility
+        
+        # 2. Regime
+        regime_context = getattr(intent.fused_signal, 'regime_context', None) if intent.fused_signal else None
+        
+        # 3. Drawdown Factor
+        drawdown_factor = self._risk_manager.calculate_drawdown_factor()
+        
+        # 4. Correlation Penalty
+        portfolio_symbols = [pos.symbol.value for pos in portfolio.positions]
+        correlation_penalty = self._risk_manager.calculate_correlation_penalty(intent.symbol.value, portfolio_symbols)
+        
+        # 5. Confidence Adjustment
+        confidence = float(intent.intent_confidence.value) if intent.intent_confidence else 1.0
+        risk_percentage = self._risk_manager.max_risk_per_trade * confidence
+        
+        # Calculate size using EnterpriseRiskManager's implementation
+        size = self._risk_manager.calculate_position_size(
+            entry_price=limit_price,
+            stop_loss=stop_loss,
+            portfolio_equity=portfolio_equity,
+            risk_percentage=risk_percentage,
+            regime_context=regime_context,
+            volatility=vol,
+            correlation_penalty=correlation_penalty,
+            drawdown_factor=drawdown_factor
+        )
+        
+        # Explainability and Audit logging using structured forensic logger
+        try:
+            from infrastructure.logging.forensic_logger import forensic_logger
+            forensic_logger.log_position_sizing(
+                symbol=intent.symbol.value,
+                portfolio_equity=portfolio_equity,
+                target_risk_pct=risk_percentage,
+                volatility_factor=vol if vol is not None else 0.0,
+                atr_normalization=abs(limit_price - stop_loss),
+                drawdown_multiplier=drawdown_factor,
+                correlation_penalty=correlation_penalty,
+                setup_confidence=confidence,
+                final_position_size=size
+            )
+        except Exception:
+            pass  # Logging failures must not halt execution path
+            
+        return size
 
     # --- PortfolioRiskEnginePort (exposure / drawdown / kill-switch) ----------
 

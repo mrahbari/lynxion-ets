@@ -81,3 +81,43 @@ def test_discipline_is_symbol_agnostic():
     a.record_trade_result("SOLUSDT", is_profitable=False, exit_time=t)
     assert a.consecutive_losses.get("SOLUSDT") == 1
     assert "BTCUSDT" not in a.consecutive_losses
+
+
+def test_regime_suitability_routing():
+    from domain.entities import FusedSignal, SignalType
+    from domain.value_objects import Symbol, Percentage
+    from decimal import Decimal
+    
+    # Create mock fused signal with trending regime
+    sig_trend = FusedSignal(
+        symbol=Symbol("BTCUSDT"),
+        direction=0.5,
+        confidence=Percentage(Decimal("0.8")),
+        dominance_score=0.7,
+        dominant_bias=SignalType.BUY,
+        regime_context="trending_up",
+        timestamp=datetime.now()
+    )
+    
+    # Create mock fused signal with ranging/mean reversion regime
+    sig_range = FusedSignal(
+        symbol=Symbol("BTCUSDT"),
+        direction=-0.5,
+        confidence=Percentage(Decimal("0.8")),
+        dominance_score=0.7,
+        dominant_bias=SignalType.SELL,
+        regime_context="ranging",
+        timestamp=datetime.now()
+    )
+    
+    # TrendFollowStrategyAdapter should execute in trend, reject in range
+    tf = TrendFollowStrategyAdapter()
+    assert tf.should_execute(sig_trend) is True
+    assert tf.should_execute(sig_range) is False
+    
+    # MeanReversionStrategyAdapter should execute in range, reject in trend
+    from infrastructure.strategies.adapters.mean_reversion_strategy_adapter import MeanReversionStrategyAdapter
+    mr = MeanReversionStrategyAdapter()
+    assert mr.should_execute(sig_range) is True
+    assert mr.should_execute(sig_trend) is False
+

@@ -51,6 +51,37 @@ class RiskEnforcement:
                 if size <= 0 or entry <= 0:
                     self.denials += 1
                     return False, "risk engine: non-positive size/price"
+
+                # Sizing boundary enforcement: cap quantity if it exceeds max position limit slightly (<= 5% overflow)
+                max_exposure = getattr(self._rm, 'max_position_exposure', 50000.0)
+                if size * entry > max_exposure:
+                    if size * entry <= max_exposure * 1.05:
+                        # Apply a tiny safety buffer (0.1%) to prevent rounding/precision increments
+                        target_exposure = max_exposure * 0.999
+                        capped_size = target_exposure / entry
+                        import math
+                        capped_size = math.floor(capped_size * 10000) / 10000.0
+                        from decimal import Decimal
+                        if hasattr(order, 'quantity'):
+                            if isinstance(order.quantity, Decimal):
+                                order.quantity = Decimal(str(capped_size))
+                            else:
+                                order.quantity = capped_size
+                            from shared.logger import logger
+                            logger.warning(
+                                f"⚠️ Sizing boundary enforcement: Capped {symbol} quantity from {size} to {order.quantity} "
+                                f"to stay within max position limit of ${max_exposure}"
+                            )
+                            # Update size variable for subsequent checks
+                            size = float(order.quantity)
+                    else:
+                        # Large violation: reject outright without capping
+                        self.denials += 1
+                        self._rm.violations.append(
+                            f"{symbol}: Position size ${size * entry:.2f} exceeds max position limit ${max_exposure}"
+                        )
+                        return False, f"risk engine: Position size ${size * entry:.2f} exceeds max position limit ${max_exposure}"
+
                 if not self._rm.validate_position_entry(symbol, size, entry):
                     self.denials += 1
                     v = self._rm.get_violations()
@@ -71,8 +102,16 @@ class RiskEnforcement:
             size = float(getattr(order, "quantity", 0) or 0)
             sl = float(order.stop_loss_price.amount) if getattr(order, "stop_loss_price", None) else fill_price * 0.99
             tp = float(order.take_profit_price.amount) if getattr(order, "take_profit_price", None) else fill_price * 1.01
+            
+            # Extract setup type from order's parent_execution_intent metadata if available
+            setup_type = None
+            if hasattr(order, 'parent_execution_intent') and order.parent_execution_intent:
+                intent = order.parent_execution_intent
+                if intent.metadata:
+                    setup_type = intent.metadata.get("setup_type")
+                    
             with self._lock:
-                self._rm.enter_position(symbol, fill_price, size, direction, sl, tp)
+                self._rm.enter_position(symbol, fill_price, size, direction, sl, tp, setup_type=setup_type)
         except Exception:
             pass  # exposure feedback must never break execution
 

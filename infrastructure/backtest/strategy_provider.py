@@ -24,11 +24,9 @@ def load_sample_strategy(strategy_name: str, raw_signal: bool = False):
     # Import the strategy adapters
     from infrastructure.strategies.adapters.trend_follow_strategy_adapter import TrendFollowStrategyAdapter
     from infrastructure.strategies.adapters.mean_reversion_strategy_adapter import MeanReversionStrategyAdapter
-    from infrastructure.strategies.adapters.scalping_strategy_adapter import ScalpingStrategyAdapter
     from infrastructure.strategies.adapters.breakout_strategy_adapter import BreakoutStrategyAdapter
     from infrastructure.strategies.adapters.liquidity_strategy_adapter import LiquidityStrategyAdapter
     from infrastructure.strategies.adapters.vwap_reversal_strategy_adapter import VWAPReversalStrategyAdapter
-    from infrastructure.strategies.adapters.momentum_strategy_adapter import MomentumStrategyAdapter
     from infrastructure.strategies.adapters.mtf_trend_strategy_adapter import MTFTrendStrategyAdapter
     from infrastructure.strategies.adapters.oi_footprint_strategy_adapter import OIFootprintStrategyAdapter
     from infrastructure.strategies.adapters.sweep_scalper_strategy_adapter import SweepScalperAdapter
@@ -38,11 +36,9 @@ def load_sample_strategy(strategy_name: str, raw_signal: bool = False):
     strategy_adapters = {
         'trend_following': TrendFollowStrategyAdapter,
         'mean_reversion': MeanReversionStrategyAdapter,
-        'scalping': ScalpingStrategyAdapter,
         'breakout': BreakoutStrategyAdapter,
         'liquidity': LiquidityStrategyAdapter,
         'vwap_reversal': VWAPReversalStrategyAdapter,
-        'momentum': MomentumStrategyAdapter,
         'mtf_trend': MTFTrendStrategyAdapter,
         'oi_footprint': OIFootprintStrategyAdapter,
         'sweep_scalper': SweepScalperAdapter,
@@ -95,6 +91,9 @@ def load_sample_strategy(strategy_name: str, raw_signal: bool = False):
                 'close': row.get('close'), 'volume': row.get('volume', 0),
                 'timestamp': bar_ts,
             }
+            if hasattr(strategy_instance, 'config') and params:
+                for k, v in params.items():
+                    strategy_instance.config[k] = v
             strategy_instance.update_with_market_data(bar)
             sig = strategy_instance.generate_signal(mock_symbol)
             if sig is None:

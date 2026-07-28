@@ -38,7 +38,7 @@ def _project_root() -> str:
 
 
 def _default_path() -> str:
-    return os.getenv("LIVE_ORDER_JOURNAL_PATH") or os.path.join(_project_root(), "data", "live_order_journal.jsonl")
+    return os.getenv("LIVE_ORDER_JOURNAL_PATH") or os.path.join(_project_root(), "data", "live_order_journal.json")
 
 
 def _now() -> str:

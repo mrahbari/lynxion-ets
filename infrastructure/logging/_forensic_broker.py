@@ -312,4 +312,24 @@ class _ForensicBrokerLoggingMixin:
             "was_profitable": pnl > 0
         })
 
+        # Try to retrieve original strategy decision to extract raw confidence
+        raw_confidence = None
+        try:
+            history = historical_data_tracker.get_strategy_history(symbol, limit=100)
+            for decision in reversed(history):
+                if decision.get("trade_id") == trade_id:
+                    raw_confidence = decision.get("raw_confidence") or decision.get("confidence")
+                    break
+        except Exception as e:
+            self.enhanced_logger.warning(f"Failed to lookup strategy history for calibrating trade {trade_id}: {e}")
+
+        # Feed to confidence calibrator
+        if raw_confidence is not None:
+            try:
+                from infrastructure.statistical_validation.confidence_calibrator import confidence_calibrator
+                confidence_calibrator.add_calibration_sample(float(raw_confidence), pnl > 0)
+                self.enhanced_logger.info(f"Calibrated sample added: raw_confidence={raw_confidence:.2f}, profitable={pnl > 0}")
+            except Exception as e:
+                self.enhanced_logger.warning(f"Failed to add calibration sample for trade {trade_id}: {e}")
+
         return log_entry

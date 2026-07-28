@@ -105,11 +105,11 @@ class StrategyConfig:
     # and documented in docs/reports/strategy_architecture_review.md). This is a routing
     # table, not a parameter change — values are the strategies' existing declared TFs.
     DESIGN_TIMEFRAMES = {
-        'scalping': '1m', 'sweep_scalper': '1m',
+        'sweep_scalper': '1m',
         'liquidity': '5m', 'vwap_reversal': '5m',
         'breakout': '15m', 'crypto_breakout': '15m', 'volatility_breakout': '15m', 'mtf_trend': '15m',
         'trend_following': '1h', 'trend_follow': '1h', 'mean_reversion': '1h',
-        'momentum': '1h', 'oi_footprint': '1h',
+        'oi_footprint': '1h',
         # RETIRED-slot replacement candidates (E11 strategy-replacement program)
         'short_term_reversal': '15m', 'donchian_breakout': '1h',
     }
@@ -197,13 +197,35 @@ class StrategyConfig:
         return default
 
     @staticmethod
-    def get_strategy_cooldown_after_exit_minutes(strategy_name: str, default: int = 30) -> int:
+    def get_strategy_cooldown_after_exit_minutes(strategy_name: str, default: int = 5) -> int:
         """Get cooldown period after exit in minutes"""
         # Use a general cooldown setting from strategy config
         if load_settings().strategy:
             try:
                 if hasattr(load_settings().strategy, 'cooldown_after_exit_minutes'):
                     return load_settings().strategy.cooldown_after_exit_minutes
+            except AttributeError:
+                pass
+        return default
+
+    @staticmethod
+    def get_symbol_stoploss_cooldown_minutes(strategy_name: str, default: int = 60) -> int:
+        """Get per-symbol stop loss cooldown in minutes"""
+        if load_settings().strategy:
+            try:
+                if hasattr(load_settings().strategy, 'symbol_stoploss_cooldown_minutes'):
+                    return load_settings().strategy.symbol_stoploss_cooldown_minutes
+            except AttributeError:
+                pass
+        return default
+
+    @staticmethod
+    def get_enable_symbol_stoploss_cooldown(strategy_name: str, default: bool = True) -> bool:
+        """Get whether per-symbol stop loss cooldown is enabled"""
+        if load_settings().strategy:
+            try:
+                if hasattr(load_settings().strategy, 'enable_symbol_stoploss_cooldown'):
+                    return load_settings().strategy.enable_symbol_stoploss_cooldown
             except AttributeError:
                 pass
         return default
@@ -269,47 +291,6 @@ def get_volatility_breakout_config() -> dict:
             'atr_period': 14,
             'atr_multiplier': 1.5,
             'volatility_threshold': 0.02
-        }
-    }
-
-
-def get_momentum_config() -> dict:
-    """Get configuration for MomentumStrategy"""
-    return {
-        'enabled': StrategyConfig.get_strategy_enabled('MOMENTUM'),
-        'max_position_size': StrategyConfig.get_strategy_max_position_size('MOMENTUM', 0.04),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('MOMENTUM', 0.5),
-        'max_confidence': StrategyConfig.get_strategy_max_confidence('MOMENTUM', 0.90),
-        'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('MOMENTUM', 0.018),
-        'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('MOMENTUM', 1.3),
-        'take_profit_multiplier': StrategyConfig.get_strategy_take_profit_multiplier('MOMENTUM', 2.2),
-        'lookback_period': StrategyConfig.get_strategy_lookback_period('MOMENTUM', 20),
-        'timeframe': StrategyConfig.get_strategy_timeframe('MOMENTUM', '1h'),
-        'parameters': {
-            'roc_period': 10,
-            'momentum_threshold': 0.02
-        }
-    }
-
-
-def get_scalping_config() -> dict:
-    """Get configuration for ScalpingStrategy"""
-    return {
-        'enabled': StrategyConfig.get_strategy_enabled('SCALPING'),
-        'max_position_size': StrategyConfig.get_strategy_max_position_size('SCALPING', 0.02),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('SCALPING', 0.5),
-        'max_confidence': StrategyConfig.get_strategy_max_confidence('SCALPING', 0.95),
-        'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('SCALPING', 0.01),
-        'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('SCALPING', 0.8),
-        'take_profit_multiplier': StrategyConfig.get_strategy_take_profit_multiplier('SCALPING', 1.5),
-        'lookback_period': StrategyConfig.get_strategy_lookback_period('SCALPING', 50),
-        'timeframe': StrategyConfig.get_strategy_timeframe('SCALPING', '1m'),
-        'parameters': {
-            'fast_ma': 5,
-            'slow_ma': 10,
-            'rsi_period': 7,
-            'rsi_oversold': 20,
-            'rsi_overbought': 80
         }
     }
 

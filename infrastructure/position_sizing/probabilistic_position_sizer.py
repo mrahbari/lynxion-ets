@@ -256,7 +256,8 @@ class EvidenceWeightedPositionSizer:
         position_size = min(position_size, max_by_portfolio)
 
         # Constraint 2: Minimum position size
-        position_size = max(position_size, self.min_position_size)
+        if position_size > 0:
+            position_size = max(position_size, self.min_position_size)
 
         # Constraint 3: Reasonable position size based on asset price
         if entry_price > 1000:
@@ -453,7 +454,7 @@ class ProbabilisticPositionSizer:
         }
 
         return PositionSizeResult(
-            size=max(position_size, self.min_position_size),
+            size=position_size if position_size <= 0 else max(position_size, self.min_position_size),
             confidence=confidence_product,
             risk_amount=adjusted_risk_amount,
             method_used=method.value,

@@ -13,8 +13,28 @@ from domain.entities.signal import (
 )
 from domain.entities.order import OrderSide, Order, Fill, ExecutionIntent
 from domain.entities.position import PositionSide, Position, Portfolio
-from domain.entities.market_data import MarketData
+from domain.entities.market_data import (
+    MarketData,
+    OrderBookLevel,
+    OrderBookSnapshot,
+    TradeTick,
+    OpenInterest,
+    FundingRate,
+    LiquidationEvent,
+    MarkPrice,
+    IndexPrice,
+    PremiumIndex,
+    MarketState,
+    VolumeProfile,
+    SessionStatistics,
+)
 from domain.entities.account import Balance, TradingAccount
+from domain.entities.venue import CanonicalInstrument, SymbolMapping, InstrumentMapping
+from domain.entities.order_book import OrderBookState, OrderBookBuilder, SequenceGapError
+from domain.entities.replay import ReplaySession, ReplayEvent, ReplayCheckpoint, ReplaySessionStatus
+from domain.entities.feature import FeatureSnapshot, DerivativesFeatureVector
+from domain.entities.research import FeatureEventRecord, RegimeStats
+from domain.entities.walk_forward import WalkForwardFold, AlphaQualificationSession
 
 __all__ = [
     'Signal',
@@ -25,6 +45,33 @@ __all__ = [
     'TradingAccount',
     'Balance',
     'MarketData',
+    'OrderBookLevel',
+    'OrderBookSnapshot',
+    'TradeTick',
+    'OpenInterest',
+    'FundingRate',
+    'LiquidationEvent',
+    'MarkPrice',
+    'IndexPrice',
+    'PremiumIndex',
+    'MarketState',
+    'VolumeProfile',
+    'SessionStatistics',
+    'CanonicalInstrument',
+    'SymbolMapping',
+    'InstrumentMapping',
+    'OrderBookState',
+    'OrderBookBuilder',
+    'SequenceGapError',
+    'ReplaySession',
+    'ReplayEvent',
+    'ReplayCheckpoint',
+    'ReplaySessionStatus',
+    'FeatureSnapshot',
+    'FeatureEventRecord',
+    'RegimeStats',
+    'WalkForwardFold',
+    'AlphaQualificationSession',
     'SignalType',
     'OrderSide',
     'PositionSide',

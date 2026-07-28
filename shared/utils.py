@@ -139,3 +139,46 @@ def format_price_for_api(price: float, max_total_digits: int = 9) -> str:
         result = result.rstrip('0').rstrip('.')
 
     return result
+
+
+def sanitize_sltp_levels(
+    entry_price: float,
+    side: Any,  # 'BUY'/'SELL', OrderSide, or SignalType
+    stop_loss: Optional[float] = None,
+    take_profit: Optional[float] = None,
+    default_sl_pct: float = 0.02,
+    default_tp_pct: float = 0.03,
+    max_sl_distance_ratio: float = 0.50
+) -> tuple:
+    """
+    Centralized, robust utility for sanitizing and validating Stop Loss and Take Profit levels.
+    Guarantees mathematically valid SL/TP relative to entry_price for both BUY and SELL sides.
+
+    Returns:
+        tuple: (sanitized_stop_loss, sanitized_take_profit)
+    """
+    entry = float(entry_price) if entry_price else 0.0
+    if entry <= 0:
+        return 0.0, 0.0
+
+    side_str = side.name if hasattr(side, 'name') else (side.value if hasattr(side, 'value') else str(side))
+    is_buy = side_str.upper() in ('BUY', 'LONG')
+
+    sl = float(stop_loss) if stop_loss is not None else 0.0
+    tp = float(take_profit) if take_profit is not None else 0.0
+
+    if is_buy:
+        # BUY: Stop loss must be below entry, Take profit must be above entry
+        if sl >= entry or sl <= 0 or abs(sl - entry) / entry > max_sl_distance_ratio:
+            sl = entry * (1.0 - default_sl_pct)
+        if tp <= entry or tp <= 0 or abs(tp - entry) / entry > max_sl_distance_ratio:
+            tp = entry * (1.0 + default_tp_pct)
+    else:
+        # SELL: Stop loss must be above entry, Take profit must be below entry
+        if sl <= entry or sl <= 0 or abs(sl - entry) / entry > max_sl_distance_ratio:
+            sl = entry * (1.0 + default_sl_pct)
+        if tp >= entry or tp <= 0 or abs(tp - entry) / entry > max_sl_distance_ratio:
+            tp = entry * (1.0 - default_tp_pct)
+
+    precision = 5 if entry >= 1.0 else 8
+    return round(sl, precision), round(tp, precision)
