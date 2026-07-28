@@ -116,8 +116,9 @@ class AdvancedRiskManagementService:
         min_position_size = portfolio_value * 0.001  # Minimum 0.1% of portfolio
         max_position_size = portfolio_value * 0.1    # Maximum 10% of portfolio
         
-        position_size = max(min_position_size / price if price > 0 else 0, 
-                           min(max_position_size / price if price > 0 else float('inf'), position_size))
+        if position_size > 0:
+            position_size = max(min_position_size / price if price > 0 else 0, 
+                               min(max_position_size / price if price > 0 else float('inf'), position_size))
         
         self.logger.info(f"Position sizing for {symbol.value}: "
                         f"Portfolio=${portfolio_value:.2f}, Price=${price:.2f}, "

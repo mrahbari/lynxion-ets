@@ -22,17 +22,43 @@ from typing import Optional as TypingOptional, Dict as TypingDict, Any as Typing
 correlation_id_ctx: ContextVar[str] = ContextVar('correlation_id', default=None)
 
 
+def get_configured_log_level() -> str:
+    """Fetch log level from central application configuration (get_settings().monitoring.logging_level)
+    with safe fallback to environment variable and INFO default."""
+    try:
+        from application.configs.settings_loader import get_settings
+        settings = get_settings()
+        if settings and hasattr(settings, 'monitoring') and settings.monitoring:
+            level = getattr(settings.monitoring, 'logging_level', None)
+            if level:
+                return str(level).upper()
+    except Exception:
+        pass
+    return os.environ.get("LOG_LEVEL", "INFO").upper()
+
+
 def create_logger(name: str):
     """Create a basic logger with rotating file handler and colored console output."""
     from shared.log_paths import logs_dir, log_path
     logs_dir()  # ensure <project-root>/logs exists (anchored, not cwd-relative)
     logger = logging.getLogger(name)
 
+    log_level_str = get_configured_log_level()
+    log_level = getattr(logging, log_level_str, logging.INFO)
+    logger.setLevel(log_level)
+
     # Check if logger already has handlers to prevent duplicate handlers
     if logger.handlers:
+        for h in logger.handlers:
+            h.setLevel(log_level)
         return logger
 
-    logger.setLevel(logging.DEBUG)
+    # Ensure root logger respects log_level for third-party libraries if unconfigured
+    if log_level > logging.DEBUG:
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        logging.getLogger("asyncio").setLevel(logging.WARNING)
+        logging.getLogger("websockets").setLevel(logging.WARNING)
+        logging.getLogger("ccxt").setLevel(logging.WARNING)
 
     # Create the rotating file handler with a safer approach to prevent rotation errors
     # Ensure the main log file exists first to avoid issues during rotation
@@ -58,12 +84,14 @@ def create_logger(name: str):
     # The backupCount specifies how many backup files to keep, but the rotation
     # mechanism can sometimes fail if intermediate files are missing
     handler = RotatingFileHandler(log_file_path, maxBytes=1_000_000, backupCount=5)
+    handler.setLevel(log_level)
 
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
     console = logging.StreamHandler()
+    console.setLevel(log_level)
     # Use enhanced colored formatter for console
     if sys.stdout.isatty():
         console.setFormatter(ColoredFormatter())
@@ -122,6 +150,13 @@ class EnhancedLogger:
         else:
             self.logger = create_logger(name)
             EnhancedLogger._logger_cache[name] = self.logger
+
+        # Always re-synchronize logger and handler levels with configured log level
+        log_level_str = get_configured_log_level()
+        log_level = getattr(logging, log_level_str, logging.INFO)
+        self.logger.setLevel(log_level)
+        for h in self.logger.handlers:
+            h.setLevel(log_level)
 
         self.metrics = {}
         self.name = name

@@ -165,6 +165,14 @@ class SignalProcessor:
             if self.logger:
                 self.logger.info(f"Processing observation from {event.source_component} for {observation.symbol.value}")
 
+            # Record price for rolling correlation calculation (E3.T5)
+            try:
+                from application.containers.container import container
+                risk_engine = container.resolve("risk_engine")
+                risk_engine._risk_manager.record_price(observation.symbol.value, float(observation.close))
+            except Exception:
+                pass
+
             # Process observation through engine
             interpreted_signal = engine_service.process_observation(observation)
 
@@ -249,9 +257,6 @@ class SignalProcessor:
         """Process execution intent through broker layer"""
         try:
             execution_intent = event.data
-            if self.logger:
-                self.logger.info(f"📥 RECEIVED EXECUTION INTENT: Processing execution intent from {event.source_component} for {execution_intent.symbol.value} with confidence {float(execution_intent.intent_confidence.value):.2%}")
-
             # Check if we have access to the orchestrator to queue the execution intent
             # The orchestrator should be accessible through the global architecture orchestrator
             from infrastructure.orchestrators.architecture_orchestrator import architecture_orchestrator
@@ -295,72 +300,63 @@ class SignalProcessor:
 
             # Calculate quantity based on risk parameters
             risk_params = execution_intent.risk_parameters
-            position_size_pct = risk_params.get('max_position_size', 0.02)  # Default 2%
-
-            # Fixed Position Size Configuration (for testing purposes)
             fixed_position_size_enabled = load_settings().position_sizing.fixed_position_size_enabled if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'fixed_position_size_enabled') else False
-            fixed_position_amount = load_settings().position_sizing.fixed_position_amount if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'fixed_position_amount') else 10.0  # Default to $10 for testing
+            fixed_position_amount = load_settings().position_sizing.fixed_position_amount if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'fixed_position_amount') else 10.0
 
-            # Calculate quantity based on risk parameters and account balance
             try:
-                if fixed_position_size_enabled:
-                    # Use fixed position size for testing
-                    # Check if current_price is valid before division
-                    if current_price is None or current_price <= 0:
-                        # Use fallback price if current_price is invalid
-                        fallback_price = 50000.0
-                        quantity = fixed_position_amount / fallback_price
-                        if self.logger:
-                            self.logger.info(f"Using fixed position size with fallback price: ${fixed_position_amount} at ${fallback_price} = {quantity} units")
-                    else:
-                        quantity = fixed_position_amount / current_price
-                        if self.logger:
-                            self.logger.info(f"Using fixed position size: ${fixed_position_amount} at ${current_price} = {quantity} units")
-                else:
-                    # In a real implementation, we'd get portfolio metrics from portfolio service
-                    # For now, using a default account balance from environment variable
-                    account_balance = load_settings().position_sizing.default_account_balance if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'default_account_balance') else 10000.0  # Default to $10,000 if not available
-                    position_value = account_balance * position_size_pct
+                from application.containers.container import container
+                risk_engine = container.resolve("risk_engine")
+                from domain.entities.position import Portfolio, Position as DomainPosition
+                from domain.value_objects import Money as DomainMoney, Symbol as DomainSymbol
+                from domain.enums.position_side import PositionSide
+                from decimal import Decimal
 
-                    # Calculate quantity based on position value and current price
-                    # Check if current_price is valid before division
-                    if current_price is None or current_price <= 0:
-                        # Use fallback price if current_price is invalid
-                        fallback_price = 50000.0
-                        quantity = position_value / fallback_price
-                        if self.logger:
-                            self.logger.info(f"Using calculated position size with fallback price: ${position_value} at ${fallback_price} = {quantity} units")
-                    else:
-                        quantity = position_value / current_price
+                risk_mgr = risk_engine._risk_manager
+                active_positions = []
+                for sym_str, pos in risk_mgr.positions.items():
+                    active_positions.append(DomainPosition(
+                        symbol=DomainSymbol(sym_str),
+                        side=PositionSide.LONG if pos.direction.value == "long" else PositionSide.SHORT,
+                        quantity=Decimal(str(pos.size)),
+                        entry_price=DomainMoney(amount=Decimal(str(pos.entry_price)), currency="USDT"),
+                        timestamp=pos.entry_time
+                    ))
+                
+                equity_val = risk_mgr.starting_equity + risk_mgr.total_pnl
+                portfolio_obj = Portfolio(
+                    positions=active_positions,
+                    cash_balance=DomainMoney(amount=Decimal(str(equity_val)), currency="USDT"),
+                    total_value=DomainMoney(amount=Decimal(str(equity_val)), currency="USDT"),
+                    timestamp=datetime.now()
+                )
 
-                    # Apply any quantity adjustments from risk parameters
-                    # Check if position_quantity in risk_params is significantly different from calculated quantity
-                    if 'position_quantity' in risk_params:
-                        risk_position_quantity = risk_params['position_quantity']
-                        # If there's a significant difference (>5% relative difference), log a warning
-                        if quantity != 0 and abs(risk_position_quantity - quantity) / quantity > 0.05:
-                            if self.logger:
-                                self.logger.warning(f"⚠️ Quantity mismatch: Risk params quantity={risk_position_quantity}, Calculated quantity={quantity}, Diff={abs(risk_position_quantity - quantity) / quantity:.2%}")
+                # Fetch volatility/ATR if available
+                atr = execution_intent.metadata.get("atr") if execution_intent.metadata else None
 
-                        # Use the risk parameter quantity as the authoritative value
-                        quantity = risk_position_quantity
-
-            except Exception as e:
-                # If portfolio service fails, use a default quantity
-                if fixed_position_size_enabled:
-                    # Use fixed position size for testing with fallback price
-                    fallback_price = 50000.0
-                    quantity = fixed_position_amount / fallback_price
-                    if self.logger:
-                        self.logger.info(f"Using fixed position size (fallback): ${fixed_position_amount} at ${fallback_price} = {quantity} units")
-                else:
-                    # Use default account balance from environment variable
-                    default_account_balance = load_settings().position_sizing.default_account_balance if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'default_account_balance') else 1000.0  # Default to $1,000 if not available
-                    fallback_price = 50000.0
-                    quantity = position_size_pct * default_account_balance / fallback_price
-
+                quantity = risk_engine.calculate_dynamic_size(
+                    intent=execution_intent,
+                    portfolio=portfolio_obj,
+                    volatility=atr
+                )
                 if self.logger:
-                    self.logger.error(f"Error calculating quantity, using fallback: {e}")
+                    self.logger.debug(f"NGDP dynamically sized quantity: {quantity:.6f} for {execution_intent.symbol.value}")
+            except Exception as e:
+                if self.logger:
+                    self.logger.error(f"Error in NGDP calculation, falling back to static sizing: {e}")
+                
+                if fixed_position_size_enabled:
+                    fallback_price = 50000.0
+                    p = current_price if current_price and current_price > 0 else fallback_price
+                    quantity = fixed_position_amount / p
+                else:
+                    position_size_pct = risk_params.get('max_position_size', 0.02)
+                    account_balance = load_settings().position_sizing.default_account_balance if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'default_account_balance') else 10000.0
+                    position_value = account_balance * position_size_pct
+                    p = current_price if current_price and current_price > 0 else 50000.0
+                    quantity = position_value / p
+
+                if 'position_quantity' in risk_params:
+                    quantity = risk_params['position_quantity']
 
             # Ensure minimum quantity to avoid issues with small trades
             if quantity < 0.001:
@@ -413,92 +409,166 @@ class SignalProcessor:
                         if self.logger:
                             self.logger.warning(f"⚠️ Signal contradiction: Bias={bias_str} vs Order={order_side.name} for {execution_intent.symbol.value}")
 
-            if order_side.name == 'BUY':
-                # For BUY orders, SL should be below entry, TP should be above entry
-                if (stop_loss_price is None or
-                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) <= 0) or
-                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) >= entry_price)):
-                    # Recalculate SL if not set or invalid (above entry for BUY)
-                    from domain.value_objects import Money
-                    stop_loss_price = Money(amount=float(sl_price), currency='USDT')
-                else:
-                    # Validate existing SL price for BUY order
-                    sl_amount = float(stop_loss_price.amount)
-                    if sl_amount >= entry_price:
-                        if self.logger:
-                            self.logger.warning(f"Invalid SL for BUY: SL({sl_amount}) >= Entry({entry_price}), recalculating...")
-                        from domain.value_objects import Money
-                        stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+            # Validate SL/TP prices from strategy
+            is_valid = True
+            invalid_reason = ""
+            
+            # Extract and sanitize SL/TP amounts using centralized shared utility
+            from shared.utils import sanitize_sltp_levels
+            from domain.value_objects import Money
+            from decimal import Decimal
 
-                if (take_profit_price is None or
-                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= 0) or
-                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= entry_price)):
-                    # Recalculate TP if not set or invalid (below entry for BUY)
-                    from domain.value_objects import Money
-                    take_profit_price = Money(amount=float(tp_price), currency='USDT')
-                else:
-                    # Validate existing TP price for BUY order
-                    tp_amount = float(take_profit_price.amount)
-                    if tp_amount <= entry_price:
-                        if self.logger:
-                            self.logger.warning(f"Invalid TP for BUY: TP({tp_amount}) <= Entry({entry_price}), recalculating...")
-                        from domain.value_objects import Money
-                        take_profit_price = Money(amount=float(tp_price), currency='USDT')
-            else:  # SELL
-                # For SELL orders, SL should be above entry, TP should be below entry
-                if (stop_loss_price is None or
-                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) <= 0) or
-                    (hasattr(stop_loss_price, 'amount') and float(stop_loss_price.amount) <= entry_price)):
-                    # Recalculate SL if not set or invalid (below entry for SELL)
-                    from domain.value_objects import Money
-                    stop_loss_price = Money(amount=float(sl_price), currency='USDT')
-                else:
-                    # Validate existing SL price for SELL order
-                    sl_amount = float(stop_loss_price.amount)
-                    if sl_amount <= entry_price:
-                        if self.logger:
-                            self.logger.warning(f"Invalid SL for SELL: SL({sl_amount}) <= Entry({entry_price}), recalculating...")
-                        from domain.value_objects import Money
-                        stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+            sl_amount = float(stop_loss_price.amount) if stop_loss_price and hasattr(stop_loss_price, 'amount') else None
+            tp_amount = float(take_profit_price.amount) if take_profit_price and hasattr(take_profit_price, 'amount') else None
 
-                if (take_profit_price is None or
-                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) <= 0) or
-                    (hasattr(take_profit_price, 'amount') and float(take_profit_price.amount) >= entry_price)):
-                    # Recalculate TP if not set or invalid (above entry for SELL)
-                    from domain.value_objects import Money
-                    take_profit_price = Money(amount=float(tp_price), currency='USDT')
-                else:
-                    # Validate existing TP price for SELL order
-                    tp_amount = float(take_profit_price.amount)
-                    if tp_amount >= entry_price:
-                        if self.logger:
-                            self.logger.warning(f"Invalid TP for SELL: TP({tp_amount}) >= Entry({entry_price}), recalculating...")
-                        from domain.value_objects import Money
-                        take_profit_price = Money(amount=float(tp_price), currency='USDT')
+            if sl_amount is None or sl_amount <= 0:
+                sl_amount = float(risk_params.get('stop_loss')) if risk_params and risk_params.get('stop_loss') is not None else None
+            if tp_amount is None or tp_amount <= 0:
+                tp_amount = float(risk_params.get('take_profit')) if risk_params and risk_params.get('take_profit') is not None else None
 
-            # Perform comprehensive validation of calculated SL/TP prices
-            # Check for symbol-price consistency (sanity check)
-            if stop_loss_price:
-                sl_amount = float(stop_loss_price.amount)
-                sl_distance_ratio = abs(sl_amount - entry_price) / entry_price
+            sl_amount, tp_amount = sanitize_sltp_levels(
+                entry_price=entry_price,
+                side=order_side,
+                stop_loss=sl_amount,
+                take_profit=tp_amount
+            )
 
-                # If SL is extremely far from entry price (>50%), it's likely a calculation error
-                if sl_distance_ratio > 0.5:
+            # Re-attach sanitized Money objects to execution_intent
+            stop_loss_price = Money(amount=Decimal(str(sl_amount)), currency='USDT')
+            take_profit_price = Money(amount=Decimal(str(tp_amount)), currency='USDT')
+            execution_intent.stop_loss_price = stop_loss_price
+            execution_intent.take_profit_price = take_profit_price
+                    
+            # Check sanity distance ratios
+            if is_valid:
+                if sl_amount:
+                    sl_ratio = abs(sl_amount - entry_price) / entry_price
+                    if sl_ratio > 0.5:
+                        is_valid = False
+                        invalid_reason = f"Stop Loss is too far from entry (>50%): SL={sl_amount}, Entry={entry_price}, Ratio={sl_ratio:.2f}"
+                if tp_amount:
+                    tp_ratio = abs(tp_amount - entry_price) / entry_price
+                    if tp_ratio > 0.5:
+                        is_valid = False
+                        invalid_reason = f"Take Profit is too far from entry (>50%): TP={tp_amount}, Entry={entry_price}, Ratio={tp_ratio:.2f}"
+
+            if not is_valid:
+                if self.logger:
+                    self.logger.warning(f"❌ ORDER REJECTED: {invalid_reason}")
+                
+                # Write rejection to ExecutionTruthLedger
+                try:
+                    from shared.execution_truth_ledger import execution_truth_ledger as ledger
+                    order_ref = ledger.new_order_ref()
+                    ledger.append("decision", {
+                        "order_ref": order_ref,
+                        "symbol": execution_intent.symbol.value,
+                        "broker": "bingx",
+                        "route": "REJECTED",
+                        "decision_trace": {
+                            "rule": "SL_TP_VALIDATION",
+                            "reason": f"VETO: {invalid_reason}"
+                        },
+                        "input_flags": {
+                            "entry_price": entry_price,
+                            "stop_loss": sl_amount,
+                            "take_profit": tp_amount,
+                            "side": order_side.name
+                        }
+                    })
+                except Exception as ledger_err:
                     if self.logger:
-                        self.logger.warning(f"SL price scale mismatch for {execution_intent.symbol.value}: SL={sl_amount}, Entry={entry_price}, Ratio={sl_distance_ratio:.2f}. Recalculating...")
-                    from domain.value_objects import Money
-                    stop_loss_price = Money(amount=float(sl_price), currency='USDT')
+                        self.logger.error(f"Failed to write rejection to ExecutionTruthLedger: {ledger_err}")
+                return None
 
-            if take_profit_price:
-                tp_amount = float(take_profit_price.amount)
-                tp_distance_ratio = abs(tp_amount - entry_price) / entry_price
 
-                # If TP is extremely far from entry price (>50%), it's likely a calculation error
-                if tp_distance_ratio > 0.5:
+            # --- MARKET DATA SAFETY HEARTBEAT GUARD (LIVE ONLY) ---
+            is_live = not hasattr(execution_service_to_use, 'is_backtest') or not getattr(execution_service_to_use, 'is_backtest', False)
+            if is_live:
+                last_time = getattr(self, '_last_market_data_times', {}).get(execution_intent.symbol.value)
+                if last_time:
+                    elapsed = (datetime.now() - last_time).total_seconds()
+                    if elapsed > 90.0:
+                        if self.logger:
+                            self.logger.warning(
+                                f"❌ HEARTBEAT GUARD VETO: Market data heartbeat is stale by {elapsed:.1f}s (> 90s) for "
+                                f"{execution_intent.symbol.value}. Submission rejected."
+                            )
+                        return None
+                else:
                     if self.logger:
-                        self.logger.warning(f"TP price scale mismatch for {execution_intent.symbol.value}: TP={tp_amount}, Entry={entry_price}, Ratio={tp_distance_ratio:.2f}. Recalculating...")
-                    from domain.value_objects import Money
-                    take_profit_price = Money(amount=float(tp_price), currency='USDT')
+                        self.logger.warning(
+                            f"❌ HEARTBEAT GUARD VETO: No market data heartbeat recorded for "
+                            f"{execution_intent.symbol.value}. Submission rejected."
+                        )
+                    return None
+
+            # --- LIQUIDITY DEPTH PROTECTION GUARD ---
+            max_liquidity = 999999.0
+            if hasattr(execution_service_to_use, 'broker') and hasattr(execution_service_to_use.broker, 'fetch_order_book'):
+                try:
+                    order_book = execution_service_to_use.broker.fetch_order_book(execution_intent.symbol.value)
+                    if isinstance(order_book, dict):
+                        if order_side.name == 'BUY':
+                            # Check asks (seller liquidity)
+                            asks = order_book.get('asks', [])[:3]
+                            max_liquidity = sum(float(ask[1]) for ask in asks)
+                        else:
+                            # Check bids (buyer liquidity)
+                            bids = order_book.get('bids', [])[:3]
+                            max_liquidity = sum(float(bid[1]) for bid in bids)
+                except Exception as e:
+                    if self.logger:
+                        self.logger.debug(f"Could not fetch order book depth: {e}")
+
+            # Safety liquidity threshold check
+            if quantity > max_liquidity:
+                if self.logger:
+                    self.logger.warning(
+                        f"⚠️ LIQUIDITY DEPTH GUARD: Requested size {quantity:.6f} exceeds top 3 levels "
+                        f"liquidity {max_liquidity:.6f} for {execution_intent.symbol.value}. Scaling down to {max_liquidity:.6f}."
+                    )
+                quantity = max_liquidity
+                if quantity < 0.001:
+                    if self.logger:
+                        self.logger.warning("Scaled size below minimum 0.001. Submission rejected.")
+                    return None
+
+            # Configurable maximum order notional cap
+            try:
+                max_order_notional = None
+                settings = load_settings()
+                
+                # Check settings
+                if settings.risk:
+                    if hasattr(settings.risk, 'max_order_notional_amount') and settings.risk.max_order_notional_amount is not None:
+                        max_order_notional = settings.risk.max_order_notional_amount
+                
+                # Check environment override
+                import os
+                env_cap = os.getenv('MAX_ORDER_NOTIONAL_AMOUNT')
+                if env_cap is not None and env_cap.strip():
+                    max_order_notional = float(env_cap)
+                    
+                if max_order_notional is not None:
+                    max_order_notional = float(max_order_notional)
+                    execution_price = float(current_price) if current_price else 0.0
+                    if execution_price > 0:
+                        calculated_notional = quantity * execution_price
+                        if calculated_notional > max_order_notional:
+                            old_quantity = quantity
+                            new_quantity = max_order_notional / execution_price
+                            quantity = new_quantity
+                            if self.logger:
+                                self.logger.warning(
+                                    f"🛡️ ORDER CAP ENGAGED: Capping order notional from ${calculated_notional:.2f} "
+                                    f"to ${max_order_notional:.2f}. "
+                                    f"Old Qty: {old_quantity:.6f}, New Qty: {new_quantity:.6f}"
+                                )
+            except Exception as cap_err:
+                if self.logger:
+                    self.logger.warning(f"Error applying MAX_ORDER_NOTIONAL_AMOUNT cap: {cap_err}")
+
 
             # Log comprehensive order details before execution
             if self.logger:

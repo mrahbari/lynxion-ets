@@ -56,11 +56,16 @@ def create_hexagonal_logger(name: str, log_file: str = "hexagonal_system.log") -
     """Create a logger instance for hexagonal architecture"""
     os.makedirs("logs", exist_ok=True)
     
+    from shared.logger import get_configured_log_level
+    log_level_str = get_configured_log_level()
+    log_level = getattr(logging, log_level_str, logging.INFO)
     logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(log_level)
     
     # Prevent duplicate handlers
     if logger.handlers:
+        for h in logger.handlers:
+            h.setLevel(log_level)
         return logger
     
     # File handler with rotation

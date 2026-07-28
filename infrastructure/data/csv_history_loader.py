@@ -560,7 +560,11 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
         # data (avoids the noisy per-symbol warning + redundant overwrite). (Type-B fix.)
         if file_path.exists() and file_path.stat().st_size > 0:
             try:
-                existing_df = pd.read_csv(file_path)
+                try:
+                    existing_df = pd.read_csv(file_path, on_bad_lines='skip')
+                except (pd.errors.EmptyDataError, pd.errors.ParserError) as read_err:
+                    self.logger.info(f"Existing file for {symbol} is empty or corrupted ({read_err}); overwriting with clean fresh data.")
+                    existing_df = pd.DataFrame()
 
                 # Handle mixed timestamp formats in existing file
                 if 'timestamp' in existing_df.columns:

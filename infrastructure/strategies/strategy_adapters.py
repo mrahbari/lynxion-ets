@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 
-from domain.entities import FusedSignal, ExecutionIntent
+from domain.entities import Signal, SignalType, FusedSignal, ExecutionIntent
 from domain.value_objects import Symbol, Percentage, Money
 from domain.ports.strategy_ports import StrategyPort
 from shared.logger import EnhancedLogger
@@ -73,6 +73,7 @@ class BaseStrategyAdapter(StrategyPort):
         self.name = name
         self.logger = EnhancedLogger(f"Strategy_{name}")
         self.active = True
+        self.data_buffer = []
         # Get configuration using the standardized config system
         self.config = {
             'enabled': StrategyConfig.get_strategy_enabled(name),
@@ -90,7 +91,9 @@ class BaseStrategyAdapter(StrategyPort):
             'max_consecutive_losses': StrategyConfig.get_strategy_max_consecutive_losses(name, 3),
             'min_atr_threshold': StrategyConfig.get_strategy_min_atr_threshold(name, 0.001),
             'avoid_flat_markets': StrategyConfig.get_strategy_avoid_flat_markets(name, True),
-            'cooldown_after_exit_minutes': StrategyConfig.get_strategy_cooldown_after_exit_minutes(name, 30)
+            'cooldown_after_exit_minutes': StrategyConfig.get_strategy_cooldown_after_exit_minutes(name, 5),
+            'symbol_stoploss_cooldown_minutes': StrategyConfig.get_symbol_stoploss_cooldown_minutes(name, 60),
+            'enable_symbol_stoploss_cooldown': StrategyConfig.get_enable_symbol_stoploss_cooldown(name, True)
         }
 
         # Initialize with default risk parameters
@@ -105,11 +108,68 @@ class BaseStrategyAdapter(StrategyPort):
         self.intent_count_today = {}     # Track daily intent count per symbol
         self.consecutive_losses = {}     # Track consecutive losses per symbol
         self.last_loss_time = {}         # E-P5.2: time of last loss, for time-based pause recovery
+        self.last_sl_exit_time = {}      # Track per-symbol Stop Loss exit timestamp
         self.last_entry_bar_index = {}   # Track last entry bar index per symbol
         self.current_positions = {}      # Track current positions per symbol (TEMPORARY - will be phased out)
         self.last_exit_time = {}         # Track last exit time per symbol for cooldown
         self.bar_counter = {}            # Track bar count per symbol for cooldown
         self.last_signal_conditions = {} # Track last signal conditions to avoid repetition
+
+    def ensure_data_buffer(self, symbol: Symbol):
+        """Ensure that self.data_buffer is populated with historical data.
+        In live trading mode, the websocket stream doesn't populate data_buffer,
+        so we load historical data on-demand if the buffer is empty.
+        """
+        if not hasattr(self, 'data_buffer') or not self.data_buffer:
+            self.data_buffer = []
+            try:
+                from bootstrap.settings.loaders import load_settings
+                from infrastructure.services.broker_registry import broker_registry
+                
+                settings = load_settings()
+                historical_data_source = (
+                    settings.data.preferred_historical_data_source
+                    if settings.data and hasattr(settings.data, 'preferred_historical_data_source')
+                    else 'binance'
+                )
+                
+                provider = broker_registry.get_historical_data_provider(
+                    settings=settings,
+                    csv_base_path=None,
+                    download_enabled=True,
+                    broker_service=None,
+                    historical_data_source=historical_data_source,
+                    fallback_sources=['mexc', 'phemex', 'bingx']
+                )
+                
+                if provider:
+                    timeframe = self.config.get('timeframe', '1h')
+                    
+                    # Determine period based on timeframe to get at least 100-200 bars
+                    if timeframe == '1m':
+                        period = '3h'
+                    elif timeframe == '5m':
+                        period = '12h'
+                    elif timeframe == '15m':
+                        period = '3d'
+                    elif timeframe == '1h':
+                        period = '10d'
+                    elif timeframe == '4h':
+                        period = '30d'
+                    elif timeframe == '1d':
+                        period = '100d'
+                    else:
+                        period = '10d'
+
+                    self.logger.info(f"Fetching historical data dynamically for {symbol.value} (Timeframe: {timeframe}, Period: {period})...")
+                    data = provider.get_historical_data(symbol, period=period, timeframe=timeframe)
+                    if data:
+                        self.data_buffer = data
+                        self.logger.info(f"Successfully pre-populated data buffer with {len(data)} bars for {symbol.value}")
+                    else:
+                        self.logger.warning(f"No historical data returned for {symbol.value}")
+            except Exception as e:
+                self.logger.error(f"Error pre-populating data buffer for {symbol.value}: {e}")
 
     def evaluate_fused_signal(self, fused_signal: FusedSignal) -> Optional[ExecutionIntent]:
         """Evaluate a fused signal and return execution intent if strategy accepts it"""
@@ -139,33 +199,46 @@ class BaseStrategyAdapter(StrategyPort):
         risk_parameters = self._calculate_comprehensive_risk_parameters(fused_signal)
 
         # Create execution intent
+        from infrastructure.statistical_validation.confidence_calibrator import confidence_calibrator
+        calibrated_conf = confidence_calibrator.calibrate_confidence(float(fused_signal.confidence.value))
+
         execution_intent = ExecutionIntent(
             symbol=fused_signal.symbol,
             strategy_name=strategy_name,
             side=self._determine_side(fused_signal),
-            intent_confidence=Percentage(min(Decimal('1.0'),
-                                          max(Decimal('0.0'),
-                                              fused_signal.confidence.value * Decimal('0.8')))),  # Slightly reduce confidence
+            intent_confidence=Percentage(Decimal(str(calibrated_conf))),
             risk_parameters=risk_parameters,
             timestamp=getattr(fused_signal, 'timestamp', None) or datetime.now(),  # E-P5.2: simulated time
             fused_signal=fused_signal,
             metadata={
                 'strategy_reasoning': f'Signal aligned with {strategy_name} strategy criteria',
                 'dominant_bias': fused_signal.dominant_bias.value,
-                'regime_context': fused_signal.regime_context
+                'regime_context': fused_signal.regime_context,
+                'watcher_name': (fused_signal.metadata.get('watcher_name') or fused_signal.metadata.get('primary_watcher') or fused_signal.metadata.get('source_watcher')) if fused_signal and fused_signal.metadata else 'N/A',
+                'primary_watcher': (fused_signal.metadata.get('primary_watcher') or fused_signal.metadata.get('watcher_name')) if fused_signal and fused_signal.metadata else 'N/A'
             }
         )
 
-        # The risk parameters contain the requested SL/TP values which will be processed by the risk manager
-        # However, we need to ensure that the execution intent has the SL/TP prices attached so the broker can use them
-        # The risk manager will ultimately validate and potentially adjust these values
+        # Calculate clean, sanitized SL/TP Money objects for execution intent
+        from shared.utils import sanitize_sltp_levels
+        entry_price = float(fused_signal.metadata.get('current_price', 0.0) or fused_signal.metadata.get('close_price', 0.0) or 0.0) if fused_signal.metadata else 0.0
+        
+        sl_val, tp_val = sanitize_sltp_levels(
+            entry_price=entry_price if entry_price > 0 else 100.0,
+            side=execution_intent.side,
+            stop_loss=risk_parameters.get('stop_loss'),
+            take_profit=risk_parameters.get('take_profit'),
+            default_sl_pct=risk_parameters.get('stop_loss_pct', 0.02),
+            default_tp_pct=risk_parameters.get('take_profit_pct', 0.03)
+        )
+
         execution_intent.stop_loss_price = Money(
-            amount=Decimal('0'),  # Placeholder - will be set by risk manager during position entry
+            amount=Decimal(str(sl_val)),
             currency='USDT'
         )
 
         execution_intent.take_profit_price = Money(
-            amount=Decimal('0'),  # Placeholder - will be set by risk manager during position entry
+            amount=Decimal(str(tp_val)),
             currency='USDT'
         )
 
@@ -337,7 +410,36 @@ class BaseStrategyAdapter(StrategyPort):
 
     def _passes_exit_cooldown_check(self, symbol: str, current_time: datetime = None) -> bool:
         """Check if cooldown period after exit has elapsed."""
-        cooldown_minutes = self.config.get('cooldown_after_exit_minutes', 30)  # Use default value of 30 if not specified
+        now = current_time or datetime.now()
+
+        # 1. Per-Symbol Stop Loss Cooldown (Roadmap: Re-Entry After Stop Loss)
+        enabled = self.config.get(
+            'enable_symbol_stoploss_cooldown',
+            StrategyConfig.get_enable_symbol_stoploss_cooldown(self.name, True)
+        )
+        last_sl_exit = self.last_sl_exit_time.get(symbol)
+        if enabled and last_sl_exit is not None:
+            cooldown_minutes = self.config.get(
+                'symbol_stoploss_cooldown_minutes',
+                StrategyConfig.get_symbol_stoploss_cooldown_minutes(self.name, 60)
+            )
+            if cooldown_minutes > 0:
+                elapsed_seconds = (now - last_sl_exit).total_seconds()
+                required_seconds = cooldown_minutes * 60
+                if elapsed_seconds < required_seconds:
+                    remaining_minutes = (required_seconds - elapsed_seconds) / 60.0
+                    self.logger.info(
+                        f"⛔ SYMBOL COOLDOWN ACTIVE: Skipped signal for {symbol} | "
+                        f"Previous result = Stop Loss | "
+                        f"Remaining cooldown = {remaining_minutes:.1f} min | "
+                        f"Strategy = {self.name}"
+                    )
+                    return False
+                else:
+                    self.last_sl_exit_time[symbol] = None
+
+        # 2. General post-exit cooldown check
+        cooldown_minutes = self.config.get('cooldown_after_exit_minutes', 1)
         if cooldown_minutes <= 0:
             return True
 
@@ -345,7 +447,7 @@ class BaseStrategyAdapter(StrategyPort):
         if last_exit is None:
             return True
 
-        time_since_exit = (current_time or datetime.now()) - last_exit
+        time_since_exit = now - last_exit
         passes_check = time_since_exit.total_seconds() >= (cooldown_minutes * 60)
 
         if not passes_check:
@@ -469,7 +571,7 @@ class BaseStrategyAdapter(StrategyPort):
 
     def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True,
                             exit_time: datetime = None):
-        """Record the result of a trade for consecutive loss tracking.
+        """Record the result of a trade for per-symbol Stop Loss cooldown tracking.
 
         E-P5.2: ``exit_time`` (the trade's simulated close time) drives the
         cooldown and the consecutive-loss pause-recovery clock. Falls back to
@@ -477,13 +579,24 @@ class BaseStrategyAdapter(StrategyPort):
         """
         now = exit_time or datetime.now()
         if is_profitable:
-            # Reset consecutive losses counter
+            # TP trade: Reset consecutive losses and clear SL exit timestamp
             self.consecutive_losses[symbol] = 0
+            self.last_sl_exit_time[symbol] = None
+            self.logger.info(f"✅ Trade result for {symbol}: TAKE PROFIT. Symbol remains immediately tradable.")
         else:
-            # Increment consecutive losses counter
+            # SL trade: Increment consecutive losses and record SL exit timestamp
             current_losses = self.consecutive_losses.get(symbol, 0)
             self.consecutive_losses[symbol] = current_losses + 1
-            self.last_loss_time[symbol] = now  # E-P5.2: pause-recovery clock
+            self.last_loss_time[symbol] = now
+            self.last_sl_exit_time[symbol] = now
+            cooldown_min = self.config.get(
+                'symbol_stoploss_cooldown_minutes',
+                StrategyConfig.get_symbol_stoploss_cooldown_minutes(self.name, 60)
+            )
+            self.logger.info(
+                f"🛑 Trade result for {symbol}: STOP LOSS. "
+                f"Activated {cooldown_min}m per-symbol Stop Loss cooldown."
+            )
 
         # Optionally update exit time after recording the trade result (but don't modify position state)
         if position_closed:
@@ -562,7 +675,42 @@ class BaseStrategyAdapter(StrategyPort):
         if len(self.data_buffer) > limit:
             self.data_buffer = self.data_buffer[-limit:]
 
+    def _is_setup_fresh(self, setup, latest_bar) -> bool:
+        """Verify that the selected setup belongs to the latest candle in its data buffer."""
+        if not setup or not latest_bar:
+            return False
+
+        # 1. Compare trigger price as equivalent candle identity
+        trigger_price = getattr(setup, 'trigger_price', None)
+        close_price = latest_bar.get('close')
+        if trigger_price is not None and close_price is not None:
+            if abs(float(trigger_price) - float(close_price)) < 1e-6:
+                return True
+
+        # 2. Normalize and check timestamps if available
+        setup_ts = getattr(setup, 'timestamp', None)
+        bar_ts = latest_bar.get('timestamp')
+        if setup_ts and bar_ts:
+            from datetime import datetime
+            def to_dt(t):
+                if hasattr(t, 'to_datetime'):
+                    return t.to_datetime().replace(tzinfo=None)
+                if isinstance(t, datetime):
+                    return t.replace(tzinfo=None)
+                if isinstance(t, (int, float)):
+                    if t > 1e11:  # ms
+                        return datetime.fromtimestamp(t / 1000.0)
+                    return datetime.fromtimestamp(t)
+                return None
+            s_dt = to_dt(setup_ts)
+            b_dt = to_dt(bar_ts)
+            if s_dt and b_dt and abs((s_dt - b_dt).total_seconds()) < 5.0:
+                return True
+
+        return False
+
     def _determine_side(self, fused_signal: FusedSignal):
+
         """Determine order side based on fused signal direction"""
         from domain.entities import OrderSide
 
@@ -657,96 +805,7 @@ class BaseStrategyAdapter(StrategyPort):
         return risk_parameters
 
 
-class TrendFollowingStrategy(BaseStrategyAdapter):
-    """Trend following strategy implementation"""
 
-    def __init__(self):
-        super().__init__("trend_following")
-        self.lookback_period = 50
-        self.ma_period = 20
-        self.trend_strength_threshold = 0.01
-
-    def should_execute(self, fused_signal: FusedSignal) -> bool:
-        """Specific implementation for trend following strategy"""
-        # First check if strategy is enabled
-        if not StrategyConfig.get_strategy_enabled(self.name):
-            return False
-
-        # Get strategy-specific configuration
-        min_confidence = self.config.get('min_confidence', 0.5)  # Use default value of 0.5 if not specified
-
-        # Check if signal meets trend-following criteria
-        confidence = float(fused_signal.confidence.value)
-        is_trending = 'trend' in fused_signal.regime_context.lower()
-        has_direction = abs(fused_signal.direction) > 0.1
-
-        # Log specific rejection reason
-        if confidence < min_confidence:
-            self.logger.info(f"Trade rejected: "
-                           f"confidence={confidence:.2f} < "
-                           f"TREND_FOLLOWING_MIN_CONFIDENCE_THRESHOLD={min_confidence:.2f} "
-                           f"source=trend_following_strategy "
-                           f"strategy={self.name} "
-                           f"symbol={fused_signal.symbol.value}")
-            return False
-        elif not is_trending:
-            self.logger.info(f"Trade rejected: "
-                           f"regime_context='{fused_signal.regime_context}' does not indicate trending market "
-                           f"source=trend_following_strategy "
-                           f"strategy={self.name} "
-                           f"symbol={fused_signal.symbol.value}")
-            return False
-        elif not has_direction:
-            self.logger.info(f"Trade rejected: "
-                           f"direction={fused_signal.direction:.3f} is too weak (abs<{0.1}) "
-                           f"source=trend_following_strategy "
-                           f"strategy={self.name} "
-                           f"symbol={fused_signal.symbol.value}")
-            return False
-
-        return True
-
-
-class MeanReversionStrategy(BaseStrategyAdapter):
-    """Mean reversion strategy implementation"""
-
-    def __init__(self):
-        super().__init__("mean_reversion")
-        self.rsi_period = 14
-        self.rsi_oversold = 30
-        self.rsi_overbought = 70
-
-    def should_execute(self, fused_signal: FusedSignal) -> bool:
-        """Specific implementation for mean reversion strategy"""
-        # First check if strategy is enabled
-        if not StrategyConfig.get_strategy_enabled(self.name):
-            return False
-
-        # Get strategy-specific configuration
-        min_confidence = self.config.get('min_confidence', 0.5)  # Use default value of 0.5 if not specified
-
-        # Check if signal meets mean reversion criteria
-        confidence = float(fused_signal.confidence.value)
-        is_reverting = 'mean' in fused_signal.regime_context.lower() or 'revert' in fused_signal.regime_context.lower()
-
-        # Log specific rejection reason
-        if confidence < min_confidence:
-            self.logger.info(f"Trade rejected: "
-                           f"confidence={confidence:.2f} < "
-                           f"MEAN_REVERSION_MIN_CONFIDENCE_THRESHOLD={min_confidence:.2f} "
-                           f"source=mean_reversion_strategy "
-                           f"strategy={self.name} "
-                           f"symbol={fused_signal.symbol.value}")
-            return False
-        elif not is_reverting:
-            self.logger.info(f"Trade rejected: "
-                           f"regime_context='{fused_signal.regime_context}' does not indicate mean reversion "
-                           f"source=mean_reversion_strategy "
-                           f"strategy={self.name} "
-                           f"symbol={fused_signal.symbol.value}")
-            return False
-
-        return True
 
 
 class VolatilityBreakoutStrategy(BaseStrategyAdapter):
@@ -754,55 +813,126 @@ class VolatilityBreakoutStrategy(BaseStrategyAdapter):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__("volatility_breakout")
-        self.atr_period = 14
-        self.atr_multiplier = 1.5
-        self.lookback = 20
+        # Get configuration from the centralized config system
+        from infrastructure.strategies.strategy_config import get_volatility_breakout_config
+        system_config = get_volatility_breakout_config()
 
-    def generate_signal(self, symbol):
-        """ATR volatility-breakout signal from the strategy's own data buffer
-        (Direction-B fidelity fix — this strategy previously had NO signal logic).
-        Long when price breaks the prior-N high by > atr_multiplier×ATR (volatility
-        expansion up); short on the symmetric downside break. No optimization."""
-        from domain.entities import Signal
-        from domain.enums.signal_type import SignalType
-        from domain.value_objects import Percentage
-        from decimal import Decimal
-        from datetime import datetime
-        buf = getattr(self, 'data_buffer', None) or []
-        need = max(self.atr_period + 1, self.lookback) + 1
-        if len(buf) < need:
+        # Extract and merge config settings
+        params = system_config.get('parameters', {})
+        top_level = {k: v for k, v in system_config.items() if k != 'parameters'}
+        self.config = {**top_level, **params, **(config or {})}
+
+        from infrastructure.market_structure.market_structure_engine import MarketStructureEngine
+        from infrastructure.strategies.setup_engine import SetupEngine
+        from infrastructure.strategies.decision_pipeline import DecisionPipeline
+
+        self.market_structure_engine = MarketStructureEngine()
+        self.setup_engine = SetupEngine()
+        self.pipeline = DecisionPipeline()
+
+    def generate_signal(self, symbol: Symbol) -> Optional[Signal]:
+        """Generate signal using ATR breakout setups."""
+        if len(self.data_buffer) < 35:
             return None
+
         try:
-            highs = [b['high'] for b in buf]
-            lows = [b['low'] for b in buf]
-            closes = [b['close'] for b in buf]
-            atr = self.calculate_atr(buf, self.atr_period)
-            if not atr or atr <= 0:
+            closes = [float(item['close']) for item in self.data_buffer]
+            highs = [float(item.get('high', item['close'])) for item in self.data_buffer]
+            lows = [float(item.get('low', item['close'])) for item in self.data_buffer]
+            volumes = [float(item.get('volume', 0.0)) for item in self.data_buffer]
+
+            struct = self.market_structure_engine.calculate_market_structure(closes, highs, lows, volumes)
+            setups = self.setup_engine.scan_for_setups(
+                symbol=symbol,
+                prices=closes,
+                highs=highs,
+                lows=lows,
+                val=struct["val"],
+                vah=struct["vah"],
+                poc=struct["poc"]
+            )
+
+            # Filter setups to only match NGVOLATILITY_BREAKOUT setups
+            setup = next((s for s in setups if s.setup_type == "NGVOLATILITY_BREAKOUT"), None)
+            if not setup:
                 return None
-            current = closes[-1]
-            prior_high = max(highs[-self.lookback - 1:-1])
-            prior_low = min(lows[-self.lookback - 1:-1])
-            up_break = current - prior_high
-            dn_break = prior_low - current
-            sig_type, score, conf = SignalType.HOLD, 0.0, 0.3
-            if up_break > self.atr_multiplier * atr:
-                sig_type = SignalType.BUY
-                score = min(1.0, up_break / (self.atr_multiplier * atr))
-                conf = min(1.0, 0.4 + (up_break / atr) / 10.0)
-            elif dn_break > self.atr_multiplier * atr:
-                sig_type = SignalType.SELL
-                score = -min(1.0, dn_break / (self.atr_multiplier * atr))
-                conf = min(1.0, 0.4 + (dn_break / atr) / 10.0)
+
+            latest_bar = self.data_buffer[-1] if self.data_buffer else {}
+            if not self._is_setup_fresh(setup, latest_bar):
+                return None
+
+
+            from domain.value_objects import Percentage
+            from decimal import Decimal
+
+            signal_type = SignalType.BUY if setup.direction == "BUY" else SignalType.SELL
             return Signal(
-                symbol=symbol, signal_type=sig_type,
-                confidence=Percentage(Decimal(str(round(max(0.1, min(1.0, conf)), 4)))),
-                score=float(score), timestamp=datetime.now(),
+                symbol=symbol,
+                signal_type=signal_type,
+                confidence=Percentage(Decimal("0.8")),
+                score=1.0 if setup.direction == "BUY" else -1.0,
+                timestamp=datetime.now(),
                 source_layer="VolatilityBreakoutATR",
-                metadata={"atr": atr, "prior_high": prior_high, "prior_low": prior_low,
-                          "current": current, "atr_multiplier": self.atr_multiplier})
-        except Exception as e:
-            self.logger.error(f"Error in {self.name} strategy: {e}")
+                metadata={
+                    "setup": setup,
+                    "struct": struct
+                }
+            )
+
+        except Exception:
             return None
+
+    def evaluate_fused_signal(self, fused_signal: FusedSignal) -> Optional[ExecutionIntent]:
+        """Evaluate fused signal using volatility breakout confirmation and optimization."""
+        self.ensure_data_buffer(fused_signal.symbol)
+        setup = fused_signal.metadata.get("setup") if fused_signal.metadata else None
+
+        if not self.data_buffer and not setup:
+            return None
+
+        if not self.data_buffer and setup:
+            trigger_price = float(setup.trigger_price)
+            closes = [trigger_price]
+            highs = [trigger_price]
+            lows = [trigger_price]
+            volumes = [0.0]
+        else:
+            closes = [float(item['close']) for item in self.data_buffer]
+            highs = [float(item.get('high', item['close'])) for item in self.data_buffer]
+            lows = [float(item.get('low', item['close'])) for item in self.data_buffer]
+            volumes = [float(item.get('volume', 0.0)) for item in self.data_buffer]
+
+        if not setup:
+            struct = self.market_structure_engine.calculate_market_structure(closes, highs, lows, volumes)
+            setups = self.setup_engine.scan_for_setups(
+                symbol=fused_signal.symbol,
+                prices=closes,
+                highs=highs,
+                lows=lows,
+                val=struct["val"],
+                vah=struct["vah"],
+                poc=struct["poc"]
+            )
+            setup = next((s for s in setups if s.setup_type == "NGVOLATILITY_BREAKOUT"), None)
+
+        if not setup:
+            return None
+
+        latest_bar = self.data_buffer[-1] if self.data_buffer else {}
+        if not self._is_setup_fresh(setup, latest_bar):
+            return None
+
+        current_price = closes[-1]
+        max_position_size = float(self.config.get("max_position_size", 0.05))
+
+        return self.pipeline.process_execution_intent(
+            setup=setup,
+            fused_signal=fused_signal,
+            latest_bar=latest_bar,
+            current_price=current_price,
+            max_position_size=max_position_size,
+            strategy_name=self.name
+        )
 
     def should_execute(self, fused_signal: FusedSignal) -> bool:
         """Specific implementation for volatility breakout strategy"""
@@ -811,7 +941,7 @@ class VolatilityBreakoutStrategy(BaseStrategyAdapter):
             return False
 
         # Get strategy-specific configuration
-        min_confidence = self.config.get('min_confidence', 0.5)  # Use default value of 0.5 if not specified
+        min_confidence = self.config.get('min_confidence', 0.5)
 
         # Check if signal meets volatility breakout criteria
         confidence = float(fused_signal.confidence.value)

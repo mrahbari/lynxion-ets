@@ -31,6 +31,16 @@ class PositionSizingPort(Protocol):
         """Calculate appropriate position size based on risk parameters"""
         pass
 
+    @abstractmethod
+    def calculate_dynamic_size(
+        self,
+        intent: Any,
+        portfolio: Any,
+        volatility: Optional[float] = None
+    ) -> float:
+        """Calculate dynamic position size based on drawdown, correlation, and volatility (NGDP)."""
+        pass
+
 
 class PortfolioOptimizationPort(Protocol):
     """Port for portfolio optimization algorithms"""

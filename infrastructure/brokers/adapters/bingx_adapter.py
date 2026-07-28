@@ -274,7 +274,7 @@ class _BingXBroker:
 
     def _make_request(self, method: str, endpoint: str, params: Dict = None, data: Dict = None,
                       signed: bool = False) -> Dict:
-        """Make authenticated request to BingX API."""
+        """Make authenticated request to BingX API with transient fault retries."""
         try:
             self._rate_limit()  # Apply rate limiting before making the request
             url = f"{self.base_url}{endpoint}"
@@ -282,61 +282,83 @@ class _BingXBroker:
                 'X-BX-APIKEY': self.api_key
             }
 
-            if signed:
-                all_params = {}
-                if params:
-                    all_params.update(params)
-                if data:
-                    all_params.update(data)
+            def send_api_call():
+                if signed:
+                    all_params = {}
+                    if params:
+                        all_params.update(params)
+                    if data:
+                        all_params.update(data)
 
-                all_params['timestamp'] = str(int(time.time() * 1000))
+                    # Update timestamp on each attempt to prevent signature expiry/skew
+                    all_params['timestamp'] = str(int(time.time() * 1000))
 
-                param_strings = []
-                for key in sorted(all_params.keys()):
-                    param_strings.append(f"{key}={all_params[key]}")
+                    param_strings = []
+                    for key in sorted(all_params.keys()):
+                        param_strings.append(f"{key}={all_params[key]}")
 
-                query_string = '&'.join(param_strings)
+                    query_string = '&'.join(param_strings)
 
-                signature = hmac.new(
-                    self.secret_key.encode('utf-8'),
-                    query_string.encode('utf-8'),
-                    hashlib.sha256
-                ).hexdigest()
+                    signature = hmac.new(
+                        self.secret_key.encode('utf-8'),
+                        query_string.encode('utf-8'),
+                        hashlib.sha256
+                    ).hexdigest()
 
-                query_string_with_signature = query_string + f"&signature={signature}"
+                    query_string_with_signature = query_string + f"&signature={signature}"
 
-                if method.upper() == 'POST':
-                    headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                    if method.upper() == 'POST':
+                        headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
-                full_url = f"{url}?{query_string_with_signature}"
-                timeout = getattr(self, 'default_timeout', 10)
-                if method.upper() == 'DELETE':
-                    response = self.session.delete(full_url, headers=headers, timeout=timeout)
-                elif method.upper() == 'GET':
-                    response = self.session.get(full_url, headers=headers, timeout=timeout)
-                elif method.upper() == 'POST':
-                    response = self.session.post(full_url, headers=headers, timeout=timeout)
-                else:
-                    raise ValueError(f"Unsupported HTTP method for signed request: {method}")
-            else:
-                is_klines_request = '/quote/klines' in endpoint
-
-                timeout = getattr(self, 'default_timeout', 10)
-                if method.upper() == 'GET':
-                    if is_klines_request:
-                        klines_headers = {}
-                        response = self.session.get(url, headers=klines_headers, params=params, timeout=timeout)
+                    full_url = f"{url}?{query_string_with_signature}"
+                    timeout = getattr(self, 'default_timeout', 10)
+                    if method.upper() == 'DELETE':
+                        response = self.session.delete(full_url, headers=headers, timeout=timeout)
+                    elif method.upper() == 'GET':
+                        response = self.session.get(full_url, headers=headers, timeout=timeout)
+                    elif method.upper() == 'POST':
+                        response = self.session.post(full_url, headers=headers, timeout=timeout)
                     else:
-                        response = self.session.get(url, headers=headers, params=params, timeout=timeout)
-                elif method.upper() == 'POST':
-                    response = self.session.post(url, headers=headers, json=data or params, timeout=timeout)
-                elif method.upper() == 'DELETE':
-                    response = self.session.delete(url, headers=headers, params=params, timeout=timeout)
+                        raise ValueError(f"Unsupported HTTP method for signed request: {method}")
                 else:
-                    raise ValueError(f"Unsupported HTTP method: {method}")
+                    is_klines_request = '/quote/klines' in endpoint
+                    timeout = getattr(self, 'default_timeout', 10)
+                    if method.upper() == 'GET':
+                        if is_klines_request:
+                            klines_headers = {}
+                            response = self.session.get(url, headers=klines_headers, params=params, timeout=timeout)
+                        else:
+                            response = self.session.get(url, headers=headers, params=params, timeout=timeout)
+                    elif method.upper() == 'POST':
+                        response = self.session.post(url, headers=headers, json=data or params, timeout=timeout)
+                    elif method.upper() == 'DELETE':
+                        response = self.session.delete(url, headers=headers, params=params, timeout=timeout)
+                    else:
+                        raise ValueError(f"Unsupported HTTP method: {method}")
 
-            response.raise_for_status()
-            return response.json()
+                response.raise_for_status()
+                return response.json()
+
+            def should_retry_request(exc: BaseException) -> bool:
+                if isinstance(exc, requests.exceptions.HTTPError):
+                    if exc.response is not None:
+                        # Retry on 429 Rate Limit or 5xx Server errors
+                        return exc.response.status_code == 429 or exc.response.status_code >= 500
+                elif isinstance(exc, (requests.exceptions.ConnectionError, requests.exceptions.Timeout)):
+                    return True
+                return False
+
+            from shared.retry import retry_with_backoff
+            return retry_with_backoff(
+                send_api_call,
+                max_attempts=3,
+                base_delay=0.5,
+                retry_on=(requests.exceptions.RequestException,),
+                should_retry=should_retry_request,
+                on_retry=lambda attempt, exc, delay: self.logger.warning(
+                    f"⚠️ BingX API {method} {endpoint} failed (attempt {attempt}): {exc}; retrying in {delay:.2f}s..."
+                )
+            )
 
         except requests.exceptions.RequestException as e:
             self.logger.error(f"Request failed: {str(e)}\n{traceback.format_exc()}")
@@ -743,8 +765,12 @@ class _BingXBroker:
                 'quantity': quantity,
                 'stopPrice': stop_price,
                 'positionSide': position_side,
-                'timeInForce': 'GTC'  # Good till cancelled for conditional orders
+                'workingType': 'MARK_PRICE'
             }
+            # Only include reduceOnly in One-Way mode (positionSide is BOTH or absent).
+            # In Hedge mode (LONG/SHORT), BingX API forbids the reduceOnly parameter.
+            if position_side.upper() not in ('LONG', 'SHORT'):
+                conditional_order_data['reduceOnly'] = 'true'
 
             endpoint = "/openApi/swap/v2/trade/order"
             response = self._make_request('POST', endpoint, data=conditional_order_data, signed=True)

@@ -262,6 +262,10 @@ class StrategySelectionService:
         if not self.strategies:
             return None
 
+        # Update the market regime detector state if market data is provided
+        if market_data:
+            self.market_regime_detector.detect_regime(market_data)
+
         start_time = datetime.now()
 
         # Calculate scores for all strategies
@@ -346,23 +350,18 @@ class MarketRegimeDetector:
     def __init__(self):
         self.current_regime = "NEUTRAL"
         self.regime_history: List[Dict[str, Any]] = []
+        from infrastructure.market_regime.macro_regime_engine import MacroRegimeEngine
+        self.engine = MacroRegimeEngine()
 
     def detect_regime(self, market_data: Dict[str, Any]) -> str:
         """Detect the current market regime based on market data"""
-        # In a real system, this would analyze market data to detect regimes
-        # For now, we'll simulate different regimes based on volatility or trend indicators
         if market_data:
-            # Example: detect high volatility regime
-            if market_data.get('volatility', 0) > 0.3:
-                return "HIGH_VOLATILITY"
-            # Example: detect trending market
-            elif abs(market_data.get('trend', 0)) > 0.1:
-                if market_data.get('trend', 0) > 0:
-                    return "BULL_TREND"
-                else:
-                    return "BEAR_TREND"
-
-        return "NEUTRAL"
+            volatility = market_data.get('volatility', 0.0)
+            trend = market_data.get('trend', 0.0)
+            self.current_regime = self.engine.detect_regime_from_indicators(volatility, trend)
+        else:
+            self.current_regime = "NEUTRAL"
+        return self.current_regime
 
     def get_regime_strategy_bonus(self, strategy_name: str) -> float:
         """Get bonus for strategy based on current regime"""
@@ -377,6 +376,7 @@ class MarketRegimeDetector:
 
         regime_bonuses_for_current = regime_bonuses.get(self.current_regime, {})
         return regime_bonuses_for_current.get(strategy_name, 0.0)
+
 
 
 class StrategyOrchestrationService:

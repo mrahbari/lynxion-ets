@@ -22,7 +22,7 @@ class _AutoDetectionIntentMixin:
             # Calculate opportunity score based on multiple factors
             opportunity_score = self._calculate_opportunity_score(execution_intent)
 
-            self.logger.info(f"📥 RECEIVED EXECUTION INTENT: {execution_intent.symbol.value} | Side: {execution_intent.side.name} | Confidence: {confidence:.2%} | Score: {opportunity_score:.2f} | Strategy: {execution_intent.strategy_name}")
+            self.logger.debug(f"📥 RECEIVED EXECUTION INTENT: {execution_intent.symbol.value} | Side: {execution_intent.side.name} | Confidence: {confidence:.2%} | Score: {opportunity_score:.2f} | Strategy: {execution_intent.strategy_name}")
 
             # Log the decision point with comprehensive details
             self.logger.log_decision_reason(

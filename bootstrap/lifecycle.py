@@ -17,7 +17,16 @@ def create_container(environment=None,
                      base_data_dir: Optional[str] = None) -> Container:
     """Build a fully-configured container for ``environment``."""
     settings = load_settings(environment, env_file_path)
-    return Container(settings, base_data_dir=base_data_dir)
+    container = Container(settings, base_data_dir=base_data_dir)
+    
+    # Bridge to the legacy container for backward compatibility
+    try:
+        from application.containers.container import container as legacy_container
+        legacy_container.register("risk_engine", container.resolve("risk_engine"))
+    except Exception:
+        pass
+        
+    return container
 
 
 @contextmanager

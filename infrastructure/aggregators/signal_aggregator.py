@@ -115,11 +115,11 @@ class SignalAggregator:
 
         # Generate execution intents for selected signals
         for fused_signal in selected_signals:
-            self.logger.info(f"🎯 Attempting to generate execution intent for {fused_signal.symbol.value} with confidence {float(fused_signal.confidence.value):.2%}")
+            self.logger.debug(f"🎯 Attempting to generate execution intent for {fused_signal.symbol.value} with confidence {float(fused_signal.confidence.value):.2%}")
             self._generate_execution_intent(fused_signal)
 
         # Log that aggregation is complete
-        self.logger.info(f"✅ Aggregation complete: Processed {len(selected_signals)} signals for execution intent generation")
+        self.logger.debug(f"✅ Aggregation complete: Processed {len(selected_signals)} signals for execution intent generation")
 
     def _rank_signals(self, signals: List[FusedSignal]) -> List[Dict[str, Any]]:
         """Rank signals based on multiple criteria."""
@@ -237,8 +237,7 @@ class SignalAggregator:
             execution_intent = strategy_manager.evaluate_fused_signal(fused_signal)
 
             if execution_intent:
-                self.logger.info(f"🎯 Generated execution intent for {execution_intent.symbol.value} "
-                               f"({execution_intent.side.name}) with confidence {float(execution_intent.intent_confidence.value):.2%}")
+                self.logger.info(f"📥 EXECUTION INTENT: {execution_intent.symbol.value} | Side: {execution_intent.side.name} | Conf: {float(execution_intent.intent_confidence.value):.1%} | Strategy: {execution_intent.strategy_name}")
 
                 # Log the decision to generate execution intent
                 self.logger.log_decision_reason(
@@ -263,8 +262,8 @@ class SignalAggregator:
                     correlation_id=f"agg_{fused_signal.symbol.value}_{datetime.now().timestamp()}"
                 )
 
-                self.logger.info(f"📤 Published execution intent for {execution_intent.symbol.value} "
-                               f"({execution_intent.side.name}) to event system")
+                self.logger.debug(f"📤 Published execution intent for {execution_intent.symbol.value} "
+                                f"({execution_intent.side.name}) to event system")
             else:
                 self.logger.debug(f"⚠️ No execution intent generated for {fused_signal.symbol.value}")
 

@@ -26,7 +26,8 @@ class TradeTrackingPort(Protocol):
 
     @abstractmethod
     def register_trade(self, trade_id: str, symbol: str, side: str, price: float,
-                       quantity: float, sl: float, tp: float, timestamp: datetime) -> None:
+                       quantity: float, sl: float, tp: float, timestamp: datetime,
+                       setup_type: Optional[str] = None) -> None:
         """Register a newly opened trade."""
         pass
 

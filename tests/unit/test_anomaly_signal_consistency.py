@@ -17,7 +17,7 @@ from domain.entities import MarketObservation, InterpretedSignal, FusedSignal, S
 from domain.value_objects import Symbol, Percentage
 from infrastructure.engines.engine_service import EngineService
 from infrastructure.fusion.fusion_service import FusionService
-from infrastructure.strategies.strategy_adapters import MeanReversionStrategy
+from infrastructure.strategies.adapters.mean_reversion_strategy_adapter import MeanReversionStrategyAdapter
 
 
 @pytest.mark.unit
@@ -52,7 +52,7 @@ def test_positive_anomaly_observation_reversion_sell_standard_fusion():
     assert fused.direction == -0.994
     
     # 3. Trace strategy adapter determine_side
-    strategy = MeanReversionStrategy()
+    strategy = MeanReversionStrategyAdapter()
     strategy.logger = logging.getLogger("test")
     
     side = strategy._determine_side(fused)
@@ -90,7 +90,7 @@ def test_negative_anomaly_observation_reversion_buy_standard_fusion():
     assert fused.direction == 0.994
     
     # 3. Trace strategy adapter determine_side
-    strategy = MeanReversionStrategy()
+    strategy = MeanReversionStrategyAdapter()
     strategy.logger = logging.getLogger("test")
     
     side = strategy._determine_side(fused)

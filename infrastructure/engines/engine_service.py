@@ -32,6 +32,30 @@ class EngineService:
             direction = self._calculate_direction(observation)
             strength = self._calculate_strength(observation)
 
+            source_watcher = observation.metadata.get('watcher_name') if observation.metadata else None
+            if not source_watcher and observation.observation_type:
+                obs_type_lower = str(observation.observation_type).lower()
+                if 'trend' in obs_type_lower:
+                    source_watcher = 'TrendMTFWatcher'
+                elif 'pulse' in obs_type_lower or 'momentum' in obs_type_lower:
+                    source_watcher = 'MarketPulseWatcher'
+                elif 'volatility' in obs_type_lower:
+                    source_watcher = 'VolatilityWatcher'
+                elif 'pattern' in obs_type_lower or 'doji' in obs_type_lower or 'engulfing' in obs_type_lower or 'hammer' in obs_type_lower:
+                    source_watcher = 'HistoricalCandleWatcherAdapter'
+                elif 'anomaly' in obs_type_lower:
+                    source_watcher = 'AnomalyMLWatcher'
+                elif 'order_flow' in obs_type_lower:
+                    source_watcher = 'OrderFlowWSWatcher'
+                elif 'liquidity' in obs_type_lower:
+                    source_watcher = 'LiquidityWatcher'
+                elif 'tick' in obs_type_lower:
+                    source_watcher = 'TickWatcherAdapter'
+                elif 'funding' in obs_type_lower:
+                    source_watcher = 'FundingRateWatcher'
+                elif 'screening' in obs_type_lower or 'cmc' in obs_type_lower:
+                    source_watcher = 'CMCScreener'
+
             # Create interpreted signal
             interpreted_signal = InterpretedSignal(
                 symbol=observation.symbol,
@@ -40,8 +64,8 @@ class EngineService:
                 strength=strength,
                 confidence=observation.confidence,
                 timestamp=observation.timestamp,
-                source_watcher=observation.metadata.get('watcher_name') if observation.metadata else None,
-                metadata={**(observation.metadata or {}), 'observation_type': observation.observation_type}
+                source_watcher=source_watcher,
+                metadata={**(observation.metadata or {}), 'observation_type': observation.observation_type, 'watcher_name': source_watcher}
             )
 
             if self.logger:

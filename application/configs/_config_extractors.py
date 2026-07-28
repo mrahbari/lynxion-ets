@@ -60,7 +60,7 @@ class _ConfigExtractorsMixin:
             'max_exposure': self.env_loader.get_float_env_var('RISK_MAX_EXPOSURE', 0.60),
             'per_trade': self.env_loader.get_float_env_var('RISK_PER_TRADE', 0.02),
             'max_daily_loss': self.env_loader.get_float_env_var('RISK_MAX_DAILY_LOSS', 0.02),
-            'max_total_positions': self.env_loader.get_int_env_var('RISK_MAX_TOTAL_POSITIONS', 5),
+            'max_total_positions': self.env_loader.get_int_env_var('RISK_MAX_TOTAL_POSITIONS', 50),
             'max_correlation_between_pos': self.env_loader.get_float_env_var('RISK_MAX_CORRELATION_BETWEEN_POS', 0.6),
             'max_sector_exposure': self.env_loader.get_float_env_var('RISK_MAX_SECTOR_EXPOSURE', 0.25),
             'max_single_asset_exposure': self.env_loader.get_float_env_var('RISK_MAX_SINGLE_ASSET_EXPOSURE', 0.10),
@@ -73,10 +73,13 @@ class _ConfigExtractorsMixin:
             'max_position_risk': self.env_loader.get_float_env_var('MAX_POSITION_RISK', 0.02),
             'max_drawdown_threshold': self.env_loader.get_float_env_var('MAX_DRAWDOWN_THRESHOLD', 0.3),
             'max_daily_loss_threshold': self.env_loader.get_float_env_var('MAX_DAILY_LOSS', 0.02),
-            'max_total_positions_limit': self.env_loader.get_int_env_var('MAX_TOTAL_POSITIONS', 5),
+            'max_total_positions_limit': self.env_loader.get_int_env_var('MAX_TOTAL_POSITIONS', 50),
             'max_correlation_limit': self.env_loader.get_float_env_var('MAX_CORRELATION', 0.7),
             'max_leverage_limit': self.env_loader.get_float_env_var('MAX_LEVERAGE', 5.0),
             'max_order_size_limit': self.env_loader.get_float_env_var('MAX_ORDER_SIZE', 0.05),
+            'max_order_notional_amount': self.env_loader.get_float_env_var('MAX_ORDER_NOTIONAL_AMOUNT', None) if self.env_loader.get_env_var('MAX_ORDER_NOTIONAL_AMOUNT', '') else None,
+
+
         }
         return risk_data
 
@@ -88,6 +91,8 @@ class _ConfigExtractorsMixin:
             'max_position_size': self.env_loader.get_float_env_var('STRATEGY_MAX_POSITION_SIZE', 0.05),
             'min_volume_filter': self.env_loader.get_float_env_var('STRATEGY_MIN_VOLUME_FILTER', 10000.0),
             'signal_cooldown_minutes': self.env_loader.get_int_env_var('STRATEGY_SIGNAL_COOLDOWN_MINUTES', 30),
+            'symbol_stoploss_cooldown_minutes': self.env_loader.get_int_env_var('SYMBOL_STOPLOSS_COOLDOWN_MINUTES', 60),
+            'enable_symbol_stoploss_cooldown': self.env_loader.get_bool_env_var('ENABLE_SYMBOL_STOPLOSS_COOLDOWN', True),
             'min_confidence_threshold': self.env_loader.get_float_env_var('STRATEGY_MIN_CONFIDENCE_THRESHOLD', 0.5),
             'high_confidence_threshold': self.env_loader.get_float_env_var('STRATEGY_HIGH_CONFIDENCE_THRESHOLD', 0.7),
             'neutral_buffer': self.env_loader.get_float_env_var('STRATEGY_NEUTRAL_BUFFER', 0.03),
@@ -116,12 +121,19 @@ class _ConfigExtractorsMixin:
             'max_trend_impact_on_win_rate': self.env_loader.get_float_env_var('MAX_TREND_IMPACT_ON_WIN_RATE', 0.1),
             'max_volatility_impact_on_edge': self.env_loader.get_float_env_var('MAX_VOLATILITY_IMPACT_ON_EDGE', 0.1),
             'min_confidence_rr_factor': self.env_loader.get_float_env_var('MIN_CONFIDENCE_RR_FACTOR', 0.3),
-            'min_reward_risk_ratio': self.env_loader.get_float_env_var('MIN_REWARD_RISK_RATIO', 0.3),
+            'min_reward_risk_ratio': self.env_loader.get_float_env_var('MIN_REWARD_RISK_RATIO', 1.5),
             'ml_weights_enabled': self.env_loader.get_bool_env_var('ML_WEIGHTS_ENABLED', True),
             'regime_detection_enabled': self.env_loader.get_bool_env_var('REGIME_DETECTION_ENABLED', True),
             'signal_fusion_enabled': self.env_loader.get_bool_env_var('SIGNAL_FUSION_ENABLED', True),
             'signal_threshold': self.env_loader.get_float_env_var('SIGNAL_THRESHOLD', 0.3),
             'target_volatility': self.env_loader.get_float_env_var('TARGET_VOLATILITY', 0.2),
+            
+            # Volatility-Adapted SL/TP Parameters
+            'atr_period': self.env_loader.get_int_env_var('ATR_PERIOD', 14),
+            'atr_sl_multiplier': self.env_loader.get_float_env_var('ATR_SL_MULTIPLIER', 1.5),
+            'min_stop_distance_percent': self.env_loader.get_float_env_var('MIN_STOP_DISTANCE_PERCENT', 0.8),
+            'enable_dynamic_tp': self.env_loader.get_bool_env_var('ENABLE_DYNAMIC_TP', True),
+            'reject_low_rr_setup': self.env_loader.get_bool_env_var('REJECT_LOW_RR_SETUP', True),
             'trend_impact_on_win_rate_multiplier': self.env_loader.get_float_env_var('TREND_IMPACT_ON_WIN_RATE_MULTIPLIER', 1.5),
             'trend_max_rr_impact': self.env_loader.get_float_env_var('TREND_MAX_RR_IMPACT', 0.1),
             'trend_mtf_long_period': self.env_loader.get_int_env_var('TREND_MTF_LONG_PERIOD', 50),
@@ -289,7 +301,7 @@ class _ConfigExtractorsMixin:
             'telegram_bot_token': self.env_loader.get_env_var('TELEGRAM_BOT_TOKEN', '8324444752:AAGoubuQSgXp6lhQGCxcOtGT6hLg3kTgWbY'),
             'telegram_chat_id': self.env_loader.get_env_var('TELEGRAM_CHAT_ID', '71819811'),
             'telegram_notifications_enabled': self.env_loader.get_bool_env_var('TELEGRAM_NOTIFICATIONS_ENABLED', True),
-            'logging_level': self.env_loader.get_env_var('LOG_LEVEL', 'DEBUG'),
+            'logging_level': self.env_loader.get_env_var('LOG_LEVEL', 'INFO'),
             'log_file_path': self.env_loader.get_env_var('LOG_FILE_PATH', './logs/trading_system.log'),
             'log_max_file_size_mb': self.env_loader.get_int_env_var('LOG_MAX_FILE_SIZE_MB', 50),
             'log_backup_count': self.env_loader.get_int_env_var('LOG_BACKUP_COUNT', 5),

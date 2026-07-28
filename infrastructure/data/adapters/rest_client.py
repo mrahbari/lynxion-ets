@@ -46,35 +46,56 @@ class RestClient:
         return signature
         
     def _make_request(self, method: str, endpoint: str, params: Optional[Dict] = None, signed: bool = False) -> Optional[Dict]:
-        """Make an API request"""
+        """Make an API request with transient fault retries"""
         self._rate_limit()
-        
         url = f"{self.base_url}{endpoint}"
-        
-        if signed and params:
-            params['timestamp'] = int(time.time() * 1000)
-            signature = self._sign_request(params)
-            params['signature'] = signature
-            
-        try:
+
+        def send_api_call():
+            # Update signature/timestamp on each attempt
+            local_params = dict(params) if params is not None else {}
+            if signed:
+                local_params['timestamp'] = int(time.time() * 1000)
+                signature = self._sign_request(local_params)
+                local_params['signature'] = signature
+
             if method.upper() == 'GET':
-                response = self.session.get(url, params=params)
+                response = self.session.get(url, params=local_params)
             elif method.upper() == 'POST':
-                response = self.session.post(url, params=params)
+                response = self.session.post(url, params=local_params)
             elif method.upper() == 'DELETE':
-                response = self.session.delete(url, params=params)
+                response = self.session.delete(url, params=local_params)
             else:
                 raise ValueError(f"Unsupported method: {method}")
-                
+
             response.raise_for_status()
             return response.json()
-            
+
+        def should_retry_request(exc: BaseException) -> bool:
+            if isinstance(exc, requests.exceptions.HTTPError):
+                if exc.response is not None:
+                    # Retry on 429 Rate Limit or 5xx Server errors
+                    return exc.response.status_code == 429 or exc.response.status_code >= 500
+            elif isinstance(exc, (requests.exceptions.ConnectionError, requests.exceptions.Timeout)):
+                return True
+            return False
+
+        try:
+            from shared.retry import retry_with_backoff
+            return retry_with_backoff(
+                send_api_call,
+                max_attempts=3,
+                base_delay=0.5,
+                retry_on=(requests.exceptions.RequestException,),
+                should_retry=should_retry_request,
+                on_retry=lambda attempt, exc, delay: logger.warning(
+                    f"⚠️ Binance API {method} {endpoint} failed (attempt {attempt}): {exc}; retrying in {delay:.2f}s..."
+                )
+            )
         except requests.exceptions.RequestException as e:
             logger.error(f"Request failed: {e}")
             if hasattr(e, 'response') and e.response is not None:
                 logger.error(f"Response: {e.response.text}")
             return None
-            
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             return None

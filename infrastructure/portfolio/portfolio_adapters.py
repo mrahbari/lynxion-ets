@@ -156,6 +156,15 @@ class BasePositionSizingAdapter(PositionSizingPort):
         """Calculate position size based on risk parameters"""
         raise NotImplementedError
 
+    def calculate_dynamic_size(
+        self,
+        intent: Any,
+        portfolio: Any,
+        volatility: Optional[float] = None
+    ) -> float:
+        """Calculate dynamic position size based on drawdown, correlation, and volatility (NGDP)."""
+        raise NotImplementedError
+
 
 class FixedRiskPositionSizingAdapter(BasePositionSizingAdapter):
     """Infrastructure implementation of fixed risk position sizing"""
@@ -173,6 +182,14 @@ class FixedRiskPositionSizingAdapter(BasePositionSizingAdapter):
         # This is just a placeholder to maintain interface compatibility
         return 0.0
 
+    def calculate_dynamic_size(
+        self,
+        intent: Any,
+        portfolio: Any,
+        volatility: Optional[float] = None
+    ) -> float:
+        return 0.0
+
 
 class KellyCriterionPositionSizingAdapter(BasePositionSizingAdapter):
     """Infrastructure implementation of Kelly Criterion position sizing"""
@@ -188,6 +205,14 @@ class KellyCriterionPositionSizingAdapter(BasePositionSizingAdapter):
 
         # Return a default value that will be overridden by the risk manager
         # This is just a placeholder to maintain interface compatibility
+        return 0.0
+
+    def calculate_dynamic_size(
+        self,
+        intent: Any,
+        portfolio: Any,
+        volatility: Optional[float] = None
+    ) -> float:
         return 0.0
 
 

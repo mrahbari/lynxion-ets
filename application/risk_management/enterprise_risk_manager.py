@@ -28,6 +28,7 @@ class Position:
     risk_amount: float = 0.0
     trade_id: str = None
     regime_context: str = None  # Store the regime context when position was opened
+    setup_type: str = None
 
 
 class EnterpriseRiskManager:
@@ -48,7 +49,32 @@ class EnterpriseRiskManager:
                  default_account_balance: float = 10000.0,
                  risk_config: Dict[str, Any] = None,
                  regime_risk_multipliers: Optional[Dict[str, float]] = None,
-                 drawdown_decay_factor: float = 0.95):
+                 drawdown_decay_factor: float = 0.95,
+                 enable_multi_position: bool = True,
+                 max_concurrent_positions: int = 50):
+
+        import os
+        from shared.logger import logger
+
+        # Load capacity values with priority: Env Var -> risk_config -> Constructor Parameter
+        env_enable_multi = os.getenv("ENABLE_MULTI_POSITION")
+        if env_enable_multi is not None:
+            self.enable_multi_position = env_enable_multi.lower() in ("true", "1", "yes")
+        elif risk_config and 'enable_multi_position' in risk_config:
+            self.enable_multi_position = bool(risk_config['enable_multi_position'])
+        else:
+            self.enable_multi_position = enable_multi_position
+
+        if max_concurrent_positions != 50:
+            self.max_concurrent_positions = max_concurrent_positions
+        else:
+            env_max_positions = os.getenv("MAX_TOTAL_POSITIONS") or os.getenv("MAX_CONCURRENT_POSITIONS")
+            if env_max_positions is not None:
+                self.max_concurrent_positions = int(env_max_positions)
+            elif risk_config and 'max_concurrent_positions' in risk_config:
+                self.max_concurrent_positions = int(risk_config['max_concurrent_positions'])
+            else:
+                self.max_concurrent_positions = max_concurrent_positions
 
         # Use risk_config if provided, otherwise use individual parameters
         if risk_config:
@@ -109,8 +135,17 @@ class EnterpriseRiskManager:
         self.daily_start = datetime.now().date()
         self.starting_equity = self.max_portfolio_exposure
 
-        # Track correlations between symbols
+        # Track correlations between symbols dynamically with background worker
         self.correlation_matrix: Dict[str, Dict[str, float]] = {}
+        import threading
+        self.correlation_lock = threading.Lock()
+        self.price_history_for_correlation: Dict[str, List[float]] = {}
+        self.max_price_history_len = 100
+        self.correlation_update_interval_sec = 10.0  # Configurable update interval
+        
+        # Start background correlation thread
+        self.worker_thread = threading.Thread(target=self._correlation_worker_loop, daemon=True)
+        self.worker_thread.start()
 
         # Track regime-specific risk metrics
         self.regime_exposures: Dict[str, float] = {}
@@ -164,18 +199,27 @@ class EnterpriseRiskManager:
             position_size = risk_amount / risk_per_unit
 
         # Apply portfolio-level constraints
+        # Apply a safety buffer of 0.99 (0.1% - 1% standard range) to prevent minor price/rounding discrepancies
+        # between sizing and validation phases from triggering limit violations.
+        sizing_buffer = 0.99
         # 1. Ensure we don't exceed max position exposure limit
-        max_position_by_exposure = self.max_position_exposure / entry_price if entry_price > 0 else float('inf')
+        max_position_by_exposure = (self.max_position_exposure * sizing_buffer) / entry_price if entry_price > 0 else float('inf')
         position_size = min(position_size, max_position_by_exposure)
 
         # 2. Ensure we don't exceed remaining portfolio exposure capacity
         current_total_exposure = self.get_total_exposure()
         remaining_portfolio_capacity = self.max_portfolio_exposure - current_total_exposure
-        max_position_by_portfolio = remaining_portfolio_capacity / entry_price if entry_price > 0 else float('inf')
+        max_position_by_portfolio = (remaining_portfolio_capacity * sizing_buffer) / entry_price if entry_price > 0 else float('inf')
         position_size = min(position_size, max_position_by_portfolio)
 
         # 3. Ensure position size is positive
         position_size = max(position_size, 0.0)
+
+        from shared.logger import logger
+        logger.info(
+            f"NGDP Sizing Decision: entry_price={entry_price:.4f}, stop_loss={stop_loss:.4f}, "
+            f"portfolio_equity=${portfolio_equity:.2f}, calculated_size={position_size:.4f} units"
+        )
 
         return position_size
 
@@ -183,14 +227,38 @@ class EnterpriseRiskManager:
         """
         Validate if a position entry is allowed based on risk constraints
         """
-        # Check if we're within position size limits
+        from shared.logger import logger
+
+        active_count = len(self.positions)
+        current_exposure = sum(p.size * p.entry_price for p in self.positions.values())
         position_value = size * entry_price
+        exposure_after = current_exposure + position_value
+
+        # Structured log of active positions count and exposure before/after
+        logger.info(
+            f"Risk Entry Validation for {symbol}: active_positions_count={active_count}, "
+            f"exposure_before=${current_exposure:.2f}, exposure_after=${exposure_after:.2f}"
+        )
+
+        # Capacity guard check (number of open positions)
+        if symbol not in self.positions:
+            if not self.enable_multi_position and active_count >= 1:
+                msg = f"{symbol}: Entry blocked due to portfolio capacity: ENABLE_MULTI_POSITION is disabled and an active position already exists."
+                self.violations.append(msg)
+                logger.warning(msg)
+                return False
+            if active_count >= self.max_concurrent_positions:
+                msg = f"{symbol}: Entry blocked due to portfolio capacity: Active positions count ({active_count}) meets or exceeds max capacity of {self.max_concurrent_positions} concurrent positions."
+                self.violations.append(msg)
+                logger.warning(msg)
+                return False
+
+        # Check if we're within position size limits
         if position_value > self.max_position_exposure:
             self.violations.append(f"{symbol}: Position size ${position_value:.2f} exceeds max position limit ${self.max_position_exposure}")
             return False
 
         # Check portfolio exposure limits
-        current_exposure = sum(p.size * p.entry_price for p in self.positions.values())
         if current_exposure + position_value > self.max_portfolio_exposure:
             self.violations.append(f"{symbol}: Portfolio exposure would exceed limit ${self.max_portfolio_exposure}")
             return False
@@ -199,7 +267,7 @@ class EnterpriseRiskManager:
 
     def enter_position(self, symbol: str, entry_price: float, size: float,
                       direction: PositionDirection, stop_loss: float, take_profit: float,
-                      trade_id: str = None, regime_context: str = None) -> bool:
+                      trade_id: str = None, regime_context: str = None, setup_type: str = None) -> bool:
         """
         Enter a new position with risk validation
         """
@@ -225,7 +293,8 @@ class EnterpriseRiskManager:
             entry_time=datetime.now(),
             risk_amount=risk_amount,
             trade_id=trade_id,
-            regime_context=regime_context
+            regime_context=regime_context,
+            setup_type=setup_type
         )
 
         self.positions[symbol] = position
@@ -243,7 +312,8 @@ class EnterpriseRiskManager:
             quantity=size,
             sl=stop_loss,
             tp=take_profit,
-            timestamp=position.entry_time
+            timestamp=position.entry_time,
+            setup_type=setup_type
         )
 
         return True
@@ -517,3 +587,62 @@ class EnterpriseRiskManager:
         self.regime_risk_multipliers = params.get('regime_risk_multipliers', self.regime_risk_multipliers)
         # Update starting equity if portfolio exposure changes
         self.starting_equity = self.max_portfolio_exposure
+
+    def record_price(self, symbol: str, price: float):
+        """Record close price of a symbol for dynamic correlation calculation."""
+        with self.correlation_lock:
+            if symbol not in self.price_history_for_correlation:
+                self.price_history_for_correlation[symbol] = []
+            self.price_history_for_correlation[symbol].append(price)
+            if len(self.price_history_for_correlation[symbol]) > self.max_price_history_len:
+                self.price_history_for_correlation[symbol].pop(0)
+
+    def _correlation_worker_loop(self):
+        """Background daemon thread to periodically recalculate symbol correlations."""
+        import time
+        while True:
+            try:
+                time.sleep(self.correlation_update_interval_sec)
+                self.recalculate_correlations()
+            except Exception:
+                pass
+
+    def recalculate_correlations(self):
+        """Calculate rolling Pearson correlation coefficients between active symbols."""
+        with self.correlation_lock:
+            symbols = list(self.price_history_for_correlation.keys())
+            if len(symbols) < 2:
+                return
+            
+            # Find minimum history length across symbols to align data
+            min_len = min(len(self.price_history_for_correlation[s]) for s in symbols)
+            if min_len < 5:  # Need at least 5 observations to compute correlation
+                return
+                
+            # Align price series
+            series_data = {}
+            for s in symbols:
+                series_data[s] = self.price_history_for_correlation[s][-min_len:]
+                
+            new_matrix = {}
+            for s1 in symbols:
+                new_matrix[s1] = {}
+                for s2 in symbols:
+                    if s1 == s2:
+                        new_matrix[s1][s2] = 1.0
+                    else:
+                        x = series_data[s1]
+                        y = series_data[s2]
+                        n = len(x)
+                        mean_x = sum(x) / n
+                        mean_y = sum(y) / n
+                        num = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y))
+                        den_x = sum((xi - mean_x) ** 2 for xi in x)
+                        den_y = sum((yi - mean_y) ** 2 for yi in y)
+                        if den_x > 0 and den_y > 0:
+                            corr = num / ((den_x * den_y) ** 0.5)
+                        else:
+                            corr = 0.0
+                        new_matrix[s1][s2] = float(corr)
+            
+            self.correlation_matrix = new_matrix

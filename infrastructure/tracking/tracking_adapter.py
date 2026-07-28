@@ -68,7 +68,12 @@ class ConsolidatedTrackingAdapter(TradeTrackingPort, ResultsTrackingPort, Shadow
     # -- TradeTrackingPort ---------------------------------------------------------
 
     def register_trade(self, trade_id: str, symbol: str, side: str, price: float,
-                       quantity: float, sl: float, tp: float, timestamp: datetime) -> None:
+                       quantity: float, sl: float, tp: float, timestamp: datetime,
+                       setup_type: Optional[str] = None) -> None:
+        if setup_type is not None:
+            return self._trades().register_trade(
+                trade_id, symbol, side, price, quantity, sl, tp, timestamp, setup_type
+            )
         return self._trades().register_trade(
             trade_id, symbol, side, price, quantity, sl, tp, timestamp
         )

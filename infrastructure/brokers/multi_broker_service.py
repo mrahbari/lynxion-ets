@@ -191,6 +191,13 @@ class MultiBrokerExecutionService(ExecutionPort):
         from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
         return PendingOrdersTracker.has_pending_order_in_direction(symbol, side)
 
+    @classmethod
+    def _has_any_pending_order(cls, symbol: Symbol) -> bool:
+        """Check if there's any pending order for the symbol."""
+        # Use the shared pending orders tracker to ensure consistency across all broker services
+        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+        return len(PendingOrdersTracker.get_pending_orders_for_symbol(symbol)) > 0
+
     def get_available_symbols(self) -> Set[str]:
         """
         Get available symbols from all configured brokers.
@@ -370,16 +377,15 @@ class MultiBrokerExecutionService(ExecutionPort):
                 elif order_side_str.upper() in ('SELL', 'SHORT'):
                     intended_position_side = 'SHORT'
 
-            # Check for pending orders in the same direction using the shared tracker
-            if intended_position_side:
-                pending_duplicate = self._has_pending_order_in_direction(order.symbol, intended_position_side)
+            # Check for any pending orders on the symbol using the shared tracker
+            pending_duplicate = self._has_any_pending_order(order.symbol)
 
-                # If there's a pending order in the same direction, prevent the trade
-                if pending_duplicate:
-                    self.logger.info(
-                        f"⚠️ DUPLICATE CHECK BLOCKED: Internal pending flag set for {intended_position_side} order on {order.symbol.value} — broker confirmation needed.")
-                    # Return None instead of raising an exception to prevent system crashes
-                    return None  # Indicate that the order was not placed due to duplicate prevention
+            # If there's a pending order, prevent the trade
+            if pending_duplicate:
+                self.logger.info(
+                    f"⚠️ CONFLICT CHECK BLOCKED: Internal pending order exists on {order.symbol.value} — broker confirmation needed.")
+                # Return None instead of raising an exception to prevent system crashes
+                return None  # Indicate that the order was not placed due to duplicate prevention
 
         # Check for broker-specific order placement settings
         # Check if any specific broker is enabled for exclusive order placement
@@ -417,6 +423,23 @@ class MultiBrokerExecutionService(ExecutionPort):
             # Enhance order with risk parameters if they're missing
             # This ensures institutional standards are met even if the Strategy layer didn't add them
             order = self._enhance_order_with_risk_parameters(order)
+
+            # HARD-ENFORCE SINGLE ACTIVE POSITION INVARIANT AT BROKER GATE
+            if prevent_same_direction:
+                try:
+                    from domain.value_objects import Symbol as DomainSymbol
+                    domain_sym = DomainSymbol(symbol_str) if isinstance(symbol_str, str) else order.symbol
+                    if hasattr(broker, 'get_position'):
+                        pos = broker.get_position(domain_sym)
+                        if pos and hasattr(pos, 'side') and pos.side is not None:
+                            pos_side = pos.side.name if hasattr(pos.side, 'name') else str(pos.side)
+                            if pos_side.upper() in ('LONG', 'SHORT', 'BUY', 'SELL'):
+                                self.logger.warning(
+                                    f"❌ BROKER CONFLICT REJECTED: Active {pos_side} position already exists on {best_exchange.upper()} for {symbol_str}."
+                                )
+                                return None
+                except Exception as pos_error:
+                    self.logger.debug(f"Position check error on {best_exchange}: {pos_error}")
 
             # Validate the order against risk management standards
             is_valid = self._validate_order_risk(order)
@@ -529,6 +552,13 @@ class MultiBrokerExecutionService(ExecutionPort):
                 # Send Telegram notification about successful order placement
                 self._send_order_placed_notification(order, order_id, best_exchange.upper())
 
+                # Release in-flight pending order lock once order is accepted by exchange
+                try:
+                    from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+                    PendingOrdersTracker.remove_pending_order(order.symbol, order_id)
+                except Exception:
+                    pass
+
                 return order_id
             except Exception as e:
                 # Send failures are recorded (ledger + circuit breaker) inside
@@ -560,19 +590,32 @@ class MultiBrokerExecutionService(ExecutionPort):
                 f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order enhancement skipped.")
             return order
 
-        # Check if the order already has SL/TP parameters
-        has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
-        has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
+        # Sanitize order SL/TP parameters using centralized shared utility
+        price_val = float(order.price.amount) if hasattr(order, 'price') and order.price and hasattr(order.price, 'amount') else None
+        sl_val = float(order.stop_loss_price.amount) if hasattr(order, 'stop_loss_price') and order.stop_loss_price and hasattr(order.stop_loss_price, 'amount') else None
+        tp_val = float(order.take_profit_price.amount) if hasattr(order, 'take_profit_price') and order.take_profit_price and hasattr(order.take_profit_price, 'amount') else None
 
-        # If both SL and TP are already present, return the order as is
+        if price_val and price_val > 0:
+            from shared.utils import sanitize_sltp_levels
+            from domain.value_objects import Money
+            from decimal import Decimal
+
+            sl_clean, tp_clean = sanitize_sltp_levels(
+                entry_price=price_val,
+                side=order.side,
+                stop_loss=sl_val,
+                take_profit=tp_val
+            )
+            order.stop_loss_price = Money(amount=Decimal(str(sl_clean)), currency='USDT')
+            order.take_profit_price = Money(amount=Decimal(str(tp_clean)), currency='USDT')
+
+        # Check if the order already has valid SL/TP parameters
+        has_stop_loss = order.stop_loss_price is not None and float(order.stop_loss_price.amount) > 0
+        has_take_profit = order.take_profit_price is not None and float(order.take_profit_price.amount) > 0
+
+        # If both SL and TP are already present and valid, return the order as is
         if has_stop_loss and has_take_profit:
             return order
-
-        # If SL/TP are missing, we need to add them using advanced risk management
-        # This should ideally be done by the Strategy layer, but we'll add defaults here
-        # to ensure institutional standards are met
-        if order.price is not None and order.price.amount is not None:
-            current_price = float(order.price.amount)
 
             # Use advanced risk management system to calculate dynamic TP/SL based on market conditions
             try:
@@ -910,6 +953,9 @@ class MultiBrokerExecutionService(ExecutionPort):
             price = getattr(order, 'price', 'N/A')
             price_amount = getattr(price, 'amount', 'N/A') if hasattr(price, 'amount') else str(price)
             strategy_name = getattr(order, 'strategy_name', 'N/A')
+            intent = getattr(order, 'parent_execution_intent', None)
+            if (strategy_name in ('N/A', 'default', '')) and intent:
+                strategy_name = getattr(intent, 'strategy_name', strategy_name)
 
             # Get TP/SL information if available
             stop_loss_price = getattr(order, 'stop_loss_price', None)
@@ -917,21 +963,116 @@ class MultiBrokerExecutionService(ExecutionPort):
             sl_value = getattr(stop_loss_price, 'amount', 'N/A') if stop_loss_price else 'N/A'
             tp_value = getattr(take_profit_price, 'amount', 'N/A') if take_profit_price else 'N/A'
 
-            message = (f"\n✅ ORDER PLACED\n"
-                       f"Exchange: {exchange_name}\n"
-                       f"Symbol: {symbol}\n"
-                       f"Side: {side_name}\n"
-                       f"Quantity: {quantity}\n"
-                       f"Price: {price_amount}\n"
-                       f"Stop Loss: {sl_value}\n"
-                       f"Take Profit: {tp_value}\n"
-                       f"Strategy: {strategy_name}\n"
-                       f"Order ID: {order_id}")
+            # Get real-time timestamp for live order placement alert
+            from datetime import datetime
+            order_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            subject = f"Order Placed: {symbol} {side_name} on {exchange_name}"
+            # Extract confidence and score of the order
+            confidence_str = "N/A"
+            score_str = "N/A"
+            perf_score_str = "N/A"
+            risk_adj_score_str = "N/A"
+            regime_context = "N/A"
+            watcher_name = getattr(order, 'watcher_name', None) or getattr(order, 'source_watcher', None) or "N/A"
+
+            if intent:
+                intent_conf = getattr(intent, 'intent_confidence', None)
+                if intent_conf:
+                    conf_val = getattr(intent_conf, 'value', intent_conf)
+                    try:
+                        confidence_str = f"{float(conf_val) * 100:.1f}%"
+                    except (ValueError, TypeError):
+                        confidence_str = str(conf_val)
+
+                metadata = getattr(intent, 'metadata', {}) or {}
+                risk_adj_score = metadata.get('risk_adjusted_score', None)
+                perf_score = metadata.get('performance_score', None)
+                regime_context = metadata.get('regime_context', 'N/A')
+                if watcher_name in ("N/A", "default"):
+                    watcher_name = metadata.get('watcher_name') or metadata.get('source_watcher') or metadata.get('primary_watcher') or "N/A"
+
+                if perf_score is not None:
+                    try:
+                        perf_score_str = f"{float(perf_score):.3f}"
+                    except (ValueError, TypeError):
+                        perf_score_str = str(perf_score)
+
+                if risk_adj_score is not None:
+                    try:
+                        risk_adj_score_str = f"{float(risk_adj_score):.3f}"
+                    except (ValueError, TypeError):
+                        risk_adj_score_str = str(risk_adj_score)
+
+                fused_sig = getattr(intent, 'fused_signal', None)
+                if fused_sig:
+                    if regime_context == 'N/A':
+                        regime_context = getattr(fused_sig, 'regime_context', 'N/A')
+                    if watcher_name in ("N/A", "default"):
+                        fused_meta = getattr(fused_sig, 'metadata', {}) or {}
+                        watcher_name = fused_meta.get('watcher_name') or fused_meta.get('primary_watcher') or fused_meta.get('source_watcher') or getattr(fused_sig, 'source_watcher', 'N/A')
+                    if risk_adj_score_str == "N/A":
+                        dom_score = getattr(fused_sig, 'dominance_score', None)
+                        if dom_score is not None:
+                            try:
+                                risk_adj_score_str = f"{float(dom_score):.3f} (Dominance)"
+                            except (ValueError, TypeError):
+                                pass
+
+            # Centralized Watcher resolution using domain WatcherType enum
+            from domain.enums import WatcherType
+            watcher_name = WatcherType.resolve_from_strategy_or_metadata(
+                watcher_name=watcher_name,
+                strategy_name=strategy_name,
+                metadata=metadata if 'metadata' in locals() else None
+            )
+
+            # Select side emoji
+            side_upper = side_name.upper()
+            side_emoji = "🟩" if "BUY" in side_upper or "LONG" in side_upper else "🟥" if "SELL" in side_upper or "SHORT" in side_upper else "⬜"
+
+            # Escape special characters to prevent Telegram HTML parse errors
+            def escape_html(val):
+                return str(val).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+            symbol_esc = escape_html(symbol)
+            exchange_esc = escape_html(exchange_name)
+            side_name_esc = escape_html(side_name)
+            quantity_esc = escape_html(quantity)
+            price_amount_esc = escape_html(price_amount)
+            watcher_name_esc = escape_html(watcher_name)
+            strategy_name_esc = escape_html(strategy_name)
+            regime_context_esc = escape_html(regime_context)
+            confidence_esc = escape_html(confidence_str)
+            perf_score_esc = escape_html(perf_score_str)
+            risk_adj_score_esc = escape_html(risk_adj_score_str)
+            sl_value_esc = escape_html(sl_value)
+            tp_value_esc = escape_html(tp_value)
+            order_time_esc = escape_html(order_time_str)
+            order_id_esc = escape_html(order_id)
+
+            message = (f"📦 <b>Order Details:</b>\n"
+                       f" ├ <b>Side:</b> <code>{side_name_esc}</code>\n"
+                       f" ├ <b>Symbol:</b> <code>{symbol_esc}</code>\n"
+                       f" ├ <b>Exchange:</b> <code>{exchange_esc}</code>\n"
+                       f" ├ <b>Quantity:</b> <code>{quantity_esc}</code>\n"
+                       f" └ <b>Price:</b> <code>{price_amount_esc}</code>\n\n"
+                       f"⚙️ <b>Execution Details:</b>\n"
+                       f" ├ <b>Watcher:</b> <code>{watcher_name_esc}</code>\n"
+                       f" ├ <b>Strategy:</b> <code>{strategy_name_esc}</code>\n"
+                       f" ├ <b>Regime:</b> <code>{regime_context_esc}</code>\n"
+                       f" ├ <b>Confidence:</b> <code>{confidence_esc}</code>\n"
+                       f" ├ <b>Performance Score:</b> <code>{perf_score_esc}</code>\n"
+                       f" └ <b>Risk-Adjusted Priority:</b> <code>{risk_adj_score_esc}</code>\n\n"
+                       f"🛡️ <b>Risk Parameters:</b>\n"
+                       f" ├ <b>Stop Loss:</b> <code>{sl_value_esc}</code>\n"
+                       f" └ <b>Take Profit:</b> <code>{tp_value_esc}</code>\n\n"
+                       f"🕒 <b>Time:</b> <code>{order_time_esc}</code>\n"
+                       f"🆔 <b>Order ID:</b> <code>{order_id_esc}</code>")
+
+            subject = f"{side_emoji} {symbol} {side_name} on {exchange_name}"
 
             # Send the notification
-            success = telegram_service.send_notification(message, subject, "info")
+            success = telegram_service.send_notification(message, subject, "info", parse_mode="HTML")
 
             if success:
                 self.logger.info(f"🔔 Telegram notification sent for order {order_id}")
