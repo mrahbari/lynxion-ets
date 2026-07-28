@@ -116,6 +116,22 @@ class BrokerReconciliationService:
                 self.logger.info(
                     f"✅ POSITION CLOSED CONFIRMED for {sym}: exit_key={exit_key}, is_profitable={is_profitable}"
                 )
+
+                # 4. Dispatch immediate Telegram Alert for Position Close
+                try:
+                    from infrastructure.services.risk_alerts import send_telegram
+                    outcome_str = "STOP LOSS" if not is_profitable else "TAKE PROFIT"
+                    emoji = "🛑" if not is_profitable else "✅"
+                    msg = (
+                        f"{emoji} <b>EXCHANGE POSITION CLOSED</b>\n\n"
+                        f"• <b>Symbol:</b> <code>{sym}</code>\n"
+                        f"• <b>Outcome:</b> {outcome_str}\n"
+                        f"• <b>Realized PnL:</b> <code>{realized_pnl if realized_pnl is not None else 'N/A'} USDT</code>\n"
+                        f"• <b>Cooldown:</b> {'60-Minute Stop Loss Cooldown Activated' if not is_profitable else 'None'}"
+                    )
+                    send_telegram(msg)
+                except Exception as tel_err:
+                    self.logger.warning(f"Telegram notification for {sym} close could not be sent: {tel_err}")
             except Exception as e:
                 self.logger.error(
                     f"❌ Failed to propagate position close event for {sym}: {e}",

@@ -361,8 +361,18 @@ class StrategyManager:
     Manages multiple strategies with health monitoring and execution coordination.
     This is the ONLY layer that selects strategies and decides on capital deployment.
     """
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(StrategyManager, cls).__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
 
     def __init__(self):
+        if getattr(self, '_initialized', False):
+            return
+        self._initialized = True
         self.strategies: Dict[str, BaseStrategyAdapter] = {}
         self.strategy_factories: Dict[str, Callable[[], BaseStrategyAdapter]] = {}
         self.strategy_threads: Dict[str, threading.Thread] = {}
