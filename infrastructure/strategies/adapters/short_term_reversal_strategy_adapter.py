@@ -34,6 +34,10 @@ class ShortTermReversalStrategyAdapter(BaseStrategyAdapter):
         self.min_bars = self.z_window + 55
 
     def generate_signal(self, symbol):
+        sym_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+        if not self._passes_exit_cooldown_check(sym_str):
+            return None
+
         buf = getattr(self, "data_buffer", None)
         if not buf or len(buf) < self.min_bars:
             return None

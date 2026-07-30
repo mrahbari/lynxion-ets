@@ -60,9 +60,12 @@ class TelegramNotificationService(INotificationService):
     """Telegram notification service implementation."""
 
     def __init__(self, bot_token: str = "", chat_id: str = ""):
+        import os
+        token = bot_token or os.getenv("TELEGRAM_BOT_TOKEN", "8324444752:AAGoubuQSgXp6lhQGCxcOtGT6hLg3kTgWbY")
+        cid = chat_id or os.getenv("TELEGRAM_CHAT_ID", "")
         self.config = {
-            "bot_token": bot_token,
-            "chat_id": chat_id
+            "bot_token": token,
+            "chat_id": cid
         }
         self.logger = EnhancedLogger("TelegramNotificationService")
 
@@ -190,10 +193,10 @@ def send_email(subject, body):
     email_service = EmailNotificationService()
     return email_service.send_notification(body, subject)
 
-def send_telegram(message):
+def send_telegram(message, subject="Trading Alert", parse_mode="HTML"):
     """Backward compatibility function for Telegram sending."""
     telegram_service = TelegramNotificationService()
-    return telegram_service.send_notification(message)
+    return telegram_service.send_notification(message, subject=subject, parse_mode=parse_mode)
 
 def check_and_alert(trade_log, equity_curve, asset_performance, max_leverage=10, dd_threshold=-0.1):
     """Backward compatibility function for alert checking."""

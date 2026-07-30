@@ -172,13 +172,15 @@ def sanitize_sltp_levels(
         if sl >= entry or sl <= 0 or abs(sl - entry) / entry > max_sl_distance_ratio:
             sl = entry * (1.0 - default_sl_pct)
         if tp <= entry or tp <= 0 or abs(tp - entry) / entry > max_sl_distance_ratio:
-            tp = entry * (1.0 + default_tp_pct)
+            min_tp_dist = max(entry * default_tp_pct, 1.5 * abs(entry - sl))
+            tp = entry + min_tp_dist
     else:
         # SELL: Stop loss must be above entry, Take profit must be below entry
         if sl <= entry or sl <= 0 or abs(sl - entry) / entry > max_sl_distance_ratio:
             sl = entry * (1.0 + default_sl_pct)
         if tp >= entry or tp <= 0 or abs(tp - entry) / entry > max_sl_distance_ratio:
-            tp = entry * (1.0 - default_tp_pct)
+            min_tp_dist = max(entry * default_tp_pct, 1.5 * abs(sl - entry))
+            tp = max(0.0, entry - min_tp_dist)
 
     precision = 5 if entry >= 1.0 else 8
     return round(sl, precision), round(tp, precision)

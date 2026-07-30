@@ -17,6 +17,15 @@ import threading
 from typing import Any, Dict, Tuple
 
 
+import json
+import os
+import threading
+from datetime import datetime
+from typing import Any, Dict, Tuple
+
+COOLDOWN_JOURNAL_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "sl_cooldown_journal.json")
+
+
 class RiskEnforcement:
     """Order-path adapter over EnterpriseRiskManager (enforce + exposure feedback + state)."""
 
@@ -25,6 +34,50 @@ class RiskEnforcement:
         self._lock = threading.Lock()
         self.checks = 0
         self.denials = 0
+        self._sl_cooldowns: Dict[str, float] = self._load_cooldown_journal()
+
+    def _load_cooldown_journal(self) -> Dict[str, float]:
+        """Load persistent Stop Loss cooldown timestamps from disk with corruption recovery."""
+        try:
+            os.makedirs(os.path.dirname(COOLDOWN_JOURNAL_PATH), exist_ok=True)
+            if os.path.exists(COOLDOWN_JOURNAL_PATH):
+                with open(COOLDOWN_JOURNAL_PATH, "r") as f:
+                    return json.load(f)
+        except Exception as e:
+            from shared.logger import logger
+            logger.error(f"⚠️ Cooldown Journal corrupt or unreadable: {e}. Backing up corrupt file and resetting.")
+            try:
+                if os.path.exists(COOLDOWN_JOURNAL_PATH):
+                    os.rename(COOLDOWN_JOURNAL_PATH, f"{COOLDOWN_JOURNAL_PATH}.corrupt.{int(datetime.now().timestamp())}")
+            except Exception:
+                pass
+        return {}
+
+    def _save_cooldown_journal(self) -> None:
+        """Save persistent Stop Loss cooldown timestamps atomically via temp file replace."""
+        try:
+            os.makedirs(os.path.dirname(COOLDOWN_JOURNAL_PATH), exist_ok=True)
+            tmp_path = f"{COOLDOWN_JOURNAL_PATH}.tmp.{os.getpid()}"
+            with open(tmp_path, "w") as f:
+                json.dump(self._sl_cooldowns, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, COOLDOWN_JOURNAL_PATH)
+        except Exception as e:
+            from shared.logger import logger
+            logger.error(f"⚠️ Failed atomic save of Cooldown Journal: {e}")
+
+    def record_stop_loss_exit(self, symbol: str, exit_time: datetime = None) -> None:
+        """Record Stop Loss exit for a symbol to activate persistent 60m cooldown across the entire order path."""
+        with self._lock:
+            ts = (exit_time or datetime.now()).timestamp()
+            sym_raw = str(symbol).upper()
+            sym_clean = sym_raw.replace("-", "")
+            self._sl_cooldowns[sym_raw] = ts
+            self._sl_cooldowns[sym_clean] = ts
+            self._save_cooldown_journal()
+            from shared.logger import logger
+            logger.info(f"🛑 RISK ENFORCEMENT: Activated 60m Stop Loss Cooldown for {symbol}")
 
     @staticmethod
     def _symbol(order) -> str:
@@ -35,6 +88,46 @@ class RiskEnforcement:
     def _price(order) -> float:
         p = getattr(order, "price", None)
         return float(p.amount) if p is not None and getattr(p, "amount", None) is not None else 0.0
+
+    @staticmethod
+    def _extract_sl_price(order) -> Optional[float]:
+        """Extract stop loss price from order or parent execution intent."""
+        # 1. Check order.stop_loss_price
+        sl = getattr(order, "stop_loss_price", None)
+        if sl is not None:
+            amt = getattr(sl, "amount", None)
+            if amt is not None:
+                return float(amt)
+            try:
+                return float(sl)
+            except (ValueError, TypeError):
+                pass
+        
+        # 2. Check order.stop_price
+        sp = getattr(order, "stop_price", None)
+        if sp is not None:
+            amt = getattr(sp, "amount", None)
+            if amt is not None:
+                return float(amt)
+            try:
+                return float(sp)
+            except (ValueError, TypeError):
+                pass
+
+        # 3. Check risk_parameters dictionary in order or parent_execution_intent
+        rp = getattr(order, "risk_parameters", None)
+        if not rp and hasattr(order, "parent_execution_intent") and order.parent_execution_intent:
+            rp = getattr(order.parent_execution_intent, "risk_parameters", None)
+        
+        if isinstance(rp, dict):
+            for k in ("stop_loss", "sl", "stop_loss_price", "sl_price"):
+                val = rp.get(k)
+                if val is not None:
+                    try:
+                        return float(val)
+                    except (ValueError, TypeError):
+                        pass
+        return None
 
     def enforce(self, order) -> Tuple[bool, str]:
         """Return (allowed, reason). Fails CLOSED on any error (deny)."""
@@ -51,6 +144,102 @@ class RiskEnforcement:
                 if size <= 0 or entry <= 0:
                     self.denials += 1
                     return False, "risk engine: non-positive size/price"
+
+                # -------------------------------------------------------------
+                # MANDATORY STOP-LOSS & SANITY DISTANCE ENFORCEMENT
+                # -------------------------------------------------------------
+                sl_price = self._extract_sl_price(order)
+                strategy_name = getattr(order, "strategy_name", "UNKNOWN_STRATEGY") or "UNKNOWN_STRATEGY"
+                side_str = str(getattr(order, "side", "UNKNOWN_SIDE"))
+
+                if sl_price is None or sl_price <= 0:
+                    self.denials += 1
+                    from shared.logger import logger
+                    logger.error(
+                        f"🛑 MANDATORY RISK GATE REJECTION: Missing Stop-Loss Parameter!\n"
+                        f"• Symbol: {symbol}\n"
+                        f"• Source/Strategy: {strategy_name}\n"
+                        f"• Direction: {side_str}\n"
+                        f"• Requested Size: {size}\n"
+                        f"• Missing Risk Params: ['stop_loss_price']\n"
+                        f"• Rejection Reason: Mandatory Stop-Loss policy violation (every order MUST contain a valid SL)"
+                    )
+                    return False, f"risk engine: Mandatory Stop-Loss policy violation — order on {symbol} rejected (missing SL)"
+
+                import math
+                if not math.isfinite(sl_price):
+                    self.denials += 1
+                    return False, f"risk engine: Stop-Loss price on {symbol} is non-finite ({sl_price})"
+
+                # Side Validation: Stop-Loss must be on correct side of entry
+                side_upper = side_str.upper()
+                if ("BUY" in side_upper or "LONG" in side_upper) and sl_price >= entry:
+                    self.denials += 1
+                    from shared.logger import logger
+                    logger.error(
+                        f"🛑 MANDATORY RISK GATE REJECTION: Invalid Stop-Loss Side for BUY/LONG!\n"
+                        f"• Symbol: {symbol}\n"
+                        f"• Entry: {entry}\n"
+                        f"• Stop Loss: {sl_price}\n"
+                        f"• Rejection Reason: Stop Loss for BUY/LONG must be strictly below entry price"
+                    )
+                    return False, f"risk engine: Stop-Loss price ({sl_price}) for BUY must be strictly below entry price ({entry})"
+
+                if ("SELL" in side_upper or "SHORT" in side_upper) and sl_price <= entry:
+                    self.denials += 1
+                    from shared.logger import logger
+                    logger.error(
+                        f"🛑 MANDATORY RISK GATE REJECTION: Invalid Stop-Loss Side for SELL/SHORT!\n"
+                        f"• Symbol: {symbol}\n"
+                        f"• Entry: {entry}\n"
+                        f"• Stop Loss: {sl_price}\n"
+                        f"• Rejection Reason: Stop Loss for SELL/SHORT must be strictly above entry price"
+                    )
+                    return False, f"risk engine: Stop-Loss price ({sl_price}) for SELL must be strictly above entry price ({entry})"
+
+                # Minimum & Maximum Distance Boundaries: 0.1% <= SL distance <= 50%
+                sl_distance_pct = abs(entry - sl_price) / entry
+                if sl_distance_pct < 0.001:
+                    self.denials += 1
+                    from shared.logger import logger
+                    logger.error(
+                        f"🛑 MANDATORY RISK GATE REJECTION: Stop-Loss Distance Too Tight (< 0.1%)!\n"
+                        f"• Symbol: {symbol}\n"
+                        f"• Distance Pct: {sl_distance_pct * 100:.3f}%\n"
+                        f"• Rejection Reason: Stop Loss distance is less than minimum required distance of 0.1%"
+                    )
+                    return False, f"risk engine: Stop-Loss distance ({sl_distance_pct * 100:.3f}%) below minimum safety boundary (0.1%)"
+
+                if sl_distance_pct > 0.50:
+                    self.denials += 1
+                    from shared.logger import logger
+                    logger.error(
+                        f"🛑 MANDATORY RISK GATE REJECTION: Unrealistic Stop-Loss Distance (> 50%)!\n"
+                        f"• Symbol: {symbol}\n"
+                        f"• Source/Strategy: {strategy_name}\n"
+                        f"• Direction: {side_str}\n"
+                        f"• Entry Price: {entry:.4f}\n"
+                        f"• Stop Loss Price: {sl_price:.4f}\n"
+                        f"• Distance Pct: {sl_distance_pct * 100:.2f}%\n"
+                        f"• Rejection Reason: Stop-Loss distance exceeds maximum allowable safety boundary of 50%"
+                    )
+                    return False, f"risk engine: Stop-Loss distance ({sl_distance_pct * 100:.1f}%) exceeds safety boundary (50%)"
+
+                # 60-Minute Stop Loss Cooldown Hard Gate
+                sym_raw = symbol.upper()
+                sym_clean = sym_raw.replace("-", "")
+                now_ts = datetime.now().timestamp()
+                for sym_key in (sym_raw, sym_clean):
+                    last_sl_ts = self._sl_cooldowns.get(sym_key)
+                    if last_sl_ts and (now_ts - last_sl_ts) < 3600:
+                        rem_min = (3600 - (now_ts - last_sl_ts)) / 60.0
+                        self.denials += 1
+                        from shared.logger import logger
+                        logger.warning(
+                            f"🛑 HARD RISK GATE DENIAL: 60m Stop Loss Cooldown ACTIVE on {symbol} | "
+                            f"Remaining = {rem_min:.1f} min"
+                        )
+                        return False, f"risk engine: 60m Stop Loss Cooldown ACTIVE for {symbol} ({rem_min:.1f}m remaining)"
 
                 # Sizing boundary enforcement: cap quantity if it exceeds max position limit slightly (<= 5% overflow)
                 max_exposure = getattr(self._rm, 'max_position_exposure', 50000.0)

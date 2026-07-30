@@ -44,6 +44,19 @@ class SetupEngine:
         current_price = prices[-1]
         ts = ExchangeTimestamp(int(datetime.now().timestamp() * 1000))
 
+        # Calculate ATR dynamically for all setup types
+        atr = (min_stop_distance_percent / atr_sl_multiplier) * current_price
+        if len(prices) >= atr_period + 1 and highs and lows and len(highs) == len(prices) and len(lows) == len(prices):
+            tr_list = []
+            for i in range(1, len(prices)):
+                tr = max(highs[i] - lows[i], 
+                         abs(highs[i] - prices[i-1]), 
+                         abs(lows[i] - prices[i-1]))
+                tr_list.append(tr)
+            lookback = min(atr_period, len(tr_list))
+            if lookback > 0:
+                atr = sum(tr_list[-lookback:]) / lookback
+
         # 1. NGLS Sweep Setup detection
         if n >= 21:
             prev_low_20 = min(lows[-21:-1])
@@ -51,8 +64,17 @@ class SetupEngine:
 
             # Bullish sweep
             if lows[-1] < prev_low_20 and current_price > prev_low_20:
-                sl = lows[-1] - 0.001 * current_price
-                tp = prev_high_20
+                sl_structural = lows[-1] - atr_sl_multiplier * atr
+                sl_limit = current_price * (1.0 - min_stop_distance_percent)
+                sl = max(0.0001, min(sl_structural, sl_limit)) if sl_structural > 0 else sl_limit
+
+                tp_structural = prev_high_20
+                if enable_dynamic_tp:
+                    tp_min = current_price + min_reward_risk_ratio * (current_price - sl)
+                    tp = max(tp_structural, tp_min)
+                else:
+                    tp = tp_structural
+
                 setups.append(CandidateSetup(
                     symbol=symbol,
                     timestamp=ts,
@@ -64,8 +86,17 @@ class SetupEngine:
                 ))
             # Bearish sweep
             elif highs[-1] > prev_high_20 and current_price < prev_high_20:
-                sl = highs[-1] + 0.001 * current_price
-                tp = prev_low_20
+                sl_structural = highs[-1] + atr_sl_multiplier * atr
+                sl_limit = current_price * (1.0 + min_stop_distance_percent)
+                sl = max(sl_structural, sl_limit)
+
+                tp_structural = prev_low_20
+                if enable_dynamic_tp:
+                    tp_max = current_price - min_reward_risk_ratio * (sl - current_price)
+                    tp = max(0.0, min(tp_structural, tp_max))
+                else:
+                    tp = tp_structural
+
                 setups.append(CandidateSetup(
                     symbol=symbol,
                     timestamp=ts,
@@ -79,22 +110,9 @@ class SetupEngine:
         # 2. NGMR Reversion Setup detection
         threshold = 0.0005 * current_price  # 0.05% threshold
         if abs(current_price - val) < threshold or abs(current_price - vah) < threshold:
-            # Calculate ATR dynamically
-            atr = (min_stop_distance_percent / atr_sl_multiplier) * current_price
-            if len(prices) >= atr_period + 1:
-                tr_list = []
-                for i in range(1, len(prices)):
-                    tr = max(highs[i] - lows[i], 
-                             abs(highs[i] - prices[i-1]), 
-                             abs(lows[i] - prices[i-1]))
-                    tr_list.append(tr)
-                lookback = min(atr_period, len(tr_list))
-                if lookback > 0:
-                    atr = sum(tr_list[-lookback:]) / lookback
-
             if abs(current_price - val) < threshold:
                 # Buy reversion to POC
-                # Hybrid SL/TP (Option C): Structural invalidation + Volatility buffer + Min stop distance floor
+                # Hybrid SL/TP: Structural invalidation + Volatility buffer + Min stop distance floor
                 sl_structural = val - atr_sl_multiplier * atr
                 sl_limit = current_price * (1.0 - min_stop_distance_percent)
                 sl = min(sl_structural, sl_limit)
@@ -125,7 +143,7 @@ class SetupEngine:
                     self.rejected_low_rr_count[str(symbol)] = self.rejected_low_rr_count.get(str(symbol), 0) + 1
             elif abs(current_price - vah) < threshold:
                 # Sell reversion to POC
-                # Hybrid SL/TP (Option C): Structural invalidation + Volatility buffer + Min stop distance floor
+                # Hybrid SL/TP: Structural invalidation + Volatility buffer + Min stop distance floor
                 sl_structural = vah + atr_sl_multiplier * atr
                 sl_limit = current_price * (1.0 + min_stop_distance_percent)
                 sl = max(sl_structural, sl_limit)
@@ -158,8 +176,10 @@ class SetupEngine:
         # 3. NGTREND_FOLLOW Setup detection
         if current_price > vah:
             # Bullish trend following
-            sl = val if (0 < val < current_price and val >= current_price * 0.90) else current_price * 0.98
-            tp = current_price * 1.02
+            sl_structural = val if (0 < val < current_price and val >= current_price * 0.90) else (current_price - atr_sl_multiplier * atr)
+            sl_limit = current_price * (1.0 - min_stop_distance_percent)
+            sl = min(sl_structural, sl_limit)
+            tp = current_price + min_reward_risk_ratio * (current_price - sl)
             setups.append(CandidateSetup(
                 symbol=symbol,
                 timestamp=ts,
@@ -171,8 +191,10 @@ class SetupEngine:
             ))
         elif current_price < val:
             # Bearish trend following
-            sl = vah if (vah > current_price and vah <= current_price * 1.10) else current_price * 1.02
-            tp = current_price * 0.98
+            sl_structural = vah if (vah > current_price and vah <= current_price * 1.10) else (current_price + atr_sl_multiplier * atr)
+            sl_limit = current_price * (1.0 + min_stop_distance_percent)
+            sl = max(sl_structural, sl_limit)
+            tp = max(0.0, current_price - min_reward_risk_ratio * (sl - current_price))
             setups.append(CandidateSetup(
                 symbol=symbol,
                 timestamp=ts,
@@ -200,8 +222,10 @@ class SetupEngine:
                 breakout_threshold = 0.001
 
                 if current_price > range_high * (1 + breakout_threshold):
-                    sl = range_low
-                    tp = current_price + 0.02 * current_price
+                    sl_structural = range_low
+                    sl_limit = current_price * (1.0 - min_stop_distance_percent)
+                    sl = min(sl_structural, sl_limit)
+                    tp = current_price + max(2.0 * atr, min_reward_risk_ratio * (current_price - sl))
                     setups.append(CandidateSetup(
                         symbol=symbol,
                         timestamp=ts,
@@ -212,8 +236,10 @@ class SetupEngine:
                         take_profit_level=Decimal(str(tp))
                     ))
                 elif current_price < range_low * (1 - breakout_threshold):
-                    sl = range_high
-                    tp = current_price - 0.02 * current_price
+                    sl_structural = range_high
+                    sl_limit = current_price * (1.0 + min_stop_distance_percent)
+                    sl = max(sl_structural, sl_limit)
+                    tp = max(0.0, current_price - max(2.0 * atr, min_reward_risk_ratio * (sl - current_price)))
                     setups.append(CandidateSetup(
                         symbol=symbol,
                         timestamp=ts,

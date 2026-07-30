@@ -754,7 +754,7 @@ class _BingXBroker:
 
     def _place_conditional_order(self, symbol: str, side: str, quantity: str, stop_price: str,
                                order_type: str, position_side: str) -> Dict[str, Any]:
-        """Place a conditional order (stop loss or take profit)."""
+        """Place a conditional order (stop loss or take profit) using Swap V2 endpoint with V3 fallback support."""
         try:
             # For conditional orders on BingX, the parameters depend on the order type
             # STOP_MARKET and TAKE_PROFIT_MARKET orders use 'stopPrice' parameter
@@ -783,15 +783,105 @@ class _BingXBroker:
                     'response': response['data']
                 }
             else:
-                # Return the error message from the API
-                error_msg = response.get('msg', 'Unknown error from conditional order')
-                self.logger.error(f"Conditional order failed: {error_msg}")
-                return {
-                    'success': False,
-                    'error': error_msg
-                }
+                # Attempt Swap V3 endpoint fallback if V2 returns an error
+                self.logger.warning(f"V2 conditional order returned code {response.get('code')}, attempting V3 endpoint fallback...")
+                return self._place_v3_conditional_order(symbol, side, quantity, stop_price, order_type, position_side)
         except Exception as e:
-            self.logger.error(f"Failed to place conditional order: {e}")
+            self.logger.error(f"Failed to place conditional order on V2: {e}, attempting V3 fallback...")
+            return self._place_v3_conditional_order(symbol, side, quantity, stop_price, order_type, position_side)
+
+    def _place_v3_conditional_order(self, symbol: str, side: str, quantity: str, stop_price: str,
+                                   order_type: str, position_side: str) -> Dict[str, Any]:
+        """Place a conditional order using BingX Swap V3 API endpoint."""
+        try:
+            v3_data = {
+                'symbol': symbol,
+                'side': side,
+                'type': order_type,
+                'quantity': quantity,
+                'stopPrice': stop_price,
+                'positionSide': position_side,
+                'workingType': 'MARK_PRICE'
+            }
+            if position_side.upper() not in ('LONG', 'SHORT'):
+                v3_data['reduceOnly'] = 'true'
+
+            endpoint = "/openApi/swap/v3/trade/order"
+            response = self._make_request('POST', endpoint, data=v3_data, signed=True)
+
+            if response.get('code') == 0:
+                order_info = response.get('data', {}).get('order', {})
+                return {
+                    'success': True,
+                    'order_id': order_info.get('orderId'),
+                    'response': response.get('data')
+                }
+            else:
+                error_msg = response.get('msg', 'Unknown error from BingX V3 API')
+                self.logger.error(f"BingX V3 conditional order failed: {error_msg}")
+                return {'success': False, 'error': error_msg}
+        except Exception as e:
+            self.logger.error(f"BingX V3 conditional order exception: {e}")
+            return {'success': False, 'error': str(e)}
+
+    def _place_v3_multi_bracket_order(self, symbol: str, side: str, quantity: str,
+                                      tp1_price: str, tp1_qty: str,
+                                      tp2_price: Optional[str], tp2_qty: Optional[str],
+                                      sl_price: str, position_side: str) -> Dict[str, Any]:
+        """Place multi-bracket TP1/TP2 and SL conditional orders natively via BingX Swap V3 API."""
+        try:
+            close_side = 'SELL' if side.upper() == 'BUY' else 'BUY'
+            orders = [{
+                'symbol': symbol,
+                'side': close_side,
+                'type': 'TAKE_PROFIT_MARKET',
+                'quantity': tp1_qty,
+                'stopPrice': tp1_price,
+                'positionSide': position_side,
+                'workingType': 'MARK_PRICE'
+            }]
+
+            # 1. TP1 Conditional Order (50% size)
+
+            # 2. TP2 Conditional Order (50% size if present)
+            if tp2_price and tp2_qty:
+                orders.append({
+                    'symbol': symbol,
+                    'side': close_side,
+                    'type': 'TAKE_PROFIT_MARKET',
+                    'quantity': tp2_qty,
+                    'stopPrice': tp2_price,
+                    'positionSide': position_side,
+                    'workingType': 'MARK_PRICE'
+                })
+
+            # 3. Stop Loss Conditional Order (100% size)
+            orders.append({
+                'symbol': symbol,
+                'side': close_side,
+                'type': 'STOP_MARKET',
+                'quantity': quantity,
+                'stopPrice': sl_price,
+                'positionSide': position_side,
+                'workingType': 'MARK_PRICE'
+            })
+
+            results = []
+            for order_data in orders:
+                if position_side.upper() not in ('LONG', 'SHORT'):
+                    order_data['reduceOnly'] = 'true'
+                res = self._make_request('POST', '/openApi/swap/v3/trade/order', data=order_data, signed=True)
+                results.append(res)
+
+            success_count = sum(1 for r in results if r.get('code') == 0)
+            return {
+                'success': success_count == len(orders),
+                'submitted': len(orders),
+                'succeeded': success_count,
+                'results': results
+            }
+        except Exception as e:
+            self.logger.error(f"Failed multi-bracket V3 execution: {e}")
             return {'success': False, 'error': str(e)}
 
     def get_account_balance(self) -> List[Dict[str, Any]]:

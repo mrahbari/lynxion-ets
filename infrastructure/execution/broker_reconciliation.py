@@ -69,7 +69,7 @@ class BrokerReconciliationService:
 
                 if hasattr(broker, "get_order_history"):
                     try:
-                        history = broker.get_order_history(_mk_symbol(sym), limit=20) or []
+                        history = broker.get_order_history(_sym(sym), limit=20) or []
                         # Sort newest order first
                         sorted_history = sorted(
                             history,
@@ -110,9 +110,19 @@ class BrokerReconciliationService:
                 # ATOMICITY: Register idempotency key BEFORE emitting to prevent duplicate propagation on crash
                 self._processed_closed_exits.add(exit_key)
 
-                # 3. Propagate to strategy_manager
+                # 3. Propagate to strategy_manager and register with RiskEnforcement durable cooldown
                 from infrastructure.strategies.strategy_manager import strategy_manager
                 strategy_manager.record_trade_result(sym, is_profitable=is_profitable, position_closed=True)
+
+                if not is_profitable:
+                    try:
+                        from bootstrap.container import container
+                        re = container.risk_enforcement()
+                        if re and hasattr(re, 'record_stop_loss_exit'):
+                            re.record_stop_loss_exit(sym)
+                    except Exception as re_err:
+                        self.logger.warning(f"Could not record SL exit with RiskEnforcement: {re_err}")
+
                 self.logger.info(
                     f"✅ POSITION CLOSED CONFIRMED for {sym}: exit_key={exit_key}, is_profitable={is_profitable}"
                 )

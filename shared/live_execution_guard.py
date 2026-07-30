@@ -254,6 +254,15 @@ class LiveExecutionGuard:
 
         # 2b. Portfolio risk admission — enforced on EVERY order path (paper and live).
         # A risk-rejected order is blocked outright (it is not even paper-simulated).
+        if self._risk_enforcer is None:
+            try:
+                from bootstrap.container import container
+                re = container.risk_enforcement()
+                if re:
+                    self._risk_enforcer = re.enforce
+            except Exception:
+                pass
+
         if self._risk_enforcer is not None and order is not None:
             try:
                 allowed, risk_reason = self._risk_enforcer(order)

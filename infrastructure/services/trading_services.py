@@ -39,13 +39,21 @@ class OrderManagementService(OrderManagementPort):
         self.risk_port = risk_port
     
     def place_order(self, order: Order) -> str:
-        """Place an order through the broker"""
+        """Place an order through the broker via LiveExecutionGuard authorization"""
         # Validate risk before placing order
         if not self.risk_port.validate_order_risk(order):
             raise Exception("Order failed risk validation")
         
-        # Place order through broker port
-        order_id = self.broker_port.place_order(order)
+        # Place order through broker port under LiveExecutionGuard authorization
+        from shared.live_execution_guard import live_execution_guard
+        guard_decision, order_id = live_execution_guard.authorize_and_send(
+            broker_name="default_broker", settings=None, order=order,
+            send_fn=lambda: self.broker_port.place_order(order)
+        )
+        if not guard_decision.allowed or not order_id:
+            logger.error(f"🛑 ORDER MANAGEMENT SERVICE BLOCKED: Order for {order.symbol.value} rejected by Risk Gate: {guard_decision.reason}")
+            return ""
+
         logger.info(f"Order placed: {order_id} for {order.symbol.value}")
         return order_id
     

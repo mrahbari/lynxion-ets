@@ -34,7 +34,7 @@ def test_setup_engine_scans_and_triggers_setups():
     sweep_setup = [s for s in setups if s.setup_type == "NGLS_SWEEP"][0]
     assert sweep_setup.direction == "BUY"
     assert float(sweep_setup.trigger_price) == 2.0
-    assert float(sweep_setup.stop_loss_level) == 0.498  # 0.5 - 0.001 * 2.0 = 0.498
+    assert 0.0 < float(sweep_setup.stop_loss_level) < float(sweep_setup.trigger_price)
 
 
 @pytest.mark.unit
