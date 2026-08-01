@@ -189,3 +189,27 @@ def test_stop_loss_minimum_distance_rejection():
     allowed, reason = enf.enforce(tight_sl_order)
     assert not allowed
     assert "below minimum safety boundary (0.1%)" in reason
+
+
+def test_symbol_formatting_equivalence_cooldown():
+    """Verify that 60m SL Cooldown matches COTI-USDT and COTIUSDT interchangeably."""
+    enf = RiskEnforcement(EnterpriseRiskManager())
+
+    # Record exit with broker symbol string 'COTI-USDT'
+    enf.record_stop_loss_exit("COTI-USDT")
+
+    # Order created with symbol 'COTIUSDT'
+    sl_order_clean = Order(
+        symbol=Symbol("COTIUSDT"),
+        side=OrderSide.BUY,
+        quantity=Decimal("100"),
+        price=Money(Decimal("0.0145"), "USDT"),
+        order_type="MARKET",
+        strategy_name="mean_reversion",
+        timestamp=datetime.now(timezone.utc),
+        stop_loss_price=Money(Decimal("0.0140"), "USDT")
+    )
+
+    allowed, reason = enf.enforce(sl_order_clean)
+    assert not allowed
+    assert "60m Stop Loss Cooldown ACTIVE" in reason

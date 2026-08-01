@@ -99,7 +99,7 @@ class _ConfigExtractorsMixin:
             'strong_directional_bias_threshold': self.env_loader.get_float_env_var('STRATEGY_STRONG_DIRECTIONAL_BIAS_THRESHOLD', 0.3),
             'anomaly_ml_contamination': self.env_loader.get_float_env_var('ANOMALY_ML_CONTAMINATION', 0.1),
             'atr_default_percentage': self.env_loader.get_float_env_var('ATR_DEFAULT_PERCENTAGE', 0.02),
-            'atr_fixed_dollar_risk': self.env_loader.get_float_env_var('ATR_FIXED_DOLLAR_RISK', 100.0),
+            'atr_fixed_dollar_risk': self.env_loader.get_float_env_var('ATR_FIXED_DOLLAR_RISK', 50.0),
             'atr_max_portfolio_percent': self.env_loader.get_float_env_var('ATR_MAX_PORTFOLIO_PERCENT', 0.05),
             'atr_min_multiple': self.env_loader.get_float_env_var('ATR_MIN_MULTIPLE', 1.0),
             'atr_multiplier': self.env_loader.get_float_env_var('ATR_MULTIPLIER', 1.5),

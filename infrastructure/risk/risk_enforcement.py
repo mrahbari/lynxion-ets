@@ -72,12 +72,12 @@ class RiskEnforcement:
         with self._lock:
             ts = (exit_time or datetime.now()).timestamp()
             sym_raw = str(symbol).upper()
-            sym_clean = sym_raw.replace("-", "")
+            sym_clean = sym_raw.replace("-", "").replace("/", "").replace("_", "")
             self._sl_cooldowns[sym_raw] = ts
             self._sl_cooldowns[sym_clean] = ts
             self._save_cooldown_journal()
             from shared.logger import logger
-            logger.info(f"🛑 RISK ENFORCEMENT: Activated 60m Stop Loss Cooldown for {symbol}")
+            logger.info(f"🛑 RISK ENFORCEMENT: Activated 60m Stop Loss Cooldown for {symbol} ({sym_clean})")
 
     @staticmethod
     def _symbol(order) -> str:
@@ -94,43 +94,50 @@ class RiskEnforcement:
         """Extract stop loss price from order or parent execution intent."""
         # 1. Check order.stop_loss_price
         sl = getattr(order, "stop_loss_price", None)
-        if sl is not None:
-            amt = getattr(sl, "amount", None)
-            if amt is not None:
-                return float(amt)
-            try:
-                return float(sl)
-            except (ValueError, TypeError):
-                pass
-        
+        if sl is not None and getattr(sl, "amount", None) is not None:
+            return float(sl.amount)
+        if isinstance(sl, (int, float)) and sl > 0:
+            return float(sl)
+
         # 2. Check order.stop_price
         sp = getattr(order, "stop_price", None)
-        if sp is not None:
-            amt = getattr(sp, "amount", None)
-            if amt is not None:
-                return float(amt)
-            try:
-                return float(sp)
-            except (ValueError, TypeError):
-                pass
+        if sp is not None and getattr(sp, "amount", None) is not None:
+            return float(sp.amount)
+        if isinstance(sp, (int, float)) and sp > 0:
+            return float(sp)
 
-        # 3. Check risk_parameters dictionary in order or parent_execution_intent
-        rp = getattr(order, "risk_parameters", None)
-        if not rp and hasattr(order, "parent_execution_intent") and order.parent_execution_intent:
-            rp = getattr(order.parent_execution_intent, "risk_parameters", None)
-        
+        # 3. Check order.risk_parameters
+        rp = getattr(order, "risk_parameters", None) or {}
         if isinstance(rp, dict):
-            for k in ("stop_loss", "sl", "stop_loss_price", "sl_price"):
-                val = rp.get(k)
+            for key in ("stop_loss", "sl", "stop_loss_price"):
+                val = rp.get(key)
                 if val is not None:
                     try:
-                        return float(val)
+                        fval = float(val.amount) if hasattr(val, "amount") else float(val)
+                        if fval > 0:
+                            return fval
                     except (ValueError, TypeError):
                         pass
+
+        # 4. Check parent_execution_intent.risk_parameters
+        intent = getattr(order, "parent_execution_intent", None)
+        if intent is not None:
+            irp = getattr(intent, "risk_parameters", None) or {}
+            if isinstance(irp, dict):
+                for key in ("stop_loss", "sl", "stop_loss_price"):
+                    val = irp.get(key)
+                    if val is not None:
+                        try:
+                            fval = float(val.amount) if hasattr(val, "amount") else float(val)
+                            if fval > 0:
+                                return fval
+                        except (ValueError, TypeError):
+                            pass
+
         return None
 
-    def enforce(self, order) -> Tuple[bool, str]:
-        """Return (allowed, reason). Fails CLOSED on any error (deny)."""
+    def enforce(self, order) -> tuple[bool, str]:
+        """Primary Risk Gate: Validates trading status, position limits, mandatory SL, and SL distance boundaries."""
         with self._lock:
             self.checks += 1
             try:
@@ -139,137 +146,92 @@ class RiskEnforcement:
                     v = self._rm.get_violations()
                     return False, f"risk engine: trading not allowed ({v[-1] if v else 'limit breached'})"
                 symbol = self._symbol(order)
-                size = float(getattr(order, "quantity", 0) or 0)
                 entry = self._price(order)
+                size = float(getattr(order, "quantity", 0) or 0)
                 if size <= 0 or entry <= 0:
                     self.denials += 1
                     return False, "risk engine: non-positive size/price"
 
-                # -------------------------------------------------------------
-                # MANDATORY STOP-LOSS & SANITY DISTANCE ENFORCEMENT
-                # -------------------------------------------------------------
+                # Mandatory Stop-Loss Validation
                 sl_price = self._extract_sl_price(order)
-                strategy_name = getattr(order, "strategy_name", "UNKNOWN_STRATEGY") or "UNKNOWN_STRATEGY"
-                side_str = str(getattr(order, "side", "UNKNOWN_SIDE"))
-
-                if sl_price is None or sl_price <= 0:
+                import math
+                if sl_price is None or sl_price <= 0 or not math.isfinite(sl_price):
                     self.denials += 1
                     from shared.logger import logger
                     logger.error(
                         f"🛑 MANDATORY RISK GATE REJECTION: Missing Stop-Loss Parameter!\n"
                         f"• Symbol: {symbol}\n"
-                        f"• Source/Strategy: {strategy_name}\n"
-                        f"• Direction: {side_str}\n"
-                        f"• Requested Size: {size}\n"
-                        f"• Missing Risk Params: ['stop_loss_price']\n"
-                        f"• Rejection Reason: Mandatory Stop-Loss policy violation (every order MUST contain a valid SL)"
+                        f"• Order Type: {getattr(order, 'order_type', 'UNKNOWN')}\n"
+                        f"• Rejection Reason: Every order must contain a valid, finite Stop-Loss price > 0."
                     )
                     return False, f"risk engine: Mandatory Stop-Loss policy violation — order on {symbol} rejected (missing SL)"
 
-                import math
-                if not math.isfinite(sl_price):
-                    self.denials += 1
-                    return False, f"risk engine: Stop-Loss price on {symbol} is non-finite ({sl_price})"
-
-                # Side Validation: Stop-Loss must be on correct side of entry
+                # Side Validation for Stop-Loss (BUY SL < Entry; SELL SL > Entry)
+                side_attr = getattr(order, "side", None)
+                side_str = getattr(side_attr, "name", str(side_attr)) if side_attr else ""
                 side_upper = side_str.upper()
-                if ("BUY" in side_upper or "LONG" in side_upper) and sl_price >= entry:
-                    self.denials += 1
-                    from shared.logger import logger
-                    logger.error(
-                        f"🛑 MANDATORY RISK GATE REJECTION: Invalid Stop-Loss Side for BUY/LONG!\n"
-                        f"• Symbol: {symbol}\n"
-                        f"• Entry: {entry}\n"
-                        f"• Stop Loss: {sl_price}\n"
-                        f"• Rejection Reason: Stop Loss for BUY/LONG must be strictly below entry price"
-                    )
-                    return False, f"risk engine: Stop-Loss price ({sl_price}) for BUY must be strictly below entry price ({entry})"
 
-                if ("SELL" in side_upper or "SHORT" in side_upper) and sl_price <= entry:
-                    self.denials += 1
-                    from shared.logger import logger
-                    logger.error(
-                        f"🛑 MANDATORY RISK GATE REJECTION: Invalid Stop-Loss Side for SELL/SHORT!\n"
-                        f"• Symbol: {symbol}\n"
-                        f"• Entry: {entry}\n"
-                        f"• Stop Loss: {sl_price}\n"
-                        f"• Rejection Reason: Stop Loss for SELL/SHORT must be strictly above entry price"
-                    )
-                    return False, f"risk engine: Stop-Loss price ({sl_price}) for SELL must be strictly above entry price ({entry})"
-
-                # Minimum & Maximum Distance Boundaries: 0.1% <= SL distance <= 50%
-                sl_distance_pct = abs(entry - sl_price) / entry
-                if sl_distance_pct < 0.001:
-                    self.denials += 1
-                    from shared.logger import logger
-                    logger.error(
-                        f"🛑 MANDATORY RISK GATE REJECTION: Stop-Loss Distance Too Tight (< 0.1%)!\n"
-                        f"• Symbol: {symbol}\n"
-                        f"• Distance Pct: {sl_distance_pct * 100:.3f}%\n"
-                        f"• Rejection Reason: Stop Loss distance is less than minimum required distance of 0.1%"
-                    )
-                    return False, f"risk engine: Stop-Loss distance ({sl_distance_pct * 100:.3f}%) below minimum safety boundary (0.1%)"
-
-                if sl_distance_pct > 0.50:
-                    self.denials += 1
-                    from shared.logger import logger
-                    logger.error(
-                        f"🛑 MANDATORY RISK GATE REJECTION: Unrealistic Stop-Loss Distance (> 50%)!\n"
-                        f"• Symbol: {symbol}\n"
-                        f"• Source/Strategy: {strategy_name}\n"
-                        f"• Direction: {side_str}\n"
-                        f"• Entry Price: {entry:.4f}\n"
-                        f"• Stop Loss Price: {sl_price:.4f}\n"
-                        f"• Distance Pct: {sl_distance_pct * 100:.2f}%\n"
-                        f"• Rejection Reason: Stop-Loss distance exceeds maximum allowable safety boundary of 50%"
-                    )
-                    return False, f"risk engine: Stop-Loss distance ({sl_distance_pct * 100:.1f}%) exceeds safety boundary (50%)"
-
-                # 60-Minute Stop Loss Cooldown Hard Gate
-                sym_raw = symbol.upper()
-                sym_clean = sym_raw.replace("-", "")
-                now_ts = datetime.now().timestamp()
-                for sym_key in (sym_raw, sym_clean):
-                    last_sl_ts = self._sl_cooldowns.get(sym_key)
-                    if last_sl_ts and (now_ts - last_sl_ts) < 3600:
-                        rem_min = (3600 - (now_ts - last_sl_ts)) / 60.0
+                if entry > 0:
+                    if ("BUY" in side_upper or "LONG" in side_upper) and sl_price >= entry:
                         self.denials += 1
-                        from shared.logger import logger
-                        logger.warning(
-                            f"🛑 HARD RISK GATE DENIAL: 60m Stop Loss Cooldown ACTIVE on {symbol} | "
-                            f"Remaining = {rem_min:.1f} min"
-                        )
-                        return False, f"risk engine: 60m Stop Loss Cooldown ACTIVE for {symbol} ({rem_min:.1f}m remaining)"
+                        return False, f"risk engine: Stop-Loss price ({sl_price}) for BUY must be strictly below entry price ({entry})"
 
-                # Sizing boundary enforcement: cap quantity if it exceeds max position limit slightly (<= 5% overflow)
-                max_exposure = getattr(self._rm, 'max_position_exposure', 50000.0)
-                if size * entry > max_exposure:
-                    if size * entry <= max_exposure * 1.05:
-                        # Apply a tiny safety buffer (0.1%) to prevent rounding/precision increments
-                        target_exposure = max_exposure * 0.999
-                        capped_size = target_exposure / entry
-                        import math
-                        capped_size = math.floor(capped_size * 10000) / 10000.0
-                        from decimal import Decimal
-                        if hasattr(order, 'quantity'):
-                            if isinstance(order.quantity, Decimal):
-                                order.quantity = Decimal(str(capped_size))
-                            else:
-                                order.quantity = capped_size
+                    if ("SELL" in side_upper or "SHORT" in side_upper) and sl_price <= entry:
+                        self.denials += 1
+                        return False, f"risk engine: Stop-Loss price ({sl_price}) for SELL must be strictly above entry price ({entry})"
+
+                    # Minimum & Maximum Distance Boundaries: 0.1% <= SL distance <= 50%
+                    sl_distance_pct = abs(entry - sl_price) / entry
+                    if sl_distance_pct < 0.001:
+                        self.denials += 1
+                        return False, f"risk engine: Stop-Loss distance ({sl_distance_pct * 100:.3f}%) below minimum safety boundary (0.1%)"
+
+                    if sl_distance_pct > 0.50:
+                        self.denials += 1
+                        return False, f"risk engine: Stop-Loss distance ({sl_distance_pct * 100:.1f}%) exceeds safety boundary (50%)"
+
+                    # 60-Minute Stop Loss Cooldown Hard Gate
+                    sym_raw = symbol.upper()
+                    sym_clean = sym_raw.replace("-", "").replace("/", "").replace("_", "")
+                    now_ts = datetime.now().timestamp()
+                    for sym_key in (sym_raw, sym_clean):
+                        last_sl_ts = self._sl_cooldowns.get(sym_key)
+                        if last_sl_ts and (now_ts - last_sl_ts) < 3600:
+                            rem_min = (3600 - (now_ts - last_sl_ts)) / 60.0
+                            self.denials += 1
                             from shared.logger import logger
                             logger.warning(
-                                f"⚠️ Sizing boundary enforcement: Capped {symbol} quantity from {size} to {order.quantity} "
-                                f"to stay within max position limit of ${max_exposure}"
+                                f"🛑 HARD RISK GATE DENIAL: 60m Stop Loss Cooldown ACTIVE on {symbol} ({sym_key}) | "
+                                f"Remaining = {rem_min:.1f} min"
                             )
-                            # Update size variable for subsequent checks
-                            size = float(order.quantity)
-                    else:
-                        # Large violation: reject outright without capping
-                        self.denials += 1
-                        self._rm.violations.append(
-                            f"{symbol}: Position size ${size * entry:.2f} exceeds max position limit ${max_exposure}"
-                        )
-                        return False, f"risk engine: Position size ${size * entry:.2f} exceeds max position limit ${max_exposure}"
+                            return False, f"risk engine: 60m Stop Loss Cooldown ACTIVE for {symbol} ({rem_min:.1f}m remaining)"
+
+                    # Sizing boundary enforcement: cap quantity if it exceeds max position limit slightly (<= 5% overflow)
+                    max_exposure = getattr(self._rm, 'max_position_exposure', 50000.0)
+                    if size * entry > max_exposure:
+                        if size * entry <= max_exposure * 1.05:
+                            target_exposure = max_exposure * 0.999
+                            capped_size = target_exposure / entry
+                            import math
+                            capped_size = math.floor(capped_size * 10000) / 10000.0
+                            from decimal import Decimal
+                            if hasattr(order, 'quantity'):
+                                if isinstance(order.quantity, Decimal):
+                                    order.quantity = Decimal(str(capped_size))
+                                else:
+                                    order.quantity = capped_size
+                                from shared.logger import logger
+                                logger.warning(
+                                    f"⚠️ Sizing boundary enforcement: Capped {symbol} quantity from {size} to {order.quantity} "
+                                    f"to stay within max position limit of ${max_exposure}"
+                                )
+                                size = float(order.quantity)
+                        else:
+                            self.denials += 1
+                            self._rm.violations.append(
+                                f"{symbol}: Position size ${size * entry:.2f} exceeds max position limit ${max_exposure}"
+                            )
+                            return False, f"risk engine: Position size ${size * entry:.2f} exceeds max position limit ${max_exposure}"
 
                 if not self._rm.validate_position_entry(symbol, size, entry):
                     self.denials += 1

@@ -417,7 +417,9 @@ class BaseStrategyAdapter(StrategyPort):
             'enable_symbol_stoploss_cooldown',
             StrategyConfig.get_enable_symbol_stoploss_cooldown(self.name, True)
         )
-        last_sl_exit = self.last_sl_exit_time.get(symbol)
+        sym_raw = str(symbol).upper()
+        sym_clean = sym_raw.replace("-", "").replace("/", "").replace("_", "")
+        last_sl_exit = self.last_sl_exit_time.get(sym_raw) or self.last_sl_exit_time.get(sym_clean)
         if enabled and last_sl_exit is not None:
             cooldown_minutes = self.config.get(
                 'symbol_stoploss_cooldown_minutes',
@@ -436,7 +438,8 @@ class BaseStrategyAdapter(StrategyPort):
                     )
                     return False
                 else:
-                    self.last_sl_exit_time[symbol] = None
+                    self.last_sl_exit_time[sym_raw] = None
+                    self.last_sl_exit_time[sym_clean] = None
 
         # 2. General post-exit cooldown check
         cooldown_minutes = self.config.get('cooldown_after_exit_minutes', 1)
@@ -578,23 +581,31 @@ class BaseStrategyAdapter(StrategyPort):
         wall-clock when absent, preserving live behavior.
         """
         now = exit_time or datetime.now()
+        sym_raw = str(symbol).upper()
+        sym_clean = sym_raw.replace("-", "").replace("/", "").replace("_", "")
+
         if is_profitable:
             # TP trade: Reset consecutive losses and clear SL exit timestamp
-            self.consecutive_losses[symbol] = 0
-            self.last_sl_exit_time[symbol] = None
+            self.consecutive_losses[sym_raw] = 0
+            self.consecutive_losses[sym_clean] = 0
+            self.last_sl_exit_time[sym_raw] = None
+            self.last_sl_exit_time[sym_clean] = None
             self.logger.info(f"✅ Trade result for {symbol}: TAKE PROFIT. Symbol remains immediately tradable.")
         else:
             # SL trade: Increment consecutive losses and record SL exit timestamp
-            current_losses = self.consecutive_losses.get(symbol, 0)
-            self.consecutive_losses[symbol] = current_losses + 1
-            self.last_loss_time[symbol] = now
-            self.last_sl_exit_time[symbol] = now
+            current_losses = self.consecutive_losses.get(sym_clean, 0)
+            self.consecutive_losses[sym_raw] = current_losses + 1
+            self.consecutive_losses[sym_clean] = current_losses + 1
+            self.last_loss_time[sym_raw] = now
+            self.last_loss_time[sym_clean] = now
+            self.last_sl_exit_time[sym_raw] = now
+            self.last_sl_exit_time[sym_clean] = now
             cooldown_min = self.config.get(
                 'symbol_stoploss_cooldown_minutes',
                 StrategyConfig.get_symbol_stoploss_cooldown_minutes(self.name, 60)
             )
             self.logger.info(
-                f"🛑 Trade result for {symbol}: STOP LOSS. "
+                f"🛑 Trade result for {symbol} ({sym_clean}): STOP LOSS. "
                 f"Activated {cooldown_min}m per-symbol Stop Loss cooldown."
             )
 
