@@ -35,8 +35,8 @@ def _build_test_order(symbol="BTC-USDT", side=OrderSide.BUY, qty="0.0156", sl="5
 def test_scenario_a_sltp_failure_injection(monkeypatch):
     """Scenario A: Entry order accepted by exchange, but attached SL order fails.
     
-    Verifies that BingXBrokerAdapter.place_order fails OPEN by logging a warning
-    and returning the main order_id as SUCCESS, leaving a Naked Long on exchange.
+    Verifies that BingXBrokerAdapter.place_order fails CLOSED by raising an Exception
+    when protective orders fail, preventing naked positions on exchange.
     """
     adapter = BingXBrokerAdapter(config={
         'api_key': 'test_key',
@@ -48,8 +48,10 @@ def test_scenario_a_sltp_failure_injection(monkeypatch):
     # Mock internal _broker.execute_order to simulate BingX returning SL failure
     def mock_execute_order(temp_order):
         return {
-            'success': True,
-            'order_id': 'MAIN_BINGX_OID_999',
+            'success': False,
+            'order_id': None,
+            'error': "protective orders failed (['SL order failed: 100001 Invalid Price Band']); unwound=True",
+            'protection_failed': True,
             'conditional_orders_errors': ['SL order failed: 100001 Invalid Price Band']
         }
 
@@ -57,13 +59,12 @@ def test_scenario_a_sltp_failure_injection(monkeypatch):
 
     order = _build_test_order()
     
-    # EXECUTION: Call place_order
-    # EXPECTED SAFE BEHAVIOR: Raise Exception / Cancel main order
-    # ACTUAL BEHAVIOR: Returns order_id successfully despite failed SL!
-    returned_order_id = adapter.place_order(order)
+    # EXECUTION & PROOF OF FAIL-CLOSED BEHAVIOR:
+    # Must raise Exception and NOT return an order_id to downstream caller!
+    with pytest.raises(Exception) as exc_info:
+        adapter.place_order(order)
 
-    assert returned_order_id == 'MAIN_BINGX_OID_999'
-    # PROOF: Main entry order is returned as SUCCESS to caller, leaving Naked Position on BingX!
+    assert "Failed to place order" in str(exc_info.value)
 
 
 def test_scenario_b_quantity_rounding_failure_injection():

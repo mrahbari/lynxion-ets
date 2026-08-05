@@ -116,15 +116,10 @@ class BingXBrokerAdapter(BrokerPort):
         )
 
         result = self._broker.execute_order(temp_order)
-        if result['success']:
-            # Check if there were any conditional order errors
-            if 'conditional_orders_errors' in result and result['conditional_orders_errors']:
-                # Log the conditional order errors but still return the main order ID
-                self.logger.warning(f"BingX order placed successfully but had conditional order errors: {result['conditional_orders_errors']}")
-
+        if result.get('success') and not result.get('protection_failed') and not result.get('conditional_orders_errors'):
             return result['order_id']
         else:
-            error_msg = result['error']
+            error_msg = result.get('error') or f"protective orders failed: {result.get('conditional_orders_errors')}"
             # Make error messages more readable
             if 'error code:109400' in error_msg or 'Rate Limit' in error_msg or 'rate limit' in error_msg:
                 readable_error = "API Rate Limit Exceeded: Too many requests to BingX API. Please reduce request frequency."
@@ -667,7 +662,15 @@ class _BingXBroker:
                         unwound = self._unwind_position(
                             symbol_formatted, side_value.upper(),
                             self._format_quantity(symbol_formatted, float(order.quantity)), position_side_value)
-                        if not unwound:
+                        if unwound:
+                            try:
+                                from bootstrap.container import container
+                                sm = container.strategy_manager() if container and "strategy_manager" in container.registered_keys() else None
+                                if sm:
+                                    sm.record_trade_result(symbol_formatted, is_profitable=False, position_closed=True, is_execution_unwind=True)
+                            except Exception as sm_err:
+                                self.logger.warning(f"Could not forward B1 unwind to strategy_manager: {sm_err}")
+                        else:
                             try:
                                 from shared.live_execution_guard import live_execution_guard
                                 live_execution_guard.engage_kill_switch(
@@ -688,7 +691,8 @@ class _BingXBroker:
                         }
 
                     # Both main order and protective orders succeeded.
-                    self.logger.info(f"Main order and conditional orders placed successfully ({main_order_id})")
+                    print(f"\n🟢 [ORDER EXECUTED] Main order & SL/TP placed successfully: OrderID={main_order_id} Symbol={symbol_formatted} Side={side_value.upper()} Qty={order.quantity}", flush=True)
+                    self.logger.warning(f"🟢 [ORDER EXECUTED] Main order & SL/TP placed successfully: OrderID={main_order_id} Symbol={symbol_formatted}")
                     return {
                         'success': True,
                         'order_id': main_order_id,
@@ -758,12 +762,13 @@ class _BingXBroker:
         try:
             # For conditional orders on BingX, the parameters depend on the order type
             # STOP_MARKET and TAKE_PROFIT_MARKET orders use 'stopPrice' parameter
+            formatted_stop_price = self._format_price(symbol, float(stop_price)) if stop_price is not None else stop_price
             conditional_order_data = {
                 'symbol': symbol,
                 'side': side,
                 'type': order_type,
                 'quantity': quantity,
-                'stopPrice': stop_price,
+                'stopPrice': formatted_stop_price,
                 'positionSide': position_side,
                 'workingType': 'MARK_PRICE'
             }

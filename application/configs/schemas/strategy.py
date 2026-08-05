@@ -26,7 +26,7 @@ class StrategyConfig(BaseModel):
     strong_directional_bias_threshold: float = Field(default=0.3, description="Strong directional bias threshold")
     anomaly_ml_contamination: float = Field(default=0.1, description="Anomaly ML contamination")
     atr_default_percentage: float = Field(default=0.02, description="ATR default percentage")
-    atr_fixed_dollar_risk: float = Field(default=50.0, description="ATR fixed dollar risk")
+    atr_fixed_dollar_risk: float = Field(default=21.0, description="ATR fixed dollar risk")
     atr_max_portfolio_percent: float = Field(default=0.05, description="ATR max portfolio percent")
     atr_min_multiple: float = Field(default=1.0, description="ATR minimum multiple")
     atr_multiplier: float = Field(default=1.5, description="ATR multiplier")

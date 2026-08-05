@@ -60,6 +60,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"   Risk Per Trade: {args.risk_per_trade:.2%}")
         print(f"   Cycle Interval: {args.interval}s")
 
+        report_dir = os.path.join(".", "data", "shadow_report")
+        os.makedirs(report_dir, exist_ok=True)
+
         try:
             cycle_count = 0
             while True:
@@ -69,7 +72,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 # Generate report periodically
                 if args.report and cycle_count % 10 == 0:  # Every 10 cycles
                     report = shadow_system.get_shadow_report()
-                    report_filename = f"shadow_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                    report_filename = os.path.join(report_dir, f"shadow_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
                     with open(report_filename, 'w') as f:
                         json.dump(report, f, indent=2, default=str)
                     print(f"   Saved shadow report to {report_filename}")
@@ -81,7 +84,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             # Generate final report
             if args.report:
                 report = shadow_system.get_shadow_report()
-                final_report_filename = f"final_shadow_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                final_report_filename = os.path.join(report_dir, f"final_shadow_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
                 with open(final_report_filename, 'w') as f:
                     json.dump(report, f, indent=2, default=str)
                 print(f"   Saved final shadow report to {final_report_filename}")

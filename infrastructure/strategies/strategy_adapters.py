@@ -573,7 +573,7 @@ class BaseStrategyAdapter(StrategyPort):
         self.logger.info(f"Position status reset attempt for {symbol} ignored - strategies should not track position state")
 
     def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True,
-                            exit_time: datetime = None):
+                            exit_time: datetime = None, is_execution_unwind: bool = False):
         """Record the result of a trade for per-symbol Stop Loss cooldown tracking.
 
         E-P5.2: ``exit_time`` (the trade's simulated close time) drives the
@@ -584,7 +584,20 @@ class BaseStrategyAdapter(StrategyPort):
         sym_raw = str(symbol).upper()
         sym_clean = sym_raw.replace("-", "").replace("/", "").replace("_", "")
 
-        if is_profitable:
+        if is_execution_unwind:
+            # B1 Emergency Unwind: Set SL exit timestamp to activate cooldown,
+            # but DO NOT increment consecutive losses (preserve win rate / statistics)
+            self.last_sl_exit_time[sym_raw] = now
+            self.last_sl_exit_time[sym_clean] = now
+            cooldown_min = self.config.get(
+                'symbol_stoploss_cooldown_minutes',
+                StrategyConfig.get_symbol_stoploss_cooldown_minutes(self.name, 60)
+            )
+            self.logger.warning(
+                f"🛑 B1 Emergency Unwind recorded for {symbol} ({sym_clean}). "
+                f"Activated {cooldown_min}m per-symbol Stop Loss cooldown (statistics preserved)."
+            )
+        elif is_profitable:
             # TP trade: Reset consecutive losses and clear SL exit timestamp
             self.consecutive_losses[sym_raw] = 0
             self.consecutive_losses[sym_clean] = 0
@@ -612,9 +625,11 @@ class BaseStrategyAdapter(StrategyPort):
         # Optionally update exit time after recording the trade result (but don't modify position state)
         if position_closed:
             self.last_exit_time[symbol] = now
+            self.last_exit_time[sym_raw] = now
+            self.last_exit_time[sym_clean] = now
 
-        self.logger.debug(f"Trade result recorded for {symbol}: {'profit' if is_profitable else 'loss'}, "
-                         f"consecutive_losses={self.consecutive_losses[symbol]}, "
+        self.logger.debug(f"Trade result recorded for {symbol}: {'unwind' if is_execution_unwind else ('profit' if is_profitable else 'loss')}, "
+                         f"consecutive_losses={self.consecutive_losses.get(sym_clean, 0)}, "
                          f"position_closed={position_closed}")
 
     def should_execute(self, fused_signal: FusedSignal) -> bool:

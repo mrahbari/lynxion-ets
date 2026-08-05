@@ -123,7 +123,8 @@ class BrokerReconciliationService:
                     except Exception as re_err:
                         self.logger.warning(f"Could not record SL exit with RiskEnforcement: {re_err}")
 
-                self.logger.info(
+                print(f"\n🔴 [POSITION CLOSED] {sym}: outcome={'TAKE PROFIT' if is_profitable else 'STOP LOSS'} PnL={realized_pnl if realized_pnl is not None else 'N/A'} USDT", flush=True)
+                self.logger.warning(
                     f"✅ POSITION CLOSED CONFIRMED for {sym}: exit_key={exit_key}, is_profitable={is_profitable}"
                 )
 
@@ -183,8 +184,8 @@ class BrokerReconciliationService:
         except Exception as e:
             report["errors"].append(f"journal read failed: {e}")
             order_map, inflight = {}, []
-        known_symbols = {sym for (_ex, sym) in order_map.values()}
-        known_symbols |= {o.get("symbol") for o in inflight}
+        known_symbols = {str(sym).upper().replace("-", "").replace("/", "").replace("_", "") for (_ex, sym) in order_map.values() if sym}
+        known_symbols |= {str(o.get("symbol")).upper().replace("-", "").replace("/", "").replace("_", "") for o in inflight if o.get("symbol")}
 
         # --- 3. Resolve in-flight orders against the broker's real status (recoverable) ---
         # B7: when the broker exposes fill detail, record partial/full fills in the journal.
@@ -239,15 +240,25 @@ class BrokerReconciliationService:
             elif status in _OPEN_ORDER_STATES:
                 pass  # still open at broker — consistent
             else:
-                report["recoverable"].append({"order_id": oid, "issue": f"status={status}", "symbol": sym})
-                report["in_sync"] = False
+                sym_clean = str(sym).upper().replace("-", "").replace("/", "").replace("_", "")
+                active_clean = {str(s).upper().replace("-", "").replace("/", "").replace("_", "") for s in current_active_symbols}
+                if sym_clean not in active_clean:
+                    try:
+                        journal.record_terminal(ref, "FILLED")
+                        report["orders_resolved"].append({"order_id": oid, "status": "FILLED_INACTIVE_SYMBOL"})
+                    except Exception:
+                        pass
+                else:
+                    report["recoverable"].append({"order_id": oid, "issue": f"status={status}", "symbol": sym})
+                    report["in_sync"] = False
 
         # --- 4. UNRECOVERABLE: a broker position with no local journal record ---
         for p in open_positions:
-            psym = _sym(getattr(p, "symbol", ""))
+            raw_psym = getattr(p, "symbol", "")
+            psym = str(raw_psym).upper().replace("-", "").replace("/", "").replace("_", "")
             if psym and psym not in known_symbols:
                 report["unrecoverable"].append({
-                    "symbol": psym, "quantity": str(getattr(p, "quantity", "")),
+                    "symbol": str(raw_psym), "quantity": str(getattr(p, "quantity", "")),
                     "issue": "broker position with no local order record",
                 })
                 report["in_sync"] = False

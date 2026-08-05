@@ -19,7 +19,9 @@ def create_container(environment=None,
     settings = load_settings(environment, env_file_path)
     container = Container(settings, base_data_dir=base_data_dir)
     
-    # Bridge to the legacy container for backward compatibility
+    # Bridge to the active container for backward compatibility
+    import bootstrap.container
+    bootstrap.container.container = container
     try:
         from application.containers.container import container as legacy_container
         legacy_container.register("risk_engine", container.resolve("risk_engine"))

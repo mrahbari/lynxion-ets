@@ -361,18 +361,8 @@ class StrategyManager:
     Manages multiple strategies with health monitoring and execution coordination.
     This is the ONLY layer that selects strategies and decides on capital deployment.
     """
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super(StrategyManager, cls).__new__(cls)
-            cls._instance._initialized = False
-        return cls._instance
 
     def __init__(self):
-        if getattr(self, '_initialized', False):
-            return
-        self._initialized = True
         self.strategies: Dict[str, BaseStrategyAdapter] = {}
         self.strategy_factories: Dict[str, Callable[[], BaseStrategyAdapter]] = {}
         self.strategy_threads: Dict[str, threading.Thread] = {}
@@ -919,16 +909,16 @@ class StrategyManager:
         
         return status_report
 
-    def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True, exit_time: datetime = None):
+    def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True, exit_time: datetime = None, is_execution_unwind: bool = False):
         """Forward trade result event to registered strategy adapters for per-symbol discipline tracking."""
         for name, adapter in self.strategies.items():
             if hasattr(adapter, 'record_trade_result'):
                 try:
-                    adapter.record_trade_result(symbol, is_profitable, position_closed, exit_time)
+                    adapter.record_trade_result(symbol, is_profitable, position_closed, exit_time, is_execution_unwind)
                 except Exception as e:
                     self.logger.error(f"Error forwarding trade result to strategy {name}: {e}")
 
-        if not is_profitable:
+        if not is_profitable and not is_execution_unwind:
             try:
                 from bootstrap.container import container
                 re = container.risk_enforcement()
@@ -958,6 +948,12 @@ _strategy_manager_singleton = None
 def __getattr__(name):
     global _strategy_manager_singleton
     if name == "strategy_manager":
+        try:
+            from bootstrap.container import container
+            if container and "strategy_manager" in container.registered_keys():
+                return container.resolve("strategy_manager")
+        except Exception:
+            pass
         if _strategy_manager_singleton is None:
             _strategy_manager_singleton = StrategyManager()
         return _strategy_manager_singleton

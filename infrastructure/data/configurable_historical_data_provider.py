@@ -56,9 +56,9 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         # Track usage statistics to help with load balancing
         self.usage_stats = {source: {'requests': 0, 'errors': 0} for source in ['bingx', 'binance', 'mexc', 'phemex']}
 
-        # Track symbols that have failed to fetch data recently to avoid repeated attempts
-        self.failed_symbols_cache = {}  # symbol -> timestamp of last failure
-        self.failed_symbols_cache_duration = self._settings.data.failed_symbols_cache_duration if self._settings.data and hasattr(self._settings.data, 'failed_symbols_cache_duration') else 300  # 5 minutes default
+        # Cache of (source, symbol) -> timestamp for invalid/unsupported symbols per exchange (24-hour TTL)
+        self.unsupported_exchange_symbols = {}  # (source, symbol) -> float timestamp
+        self.unsupported_exchange_ttl = 86400  # 24 hours in seconds
 
         self.logger.info(f"Configurable Historical Data Provider initialized with preferred source: {self.preferred_data_source}")
         self.logger.info(f"Fallback sources: {self.fallback_sources}")
@@ -183,39 +183,49 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
         self.logger.info(f"Fetching historical data for {symbol_str} from sources: {data_sources}")
 
+        current_time_sec = time.time()
         for source in data_sources:
+            key = (source.lower(), symbol_str)
+            if key in self.unsupported_exchange_symbols:
+                last_failed_ts = self.unsupported_exchange_symbols[key]
+                if current_time_sec - last_failed_ts < self.unsupported_exchange_ttl:
+                    self.logger.debug(f"Skipping {source} for {symbol_str} - known unsupported symbol on {source}")
+                    continue
+                else:
+                    # TTL expired (24 hours passed), remove so we can re-check exchange availability
+                    del self.unsupported_exchange_symbols[key]
+
             try:
                 self.logger.debug(f"Attempting to fetch historical data for {symbol_str} from {source}")
 
                 # Increment request counter
-                self.usage_stats[source]['requests'] += 1
+                if source in self.usage_stats:
+                    self.usage_stats[source]['requests'] += 1
 
                 # Try to get historical data from the current source
                 data = self._fetch_from_source(source, symbol_str, period, timeframe)
 
                 if data and len(data) > 0:
                     self.logger.info(f"✅ Successfully fetched {len(data)} historical data points for {symbol_str} from {source}")
-                    # Remove from failed cache if successful
-                    if symbol_str in self.failed_symbols_cache:
-                        del self.failed_symbols_cache[symbol_str]
 
                     # Cache the data locally for future use
                     self._cache_data_locally(symbol_str, data)
 
                     return data
                 else:
-                    self.logger.warning(f"⚠️ No data returned from {source} for {symbol_str}, trying next source...")
+                    self.logger.debug(f"No data returned from {source} for {symbol_str}, trying next fallback source...")
 
             except Exception as e:
-                # Check if this is a network/DNS error that suggests connectivity issues
                 error_str = str(e).lower()
-                if any(network_error in error_str for network_error in ['resolve', 'nodename', 'servname', 'connection', 'timeout', 'network', 'ssl']):
-                    self.logger.error(f"Network error fetching data from {source} for {symbol_str}: {e}. "
-                                    f"This may indicate connectivity issues. Consider checking network connection.")
-                    # Don't increment error counter for network issues as they're systemic
+                if 'invalid symbol' in error_str or '-1121' in error_str or 'invalid_symbol' in error_str:
+                    self.unsupported_exchange_symbols[key] = time.time()
+                    self.logger.debug(f"Cached {symbol_str} as unsupported on {source} (24-hour TTL)")
+                elif any(network_error in error_str for network_error in ['resolve', 'nodename', 'servname', 'connection', 'timeout', 'network', 'ssl']):
+                    self.logger.debug(f"Network issue fetching data from {source} for {symbol_str}: {e}")
                 else:
-                    self.logger.warning(f"⚠️ Failed to fetch historical data for {symbol_str} from {source}: {e}")
-                    self.usage_stats[source]['errors'] += 1
+                    self.logger.debug(f"Failed to fetch historical data for {symbol_str} from {source}: {e}")
+                    if source in self.usage_stats:
+                        self.usage_stats[source]['errors'] += 1
                 continue
 
         # If all sources failed, try to get data from local CSV cache as a fallback
@@ -401,6 +411,8 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
                     
                     # Custom mapping for known code errors (e.g. Binance -1121)
                     if code == -1121 or 'invalid symbol' in msg.lower() or 'invalid_symbol' in msg.lower():
+                        if hasattr(self, 'unsupported_exchange_symbols'):
+                            self.unsupported_exchange_symbols[(source.lower(), symbol)] = time.time()
                         detailed_msg = f"Invalid symbol '{symbol}' on {source} (code {code}: {msg})"
                     else:
                         detailed_msg = f"{source} API error (code {code}: {msg})"
@@ -455,7 +467,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
         except Exception as e:
             detailed_e = self._handle_http_error(e, symbol, "Binance")
-            self.logger.error(f"Error fetching historical data from Binance for {symbol}: {detailed_e}")
+            self.logger.debug(f"Source Binance failed for {symbol}: {detailed_e}")
             raise detailed_e
 
     def _fetch_bingx_historical(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
@@ -512,7 +524,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
         except Exception as e:
             detailed_e = self._handle_http_error(e, symbol, "BingX")
-            self.logger.error(f"Error fetching historical data from BingX for {symbol}: {detailed_e}")
+            self.logger.debug(f"Source BingX failed for {symbol}: {detailed_e}")
             raise detailed_e
 
     def _fetch_mexc_historical(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
@@ -560,7 +572,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
         except Exception as e:
             detailed_e = self._handle_http_error(e, symbol, "MEXC")
-            self.logger.error(f"Error fetching historical data from MEXC for {symbol}: {detailed_e}")
+            self.logger.debug(f"Source MEXC failed for {symbol}: {detailed_e}")
             raise detailed_e
 
     def _fetch_phemex_historical(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
@@ -612,7 +624,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
         except Exception as e:
             detailed_e = self._handle_http_error(e, symbol, "Phemex")
-            self.logger.error(f"Error fetching historical data from Phemex for {symbol}: {detailed_e}")
+            self.logger.debug(f"Source Phemex failed for {symbol}: {detailed_e}")
             raise detailed_e
 
     def _convert_timeframe_to_phemex(self, timeframe: str) -> str:
