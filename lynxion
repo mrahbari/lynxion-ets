@@ -1,0 +1,3 @@
+#!/usr/bin/env zsh
+# Lynxion Trading System - Fast Production Auto-Detect Runner
+LOG_LEVEL=WARNING python run_trading_system.py --mode production --auto-detect "$@"

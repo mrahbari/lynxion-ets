@@ -149,6 +149,14 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
         recon_thread.start()
         self.background_threads.append(("broker_reconciliation", recon_thread))
 
+        # Start persistent trade feature collector for ongoing trade analysis & research dataset
+        try:
+            from infrastructure.execution.trade_feature_collector import trade_feature_collector
+            trade_feature_collector.start()
+            self.logger.info("📊 Started persistent TradeFeatureCollector background thread")
+        except Exception as collector_err:
+            self.logger.warning(f"Could not start TradeFeatureCollector: {collector_err}")
+
         self.logger.info(f"⚙️ Started {len(self.background_threads)} background services")
 
     def _opportunity_processing_loop(self):

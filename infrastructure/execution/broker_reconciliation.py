@@ -255,10 +255,10 @@ class BrokerReconciliationService:
         # --- 4. UNRECOVERABLE: a broker position with no local journal record ---
         for p in open_positions:
             raw_psym = getattr(p, "symbol", "")
-            psym = str(raw_psym).upper().replace("-", "").replace("/", "").replace("_", "")
+            psym = _sym(raw_psym).upper().replace("-", "").replace("/", "").replace("_", "")
             if psym and psym not in known_symbols:
                 report["unrecoverable"].append({
-                    "symbol": str(raw_psym), "quantity": str(getattr(p, "quantity", "")),
+                    "symbol": _sym(raw_psym), "quantity": str(getattr(p, "quantity", "")),
                     "issue": "broker position with no local order record",
                 })
                 report["in_sync"] = False

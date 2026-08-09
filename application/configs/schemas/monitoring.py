@@ -26,6 +26,7 @@ class MonitoringConfig(BaseModel):
     enabled: bool = Field(default=True, description="Monitoring enabled")
     metrics_reporting_interval_minutes: int = Field(default=3, description="Metrics reporting interval in minutes")
     forensic_logging_enabled: bool = Field(default=True, description="Forensic logging enabled")
+    trade_journal_collector_enabled: bool = Field(default=True, description="Persistent trade journal collector enabled")
     enable_metrics: bool = Field(default=True, description="Enable metrics")
 
     @validator('logging_level')

@@ -432,15 +432,21 @@ class _BingXBroker:
         """Execute order on BingX."""
         try:
             # Handle the symbol formatting here
-            # If symbol is a string, use it directly; if it's a Symbol object, get its value
+            # Ensure symbol is properly formatted for BingX REST API (must include hyphen, e.g. XMR-USDT)
             if isinstance(order.symbol, str):
-                symbol_formatted = order.symbol
+                raw_sym = order.symbol
+            elif hasattr(order.symbol, 'value'):
+                raw_sym = str(order.symbol.value)
             else:
-                # If it's a Symbol object, get its string representation
-                if hasattr(order.symbol, 'value'):
-                    symbol_formatted = order.symbol.value
+                raw_sym = str(order.symbol)
+
+            if '-' not in raw_sym:
+                if raw_sym.endswith('USDT') or raw_sym.endswith('USDC'):
+                    symbol_formatted = raw_sym[:-4] + '-' + raw_sym[-4:]
                 else:
-                    symbol_formatted = str(order.symbol)
+                    symbol_formatted = raw_sym
+            else:
+                symbol_formatted = raw_sym
 
             # Ensure side is handled properly
             if hasattr(order.side, 'value'):
@@ -664,10 +670,8 @@ class _BingXBroker:
                             self._format_quantity(symbol_formatted, float(order.quantity)), position_side_value)
                         if unwound:
                             try:
-                                from bootstrap.container import container
-                                sm = container.strategy_manager() if container and "strategy_manager" in container.registered_keys() else None
-                                if sm:
-                                    sm.record_trade_result(symbol_formatted, is_profitable=False, position_closed=True, is_execution_unwind=True)
+                                from infrastructure.strategies.strategy_manager import strategy_manager
+                                strategy_manager.record_trade_result(symbol_formatted, is_profitable=False, position_closed=True, is_execution_unwind=True)
                             except Exception as sm_err:
                                 self.logger.warning(f"Could not forward B1 unwind to strategy_manager: {sm_err}")
                         else:
