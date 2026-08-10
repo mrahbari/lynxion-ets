@@ -153,12 +153,182 @@ class TradeFeatureCollector:
                     logger.error(f"TRADE_JOURNAL: Error loading recorded IDs from {p}: {e}")
             logger.info(f"TRADE_JOURNAL: Loaded {len(self._recorded_ids)} recorded trade keys from CSV")
 
+    # -- Dynamic Symbol Discovery -----------------------------------------------
+
+    def _discover_all_symbols(self, adapter: Optional[Any] = None) -> List[str]:
+        """Dynamically discover all traded symbols across config, CSV, journal, ledger, and broker."""
+        discovered: Set[str] = set()
+
+        # 1. Parse dynamically from active settings / config watchlist
+        try:
+            from bootstrap.settings.loaders import load_settings
+            st = load_settings()
+            sym_cfg = getattr(st, "symbols", None) or getattr(st, "trading", None)
+            watchlist = getattr(sym_cfg, "watchlist", None) or getattr(sym_cfg, "active_symbols", None) or []
+            for s in watchlist:
+                clean = str(s).upper().replace("-", "").replace("_", "").replace("/", "")
+                if clean.endswith("USDT"):
+                    base = clean[:-4]
+                    discovered.add(f"{base}-USDT")
+        except Exception as e:
+            logger.debug(f"TRADE_JOURNAL: Settings watchlist parsing skipped: {e}")
+
+        # 2. Parse from existing CSV records (data/trade_journal.csv)
+        if os.path.exists(self.csv_path):
+            try:
+                with open(self.csv_path, "r", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        sym = row.get("symbol")
+                        if sym:
+                            clean = str(sym).upper().replace("-", "").replace("_", "").replace("/", "")
+                            if clean.endswith("USDT"):
+                                base = clean[:-4]
+                                discovered.add(f"{base}-USDT")
+            except Exception as e:
+                logger.warning(f"TRADE_JOURNAL: Could not parse symbols from CSV: {e}")
+
+        # 1. Parse from live_order_journal.json
+        if os.path.exists(self.journal_path):
+            try:
+                with open(self.journal_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        try:
+                            entry = json.loads(line)
+                            sym = entry.get("symbol")
+                            if sym:
+                                clean = str(sym).upper().replace("-", "").replace("_", "").replace("/", "")
+                                if clean.endswith("USDT"):
+                                    base = clean[:-4]
+                                    discovered.add(f"{base}-USDT")
+                        except Exception:
+                            pass
+            except Exception as e:
+                logger.warning(f"TRADE_JOURNAL: Could not parse symbols from journal: {e}")
+
+        # 2. Parse from execution_truth_ledger.jsonl
+        if os.path.exists(self.ledger_path):
+            try:
+                with open(self.ledger_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        try:
+                            entry = json.loads(line)
+                            sym = entry.get("symbol")
+                            if sym:
+                                clean = str(sym).upper().replace("-", "").replace("_", "").replace("/", "")
+                                if clean.endswith("USDT"):
+                                    base = clean[:-4]
+                                    discovered.add(f"{base}-USDT")
+                        except Exception:
+                            pass
+            except Exception as e:
+                logger.warning(f"TRADE_JOURNAL: Could not parse symbols from ledger: {e}")
+
+        # 3. Parse active positions from broker if connected
+        if adapter is not None:
+            try:
+                positions = adapter.get_all_positions() or []
+                for p in positions:
+                    raw_sym = getattr(p, "symbol", "")
+                    if raw_sym:
+                        clean = str(raw_sym).upper().replace("-", "").replace("_", "").replace("/", "")
+                        if clean.endswith("USDT"):
+                            base = clean[:-4]
+                            discovered.add(f"{base}-USDT")
+            except Exception as e:
+                logger.warning(f"TRADE_JOURNAL: Could not parse symbols from broker positions: {e}")
+
+        return sorted(list(discovered))
+
+    # -- Intent Metadata Cross-Referencing --------------------------------------
+
+    def _load_intent_metadata_map(self) -> Dict[str, Dict[str, Any]]:
+        """Load strategy-level metadata (stop_loss, take_profit, confidence, regime, strategy) from journal/ledger keyed by order_ref and order_id."""
+        meta_map: Dict[str, Dict[str, Any]] = {}
+
+        # 1. Read live_order_journal.json
+        if os.path.exists(self.journal_path):
+            try:
+                with open(self.journal_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        try:
+                            entry = json.loads(line)
+                            ref = entry.get("order_ref") or entry.get("client_order_id")
+                            oid = entry.get("order_id")
+                            sl = entry.get("stop_loss") or entry.get("initial_stop_loss")
+                            tp = entry.get("take_profit") or entry.get("initial_take_profit")
+                            conf = entry.get("confidence")
+                            reg = entry.get("regime")
+                            strat = entry.get("strategy") or entry.get("strategy_name")
+
+                            meta = {
+                                "initial_stop_loss": str(sl) if sl is not None else "",
+                                "initial_take_profit": str(tp) if tp is not None else "",
+                                "confidence": str(conf) if conf is not None else "",
+                                "regime": str(reg) if reg is not None else "",
+                                "strategy": str(strat) if strat is not None else "",
+                            }
+                            if ref:
+                                meta_map[str(ref)] = meta
+                            if oid:
+                                meta_map[str(oid)] = meta
+                        except Exception:
+                            pass
+            except Exception as e:
+                logger.warning(f"TRADE_JOURNAL: Could not load metadata from journal: {e}")
+
+        # 2. Read execution_truth_ledger.jsonl
+        if os.path.exists(self.ledger_path):
+            try:
+                with open(self.ledger_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        try:
+                            entry = json.loads(line)
+                            ref = entry.get("order_ref") or entry.get("client_order_id")
+                            oid = entry.get("order_id")
+                            sl = entry.get("stop_loss") or entry.get("initial_stop_loss")
+                            tp = entry.get("take_profit") or entry.get("initial_take_profit")
+                            conf = entry.get("confidence")
+                            reg = entry.get("regime")
+                            strat = entry.get("strategy") or entry.get("strategy_name")
+
+                            keys = [k for k in [ref, oid] if k]
+                            for k in keys:
+                                sk = str(k)
+                                meta = meta_map.get(sk, {})
+                                if sl is not None and not meta.get("initial_stop_loss"):
+                                    meta["initial_stop_loss"] = str(sl)
+                                if tp is not None and not meta.get("initial_take_profit"):
+                                    meta["initial_take_profit"] = str(tp)
+                                if conf is not None and not meta.get("confidence"):
+                                    meta["confidence"] = str(conf)
+                                if reg is not None and not meta.get("regime"):
+                                    meta["regime"] = str(reg)
+                                if strat is not None and not meta.get("strategy"):
+                                    meta["strategy"] = str(strat)
+                                meta_map[sk] = meta
+                        except Exception:
+                            pass
+            except Exception as e:
+                logger.warning(f"TRADE_JOURNAL: Could not load metadata from ledger: {e}")
+
+        return meta_map
+
     # -- Exchange Position History & Reconstructed Completed Trades ---------------
 
     def reconstruct_exchange_completed_trades(self) -> List[Dict[str, Any]]:
-        """Fetch exchange order histories and group Entry + Exit by positionID."""
+        """Fetch exchange order histories (including VST demo account) and group Entry + Exit by positionID."""
         completed_trades: List[Dict[str, Any]] = []
         try:
+            import time
             from bootstrap.settings.loaders import load_settings
             from infrastructure.brokers.adapters.bingx_adapter import BingXBrokerAdapter
 
@@ -171,96 +341,149 @@ class TradeFeatureCollector:
             adapter = BingXBrokerAdapter(config)
             adapter.connect()
 
-            symbols = [
-                "XMR-USDT", "SOL-USDT", "LINK-USDT", "AVAX-USDT", "WLD-USDT",
-                "PUMP-USDT", "XLM-USDT", "HYPE-USDT", "BTC-USDT", "ETH-USDT",
-                "DOT-USDT", "DOGE-USDT", "ADA-USDT", "SUI-USDT", "NEAR-USDT"
-            ]
+            intent_meta = self._load_intent_metadata_map()
 
+            now_ms = int(time.time() * 1000)
+            seven_days_ms = 7 * 24 * 3600 * 1000
+            all_orders: List[Any] = []
+
+            # 1. Query VST Demo Account allOrders in 7-day chunks across past 35 days
+            for i in range(5):
+                end_ms = now_ms - (i * seven_days_ms)
+                start_ms = end_ms - seven_days_ms
+                try:
+                    res = adapter._broker._make_request(
+                        "GET",
+                        "/openApi/swap/v2/trade/allOrders",
+                        data={"marginCoin": "VST", "startTime": start_ms, "endTime": end_ms, "limit": 500},
+                        signed=True,
+                    )
+                    if res.get("code") == 0:
+                        all_orders.extend(res.get("data", {}).get("orders", []) or [])
+                except Exception as vst_err:
+                    logger.warning(f"TRADE_JOURNAL: VST chunk #{i+1} fetch error: {vst_err}")
+
+            # 2. Query per-symbol order history
+            symbols = self._discover_all_symbols(adapter)
             for sym in symbols:
                 try:
                     hist = adapter._broker.get_order_history(sym, limit=100) or []
-                    by_pos: Dict[str, Dict[str, List[Any]]] = {}
-                    for o in hist:
-                        pos_id = str(o.get("positionID") or "")
-                        if not pos_id or pos_id == "0":
-                            continue
-                        if pos_id not in by_pos:
-                            by_pos[pos_id] = {"entries": [], "exits": []}
+                    all_orders.extend(hist)
+                except Exception:
+                    pass
 
-                        st = str(o.get("status", "")).upper()
-                        is_reduce = o.get("reduceOnly") in (True, "true", "TRUE")
-                        o_type = str(o.get("type", "")).upper()
+            by_pos: Dict[str, Dict[str, List[Any]]] = {}
+            for o in all_orders:
+                pos_id = str(o.get("positionID") or "")
+                if not pos_id or pos_id == "0":
+                    continue
+                if pos_id not in by_pos:
+                    by_pos[pos_id] = {"entries": [], "exits": []}
 
-                        if st == "FILLED":
-                            if is_reduce or o_type in ("STOP_MARKET", "TAKE_PROFIT_MARKET", "LIQUIDATION"):
-                                by_pos[pos_id]["exits"].append(o)
-                            else:
-                                by_pos[pos_id]["entries"].append(o)
+                st = str(o.get("status", "")).upper()
+                is_reduce = o.get("reduceOnly") in (True, "true", "TRUE")
+                o_type = str(o.get("type", "")).upper()
 
-                    for pos_id, data in by_pos.items():
-                        if data["entries"] and data["exits"]:
-                            e = data["entries"][0]
-                            x = data["exits"][0]
+                if st == "FILLED":
+                    if is_reduce or o_type in ("STOP_MARKET", "TAKE_PROFIT_MARKET", "LIQUIDATION"):
+                        by_pos[pos_id]["exits"].append(o)
+                    else:
+                        by_pos[pos_id]["entries"].append(o)
 
-                            entry_price = str(e.get("avgPrice") or "")
-                            exit_price = str(x.get("avgPrice") or "")
-                            pnl = str(x.get("profit") or "")
-                            fee = str(x.get("commission") or "")
-                            qty = str(e.get("origQty") or "")
-                            side = str(e.get("side") or "").upper()
-                            exit_type = str(x.get("type") or "").upper()
+            for pos_id, data in by_pos.items():
+                if data["entries"] and data["exits"]:
+                    e = data["entries"][0]
+                    x = data["exits"][0]
 
-                            e_ms = int(e.get("time") or 0)
-                            x_ms = int(x.get("time") or 0)
-                            ts_entry = datetime.fromtimestamp(e_ms / 1000.0, tz=timezone.utc).isoformat() if e_ms else ""
-                            ts_exit = datetime.fromtimestamp(x_ms / 1000.0, tz=timezone.utc).isoformat() if x_ms else ""
+                    sym_raw = str(e.get("symbol") or "")
+                    clean_sym = sym_raw.replace("-", "").replace("_", "").replace("/", "")
+                    side = str(e.get("side") or "").upper()
+                    entry_price = str(e.get("avgPrice") or "")
+                    exit_price = str(x.get("avgPrice") or "")
+                    pnl = str(x.get("profit") or "")
+                    fee = str(x.get("commission") or "")
+                    qty = str(e.get("origQty") or "")
+                    exit_reason = str(x.get("type") or "").upper()
 
-                            duration_sec = ""
-                            if e_ms and x_ms and x_ms >= e_ms:
-                                duration_sec = str(round((x_ms - e_ms) / 1000.0, 2))
+                    e_ms = int(e.get("time") or 0)
+                    x_ms = int(x.get("time") or 0)
+                    ts_entry = datetime.fromtimestamp(e_ms / 1000.0, tz=timezone.utc).isoformat() if e_ms else ""
+                    ts_exit = datetime.fromtimestamp(x_ms / 1000.0, tz=timezone.utc).isoformat() if x_ms else ""
 
-                            is_unwind = "UNWIND" in exit_type or "EMERGENCY" in exit_type
-                            exit_reason = "EMERGENCY_UNWIND" if is_unwind else exit_type
+                    duration_sec = str((x_ms - e_ms) / 1000.0) if (e_ms and x_ms and x_ms >= e_ms) else "0.0"
+                    is_unwind = "unwound=True" in str(e.get("clientOrderId") or "") or "unwound=True" in str(x.get("clientOrderId") or "")
 
-                            clean_sym = sym.replace("-", "")
+                    order_ref = str(e.get("clientOrderId") or "")
+                    order_id = str(e.get("orderId") or "")
+                    meta = intent_meta.get(order_ref) or intent_meta.get(order_id) or {}
 
-                            row = {
-                                "trade_id": pos_id,
-                                "symbol": clean_sym,
-                                "strategy": "trend_following",
-                                "side": side,
-                                "entry_timestamp": ts_entry,
-                                "exit_timestamp": ts_exit,
-                                "entry_price": entry_price,
-                                "exit_price": exit_price,
-                                "quantity": qty,
-                                "pnl_usdt": pnl,
-                                "fees_usdt": fee,
-                                "exit_reason": exit_reason,
-                                "actual_fill_price": entry_price,
-                                "initial_stop_loss": "",
-                                "initial_take_profit": "",
-                                "risk_usdt": "",
-                                "r_multiple": "",
-                                "confidence": "",
-                                "regime": "",
-                                "timeframe": "1m",
-                                "signal_direction": side,
-                                "duration_seconds": duration_sec,
-                                "sl_distance_pct": "",
-                                "tp_distance_pct": "",
-                                "order_id": str(e.get("orderId") or ""),
-                                "order_ref": str(e.get("clientOrderId") or ""),
-                                "client_order_id": str(e.get("clientOrderId") or ""),
-                                "exchange": "bingx",
-                                "execution_latency_ms": "",
-                                "is_execution_unwind": "True" if is_unwind else "False",
-                                "status": "FILLED",
-                            }
-                            completed_trades.append(row)
-                except Exception as sym_err:
-                    logger.warning(f"TRADE_JOURNAL: Could not fetch history for {sym}: {sym_err}")
+                    sl_val = meta.get("initial_stop_loss", "")
+                    tp_val = meta.get("initial_take_profit", "")
+                    conf_val = meta.get("confidence", "")
+                    reg_val = meta.get("regime", "")
+                    strat_val = meta.get("strategy") or "trend_following"
+
+                    risk_usdt = ""
+                    r_multiple = ""
+                    sl_dist_pct = ""
+                    tp_dist_pct = ""
+
+                    try:
+                        ep_num = float(entry_price)
+                        sl_num = float(sl_val) if sl_val else 0.0
+                        tp_num = float(tp_val) if tp_val else 0.0
+                        pnl_num = float(pnl) if pnl else 0.0
+                        qty_num = float(qty) if qty else 0.0
+
+                        if ep_num > 0 and sl_num > 0 and qty_num > 0:
+                            dist = abs(ep_num - sl_num)
+                            risk_tot = dist * qty_num
+                            risk_usdt = f"{risk_tot:.4f}"
+                            sl_dist_pct = f"{(dist / ep_num * 100.0):.2f}"
+                            if risk_tot > 0:
+                                r_mult = pnl_num / risk_tot
+                                r_multiple = f"{r_mult:.2f}"
+
+                        if ep_num > 0 and tp_num > 0:
+                            tp_dist = abs(tp_num - ep_num)
+                            tp_dist_pct = f"{(tp_dist / ep_num * 100.0):.2f}"
+                    except Exception:
+                        pass
+
+                    row = {
+                        "trade_id": pos_id,
+                        "symbol": clean_sym,
+                        "strategy": strat_val,
+                        "side": side,
+                        "entry_timestamp": ts_entry,
+                        "exit_timestamp": ts_exit,
+                        "entry_price": entry_price,
+                        "exit_price": exit_price,
+                        "quantity": qty,
+                        "pnl_usdt": pnl,
+                        "fees_usdt": fee,
+                        "exit_reason": exit_reason,
+                        "actual_fill_price": entry_price,
+                        "initial_stop_loss": sl_val,
+                        "initial_take_profit": tp_val,
+                        "risk_usdt": risk_usdt,
+                        "r_multiple": r_multiple,
+                        "confidence": conf_val,
+                        "regime": reg_val,
+                        "timeframe": "1m",
+                        "signal_direction": side,
+                        "duration_seconds": duration_sec,
+                        "sl_distance_pct": sl_dist_pct,
+                        "tp_distance_pct": tp_dist_pct,
+                        "order_id": order_id,
+                        "order_ref": order_ref,
+                        "client_order_id": order_ref,
+                        "exchange": "bingx",
+                        "execution_latency_ms": "",
+                        "is_execution_unwind": "True" if is_unwind else "False",
+                        "status": "FILLED",
+                    }
+                    completed_trades.append(row)
         except Exception as e:
             logger.error(f"TRADE_JOURNAL: Failed to connect to exchange history: {e}")
         return completed_trades
@@ -300,7 +523,7 @@ class TradeFeatureCollector:
 
     def _purge_and_recreate_csvs(self) -> None:
         """Purge old incomplete order-level CSVs and recreate headers."""
-        paths = [p for p in (self.csv_path, self.alt_csv_path) if p]
+        paths = list(dict.fromkeys([p for p in (self.csv_path, self.alt_csv_path) if p]))
         for p in paths:
             try:
                 if os.path.exists(p):
@@ -316,7 +539,7 @@ class TradeFeatureCollector:
 
     def _append_row(self, row: Dict[str, Any]) -> None:
         """Safely append a single dictionary row to trade_journal.csv."""
-        paths = [p for p in (self.csv_path, self.alt_csv_path) if p]
+        paths = list(dict.fromkeys([p for p in (self.csv_path, self.alt_csv_path) if p]))
         for p in paths:
             try:
                 with open(p, "a", newline="", encoding="utf-8") as f:

@@ -69,15 +69,13 @@ class RiskEnforcement:
 
     def record_stop_loss_exit(self, symbol: str, exit_time: datetime = None) -> None:
         """Record Stop Loss exit for a symbol to activate persistent 60m cooldown across the entire order path."""
-        with self._lock:
-            ts = (exit_time or datetime.now()).timestamp()
-            sym_raw = str(symbol).upper()
-            sym_clean = sym_raw.replace("-", "").replace("/", "").replace("_", "")
-            self._sl_cooldowns[sym_raw] = ts
-            self._sl_cooldowns[sym_clean] = ts
-            self._save_cooldown_journal()
-            from shared.logger import logger
-            logger.info(f"🛑 RISK ENFORCEMENT: Activated 60m Stop Loss Cooldown for {symbol} ({sym_clean})")
+        from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+        symbol_cooldown_gate.record_stop_loss_exit(symbol, exit_time)
+
+    def record_take_profit_exit(self, symbol: str) -> None:
+        """Clear Stop Loss exit cooldown for a symbol when trade exits via Take Profit."""
+        from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+        symbol_cooldown_gate.record_take_profit_exit(symbol)
 
     @staticmethod
     def _symbol(order) -> str:
@@ -190,21 +188,14 @@ class RiskEnforcement:
                         self.denials += 1
                         return False, f"risk engine: Stop-Loss distance ({sl_distance_pct * 100:.1f}%) exceeds safety boundary (50%)"
 
-                    # 60-Minute Stop Loss Cooldown Hard Gate
-                    sym_raw = symbol.upper()
-                    sym_clean = sym_raw.replace("-", "").replace("/", "").replace("_", "")
-                    now_ts = datetime.now().timestamp()
-                    for sym_key in (sym_raw, sym_clean):
-                        last_sl_ts = self._sl_cooldowns.get(sym_key)
-                        if last_sl_ts and (now_ts - last_sl_ts) < 3600:
-                            rem_min = (3600 - (now_ts - last_sl_ts)) / 60.0
-                            self.denials += 1
-                            from shared.logger import logger
-                            logger.warning(
-                                f"🛑 HARD RISK GATE DENIAL: 60m Stop Loss Cooldown ACTIVE on {symbol} ({sym_key}) | "
-                                f"Remaining = {rem_min:.1f} min"
-                            )
-                            return False, f"risk engine: 60m Stop Loss Cooldown ACTIVE for {symbol} ({rem_min:.1f}m remaining)"
+                    # 60-Minute Stop Loss Cooldown Hard Gate (Unified SymbolCooldownGate)
+                    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+                    allowed, reason = symbol_cooldown_gate.is_symbol_allowed(symbol, cooldown_minutes=60)
+                    if not allowed:
+                        self.denials += 1
+                        from shared.logger import logger
+                        logger.warning(f"🛑 HARD RISK GATE DENIAL: {reason}")
+                        return False, f"risk engine: {reason}"
 
                     # Sizing boundary enforcement: cap quantity if it exceeds max position limit slightly (<= 5% overflow)
                     max_exposure = getattr(self._rm, 'max_position_exposure', 50000.0)

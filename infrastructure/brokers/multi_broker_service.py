@@ -488,8 +488,28 @@ class MultiBrokerExecutionService(ExecutionPort):
                             pass
                         sym = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
                         side_name = getattr(order.side, 'name', str(order.side))
+
+                        sl = getattr(order, 'stop_loss', None) or getattr(order, 'initial_stop_loss', None)
+                        if sl is None and hasattr(order, 'risk_parameters') and isinstance(order.risk_parameters, dict):
+                            sl = order.risk_parameters.get('stop_loss')
+
+                        tp = getattr(order, 'take_profit', None) or getattr(order, 'initial_take_profit', None)
+                        if tp is None and hasattr(order, 'risk_parameters') and isinstance(order.risk_parameters, dict):
+                            tp = order.risk_parameters.get('take_profit')
+
+                        conf = getattr(order, 'confidence', None) or getattr(order, 'intent_confidence', None)
+                        if conf is None and hasattr(order, 'metadata') and isinstance(order.metadata, dict):
+                            conf = order.metadata.get('confidence') or order.metadata.get('fused_confidence')
+
+                        reg = getattr(order, 'regime', None)
+                        if reg is None and hasattr(order, 'metadata') and isinstance(order.metadata, dict):
+                            reg = order.metadata.get('regime')
+
+                        strat = getattr(order, 'strategy_name', None) or getattr(order, 'strategy', None)
+
                         journal_ref = live_order_journal.record_intent(
-                            sym, side_name, order.quantity, best_exchange, coid)
+                            sym, side_name, order.quantity, best_exchange, coid,
+                            stop_loss=sl, take_profit=tp, confidence=conf, regime=reg, strategy=strat)
                     except Exception:
                         journal_ref = None
 

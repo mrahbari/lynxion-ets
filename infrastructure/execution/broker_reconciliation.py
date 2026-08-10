@@ -110,18 +110,15 @@ class BrokerReconciliationService:
                 # ATOMICITY: Register idempotency key BEFORE emitting to prevent duplicate propagation on crash
                 self._processed_closed_exits.add(exit_key)
 
-                # 3. Propagate to strategy_manager and register with RiskEnforcement durable cooldown
+                # 3. Propagate to strategy_manager and register with SymbolCooldownGate
                 from infrastructure.strategies.strategy_manager import strategy_manager
                 strategy_manager.record_trade_result(sym, is_profitable=is_profitable, position_closed=True)
 
+                from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
                 if not is_profitable:
-                    try:
-                        from bootstrap.container import container
-                        re = container.risk_enforcement()
-                        if re and hasattr(re, 'record_stop_loss_exit'):
-                            re.record_stop_loss_exit(sym)
-                    except Exception as re_err:
-                        self.logger.warning(f"Could not record SL exit with RiskEnforcement: {re_err}")
+                    symbol_cooldown_gate.record_stop_loss_exit(sym)
+                else:
+                    symbol_cooldown_gate.record_take_profit_exit(sym)
 
                 print(f"\n🔴 [POSITION CLOSED] {sym}: outcome={'TAKE PROFIT' if is_profitable else 'STOP LOSS'} PnL={realized_pnl if realized_pnl is not None else 'N/A'} USDT", flush=True)
                 self.logger.warning(

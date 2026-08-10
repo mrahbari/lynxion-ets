@@ -159,6 +159,41 @@ def test_emergency_unwind_classification(temp_collector, monkeypatch):
 
 
 @pytest.mark.unit
+def test_metadata_forwarding_end_to_end():
+    """Verify that metadata fields passed to record_intent arrive unchanged in intent_metadata_map."""
+    from infrastructure.execution.live_order_journal import LiveOrderJournal
+    with tempfile.TemporaryDirectory() as tmpdir:
+        journal_p = os.path.join(tmpdir, "live_order_journal.json")
+        journal = LiveOrderJournal(path=journal_p)
+
+        ref = journal.record_intent(
+            symbol="BTC-USDT",
+            side="BUY",
+            quantity="0.01",
+            exchange="bingx",
+            client_order_id="client_test_999",
+            stop_loss="62000.0",
+            take_profit="65000.0",
+            confidence="0.85",
+            regime="TRENDING_UP",
+            strategy="trend_following",
+        )
+
+        assert ref is not None
+        collector = TradeFeatureCollector(journal_path=journal_p)
+        meta_map = collector._load_intent_metadata_map()
+
+        meta = meta_map.get("client_test_999") or meta_map.get(ref)
+        assert meta is not None
+        assert meta["initial_stop_loss"] == "62000.0"
+        assert meta["initial_take_profit"] == "65000.0"
+        assert meta["confidence"] == "0.85"
+        assert meta["regime"] == "TRENDING_UP"
+        assert meta["strategy"] == "trend_following"
+
+
+
+@pytest.mark.unit
 def test_background_thread_start_and_stop(temp_collector):
     collector, _, _, _, _ = temp_collector
     collector.start()
