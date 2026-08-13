@@ -248,9 +248,7 @@ class MonitoringAnalysisService:
                 # Update last market data heartbeat immediately after ingestion
                 try:
                     from infrastructure.messaging.event_system import signal_processor
-                    if not hasattr(signal_processor, '_last_market_data_times'):
-                        signal_processor._last_market_data_times = {}
-                    signal_processor._last_market_data_times[symbol_str] = datetime.now()
+                    signal_processor.update_market_data_heartbeat(symbol)
                 except Exception as heartbeat_err:
                     self.logger.warning(f"Failed to update heartbeat timestamp for {symbol_str}: {heartbeat_err}")
 

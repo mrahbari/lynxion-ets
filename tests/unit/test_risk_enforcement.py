@@ -27,7 +27,9 @@ def _reset_breakers():
     from shared.circuit_breaker import circuit_breaker_manager
     import os
     from infrastructure.risk.risk_enforcement import COOLDOWN_JOURNAL_PATH
+    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
     circuit_breaker_manager.circuit_breakers.clear()
+    symbol_cooldown_gate._sl_cooldowns.clear()
     if os.path.exists(COOLDOWN_JOURNAL_PATH):
         try:
             os.remove(COOLDOWN_JOURNAL_PATH)
@@ -35,6 +37,7 @@ def _reset_breakers():
             pass
     yield
     circuit_breaker_manager.circuit_breakers.clear()
+    symbol_cooldown_gate._sl_cooldowns.clear()
     if os.path.exists(COOLDOWN_JOURNAL_PATH):
         try:
             os.remove(COOLDOWN_JOURNAL_PATH)
@@ -213,3 +216,121 @@ def test_symbol_formatting_equivalence_cooldown():
     allowed, reason = enf.enforce(sl_order_clean)
     assert not allowed
     assert "60m Stop Loss Cooldown ACTIVE" in reason
+
+
+def test_p1_1_short_side_safety_gate(monkeypatch):
+    """Verify that P1.1 Short-Side Safety Gate blocks SHORT entries on anomalous high-wick symbols while allowing LONG entries."""
+    monkeypatch.setenv("RESTRICTED_SHORT_SYMBOLS", "SEIUSDT,UNIUSDT,SOLUSDT")
+    enf = RiskEnforcement(EnterpriseRiskManager())
+
+    # 1. SHORT order on restricted high-wick symbol SEIUSDT -> MUST BE BLOCKED
+    short_sei_order = Order(
+        symbol=Symbol("SEIUSDT"),
+        side=OrderSide.SELL,
+        quantity=Decimal("100"),
+        price=Money(Decimal("0.35"), "USDT"),
+        order_type="MARKET",
+        strategy_name="trend_following",
+        timestamp=datetime.now(timezone.utc),
+        stop_loss_price=Money(Decimal("0.36"), "USDT")
+    )
+
+    allowed_short, reason_short = enf.enforce(short_sei_order)
+    assert not allowed_short
+    assert "P1.1 Short-side safety gate ACTIVE" in reason_short
+
+    # 2. LONG order on SEIUSDT -> MUST BE ALLOWED
+    long_sei_order = Order(
+        symbol=Symbol("SEIUSDT"),
+        side=OrderSide.BUY,
+        quantity=Decimal("100"),
+        price=Money(Decimal("0.35"), "USDT"),
+        order_type="MARKET",
+        strategy_name="trend_following",
+        timestamp=datetime.now(timezone.utc),
+        stop_loss_price=Money(Decimal("0.34"), "USDT")
+    )
+
+    allowed_long, reason_long = enf.enforce(long_sei_order)
+    assert allowed_long
+    assert "P1.1 Short-side safety gate" not in reason_long
+
+    # 3. SHORT order on normal symbol ETHUSDT -> MUST BE ALLOWED
+    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+    symbol_cooldown_gate._sl_cooldowns.clear()
+
+    short_eth_order = Order(
+        symbol=Symbol("ETHUSDT"),
+        side=OrderSide.SELL,
+        quantity=Decimal("0.1"),
+        price=Money(Decimal("3000"), "USDT"),
+        order_type="MARKET",
+        strategy_name="trend_following",
+        timestamp=datetime.now(timezone.utc),
+        stop_loss_price=Money(Decimal("3050"), "USDT")
+    )
+
+    allowed_eth, reason_eth = enf.enforce(short_eth_order)
+    assert allowed_eth, f"ETHUSDT SHORT should be allowed, got: {reason_eth}"
+
+
+def test_market_order_price_zero_cooldown_blocked():
+    """Test Group A: Verify that market orders with price=0 or un-populated price are BLOCKED during active SL cooldown."""
+    enf = RiskEnforcement(EnterpriseRiskManager())
+    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+    symbol_cooldown_gate.record_stop_loss_exit("TUTUSDT")
+
+    # Order with unpopulated price (price=0)
+    market_zero_price_order = Order(
+        symbol=Symbol("TUTUSDT"),
+        side=OrderSide.BUY,
+        quantity=Decimal("100"),
+        price=Money(Decimal("0"), "USDT"),
+        order_type="MARKET",
+        strategy_name="trend_following",
+        timestamp=datetime.now(timezone.utc),
+        stop_loss_price=Money(Decimal("0.10"), "USDT")
+    )
+
+    allowed, reason = enf.enforce(market_zero_price_order)
+    assert not allowed
+    assert "60m Stop Loss Cooldown ACTIVE" in reason
+
+
+def test_reconciliation_active_positions_persistence_restart():
+    """Test Group B: Verify that BrokerReconciliationService persists active symbols across restarts."""
+    from infrastructure.execution.broker_reconciliation import BrokerReconciliationService, ACTIVE_POSITIONS_JOURNAL_PATH
+    import os
+
+    if os.path.exists(ACTIVE_POSITIONS_JOURNAL_PATH):
+        try:
+            os.remove(ACTIVE_POSITIONS_JOURNAL_PATH)
+        except Exception:
+            pass
+
+    recon1 = BrokerReconciliationService()
+    # Cycle 1: Position active on TUTUSDT
+    recon1._process_position_closures(broker=None, current_active_symbols={"TUTUSDT"})
+    assert os.path.exists(ACTIVE_POSITIONS_JOURNAL_PATH)
+
+    # Process restart: Instantiate fresh BrokerReconciliationService
+    recon2 = BrokerReconciliationService()
+    assert "TUTUSDT" in recon2._previous_active_symbols
+
+    # Cycle 2: Position closed on TUTUSDT with a mock broker returning a loss exit order
+    class MockBroker:
+        def get_order_history(self, sym, limit=20):
+            return [{
+                "orderId": "12345",
+                "status": "FILLED",
+                "type": "STOP_MARKET",
+                "realizedProfit": "-1.50"
+            }]
+
+    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+    symbol_cooldown_gate._sl_cooldowns.clear()
+
+    recon2._process_position_closures(broker=MockBroker(), current_active_symbols=set())
+    # TUTUSDT close is detected, and SL cooldown registered
+    assert "TUTUSDT" in symbol_cooldown_gate._sl_cooldowns
+

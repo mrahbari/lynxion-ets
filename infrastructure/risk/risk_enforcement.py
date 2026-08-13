@@ -144,6 +144,17 @@ class RiskEnforcement:
                     v = self._rm.get_violations()
                     return False, f"risk engine: trading not allowed ({v[-1] if v else 'limit breached'})"
                 symbol = self._symbol(order)
+
+                # 60-Minute Stop Loss Cooldown Hard Gate (Unified SymbolCooldownGate)
+                # Evaluated first for EVERY position-entry attempt (independent of order.price availability)
+                from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+                cooldown_allowed, cooldown_reason = symbol_cooldown_gate.is_symbol_allowed(symbol, cooldown_minutes=60)
+                if not cooldown_allowed:
+                    self.denials += 1
+                    from shared.logger import logger
+                    logger.warning(f"🛑 HARD RISK GATE DENIAL: {cooldown_reason}")
+                    return False, f"risk engine: {cooldown_reason}"
+
                 entry = self._price(order)
                 size = float(getattr(order, "quantity", 0) or 0)
                 if size <= 0 or entry <= 0:
@@ -178,6 +189,25 @@ class RiskEnforcement:
                         self.denials += 1
                         return False, f"risk engine: Stop-Loss price ({sl_price}) for SELL must be strictly above entry price ({entry})"
 
+                    # P1.1 Short-Side Safety Gate: Block SHORT position entries on anomalous high-wick / low-liquidity symbols
+                    if "SELL" in side_upper or "SHORT" in side_upper:
+                        sym_clean = symbol.upper().replace("-", "").replace("/", "").replace("_", "")
+
+                        # Rule 1: Check environment for global short-side disable
+                        if os.getenv("ENABLE_SHORT_SIDE", "true").lower() in ("false", "0", "no"):
+                            self.denials += 1
+                            return False, f"risk engine: P1.1 Short-side execution is globally disabled (ENABLE_SHORT_SIDE=false)"
+
+                        # Rule 2: Check dynamically restricted symbols from environment (RESTRICTED_SHORT_SYMBOLS)
+                        env_restricted = os.getenv("RESTRICTED_SHORT_SYMBOLS", "")
+                        if env_restricted and os.getenv("RESTRICT_ANOMALOUS_SHORT_SYMBOLS", "true").lower() in ("true", "1", "yes"):
+                            restricted_shorts = set(s.strip().upper().replace("-", "").replace("/", "").replace("_", "") for s in env_restricted.split(",") if s.strip())
+                            if sym_clean in restricted_shorts:
+                                self.denials += 1
+                                from shared.logger import logger
+                                logger.warning(f"🛑 P1.1 SHORT SAFETY GATE DENIAL: Blocked SHORT entry on high-wick token {symbol} ({sym_clean})")
+                                return False, f"risk engine: P1.1 Short-side safety gate ACTIVE — SHORT orders on high-wick token {symbol} blocked to prevent squeeze slippage"
+
                     # Minimum & Maximum Distance Boundaries: 0.1% <= SL distance <= 50%
                     sl_distance_pct = abs(entry - sl_price) / entry
                     if sl_distance_pct < 0.001:
@@ -187,15 +217,6 @@ class RiskEnforcement:
                     if sl_distance_pct > 0.50:
                         self.denials += 1
                         return False, f"risk engine: Stop-Loss distance ({sl_distance_pct * 100:.1f}%) exceeds safety boundary (50%)"
-
-                    # 60-Minute Stop Loss Cooldown Hard Gate (Unified SymbolCooldownGate)
-                    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
-                    allowed, reason = symbol_cooldown_gate.is_symbol_allowed(symbol, cooldown_minutes=60)
-                    if not allowed:
-                        self.denials += 1
-                        from shared.logger import logger
-                        logger.warning(f"🛑 HARD RISK GATE DENIAL: {reason}")
-                        return False, f"risk engine: {reason}"
 
                     # Sizing boundary enforcement: cap quantity if it exceeds max position limit slightly (<= 5% overflow)
                     max_exposure = getattr(self._rm, 'max_position_exposure', 50000.0)

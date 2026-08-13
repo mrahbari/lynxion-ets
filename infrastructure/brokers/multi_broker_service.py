@@ -526,11 +526,24 @@ class MultiBrokerExecutionService(ExecutionPort):
                 if not guard_decision.allowed:
                     self.logger.error(
                         f"🛑 LIVE_EXECUTION_GUARD BLOCKED order on {best_exchange.upper()}: {guard_decision.reason}")
+                    if journal_ref:
+                        try:
+                            from infrastructure.execution.live_order_journal import live_order_journal
+                            live_order_journal.record_failed(journal_ref, f"blocked: {guard_decision.reason}")
+                        except Exception:
+                            pass
                     return None
                 if guard_decision.simulate:
                     self.logger.warning(
                         f"🧪 PAPER MODE — order SIMULATED on {best_exchange.upper()} "
                         f"(NOT sent to exchange): {order_id} [{guard_decision.reason}]")
+                    if journal_ref:
+                        try:
+                            from infrastructure.execution.live_order_journal import live_order_journal
+                            live_order_journal.record_submitted(journal_ref, order_id, best_exchange)
+                            live_order_journal.record_result(journal_ref, "FILLED", order_id=order_id)
+                        except Exception:
+                            pass
                     if prevent_same_direction and intended_position_side:
                         self._add_pending_order(order.symbol, intended_position_side, order_id)
                     return order_id

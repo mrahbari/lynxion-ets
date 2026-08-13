@@ -16,12 +16,21 @@ agnostic (uses the BrokerPort interface) and side-effect-free except the halt ca
 
 from __future__ import annotations
 
+import json
+import os
 from decimal import Decimal
 from typing import Any, Callable, Dict, List, Optional
 
 
 def _sym(s) -> str:
     return getattr(s, "value", None) or (str(s) if s is not None else "")
+
+
+def _project_root() -> str:
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+ACTIVE_POSITIONS_JOURNAL_PATH = os.path.join(_project_root(), "data", "active_positions_journal.json")
 
 
 _OPEN_ORDER_STATES = {"NEW", "PENDING", "PARTIALLY_FILLED", "PARTIAL", "OPEN", "WORKING"}
@@ -34,11 +43,40 @@ class BrokerReconciliationService:
     def __init__(self, halt_fn: Optional[Callable[[str], None]] = None):
         # Default halt = engage the live execution guard kill switch (imported lazily).
         self._halt_fn = halt_fn
-        # In-memory tracking for active position transitions and closed position idempotency
-        self._previous_active_symbols: set[str] = set()
-        self._processed_closed_exits: set[str] = set()
         from shared.logger import EnhancedLogger
         self.logger = EnhancedLogger("BrokerReconciliationService")
+        # Persistent tracking for active position transitions and closed position idempotency across restarts
+        self._previous_active_symbols: set[str] = self._load_active_symbols()
+        self._processed_closed_exits: set[str] = set()
+
+    def _load_active_symbols(self) -> set[str]:
+        try:
+            if os.path.exists(ACTIVE_POSITIONS_JOURNAL_PATH):
+                with open(ACTIVE_POSITIONS_JOURNAL_PATH, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        return set(data)
+                    elif isinstance(data, dict):
+                        return set(data.get("active_symbols", []))
+        except Exception as e:
+            if hasattr(self, "logger"):
+                self.logger.warning(f"Failed to load active positions journal: {e}")
+        return set()
+
+    def _save_active_symbols(self) -> None:
+        try:
+            os.makedirs(os.path.dirname(ACTIVE_POSITIONS_JOURNAL_PATH), exist_ok=True)
+            tmp_path = f"{ACTIVE_POSITIONS_JOURNAL_PATH}.tmp.{os.getpid()}"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump({"active_symbols": sorted(list(self._previous_active_symbols))}, f, indent=2)
+                f.flush()
+                try:
+                    os.fsync(f.fileno())
+                except (OSError, ValueError):
+                    pass
+            os.replace(tmp_path, ACTIVE_POSITIONS_JOURNAL_PATH)
+        except Exception as e:
+            self.logger.warning(f"Failed to save active positions journal: {e}")
 
     def _halt(self, reason: str) -> None:
         if self._halt_fn is not None:
@@ -54,8 +92,9 @@ class BrokerReconciliationService:
         """Detect exchange position closures (transition to positionAmt == 0) and propagate trade result."""
         # Find symbols that were active in the previous cycle but are absent in current cycle
         closed_symbols = self._previous_active_symbols - current_active_symbols
-        # Update active symbols for next cycle
+        # Update active symbols for next cycle and persist atomically across process restarts
         self._previous_active_symbols = set(current_active_symbols)
+        self._save_active_symbols()
 
         if not closed_symbols:
             return
@@ -115,15 +154,32 @@ class BrokerReconciliationService:
                 strategy_manager.record_trade_result(sym, is_profitable=is_profitable, position_closed=True)
 
                 from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
-                if not is_profitable:
-                    symbol_cooldown_gate.record_stop_loss_exit(sym)
+                if realized_pnl is None and closing_order_id == "UNKNOWN":
+                    self.logger.warning(f"⚠️ Exit result for {sym} is UNKNOWN — skipping cooldown registration to avoid false loss cooldown.")
                 else:
-                    symbol_cooldown_gate.record_take_profit_exit(sym)
+                    if not is_profitable:
+                        symbol_cooldown_gate.record_stop_loss_exit(sym)
+                    else:
+                        symbol_cooldown_gate.record_take_profit_exit(sym)
 
                 print(f"\n🔴 [POSITION CLOSED] {sym}: outcome={'TAKE PROFIT' if is_profitable else 'STOP LOSS'} PnL={realized_pnl if realized_pnl is not None else 'N/A'} USDT", flush=True)
                 self.logger.warning(
                     f"✅ POSITION CLOSED CONFIRMED for {sym}: exit_key={exit_key}, is_profitable={is_profitable}"
                 )
+
+                # 3b. Sync terminal state to live_order_journal to prevent stale in-flight recovery warnings
+                try:
+                    from infrastructure.execution.live_order_journal import live_order_journal
+                    if closing_order_id and closing_order_id != "UNKNOWN":
+                        live_order_journal.record_result(
+                            order_ref=closing_order_id,
+                            status="FILLED",
+                            order_id=closing_order_id,
+                            realized_pnl=realized_pnl,
+                            symbol=sym
+                        )
+                except Exception as journal_sync_err:
+                    self.logger.warning(f"Could not sync closed position to live_order_journal for {sym}: {journal_sync_err}")
 
                 # 4. Dispatch immediate Telegram Alert for Position Close
                 try:

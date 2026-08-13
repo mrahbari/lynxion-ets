@@ -210,19 +210,20 @@ class _AutoDetectionExecutionMixin:
             is_live = not hasattr(execution_service_to_use, 'is_backtest') or not getattr(execution_service_to_use, 'is_backtest', False)
             if is_live:
                 from infrastructure.messaging.event_system import signal_processor
-                last_time = getattr(signal_processor, '_last_market_data_times', {}).get(symbol_value)
+                symbol_key = str(symbol_value).upper().replace("-", "")
+                last_time = getattr(signal_processor, '_last_market_data_times', {}).get(symbol_key)
                 if last_time:
                     elapsed = (datetime.now() - last_time).total_seconds()
                     if elapsed > 90.0:
                         self.logger.warning(
                             f"❌ HEARTBEAT GUARD VETO: Market data heartbeat is stale by {elapsed:.1f}s (> 90s) for "
-                            f"{symbol_value}. Submission rejected."
+                            f"{symbol_key}. Submission rejected."
                         )
                         return {'status': 'failed', 'error': 'HEARTBEAT_STALE'}
                 else:
                     self.logger.warning(
                         f"❌ HEARTBEAT GUARD VETO: No market data heartbeat recorded for "
-                        f"{symbol_value}. Submission rejected."
+                        f"{symbol_key}. Submission rejected."
                     )
                     return {'status': 'failed', 'error': 'HEARTBEAT_MISSING'}
 

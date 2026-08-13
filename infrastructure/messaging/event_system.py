@@ -158,11 +158,21 @@ class SignalProcessor:
         self.event_router.subscribe(EventType.EXECUTION_INTENT, 
                                   lambda event: self._process_execution_intent(event, execution_service))
 
+    def update_market_data_heartbeat(self, symbol, timestamp=None):
+        """Canonical update method for market data heartbeat staleness safety check."""
+        if not hasattr(self, '_last_market_data_times') or self._last_market_data_times is None:
+            self._last_market_data_times = {}
+        symbol_key = symbol.value if hasattr(symbol, 'value') else str(symbol)
+        symbol_key = str(symbol_key).upper().replace("-", "")
+        self._last_market_data_times[symbol_key] = timestamp or datetime.now()
+
     def _process_observation(self, event: SignalEvent, engine_service):
         """Process market observation through engine layer"""
         try:
             observation = event.data
-            if self.logger:
+            if hasattr(observation, 'symbol'):
+                self.update_market_data_heartbeat(observation.symbol)
+            if self.logger and hasattr(observation, 'symbol'):
                 self.logger.info(f"Processing observation from {event.source_component} for {observation.symbol.value}")
 
             # Record price for rolling correlation calculation (E3.T5)
@@ -485,21 +495,23 @@ class SignalProcessor:
             # --- MARKET DATA SAFETY HEARTBEAT GUARD (LIVE ONLY) ---
             is_live = not hasattr(execution_service_to_use, 'is_backtest') or not getattr(execution_service_to_use, 'is_backtest', False)
             if is_live:
-                last_time = getattr(self, '_last_market_data_times', {}).get(execution_intent.symbol.value)
+                symbol_key = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
+                symbol_key = str(symbol_key).upper().replace("-", "")
+                last_time = getattr(self, '_last_market_data_times', {}).get(symbol_key)
                 if last_time:
                     elapsed = (datetime.now() - last_time).total_seconds()
                     if elapsed > 90.0:
                         if self.logger:
                             self.logger.warning(
                                 f"❌ HEARTBEAT GUARD VETO: Market data heartbeat is stale by {elapsed:.1f}s (> 90s) for "
-                                f"{execution_intent.symbol.value}. Submission rejected."
+                                f"{symbol_key}. Submission rejected."
                             )
                         return None
                 else:
                     if self.logger:
                         self.logger.warning(
                             f"❌ HEARTBEAT GUARD VETO: No market data heartbeat recorded for "
-                            f"{execution_intent.symbol.value}. Submission rejected."
+                            f"{symbol_key}. Submission rejected."
                         )
                     return None
 
