@@ -297,8 +297,8 @@ class BrokerReconciliationService:
                 active_clean = {str(s).upper().replace("-", "").replace("/", "").replace("_", "") for s in current_active_symbols}
                 if sym_clean not in active_clean:
                     try:
-                        journal.record_terminal(ref, "FILLED")
-                        report["orders_resolved"].append({"order_id": oid, "status": "FILLED_INACTIVE_SYMBOL"})
+                        journal.record_terminal(ref, "CANCELLED", reason=f"BROKER_STATUS_{status}_INACTIVE_SYMBOL")
+                        report["orders_resolved"].append({"order_id": oid, "status": f"CANCELLED_{status}"})
                     except Exception:
                         pass
                 else:
