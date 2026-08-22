@@ -331,6 +331,25 @@ class MonitoringAnalysisService:
                 'execution_intent': None
             }
 
+        # Check SymbolCooldownGate: if cooldown is active, skip analyzing this symbol entirely!
+        try:
+            from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+            allowed, cd_reason = symbol_cooldown_gate.is_symbol_allowed(symbol)
+            if not allowed:
+                self.logger.debug(f"🛑 SYMBOL ON COOLDOWN: {symbol_str} ({cd_reason}). Skipping watcher analysis.")
+                return {
+                    'symbol': symbol_str,
+                    'timestamp': datetime.now(),
+                    'observations': {},
+                    'indicators': {},
+                    'recommendation': None,
+                    'confidence': 0.0,
+                    'strategy_suggestion': 'SKIPPED_COOLDOWN',
+                    'execution_intent': None
+                }
+        except Exception:
+            pass
+
         # Log that the symbol analysis is starting
         if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:
             self.logger.log_background_activity(

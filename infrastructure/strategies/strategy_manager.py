@@ -918,14 +918,12 @@ class StrategyManager:
                 except Exception as e:
                     self.logger.error(f"Error forwarding trade result to strategy {name}: {e}")
 
-        if not is_profitable and not is_execution_unwind:
+        if not is_profitable or is_execution_unwind:
             try:
-                from bootstrap.container import container
-                re = container.risk_enforcement()
-                if re and hasattr(re, 'record_stop_loss_exit'):
-                    re.record_stop_loss_exit(symbol, exit_time)
+                from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+                symbol_cooldown_gate.record_stop_loss_exit(symbol, exit_time)
             except Exception as re_err:
-                self.logger.warning(f"Could not record SL exit with RiskEnforcement in strategy_manager: {re_err}")
+                self.logger.warning(f"Could not record SL exit with SymbolCooldownGate in strategy_manager: {re_err}")
 
     def record_position_closed(self, symbol: str, exit_time: datetime = None):
         """Forward position closed event to registered strategy adapters."""

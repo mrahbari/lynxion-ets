@@ -246,6 +246,32 @@ class TradeFeatureCollector:
 
     # -- Intent Metadata Cross-Referencing --------------------------------------
 
+    @staticmethod
+    def _merge_intent_metadata(
+        existing: Optional[Dict[str, Any]], incoming: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Merge lifecycle records without allowing a sparse update to erase intent data."""
+        merged = dict(existing or {})
+        for field, value in incoming.items():
+            if value not in (None, ""):
+                merged[field] = value
+        return merged
+
+    @staticmethod
+    def _index_intent_metadata(
+        meta_map: Dict[str, Dict[str, Any]], keys: List[Any], metadata: Dict[str, Any]
+    ) -> None:
+        """Attach merged intent metadata to every known journal/exchange identity."""
+        resolved = dict(metadata)
+        for key in keys:
+            if key:
+                resolved = TradeFeatureCollector._merge_intent_metadata(
+                    meta_map.get(str(key)), resolved
+                )
+        for key in keys:
+            if key:
+                meta_map[str(key)] = dict(resolved)
+
     def _load_intent_metadata_map(self) -> Dict[str, Dict[str, Any]]:
         """Load strategy-level metadata (stop_loss, take_profit, confidence, regime, strategy) from journal/ledger keyed by order_ref and order_id."""
         meta_map: Dict[str, Dict[str, Any]] = {}
@@ -274,10 +300,15 @@ class TradeFeatureCollector:
                                 "regime": str(reg) if reg is not None else "",
                                 "strategy": str(strat) if strat is not None else "",
                             }
-                            if ref:
-                                meta_map[str(ref)] = meta
-                            if oid:
-                                meta_map[str(oid)] = meta
+                            # The journal's order_ref, broker client order ID, and exchange
+                            # order ID are distinct identities.  Index all of them so a later
+                            # sparse SUBMITTED lifecycle record cannot sever the collector's
+                            # link to the original signal metadata.
+                            self._index_intent_metadata(
+                                meta_map,
+                                [ref, entry.get("client_order_id"), oid],
+                                meta,
+                            )
                         except Exception:
                             pass
             except Exception as e:
@@ -300,21 +331,18 @@ class TradeFeatureCollector:
                             reg = entry.get("regime")
                             strat = entry.get("strategy") or entry.get("strategy_name")
 
-                            keys = [k for k in [ref, oid] if k]
-                            for k in keys:
-                                sk = str(k)
-                                meta = meta_map.get(sk, {})
-                                if sl is not None and not meta.get("initial_stop_loss"):
-                                    meta["initial_stop_loss"] = str(sl)
-                                if tp is not None and not meta.get("initial_take_profit"):
-                                    meta["initial_take_profit"] = str(tp)
-                                if conf is not None and not meta.get("confidence"):
-                                    meta["confidence"] = str(conf)
-                                if reg is not None and not meta.get("regime"):
-                                    meta["regime"] = str(reg)
-                                if strat is not None and not meta.get("strategy"):
-                                    meta["strategy"] = str(strat)
-                                meta_map[sk] = meta
+                            meta = {
+                                "initial_stop_loss": str(sl) if sl is not None else "",
+                                "initial_take_profit": str(tp) if tp is not None else "",
+                                "confidence": str(conf) if conf is not None else "",
+                                "regime": str(reg) if reg is not None else "",
+                                "strategy": str(strat) if strat is not None else "",
+                            }
+                            self._index_intent_metadata(
+                                meta_map,
+                                [ref, entry.get("client_order_id"), oid],
+                                meta,
+                            )
                         except Exception:
                             pass
             except Exception as e:
@@ -538,7 +566,11 @@ class TradeFeatureCollector:
         self._recorded_ids.clear()
 
     def _append_row(self, row: Dict[str, Any]) -> None:
-        """Safely append a single dictionary row to trade_journal.csv."""
+        """Safely append a single dictionary row to trade_journal.csv with strict idempotency."""
+        tid = row.get("trade_id")
+        if tid and tid in self._recorded_ids:
+            return
+
         paths = list(dict.fromkeys([p for p in (self.csv_path, self.alt_csv_path) if p]))
         for p in paths:
             try:
@@ -548,6 +580,22 @@ class TradeFeatureCollector:
                     f.flush()
             except Exception as e:
                 logger.error(f"TRADE_JOURNAL: Failed to append row {row.get('trade_id')} to {p}: {e}")
+
+        if tid:
+            self._recorded_ids.add(tid)
+            # Automatically synchronize with SymbolCooldownGate
+            try:
+                from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+                sym = row.get("symbol")
+                pnl = float(row.get("pnl_usdt", 0.0) or 0.0)
+                is_unwind = str(row.get("is_execution_unwind", "")).lower() == "true"
+                if sym:
+                    if pnl < 0 or is_unwind:
+                        symbol_cooldown_gate.record_stop_loss_exit(sym)
+                    elif pnl > 0:
+                        symbol_cooldown_gate.record_take_profit_exit(sym)
+            except Exception as e:
+                logger.debug(f"TRADE_JOURNAL: Could not update cooldown gate: {e}")
 
     # -- Background Lifecycle ----------------------------------------------------
 

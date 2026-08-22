@@ -176,6 +176,7 @@ class BaseStrategyAdapter(StrategyPort):
         # Check if strategy is enabled before processing
         if not StrategyConfig.get_strategy_enabled(self.name):
             self.logger.debug(f"Strategy {self.name} is disabled, skipping signal evaluation")
+            self._record_signal_census(fused_signal, "REJECTED", "strategy disabled")
             return None
 
         # Increment bar counter for this symbol to track timing between entries
@@ -186,10 +187,12 @@ class BaseStrategyAdapter(StrategyPort):
         should_emit, reason = self._should_emit_intent(fused_signal)
         if not should_emit:
             self.logger.info(f"Strategy {self.name} blocked intent emission for {symbol}: {reason}")
+            self._record_signal_census(fused_signal, "REJECTED", reason)
             return None
 
         if not self.should_execute(fused_signal):
             self.logger.info(f"Strategy {self.name} rejected fused signal for {fused_signal.symbol.value}")
+            self._record_signal_census(fused_signal, "REJECTED", "strategy eligibility rejected")
             return None
 
         # Select appropriate strategy based on the fused signal
@@ -286,8 +289,19 @@ class BaseStrategyAdapter(StrategyPort):
 
         # Add trade_id to execution intent metadata
         execution_intent.metadata['trade_id'] = trade_id
+        self._record_signal_census(fused_signal, "ACCEPTED", "intent emitted", execution_intent)
 
         return execution_intent
+
+    def _record_signal_census(
+        self, fused_signal: FusedSignal, decision: str, reason: str, intent: Optional[ExecutionIntent] = None
+    ) -> None:
+        """Best-effort research telemetry; a write failure must never affect a signal."""
+        try:
+            from infrastructure.execution.signal_census_journal import signal_census_journal
+            signal_census_journal.record(self.name, fused_signal, decision, reason, intent)
+        except Exception as exc:
+            self.logger.warning(f"Signal census write failed: {exc}")
 
     def _should_emit_intent(self, fused_signal: FusedSignal) -> tuple[bool, str]:
         """

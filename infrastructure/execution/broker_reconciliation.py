@@ -154,13 +154,11 @@ class BrokerReconciliationService:
                 strategy_manager.record_trade_result(sym, is_profitable=is_profitable, position_closed=True)
 
                 from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
-                if realized_pnl is None and closing_order_id == "UNKNOWN":
-                    self.logger.warning(f"⚠️ Exit result for {sym} is UNKNOWN — skipping cooldown registration to avoid false loss cooldown.")
+                if not is_profitable or realized_pnl is None or realized_pnl <= 0 or closing_order_id == "UNKNOWN":
+                    symbol_cooldown_gate.record_stop_loss_exit(sym)
+                    self.logger.warning(f"🛑 SYMBOL COOLDOWN GATE: Activated 60m Stop Loss Cooldown for {sym} (is_profitable={is_profitable}, PnL={realized_pnl})")
                 else:
-                    if not is_profitable:
-                        symbol_cooldown_gate.record_stop_loss_exit(sym)
-                    else:
-                        symbol_cooldown_gate.record_take_profit_exit(sym)
+                    symbol_cooldown_gate.record_take_profit_exit(sym)
 
                 print(f"\n🔴 [POSITION CLOSED] {sym}: outcome={'TAKE PROFIT' if is_profitable else 'STOP LOSS'} PnL={realized_pnl if realized_pnl is not None else 'N/A'} USDT", flush=True)
                 self.logger.warning(

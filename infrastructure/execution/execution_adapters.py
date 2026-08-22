@@ -60,13 +60,14 @@ class DirectExecutionAdapter(BaseExecutionAdapter):
         logger.info(f"Direct execution placed order: {order_id} for {order.symbol.value}")
         return order_id
     
-    def cancel_order(self, order_id: str) -> bool:
+    def cancel_order(self, order_id: str, symbol: Optional[Any] = None) -> bool:
         """Cancel an order"""
         from infrastructure.adapters.broker_data_adapters import MockBrokerAdapter
         broker = MockBrokerAdapter()
+        target_sym = Symbol(symbol) if symbol else None
         
         # Cancel the order
-        success = broker.cancel_order(order_id, Symbol("BTCUSDT"))  # Placeholder symbol
+        success = broker.cancel_order(order_id, target_sym)
         
         if success:
             if order_id in self.execution_history:
@@ -75,12 +76,13 @@ class DirectExecutionAdapter(BaseExecutionAdapter):
         logger.info(f"Direct execution cancel order {order_id}: {success}")
         return success
     
-    def get_execution_status(self, execution_id: str) -> str:
+    def get_execution_status(self, execution_id: str, symbol: Optional[Any] = None) -> str:
         """Get execution status"""
         from infrastructure.adapters.broker_data_adapters import MockBrokerAdapter
         broker = MockBrokerAdapter()
+        target_sym = Symbol(symbol) if symbol else None
         
-        status = broker.get_order_status(execution_id, Symbol("BTCUSDT"))  # Placeholder symbol
+        status = broker.get_order_status(execution_id, target_sym)
         
         logger.info(f"Direct execution status for {execution_id}: {status}")
         return status
@@ -171,21 +173,23 @@ class SmartRouterExecutionAdapter(ExecutionPort):
         logger.info(f"Smart router placed order: {order_id} via {self.preferred_broker}")
         return order_id
     
-    def cancel_order(self, order_id: str) -> bool:
+    def cancel_order(self, order_id: str, symbol: Optional[Any] = None) -> bool:
         """Cancel an order on the broker where it was placed"""
         from infrastructure.adapters.broker_data_adapters import MockBrokerAdapter
         broker = MockBrokerAdapter()
+        target_sym = Symbol(symbol) if symbol else None
         
         # This would need to know which broker has the order
-        success = broker.cancel_order(order_id, Symbol("BTCUSDT"))  # Placeholder
+        success = broker.cancel_order(order_id, target_sym)
         logger.info(f"Smart router cancel order {order_id}: {success}")
         return success
     
-    def get_execution_status(self, execution_id: str) -> str:
+    def get_execution_status(self, execution_id: str, symbol: Optional[Any] = None) -> str:
         """Get execution status from the relevant broker"""
         from infrastructure.adapters.broker_data_adapters import MockBrokerAdapter
         broker = MockBrokerAdapter()
+        target_sym = Symbol(symbol) if symbol else None
         
-        status = broker.get_order_status(execution_id, Symbol("BTCUSDT"))  # Placeholder
+        status = broker.get_order_status(execution_id, target_sym)
         logger.info(f"Smart router status for {execution_id}: {status}")
         return status

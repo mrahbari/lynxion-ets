@@ -22,7 +22,7 @@ def test_symbol_cooldown_gate_sl_exit():
     # Verify BICO-USDT, BICOUSDT, BICO/USDT are all blocked
     allowed1, reason1 = gate.is_symbol_allowed("BICOUSDT", cooldown_minutes=60)
     assert not allowed1
-    assert "60m Stop Loss Cooldown ACTIVE" in reason1
+    assert "Cooldown ACTIVE" in reason1
 
     allowed2, reason2 = gate.is_symbol_allowed("BICO-USDT", cooldown_minutes=60)
     assert not allowed2
@@ -36,50 +36,93 @@ def test_symbol_cooldown_gate_sl_exit():
 
 
 @pytest.mark.unit
-def test_symbol_cooldown_gate_tp_bypass():
-    """Verify that Take Profit exit clears the cooldown immediately."""
+def test_symbol_cooldown_gate_tp_spacing():
+    """Verify that Take Profit exit registers a 15-minute spacing window and clears after 15m."""
     gate = SymbolCooldownGate()
     gate._sl_cooldowns.clear()
 
-    # Record SL exit then TP exit
+    # Record SL exit (60m)
     gate.record_stop_loss_exit("BICOUSDT")
     allowed_sl, _ = gate.is_symbol_allowed("BICOUSDT", cooldown_minutes=60)
     assert not allowed_sl
 
-    # Take Profit exit clears cooldown
+    # Take Profit exit sets 15m spacing window
     gate.record_take_profit_exit("BICOUSDT")
-    allowed_tp, reason_tp = gate.is_symbol_allowed("BICOUSDT", cooldown_minutes=60)
-    assert allowed_tp
-    assert reason_tp == "ALLOWED"
+    # Immediate check should have 15m cooldown active
+    allowed_tp_immediate, reason = gate.is_symbol_allowed("BICOUSDT", cooldown_minutes=60)
+    assert not allowed_tp_immediate
+    assert "Cooldown ACTIVE" in reason
+
+    # After 16 minutes, symbol should be allowed
+    gate._sl_cooldowns["BICOUSDT"] = time.time() - 3601.0
+    allowed_after, reason_after = gate.is_symbol_allowed("BICOUSDT", cooldown_minutes=60)
+    assert allowed_after
+    assert reason_after == "ALLOWED"
 
 
 @pytest.mark.unit
-def test_adaptive_trailing_stop():
-    """Verify adaptive trailing stop calculation for Long and Short positions."""
-    rm = AdvancedRiskManagementService()
+def test_symbol_health_gate_24h_circuit_breaker():
+    """Verify that 2 rapid losses within 2 hours engage the 24-hour circuit breaker."""
+    gate = SymbolCooldownGate()
+    gate._sl_cooldowns.clear()
+    gate._symbol_loss_history.clear()
 
-    # Short position entry=0.04333, initial SL=0.0441966 (2% SL distance)
-    # Price moves down to 0.04250 (in profit)
-    new_sl_short = rm.update_trailing_stop(
-        current_price=0.04250,
-        entry_price=0.04333,
-        position_side="SHORT",
-        initial_stop_loss=0.0441966
+    # First loss -> standard 60m cooldown
+    gate.record_stop_loss_exit("SOLUSDT")
+    rem_ts_1 = gate._sl_cooldowns.get("SOLUSDT", 0) - time.time()
+    assert rem_ts_1 <= 3605.0  # Approx 60 minutes
+
+    # Second loss 10 minutes later -> triggers 24-hour circuit breaker
+    gate.record_stop_loss_exit("SOLUSDT")
+    rem_ts_2 = gate._sl_cooldowns.get("SOLUSDT", 0) - time.time()
+    assert rem_ts_2 > 22 * 3600.0  # > 22 hours remaining (24h lockout)
+
+    allowed, reason = gate.is_symbol_allowed("SOLUSDT", cooldown_minutes=60)
+    assert not allowed
+    assert "60m Stop Loss Cooldown ACTIVE" in reason
+
+
+@pytest.mark.unit
+def test_active_position_manager_breakeven_and_trailing():
+    """Verify ActivePositionManager triggers Breakeven at +5% ROE and Trailing Stop at +10% ROE."""
+    from infrastructure.risk.active_position_manager import ActivePositionManager
+    from unittest.mock import MagicMock
+
+    mgr = ActivePositionManager(
+        be_trigger_roe=5.0,
+        trail_trigger_roe=10.0,
+        trail_distance_pct=0.005,
+        fee_buffer_pct=0.001,
+        leverage_multiplier=10.0
     )
+    mgr._positions_state.clear()
 
-    # Trailing stop must move DOWN below initial SL
-    assert new_sl_short < 0.0441966
-    assert new_sl_short == pytest.approx(0.04335, abs=1e-4)
+    mock_pos_long = MagicMock()
+    mock_pos_long.symbol = "ETHUSDT"
+    mock_pos_long.side.value = "BUY"
+    mock_pos_long.quantity = 1.0
+    mock_pos_long.entry_price = 2000.0
+    mock_pos_long.current_price = 2000.0
 
-    # Long position entry=100.0, initial SL=98.0 (2% SL distance)
-    # Price moves up to 105.0 (in profit)
-    new_sl_long = rm.update_trailing_stop(
-        current_price=105.0,
-        entry_price=100.0,
-        position_side="LONG",
-        initial_stop_loss=98.0
-    )
+    mock_broker = MagicMock()
+    mock_broker.get_all_positions.return_value = [mock_pos_long]
 
-    # Trailing stop must move UP above initial SL
-    assert new_sl_long > 98.0
-    assert new_sl_long >= 102.0
+    # Initial state (0% ROE) -> No action
+    actions = mgr.evaluate_open_positions(mock_broker, current_prices={"ETHUSDT": 2000.0})
+    assert len(actions) == 0
+
+    # Price moves to 2012.0 (+0.6% price move -> +6.0% ROE) -> Triggers Breakeven (+0.1% buffer = $2002.0)
+    actions = mgr.evaluate_open_positions(mock_broker, current_prices={"ETHUSDT": 2012.0})
+    assert len(actions) == 1
+    assert actions[0]["type"] == "BREAKEVEN_ACTIVATED"
+    assert actions[0]["new_sl_price"] == pytest.approx(2002.0, abs=1e-2)
+
+    # Price moves to 2030.0 (+1.5% price move -> +15.0% ROE) -> Triggers Trailing Stop Ratchet (0.5% below 2030 = $2019.85)
+    actions = mgr.evaluate_open_positions(mock_broker, current_prices={"ETHUSDT": 2030.0})
+    assert len(actions) == 1
+    assert actions[0]["type"] == "TRAILING_STOP_RATCHET"
+    assert actions[0]["new_sl_price"] == pytest.approx(2019.85, abs=1e-2)
+
+    # Price drops to 2015.0 (below trailing stop $2019.85) -> Triggers Trailing Exit Executed
+    actions = mgr.evaluate_open_positions(mock_broker, current_prices={"ETHUSDT": 2015.0})
+    assert any(a["type"] == "TRAILING_EXIT_EXECUTED" for a in actions)

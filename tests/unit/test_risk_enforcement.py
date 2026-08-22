@@ -107,12 +107,12 @@ def test_exposure_accrues_via_register_fill_then_rejects():
 
 
 def test_60m_stop_loss_cooldown_enforcement_and_persistence():
-    """Verify that Stop Loss exit activates persistent 60m cooldown dynamically across any symbol (BTC, ETH, SOL, XRP, LTC, XMR)."""
+    """Verify that Stop Loss exit activates persistent 60m cooldown dynamically across any allowed symbol (BTC, ETH, SOL, XRP, LTC, ADA)."""
     rm = EnterpriseRiskManager()
     enf = RiskEnforcement(rm)
 
     # Test dynamic multi-symbol enforcement
-    test_symbols = ["BTC-USDT", "ETH-USDT", "SOL-USDT", "XRP-USDT", "LTC-USDT", "XMR-USDT"]
+    test_symbols = ["BTC-USDT", "ETH-USDT", "SOL-USDT", "XRP-USDT", "LTC-USDT", "ADA-USDT"]
 
     for sym in test_symbols:
         raw_sym = sym.replace("-", "")
@@ -141,6 +141,18 @@ def test_60m_stop_loss_cooldown_enforcement_and_persistence():
         allowed_fresh, reason_fresh = fresh_enf.enforce(sym_order)
         assert not allowed_fresh
         assert "60m Stop Loss Cooldown ACTIVE" in reason_fresh
+
+
+def test_blacklisted_symbol_rejection():
+    """Verify that blacklisted symbols like XMRUSDT are rejected fail-closed at the risk barrier."""
+    enf = RiskEnforcement(EnterpriseRiskManager())
+    xmr_order = Order(symbol=Symbol("XMRUSDT"), side=OrderSide.BUY, quantity=Decimal("1.0"),
+                      price=Money(Decimal("100.0"), "USDT"), order_type="MARKET",
+                      strategy_name="trend_following", timestamp=datetime.now(timezone.utc),
+                      stop_loss_price=Money(Decimal("98.0"), "USDT"))
+    allowed, reason = enf.enforce(xmr_order)
+    assert not allowed
+    assert "PERMANENT_BLACKLIST" in reason
 
 
 def test_mandatory_stop_loss_rejection():

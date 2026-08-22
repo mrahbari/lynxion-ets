@@ -69,6 +69,7 @@ class MeanReversionStrategyAdapter(BaseStrategyAdapter):
                 val=struct["val"],
                 vah=struct["vah"],
                 poc=struct["poc"],
+                data_buffer=self.data_buffer,
                 config=self.config
             )
 

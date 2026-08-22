@@ -71,10 +71,10 @@ def test_default_halt_engages_kill_switch(tmp_path):
 def test_entry_order_filled_does_not_trigger_trade_result(tmp_path, monkeypatch):
     """TEST 1: Entry order FILLED while position still exists must NOT trigger record_trade_result()."""
     j = _journal(tmp_path)
-    ref = j.record_intent("XMR-USDT", "BUY", "1.0", "bingx", "x1")
+    ref = j.record_intent("ADA-USDT", "BUY", "1.0", "bingx", "x1")
     j.record_submitted(ref, "ENTRY_OID", "bingx")
 
-    broker = _FakeBroker(positions=[_pos("XMR-USDT", 1.0)], statuses={"ENTRY_OID": "FILLED"})
+    broker = _FakeBroker(positions=[_pos("ADA-USDT", 1.0)], statuses={"ENTRY_OID": "FILLED"})
 
     trade_results = []
     from infrastructure.strategies.strategy_manager import strategy_manager
@@ -90,7 +90,7 @@ def test_entry_order_filled_does_not_trigger_trade_result(tmp_path, monkeypatch)
 def test_sl_position_close_triggers_cooldown(tmp_path, monkeypatch):
     """TEST 2: Position closure via STOP_MARKET (realizedProfit < 0) calls record_trade_result(is_profitable=False)."""
     j = _journal(tmp_path)
-    broker = _FakeBroker(positions=[_pos("XMR-USDT", 1.0)])
+    broker = _FakeBroker(positions=[_pos("ADA-USDT", 1.0)])
 
     svc = BrokerReconciliationService(halt_fn=lambda r: None)
 
@@ -110,13 +110,13 @@ def test_sl_position_close_triggers_cooldown(tmp_path, monkeypatch):
     svc.reconcile(broker, j)
 
     # Assert record_trade_result was called ONCE with is_profitable=False
-    assert trade_results == [("XMR-USDT", False)]
+    assert trade_results == [("ADA-USDT", False)]
 
 
 def test_tp_position_close_no_cooldown(tmp_path, monkeypatch):
     """TEST 3: Position closure via TAKE_PROFIT_MARKET calls record_trade_result(is_profitable=True)."""
     j = _journal(tmp_path)
-    broker = _FakeBroker(positions=[_pos("XMR-USDT", 1.0)])
+    broker = _FakeBroker(positions=[_pos("ADA-USDT", 1.0)])
 
     svc = BrokerReconciliationService(halt_fn=lambda r: None)
 
@@ -136,13 +136,13 @@ def test_tp_position_close_no_cooldown(tmp_path, monkeypatch):
     svc.reconcile(broker, j)
 
     # Assert record_trade_result was called ONCE with is_profitable=True
-    assert trade_results == [("XMR-USDT", True)]
+    assert trade_results == [("ADA-USDT", True)]
 
 
 def test_idempotent_closed_position_event(tmp_path, monkeypatch):
     """TEST 4: Same closed position in multiple reconciliation cycles calls record_trade_result EXACTLY ONCE."""
     j = _journal(tmp_path)
-    broker = _FakeBroker(positions=[_pos("XMR-USDT", 1.0)])
+    broker = _FakeBroker(positions=[_pos("ADA-USDT", 1.0)])
 
     svc = BrokerReconciliationService(halt_fn=lambda r: None)
 
@@ -165,5 +165,5 @@ def test_idempotent_closed_position_event(tmp_path, monkeypatch):
     svc.reconcile(broker, j)
 
     # Assert called EXACTLY ONCE across multiple cycles
-    assert trade_results == [("XMR-USDT", False)]
+    assert trade_results == [("ADA-USDT", False)]
 

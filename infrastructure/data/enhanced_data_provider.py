@@ -187,20 +187,19 @@ class EnhancedDataProviderAdapter(DataProviderPort, _EdpPricingMixin, _EdpAvaila
                 self.logger.info(f"Using {len(real_historical)} real historical data points as final fallback for {symbol.value}")
                 return real_historical
 
-            # If all else fails, return minimal data but log this as a warning
-            # This is better than completely failing, but we should be aware when this happens
-            self.logger.warning(f"No historical data available for {symbol.value}, using minimal data which may affect signal generation")
-            return self._get_minimal_data_for_symbol(symbol.value)
+            # In production, never trade on synthetic minimal data if real data is missing/corrupted
+            self.logger.warning(f"No valid historical data available for {symbol.value}; returning empty data to prevent corrupted signals.")
+            return []
 
         except Exception as e:
             self.logger.error(f"Error getting historical data for {symbol.value}: {e}")
-            # Try to get real historical data as fallback before using mock data
+            # Try to get real historical data as fallback before failing
             real_historical = self._get_real_historical_from_external_source(symbol.value, period, timeframe)
             if real_historical and len(real_historical) > 0:
                 self.logger.info(f"Using {len(real_historical)} real historical data points as fallback for {symbol.value}")
                 return real_historical
-            self.logger.warning(f"Using minimal data for {symbol.value} after error: {e}")
-            return self._get_minimal_data_for_symbol(symbol.value)
+            self.logger.warning(f"Data quality or provider failure for {symbol.value}: {e}. Aborting data fetch.")
+            return []
 
     def _get_real_historical_from_external_source(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
         """Fetch real historical data from external sources like exchanges with caching."""

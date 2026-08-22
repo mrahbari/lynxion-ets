@@ -53,7 +53,9 @@ class SweepScalperAdapter(BaseStrategyAdapter):
                 lows=lows,
                 val=struct["val"],
                 vah=struct["vah"],
-                poc=struct["poc"]
+                poc=struct["poc"],
+                data_buffer=self.data_buffer,
+                config=self.config
             )
 
             # Filter setups to only match NGLS_SWEEP setups

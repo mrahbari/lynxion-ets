@@ -895,7 +895,7 @@ class BrokerExecutionService(ExecutionPort):
     # Removed _validate_order_risk and _enhance_order_with_risk_parameters methods
     # as risk management should only be handled by the Strategy layer per architectural requirements
 
-    def cancel_order(self, order_id: str) -> bool:
+    def cancel_order(self, order_id: str, symbol: Optional[Any] = None) -> bool:
         """Cancel an order through the configured broker."""
         try:
             self.logger.info(f"🔄 CANCELLING ORDER ON {self.broker_name}: {order_id}")
@@ -903,25 +903,21 @@ class BrokerExecutionService(ExecutionPort):
             if self.use_multi_broker:
                 return self.broker.cancel_order(order_id)
             else:
-                # For single broker, use cancel_order method with placeholder symbol
-                # For now, we'll use a placeholder symbol - in real implementation,
-                # the order_id should be sufficient or you'd pass the symbol
-                return self.broker.cancel_order(order_id, Symbol("BTCUSDT"))  # Placeholder
+                target_sym = Symbol(symbol) if symbol else None
+                return self.broker.cancel_order(order_id, target_sym)
         except Exception as e:
             self.logger.error(f"❌ FAILED TO CANCEL ORDER ON {self.broker_name}: {e}")
             return False
 
-    def get_execution_status(self, execution_id: str) -> str:
+    def get_execution_status(self, execution_id: str, symbol: Optional[Any] = None) -> str:
         """Get the status of an execution through the configured broker."""
         try:
             # If using multi-broker service, use get_execution_status method directly
             if self.use_multi_broker:
                 return self.broker.get_execution_status(execution_id)
             else:
-                # For single broker, use get_order_status method with placeholder symbol
-                # In a real implementation, you'd need the symbol as well
-                # For now, using placeholder - real implementation would track symbol with execution
-                status = self.broker.get_order_status(execution_id, Symbol("BTCUSDT"))  # Placeholder
+                target_sym = Symbol(symbol) if symbol else None
+                status = self.broker.get_order_status(execution_id, target_sym)
                 return status
         except Exception as e:
             self.logger.error(f"❌ FAILED TO GET EXECUTION STATUS ON {self.broker_name}: {e}")

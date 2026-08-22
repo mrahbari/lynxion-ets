@@ -5,7 +5,7 @@ This service provides exchange switching capabilities similar to the downloader'
 import threading
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional, Set
+from typing import Any, Dict, Optional, Set
 
 from domain.entities import Order
 from domain.ports.execution_ports import ExecutionPort
@@ -15,6 +15,54 @@ from infrastructure.brokers.broker_adapters import (
 )
 from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 from shared.logger import EnhancedLogger
+
+
+def extract_order_journal_metadata(order: Any) -> Dict[str, Any]:
+    """Return the decision metadata needed to attribute an exchange fill to its intent.
+
+    Execution orders carry protective prices as ``*_price`` Money objects and often
+    retain the strategy decision through ``parent_execution_intent``.  The journal
+    must capture those canonical fields rather than only legacy attribute names.
+    """
+    parent_intent = getattr(order, "parent_execution_intent", None)
+    metadata = getattr(order, "metadata", None) or getattr(parent_intent, "metadata", None) or {}
+    risk_parameters = getattr(order, "risk_parameters", None) or getattr(parent_intent, "risk_parameters", None) or {}
+
+    def scalar(value: Any) -> Any:
+        return getattr(value, "amount", getattr(value, "value", value))
+
+    stop_loss = (
+        getattr(order, "stop_loss", None)
+        or getattr(order, "initial_stop_loss", None)
+        or risk_parameters.get("stop_loss")
+        or scalar(getattr(order, "stop_loss_price", None))
+    )
+    take_profit = (
+        getattr(order, "take_profit", None)
+        or getattr(order, "initial_take_profit", None)
+        or risk_parameters.get("take_profit")
+        or scalar(getattr(order, "take_profit_price", None))
+    )
+    confidence = (
+        getattr(order, "confidence", None)
+        or getattr(order, "intent_confidence", None)
+        or getattr(parent_intent, "intent_confidence", None)
+        or metadata.get("confidence")
+        or metadata.get("fused_confidence")
+    )
+    regime = getattr(order, "regime", None) or metadata.get("regime") or metadata.get("regime_context")
+    strategy = (
+        getattr(order, "strategy_name", None)
+        or getattr(order, "strategy", None)
+        or getattr(parent_intent, "strategy_name", None)
+    )
+    return {
+        "stop_loss": scalar(stop_loss),
+        "take_profit": scalar(take_profit),
+        "confidence": scalar(confidence),
+        "regime": regime,
+        "strategy": strategy,
+    }
 
 
 class MultiBrokerExecutionService(ExecutionPort):
@@ -347,10 +395,14 @@ class MultiBrokerExecutionService(ExecutionPort):
         return False
 
     def execute_order(self, order: Order) -> str:
-        """
-        Execute an order, trying different exchanges if the symbol is not available on the primary one.
-        """
-        symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
+        """Execute an order, trying different exchanges if the symbol is not available on the primary one."""
+        from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
+        normalized_symbol = SymbolFormatHelper.normalize_symbol(order.symbol)
+        if not SymbolFormatHelper.is_valid_symbol_format(normalized_symbol):
+            self.logger.warning(f"❌ INVALID SYMBOL FORMAT: {order.symbol} cannot be parsed into a valid trading pair.")
+            return None
+
+        symbol_str = normalized_symbol
 
         # First, check if the symbol is in the approved symbols list
         # This is the primary validation - if a symbol is not approved, it's not available for trading
@@ -489,27 +541,11 @@ class MultiBrokerExecutionService(ExecutionPort):
                         sym = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
                         side_name = getattr(order.side, 'name', str(order.side))
 
-                        sl = getattr(order, 'stop_loss', None) or getattr(order, 'initial_stop_loss', None)
-                        if sl is None and hasattr(order, 'risk_parameters') and isinstance(order.risk_parameters, dict):
-                            sl = order.risk_parameters.get('stop_loss')
-
-                        tp = getattr(order, 'take_profit', None) or getattr(order, 'initial_take_profit', None)
-                        if tp is None and hasattr(order, 'risk_parameters') and isinstance(order.risk_parameters, dict):
-                            tp = order.risk_parameters.get('take_profit')
-
-                        conf = getattr(order, 'confidence', None) or getattr(order, 'intent_confidence', None)
-                        if conf is None and hasattr(order, 'metadata') and isinstance(order.metadata, dict):
-                            conf = order.metadata.get('confidence') or order.metadata.get('fused_confidence')
-
-                        reg = getattr(order, 'regime', None)
-                        if reg is None and hasattr(order, 'metadata') and isinstance(order.metadata, dict):
-                            reg = order.metadata.get('regime')
-
-                        strat = getattr(order, 'strategy_name', None) or getattr(order, 'strategy', None)
+                        journal_metadata = extract_order_journal_metadata(order)
 
                         journal_ref = live_order_journal.record_intent(
                             sym, side_name, order.quantity, best_exchange, coid,
-                            stop_loss=sl, take_profit=tp, confidence=conf, regime=reg, strategy=strat)
+                            **journal_metadata)
                     except Exception:
                         journal_ref = None
 

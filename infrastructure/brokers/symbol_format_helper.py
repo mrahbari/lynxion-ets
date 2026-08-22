@@ -1,134 +1,78 @@
 """
-Symbol format helper for consistent symbol formatting across all exchanges.
+Unified Symbol Format & Conversion Helper for all Broker / Exchange Integrations.
 """
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Any
 import re
 
 
 class SymbolFormatHelper:
-    """Helper class for consistent symbol formatting across exchanges."""
+    """Centralized helper for standardizing, validating, and converting symbols per target broker."""
 
-    @staticmethod
-    def format_symbol_for_exchange(symbol: str, exchange_name: str) -> str:
+    QUOTE_CURRENCIES = [
+        'USDT', 'USD', 'USDC', 'BTC', 'ETH', 'BNB', 'BUSD', 'DAI', 'TUSD', 'PAX',
+        'USDD', 'FDUSD', 'TERRA', 'FRAX', 'LUSD', 'FEI', 'ALUSD', 'GUSD', 'HUSD',
+        'EUR', 'GBP', 'JPY', 'TRY', 'RUB', 'ZAR', 'UAH', 'NGN', 'BRL', 'AUD',
+        'CAD', 'CHF', 'CNY', 'HKD', 'IDR', 'INR', 'KRW', 'SGD', 'THB', 'VND'
+    ]
+
+    @classmethod
+    def normalize_symbol(cls, symbol: Any) -> str:
+        """Normalize symbol to standard uppercase string without separators (e.g. 'BTCUSDT')."""
+        s = getattr(symbol, 'value', None) or str(symbol or "")
+        return s.upper().replace('-', '').replace('/', '').replace('_', '').replace(' ', '').strip()
+
+    @classmethod
+    def split_base_quote(cls, symbol: Any) -> Tuple[str, str]:
+        """Extract (base, quote) tuple from any symbol representation."""
+        norm = cls.normalize_symbol(symbol)
+        # Check known quote currencies sorted by length descending
+        for qc in sorted(cls.QUOTE_CURRENCIES, key=len, reverse=True):
+            if norm.endswith(qc):
+                base = norm[:-len(qc)]
+                if len(base) >= 1:
+                    return base, qc
+        return norm, "USDT"
+
+    @classmethod
+    def format_symbol_for_exchange(cls, symbol: Any, exchange_name: str) -> str:
+        """Format symbol according to the specific broker / exchange API specifications.
+
+        - BingX perpetual: 'BTC-USDT'
+        - Binance / CCXT:  'BTC/USDT'
+        - MEXC contract:   'BTC_USDT'
+        - Phemex contract: 'BTC/USDT'
+        - Standard default:'BTCUSDT'
         """
-        Format symbol according to exchange requirements.
-        
-        Args:
-            symbol: Symbol in various formats (e.g., BTCUSDT, BTC-USDT, BTC/USDT)
-            exchange_name: Name of the exchange (binance, bingx, mexc, phemex)
-            
-        Returns:
-            Formatted symbol string
-        """
-        # Normalize the input symbol by removing any existing separators
-        normalized_symbol = symbol.replace('-', '').replace('/', '').replace('_', '')
+        ex = str(exchange_name or "").lower().strip()
+        base, quote = cls.split_base_quote(symbol)
 
-        # Define exchange-specific formats
-        slash_format_exchanges = ['binance', 'mexc', 'phemex']
-        dash_format_exchanges = ['bingx']
+        if not base:
+            return cls.normalize_symbol(symbol)
 
-        if exchange_name.lower() in slash_format_exchanges:
-            # These exchanges expect the format like BTC/USDT
-            # Extract base and quote currency by looking for common quote currencies at the end
-            quote_currencies = [
-                'USDT', 'USD', 'BTC', 'ETH', 'BNB', 'BUSD', 'USDC', 'DAI', 'TUSD', 'PAX',
-                'USDD', 'FDUSD', 'TERRA', 'FRAX', 'LUSD', 'FEI', 'ALUSD', 'GUSD', 'HUSD',
-                'EUR', 'GBP', 'JPY', 'TRY', 'RUB', 'ZAR', 'UAH', 'NGN', 'BRL', 'AUD',
-                'CAD', 'CHF', 'CNY', 'HKD', 'IDR', 'INR', 'KRW', 'SGD', 'THB', 'VND'
-            ]
-
-            # Look for quote currency at the end of the symbol first (most common case)
-            for qc in quote_currencies:
-                if normalized_symbol.upper().endswith(qc.upper()):
-                    base = normalized_symbol[:-len(qc)]
-                    quote = qc
-                    return f"{base}/{quote}"
-
-            # If not found at the end, return the normalized symbol as is
-            return normalized_symbol
-        elif exchange_name.lower() in dash_format_exchanges:
-            # These exchanges expect the format like BTC-USDT
-            # Extract base and quote currency by looking for common quote currencies at the end
-            quote_currencies = [
-                'USDT', 'USD', 'BTC', 'ETH', 'BNB', 'BUSD', 'USDC', 'DAI', 'TUSD', 'PAX',
-                'USDD', 'FDUSD', 'TERRA', 'FRAX', 'LUSD', 'FEI', 'ALUSD', 'GUSD', 'HUSD',
-                'EUR', 'GBP', 'JPY', 'TRY', 'RUB', 'ZAR', 'UAH', 'NGN', 'BRL', 'AUD',
-                'CAD', 'CHF', 'CNY', 'HKD', 'IDR', 'INR', 'KRW', 'SGD', 'THB', 'VND'
-            ]
-
-            # Look for quote currency at the end of the symbol first (most common case)
-            for qc in quote_currencies:
-                if normalized_symbol.upper().endswith(qc.upper()):
-                    base = normalized_symbol[:-len(qc)]
-                    quote = qc
-                    return f"{base}-{quote}"
-
-            # If not found at the end, return the normalized symbol as is
-            return normalized_symbol
+        if ex in ('bingx', 'bingx_swap', 'bingx_futures'):
+            return f"{base}-{quote}"
+        elif ex in ('binance', 'phemex', 'bybit', 'okx', 'ccxt'):
+            return f"{base}/{quote}"
+        elif ex in ('mexc', 'mexc_futures'):
+            return f"{base}_{quote}"
         else:
-            # Default to no separator format for other exchanges
-            return normalized_symbol
+            return f"{base}{quote}"
 
-    @staticmethod
-    def parse_symbol_from_exchange(symbol: str, exchange_name: str) -> str:
-        """
-        Parse symbol from exchange format back to standard format.
-        
-        Args:
-            symbol: Symbol in exchange format (e.g., BTC/USDT, BTC-USDT)
-            exchange_name: Name of the exchange
-            
-        Returns:
-            Standard symbol format (e.g., BTCUSDT)
-        """
-        # Remove separators and return standard format
-        return symbol.replace('-', '').replace('/', '').replace('_', '')
+    @classmethod
+    def format_order_symbol(cls, symbol: Any, exchange_name: str) -> str:
+        """Alias for formatting before order placement."""
+        return cls.format_symbol_for_exchange(symbol, exchange_name)
 
-    @staticmethod
-    def normalize_symbol(symbol: str) -> str:
-        """
-        Normalize symbol to standard format (e.g., BTCUSDT).
-        
-        Args:
-            symbol: Symbol in any format
-            
-        Returns:
-            Normalized symbol in standard format
-        """
-        return symbol.replace('-', '').replace('/', '').replace('_', '')
+    @classmethod
+    def parse_symbol_from_exchange(cls, symbol: Any, exchange_name: Optional[str] = None) -> str:
+        """Parse symbol from exchange format back to standard normalized format (e.g. 'BTCUSDT')."""
+        return cls.normalize_symbol(symbol)
 
-    @staticmethod
-    def is_valid_symbol_format(symbol: str) -> bool:
-        """
-        Check if symbol has a valid format.
-        
-        Args:
-            symbol: Symbol to validate
-            
-        Returns:
-            True if valid, False otherwise
-        """
-        # Basic validation: should have at least 6 characters (e.g., BTCUSDT)
-        # and start with letters followed by letters/numbers
-        if len(symbol) < 6:
+    @classmethod
+    def is_valid_symbol_format(cls, symbol: Any) -> bool:
+        """Validate if symbol has proper format and recognizable quote currency."""
+        norm = cls.normalize_symbol(symbol)
+        if len(norm) < 4 or not re.match(r'^[A-Za-z0-9]+$', norm):
             return False
-        
-        # Should contain only letters and numbers
-        if not re.match(r'^[A-Za-z0-9]+$', symbol):
-            return False
-            
-        # Should end with common quote currencies
-        quote_currencies = [
-            'USDT', 'USD', 'BTC', 'ETH', 'BNB', 'BUSD', 'USDC', 'DAI', 'TUSD', 'PAX',
-            'USDD', 'FDUSD', 'TERRA', 'FRAX', 'LUSD', 'FEI', 'ALUSD', 'GUSD', 'HUSD',
-            'EUR', 'GBP', 'JPY', 'TRY', 'RUB', 'ZAR', 'UAH', 'NGN', 'BRL', 'AUD',
-            'CAD', 'CHF', 'CNY', 'HKD', 'IDR', 'INR', 'KRW', 'SGD', 'THB', 'VND'
-        ]
-        
-        for quote in quote_currencies:
-            if symbol.upper().endswith(quote.upper()):
-                base = symbol[:-len(quote)]
-                if len(base) >= 1:  # Base currency should be at least 1 character
-                    return True
-        
-        return False
+        base, quote = cls.split_base_quote(norm)
+        return len(base) >= 1 and quote in cls.QUOTE_CURRENCIES

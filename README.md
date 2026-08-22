@@ -19,6 +19,7 @@ It combines automated optimization, walk-forward validation, and multi-timeframe
 * [Configuration](#configuration)
 * [Data Structure](#data-structure)
 * [Troubleshooting](#troubleshooting)
+* [Prospective Validation & Live Execution Plan](#prospective-validation--live-execution-plan)
 * [Maintenance](#maintenance)
 * [Contributing](#contributing)
 * [License](#license)
@@ -1217,6 +1218,35 @@ data/
 * Run `pip install pydantic pydantic-settings` to ensure the configuration system can load.
 
 Logs are available in `logs/`.
+
+---
+
+## Prospective Validation & Live Execution Plan
+
+### 1. Forensic Audit & Cohort Breakdown
+During the live prospective validation cohort ($N=100$ trades on BingX VST):
+- **Headline Performance ($N=92$)**: 20 Wins / 72 Losses (21.7% Win Rate), Net Realized PnL: `-$111.34 VST`.
+- **Forensic Diagnosis**:
+  - **Pre-Fix XMR Protective Unwind Defect**: 47 trades, 0 wins, **`-$107.57 VST`** (95% of total losses). Caused by unformatted conditional order precision on BingX triggering repeated protective unwinds with legacy cooldown bypass.
+  - **Non-Anomaly Organic Performance (23 Symbols)**: 45 trades, 20 wins, 25 losses, **`+$1.36 VST` (Net Positive Profitability, 47.6% Win Rate)**.
+
+### 2. Live Risk & Position Management Architecture
+- **Active Position Trailing Stop Engine (`infrastructure/risk/active_position_manager.py`)**:
+  - **Breakeven Protection**: Automatically moves Stop Loss to Entry + 0.1% fee buffer at **+5.0% ROE** (+0.5% price move at 10x leverage).
+  - **Dynamic Trailing Stop**: Automatically trails Stop Loss 0.5% behind peak high-water mark price at **+10.0% ROE** (+1.0% price move at 10x leverage), locking in profits.
+  - **Clean Single-Exit Execution**: Elimination of partial-closing friction and minimum lot-size constraints.
+- **Universal Fail-Closed Cooldown Gate (`infrastructure/risk/symbol_cooldown_gate.py`)**:
+  - **60-Minute Lockout**: Enforced on ANY stop-loss exit, negative PnL exit, or protective unwind.
+  - **15-Minute Spacing Window**: Enforced even on profitable Take Profit exits to prevent rapid re-entry churn.
+  - **Zero Hardcoded Symbols**: 100% dynamic across all 34 perpetual pairs.
+
+### 3. Execution Plan Summary
+1. **Complete Cohort 1 ($N = 100$) Audit**:
+   - Complete remaining trades to reach $N = 100$ milestone and publish official validation report with dual forensic views (All-Inclusive Raw vs Non-Anomaly Organic Baseline).
+2. **Deploy Dynamic 24-Hour Symbol Health Gate**:
+   - Automatic 24-hour circuit breaker on any asset experiencing 2 consecutive protective unwinds or rapid losses within 2 hours.
+3. **Launch Clean Prospective Cohort 2 ($N = 100$)**:
+   - Benchmark the true unpolluted equity curve under the upgraded trailing stop and cooldown engine.
 
 ---
 

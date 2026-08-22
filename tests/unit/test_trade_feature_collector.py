@@ -192,6 +192,77 @@ def test_metadata_forwarding_end_to_end():
         assert meta["strategy"] == "trend_following"
 
 
+@pytest.mark.unit
+def test_metadata_is_retained_when_submitted_record_adds_exchange_order_id():
+    """Exchange-history matching by order ID must retain the original intent metadata."""
+    from infrastructure.execution.live_order_journal import LiveOrderJournal
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        journal_p = os.path.join(tmpdir, "live_order_journal.json")
+        journal = LiveOrderJournal(path=journal_p)
+        ref = journal.record_intent(
+            symbol="BTC-USDT",
+            side="BUY",
+            quantity="0.01",
+            exchange="bingx",
+            client_order_id="exchange-client-id",
+            stop_loss="62000.0",
+            take_profit="65000.0",
+            confidence="0.85",
+            regime="TRENDING_UP",
+            strategy="trend_following",
+        )
+        journal.record_submitted(ref, "exchange-order-id", "bingx")
+
+        meta = TradeFeatureCollector(journal_path=journal_p)._load_intent_metadata_map()[
+            "exchange-order-id"
+        ]
+        assert meta == {
+            "initial_stop_loss": "62000.0",
+            "initial_take_profit": "65000.0",
+            "confidence": "0.85",
+            "regime": "TRENDING_UP",
+            "strategy": "trend_following",
+        }
+
+
+@pytest.mark.unit
+def test_order_journal_metadata_uses_canonical_execution_order_fields():
+    """Journal attribution must use Order SL/TP prices and its parent intent context."""
+    from datetime import datetime
+    from decimal import Decimal
+    from domain.entities import ExecutionIntent, Order
+    from domain.enums.order_side import OrderSide
+    from domain.value_objects import Money, Percentage, Symbol
+    from infrastructure.brokers.multi_broker_service import extract_order_journal_metadata
+
+    parent_intent = ExecutionIntent(
+        symbol=Symbol("BTCUSDT"),
+        strategy_name="trend_following",
+        side=OrderSide.BUY,
+        intent_confidence=Percentage(Decimal("0.85")),
+        risk_parameters={"stop_loss": 62000.0, "take_profit": 65000.0},
+        timestamp=datetime.now(),
+        metadata={"regime_context": "TRENDING_UP"},
+    )
+    order = Order(
+        symbol=Symbol("BTCUSDT"),
+        side=OrderSide.BUY,
+        quantity=Decimal("0.01"),
+        parent_execution_intent=parent_intent,
+        stop_loss_price=Money(Decimal("62000"), "USDT"),
+        take_profit_price=Money(Decimal("65000"), "USDT"),
+    )
+
+    assert extract_order_journal_metadata(order) == {
+        "stop_loss": Decimal("62000"),
+        "take_profit": Decimal("65000"),
+        "confidence": Decimal("0.85"),
+        "regime": "TRENDING_UP",
+        "strategy": "trend_following",
+    }
+
+
 
 @pytest.mark.unit
 def test_background_thread_start_and_stop(temp_collector):
