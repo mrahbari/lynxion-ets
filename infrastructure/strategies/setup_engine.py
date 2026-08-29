@@ -91,24 +91,24 @@ class SetupEngine:
                 var = sum(vols[i] * ((typical_prices[i] - vwap) ** 2) for i in range(len(vols))) / total_vol
                 vwap_std = (var ** 0.5) if var > 0 else 0.0
 
-        # 1. NGLS Sweep Setup detection
+        # 1. NGLS Sweep Setup detection (Liquidity Sweeps with Market Structure Confirmation)
         if n >= 21:
             prev_low_20 = min(lows[-21:-1])
             prev_high_20 = max(highs[-21:-1])
 
             # Bullish sweep: Wicks below 20-bar low and rejects back up with MSS confirmation
             if lows[-1] < prev_low_20 and current_price > prev_low_20:
-                # 1. Price action confirmation: Green close OR long lower absorption wick (>= 30% of range)
+                # 1. Price action confirmation: Green close OR long lower absorption wick (>= 25% of range)
                 candle_range = highs[-1] - lows[-1]
                 lower_wick = min(open_price, current_price) - lows[-1]
-                is_rejection = (current_price >= open_price) or (candle_range > 0 and (lower_wick / candle_range) >= 0.30)
+                is_rejection = (current_price >= open_price) or (candle_range > 0 and (lower_wick / candle_range) >= 0.25)
                 
                 # 2. Market Structure Shift (MSS) / CHoCH confirmation (close above previous bar midpoint)
                 prev_mid = (highs[-2] + lows[-2]) / 2.0
                 is_mss = current_price >= prev_mid
 
-                # 3. Avoid buying in strong downward breakdown below VAL
-                is_breakdown = is_bear_trend and val > 0 and current_price < val * 0.995
+                # 3. Avoid buying in strong downward breakdown or bear trend
+                is_breakdown = is_bear_trend or (val > 0 and current_price < val * 0.995)
 
                 if is_rejection and is_mss and not is_breakdown:
                     sl_structural = lows[-1] - atr_sl_multiplier * atr
@@ -120,23 +120,30 @@ class SetupEngine:
                         tp_min = current_price + min_reward_risk_ratio * (current_price - sl)
                         tp = max(tp_structural, tp_min)
                     else:
-                        tp = tp_structural
+                        tp = max(tp_structural, current_price + min_reward_risk_ratio * (current_price - sl))
 
-                    setups.append(CandidateSetup(
-                        symbol=symbol,
-                        timestamp=ts,
-                        setup_type="NGLS_SWEEP",
-                        direction="BUY",
-                        trigger_price=Decimal(str(current_price)),
-                        stop_loss_level=Decimal(str(sl)),
-                        take_profit_level=Decimal(str(tp))
-                    ))
+                    # Strict Reward/Risk gating:
+                    if not hasattr(self, 'rejected_low_rr_count'):
+                        self.rejected_low_rr_count = {}
+                    rr_ratio = abs(tp - current_price) / abs(current_price - sl) if abs(current_price - sl) > 0 else 0.0
+                    if not reject_low_rr_setup or rr_ratio >= (min_reward_risk_ratio - 1e-6):
+                        setups.append(CandidateSetup(
+                            symbol=symbol,
+                            timestamp=ts,
+                            setup_type="NGLS_SWEEP",
+                            direction="BUY",
+                            trigger_price=Decimal(str(current_price)),
+                            stop_loss_level=Decimal(str(sl)),
+                            take_profit_level=Decimal(str(tp))
+                        ))
+                    else:
+                        self.rejected_low_rr_count[str(symbol)] = self.rejected_low_rr_count.get(str(symbol), 0) + 1
             # Bearish sweep: Wicks above 20-bar high and rejects back down with MSS confirmation
             elif highs[-1] > prev_high_20 and current_price < prev_high_20:
-                # 1. Price action confirmation: Red close OR long upper rejection wick (>= 30% of range)
+                # 1. Price action confirmation: Red close OR long upper rejection wick (>= 25% of range)
                 candle_range = highs[-1] - lows[-1]
                 upper_wick = highs[-1] - max(open_price, current_price)
-                is_rejection = (current_price <= open_price) or (candle_range > 0 and (upper_wick / candle_range) >= 0.30)
+                is_rejection = (current_price <= open_price) or (candle_range > 0 and (upper_wick / candle_range) >= 0.25)
                 
                 # 2. Market Structure Shift (MSS) / CHoCH confirmation (close below previous bar midpoint)
                 prev_mid = (highs[-2] + lows[-2]) / 2.0
@@ -155,17 +162,24 @@ class SetupEngine:
                         tp_max = current_price - min_reward_risk_ratio * (sl - current_price)
                         tp = max(0.0, min(tp_structural, tp_max))
                     else:
-                        tp = tp_structural
+                        tp = max(0.0, current_price - max(abs(current_price - tp_structural), min_reward_risk_ratio * (sl - current_price)))
 
-                    setups.append(CandidateSetup(
-                        symbol=symbol,
-                        timestamp=ts,
-                        setup_type="NGLS_SWEEP",
-                        direction="SELL",
-                        trigger_price=Decimal(str(current_price)),
-                        stop_loss_level=Decimal(str(sl)),
-                        take_profit_level=Decimal(str(tp))
-                    ))
+                    # Strict Reward/Risk gating:
+                    if not hasattr(self, 'rejected_low_rr_count'):
+                        self.rejected_low_rr_count = {}
+                    rr_ratio = abs(current_price - tp) / abs(sl - current_price) if abs(sl - current_price) > 0 else 0.0
+                    if not reject_low_rr_setup or rr_ratio >= (min_reward_risk_ratio - 1e-6):
+                        setups.append(CandidateSetup(
+                            symbol=symbol,
+                            timestamp=ts,
+                            setup_type="NGLS_SWEEP",
+                            direction="SELL",
+                            trigger_price=Decimal(str(current_price)),
+                            stop_loss_level=Decimal(str(sl)),
+                            take_profit_level=Decimal(str(tp))
+                        ))
+                    else:
+                        self.rejected_low_rr_count[str(symbol)] = self.rejected_low_rr_count.get(str(symbol), 0) + 1
 
         # 2. NGMR Reversion Setup detection (Value Area & VWAP 2.5σ Extreme Deviation)
         threshold = 0.0015 * current_price  # 0.15% threshold buffer around Value Area boundaries
@@ -177,20 +191,19 @@ class SetupEngine:
         if is_val_touch or is_vwap_oversold or is_vah_touch or is_vwap_overbought:
             candle_range = highs[-1] - lows[-1]
             if is_val_touch or is_vwap_oversold:
-                # Buy reversion to POC/VWAP: Require bounce/rejection and avoid strong downtrend
+                # Buy reversion to POC/VWAP/VAH: Require bounce/rejection and strictly avoid breakdown below VAL in bear trend
                 lower_wick = min(open_price, current_price) - lows[-1]
                 is_rejection = (current_price >= open_price) or (candle_range > 0 and (lower_wick / candle_range) >= 0.25)
                 is_breakdown = is_bear_trend and val > 0 and current_price < val * 0.995
 
-                target_poc = poc if poc > current_price else (vwap if vwap > current_price else current_price * 1.01)
+                target_poc = poc if poc > current_price else (vwap if vwap > current_price else (vah if vah > current_price else current_price * 1.01))
                 if is_rejection and not is_breakdown and target_poc > current_price:
-                    # Hybrid SL/TP: Structural invalidation + Volatility buffer + Min stop distance floor
+                    # Hybrid SL: Structural invalidation below VAL/low + Volatility buffer + Min stop distance floor
                     ref_low = min(val, lows[-1]) if val > 0 else lows[-1]
                     sl_structural = ref_low - atr_sl_multiplier * atr
                     sl_limit = current_price * (1.0 - min_stop_distance_percent)
                     sl = min(sl_structural, sl_limit)
-                    
-                    # Take profit: POC/VWAP target
+
                     tp_structural = target_poc
                     if enable_dynamic_tp:
                         tp_min = current_price + min_reward_risk_ratio * (current_price - sl)
@@ -198,11 +211,11 @@ class SetupEngine:
                     else:
                         tp = tp_structural
 
-                    # Reward/Risk checking:
+                    # Strict Reward/Risk gating:
                     if not hasattr(self, 'rejected_low_rr_count'):
                         self.rejected_low_rr_count = {}
                     rr_ratio = abs(tp - current_price) / abs(current_price - sl) if abs(current_price - sl) > 0 else 0.0
-                    if not reject_low_rr_setup or rr_ratio >= min_reward_risk_ratio:
+                    if not reject_low_rr_setup or rr_ratio >= (min_reward_risk_ratio - 1e-6):
                         setups.append(CandidateSetup(
                             symbol=symbol,
                             timestamp=ts,
@@ -215,20 +228,19 @@ class SetupEngine:
                     else:
                         self.rejected_low_rr_count[str(symbol)] = self.rejected_low_rr_count.get(str(symbol), 0) + 1
             elif is_vah_touch or is_vwap_overbought:
-                # Sell reversion to POC/VWAP: Require rejection from VAH/VWAP+2.5σ and avoid strong uptrend
+                # Sell reversion to POC/VWAP/VAL: Require rejection from VAH/VWAP+2.5σ and strictly avoid breakout above VAH in bull trend
                 upper_wick = highs[-1] - max(open_price, current_price)
                 is_rejection = (current_price <= open_price) or (candle_range > 0 and (upper_wick / candle_range) >= 0.25)
-                is_breakout = is_bull_trend or (vah > 0 and current_price > vah * 1.005)
+                is_breakout = is_bull_trend and vah > 0 and current_price > vah * 1.005
 
-                target_poc = poc if (0 < poc < current_price) else (vwap if (0 < vwap < current_price) else current_price * 0.99)
+                target_poc = poc if (0 < poc < current_price) else (vwap if (0 < vwap < current_price) else (val if (0 < val < current_price) else current_price * 0.99))
                 if is_rejection and not is_breakout and target_poc < current_price:
-                    # Hybrid SL/TP: Structural invalidation + Volatility buffer + Min stop distance floor
+                    # Hybrid SL: Structural invalidation above VAH/high + Volatility buffer + Min stop distance floor
                     ref_high = max(vah, highs[-1]) if vah > 0 else highs[-1]
                     sl_structural = ref_high + atr_sl_multiplier * atr
                     sl_limit = current_price * (1.0 + min_stop_distance_percent)
                     sl = max(sl_structural, sl_limit)
-                    
-                    # Take profit: POC/VWAP target
+
                     tp_structural = target_poc
                     if enable_dynamic_tp:
                         tp_max = current_price - min_reward_risk_ratio * (sl - current_price)
@@ -236,11 +248,11 @@ class SetupEngine:
                     else:
                         tp = tp_structural
 
-                    # Reward/Risk checking:
+                    # Strict Reward/Risk gating:
                     if not hasattr(self, 'rejected_low_rr_count'):
                         self.rejected_low_rr_count = {}
                     rr_ratio = abs(current_price - tp) / abs(sl - current_price) if abs(sl - current_price) > 0 else 0.0
-                    if not reject_low_rr_setup or rr_ratio >= min_reward_risk_ratio:
+                    if not reject_low_rr_setup or rr_ratio >= (min_reward_risk_ratio - 1e-6):
                         setups.append(CandidateSetup(
                             symbol=symbol,
                             timestamp=ts,
@@ -253,39 +265,47 @@ class SetupEngine:
                     else:
                         self.rejected_low_rr_count[str(symbol)] = self.rejected_low_rr_count.get(str(symbol), 0) + 1
 
-        # 3. NGTREND_FOLLOW Setup detection (Multi-Timeframe Trend Following)
+        # 3. NGTREND_FOLLOW Setup detection (Multi-Timeframe Trend Following with Retest Alignment)
         if vah > 0 and current_price > vah and is_bull_trend:
-            # Bullish trend following with momentum confirmation
-            sl_structural = val if (0 < val < current_price and val >= current_price * 0.90) else (current_price - atr_sl_multiplier * atr)
-            sl_limit = current_price * (1.0 - min_stop_distance_percent)
-            sl = min(sl_structural, sl_limit)
-            tp = current_price + min_reward_risk_ratio * (current_price - sl)
-            setups.append(CandidateSetup(
-                symbol=symbol,
-                timestamp=ts,
-                setup_type="NGTREND_FOLLOW",
-                direction="BUY",
-                trigger_price=Decimal(str(current_price)),
-                stop_loss_level=Decimal(str(sl)),
-                take_profit_level=Decimal(str(tp))
-            ))
-        elif val > 0 and current_price < val and is_bear_trend:
-            # Bearish trend following with momentum confirmation
-            sl_structural = vah if (vah > current_price and vah <= current_price * 1.10) else (current_price + atr_sl_multiplier * atr)
-            sl_limit = current_price * (1.0 + min_stop_distance_percent)
-            sl = max(sl_structural, sl_limit)
-            tp = max(0.0, current_price - min_reward_risk_ratio * (sl - current_price))
-            setups.append(CandidateSetup(
-                symbol=symbol,
-                timestamp=ts,
-                setup_type="NGTREND_FOLLOW",
-                direction="SELL",
-                trigger_price=Decimal(str(current_price)),
-                stop_loss_level=Decimal(str(sl)),
-                take_profit_level=Decimal(str(tp))
-            ))
+            # Bullish trend following with momentum confirmation and overextension limit (max +6.0% from VAH)
+            is_not_overextended = current_price <= vah * 1.060
+            is_momentum_green = current_price >= open_price or (candle_range > 0 and (lower_wick / candle_range) >= 0.20) if 'lower_wick' in locals() else (current_price >= open_price)
 
-        # 4. NGBREAKOUT Setup detection (consolidation range compression breakout)
+            if is_not_overextended and is_momentum_green:
+                sl_structural = val if (0 < val < current_price and val >= current_price * 0.90) else (current_price - atr_sl_multiplier * atr)
+                sl_limit = current_price * (1.0 - min_stop_distance_percent)
+                sl = min(sl_structural, sl_limit)
+                tp = current_price + min_reward_risk_ratio * (current_price - sl)
+                setups.append(CandidateSetup(
+                    symbol=symbol,
+                    timestamp=ts,
+                    setup_type="NGTREND_FOLLOW",
+                    direction="BUY",
+                    trigger_price=Decimal(str(current_price)),
+                    stop_loss_level=Decimal(str(sl)),
+                    take_profit_level=Decimal(str(tp))
+                ))
+        elif val > 0 and current_price < val and is_bear_trend:
+            # Bearish trend following with momentum confirmation and overextension limit (max -6.0% from VAL)
+            is_not_overextended = current_price >= val * 0.940
+            is_momentum_red = current_price <= open_price or (candle_range > 0 and (upper_wick / candle_range) >= 0.20) if 'upper_wick' in locals() else (current_price <= open_price)
+
+            if is_not_overextended and is_momentum_red:
+                sl_structural = vah if (vah > current_price and vah <= current_price * 1.10) else (current_price + atr_sl_multiplier * atr)
+                sl_limit = current_price * (1.0 + min_stop_distance_percent)
+                sl = max(sl_structural, sl_limit)
+                tp = max(0.0, current_price - min_reward_risk_ratio * (sl - current_price))
+                setups.append(CandidateSetup(
+                    symbol=symbol,
+                    timestamp=ts,
+                    setup_type="NGTREND_FOLLOW",
+                    direction="SELL",
+                    trigger_price=Decimal(str(current_price)),
+                    stop_loss_level=Decimal(str(sl)),
+                    take_profit_level=Decimal(str(tp))
+                ))
+
+        # 4. NGBREAKOUT Setup detection (consolidation range compression with volume expansion)
         if n >= 22:
             recent_highs = highs[-11:-1]
             recent_lows = lows[-11:-1]
@@ -295,8 +315,18 @@ class SetupEngine:
             historical_lows = lows[-21:-1]
             historical_range = max(historical_highs) - min(historical_lows) if historical_highs and historical_lows else 0.0
 
+            # Volume surge confirmation if volume is tracked and non-uniform in data_buffer
+            has_volume_surge = True
+            if 'vol_list' in locals() and len(vol_list) >= 21:
+                min_v = min(vol_list[-21:])
+                max_v = max(vol_list[-21:])
+                if max_v > min_v:
+                    avg_prior_vol = sum(vol_list[-21:-1]) / 20.0
+                    if avg_prior_vol > 0:
+                        has_volume_surge = vol_list[-1] >= avg_prior_vol * 1.05
+
             compression_ratio = historical_range / recent_range if recent_range > 0 else 0.0
-            if compression_ratio > 1.5 and recent_range > 0:
+            if compression_ratio > 1.5 and recent_range > 0 and has_volume_surge:
                 range_high = max(recent_highs)
                 range_low = min(recent_lows)
                 breakout_threshold = 0.001

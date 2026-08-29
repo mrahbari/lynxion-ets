@@ -147,12 +147,14 @@ def sanitize_sltp_levels(
     stop_loss: Optional[float] = None,
     take_profit: Optional[float] = None,
     default_sl_pct: float = 0.02,
-    default_tp_pct: float = 0.03,
-    max_sl_distance_ratio: float = 0.50
+    default_tp_pct: float = 0.035,
+    min_sl_pct: float = 0.012,
+    max_sl_pct: float = 0.030,
+    max_tp_pct: float = 0.055
 ) -> tuple:
     """
     Centralized, robust utility for sanitizing and validating Stop Loss and Take Profit levels.
-    Guarantees mathematically valid SL/TP relative to entry_price for both BUY and SELL sides.
+    Guarantees mathematically valid SL/TP relative to entry_price with realistic caps for perpetual leverage trading.
 
     Returns:
         tuple: (sanitized_stop_loss, sanitized_take_profit)
@@ -168,19 +170,49 @@ def sanitize_sltp_levels(
     tp = float(take_profit) if take_profit is not None else 0.0
 
     if is_buy:
-        # BUY: Stop loss must be below entry, Take profit must be above entry
-        if sl >= entry or sl <= 0 or abs(sl - entry) / entry > max_sl_distance_ratio:
+        # BUY: Stop loss must be below entry, clamped between min_sl_pct and max_sl_pct
+        if sl >= entry or sl <= 0:
             sl = entry * (1.0 - default_sl_pct)
-        if tp <= entry or tp <= 0 or abs(tp - entry) / entry > max_sl_distance_ratio:
-            min_tp_dist = max(entry * default_tp_pct, 1.5 * abs(entry - sl))
-            tp = entry + min_tp_dist
+        else:
+            sl_dist_pct = (entry - sl) / entry
+            if sl_dist_pct < min_sl_pct:
+                sl = entry * (1.0 - min_sl_pct)
+            elif sl_dist_pct > max_sl_pct:
+                sl = entry * (1.0 - max_sl_pct)
+
+        # BUY: Take profit must be above entry, at least 1.5x SL distance, capped at max_tp_pct
+        sl_dist = entry - sl
+        min_tp_dist = max(entry * default_tp_pct, 1.5 * sl_dist)
+        if tp <= entry or tp <= 0:
+            tp = entry + min(min_tp_dist, entry * max_tp_pct)
+        else:
+            tp_dist_pct = (tp - entry) / entry
+            if tp_dist_pct > max_tp_pct:
+                tp = entry * (1.0 + max_tp_pct)
+            elif (tp - entry) < (1.5 * sl_dist):
+                tp = entry + min(1.5 * sl_dist, entry * max_tp_pct)
     else:
-        # SELL: Stop loss must be above entry, Take profit must be below entry
-        if sl <= entry or sl <= 0 or abs(sl - entry) / entry > max_sl_distance_ratio:
+        # SELL: Stop loss must be above entry, clamped between min_sl_pct and max_sl_pct
+        if sl <= entry or sl <= 0:
             sl = entry * (1.0 + default_sl_pct)
-        if tp >= entry or tp <= 0 or abs(tp - entry) / entry > max_sl_distance_ratio:
-            min_tp_dist = max(entry * default_tp_pct, 1.5 * abs(sl - entry))
-            tp = max(0.0, entry - min_tp_dist)
+        else:
+            sl_dist_pct = (sl - entry) / entry
+            if sl_dist_pct < min_sl_pct:
+                sl = entry * (1.0 + min_sl_pct)
+            elif sl_dist_pct > max_sl_pct:
+                sl = entry * (1.0 + max_sl_pct)
+
+        # SELL: Take profit must be below entry, at least 1.5x SL distance, capped at max_tp_pct
+        sl_dist = sl - entry
+        min_tp_dist = max(entry * default_tp_pct, 1.5 * sl_dist)
+        if tp >= entry or tp <= 0:
+            tp = max(0.0001, entry - min(min_tp_dist, entry * max_tp_pct))
+        else:
+            tp_dist_pct = (entry - tp) / entry
+            if tp_dist_pct > max_tp_pct:
+                tp = max(0.0001, entry * (1.0 - max_tp_pct))
+            elif (entry - tp) < (1.5 * sl_dist):
+                tp = max(0.0001, entry - min(1.5 * sl_dist, entry * max_tp_pct))
 
     precision = 5 if entry >= 1.0 else 8
     return round(sl, precision), round(tp, precision)

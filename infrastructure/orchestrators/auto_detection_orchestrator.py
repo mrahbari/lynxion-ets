@@ -689,10 +689,14 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                     if not broker:
                         continue
                     positions = []
-                    if hasattr(broker, "get_all_positions"):
+                    if hasattr(broker, "get_open_positions"):
+                        positions = broker.get_open_positions() or []
+                    elif hasattr(broker, "get_all_positions"):
                         positions = broker.get_all_positions() or []
                     elif hasattr(broker, "get_positions"):
                         positions = broker.get_positions() or []
+                    elif hasattr(broker, "_broker") and hasattr(broker._broker, "get_open_positions"):
+                        positions = broker._broker.get_open_positions() or []
 
                     if not positions:
                         continue

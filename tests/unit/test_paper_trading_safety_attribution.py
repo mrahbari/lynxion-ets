@@ -122,7 +122,8 @@ def test_market_data_heartbeat_safety_guard(setup_mock_container):
 
 
 @pytest.mark.unit
-def test_order_book_liquidity_depth_guard(setup_mock_container):
+def test_order_book_liquidity_depth_guard(setup_mock_container, monkeypatch):
+    monkeypatch.setenv("MAX_ORDER_NOTIONAL_AMOUNT", "10000.0")
     router = MagicMock()
     processor = SignalProcessor(router)
     processor.logger = MagicMock()

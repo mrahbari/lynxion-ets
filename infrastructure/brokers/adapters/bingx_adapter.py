@@ -855,6 +855,13 @@ class _BingXBroker:
             endpoint = "/openApi/swap/v2/trade/order"
             response = self._make_request('POST', endpoint, params=conditional_order_data, signed=True)
 
+            resp_code = response.get('code')
+            resp_msg = str(response.get('msg', '')).lower()
+            is_conflict = (
+                resp_code in (110406, 110407, 110411, 100404, 100405, 80016)
+                or any(phrase in resp_msg for phrase in ('already exists', 'conflict', 'position sl', 'position tp'))
+            )
+
             if response.get('code') == 0:
                 order_info = response.get('data', {}).get('order', {})
                 return {
@@ -862,7 +869,7 @@ class _BingXBroker:
                     'order_id': order_info.get('orderId'),
                     'response': response['data']
                 }
-            elif response.get('code') in (110406, 110407, 110411):
+            elif is_conflict:
                 # Position SL/TP conflict: cancel existing conditional order on this symbol and retry
                 self.logger.warning(f"Position order conflict on {formatted_sym} ({response.get('msg')}), cancelling stale conditional orders and retrying...")
                 open_orders = self.get_pending_orders(formatted_sym) or []
@@ -872,7 +879,7 @@ class _BingXBroker:
                         oid = str(o.get("orderId"))
                         if oid:
                             self.cancel_order(oid, formatted_sym)
-                time.sleep(0.15)
+                time.sleep(0.25)
                 retry_resp = self._make_request('POST', endpoint, params=conditional_order_data, signed=True)
                 if retry_resp.get('code') == 0:
                     order_info = retry_resp.get('data', {}).get('order', {})
@@ -881,6 +888,19 @@ class _BingXBroker:
                         'order_id': order_info.get('orderId'),
                         'response': retry_resp['data']
                     }
+                elif retry_resp.get('code') in (110406, 110407, 110411, 100404, 100405, 80016) or 'already exists' in str(retry_resp.get('msg', '')).lower():
+                    # Second retry with longer propagation cushion
+                    time.sleep(0.40)
+                    retry2_resp = self._make_request('POST', endpoint, params=conditional_order_data, signed=True)
+                    if retry2_resp.get('code') == 0:
+                        order_info = retry2_resp.get('data', {}).get('order', {})
+                        return {
+                            'success': True,
+                            'order_id': order_info.get('orderId'),
+                            'response': retry2_resp['data']
+                        }
+                    else:
+                        return {'success': False, 'error': retry2_resp.get('msg', str(retry2_resp))}
                 else:
                     return {'success': False, 'error': retry_resp.get('msg', str(retry_resp))}
             else:
@@ -1116,3 +1136,11 @@ class _BingXBroker:
 
         except Exception as e:
             return []
+
+    def get_positions(self, symbol: str=None) -> List[Dict]:
+        """Alias for get_open_positions."""
+        return self.get_open_positions(symbol)
+
+    def get_all_positions(self) -> List[Dict]:
+        """Alias for get_open_positions."""
+        return self.get_open_positions()

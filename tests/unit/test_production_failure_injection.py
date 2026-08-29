@@ -20,7 +20,7 @@ from infrastructure.execution.live_order_journal import LiveOrderJournal
 from infrastructure.execution.broker_reconciliation import BrokerReconciliationService
 
 
-def _build_test_order(symbol="BTC-USDT", side=OrderSide.BUY, qty="0.0156", sl="58000"):
+def _build_test_order(symbol="TEST-USDT", side=OrderSide.BUY, qty="0.0156", sl="58000"):
     return Order(
         symbol=Symbol(symbol),
         side=side,

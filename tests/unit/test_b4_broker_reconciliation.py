@@ -23,6 +23,13 @@ class _FakeBroker:
         return self._statuses.get(str(order_id), "NEW")
 
 
+@pytest.fixture(autouse=True)
+def _isolate_active_positions_journal(tmp_path, monkeypatch):
+    test_path = str(tmp_path / "active_positions_journal.json")
+    monkeypatch.setattr("infrastructure.execution.broker_reconciliation.ACTIVE_POSITIONS_JOURNAL_PATH", test_path)
+    yield
+
+
 def _journal(tmp_path, name="j.jsonl"):
     return LiveOrderJournal(path=str(tmp_path / name))
 

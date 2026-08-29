@@ -69,7 +69,8 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
                 val=struct["val"],
                 vah=struct["vah"],
                 poc=struct["poc"],
-                config=self.config
+                config=self.config,
+                data_buffer=self.data_buffer
             )
 
             # Filter setups to only match NGMR_REVERSION setups
@@ -133,7 +134,8 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
                 val=struct["val"],
                 vah=struct["vah"],
                 poc=struct["poc"],
-                config=self.config
+                config=self.config,
+                data_buffer=self.data_buffer
             )
             setup = next((s for s in setups if s.setup_type == "NGMR_REVERSION"), None)
 

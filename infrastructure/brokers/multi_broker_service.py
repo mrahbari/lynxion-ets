@@ -128,9 +128,36 @@ class MultiBrokerExecutionService(ExecutionPort):
             self._order_exchange_map.update(rec.get("order_exchange_map", {}))
             in_flight = rec.get("in_flight", [])
             if in_flight:
-                self.logger.warning(
-                    f"♻️ STARTUP RECOVERY: {len(in_flight)} in-flight order(s) from journal "
-                    f"need broker reconciliation: {[o.get('order_id') or o.get('order_ref') for o in in_flight]}")
+                # Check broker pending orders to reconcile any filled/closed orders
+                primary_b = self.brokers.get(self.primary_broker)
+                active_pending_ids = set()
+                if primary_b and hasattr(primary_b, "get_pending_orders"):
+                    try:
+                        pending = primary_b.get_pending_orders() or []
+                        active_pending_ids = {str(o.get("orderId", "")) for o in pending if isinstance(o, dict)}
+                    except Exception:
+                        pass
+
+                truly_in_flight = []
+                for o in in_flight:
+                    oid = str(o.get("order_id", ""))
+                    ref = o.get("order_ref")
+                    if oid and oid not in active_pending_ids and primary_b:
+                        # Order is no longer active on broker -> mark terminal FILLED
+                        try:
+                            live_order_journal.record_terminal(ref, "FILLED")
+                        except Exception:
+                            pass
+                    else:
+                        truly_in_flight.append(o)
+
+                if truly_in_flight:
+                    self.logger.warning(
+                        f"♻️ STARTUP RECOVERY: {len(truly_in_flight)} in-flight order(s) from journal "
+                        f"need broker reconciliation: {[o.get('order_id') or o.get('order_ref') for o in truly_in_flight]}")
+                else:
+                    self.logger.info(
+                        f"♻️ STARTUP RECOVERY: loaded {rec.get('total_orders', 0)} journaled order(s); all reconciled to terminal state")
             elif rec.get("total_orders"):
                 self.logger.info(
                     f"♻️ STARTUP RECOVERY: loaded {rec['total_orders']} journaled order(s); none in-flight")

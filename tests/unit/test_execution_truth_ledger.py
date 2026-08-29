@@ -28,14 +28,22 @@ def _reset_global_breakers():
     # The circuit breaker is process-global (by design); clear it between tests so an
     # OPEN breaker from one test does not bleed into the next.
     from shared.circuit_breaker import circuit_breaker_manager
+    from shared.live_execution_guard import live_execution_guard
     circuit_breaker_manager.circuit_breakers.clear()
+    live_execution_guard.disengage_kill_switch()
+    old_enforcer = live_execution_guard._risk_enforcer
+    live_execution_guard._risk_enforcer = lambda o: (True, "")
     yield
     circuit_breaker_manager.circuit_breakers.clear()
+    live_execution_guard.disengage_kill_switch()
+    live_execution_guard._risk_enforcer = old_enforcer
 
 
 @pytest.fixture
 def guard():
-    return LiveExecutionGuard()
+    g = LiveExecutionGuard()
+    g._risk_enforcer = lambda o: (True, "")
+    return g
 
 
 def _settings(paper, placement, testnet, broker="bingx"):
@@ -46,7 +54,7 @@ def _settings(paper, placement, testnet, broker="bingx"):
 
 
 def _order():
-    return SimpleNamespace(symbol=SimpleNamespace(value="BTC/USDT"), side=SimpleNamespace(name="BUY"))
+    return SimpleNamespace(symbol=SimpleNamespace(value="TEST/USDT"), side=SimpleNamespace(name="BUY"))
 
 
 # ---- ledger primitives -------------------------------------------------------------

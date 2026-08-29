@@ -53,7 +53,9 @@ class MTFTrendStrategyAdapter(BaseStrategyAdapter):
                 lows=lows,
                 val=struct["val"],
                 vah=struct["vah"],
-                poc=struct["poc"]
+                poc=struct["poc"],
+                config=self.config,
+                data_buffer=self.data_buffer
             )
 
             # Filter setups to only match NGTREND_FOLLOW setups
@@ -126,7 +128,9 @@ class MTFTrendStrategyAdapter(BaseStrategyAdapter):
                 lows=lows,
                 val=struct["val"],
                 vah=struct["vah"],
-                poc=struct["poc"]
+                poc=struct["poc"],
+                config=self.config,
+                data_buffer=self.data_buffer
             )
             setup = next((s for s in setups if s.setup_type == "NGTREND_FOLLOW"), None)
 
