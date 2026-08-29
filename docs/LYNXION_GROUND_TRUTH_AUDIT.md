@@ -162,6 +162,44 @@ Prove and enforce documented VST caps at the LiveExecutionGuard path with tests 
 - Do not add ML, Kelly sizing, exchanges, or new strategy features.
 - Do not claim reconciliation/OCO coverage without broker evidence.
 
+## Follow-up Task Ledger
+
+### TASK 001 — Fail-closed VST execution caps
+
+**Result: completed.** Commit `e959324` introduced the single
+`build_vst_risk_enforcement` factory used by both container wiring and the guard fallback.
+It sets a $1,000 portfolio cap and a strict $21 per-order cap; over-limit orders are
+rejected rather than silently resized. The paper E2E fixture now uses a compliant order,
+includes a valid stop loss, and snapshots/restores cooldown state in memory without
+changing the persisted runtime journal.
+
+**Validation:** 31 focused tests passed. A subsequent full run reached 606 passed and 1
+skipped; its only two failures are local settings-snapshot mismatches limited to MEXC key
+fields, outside this task's scope.
+
+### TASK 002 — Derived live-order journal state
+
+**Result: completed.** Commit `127b3da` adds `scripts/audit_live_order_journal.py`, a
+read-only JSONL report with a no-write regression test. Against the current journal it
+reports 2,075 unique orders, 0 in flight, 416 mapped exchange order IDs, and local net
+positions of BTCUSDT 0.6263 and DOGEUSDT 86.0. The local net positions conflict with the
+empty active-position snapshot and require a read-only broker reconciliation before any
+state repair.
+
+### TASK 003 — Reproducible trade-journal cohort analysis
+
+**Result: completed.** Commit `bcdbf4f` adds `scripts/audit_trade_journal.py`, which
+deduplicates by final trade ID, applies an explicit inclusive exit-timestamp boundary, and
+never changes the source CSV. For the documented 2026-08-13T13:31:42+00:00 boundary, the
+actual dataset has 419 completed unique trades, -$253.1793 PnL, 0.2074 profit factor, and
+-$0.6042 expectancy. The previous 92/100 cohort claim is therefore false for the current
+data snapshot.
+
+**Forensic extension (uncommitted at this entry):** The same report now attributes cohort
+PnL by side, exit reason, and strategy. MARKET exits account for -$253.8165, BUY trades
+for -$218.5403, and SELL trades for -$34.6390; take-profit exits contribute +$58.1593.
+This is a diagnosis signal, not authorization to tune or disable a strategy.
+
 ## Reproducible Commands
 
     git status --short --branch

@@ -35,5 +35,7 @@ def test_report_deduplicates_by_final_trade_id_and_honors_cohort_boundary(tmp_pa
     assert report["cohort_trade_ids"] == 2
     assert report["net_pnl_usdt"] == 1.0
     assert report["profit_factor"] == 2.0
+    assert report["pnl_by_side"] == {"BUY": 2.0, "SELL": -1.0}
+    assert report["pnl_by_exit_reason"] == {"STOP_MARKET": -1.0, "TAKE_PROFIT_MARKET": 2.0}
     assert report["missing_initial_stop_loss"] == 1
     assert journal_path.read_bytes() == before

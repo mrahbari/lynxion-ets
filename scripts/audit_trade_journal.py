@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
@@ -33,6 +33,13 @@ def _final_records(rows: Iterable[Dict[str, str]]) -> tuple[list[Dict[str, str]]
             continue
         by_id[trade_id] = row
     return list(by_id.values()), records_without_id
+
+
+def _pnl_by(records: Iterable[Dict[str, str]], field: str) -> Dict[str, float]:
+    totals: Dict[str, float] = defaultdict(float)
+    for row in records:
+        totals[row.get(field) or "<blank>"] += _number(row, "pnl_usdt")
+    return {key: round(value, 8) for key, value in sorted(totals.items())}
 
 
 def build_report(path: str, cohort_start: Optional[str] = None) -> Dict[str, Any]:
@@ -67,6 +74,9 @@ def build_report(path: str, cohort_start: Optional[str] = None) -> Dict[str, Any
         "expectancy_usdt": round(sum(pnl) / len(pnl), 8) if pnl else None,
         "by_side": dict(Counter(row.get("side") or "<blank>" for row in cohort)),
         "by_exit_reason": dict(Counter(row.get("exit_reason") or "<blank>" for row in cohort)),
+        "pnl_by_side": _pnl_by(cohort, "side"),
+        "pnl_by_exit_reason": _pnl_by(cohort, "exit_reason"),
+        "pnl_by_strategy": _pnl_by(cohort, "strategy"),
         "missing_initial_stop_loss": sum(_number(row, "initial_stop_loss") <= 0 for row in cohort),
         "missing_initial_take_profit": sum(_number(row, "initial_take_profit") <= 0 for row in cohort),
     }
