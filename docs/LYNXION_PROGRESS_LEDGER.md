@@ -7,7 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK 000 closeout — P0 exchange-side profit-lock and trailing-stop correctness.
+TASK 000 closeout — P0 exchange-side profit-lock/trailing-stop correctness and VST execution
+liveness.
 
 ## Status
 
@@ -29,6 +30,9 @@ qualifying positions after the corrected runner has loaded.
 - Latest read-only VST coverage check: 11 open positions, each with one exchange-side
   `STOP_MARKET` and one `TAKE_PROFIT_MARKET` order. Coverage is not treated as proof of
   a profit lock.
+- A runtime telemetry API drift prevented execution intents from reaching the broker call:
+  `EnhancedLogger.log_strategy_to_broker_flow` was called but not implemented. The minimal
+  logger-contract repair is locally verified; runtime reload evidence remains pending.
 
 ## Changes made
 
@@ -44,6 +48,7 @@ qualifying positions after the corrected runner has loaded.
 - Full post-correction suite: 622 passed, 1 optional layering test skipped
   (`import-linter` is not installed locally). This includes 461 unit, 109
   characterization/contract, and 52 smoke/E2E tests.
+- Post telemetry-contract repair suite: 623 passed, 1 optional layering test skipped.
 
 ## Rejected hypotheses
 
@@ -57,6 +62,8 @@ qualifying positions after the corrected runner has loaded.
 - Restart persistence is achieved by broker-state hydration rather than a durable manager-state
   file; the behavior needs VST evidence.
 - Existing project-context documents contain stale operational and test-status claims.
+- The running VST process has not yet demonstrated that execution intents pass the repaired
+  strategy-to-broker telemetry call after a code reload.
 
 ## Next task
 

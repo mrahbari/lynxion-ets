@@ -310,6 +310,30 @@ class EnhancedLogger:
                   confidence=confidence,
                   **context)
 
+    def log_strategy_to_broker_flow(self, symbol: str, strategy_name: str,
+                                    trade_executed: bool, signal_type: str,
+                                    confidence: float = None, reason: str = "",
+                                    **context):
+        """Log the strategy-to-broker handoff without affecting execution flow."""
+        status = "EXECUTED" if trade_executed else "PENDING_OR_REJECTED"
+        message = (
+            f"STRATEGY TO BROKER: {strategy_name} | Symbol: {symbol} | "
+            f"Signal: {signal_type} | Status: {status} | Reason: {reason}"
+        )
+        if confidence is not None:
+            message += f" | Confidence: {confidence:.2%}"
+
+        self.info(
+            message,
+            symbol=symbol,
+            strategy_name=strategy_name,
+            trade_executed=trade_executed,
+            signal_type=signal_type,
+            confidence=confidence,
+            reason=reason,
+            **context,
+        )
+
     def log_execution_status(self, execution_id: str, status: str, details: str = "",
                            execution_time: float = None, **context):
         """Log execution status with correlation ID"""
