@@ -9,8 +9,13 @@ from infrastructure.execution.live_order_journal import LiveOrderJournal
 from infrastructure.execution.broker_reconciliation import BrokerReconciliationService
 
 
-def _pos(symbol, qty, side="LONG"):
-    return SimpleNamespace(symbol=Symbol(symbol), quantity=qty, side=SimpleNamespace(value=side))
+def _pos(symbol, qty, side="LONG", entry_price=0):
+    return SimpleNamespace(
+        symbol=Symbol(symbol),
+        quantity=qty,
+        side=SimpleNamespace(value=side),
+        entry_price=SimpleNamespace(amount=entry_price),
+    )
 
 
 class _FakeBroker:
@@ -50,11 +55,13 @@ def test_inspect_reports_drift_without_mutating_or_halting(tmp_path):
     j.record_submitted(ref, "OID1", "bingx")
     before = (tmp_path / "j.jsonl").read_bytes()
     halts = []
-    broker = _FakeBroker(positions=[_pos("ETH-USDT", 0.5)])
+    broker = _FakeBroker(positions=[_pos("ETH-USDT", 0.5, entry_price=100)])
 
     report = BrokerReconciliationService(halt_fn=halts.append).inspect(broker, j)
 
-    assert report["broker_positions_missing_from_journal"] == [{"symbol": "ETH-USDT", "quantity": "0.5", "side": "LONG"}]
+    assert report["broker_positions_missing_from_journal"] == [{
+        "symbol": "ETH-USDT", "quantity": "0.5", "side": "LONG", "entry_notional_usdt": 50.0,
+    }]
     assert halts == []
     assert (tmp_path / "j.jsonl").read_bytes() == before
 

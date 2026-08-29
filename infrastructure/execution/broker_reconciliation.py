@@ -26,6 +26,14 @@ def _sym(s) -> str:
     return getattr(s, "value", None) or (str(s) if s is not None else "")
 
 
+def _amount(value) -> float:
+    """Extract a numeric amount from a Money-like broker/domain value."""
+    try:
+        return float(getattr(value, "amount", value) or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def _project_root() -> str:
     return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -226,14 +234,16 @@ class BrokerReconciliationService:
             position for position in broker_positions
             if abs(float(getattr(position, "quantity", 0) or getattr(position, "position_amt", 0) or 0)) > 0
         ]
-        report["broker_positions"] = [
-            {
+        report["broker_positions"] = []
+        for position in open_positions:
+            quantity = abs(_amount(getattr(position, "quantity", 0) or getattr(position, "position_amt", 0)))
+            entry_price = _amount(getattr(position, "entry_price", 0) or getattr(position, "avg_price", 0))
+            report["broker_positions"].append({
                 "symbol": _sym(getattr(position, "symbol", "")),
                 "quantity": str(getattr(position, "quantity", "")),
                 "side": getattr(getattr(position, "side", None), "value", str(getattr(position, "side", ""))),
-            }
-            for position in open_positions
-        ]
+                "entry_notional_usdt": round(quantity * entry_price, 8),
+            })
         try:
             order_map = journal.order_exchange_map()
             in_flight = journal.in_flight()
