@@ -189,10 +189,10 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
 
         while self.is_running:
             try:
+                opportunity = None
                 with self._opportunity_queue_lock:
                     if self.opportunity_queue:
                         # Look for an opportunity that's not from a recently processed symbol
-                        opportunity = None
                         opportunity_idx = 0
 
                         # First, try to find an opportunity from a symbol that hasn't been processed recently
@@ -270,8 +270,11 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                                 if not allowed:
                                     self.logger.debug(f"Skipping opportunity for {symbol_str}: {cd_reason}")
                                     continue
-                            except Exception:
-                                pass
+                            except Exception as gate_err:
+                                self.logger.error(
+                                    f"Risk Health Gate unavailable for {symbol_str}; skipping opportunity: {gate_err}"
+                                )
+                                continue
 
                             self.logger.debug(f"Processing opportunity for symbol: {symbol_str}, Recent symbols: {recent_symbols}")
 

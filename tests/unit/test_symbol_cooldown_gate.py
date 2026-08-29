@@ -31,6 +31,31 @@ def test_symbol_validator_hot_reloads_blacklist_without_restart(tmp_path):
 
 
 @pytest.mark.unit
+def test_opportunity_loop_handles_an_empty_queue_without_unbound_local(monkeypatch):
+    """An empty queue must be a normal idle cycle, not a repeating runtime error."""
+    import threading
+    from unittest.mock import MagicMock
+    from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator
+
+    orchestrator = object.__new__(AutoDetectionOrchestrator)
+    orchestrator.is_running = True
+    orchestrator.opportunity_queue = []
+    orchestrator._opportunity_queue_lock = threading.RLock()
+    orchestrator.active_trades = {}
+    orchestrator.logger = MagicMock()
+    orchestrator.logger.comprehensive_mode = False
+
+    monkeypatch.setattr(
+        "infrastructure.orchestrators.auto_detection_orchestrator.time.sleep",
+        lambda _seconds: setattr(orchestrator, "is_running", False),
+    )
+
+    orchestrator._opportunity_processing_loop()
+
+    orchestrator.logger.error.assert_not_called()
+
+
+@pytest.mark.unit
 def test_symbol_cooldown_gate_sl_exit():
     """Verify that Stop Loss exit activates 60-minute cooldown on all symbol format variants."""
     gate = SymbolCooldownGate()
