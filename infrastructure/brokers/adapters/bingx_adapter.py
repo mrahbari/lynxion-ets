@@ -10,6 +10,7 @@ from enum import Enum
 import json
 import traceback
 import uuid
+import threading
 
 from domain.entities import Order, Fill, Position, Balance, OrderSide, PositionSide
 from domain.ports.broker_ports import BrokerPort
@@ -18,6 +19,9 @@ from infrastructure.data.adapters.rest_client import RestClient
 from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 from shared.rate_limiter import global_rate_limiter
 from shared.utils import format_price_for_api
+
+
+_BINGX_ENTRY_ADMISSION_LOCK = threading.RLock()
 
 
 def ensure_client_order_id(order) -> str:
@@ -488,8 +492,70 @@ class _BingXBroker:
         precision = precision_info.get('quantityPrecision', 4)
         return f"{quantity:.{precision}f}"
 
+    def _assert_entry_admission(self, order: Order) -> tuple[bool, str]:
+        """Fail-closed final risk check against the authoritative broker snapshot."""
+        try:
+            from infrastructure.risk.risk_enforcement import build_vst_risk_enforcement
+
+            allowed, reason = build_vst_risk_enforcement().enforce(order)
+            if not allowed:
+                return False, reason
+
+            response = self._make_request(
+                'GET', '/openApi/swap/v2/user/positions', signed=True, params={}
+            )
+            if response.get('code') != 0 or not isinstance(response.get('data'), list):
+                return False, "broker position snapshot unavailable or malformed"
+
+            open_positions = []
+            for position in response['data']:
+                quantity = abs(float(position.get('positionAmt', 0) or 0))
+                if quantity > 0:
+                    open_positions.append(position)
+
+            from bootstrap.settings.loaders import load_settings
+            settings = load_settings()
+            max_open_positions = int(getattr(settings.safety, 'max_open_positions', 5))
+            if len(open_positions) >= max_open_positions:
+                return False, (
+                    f"portfolio capacity reached: {len(open_positions)} open positions "
+                    f">= configured maximum {max_open_positions}"
+                )
+
+            from infrastructure.services.symbol_validator import symbol_validator
+            requested_symbol = symbol_validator.normalize_symbol(order.symbol)
+            for position in open_positions:
+                if symbol_validator.normalize_symbol(position.get('symbol')) == requested_symbol:
+                    return False, f"duplicate position blocked: {requested_symbol} is already open"
+
+            current_exposure = sum(
+                abs(float(position.get('positionAmt', 0) or 0))
+                * float(position.get('markPrice', 0) or position.get('avgPrice', 0) or 0)
+                for position in open_positions
+            )
+            order_price = float(getattr(getattr(order, 'price', None), 'amount', 0) or 0)
+            order_notional = abs(float(getattr(order, 'quantity', 0) or 0)) * order_price
+            max_portfolio_exposure = 1_000.0
+            if current_exposure + order_notional > max_portfolio_exposure:
+                return False, (
+                    f"portfolio exposure limit exceeded: ${current_exposure + order_notional:.2f} "
+                    f"> ${max_portfolio_exposure:.2f}"
+                )
+            return True, "broker-backed risk admission approved"
+        except Exception as admission_error:
+            return False, f"broker-backed risk admission error: {admission_error}"
+
     def execute_order(self, order: Order) -> Dict[str, Any]:
-        """Execute order on BingX."""
+        """Execute only after an atomic, broker-backed, fail-closed risk admission."""
+        with _BINGX_ENTRY_ADMISSION_LOCK:
+            allowed, reason = self._assert_entry_admission(order)
+            if not allowed:
+                self.logger.error(f"🛑 [BINGX RISK ADMISSION] Order REJECTED: {reason}")
+                return {"success": False, "order_id": None, "error": reason}
+            return self._execute_order_after_admission(order)
+
+    def _execute_order_after_admission(self, order: Order) -> Dict[str, Any]:
+        """Perform the exchange request after final admission has succeeded."""
         try:
             # Final exchange-boundary admission check.  Some recovery/service paths
             # call this low-level method directly instead of adapter.place_order().

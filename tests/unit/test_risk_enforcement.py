@@ -5,6 +5,89 @@ from decimal import Decimal
 
 import pytest
 
+
+def _broker_admission_order(symbol="NEWUSDT"):
+    from decimal import Decimal
+    from domain.entities import Order, OrderSide
+    from domain.value_objects import Money, Symbol
+
+    return Order(
+        symbol=Symbol(symbol),
+        side=OrderSide.BUY,
+        quantity=Decimal("0.1"),
+        price=Money(Decimal("100"), "USDT"),
+        stop_loss_price=Money(Decimal("98"), "USDT"),
+        take_profit_price=Money(Decimal("104"), "USDT"),
+    )
+
+
+def test_bingx_final_admission_blocks_at_real_broker_position_capacity(monkeypatch):
+    """Internal risk state cannot permit entries beyond the exchange's real position count."""
+    import logging
+    from types import SimpleNamespace
+    from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
+
+    broker = object.__new__(_BingXBroker)
+    broker.logger = logging.getLogger("test_capacity_admission")
+    positions = [
+        {"symbol": "BTC-USDT", "positionAmt": "0.01", "avgPrice": "100", "markPrice": "100"},
+        {"symbol": "ETH-USDT", "positionAmt": "0.01", "avgPrice": "100", "markPrice": "100"},
+    ]
+    monkeypatch.setattr(
+        broker, "_make_request", lambda *args, **kwargs: {"code": 0, "data": positions}
+    )
+    monkeypatch.setattr(
+        "bootstrap.settings.loaders.load_settings",
+        lambda: SimpleNamespace(safety=SimpleNamespace(max_open_positions=2)),
+    )
+
+    allowed, reason = broker._assert_entry_admission(_broker_admission_order())
+
+    assert allowed is False
+    assert "capacity reached" in reason
+
+
+def test_bingx_final_admission_blocks_duplicate_from_real_broker_snapshot(monkeypatch):
+    import logging
+    from types import SimpleNamespace
+    from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
+
+    broker = object.__new__(_BingXBroker)
+    broker.logger = logging.getLogger("test_duplicate_admission")
+    monkeypatch.setattr(
+        broker,
+        "_make_request",
+        lambda *args, **kwargs: {
+            "code": 0,
+            "data": [{"symbol": "NEW-USDT", "positionAmt": "1", "avgPrice": "100", "markPrice": "100"}],
+        },
+    )
+    monkeypatch.setattr(
+        "bootstrap.settings.loaders.load_settings",
+        lambda: SimpleNamespace(safety=SimpleNamespace(max_open_positions=5)),
+    )
+
+    allowed, reason = broker._assert_entry_admission(_broker_admission_order())
+
+    assert allowed is False
+    assert "duplicate position blocked" in reason
+
+
+def test_bingx_final_admission_fails_closed_when_position_snapshot_is_unavailable(monkeypatch):
+    import logging
+    from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
+
+    broker = object.__new__(_BingXBroker)
+    broker.logger = logging.getLogger("test_snapshot_admission")
+    monkeypatch.setattr(
+        broker, "_make_request", lambda *args, **kwargs: {"code": 100001, "msg": "timestamp invalid"}
+    )
+
+    allowed, reason = broker._assert_entry_admission(_broker_admission_order())
+
+    assert allowed is False
+    assert "snapshot unavailable" in reason
+
 from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager, Position, PositionDirection
 from domain.entities import Order, OrderSide
 from domain.value_objects import Money, Symbol

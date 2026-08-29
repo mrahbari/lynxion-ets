@@ -23,6 +23,7 @@ def test_bingx_adapter_position_side_robustness(monkeypatch):
     monkeypatch.setattr(symbol_cooldown_gate, "is_symbol_allowed", lambda symbol: (True, "ALLOWED"))
     b = object.__new__(_BingXBroker)
     b.logger = logging.getLogger("test_bingx_side")
+    monkeypatch.setattr(b, "_assert_entry_admission", lambda order: (True, "test admission"))
     
     sent_payloads = []
     monkeypatch.setattr(b, "_make_request",
@@ -79,6 +80,7 @@ def test_bingx_low_level_execute_order_rejects_blacklisted_symbol(monkeypatch):
     """Direct low-level calls cannot bypass the final exchange-boundary blacklist gate."""
     b = object.__new__(_BingXBroker)
     b.logger = logging.getLogger("test_bingx_final_gate")
+    monkeypatch.setattr(b, "_assert_entry_admission", lambda order: (True, "test admission"))
     monkeypatch.setattr(
         b,
         "_make_request",

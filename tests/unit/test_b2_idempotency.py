@@ -32,6 +32,7 @@ def test_ensure_client_order_id_generates_once_and_is_valid():
 def test_place_order_transmits_client_order_id(monkeypatch):
     b = object.__new__(_BingXBroker)
     b.logger = logging.getLogger("test_b2")
+    monkeypatch.setattr(b, "_assert_entry_admission", lambda order: (True, "test admission"))
     sent = []
     monkeypatch.setattr(b, "_make_request",
                         lambda method, endpoint, params=None, data=None, signed=False:
@@ -47,6 +48,7 @@ def test_place_order_transmits_client_order_id(monkeypatch):
 def test_retry_of_same_order_reuses_id(monkeypatch):
     b = object.__new__(_BingXBroker)
     b.logger = logging.getLogger("test_b2")
+    monkeypatch.setattr(b, "_assert_entry_admission", lambda order: (True, "test admission"))
     sent = []
     monkeypatch.setattr(b, "_make_request",
                         lambda method, endpoint, params=None, data=None, signed=False:

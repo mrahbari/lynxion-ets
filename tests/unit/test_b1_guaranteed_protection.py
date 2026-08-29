@@ -18,6 +18,7 @@ from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
 def _broker():
     b = object.__new__(_BingXBroker)          # bypass __init__ (no network/keys)
     b.logger = logging.getLogger("test_b1")
+    b._assert_entry_admission = lambda order: (True, "test admission")
     return b
 
 
@@ -123,5 +124,4 @@ def test_precision_formatting(monkeypatch):
     
     assert b._format_price("XRP-USDT", 0.54321) == "0.5432"
     assert b._format_quantity("XRP-USDT", 123.456) == "123"
-
 
