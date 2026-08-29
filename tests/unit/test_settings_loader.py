@@ -26,8 +26,25 @@ except Exception as exc:  # pragma: no cover - environment guard
 SNAPSHOT = Path(__file__).resolve().parent.parent / "fixtures" / "settings" / "configs_snapshot.json"
 
 
+def _redact_broker_credentials(data: dict) -> dict:
+    # Golden configuration tests must verify stable, non-secret settings only. Local
+    # credentials intentionally vary between machines and must neither affect test
+    # results nor be emitted in assertion diffs.
+    broker = data.get("broker", {})
+    for key in broker:
+        if key in {"api_key", "secret_key", "bingx_passphrase"} or key.endswith(("_api_key", "_secret_key")):
+            broker[key] = "<redacted>"
+    return data
+
+
 def _dump(settings) -> dict:
-    return {domain: getattr(settings, domain).model_dump(mode="json") for domain in DOMAINS}
+    return _redact_broker_credentials(
+        {domain: getattr(settings, domain).model_dump(mode="json") for domain in DOMAINS}
+    )
+
+
+def _load_snapshot() -> dict:
+    return _redact_broker_credentials(json.loads(SNAPSHOT.read_text(encoding="utf-8")))
 
 
 @pytest.mark.unit
@@ -38,7 +55,7 @@ def test_loader_matches_committed_snapshot():
         SNAPSHOT.write_text(json.dumps(actual, indent=2, sort_keys=True), encoding="utf-8")
         return
     assert SNAPSHOT.exists(), "Run with GOLDEN_UPDATE=1 to create the snapshot."
-    expected = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+    expected = _load_snapshot()
     assert actual == expected
 
 
@@ -57,6 +74,6 @@ def test_loader_matches_committed_snapshot_default_env():
     # snapshot baked from the original ``Configs`` values (no drift after the
     # legacy class was retired in E1.T6).
     assert SNAPSHOT.exists(), "Run with GOLDEN_UPDATE=1 to create the snapshot."
-    expected = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+    expected = _load_snapshot()
     actual = _dump(load_settings())
     assert actual == expected
