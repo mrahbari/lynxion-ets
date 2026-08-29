@@ -200,6 +200,20 @@ PnL by side, exit reason, and strategy. MARKET exits account for -$253.8165, BUY
 for -$218.5403, and SELL trades for -$34.6390; take-profit exits contribute +$58.1593.
 This is a diagnosis signal, not authorization to tune or disable a strategy.
 
+### TASK 004 — Local position-state drift visibility
+
+**Result: completed.** Commit `3dbda3f` extends the read-only live-order journal report
+to compare derived local net positions against `active_positions_journal.json`. Current
+evidence: the snapshot has no active symbols while the journal derives BTCUSDT and DOGEUSDT.
+No state was repaired or broker endpoint called.
+
+### Regression status after Tasks 001–004
+
+The full local test run completed with 611 passed, 2 failed, and 1 skipped. The two failures
+are settings-loader golden-snapshot differences limited to local MEXC credential fields.
+Changing a credential-bearing baseline or its loading semantics is security-sensitive and
+requires an operator decision; it was intentionally left out of these tasks.
+
 ## Reproducible Commands
 
     git status --short --branch
