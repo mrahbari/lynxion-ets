@@ -201,7 +201,30 @@ class ActivePositionManager:
                                 from infrastructure.utils.symbol_format_helper import SymbolFormatHelper
                                 formatted_sym = SymbolFormatHelper.format_symbol_for_exchange(clean_sym, "bingx")
                                 pending = target_broker.get_pending_orders(formatted_sym) or []
-                                has_sl = any("STOP" in str(o.get("type", "")).upper() for o in pending)
+                                stop_orders = [
+                                    order for order in pending
+                                    if "STOP" in str(order.get("type", "")).upper()
+                                    and str(order.get("side", "")).upper() == ("SELL" if is_long else "BUY")
+                                    and str(order.get("positionSide", "")).upper() == ("LONG" if is_long else "SHORT")
+                                ]
+                                has_sl = bool(stop_orders)
+                                if has_sl:
+                                    # Exchange state is the restart-safe source of truth.  Hydrate
+                                    # it before evaluating a new candidate so a process restart does
+                                    # not blindly amend an already protected position.
+                                    existing_sl = self._extract_float(
+                                        stop_orders[0].get("stopPrice", stop_orders[0].get("stop_price"))
+                                    )
+                                    if existing_sl > 0:
+                                        state["current_sl_price"] = existing_sl
+                                        locked_at_breakeven = (
+                                            existing_sl >= entry_price * (1.0 + self.fee_buffer_pct)
+                                            if is_long else
+                                            existing_sl <= entry_price * (1.0 - self.fee_buffer_pct)
+                                        )
+                                        if locked_at_breakeven:
+                                            state["breakeven_active"] = True
+                                            state["trailing_sl_price"] = existing_sl
                                 if not has_sl and not state.get("breakeven_active", False) and state.get("current_sl_price", 0.0) == 0.0:
                                     default_sl_pct = 0.03  # 3% protective initial stop loss
                                     if is_long:

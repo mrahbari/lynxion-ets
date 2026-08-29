@@ -199,6 +199,42 @@ def test_active_position_manager_retries_when_accepted_stop_is_not_visible():
 
 
 @pytest.mark.unit
+def test_active_position_manager_hydrates_existing_profit_lock_after_restart():
+    """An already locked exchange stop must not be amended again after a restart."""
+    from infrastructure.risk.active_position_manager import ActivePositionManager
+    from unittest.mock import MagicMock
+
+    manager = ActivePositionManager(be_trigger_roe=5.0, trail_trigger_roe=20.0, fee_buffer_pct=0.001)
+    manager._positions_state.clear()
+    manager._sync_sl_to_exchange = MagicMock(return_value=True)
+    position = MagicMock()
+    position.symbol = "AAVEUSDT"
+    position.side.value = "BUY"
+    position.quantity = 1.0
+    position.entry_price = 100.0
+    position.current_price = 100.0
+    class Broker:
+        @staticmethod
+        def get_all_positions():
+            return [position]
+
+        @staticmethod
+        def get_pending_orders(symbol):
+            return [{
+                "type": "STOP_MARKET", "side": "SELL", "positionSide": "LONG", "stopPrice": "100.2"
+            }]
+
+    broker = Broker()
+
+    actions = manager.evaluate_open_positions(broker, current_prices={"AAVEUSDT": 100.6})
+
+    assert actions == []
+    assert manager._positions_state["AAVEUSDT"]["breakeven_active"] is True
+    assert manager._positions_state["AAVEUSDT"]["trailing_sl_price"] == pytest.approx(100.2)
+    manager._sync_sl_to_exchange.assert_not_called()
+
+
+@pytest.mark.unit
 def test_auto_detection_marks_running_before_starting_protection_threads():
     """A background protection loop must not observe a false running flag at startup."""
     from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator

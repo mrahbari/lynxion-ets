@@ -38,6 +38,10 @@ The VST primary broker is now evaluated first in each protection pass. This prev
 data/API work for ancillary exchanges from delaying a BingX stop adjustment for qualifying
 positions such as CCUSDT, INJUSDT, or AAVEUSDT.
 
+Restart handling now hydrates the existing exchange-side stop into the manager state before
+computing a new breakeven/trailing candidate. An already profit-locked stop is retained and is
+only amended if a later candidate is strictly more protective.
+
 ## Guardrails
 
 - Do not close, reduce, or otherwise alter an existing VST position without explicit operator

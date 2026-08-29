@@ -294,6 +294,13 @@ now evaluates the configured primary broker (BingX VST) before ancillary adapter
 generic ordering fix, applies to every qualifying position, and is covered by a regression
 test; it needs a runner reload before remaining exchange-side adjustments can occur.
 
+**Restart-safe stop hydration:** The reviewer found no persistence for the in-memory trailing
+state. The manager now treats the existing matching exchange STOP_MARKET as authoritative at
+startup, hydrating its trigger into local state and marking a stop beyond the fee buffer as
+profit-locked. The manager therefore does not blindly amend an already locked stop after a
+restart; a later amendment still requires a strictly better protective candidate. A focused
+test covers this restart path.
+
 ## Reproducible Commands
 
     git status --short --branch
