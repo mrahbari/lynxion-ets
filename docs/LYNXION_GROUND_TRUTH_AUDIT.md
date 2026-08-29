@@ -229,6 +229,17 @@ One existing position had $24.334 entry notional, above the new $21 hard per-ord
 cap prevents new violations; reducing or closing the pre-existing position would affect the
 prospective execution record and requires an explicit operator decision.
 
+**Protective-order evidence:** A read-only VST open-orders query found 22 open positions,
+22 `STOP_MARKET` orders, and 22 `TAKE_PROFIT_MARKET` orders. Each open position matched one
+SL and one TP after normalized symbol comparison. Commit `9ef59e0` adds the reusable
+`scripts/audit_vst_protection.py` report; it refuses to run unless BingX VST/testnet is
+enabled. No exchange order was created, amended, cancelled, or closed during this audit.
+
+### Current test baseline
+
+After all completed tasks, `pytest -q` reports 615 passed and 1 skipped. The only skip is
+the optional import-layering test, because `import-linter` is not installed.
+
 ## Reproducible Commands
 
     git status --short --branch
