@@ -73,5 +73,7 @@ four positive folds after costs. Research remains isolated from the production e
 
 ## Operator decision required
 
-No for ordinary engineering/research work. A controlled runner restart or any direct external
-order mutation remains an external operational action.
+The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
+verified commits, and controlled VST/paper runtime reloads after pre/post protection checks.
+Real funds, secrets, destructive/data-loss operations, security-boundary changes, paid services,
+legal/compliance decisions, and irreversible choices remain separately approval-gated.
