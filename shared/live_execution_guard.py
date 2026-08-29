@@ -256,9 +256,8 @@ class LiveExecutionGuard:
         # A risk-rejected order is blocked outright (it is not even paper-simulated).
         if self._risk_enforcer is None:
             try:
-                from infrastructure.risk.risk_enforcement import RiskEnforcement
-                from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager
-                re = RiskEnforcement(EnterpriseRiskManager())
+                from infrastructure.risk.risk_enforcement import build_vst_risk_enforcement
+                re = build_vst_risk_enforcement()
                 self._risk_enforcer = re.enforce
             except Exception as re_init_err:
                 _log.warning("LIVE_EXECUTION_GUARD: Could not auto-instantiate RiskEnforcement fallback: %s", re_init_err)

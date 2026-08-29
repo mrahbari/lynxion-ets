@@ -492,8 +492,7 @@ class Container:
         try:
             from shared.live_execution_guard import live_execution_guard
             from infrastructure.execution.paper_trading_engine import PaperTradingEngine
-            from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager
-            from infrastructure.risk.risk_enforcement import RiskEnforcement
+            from infrastructure.risk.risk_enforcement import build_vst_risk_enforcement
             bt = settings.backtest
             self._paper_engine = PaperTradingEngine(
                 initial_capital=getattr(bt, "initial_capital", 10000.0),
@@ -503,8 +502,8 @@ class Container:
             )
             # Risk enforcement on EVERY order path (E11 Priority 2): the guard consults the
             # portfolio risk engine before any fill/send; fills feed exposure back so the
-            # engine's existing limits become enforceable. No risk thresholds are changed.
-            self._risk_enforcement = RiskEnforcement(EnterpriseRiskManager())
+            # engine's VST hard limits become enforceable at the execution boundary.
+            self._risk_enforcement = build_vst_risk_enforcement()
             live_execution_guard.set_risk_enforcer(self._risk_enforcement.enforce)
             live_execution_guard.set_risk_state_provider(self._risk_enforcement.state)
 

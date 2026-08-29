@@ -25,15 +25,34 @@ from typing import Any, Dict, Tuple
 
 COOLDOWN_JOURNAL_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "sl_cooldown_journal.json")
 
+# VST execution limits are deliberately explicit at the authoritative order-path gate.
+# Strategy/backtest sizing inputs must never enlarge these hard execution ceilings.
+VST_MAX_PORTFOLIO_EXPOSURE = 1_000.0
+VST_MAX_ORDER_NOTIONAL = 21.0
+
+
+def build_vst_risk_enforcement():
+    """Build the fail-closed risk enforcer used by the live execution guard."""
+    from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager
+
+    return RiskEnforcement(
+        EnterpriseRiskManager(
+            max_portfolio_exposure=VST_MAX_PORTFOLIO_EXPOSURE,
+            max_position_exposure=VST_MAX_ORDER_NOTIONAL,
+        ),
+        strict_position_limit=True,
+    )
+
 
 class RiskEnforcement:
     """Order-path adapter over EnterpriseRiskManager (enforce + exposure feedback + state)."""
 
-    def __init__(self, risk_manager):
+    def __init__(self, risk_manager, strict_position_limit: bool = False):
         self._rm = risk_manager
         self._lock = threading.Lock()
         self.checks = 0
         self.denials = 0
+        self._strict_position_limit = strict_position_limit
         self._sl_cooldowns: Dict[str, float] = self._load_cooldown_journal()
 
     def _load_cooldown_journal(self) -> Dict[str, float]:
@@ -221,6 +240,12 @@ class RiskEnforcement:
                     # Sizing boundary enforcement: cap quantity if it exceeds max position limit slightly (<= 5% overflow)
                     max_exposure = getattr(self._rm, 'max_position_exposure', 50000.0)
                     if size * entry > max_exposure:
+                        if self._strict_position_limit:
+                            self.denials += 1
+                            self._rm.violations.append(
+                                f"{symbol}: Position size ${size * entry:.2f} exceeds max position limit ${max_exposure}"
+                            )
+                            return False, f"risk engine: Position size ${size * entry:.2f} exceeds max position limit ${max_exposure}"
                         if size * entry <= max_exposure * 1.05:
                             target_exposure = max_exposure * 0.999
                             capped_size = target_exposure / entry
@@ -293,4 +318,9 @@ class RiskEnforcement:
             return {"status": "error", "error": str(e)}
 
 
-__all__ = ["RiskEnforcement"]
+__all__ = [
+    "RiskEnforcement",
+    "VST_MAX_ORDER_NOTIONAL",
+    "VST_MAX_PORTFOLIO_EXPOSURE",
+    "build_vst_risk_enforcement",
+]

@@ -5,10 +5,15 @@ from decimal import Decimal
 
 import pytest
 
-from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager
+from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager, Position, PositionDirection
 from domain.entities import Order, OrderSide
 from domain.value_objects import Money, Symbol
-from infrastructure.risk.risk_enforcement import RiskEnforcement
+from infrastructure.risk.risk_enforcement import (
+    RiskEnforcement,
+    VST_MAX_ORDER_NOTIONAL,
+    VST_MAX_PORTFOLIO_EXPOSURE,
+    build_vst_risk_enforcement,
+)
 from shared.live_execution_guard import LiveExecutionGuard, ExecutionMode
 
 
@@ -57,6 +62,50 @@ def test_enforce_denies_when_position_too_large():
     allowed, reason = enf.enforce(_order(1, 64000))       # $64k notional > $100 limit
     assert not allowed and "risk engine" in reason
     assert enf.denials == 1
+
+
+def test_vst_execution_risk_enforcer_rejects_notional_above_hard_cap():
+    enf = build_vst_risk_enforcement()
+
+    assert enf._rm.max_portfolio_exposure == VST_MAX_PORTFOLIO_EXPOSURE
+    assert enf._rm.max_position_exposure == VST_MAX_ORDER_NOTIONAL
+    allowed, reason = enf.enforce(_order(0.00032828125, 64000))  # $21.01
+
+    assert not allowed
+    assert "exceeds max position limit" in reason
+
+
+def test_vst_execution_risk_enforcer_rejects_portfolio_exposure_above_hard_cap():
+    enf = build_vst_risk_enforcement()
+    enf._rm.positions["ETHUSDT"] = Position(
+        symbol="ETHUSDT",
+        entry_price=1.0,
+        size=990.0,
+        direction=PositionDirection.LONG,
+        stop_loss=0.98,
+        take_profit=1.02,
+        entry_time=datetime.now(timezone.utc),
+    )
+
+    allowed, reason = enf.enforce(_order(0.0003125, 64000))  # $20; total would be $1,010
+
+    assert not allowed
+    assert "Portfolio exposure would exceed limit" in reason
+
+
+def test_guard_fallback_uses_vst_hard_cap():
+    guard = LiveExecutionGuard()
+    settings = type("S", (), {"broker": type("B", (), {
+        "paper_trading": True,
+        "testnet": True,
+        "bingx_testnet": True,
+        "bingx_order_placement_enabled": True,
+    })()})()
+
+    decision = guard.evaluate("bingx", settings, _order(0.00032828125, 64000))  # $21.01
+
+    assert decision.mode is ExecutionMode.BLOCKED
+    assert decision.rule == "2b:risk_engine"
 
 
 def test_enforce_denies_when_trading_halted():
@@ -345,4 +394,3 @@ def test_reconciliation_active_positions_persistence_restart():
     recon2._process_position_closures(broker=MockBroker(), current_active_symbols=set())
     # TUTUSDT close is detected, and SL cooldown registered
     assert "TUTUSDT" in symbol_cooldown_gate._sl_cooldowns
-

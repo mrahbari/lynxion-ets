@@ -21,9 +21,16 @@ def _paper_env(monkeypatch):
     monkeypatch.setenv("BROKER_PAPER_TRADING", "true")
     monkeypatch.delenv("LIVE_TRADING", raising=False)
     from shared.circuit_breaker import circuit_breaker_manager
+    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
     circuit_breaker_manager.circuit_breakers.clear()
+    saved_cooldowns = dict(symbol_cooldown_gate._sl_cooldowns)
+    saved_loss_history = {symbol: list(values) for symbol, values in symbol_cooldown_gate._symbol_loss_history.items()}
+    symbol_cooldown_gate._sl_cooldowns.clear()
+    symbol_cooldown_gate._symbol_loss_history.clear()
     yield
     circuit_breaker_manager.circuit_breakers.clear()
+    symbol_cooldown_gate._sl_cooldowns = saved_cooldowns
+    symbol_cooldown_gate._symbol_loss_history = saved_loss_history
 
 
 def _make_service(engine, fake_broker):
@@ -52,9 +59,11 @@ def _order(side, qty, price):
     from domain.value_objects import Money
     from decimal import Decimal
     from datetime import datetime, timezone
+    stop_loss = price * (0.98 if side is OrderSide.BUY else 1.02)
     return Order(symbol=Symbol("BTCUSDT"), side=side, quantity=Decimal(str(qty)),
                  price=Money(Decimal(str(price)), "USDT"), order_type="MARKET",
-                 strategy_name="trend_following", timestamp=datetime.now(timezone.utc))
+                 strategy_name="trend_following", timestamp=datetime.now(timezone.utc),
+                 stop_loss_price=Money(Decimal(str(stop_loss)), "USDT"))
 
 
 def test_paper_order_fills_through_real_execution_path(tmp_path, monkeypatch):
@@ -76,14 +85,14 @@ def test_paper_order_fills_through_real_execution_path(tmp_path, monkeypatch):
         fake = FakeBroker()
         svc = _make_service(engine, fake)
 
-        oid_buy = svc.execute_order(_order(OrderSide.BUY, 0.002, 64000))
+        oid_buy = svc.execute_order(_order(OrderSide.BUY, 0.0003, 64000))
         assert oid_buy and oid_buy.startswith("PAPER-FILL-"), "paper order should fill, not drop at connect gate"
         assert fake.sent == 0, "no real send may occur in paper mode"
         pos = engine.positions["BTCUSDT"]
         assert pos.side == PositionSide.LONG and pos.quantity > 0
 
         # Close it -> realized PnL booked through the same real path.
-        oid_sell = svc.execute_order(_order(OrderSide.SELL, 0.002, 65000))
+        oid_sell = svc.execute_order(_order(OrderSide.SELL, 0.0003, 65000))
         assert oid_sell.startswith("PAPER-FILL-")
         assert engine.positions["BTCUSDT"].side == PositionSide.FLAT
         assert engine.realized_pnl != 0
