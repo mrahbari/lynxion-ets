@@ -34,3 +34,18 @@ def test_report_uses_latest_state_per_order_ref_without_writing(tmp_path):
     assert report["order_exchange_map_count"] == 1
     assert report["net_positions"] == {"BTCUSDT": "2"}
     assert journal_path.read_bytes() == before
+
+
+def test_report_compares_derived_positions_with_active_snapshot(tmp_path):
+    journal_path = tmp_path / "orders.jsonl"
+    journal_path.write_text(
+        json.dumps({"order_ref": "a", "status": "FILLED", "symbol": "BTCUSDT", "side": "BUY", "filled_qty": "1", "total_qty": "1"}) + "\n",
+        encoding="utf-8",
+    )
+    active_path = tmp_path / "active.json"
+    active_path.write_text(json.dumps({"active_symbols": ["ETHUSDT"]}), encoding="utf-8")
+
+    report = _load_script_module().build_report(str(journal_path), str(active_path))
+
+    assert report["position_snapshot_missing_from_journal"] == ["ETHUSDT"]
+    assert report["journal_positions_missing_from_snapshot"] == ["BTCUSDT"]
