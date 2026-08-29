@@ -208,12 +208,14 @@ class ActivePositionManager:
                                         init_sl = min(entry_price * (1.0 - default_sl_pct), curr_price * 0.99)
                                     else:
                                         init_sl = max(entry_price * (1.0 + default_sl_pct), curr_price * 1.01)
-                                    state["current_sl_price"] = init_sl
                                     logger.warning(
                                         f"🚨 [ACTIVE POSITION MANAGER] MISSING STOP LOSS DETECTED: {clean_sym} "
                                         f"has no active Stop Loss on exchange! Attaching protective SL at ${init_sl:.4f}"
                                     )
-                                    self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), init_sl)
+                                    if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), init_sl):
+                                        state["current_sl_price"] = init_sl
+                                    else:
+                                        state["initial_sl_verified"] = False
                             except Exception as ex:
                                 logger.error(f"Error checking/attaching initial SL for {clean_sym}: {ex}")
 
@@ -228,26 +230,25 @@ class ActivePositionManager:
                             if be_sl <= curr_price:
                                 be_sl = curr_price * 1.002
 
-                        state["breakeven_active"] = True
-                        state["current_sl_price"] = be_sl
-                        state["trailing_sl_price"] = be_sl
-
-                        action = {
-                            "type": "BREAKEVEN_ACTIVATED",
-                            "symbol": clean_sym,
-                            "side": "LONG" if is_long else "SHORT",
-                            "entry_price": entry_price,
-                            "current_price": curr_price,
-                            "roe_pct": roe_pct,
-                            "new_sl_price": be_sl,
-                        }
-                        actions_taken.append(action)
-                        logger.warning(
-                            f"🛡️ [ACTIVE POSITION MANAGER] BREAKEVEN ACTIVATED: {clean_sym} "
-                            f"ROE={roe_pct:+.2f}% >= +{self.be_trigger_roe}%. "
-                            f"SL moved to Breakeven+Buffer: ${be_sl:.4f} (Entry: ${entry_price:.4f})"
-                        )
-                        self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), be_sl)
+                        if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), be_sl):
+                            state["breakeven_active"] = True
+                            state["current_sl_price"] = be_sl
+                            state["trailing_sl_price"] = be_sl
+                            action = {
+                                "type": "BREAKEVEN_ACTIVATED",
+                                "symbol": clean_sym,
+                                "side": "LONG" if is_long else "SHORT",
+                                "entry_price": entry_price,
+                                "current_price": curr_price,
+                                "roe_pct": roe_pct,
+                                "new_sl_price": be_sl,
+                            }
+                            actions_taken.append(action)
+                            logger.warning(
+                                f"🛡️ [ACTIVE POSITION MANAGER] BREAKEVEN ACTIVATED: {clean_sym} "
+                                f"ROE={roe_pct:+.2f}% >= +{self.be_trigger_roe}%. "
+                                f"SL moved to Breakeven+Buffer: ${be_sl:.4f} (Entry: ${entry_price:.4f})"
+                            )
 
                     # --- STAGE 1.5: TIME-DECAY STALE POSITION PROTECTION ---
                     elapsed_hours = (time.time() - state.get("first_seen", time.time())) / 3600.0
@@ -263,27 +264,26 @@ class ActivePositionManager:
                             if be_sl <= curr_price:
                                 be_sl = curr_price * 1.002
 
-                        state["breakeven_active"] = True
-                        state["current_sl_price"] = be_sl
-                        state["trailing_sl_price"] = be_sl
-
-                        action = {
-                            "type": "TIME_DECAY_BREAKEVEN_ACTIVATED",
-                            "symbol": clean_sym,
-                            "side": "LONG" if is_long else "SHORT",
-                            "entry_price": entry_price,
-                            "current_price": curr_price,
-                            "roe_pct": roe_pct,
-                            "new_sl_price": be_sl,
-                            "elapsed_hours": elapsed_hours
-                        }
-                        actions_taken.append(action)
-                        logger.warning(
-                            f"⏳ [ACTIVE POSITION MANAGER] TIME-DECAY BREAKEVEN ACTIVATED: {clean_sym} "
-                            f"held for {elapsed_hours:.1f}h with ROE={roe_pct:+.2f}%. "
-                            f"SL moved to Breakeven+Buffer: ${be_sl:.4f} (Entry: ${entry_price:.4f})"
-                        )
-                        self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), be_sl)
+                        if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), be_sl):
+                            state["breakeven_active"] = True
+                            state["current_sl_price"] = be_sl
+                            state["trailing_sl_price"] = be_sl
+                            action = {
+                                "type": "TIME_DECAY_BREAKEVEN_ACTIVATED",
+                                "symbol": clean_sym,
+                                "side": "LONG" if is_long else "SHORT",
+                                "entry_price": entry_price,
+                                "current_price": curr_price,
+                                "roe_pct": roe_pct,
+                                "new_sl_price": be_sl,
+                                "elapsed_hours": elapsed_hours
+                            }
+                            actions_taken.append(action)
+                            logger.warning(
+                                f"⏳ [ACTIVE POSITION MANAGER] TIME-DECAY BREAKEVEN ACTIVATED: {clean_sym} "
+                                f"held for {elapsed_hours:.1f}h with ROE={roe_pct:+.2f}%. "
+                                f"SL moved to Breakeven+Buffer: ${be_sl:.4f} (Entry: ${entry_price:.4f})"
+                            )
 
                     # 2. Stale stagnant trade (>= 8.0h open without hitting Breakeven) -> Tighten Stop by 30%
                     elif elapsed_hours >= 8.0 and not state.get("breakeven_active", False) and not state.get("time_decay_tightened", False):
@@ -292,7 +292,6 @@ class ActivePositionManager:
                         if is_long and curr_sl > 0 and curr_sl < entry_price:
                             tightened_sl = entry_price - (entry_price - curr_sl) * 0.70
                             if tightened_sl < curr_price * 0.998:
-                                state["current_sl_price"] = tightened_sl
                                 action = {
                                     "type": "TIME_DECAY_STOP_TIGHTENED",
                                     "symbol": clean_sym,
@@ -303,17 +302,17 @@ class ActivePositionManager:
                                     "new_sl_price": tightened_sl,
                                     "elapsed_hours": elapsed_hours
                                 }
-                                actions_taken.append(action)
-                                logger.warning(
-                                    f"⏳ [ACTIVE POSITION MANAGER] TIME-DECAY SL TIGHTENED: {clean_sym} LONG "
-                                    f"held for {elapsed_hours:.1f}h without progress. "
-                                    f"SL tightened by 30% to ${tightened_sl:.4f} to cut risk on stagnant trade."
-                                )
-                                self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), tightened_sl)
+                                if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), tightened_sl):
+                                    state["current_sl_price"] = tightened_sl
+                                    actions_taken.append(action)
+                                    logger.warning(
+                                        f"⏳ [ACTIVE POSITION MANAGER] TIME-DECAY SL TIGHTENED: {clean_sym} LONG "
+                                        f"held for {elapsed_hours:.1f}h without progress. "
+                                        f"SL tightened by 30% to ${tightened_sl:.4f} to cut risk on stagnant trade."
+                                    )
                         elif not is_long and curr_sl > 0 and curr_sl > entry_price:
                             tightened_sl = entry_price + (curr_sl - entry_price) * 0.70
                             if tightened_sl > curr_price * 1.002:
-                                state["current_sl_price"] = tightened_sl
                                 action = {
                                     "type": "TIME_DECAY_STOP_TIGHTENED",
                                     "symbol": clean_sym,
@@ -324,13 +323,14 @@ class ActivePositionManager:
                                     "new_sl_price": tightened_sl,
                                     "elapsed_hours": elapsed_hours
                                 }
-                                actions_taken.append(action)
-                                logger.warning(
-                                    f"⏳ [ACTIVE POSITION MANAGER] TIME-DECAY SL TIGHTENED: {clean_sym} SHORT "
-                                    f"held for {elapsed_hours:.1f}h without progress. "
-                                    f"SL tightened by 30% to ${tightened_sl:.4f} to cut risk on stagnant trade."
-                                )
-                                self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), tightened_sl)
+                                if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), tightened_sl):
+                                    state["current_sl_price"] = tightened_sl
+                                    actions_taken.append(action)
+                                    logger.warning(
+                                        f"⏳ [ACTIVE POSITION MANAGER] TIME-DECAY SL TIGHTENED: {clean_sym} SHORT "
+                                        f"held for {elapsed_hours:.1f}h without progress. "
+                                        f"SL tightened by 30% to ${tightened_sl:.4f} to cut risk on stagnant trade."
+                                    )
 
                     # --- STAGE 2: DYNAMIC TRAILING STOP RATCHET (+10.0% ROE) ---
                     min_locked_roe = self.fee_buffer_pct * self.leverage_multiplier * 100.0  # +3.5% ROE minimum
@@ -340,9 +340,6 @@ class ActivePositionManager:
                             locked_roe = ((candidate_sl - entry_price) / entry_price) * self.leverage_multiplier * 100.0
                             # Long SL can only increase (monotonic ratchet) and must lock >= min_locked_roe
                             if candidate_sl > state.get("trailing_sl_price", 0.0) and locked_roe >= min_locked_roe:
-                                state["trailing_sl_price"] = candidate_sl
-                                state["current_sl_price"] = max(state.get("current_sl_price", 0.0), candidate_sl)
-
                                 action = {
                                     "type": "TRAILING_STOP_RATCHET",
                                     "symbol": clean_sym,
@@ -354,21 +351,20 @@ class ActivePositionManager:
                                     "new_sl_price": candidate_sl,
                                     "locked_roe_pct": locked_roe,
                                 }
-                                actions_taken.append(action)
-                                logger.warning(
-                                    f"📈 [ACTIVE POSITION MANAGER] TRAILING STOP RATCHET: {clean_sym} LONG "
-                                    f"Peak ROE={state['peak_roe']:+.2f}%, Current ROE={roe_pct:+.2f}%. "
-                                    f"SL raised to ${candidate_sl:.4f} (Locked ROE: {locked_roe:+.2f}%)"
-                                )
-                                self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), candidate_sl)
+                                if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), candidate_sl):
+                                    state["trailing_sl_price"] = candidate_sl
+                                    state["current_sl_price"] = max(state.get("current_sl_price", 0.0), candidate_sl)
+                                    actions_taken.append(action)
+                                    logger.warning(
+                                        f"📈 [ACTIVE POSITION MANAGER] TRAILING STOP RATCHET: {clean_sym} LONG "
+                                        f"Peak ROE={state['peak_roe']:+.2f}%, Current ROE={roe_pct:+.2f}%. "
+                                        f"SL raised to ${candidate_sl:.4f} (Locked ROE: {locked_roe:+.2f}%)"
+                                    )
                         else:
                             candidate_sl = max(peak_p * (1.0 + self.trail_distance_pct), curr_price * 1.003)
                             locked_roe = ((entry_price - candidate_sl) / entry_price) * self.leverage_multiplier * 100.0
                             # Short SL can only decrease (monotonic ratchet) and must lock >= min_locked_roe
                             if (state.get("trailing_sl_price", 0.0) == 0.0 or candidate_sl < state.get("trailing_sl_price", 0.0)) and locked_roe >= min_locked_roe:
-                                state["trailing_sl_price"] = candidate_sl
-                                state["current_sl_price"] = min(state.get("current_sl_price", 999999.0), candidate_sl)
-
                                 action = {
                                     "type": "TRAILING_STOP_RATCHET",
                                     "symbol": clean_sym,
@@ -380,13 +376,15 @@ class ActivePositionManager:
                                     "new_sl_price": candidate_sl,
                                     "locked_roe_pct": locked_roe,
                                 }
-                                actions_taken.append(action)
-                                logger.warning(
-                                    f"📉 [ACTIVE POSITION MANAGER] TRAILING STOP RATCHET: {clean_sym} SHORT "
-                                    f"Peak ROE={state['peak_roe']:+.2f}%, Current ROE={roe_pct:+.2f}%. "
-                                    f"SL lowered to ${candidate_sl:.4f} (Locked ROE: {locked_roe:+.2f}%)"
-                                )
-                                self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), candidate_sl)
+                                if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), candidate_sl):
+                                    state["trailing_sl_price"] = candidate_sl
+                                    state["current_sl_price"] = min(state.get("current_sl_price", 999999.0), candidate_sl)
+                                    actions_taken.append(action)
+                                    logger.warning(
+                                        f"📉 [ACTIVE POSITION MANAGER] TRAILING STOP RATCHET: {clean_sym} SHORT "
+                                        f"Peak ROE={state['peak_roe']:+.2f}%, Current ROE={roe_pct:+.2f}%. "
+                                        f"SL lowered to ${candidate_sl:.4f} (Locked ROE: {locked_roe:+.2f}%)"
+                                    )
 
                     # --- STAGE 3: TRAILING STOP HIT ENFORCEMENT ---
                     sl_price = state.get("trailing_sl_price", 0.0)
@@ -434,8 +432,13 @@ class ActivePositionManager:
             target = target.broker
         return target
 
-    def _sync_sl_to_exchange(self, broker: Any, symbol: str, is_long: bool, quantity: float, new_sl_price: float) -> None:
-        """Cancel existing SL orders on the exchange and place the updated STOP_MARKET order directly on the broker."""
+    def _sync_sl_to_exchange(self, broker: Any, symbol: str, is_long: bool, quantity: float, new_sl_price: float) -> bool:
+        """Replace a broker stop and confirm that the requested stop is actually pending.
+
+        State is deliberately not updated by this method's callers until this returns
+        true.  A rejected or invisible replacement must be retried on the next loop,
+        rather than being reported as protected based on local state alone.
+        """
         try:
             target_broker = self._resolve_target_broker(broker)
             close_side = "SELL" if is_long else "BUY"
@@ -446,23 +449,9 @@ class ActivePositionManager:
             from infrastructure.utils.symbol_format_helper import SymbolFormatHelper
             formatted_symbol = SymbolFormatHelper.format_symbol_for_exchange(symbol, "bingx")
 
-            # 1. Cancel existing pending Stop Loss / Conditional orders for this symbol on broker
-            cancel_broker = target_broker
-            if hasattr(cancel_broker, "get_pending_orders") and hasattr(cancel_broker, "cancel_order"):
-                try:
-                    open_orders = cancel_broker.get_pending_orders(formatted_symbol) or []
-                    for o in open_orders:
-                        otype = str(o.get("type", "")).upper()
-                        if "STOP" in otype or "TRAILING" in otype:
-                            oid = str(o.get("orderId", ""))
-                            if oid:
-                                cancel_broker.cancel_order(oid, formatted_symbol)
-                                logger.info(f"🔄 Cancelled old broker SL order {oid} on {formatted_symbol} before placing updated SL")
-                    time.sleep(0.15)
-                except Exception as cancel_err:
-                    logger.warning(f"Could not cancel old SL order on {formatted_symbol}: {cancel_err}")
-
-            # 2. Place updated STOP_MARKET conditional order directly on the broker (with multi-attempt resilience)
+            # The BingX adapter performs its own cancel-and-replace only after the
+            # exchange reports a position-stop conflict.  Cancelling here first can
+            # leave a live position unprotected if the replacement is rejected.
             max_sl_attempts = 3
             placed = False
             for attempt in range(1, max_sl_attempts + 1):
@@ -489,9 +478,13 @@ class ActivePositionManager:
                         res = {"success": False, "error": "No _place_conditional_order method available"}
 
                     if res.get("success"):
-                        logger.warning(f"✅ Successfully updated Broker Stop Loss on exchange for {symbol}: ${new_sl_price:.4f} (Attempt {attempt})")
-                        placed = True
-                        break
+                        placed = self._verify_pending_stop(
+                            target_broker, formatted_symbol, close_side, pos_side, new_sl_price
+                        )
+                        if placed:
+                            logger.warning(f"✅ Confirmed Broker Stop Loss on exchange for {symbol}: ${new_sl_price:.4f} (Attempt {attempt})")
+                            break
+                        logger.warning(f"SL placement for {symbol} was accepted but could not be verified as pending (Attempt {attempt})")
                     else:
                         err_msg = res.get("error", "Unknown error")
                         logger.warning(f"SL placement attempt {attempt}/{max_sl_attempts} failed on {symbol}: {err_msg}")
@@ -504,8 +497,37 @@ class ActivePositionManager:
 
             if not placed:
                 logger.error(f"❌ Failed to update Broker Stop Loss on exchange for {symbol} after {max_sl_attempts} attempts")
+            return placed
         except Exception as e:
             logger.warning(f"Could not sync updated SL order on exchange for {symbol}: {e}")
+            return False
+
+    @staticmethod
+    def _verify_pending_stop(target_broker: Any, formatted_symbol: str, close_side: str,
+                             position_side: str, expected_stop_price: float) -> bool:
+        """Return true only when the requested position-closing stop is visible."""
+        if not hasattr(target_broker, "get_pending_orders"):
+            return False
+        for _ in range(3):
+            try:
+                pending = target_broker.get_pending_orders(formatted_symbol) or []
+                for order in pending:
+                    if "STOP" not in str(order.get("type", "")).upper():
+                        continue
+                    if str(order.get("side", "")).upper() != close_side:
+                        continue
+                    if str(order.get("positionSide", "")).upper() != position_side:
+                        continue
+                    actual = ActivePositionManager._extract_float(
+                        order.get("stopPrice", order.get("stop_price", order.get("triggerPrice")))
+                    )
+                    tolerance = max(abs(expected_stop_price) * 0.0001, 1e-8)
+                    if abs(actual - expected_stop_price) <= tolerance:
+                        return True
+            except Exception as verify_err:
+                logger.warning(f"Could not verify pending stop for {formatted_symbol}: {verify_err}")
+            time.sleep(0.2)
+        return False
 
     def _execute_market_close(self, broker: Any, symbol: str, is_long: bool, quantity: float) -> None:
         """Execute a market close order for the position."""

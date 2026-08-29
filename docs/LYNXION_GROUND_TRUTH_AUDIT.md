@@ -237,7 +237,7 @@ enabled. No exchange order was created, amended, cancelled, or closed during thi
 
 ### Current test baseline
 
-After all completed tasks, `pytest -q` reports 615 passed and 1 skipped. The only skip is
+After the Task 007 correction, the complete suite reports 618 passed and 1 skipped. The only skip is
 the optional import-layering test, because `import-linter` is not installed.
 
 ### TASK 006 — Exit-price/PnL consistency forensic check
@@ -248,6 +248,27 @@ However, one historical LDOUSDT SELL LIMIT trade (2026-07-20) has a $2,001.00 di
 between price-derived gross PnL and recorded PnL; its recorded fee is only $12.64 and cannot
 explain the discrepancy. This evidence is preserved as a P1 data-provenance issue. The CSV,
 historical PnL, and cohort boundaries were not changed.
+
+### TASK 007 — Exchange-side trailing-stop and profit-lock correctness
+
+**Result: mechanical defect confirmed; scoped repair in progress.** Read-only BingX VST
+evidence found ZECUSDT LONG at 793.89 entry / 810.56 mark (estimated +21.00% ROE at the
+manager's 10x calculation) while its STOP_MARKET remained at 784.79, below entry. AVAXUSDT
+SHORT was at 7.553 entry / 7.270 mark (estimated +37.47% ROE) while its STOP_MARKET remained
+at 7.700, above entry. Both exceed the configured +6% breakeven and +10% trailing thresholds;
+neither exchange-side stop had locked profit.
+
+The code inspection found that `ActivePositionManager` mutated its in-memory protection state
+and emitted a successful action before the broker placement had succeeded or become visible in
+pending orders. It also cancelled the existing stop before attempting its replacement. The
+scoped correction makes a placement return success only after a matching pending STOP_MARKET
+is observed (symbol, close side, position side, and trigger price), and updates local state only
+after that confirmation. The unsafe eager cancellation was removed; the BingX adapter's
+exchange-conflict path handles its own cancel-and-replace. Focused tests cover confirmed and
+unverified broker acknowledgements plus the retryable breakeven state.
+
+No VST order was created, amended, cancelled, or closed during this diagnosis. Applying the
+repair to the existing ZEC/AVAX orders remains an explicit operator-approved VST action.
 
 ## Reproducible Commands
 

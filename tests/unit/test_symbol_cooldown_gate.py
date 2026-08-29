@@ -96,6 +96,7 @@ def test_active_position_manager_breakeven_and_trailing():
         leverage_multiplier=10.0
     )
     mgr._positions_state.clear()
+    mgr._sync_sl_to_exchange = MagicMock(return_value=True)
 
     mock_pos_long = MagicMock()
     mock_pos_long.symbol = "ETHUSDT"
@@ -126,3 +127,72 @@ def test_active_position_manager_breakeven_and_trailing():
     # Price drops to 2015.0 (below trailing stop $2019.85) -> Triggers Trailing Exit Executed
     actions = mgr.evaluate_open_positions(mock_broker, current_prices={"ETHUSDT": 2015.0})
     assert any(a["type"] == "TRAILING_EXIT_EXECUTED" for a in actions)
+
+
+@pytest.mark.unit
+def test_active_position_manager_does_not_record_breakeven_when_exchange_sync_fails():
+    """A failed broker update must remain eligible for retry on the next management loop."""
+    from infrastructure.risk.active_position_manager import ActivePositionManager
+    from unittest.mock import MagicMock
+
+    mgr = ActivePositionManager(be_trigger_roe=5.0, trail_trigger_roe=10.0)
+    mgr._positions_state.clear()
+    mgr._sync_sl_to_exchange = MagicMock(return_value=False)
+
+    position = MagicMock()
+    position.symbol = "ZECUSDT"
+    position.side.value = "BUY"
+    position.quantity = 1.0
+    position.entry_price = 100.0
+    position.current_price = 100.0
+    broker = MagicMock()
+    broker.get_all_positions.return_value = [position]
+    broker.get_pending_orders.return_value = [{"type": "STOP_MARKET"}]
+
+    actions = mgr.evaluate_open_positions(broker, current_prices={"ZECUSDT": 100.6})
+
+    assert actions == []
+    state = mgr._positions_state["ZECUSDT"]
+    assert state["breakeven_active"] is False
+    assert state["trailing_sl_price"] == 0.0
+
+
+@pytest.mark.unit
+def test_active_position_manager_confirms_pending_stop_before_reporting_success():
+    """The broker must expose the requested position-closing stop after placement."""
+    from infrastructure.risk.active_position_manager import ActivePositionManager
+
+    class ConfirmingBroker:
+        def __init__(self):
+            self.pending = []
+
+        def _place_conditional_order(self, **kwargs):
+            self.pending = [{
+                "type": kwargs["order_type"],
+                "side": kwargs["side"],
+                "positionSide": kwargs["position_side"],
+                "stopPrice": kwargs["stop_price"],
+            }]
+            return {"success": True, "order_id": "replacement-stop"}
+
+        def get_pending_orders(self, symbol):
+            return self.pending
+
+    mgr = ActivePositionManager()
+    assert mgr._sync_sl_to_exchange(ConfirmingBroker(), "AVAXUSDT", False, 2.0, 7.41) is True
+
+
+@pytest.mark.unit
+def test_active_position_manager_retries_when_accepted_stop_is_not_visible():
+    """An accepted response alone must not mark a stop as synced."""
+    from infrastructure.risk.active_position_manager import ActivePositionManager
+
+    class InvisibleStopBroker:
+        def _place_conditional_order(self, **kwargs):
+            return {"success": True, "order_id": "unverified-stop"}
+
+        def get_pending_orders(self, symbol):
+            return []
+
+    mgr = ActivePositionManager()
+    assert mgr._sync_sl_to_exchange(InvisibleStopBroker(), "ZECUSDT", True, 1.0, 800.0) is False
