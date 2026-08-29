@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Controlled edge research after TASK 002 decomposition, with TASK 000 runtime reload evidence
-still open.
+Controlled evaluation of the remaining preregistered candidates after C-04 rejection, with
+TASK 000 runtime reload evidence still open.
 
 ## Status
 
@@ -68,8 +68,8 @@ qualifying positions after the corrected runner has loaded.
 ## Next task
 
 TASK 001 and TASK 002 are complete. The next task is a newly versioned, pre-registered,
-chronological OOS evaluation of the residual VWAPReversal hypothesis alongside the existing
-candidate register. Research remains isolated from the production execution path.
+chronological OOS evaluation of C-01/C-02/C-03. C-04 VWAPReversal was rejected with zero of
+four positive folds after costs. Research remains isolated from the production execution path.
 
 ## Operator decision required
 

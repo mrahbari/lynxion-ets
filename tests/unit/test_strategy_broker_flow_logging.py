@@ -11,6 +11,8 @@ def test_strategy_to_broker_flow_is_available_and_emits_execution_context():
     records = []
     handler = logging.Handler()
     handler.emit = records.append
+    original_level = enhanced.logger.level
+    enhanced.logger.setLevel(logging.INFO)
     enhanced.logger.addHandler(handler)
     try:
         enhanced.log_strategy_to_broker_flow(
@@ -23,6 +25,7 @@ def test_strategy_to_broker_flow_is_available_and_emits_execution_context():
         )
     finally:
         enhanced.logger.removeHandler(handler)
+        enhanced.logger.setLevel(original_level)
 
     assert len(records) == 1
     message = records[0].getMessage()
