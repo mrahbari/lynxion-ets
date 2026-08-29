@@ -214,6 +214,21 @@ are settings-loader golden-snapshot differences limited to local MEXC credential
 Changing a credential-bearing baseline or its loading semantics is security-sensitive and
 requires an operator decision; it was intentionally left out of these tasks.
 
+### TASK 005 — VST broker-state verification
+
+**Result: partially completed, read-only verification plus local snapshot recovery.** Commit
+`8e29f9f` introduced `BrokerReconciliationService.inspect`, which cannot write state or halt
+trading. A read-only BingX VST query found active broker positions while the persisted active
+snapshot was empty. The standard existing reconciliation was then run against VST only; it
+updated the local active snapshot to 22 symbols, did not alter exchange orders, and did not
+engage the kill switch. One `ONDOUSDT` intent remains recoverable because it has no broker
+acknowledgement/order ID; it was not fabricated into a terminal state.
+
+At verification time total VST entry notional was $419.8565, within the $1,000 portfolio cap.
+One existing position had $24.334 entry notional, above the new $21 hard per-order cap. The
+cap prevents new violations; reducing or closing the pre-existing position would affect the
+prospective execution record and requires an explicit operator decision.
+
 ## Reproducible Commands
 
     git status --short --branch
