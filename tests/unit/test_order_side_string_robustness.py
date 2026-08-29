@@ -18,6 +18,9 @@ from infrastructure.brokers.adapters.phemex_adapter import PhemexBrokerAdapter
 
 @pytest.mark.unit
 def test_bingx_adapter_position_side_robustness(monkeypatch):
+    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+
+    monkeypatch.setattr(symbol_cooldown_gate, "is_symbol_allowed", lambda symbol: (True, "ALLOWED"))
     b = object.__new__(_BingXBroker)
     b.logger = logging.getLogger("test_bingx_side")
     
@@ -70,6 +73,28 @@ def test_bingx_adapter_position_side_robustness(monkeypatch):
     assert sent_payloads[-1].get("side") == "SELL"
     assert sent_payloads[-1].get("positionSide") == "SHORT"
 
+
+@pytest.mark.unit
+def test_bingx_low_level_execute_order_rejects_blacklisted_symbol(monkeypatch):
+    """Direct low-level calls cannot bypass the final exchange-boundary blacklist gate."""
+    b = object.__new__(_BingXBroker)
+    b.logger = logging.getLogger("test_bingx_final_gate")
+    monkeypatch.setattr(
+        b,
+        "_make_request",
+        lambda *args, **kwargs: pytest.fail("blacklisted order reached the exchange request"),
+    )
+    order = Order(
+        symbol=Symbol("XMRUSDT"),
+        side=OrderSide.BUY,
+        quantity=Decimal("0.01"),
+        order_type="MARKET",
+    )
+
+    result = b.execute_order(order)
+
+    assert result["success"] is False
+    assert "BLACKLIST" in result["error"]
 
 @pytest.mark.unit
 def test_binance_adapter_side_robustness(monkeypatch):

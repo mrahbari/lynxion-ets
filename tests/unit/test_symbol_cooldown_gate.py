@@ -1,6 +1,7 @@
 """Unit tests for SymbolCooldownGate and RiskEnforcement cooldown integration."""
 
 import os
+import json
 import tempfile
 import time
 from datetime import datetime
@@ -8,6 +9,25 @@ import pytest
 
 from infrastructure.risk.symbol_cooldown_gate import SymbolCooldownGate
 from infrastructure.risk.advanced_risk_management import AdvancedRiskManagementService
+from domain.value_objects import Symbol
+
+
+@pytest.mark.unit
+def test_symbol_validator_hot_reloads_blacklist_without_restart(tmp_path):
+    """A newly blacklisted symbol must be rejected by an already-running validator."""
+    from infrastructure.services.symbol_validator import SymbolValidator
+
+    approved = tmp_path / "approved.json"
+    blacklist = tmp_path / "blacklist.json"
+    approved.write_text(json.dumps(["XMR/USDT", "BTC/USDT"]), encoding="utf-8")
+    blacklist.write_text("[]", encoding="utf-8")
+    validator = SymbolValidator(str(approved), str(blacklist))
+    assert validator.is_symbol_approved(Symbol("XMRUSDT"))
+
+    blacklist.write_text(json.dumps(["XMRUSDT"]), encoding="utf-8")
+
+    assert "XMRUSDT" in validator.get_blacklisted_symbols()
+    assert not validator.is_symbol_approved(Symbol("XMRUSDT"))
 
 
 @pytest.mark.unit

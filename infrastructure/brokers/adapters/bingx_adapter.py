@@ -91,7 +91,8 @@ class BingXBrokerAdapter(BrokerPort):
         except ValueError:
             raise
         except Exception as gate_err:
-            self.logger.warning(f"Could not check SymbolCooldownGate in place_order: {gate_err}")
+            self.logger.error(f"SymbolCooldownGate unavailable in place_order; rejecting order: {gate_err}")
+            raise RuntimeError(f"Risk Health Gate unavailable; order rejected: {gate_err}") from gate_err
 
         # Store original symbol
         original_symbol = order.symbol
@@ -490,6 +491,24 @@ class _BingXBroker:
     def execute_order(self, order: Order) -> Dict[str, Any]:
         """Execute order on BingX."""
         try:
+            # Final exchange-boundary admission check.  Some recovery/service paths
+            # call this low-level method directly instead of adapter.place_order().
+            try:
+                from infrastructure.services.symbol_validator import symbol_validator
+                clean_symbol = symbol_validator.normalize_symbol(order.symbol)
+                blacklisted = symbol_validator.get_blacklisted_symbols()
+                if clean_symbol in blacklisted:
+                    reason = f"PERMANENT_BLACKLIST: {clean_symbol} is blacklisted from trading in configuration"
+                    self.logger.warning(f"🛑 [BINGX FINAL GATE] Order REJECTED for {order.symbol}: {reason}")
+                    return {"success": False, "order_id": None, "error": reason}
+            except Exception as gate_err:
+                self.logger.error(f"BingX final risk gate unavailable; rejecting order: {gate_err}")
+                return {
+                    "success": False,
+                    "order_id": None,
+                    "error": f"Risk Health Gate unavailable: {gate_err}",
+                }
+
             # Handle the symbol formatting here
             # Ensure symbol is properly formatted for BingX REST API (must include hyphen, e.g. XMR-USDT)
             if isinstance(order.symbol, str):

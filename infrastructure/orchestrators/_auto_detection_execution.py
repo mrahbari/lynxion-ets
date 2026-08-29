@@ -76,6 +76,11 @@ class _AutoDetectionExecutionMixin:
                     }
             except Exception as cd_err:
                 self.logger.error(f"Error checking symbol cooldown gate: {cd_err}")
+                self._remove_pending_execution_intent(execution_intent)
+                return {
+                    'status': 'failed',
+                    'error': f'Risk Health Gate unavailable: {cd_err}'
+                }
 
             if filter_stablecoin_pairs:
                 # Check if both parts of the symbol are stablecoins (e.g., USDCUSDT)

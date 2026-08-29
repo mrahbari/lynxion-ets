@@ -11,11 +11,17 @@ from shared.logger import EnhancedLogger
 
 class SymbolValidator:
     """Validates symbols against an approved list and dynamic blacklist configuration."""
+
+    @staticmethod
+    def normalize_symbol(symbol) -> str:
+        raw = getattr(symbol, "value", symbol)
+        return str(raw or "").upper().strip().replace("/", "").replace("-", "").replace("_", "")
     
     def __init__(self, config_path: str = None, blacklist_path: str = None):
         self.logger = EnhancedLogger("SymbolValidator")
         self.approved_symbols: Set[str] = set()
         self.blacklisted_symbols: Set[str] = set()
+        self._blacklist_mtime_ns = None
         
         base_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
@@ -40,14 +46,24 @@ class SymbolValidator:
                 for s in bl:
                     s_str = str(s).upper().strip()
                     normalized.add(s_str)
-                    normalized.add(s_str.replace("/", "").replace("-", "").replace("_", ""))
+                    normalized.add(self.normalize_symbol(s_str))
                 self.blacklisted_symbols = normalized
+                self._blacklist_mtime_ns = os.stat(blacklist_path).st_mtime_ns
                 self.logger.info(f"Loaded {len(bl)} blacklisted symbols from {blacklist_path}")
             else:
                 self.blacklisted_symbols = set()
+                self._blacklist_mtime_ns = None
         except Exception as e:
             self.logger.warning(f"Could not load blacklisted symbols: {e}")
-            self.blacklisted_symbols = set()
+
+    def _refresh_blacklist_if_changed(self):
+        """Hot-reload blacklist edits without requiring a trading-process restart."""
+        try:
+            current_mtime_ns = os.stat(self.blacklist_path).st_mtime_ns
+        except OSError:
+            current_mtime_ns = None
+        if current_mtime_ns != self._blacklist_mtime_ns:
+            self.load_blacklisted_symbols(self.blacklist_path)
     
     def load_approved_symbols(self, config_path: str):
         """Load approved symbols from configuration file"""
@@ -78,8 +94,9 @@ class SymbolValidator:
     
     def is_symbol_approved(self, symbol: Symbol) -> bool:
         """Check if a symbol is in the approved list and not blacklisted"""
+        self._refresh_blacklist_if_changed()
         symbol_str = symbol.value.upper()
-        clean = symbol_str.replace("/", "").replace("-", "").replace("_", "")
+        clean = self.normalize_symbol(symbol_str)
         if clean in self.blacklisted_symbols or symbol_str in self.blacklisted_symbols:
             self.logger.warning(f"🚫 SYMBOL BLACKLISTED: {symbol_str} is in blacklist configuration.")
             return False
@@ -94,6 +111,7 @@ class SymbolValidator:
 
     def get_blacklisted_symbols(self) -> Set[str]:
         """Get the set of blacklisted symbols"""
+        self._refresh_blacklist_if_changed()
         return self.blacklisted_symbols.copy()
 
 
