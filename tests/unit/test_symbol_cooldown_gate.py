@@ -196,3 +196,21 @@ def test_active_position_manager_retries_when_accepted_stop_is_not_visible():
 
     mgr = ActivePositionManager()
     assert mgr._sync_sl_to_exchange(InvisibleStopBroker(), "ZECUSDT", True, 1.0, 800.0) is False
+
+
+@pytest.mark.unit
+def test_auto_detection_marks_running_before_starting_protection_threads():
+    """A background protection loop must not observe a false running flag at startup."""
+    from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator
+    from unittest.mock import MagicMock
+
+    orchestrator = object.__new__(AutoDetectionOrchestrator)
+    orchestrator.logger = MagicMock()
+    orchestrator.is_running = False
+    observed = []
+    orchestrator._start_background_services = lambda: observed.append(orchestrator.is_running)
+
+    orchestrator.initialize_system()
+
+    assert observed == [True]
+    assert orchestrator.is_running is True

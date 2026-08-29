@@ -24,6 +24,11 @@ STOP_MARKET still at 784.79, below entry. AVAXUSDT is SHORT at 7.553 entry / 7.2
 configured +6% profit-lock and +10% trailing triggers but do not have an exchange-side
 profit-lock stop. No orders were changed while collecting this evidence.
 
+An additional startup defect was confirmed after a runner restart: background services were
+started while `is_running` was still false. The trailing loop uses that flag as its loop
+condition, so it could exit before its first evaluation. The corrected startup sequence sets
+the flag before launching any background thread; a regression test asserts that ordering.
+
 ## Guardrails
 
 - Do not close, reduce, or otherwise alter an existing VST position without explicit operator
@@ -56,6 +61,8 @@ profit-lock stop. No orders were changed while collecting this evidence.
 - Restart persistence restores the latest protected-stop state without duplicate amendments.
 - A VST observation report for ZEC and AVAX is produced. Any required live order amendment is
   presented to the operator before execution.
+- The runner is restarted after the startup-order correction and the active-position loop's
+  startup is evidenced before asserting live trailing behavior.
 - Full local test suite remains green.
 
 ## Deliverables

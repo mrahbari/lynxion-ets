@@ -270,6 +270,13 @@ unverified broker acknowledgements plus the retryable breakeven state.
 No VST order was created, amended, cancelled, or closed during this diagnosis. Applying the
 repair to the existing ZEC/AVAX orders remains an explicit operator-approved VST action.
 
+**Startup correction:** The first post-fix runner inspection showed a second independent
+mechanical defect: `AutoDetectionOrchestrator.initialize_system` launched background threads
+before setting `is_running=True`. Since the active-position loop immediately tests that flag,
+it could terminate without evaluating even once. The flag is now set before any background
+service starts, and a focused regression test observes that order. This requires one final
+controlled runner restart before exchange-side trailing behavior can be claimed.
+
 ## Reproducible Commands
 
     git status --short --branch

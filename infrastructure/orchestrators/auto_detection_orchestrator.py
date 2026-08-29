@@ -123,10 +123,14 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
         """Initialize the auto-detection system."""
         self.logger.info("🚀 Initializing Auto-Detection Orchestrator with correct architecture...")
 
+        # Background loops use this flag as their loop condition.  It must be
+        # true before their threads are started, otherwise a fast-starting
+        # protection loop can exit before its first position evaluation.
+        self.is_running = True
+
         # Start background services
         self._start_background_services()
 
-        self.is_running = True
         self.logger.info("✅ Auto-Detection Orchestrator initialized successfully with correct architecture")
 
     def _start_background_services(self):
