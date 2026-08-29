@@ -7,7 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK 002 — edge failure decomposition, with TASK 000 runtime reload evidence still open.
+Controlled edge research after TASK 002 decomposition, with TASK 000 runtime reload evidence
+still open.
 
 ## Status
 
@@ -66,9 +67,9 @@ qualifying positions after the corrected runner has loaded.
 
 ## Next task
 
-TASK 001 performance attribution is complete. TASK 002 must classify the XMR MARKET-exit
-cascade and MARKET exit sources before any strategy or exit mutation. Research remains
-isolated from the production execution path.
+TASK 001 and TASK 002 are complete. The next task is a newly versioned, pre-registered,
+chronological OOS evaluation of the residual VWAPReversal hypothesis alongside the existing
+candidate register. Research remains isolated from the production execution path.
 
 ## Operator decision required
 
