@@ -240,6 +240,15 @@ enabled. No exchange order was created, amended, cancelled, or closed during thi
 After all completed tasks, `pytest -q` reports 615 passed and 1 skipped. The only skip is
 the optional import-layering test, because `import-linter` is not installed.
 
+### TASK 006 — Exit-price/PnL consistency forensic check
+
+**Result: read-only finding.** Deduplicated trade records have directionally consistent PnL
+relative to entry/exit prices for LIMIT, MARKET, STOP_MARKET, and TAKE_PROFIT_MARKET exits.
+However, one historical LDOUSDT SELL LIMIT trade (2026-07-20) has a $2,001.00 difference
+between price-derived gross PnL and recorded PnL; its recorded fee is only $12.64 and cannot
+explain the discrepancy. This evidence is preserved as a P1 data-provenance issue. The CSV,
+historical PnL, and cohort boundaries were not changed.
+
 ## Reproducible Commands
 
     git status --short --branch
