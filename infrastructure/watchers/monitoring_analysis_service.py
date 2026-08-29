@@ -248,9 +248,7 @@ class MonitoringAnalysisService:
                 # Update last market data heartbeat immediately after ingestion
                 try:
                     from infrastructure.messaging.event_system import signal_processor
-                    if not hasattr(signal_processor, '_last_market_data_times'):
-                        signal_processor._last_market_data_times = {}
-                    signal_processor._last_market_data_times[symbol_str] = datetime.now()
+                    signal_processor.update_market_data_heartbeat(symbol)
                 except Exception as heartbeat_err:
                     self.logger.warning(f"Failed to update heartbeat timestamp for {symbol_str}: {heartbeat_err}")
 
@@ -332,6 +330,25 @@ class MonitoringAnalysisService:
                 'strategy_suggestion': 'SKIPPED',  # Mark as skipped due to validation
                 'execution_intent': None
             }
+
+        # Check SymbolCooldownGate: if cooldown is active, skip analyzing this symbol entirely!
+        try:
+            from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+            allowed, cd_reason = symbol_cooldown_gate.is_symbol_allowed(symbol)
+            if not allowed:
+                self.logger.debug(f"🛑 SYMBOL ON COOLDOWN: {symbol_str} ({cd_reason}). Skipping watcher analysis.")
+                return {
+                    'symbol': symbol_str,
+                    'timestamp': datetime.now(),
+                    'observations': {},
+                    'indicators': {},
+                    'recommendation': None,
+                    'confidence': 0.0,
+                    'strategy_suggestion': 'SKIPPED_COOLDOWN',
+                    'execution_intent': None
+                }
+        except Exception:
+            pass
 
         # Log that the symbol analysis is starting
         if hasattr(self.logger, 'comprehensive_mode') and self.logger.comprehensive_mode:

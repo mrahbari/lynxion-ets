@@ -61,14 +61,34 @@ class LiveOrderJournal:
     # -- lifecycle records --------------------------------------------------------
 
     def record_intent(self, symbol: str, side: str, quantity, exchange: str,
-                      client_order_id: Optional[str] = None) -> str:
+                      client_order_id: Optional[str] = None,
+                      stop_loss: Optional[Any] = None,
+                      take_profit: Optional[Any] = None,
+                      confidence: Optional[Any] = None,
+                      regime: Optional[Any] = None,
+                      strategy: Optional[Any] = None) -> str:
         """Write an INTENT record BEFORE the send; returns an order_ref linking the lifecycle."""
         order_ref = uuid.uuid4().hex
-        self._append({
+        rec = {
             "order_ref": order_ref, "status": "INTENT", "symbol": symbol, "side": str(side),
             "quantity": str(quantity), "exchange": exchange,
             "client_order_id": client_order_id, "order_id": None,
-        })
+        }
+        if stop_loss is not None:
+            rec["stop_loss"] = str(stop_loss)
+            rec["initial_stop_loss"] = str(stop_loss)
+        if take_profit is not None:
+            rec["take_profit"] = str(take_profit)
+            rec["initial_take_profit"] = str(take_profit)
+        if confidence is not None:
+            rec["confidence"] = str(confidence)
+        if regime is not None:
+            rec["regime"] = str(regime)
+        if strategy is not None:
+            rec["strategy"] = str(strategy)
+            rec["strategy_name"] = str(strategy)
+
+        self._append(rec)
         return order_ref
 
     def record_submitted(self, order_ref: str, order_id: str, exchange: str) -> None:

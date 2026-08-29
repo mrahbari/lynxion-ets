@@ -137,7 +137,12 @@ class SymbolDiscoveryService:
                     symbols_discovered=len(new_general_symbols),
                     sample_symbols=new_general_symbols[:5])
 
-        discovered_symbols = list(all_discovered_symbols)
+        from infrastructure.services.symbol_validator import symbol_validator
+        blacklisted = symbol_validator.get_blacklisted_symbols()
+        discovered_symbols = [
+            s for s in all_discovered_symbols 
+            if (s.value if hasattr(s, 'value') else str(s)).upper().replace("/", "").replace("-", "").replace("_", "") not in blacklisted
+        ]
 
         # Log the combined symbol set
         self.logger.info(

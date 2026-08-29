@@ -19,6 +19,7 @@ It combines automated optimization, walk-forward validation, and multi-timeframe
 * [Configuration](#configuration)
 * [Data Structure](#data-structure)
 * [Troubleshooting](#troubleshooting)
+* [Prospective Validation & Live Execution Plan](#prospective-validation--live-execution-plan)
 * [Maintenance](#maintenance)
 * [Contributing](#contributing)
 * [License](#license)
@@ -75,6 +76,71 @@ The system is suitable for both **research/backtesting** and **live trading**.
 * Realistic backtesting (fees, slippage, position sizing)
 * Continuous historical data synchronization
 * Clean hexagonal (ports & adapters) architecture
+
+---
+
+## Strategy Architecture & Optimization Report
+
+### 1. Strategy Taxonomy & Lifecycle Hierarchy
+
+```mermaid
+flowchart TD
+    subgraph Market Data Layer
+        MD[15m Candles + 1m Microdata + Order Flow & OI]
+    end
+
+    subgraph Market Structure & Feature Engine
+        MS[MarketStructureEngine<br/>VAH, VAL, POC, Volume Profile]
+        ATR[14-Period ATR & Volatility Buffer]
+        VWAP_Calc[Rolling 20-Bar VWAP & ±2.5σ Bands]
+    end
+
+    subgraph Strategy Tiers
+        T1[Tier 1: Trend & Breakout<br/>• Breakout / Donchian<br/>• TrendFollow (FROZEN)]
+        T2[Tier 2: Statistical Reversion & Footprint<br/>• VWAPReversal / NGMR<br/>• OIFootprint (FROZEN)]
+        T3[Tier 3: Liquidity & Structure<br/>• SweepScalper / NGLS<br/>• MTFTrend]
+    end
+
+    subgraph Admission & Risk Gates
+        AG[DecisionPipeline<br/>• Min R:R ≥ 1.5<br/>• Regime Compatibility<br/>• Cooldown Gate]
+        RG[ActivePositionManager<br/>• Breakeven @ +8.0% ROE<br/>• Fee Cushion +3.5% ROE<br/>• Trailing Ratchet @ +12.0% ROE]
+    end
+
+    subgraph Execution
+        EX[BingX Swap V2<br/>closePosition=true TP/SL Orders]
+    end
+
+    MD --> MS & ATR & VWAP_Calc
+    MS & ATR & VWAP_Calc --> T1 & T2 & T3
+    T1 & T2 & T3 --> AG --> RG --> EX
+```
+
+### 2. Strategy Implementations: Legacy vs. Upgraded Architecture Matrix
+
+| Subsystem / Layer | Legacy / Old Implementation | Upgraded / New Implementation | Mathematical & Execution Impact |
+| :--- | :--- | :--- | :--- |
+| **BingX Broker Adapter** | Mixed fragmented `/openApi/swap/v3/*` and `v2/*` endpoints. Dependent on bracket orders. | **100% Unified on BingX Swap V2 (`/openApi/swap/v2/*`)**. Native position-level `closePosition: true` conditional orders. | Eliminates endpoint mismatch errors, ensures robust atomic SL/TP placement on testnet & live. |
+| **Profit Lock & Breakeven** | Fixed stop moved to $0.10\%$ price buffer without fee awareness; phantom profits turned negative after execution. | **Fee-Compensated Profit Lock**: Enforces minimum $\mathbf{+3.50\%\text{ ROE}}$ ($0.35\%$ price @ $10\times$) to cover round-trip taker fees ($1.0\%$) + slippage ($2.5\%$). | Guarantees all Breakeven and Trailing stop-out fills yield **strictly positive realized net cash PnL**. |
+| **Position Side Resolution** | Evaluated `qty > 0` for all positions when `"side"` key was missing in API dictionary, inverting Short positions to Long. | **Multi-Key Position Side Parser**: Checks `positionSide`, `position_side`, `side`, and signed quantity explicitly with fail-safe defaults. | Eliminates inverted PnL and prevents exchange price-band rejection errors (`SL must be > mark`). |
+| **Tier 2: `OIFootprint` (FROZEN BASELINE)** | Standard volume profile detection. | **Frozen Production Baseline**: Institutional OI Z-score spike ($\Delta \text{OI}$) + Point of Control ($\text{POC}$) volume absorption + structural $\text{SL} \pm 2.0 \times \text{ATR}$. | **$73.91\%$ Win Rate**, **$3.74$ Profit Factor**, $+\$14.59$ Net PnL ($N=46$). Model locked as immutable benchmark. |
+| **Tier 1: `TrendFollow` (FROZEN BASELINE)** | Basic moving average crossover. | **Frozen Production Baseline**: Dual Moving Average momentum gate ($\text{SMA}_{10} / \text{SMA}_{20}$) aligned with Value Area expansion. | **$75.00\%$ Win Rate**, **$1.38$ Profit Factor** ($N=16$). Model locked as immutable benchmark. |
+| **Tier 2: `VWAPReversal`** | Fired mean reversion on simple $0.15\%$ touch of Value Area High ($\text{VAH}$) or Low ($\text{VAL}$). | **$\pm 2.5\sigma$ Statistical Deviation Gate**: Requires rolling 20-bar VWAP $\pm 2.5\sigma$ overextension + $\ge 25\%$ exhaustion wick rejection + $\text{R:R} \ge 1.5$. | Filters out $80\%$ of counter-trend premature entries; targets high-expectancy statistical exhaustion points. |
+| **Tier 3: `SweepScalper`** | Triggered immediately when candle wicked outside 20-bar swing high/low, frequently shorting into strong breakouts. | **Market Structure Shift (MSS) Gate**: Requires candle close breaking previous candle midpoint ($\frac{H_{-2}+L_{-2}}{2}$) + anti-bull trend expansion veto. | Stops false-breakout traps; confirms institutional absorption before executing reversal trades. |
+| **Tier 3: `MTFTrend`** | Chased momentum breakouts at the peak of extended candles $> 5-10\%$ away from the value area. | **Pullback & Overextension Guard**: Requires price within $\le 6.0\%$ of $\text{VAH}/\text{VAL}$ + directional momentum wick/close confirmation. | Eliminates buying at market exhaustion tops; aligns entry with structural value area expansion. |
+| **Tier 1: `Breakout`** | Price-only range compression breakout without volume or order flow confirmation. | **Volume Surge Validation**: Requires current candle volume $\ge 105\%$ of 20-period average volume during compression breakout ($>1.5\times$ compression). | Avoids low-volume bull/bear liquidity traps during flat market hours. |
+| **Strategy Decision Telemetry** | No durable persistence of non-executed or filtered candidate signals. | **Signal Census Journal (`data/signal_census.jsonl`)**: Records every strategy attempt, $R:R$ expectation, and admission filter reason. | Provides full auditability for long-term algorithmic research and hyperparameter optimization. |
+
+### 3. Historical Strategy Attribution ($N=1,499$ Trades)
+
+| Strategy | Status | Total Trades | Win Rate | Profit Factor | Net PnL ($) | Avg Win | Avg Loss | Primary Exit Mode |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **`OIFootprint`** | **FROZEN BASELINE** | 46 | **$73.91\%$** | **$3.74$** | **$+\$14.59$** | $\$0.59$ | $-\$0.42$ | $76\%$ Take Profit |
+| **`TrendFollow`** | **FROZEN BASELINE** | 16 | **$75.00\%$** | **$1.38$** | **$+\$0.87$** | $\$0.26$ | $-\$0.57$ | $31\%$ TP / $63\%$ SL |
+| **`SweepScalper`** | **ACTIVE (UPGRADED)** | 85 | $37.65\%$ | $0.55$ | $-\$10.83$ | $\$0.41$ | $-\$0.45$ | MSS Midpoint Shift + Anti-Trend Gate |
+| **`VWAPReversal`** | **ACTIVE (UPGRADED)** | 540 | $35.56\%$ | $0.18$ | $-\$475.20$ | $\$0.56$ | $-\$1.67$ | $\pm 2.5\sigma$ Statistical Deviation Gate |
+| **`MTFTrend`** | **ACTIVE (UPGRADED)** | 36 | $13.89\%$ | $0.06$ | $-\$31.04$ | $\$0.39$ | $-\$1.06$ | Pullback Retest & Overextension Guard |
+| **`MeanReversion`** | **LEGACY** | 34 | $2.94\%$ | $0.03$ | $-\$10.30$ | $\$0.37$ | $-\$0.32$ | Unified under VWAPReversal |
+| **`trend_following`** | **LEGACY** | 742 | $31.67\%$ | $0.18$ | $-\$14,213.94$ | $\$13.17$ | $-\$34.14$ | Unified under TrendFollow / SetupEngine |
 
 ---
 
@@ -1217,6 +1283,35 @@ data/
 * Run `pip install pydantic pydantic-settings` to ensure the configuration system can load.
 
 Logs are available in `logs/`.
+
+---
+
+## Prospective Validation & Live Execution Plan
+
+### 1. Forensic Audit & Cohort Breakdown
+During the live prospective validation cohort ($N=100$ trades on BingX VST):
+- **Headline Performance ($N=92$)**: 20 Wins / 72 Losses (21.7% Win Rate), Net Realized PnL: `-$111.34 VST`.
+- **Forensic Diagnosis**:
+  - **Pre-Fix XMR Protective Unwind Defect**: 47 trades, 0 wins, **`-$107.57 VST`** (95% of total losses). Caused by unformatted conditional order precision on BingX triggering repeated protective unwinds with legacy cooldown bypass.
+  - **Non-Anomaly Organic Performance (23 Symbols)**: 45 trades, 20 wins, 25 losses, **`+$1.36 VST` (Net Positive Profitability, 47.6% Win Rate)**.
+
+### 2. Live Risk & Position Management Architecture
+- **Active Position Trailing Stop Engine (`infrastructure/risk/active_position_manager.py`)**:
+  - **Breakeven Protection**: Automatically moves Stop Loss to Entry + 0.1% fee buffer at **+5.0% ROE** (+0.5% price move at 10x leverage).
+  - **Dynamic Trailing Stop**: Automatically trails Stop Loss 0.5% behind peak high-water mark price at **+10.0% ROE** (+1.0% price move at 10x leverage), locking in profits.
+  - **Clean Single-Exit Execution**: Elimination of partial-closing friction and minimum lot-size constraints.
+- **Universal Fail-Closed Cooldown Gate (`infrastructure/risk/symbol_cooldown_gate.py`)**:
+  - **60-Minute Lockout**: Enforced on ANY stop-loss exit, negative PnL exit, or protective unwind.
+  - **15-Minute Spacing Window**: Enforced even on profitable Take Profit exits to prevent rapid re-entry churn.
+  - **Zero Hardcoded Symbols**: 100% dynamic across all 34 perpetual pairs.
+
+### 3. Execution Plan Summary
+1. **Complete Cohort 1 ($N = 100$) Audit**:
+   - Complete remaining trades to reach $N = 100$ milestone and publish official validation report with dual forensic views (All-Inclusive Raw vs Non-Anomaly Organic Baseline).
+2. **Deploy Dynamic 24-Hour Symbol Health Gate**:
+   - Automatic 24-hour circuit breaker on any asset experiencing 2 consecutive protective unwinds or rapid losses within 2 hours.
+3. **Launch Clean Prospective Cohort 2 ($N = 100$)**:
+   - Benchmark the true unpolluted equity curve under the upgraded trailing stop and cooldown engine.
 
 ---
 

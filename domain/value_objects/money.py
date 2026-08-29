@@ -71,6 +71,12 @@ class Money:
             raise ValueError("Can only divide by non-zero numeric values")
         return Money(self.amount / Decimal(str(scalar)), self.currency)
     
+    def __float__(self) -> float:
+        return float(self.amount)
+
+    def __int__(self) -> int:
+        return int(self.amount)
+
     def __str__(self):
         return f"{self.amount:.2f} {self.currency}"
 

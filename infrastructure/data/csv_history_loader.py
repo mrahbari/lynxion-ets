@@ -355,26 +355,29 @@ class CSVHistoryLoaderAdapter(DataProviderPort):
         # IMPLEMENT HARD VALIDATION GATE: Block backtesting if missing data ratio exceeds 5%
         # Calculate missing candle ratio
         if 'timestamp' in df.columns:
-            timestamps = pd.to_datetime(df['timestamp'], unit='s', utc=True)
-            min_time = timestamps.min()
-            max_time = timestamps.max()
-            # Calculate expected number of candles based on timeframe
-            if timeframe.endswith('d'):  # Daily data
-                expected_count = (max_time - min_time).days + 1
-            elif timeframe.endswith('h'):  # Hourly data
-                expected_count = int((max_time - min_time).total_seconds() / 3600) + 1
-            elif timeframe.endswith('m'):  # Minute data
-                expected_count = int((max_time - min_time).total_seconds() / 60) + 1
-            else:
-                # Default to daily if timeframe not recognized
-                expected_count = (max_time - min_time).days + 1
+            # Filter out corrupted epoch zero or negative timestamps (before year 2001)
+            valid_ts_mask = df['timestamp'] > 1000000000
+            valid_timestamps = pd.to_datetime(df.loc[valid_ts_mask, 'timestamp'], unit='s', utc=True)
+            if not valid_timestamps.empty:
+                min_time = valid_timestamps.min()
+                max_time = valid_timestamps.max()
+                # Calculate expected number of candles based on timeframe
+                if timeframe.endswith('d'):  # Daily data
+                    expected_count = (max_time - min_time).days + 1
+                elif timeframe.endswith('h'):  # Hourly data
+                    expected_count = int((max_time - min_time).total_seconds() / 3600) + 1
+                elif timeframe.endswith('m'):  # Minute data
+                    expected_count = int((max_time - min_time).total_seconds() / 60) + 1
+                else:
+                    # Default to daily if timeframe not recognized
+                    expected_count = (max_time - min_time).days + 1
 
-            actual_count = len(df)
-            missing_ratio = 1 - (actual_count / expected_count) if expected_count > 0 else 0
+                actual_count = len(df[valid_ts_mask])
+                missing_ratio = 1 - (actual_count / expected_count) if expected_count > 0 else 0
 
-            # Hard validation gate: reject data if missing ratio > 5%
-            if missing_ratio > 0.05:
-                raise ValueError(f"Data quality validation failed for {symbol}: {missing_ratio:.2%} missing data exceeds 5% threshold. Data range: {min_time.date()} to {max_time.date()}, Expected: {expected_count}, Actual: {actual_count}")
+                # Hard validation gate: reject data if missing ratio > 5%
+                if missing_ratio > 0.05:
+                    raise ValueError(f"Data quality validation failed for {symbol}: {missing_ratio:.2%} missing data exceeds 5% threshold. Data range: {min_time.date()} to {max_time.date()}, Expected: {expected_count}, Actual: {actual_count}")
 
         # Ensure required columns exist
         required_cols = ["timestamp", "open", "high", "low", "close", "volume"]

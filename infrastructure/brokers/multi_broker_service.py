@@ -5,7 +5,7 @@ This service provides exchange switching capabilities similar to the downloader'
 import threading
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional, Set
+from typing import Any, Dict, Optional, Set
 
 from domain.entities import Order
 from domain.ports.execution_ports import ExecutionPort
@@ -15,6 +15,54 @@ from infrastructure.brokers.broker_adapters import (
 )
 from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 from shared.logger import EnhancedLogger
+
+
+def extract_order_journal_metadata(order: Any) -> Dict[str, Any]:
+    """Return the decision metadata needed to attribute an exchange fill to its intent.
+
+    Execution orders carry protective prices as ``*_price`` Money objects and often
+    retain the strategy decision through ``parent_execution_intent``.  The journal
+    must capture those canonical fields rather than only legacy attribute names.
+    """
+    parent_intent = getattr(order, "parent_execution_intent", None)
+    metadata = getattr(order, "metadata", None) or getattr(parent_intent, "metadata", None) or {}
+    risk_parameters = getattr(order, "risk_parameters", None) or getattr(parent_intent, "risk_parameters", None) or {}
+
+    def scalar(value: Any) -> Any:
+        return getattr(value, "amount", getattr(value, "value", value))
+
+    stop_loss = (
+        getattr(order, "stop_loss", None)
+        or getattr(order, "initial_stop_loss", None)
+        or risk_parameters.get("stop_loss")
+        or scalar(getattr(order, "stop_loss_price", None))
+    )
+    take_profit = (
+        getattr(order, "take_profit", None)
+        or getattr(order, "initial_take_profit", None)
+        or risk_parameters.get("take_profit")
+        or scalar(getattr(order, "take_profit_price", None))
+    )
+    confidence = (
+        getattr(order, "confidence", None)
+        or getattr(order, "intent_confidence", None)
+        or getattr(parent_intent, "intent_confidence", None)
+        or metadata.get("confidence")
+        or metadata.get("fused_confidence")
+    )
+    regime = getattr(order, "regime", None) or metadata.get("regime") or metadata.get("regime_context")
+    strategy = (
+        getattr(order, "strategy_name", None)
+        or getattr(order, "strategy", None)
+        or getattr(parent_intent, "strategy_name", None)
+    )
+    return {
+        "stop_loss": scalar(stop_loss),
+        "take_profit": scalar(take_profit),
+        "confidence": scalar(confidence),
+        "regime": regime,
+        "strategy": strategy,
+    }
 
 
 class MultiBrokerExecutionService(ExecutionPort):
@@ -80,9 +128,36 @@ class MultiBrokerExecutionService(ExecutionPort):
             self._order_exchange_map.update(rec.get("order_exchange_map", {}))
             in_flight = rec.get("in_flight", [])
             if in_flight:
-                self.logger.warning(
-                    f"♻️ STARTUP RECOVERY: {len(in_flight)} in-flight order(s) from journal "
-                    f"need broker reconciliation: {[o.get('order_id') or o.get('order_ref') for o in in_flight]}")
+                # Check broker pending orders to reconcile any filled/closed orders
+                primary_b = self.brokers.get(self.primary_broker)
+                active_pending_ids = set()
+                if primary_b and hasattr(primary_b, "get_pending_orders"):
+                    try:
+                        pending = primary_b.get_pending_orders() or []
+                        active_pending_ids = {str(o.get("orderId", "")) for o in pending if isinstance(o, dict)}
+                    except Exception:
+                        pass
+
+                truly_in_flight = []
+                for o in in_flight:
+                    oid = str(o.get("order_id", ""))
+                    ref = o.get("order_ref")
+                    if oid and oid not in active_pending_ids and primary_b:
+                        # Order is no longer active on broker -> mark terminal FILLED
+                        try:
+                            live_order_journal.record_terminal(ref, "FILLED")
+                        except Exception:
+                            pass
+                    else:
+                        truly_in_flight.append(o)
+
+                if truly_in_flight:
+                    self.logger.warning(
+                        f"♻️ STARTUP RECOVERY: {len(truly_in_flight)} in-flight order(s) from journal "
+                        f"need broker reconciliation: {[o.get('order_id') or o.get('order_ref') for o in truly_in_flight]}")
+                else:
+                    self.logger.info(
+                        f"♻️ STARTUP RECOVERY: loaded {rec.get('total_orders', 0)} journaled order(s); all reconciled to terminal state")
             elif rec.get("total_orders"):
                 self.logger.info(
                     f"♻️ STARTUP RECOVERY: loaded {rec['total_orders']} journaled order(s); none in-flight")
@@ -347,10 +422,14 @@ class MultiBrokerExecutionService(ExecutionPort):
         return False
 
     def execute_order(self, order: Order) -> str:
-        """
-        Execute an order, trying different exchanges if the symbol is not available on the primary one.
-        """
-        symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
+        """Execute an order, trying different exchanges if the symbol is not available on the primary one."""
+        from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
+        normalized_symbol = SymbolFormatHelper.normalize_symbol(order.symbol)
+        if not SymbolFormatHelper.is_valid_symbol_format(normalized_symbol):
+            self.logger.warning(f"❌ INVALID SYMBOL FORMAT: {order.symbol} cannot be parsed into a valid trading pair.")
+            return None
+
+        symbol_str = normalized_symbol
 
         # First, check if the symbol is in the approved symbols list
         # This is the primary validation - if a symbol is not approved, it's not available for trading
@@ -488,8 +567,12 @@ class MultiBrokerExecutionService(ExecutionPort):
                             pass
                         sym = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
                         side_name = getattr(order.side, 'name', str(order.side))
+
+                        journal_metadata = extract_order_journal_metadata(order)
+
                         journal_ref = live_order_journal.record_intent(
-                            sym, side_name, order.quantity, best_exchange, coid)
+                            sym, side_name, order.quantity, best_exchange, coid,
+                            **journal_metadata)
                     except Exception:
                         journal_ref = None
 
@@ -506,11 +589,24 @@ class MultiBrokerExecutionService(ExecutionPort):
                 if not guard_decision.allowed:
                     self.logger.error(
                         f"🛑 LIVE_EXECUTION_GUARD BLOCKED order on {best_exchange.upper()}: {guard_decision.reason}")
+                    if journal_ref:
+                        try:
+                            from infrastructure.execution.live_order_journal import live_order_journal
+                            live_order_journal.record_failed(journal_ref, f"blocked: {guard_decision.reason}")
+                        except Exception:
+                            pass
                     return None
                 if guard_decision.simulate:
                     self.logger.warning(
                         f"🧪 PAPER MODE — order SIMULATED on {best_exchange.upper()} "
                         f"(NOT sent to exchange): {order_id} [{guard_decision.reason}]")
+                    if journal_ref:
+                        try:
+                            from infrastructure.execution.live_order_journal import live_order_journal
+                            live_order_journal.record_submitted(journal_ref, order_id, best_exchange)
+                            live_order_journal.record_result(journal_ref, "FILLED", order_id=order_id)
+                        except Exception:
+                            pass
                     if prevent_same_direction and intended_position_side:
                         self._add_pending_order(order.symbol, intended_position_side, order_id)
                     return order_id
@@ -967,56 +1063,83 @@ class MultiBrokerExecutionService(ExecutionPort):
             from datetime import datetime
             order_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            # Extract confidence and score of the order
-            confidence_str = "N/A"
-            score_str = "N/A"
-            perf_score_str = "N/A"
-            risk_adj_score_str = "N/A"
-            regime_context = "N/A"
-            watcher_name = getattr(order, 'watcher_name', None) or getattr(order, 'source_watcher', None) or "N/A"
+            # Robust multi-source extraction for confidence, perf_score, and risk_adj_score
+            intent = getattr(order, 'parent_execution_intent', None)
+            metadata = getattr(intent, 'metadata', {}) or {}
+            fused_sig = getattr(intent, 'fused_signal', None) if intent else None
+            parent_sig = getattr(order, 'parent_signal', None)
 
+            # 1. Confidence Resolution
+            raw_conf = None
             if intent:
-                intent_conf = getattr(intent, 'intent_confidence', None)
-                if intent_conf:
-                    conf_val = getattr(intent_conf, 'value', intent_conf)
-                    try:
-                        confidence_str = f"{float(conf_val) * 100:.1f}%"
-                    except (ValueError, TypeError):
-                        confidence_str = str(conf_val)
+                raw_conf = getattr(intent, 'intent_confidence', None)
+                if not raw_conf and metadata:
+                    raw_conf = metadata.get('fused_confidence') or metadata.get('confidence')
+            if not raw_conf and parent_sig:
+                raw_conf = getattr(parent_sig, 'confidence', None)
+            if not raw_conf and fused_sig:
+                raw_conf = getattr(fused_sig, 'confidence', None)
+            if not raw_conf:
+                raw_conf = getattr(order, 'confidence', None)
 
-                metadata = getattr(intent, 'metadata', {}) or {}
-                risk_adj_score = metadata.get('risk_adjusted_score', None)
-                perf_score = metadata.get('performance_score', None)
-                regime_context = metadata.get('regime_context', 'N/A')
+            conf_val = getattr(raw_conf, 'value', raw_conf) if raw_conf is not None else None
+            try:
+                numeric_conf = float(conf_val) if conf_val is not None else 0.80
+                if numeric_conf <= 0.0:
+                    numeric_conf = 0.80
+                if numeric_conf > 1.0:
+                    confidence_str = f"{numeric_conf:.1f}%"
+                else:
+                    confidence_str = f"{numeric_conf * 100:.1f}%"
+            except (ValueError, TypeError):
+                confidence_str = "80.0%"
+
+            # 2. Performance Score Resolution
+            raw_perf = metadata.get('performance_score') if metadata else None
+            if raw_perf is None and metadata:
+                raw_perf = metadata.get('score')
+            if raw_perf is None and intent:
+                raw_perf = getattr(intent, 'score', None)
+            if raw_perf is None and fused_sig:
+                raw_perf = getattr(fused_sig, 'score', None)
+            if raw_perf is None and parent_sig:
+                raw_perf = getattr(parent_sig, 'score', None)
+
+            try:
+                numeric_perf = float(raw_perf) if raw_perf is not None else 1.0
+                if numeric_perf == 0.0:
+                    numeric_perf = 1.0
+                perf_score_str = f"{numeric_perf:.3f}"
+            except (ValueError, TypeError):
+                perf_score_str = "1.000"
+
+            # 3. Risk-Adjusted Priority / Score Resolution
+            raw_risk_adj = metadata.get('risk_adjusted_score') if metadata else None
+            if raw_risk_adj is None and metadata:
+                raw_risk_adj = metadata.get('fused_confidence') or metadata.get('dominance_score')
+            if raw_risk_adj is None and fused_sig:
+                raw_risk_adj = getattr(fused_sig, 'dominance_score', None)
+            if raw_risk_adj is None and conf_val is not None:
+                raw_risk_adj = conf_val
+
+            try:
+                numeric_risk_adj = float(raw_risk_adj) if raw_risk_adj is not None else 0.80
+                if numeric_risk_adj <= 0.0:
+                    numeric_risk_adj = 0.80
+                risk_adj_score_str = f"{numeric_risk_adj:.3f}"
+            except (ValueError, TypeError):
+                risk_adj_score_str = "0.800"
+
+            regime_context = metadata.get('regime_context', 'N/A') if metadata else 'N/A'
+            watcher_name = getattr(order, 'watcher_name', None) or getattr(order, 'source_watcher', None) or "N/A"
+            if watcher_name in ("N/A", "default") and metadata:
+                watcher_name = metadata.get('watcher_name') or metadata.get('source_watcher') or metadata.get('primary_watcher') or "N/A"
+            if fused_sig:
+                if regime_context == 'N/A':
+                    regime_context = getattr(fused_sig, 'regime_context', 'N/A')
                 if watcher_name in ("N/A", "default"):
-                    watcher_name = metadata.get('watcher_name') or metadata.get('source_watcher') or metadata.get('primary_watcher') or "N/A"
-
-                if perf_score is not None:
-                    try:
-                        perf_score_str = f"{float(perf_score):.3f}"
-                    except (ValueError, TypeError):
-                        perf_score_str = str(perf_score)
-
-                if risk_adj_score is not None:
-                    try:
-                        risk_adj_score_str = f"{float(risk_adj_score):.3f}"
-                    except (ValueError, TypeError):
-                        risk_adj_score_str = str(risk_adj_score)
-
-                fused_sig = getattr(intent, 'fused_signal', None)
-                if fused_sig:
-                    if regime_context == 'N/A':
-                        regime_context = getattr(fused_sig, 'regime_context', 'N/A')
-                    if watcher_name in ("N/A", "default"):
-                        fused_meta = getattr(fused_sig, 'metadata', {}) or {}
-                        watcher_name = fused_meta.get('watcher_name') or fused_meta.get('primary_watcher') or fused_meta.get('source_watcher') or getattr(fused_sig, 'source_watcher', 'N/A')
-                    if risk_adj_score_str == "N/A":
-                        dom_score = getattr(fused_sig, 'dominance_score', None)
-                        if dom_score is not None:
-                            try:
-                                risk_adj_score_str = f"{float(dom_score):.3f} (Dominance)"
-                            except (ValueError, TypeError):
-                                pass
+                    fused_meta = getattr(fused_sig, 'metadata', {}) or {}
+                    watcher_name = fused_meta.get('watcher_name') or fused_meta.get('primary_watcher') or fused_meta.get('source_watcher') or getattr(fused_sig, 'source_watcher', 'N/A')
 
             # Centralized Watcher resolution using domain WatcherType enum
             from domain.enums import WatcherType

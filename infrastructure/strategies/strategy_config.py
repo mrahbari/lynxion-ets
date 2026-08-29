@@ -355,9 +355,12 @@ def get_mtf_trend_config() -> dict:
 
 
 def get_oi_footprint_config() -> dict:
-    """Get configuration for OIFootprintStrategy"""
+    """Get configuration for OIFootprintStrategy (FROZEN PRODUCTION BASELINE)"""
     return {
         'enabled': StrategyConfig.get_strategy_enabled('OI_FOOTPRINT'),
+        'status': 'FROZEN_BASELINE',
+        'is_frozen': True,
+        'tier': 'Tier 2 (Frozen Production Baseline)',
         'max_position_size': StrategyConfig.get_strategy_max_position_size('OI_FOOTPRINT', 0.04),
         'min_confidence': StrategyConfig.get_strategy_min_confidence('OI_FOOTPRINT', 0.5),
         'max_confidence': StrategyConfig.get_strategy_max_confidence('OI_FOOTPRINT', 0.95),

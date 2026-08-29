@@ -57,6 +57,9 @@ class BinanceClient:
                         logger.error(f"Server error {resp.status_code} for {symbol} {interval} after {max_retries} attempts")
                         break
                 else:
+                    if resp.status_code == 400 and ("-1121" in resp.text or "Invalid symbol" in resp.text):
+                        logger.debug(f"Symbol {symbol} is not listed on Binance Spot/Futures: {resp.text}")
+                        return []
                     logger.error(f"Error downloading klines for {symbol} {interval}: {resp.status_code} - {resp.text}")
                     # Don't retry on other error codes
                     break
@@ -85,5 +88,5 @@ class BinanceClient:
                     logger.error(f"Exception downloading klines for {symbol} {interval} after {max_retries} attempts: {str(e)}")
                     break
 
-        logger.error(f"Failed to download klines for {symbol} {interval} after {max_retries} attempts")
+        logger.warning(f"No klines obtained from Binance for {symbol} {interval}; triggering fallback data sources.")
         return []

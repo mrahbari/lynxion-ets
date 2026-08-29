@@ -16,12 +16,21 @@ agnostic (uses the BrokerPort interface) and side-effect-free except the halt ca
 
 from __future__ import annotations
 
+import json
+import os
 from decimal import Decimal
 from typing import Any, Callable, Dict, List, Optional
 
 
 def _sym(s) -> str:
     return getattr(s, "value", None) or (str(s) if s is not None else "")
+
+
+def _project_root() -> str:
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+ACTIVE_POSITIONS_JOURNAL_PATH = os.path.join(_project_root(), "data", "active_positions_journal.json")
 
 
 _OPEN_ORDER_STATES = {"NEW", "PENDING", "PARTIALLY_FILLED", "PARTIAL", "OPEN", "WORKING"}
@@ -34,11 +43,40 @@ class BrokerReconciliationService:
     def __init__(self, halt_fn: Optional[Callable[[str], None]] = None):
         # Default halt = engage the live execution guard kill switch (imported lazily).
         self._halt_fn = halt_fn
-        # In-memory tracking for active position transitions and closed position idempotency
-        self._previous_active_symbols: set[str] = set()
-        self._processed_closed_exits: set[str] = set()
         from shared.logger import EnhancedLogger
         self.logger = EnhancedLogger("BrokerReconciliationService")
+        # Persistent tracking for active position transitions and closed position idempotency across restarts
+        self._previous_active_symbols: set[str] = self._load_active_symbols()
+        self._processed_closed_exits: set[str] = set()
+
+    def _load_active_symbols(self) -> set[str]:
+        try:
+            if os.path.exists(ACTIVE_POSITIONS_JOURNAL_PATH):
+                with open(ACTIVE_POSITIONS_JOURNAL_PATH, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        return set(data)
+                    elif isinstance(data, dict):
+                        return set(data.get("active_symbols", []))
+        except Exception as e:
+            if hasattr(self, "logger"):
+                self.logger.warning(f"Failed to load active positions journal: {e}")
+        return set()
+
+    def _save_active_symbols(self) -> None:
+        try:
+            os.makedirs(os.path.dirname(ACTIVE_POSITIONS_JOURNAL_PATH), exist_ok=True)
+            tmp_path = f"{ACTIVE_POSITIONS_JOURNAL_PATH}.tmp.{os.getpid()}"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump({"active_symbols": sorted(list(self._previous_active_symbols))}, f, indent=2)
+                f.flush()
+                try:
+                    os.fsync(f.fileno())
+                except (OSError, ValueError):
+                    pass
+            os.replace(tmp_path, ACTIVE_POSITIONS_JOURNAL_PATH)
+        except Exception as e:
+            self.logger.warning(f"Failed to save active positions journal: {e}")
 
     def _halt(self, reason: str) -> None:
         if self._halt_fn is not None:
@@ -54,8 +92,9 @@ class BrokerReconciliationService:
         """Detect exchange position closures (transition to positionAmt == 0) and propagate trade result."""
         # Find symbols that were active in the previous cycle but are absent in current cycle
         closed_symbols = self._previous_active_symbols - current_active_symbols
-        # Update active symbols for next cycle
+        # Update active symbols for next cycle and persist atomically across process restarts
         self._previous_active_symbols = set(current_active_symbols)
+        self._save_active_symbols()
 
         if not closed_symbols:
             return
@@ -69,7 +108,7 @@ class BrokerReconciliationService:
 
                 if hasattr(broker, "get_order_history"):
                     try:
-                        history = broker.get_order_history(_mk_symbol(sym), limit=20) or []
+                        history = broker.get_order_history(_sym(sym), limit=20) or []
                         # Sort newest order first
                         sorted_history = sorted(
                             history,
@@ -110,12 +149,35 @@ class BrokerReconciliationService:
                 # ATOMICITY: Register idempotency key BEFORE emitting to prevent duplicate propagation on crash
                 self._processed_closed_exits.add(exit_key)
 
-                # 3. Propagate to strategy_manager
+                # 3. Propagate to strategy_manager and register with SymbolCooldownGate
                 from infrastructure.strategies.strategy_manager import strategy_manager
                 strategy_manager.record_trade_result(sym, is_profitable=is_profitable, position_closed=True)
-                self.logger.info(
+
+                from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+                if not is_profitable or realized_pnl is None or realized_pnl <= 0 or closing_order_id == "UNKNOWN":
+                    symbol_cooldown_gate.record_stop_loss_exit(sym)
+                    self.logger.warning(f"🛑 SYMBOL COOLDOWN GATE: Activated 60m Stop Loss Cooldown for {sym} (is_profitable={is_profitable}, PnL={realized_pnl})")
+                else:
+                    symbol_cooldown_gate.record_take_profit_exit(sym)
+
+                print(f"\n🔴 [POSITION CLOSED] {sym}: outcome={'TAKE PROFIT' if is_profitable else 'STOP LOSS'} PnL={realized_pnl if realized_pnl is not None else 'N/A'} USDT", flush=True)
+                self.logger.warning(
                     f"✅ POSITION CLOSED CONFIRMED for {sym}: exit_key={exit_key}, is_profitable={is_profitable}"
                 )
+
+                # 3b. Sync terminal state to live_order_journal to prevent stale in-flight recovery warnings
+                try:
+                    from infrastructure.execution.live_order_journal import live_order_journal
+                    if closing_order_id and closing_order_id != "UNKNOWN":
+                        live_order_journal.record_result(
+                            order_ref=closing_order_id,
+                            status="FILLED",
+                            order_id=closing_order_id,
+                            realized_pnl=realized_pnl,
+                            symbol=sym
+                        )
+                except Exception as journal_sync_err:
+                    self.logger.warning(f"Could not sync closed position to live_order_journal for {sym}: {journal_sync_err}")
 
                 # 4. Dispatch immediate Telegram Alert for Position Close
                 try:
@@ -173,8 +235,8 @@ class BrokerReconciliationService:
         except Exception as e:
             report["errors"].append(f"journal read failed: {e}")
             order_map, inflight = {}, []
-        known_symbols = {sym for (_ex, sym) in order_map.values()}
-        known_symbols |= {o.get("symbol") for o in inflight}
+        known_symbols = {str(sym).upper().replace("-", "").replace("/", "").replace("_", "") for (_ex, sym) in order_map.values() if sym}
+        known_symbols |= {str(o.get("symbol")).upper().replace("-", "").replace("/", "").replace("_", "") for o in inflight if o.get("symbol")}
 
         # --- 3. Resolve in-flight orders against the broker's real status (recoverable) ---
         # B7: when the broker exposes fill detail, record partial/full fills in the journal.
@@ -229,15 +291,25 @@ class BrokerReconciliationService:
             elif status in _OPEN_ORDER_STATES:
                 pass  # still open at broker — consistent
             else:
-                report["recoverable"].append({"order_id": oid, "issue": f"status={status}", "symbol": sym})
-                report["in_sync"] = False
+                sym_clean = str(sym).upper().replace("-", "").replace("/", "").replace("_", "")
+                active_clean = {str(s).upper().replace("-", "").replace("/", "").replace("_", "") for s in current_active_symbols}
+                if sym_clean not in active_clean:
+                    try:
+                        journal.record_terminal(ref, "CANCELLED", reason=f"BROKER_STATUS_{status}_INACTIVE_SYMBOL")
+                        report["orders_resolved"].append({"order_id": oid, "status": f"CANCELLED_{status}"})
+                    except Exception:
+                        pass
+                else:
+                    report["recoverable"].append({"order_id": oid, "issue": f"status={status}", "symbol": sym})
+                    report["in_sync"] = False
 
         # --- 4. UNRECOVERABLE: a broker position with no local journal record ---
         for p in open_positions:
-            psym = _sym(getattr(p, "symbol", ""))
+            raw_psym = getattr(p, "symbol", "")
+            psym = _sym(raw_psym).upper().replace("-", "").replace("/", "").replace("_", "")
             if psym and psym not in known_symbols:
                 report["unrecoverable"].append({
-                    "symbol": psym, "quantity": str(getattr(p, "quantity", "")),
+                    "symbol": _sym(raw_psym), "quantity": str(getattr(p, "quantity", "")),
                     "issue": "broker position with no local order record",
                 })
                 report["in_sync"] = False

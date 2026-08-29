@@ -149,6 +149,19 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
         recon_thread.start()
         self.background_threads.append(("broker_reconciliation", recon_thread))
 
+        # Dynamic Trailing Stop & Breakeven Protection Service (5s high-frequency loop)
+        pos_mgr_thread = threading.Thread(target=self._active_position_management_loop, daemon=True)
+        pos_mgr_thread.start()
+        self.background_threads.append(("active_position_management", pos_mgr_thread))
+
+        # Start persistent trade feature collector for ongoing trade analysis & research dataset
+        try:
+            from infrastructure.execution.trade_feature_collector import trade_feature_collector
+            trade_feature_collector.start()
+            self.logger.info("📊 Started persistent TradeFeatureCollector background thread")
+        except Exception as collector_err:
+            self.logger.warning(f"Could not start TradeFeatureCollector: {collector_err}")
+
         self.logger.info(f"⚙️ Started {len(self.background_threads)} background services")
 
     def _opportunity_processing_loop(self):
@@ -245,6 +258,16 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
 
                             # Update processing statistics
                             symbol_processing_stats[symbol_str] = symbol_processing_stats.get(symbol_str, 0) + 1
+
+                            # Check cooldown gate before processing strategy
+                            try:
+                                from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+                                allowed, cd_reason = symbol_cooldown_gate.is_symbol_allowed(symbol)
+                                if not allowed:
+                                    self.logger.debug(f"Skipping opportunity for {symbol_str}: {cd_reason}")
+                                    continue
+                            except Exception:
+                                pass
 
                             self.logger.debug(f"Processing opportunity for symbol: {symbol_str}, Recent symbols: {recent_symbols}")
 
@@ -644,6 +667,69 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
             except Exception as e:
                 self.logger.error(f"Error in risk monitoring: {e}")
                 time.sleep(30)
+
+    def _active_position_management_loop(self):
+        """High-frequency (5s) background loop for dynamic Trailing Stops & Breakeven Protection."""
+        self.logger.info("🛡️ Active Position Trailing Stop & Breakeven Management loop started")
+        from infrastructure.risk.active_position_manager import active_position_manager
+
+        while self.is_running:
+            try:
+                # Gather all connected broker adapters
+                target_brokers = []
+                es = getattr(self, "execution_service", None)
+                broker_root = getattr(es, "broker", es)
+                sub_brokers = getattr(broker_root, "brokers", None)
+                if isinstance(sub_brokers, dict) and sub_brokers:
+                    target_brokers.extend(sub_brokers.values())
+                elif broker_root:
+                    target_brokers.append(broker_root)
+
+                for broker in target_brokers:
+                    if not broker:
+                        continue
+                    positions = []
+                    if hasattr(broker, "get_open_positions"):
+                        positions = broker.get_open_positions() or []
+                    elif hasattr(broker, "get_all_positions"):
+                        positions = broker.get_all_positions() or []
+                    elif hasattr(broker, "get_positions"):
+                        positions = broker.get_positions() or []
+                    elif hasattr(broker, "_broker") and hasattr(broker._broker, "get_open_positions"):
+                        positions = broker._broker.get_open_positions() or []
+
+                    if not positions:
+                        continue
+
+                    current_prices = {}
+                    for pos in positions:
+                        raw_sym = getattr(pos, "symbol", "") or (pos.get("symbol") if isinstance(pos, dict) else "")
+                        clean_sym = active_position_manager.normalize_symbol(raw_sym)
+                        if not clean_sym:
+                            continue
+
+                        # 1. Mark price from position
+                        mark_p = getattr(pos, "mark_price", 0) or (pos.get("markPrice") if isinstance(pos, dict) else 0)
+                        if mark_p and float(mark_p) > 0:
+                            current_prices[clean_sym] = float(mark_p)
+                        elif hasattr(self, "market_data_repo") and self.market_data_repo:
+                            try:
+                                from domain.value_objects import Symbol as DomainSymbol
+                                p = self.market_data_repo.get_current_price(DomainSymbol(clean_sym))
+                                if p and float(p) > 0:
+                                    current_prices[clean_sym] = float(p)
+                            except Exception:
+                                pass
+
+                    actions = active_position_manager.evaluate_open_positions(broker, current_prices=current_prices)
+                    if actions:
+                        broker_name = getattr(broker, "name", "broker")
+                        self.logger.warning(f"🛡️ Active Position Manager executed {len(actions)} protection action(s) on {broker_name}: {actions}")
+
+                time.sleep(5)
+            except Exception as e:
+                self.logger.error(f"Error in active position management loop: {e}", exc_info=True)
+                time.sleep(5)
 
     def run_auto_detection(self):
         """Main method to run the auto-detection system."""

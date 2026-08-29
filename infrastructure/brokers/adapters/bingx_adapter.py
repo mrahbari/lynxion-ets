@@ -81,9 +81,17 @@ class BingXBrokerAdapter(BrokerPort):
         if not self.connected:
             self.connect()
 
-        # Instead of modifying the order, we'll modify the internal broker to handle symbol formatting
-        # For now, let's pass the original order and handle formatting inside the internal broker
-        # by monkey-patching the symbol temporarily
+        # Universal fail-closed check for SymbolCooldownGate
+        try:
+            from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+            allowed, reason = symbol_cooldown_gate.is_symbol_allowed(order.symbol)
+            if not allowed:
+                self.logger.warning(f"🛑 [BINGX GATE] Order REJECTED for {order.symbol}: {reason}")
+                raise ValueError(f"Symbol {order.symbol} blocked by Risk Health Gate: {reason}")
+        except ValueError:
+            raise
+        except Exception as gate_err:
+            self.logger.warning(f"Could not check SymbolCooldownGate in place_order: {gate_err}")
 
         # Store original symbol
         original_symbol = order.symbol
@@ -116,15 +124,10 @@ class BingXBrokerAdapter(BrokerPort):
         )
 
         result = self._broker.execute_order(temp_order)
-        if result['success']:
-            # Check if there were any conditional order errors
-            if 'conditional_orders_errors' in result and result['conditional_orders_errors']:
-                # Log the conditional order errors but still return the main order ID
-                self.logger.warning(f"BingX order placed successfully but had conditional order errors: {result['conditional_orders_errors']}")
-
+        if result.get('success') and not result.get('protection_failed') and not result.get('conditional_orders_errors'):
             return result['order_id']
         else:
-            error_msg = result['error']
+            error_msg = result.get('error') or f"protective orders failed: {result.get('conditional_orders_errors')}"
             # Make error messages more readable
             if 'error code:109400' in error_msg or 'Rate Limit' in error_msg or 'rate limit' in error_msg:
                 readable_error = "API Rate Limit Exceeded: Too many requests to BingX API. Please reduce request frequency."
@@ -174,6 +177,20 @@ class BingXBrokerAdapter(BrokerPort):
                 )
         return balances
 
+    def _place_conditional_order(self, symbol: str, side: str, quantity: str, stop_price: str,
+                                order_type: str, position_side: str) -> Dict[str, Any]:
+        """Place a conditional order via internal broker."""
+        if not self.connected:
+            self.connect()
+        return self._broker._place_conditional_order(
+            symbol=symbol,
+            side=side,
+            quantity=quantity,
+            stop_price=stop_price,
+            order_type=order_type,
+            position_side=position_side
+        )
+
     def get_position(self, symbol) -> Optional[Position]:
         from domain.value_objects import Symbol as DomainSymbol
         symbol_obj = symbol if hasattr(symbol, 'value') else DomainSymbol(str(symbol))
@@ -200,14 +217,18 @@ class BingXBrokerAdapter(BrokerPort):
                 if quantity == 0:
                     continue  # not an open position
                 pnl_value = float(p.get('unrealisedPnl', p.get('unrealizedPnl', 0)))
+                mark_p = float(p.get('markPrice', 0) or p.get('mark_price', 0) or 0)
+                pos_side_raw = str(p.get('positionSide', '')).upper()
+                is_short_side = pos_side_raw == 'SHORT' or float(p['positionAmt']) < 0
                 positions.append(
                     Position(
                         symbol=self._parse_symbol(p['symbol']),
-                        side=PositionSide.LONG if quantity > 0 else PositionSide.SHORT,
+                        side=PositionSide.SHORT if is_short_side else PositionSide.LONG,
                         quantity=abs(quantity),
                         entry_price=Money(amount=float(p['avgPrice']), currency='USDT'),
                         unrealized_pnl=Money(amount=pnl_value, currency='USDT'),
-                        timestamp=datetime.fromtimestamp(int(p.get('time', time.time() * 1000)) / 1000)
+                        timestamp=datetime.fromtimestamp(int(p.get('time', time.time() * 1000)) / 1000),
+                        mark_price=mark_p
                     )
                 )
             except Exception as e:
@@ -220,6 +241,40 @@ class BingXBrokerAdapter(BrokerPort):
         if not self.connected:
             self.connect()
         return self._broker.get_available_symbols()
+
+    def get_pending_orders(self, symbol: Any = None) -> List[Dict]:
+        """Get pending orders for a symbol or all symbols."""
+        if not self.connected:
+            self.connect()
+        sym_str = self._format_symbol(symbol) if symbol else None
+        return self._broker.get_pending_orders(sym_str)
+
+    def _place_conditional_order(self, symbol: Any, side: str, quantity: str, stop_price: str,
+                                order_type: str, position_side: str) -> Dict[str, Any]:
+        """Place a conditional stop order directly on the exchange."""
+        if not self.connected:
+            self.connect()
+        sym_str = self._format_symbol(symbol)
+        return self._broker._place_conditional_order(
+            symbol=sym_str,
+            side=side,
+            quantity=quantity,
+            stop_price=stop_price,
+            order_type=order_type,
+            position_side=position_side
+        )
+
+    def _unwind_position(self, symbol: Any, original_side: str, quantity: str, position_side: str) -> Dict[str, Any]:
+        """Execute market unwind for position close."""
+        if not self.connected:
+            self.connect()
+        sym_str = self._format_symbol(symbol)
+        return self._broker._unwind_position(
+            symbol=sym_str,
+            original_side=original_side,
+            quantity=quantity,
+            position_side=position_side
+        )
 
 
 class _BingXBroker:
@@ -240,9 +295,9 @@ class _BingXBroker:
 
         self.logger = logging.getLogger(__name__)
 
-        # Rate limiting settings - more conservative to avoid rate limits
-        self.requests_per_minute = 10  # Reduced to avoid rate limits
-        self.min_request_interval = 6.0  # 6 seconds between requests (more conservative)
+        # Rate limiting settings - responsive and safe
+        self.requests_per_minute = 300
+        self.min_request_interval = 0.2  # 200ms between requests for fast trailing SL sync
         self.last_request_time = 0
         self.request_count = 0
         self.request_window_start = time.time()
@@ -250,8 +305,7 @@ class _BingXBroker:
         # Session for connection pooling
         self.session = requests.Session()
         self.session.headers.update({
-            'X-BX-APIKEY': self.api_key,
-            'Content-Type': 'application/json'
+            'X-BX-APIKEY': self.api_key
         })
 
         # Set default timeout for all requests
@@ -437,15 +491,21 @@ class _BingXBroker:
         """Execute order on BingX."""
         try:
             # Handle the symbol formatting here
-            # If symbol is a string, use it directly; if it's a Symbol object, get its value
+            # Ensure symbol is properly formatted for BingX REST API (must include hyphen, e.g. XMR-USDT)
             if isinstance(order.symbol, str):
-                symbol_formatted = order.symbol
+                raw_sym = order.symbol
+            elif hasattr(order.symbol, 'value'):
+                raw_sym = str(order.symbol.value)
             else:
-                # If it's a Symbol object, get its string representation
-                if hasattr(order.symbol, 'value'):
-                    symbol_formatted = order.symbol.value
+                raw_sym = str(order.symbol)
+
+            if '-' not in raw_sym:
+                if raw_sym.endswith('USDT') or raw_sym.endswith('USDC'):
+                    symbol_formatted = raw_sym[:-4] + '-' + raw_sym[-4:]
                 else:
-                    symbol_formatted = str(order.symbol)
+                    symbol_formatted = raw_sym
+            else:
+                symbol_formatted = raw_sym
 
             # Ensure side is handled properly
             if hasattr(order.side, 'value'):
@@ -667,7 +727,16 @@ class _BingXBroker:
                         unwound = self._unwind_position(
                             symbol_formatted, side_value.upper(),
                             self._format_quantity(symbol_formatted, float(order.quantity)), position_side_value)
-                        if not unwound:
+                        if unwound:
+                            try:
+                                from infrastructure.strategies.strategy_manager import strategy_manager
+                                strategy_manager.record_trade_result(symbol_formatted, is_profitable=False, position_closed=True, is_execution_unwind=True)
+                                from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+                                symbol_cooldown_gate.record_stop_loss_exit(symbol_formatted)
+                                self.logger.warning(f"🛑 Activated 60m Cooldown for {symbol_formatted} following protective unwind.")
+                            except Exception as sm_err:
+                                self.logger.warning(f"Could not forward B1 unwind to strategy_manager: {sm_err}")
+                        else:
                             try:
                                 from shared.live_execution_guard import live_execution_guard
                                 live_execution_guard.engage_kill_switch(
@@ -688,7 +757,8 @@ class _BingXBroker:
                         }
 
                     # Both main order and protective orders succeeded.
-                    self.logger.info(f"Main order and conditional orders placed successfully ({main_order_id})")
+                    print(f"\n🟢 [ORDER EXECUTED] Main order & SL/TP placed successfully: OrderID={main_order_id} Symbol={symbol_formatted} Side={side_value.upper()} Qty={order.quantity}", flush=True)
+                    self.logger.warning(f"🟢 [ORDER EXECUTED] Main order & SL/TP placed successfully: OrderID={main_order_id} Symbol={symbol_formatted}")
                     return {
                         'success': True,
                         'order_id': main_order_id,
@@ -721,6 +791,17 @@ class _BingXBroker:
             self.logger.error(f"Failed to execute order: {e}")
             return {'success': False, 'error': str(e)}
 
+    def _format_symbol_str(self, symbol: str) -> str:
+        """Ensure standard BingX perpetual contract symbol format with hyphen (e.g. BTC-USDT)."""
+        s = str(symbol or "").upper().replace("/", "").replace("_", "").strip()
+        if "-" in s:
+            return s
+        if s.endswith("USDT") and len(s) > 4:
+            return f"{s[:-4]}-USDT"
+        elif s.endswith("USDC") and len(s) > 4:
+            return f"{s[:-4]}-USDC"
+        return s
+
     def _unwind_position(self, symbol: str, original_side: str, quantity: str,
                          position_side: str) -> bool:
         """B1: flatten a just-opened position when its protective SL/TP could not be attached.
@@ -730,9 +811,10 @@ class _BingXBroker:
         entry, so it bypasses the guard (it only ever reduces risk).
         """
         try:
+            formatted_sym = self._format_symbol_str(symbol)
             close_side = 'SELL' if original_side.upper() == 'BUY' else 'BUY'
             unwind_data = {
-                'symbol': symbol,
+                'symbol': formatted_sym,
                 'side': close_side,
                 'type': 'MARKET',
                 'quantity': quantity,
@@ -744,9 +826,9 @@ class _BingXBroker:
                                       data=unwind_data, signed=True)
             if resp.get('code') == 0:
                 self.logger.warning(
-                    f"✅ UNWOUND unprotected position on {symbol} ({close_side} {quantity})")
+                    f"✅ UNWOUND unprotected position on {formatted_sym} ({close_side} {quantity})")
                 return True
-            self.logger.error(f"❌ UNWIND FAILED on {symbol}: {resp.get('msg', resp)}")
+            self.logger.error(f"❌ UNWIND FAILED on {formatted_sym}: {resp.get('msg', resp)}")
             return False
         except Exception as e:
             self.logger.error(f"❌ UNWIND EXCEPTION on {symbol}: {e}")
@@ -754,26 +836,31 @@ class _BingXBroker:
 
     def _place_conditional_order(self, symbol: str, side: str, quantity: str, stop_price: str,
                                order_type: str, position_side: str) -> Dict[str, Any]:
-        """Place a conditional order (stop loss or take profit)."""
+        """Place a standard position-level conditional order (stop loss or take profit) using Swap V2 endpoint with closePosition=true."""
         try:
-            # For conditional orders on BingX, the parameters depend on the order type
-            # STOP_MARKET and TAKE_PROFIT_MARKET orders use 'stopPrice' parameter
+            formatted_sym = self._format_symbol_str(symbol)
+            formatted_stop_price = self._format_price(formatted_sym, float(stop_price)) if stop_price is not None else stop_price
+            formatted_qty = self._format_quantity(formatted_sym, float(quantity)) if quantity is not None else quantity
             conditional_order_data = {
-                'symbol': symbol,
+                'symbol': formatted_sym,
                 'side': side,
                 'type': order_type,
-                'quantity': quantity,
-                'stopPrice': stop_price,
+                'quantity': formatted_qty,
+                'stopPrice': formatted_stop_price,
                 'positionSide': position_side,
+                'closePosition': 'true',
                 'workingType': 'MARK_PRICE'
             }
-            # Only include reduceOnly in One-Way mode (positionSide is BOTH or absent).
-            # In Hedge mode (LONG/SHORT), BingX API forbids the reduceOnly parameter.
-            if position_side.upper() not in ('LONG', 'SHORT'):
-                conditional_order_data['reduceOnly'] = 'true'
 
             endpoint = "/openApi/swap/v2/trade/order"
-            response = self._make_request('POST', endpoint, data=conditional_order_data, signed=True)
+            response = self._make_request('POST', endpoint, params=conditional_order_data, signed=True)
+
+            resp_code = response.get('code')
+            resp_msg = str(response.get('msg', '')).lower()
+            is_conflict = (
+                resp_code in (110406, 110407, 110411, 100404, 100405, 80016)
+                or any(phrase in resp_msg for phrase in ('already exists', 'conflict', 'position sl', 'position tp'))
+            )
 
             if response.get('code') == 0:
                 order_info = response.get('data', {}).get('order', {})
@@ -782,16 +869,46 @@ class _BingXBroker:
                     'order_id': order_info.get('orderId'),
                     'response': response['data']
                 }
+            elif is_conflict:
+                # Position SL/TP conflict: cancel existing conditional order on this symbol and retry
+                self.logger.warning(f"Position order conflict on {formatted_sym} ({response.get('msg')}), cancelling stale conditional orders and retrying...")
+                open_orders = self.get_pending_orders(formatted_sym) or []
+                prefix = "STOP" if "STOP" in order_type.upper() else "TAKE_PROFIT"
+                for o in open_orders:
+                    if prefix in str(o.get("type", "")).upper():
+                        oid = str(o.get("orderId"))
+                        if oid:
+                            self.cancel_order(oid, formatted_sym)
+                time.sleep(0.25)
+                retry_resp = self._make_request('POST', endpoint, params=conditional_order_data, signed=True)
+                if retry_resp.get('code') == 0:
+                    order_info = retry_resp.get('data', {}).get('order', {})
+                    return {
+                        'success': True,
+                        'order_id': order_info.get('orderId'),
+                        'response': retry_resp['data']
+                    }
+                elif retry_resp.get('code') in (110406, 110407, 110411, 100404, 100405, 80016) or 'already exists' in str(retry_resp.get('msg', '')).lower():
+                    # Second retry with longer propagation cushion
+                    time.sleep(0.40)
+                    retry2_resp = self._make_request('POST', endpoint, params=conditional_order_data, signed=True)
+                    if retry2_resp.get('code') == 0:
+                        order_info = retry2_resp.get('data', {}).get('order', {})
+                        return {
+                            'success': True,
+                            'order_id': order_info.get('orderId'),
+                            'response': retry2_resp['data']
+                        }
+                    else:
+                        return {'success': False, 'error': retry2_resp.get('msg', str(retry2_resp))}
+                else:
+                    return {'success': False, 'error': retry_resp.get('msg', str(retry_resp))}
             else:
-                # Return the error message from the API
-                error_msg = response.get('msg', 'Unknown error from conditional order')
-                self.logger.error(f"Conditional order failed: {error_msg}")
-                return {
-                    'success': False,
-                    'error': error_msg
-                }
+                error_msg = response.get('msg', str(response))
+                self.logger.error(f"BingX Swap V2 conditional order failed on {formatted_sym}: {error_msg}")
+                return {'success': False, 'error': error_msg}
         except Exception as e:
-            self.logger.error(f"Failed to place conditional order: {e}")
+            self.logger.error(f"Failed to place conditional order on BingX Swap V2 for {symbol}: {e}")
             return {'success': False, 'error': str(e)}
 
     def get_account_balance(self) -> List[Dict[str, Any]]:
@@ -814,8 +931,9 @@ class _BingXBroker:
     def cancel_order(self, order_id: str, symbol: str) -> bool:
         """Cancel an order."""
         try:
+            formatted_sym = self._format_symbol_str(symbol)
             params = {
-                'symbol': symbol,
+                'symbol': formatted_sym,
                 'orderId': order_id
             }
 
@@ -827,22 +945,24 @@ class _BingXBroker:
             return False
 
     def get_order_status(self, order_id: str, symbol: str) -> str:
-        pending_orders = self.get_pending_orders(symbol)
+        formatted_sym = self._format_symbol_str(symbol)
+        pending_orders = self.get_pending_orders(formatted_sym)
         for order in pending_orders:
-            if order.get('orderId') == order_id:
+            if str(order.get('orderId')) == str(order_id):
                 return order.get('status')
 
-        history = self.get_order_history(symbol, limit=100)
+        history = self.get_order_history(formatted_sym, limit=100)
         for order in history:
-            if order.get('orderId') == order_id:
+            if str(order.get('orderId')) == str(order_id):
                 return order.get('status')
 
         return "UNKNOWN"
 
     def get_order_fill(self, order_id: str, symbol: str) -> Dict[str, Any]:
         """B7: return the order's {status, executed_qty, avg_price} from open orders + history."""
-        for order in list(self.get_pending_orders(symbol)) + list(self.get_order_history(symbol, limit=100)):
-            if order.get('orderId') == order_id:
+        formatted_sym = self._format_symbol_str(symbol)
+        for order in list(self.get_pending_orders(formatted_sym)) + list(self.get_order_history(formatted_sym, limit=100)):
+            if str(order.get('orderId')) == str(order_id):
                 return {
                     "status": order.get('status', 'UNKNOWN'),
                     "executed_qty": order.get('executedQty', order.get('cumQty', 0)) or 0,
@@ -855,7 +975,7 @@ class _BingXBroker:
         try:
             params = {}
             if symbol:
-                params['symbol'] = symbol
+                params['symbol'] = self._format_symbol_str(symbol)
 
             response = self._make_request('GET', '/openApi/swap/v2/trade/openOrders', params=params, signed=True)
 
@@ -883,7 +1003,7 @@ class _BingXBroker:
         try:
             params = {'limit': limit}
             if symbol:
-                params['symbol'] = symbol
+                params['symbol'] = self._format_symbol_str(symbol)
             if start_time:
                 params['startTime'] = int(start_time.timestamp() * 1000)
             if end_time:
@@ -1016,3 +1136,11 @@ class _BingXBroker:
 
         except Exception as e:
             return []
+
+    def get_positions(self, symbol: str=None) -> List[Dict]:
+        """Alias for get_open_positions."""
+        return self.get_open_positions(symbol)
+
+    def get_all_positions(self) -> List[Dict]:
+        """Alias for get_open_positions."""
+        return self.get_open_positions()

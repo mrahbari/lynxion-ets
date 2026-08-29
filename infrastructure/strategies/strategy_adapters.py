@@ -176,6 +176,7 @@ class BaseStrategyAdapter(StrategyPort):
         # Check if strategy is enabled before processing
         if not StrategyConfig.get_strategy_enabled(self.name):
             self.logger.debug(f"Strategy {self.name} is disabled, skipping signal evaluation")
+            self._record_signal_census(fused_signal, "REJECTED", "strategy disabled")
             return None
 
         # Increment bar counter for this symbol to track timing between entries
@@ -186,10 +187,12 @@ class BaseStrategyAdapter(StrategyPort):
         should_emit, reason = self._should_emit_intent(fused_signal)
         if not should_emit:
             self.logger.info(f"Strategy {self.name} blocked intent emission for {symbol}: {reason}")
+            self._record_signal_census(fused_signal, "REJECTED", reason)
             return None
 
         if not self.should_execute(fused_signal):
             self.logger.info(f"Strategy {self.name} rejected fused signal for {fused_signal.symbol.value}")
+            self._record_signal_census(fused_signal, "REJECTED", "strategy eligibility rejected")
             return None
 
         # Select appropriate strategy based on the fused signal
@@ -286,8 +289,19 @@ class BaseStrategyAdapter(StrategyPort):
 
         # Add trade_id to execution intent metadata
         execution_intent.metadata['trade_id'] = trade_id
+        self._record_signal_census(fused_signal, "ACCEPTED", "intent emitted", execution_intent)
 
         return execution_intent
+
+    def _record_signal_census(
+        self, fused_signal: FusedSignal, decision: str, reason: str, intent: Optional[ExecutionIntent] = None
+    ) -> None:
+        """Best-effort research telemetry; a write failure must never affect a signal."""
+        try:
+            from infrastructure.execution.signal_census_journal import signal_census_journal
+            signal_census_journal.record(self.name, fused_signal, decision, reason, intent)
+        except Exception as exc:
+            self.logger.warning(f"Signal census write failed: {exc}")
 
     def _should_emit_intent(self, fused_signal: FusedSignal) -> tuple[bool, str]:
         """
@@ -417,7 +431,9 @@ class BaseStrategyAdapter(StrategyPort):
             'enable_symbol_stoploss_cooldown',
             StrategyConfig.get_enable_symbol_stoploss_cooldown(self.name, True)
         )
-        last_sl_exit = self.last_sl_exit_time.get(symbol)
+        sym_raw = str(symbol).upper()
+        sym_clean = sym_raw.replace("-", "").replace("/", "").replace("_", "")
+        last_sl_exit = self.last_sl_exit_time.get(sym_raw) or self.last_sl_exit_time.get(sym_clean)
         if enabled and last_sl_exit is not None:
             cooldown_minutes = self.config.get(
                 'symbol_stoploss_cooldown_minutes',
@@ -436,7 +452,8 @@ class BaseStrategyAdapter(StrategyPort):
                     )
                     return False
                 else:
-                    self.last_sl_exit_time[symbol] = None
+                    self.last_sl_exit_time[sym_raw] = None
+                    self.last_sl_exit_time[sym_clean] = None
 
         # 2. General post-exit cooldown check
         cooldown_minutes = self.config.get('cooldown_after_exit_minutes', 1)
@@ -570,7 +587,7 @@ class BaseStrategyAdapter(StrategyPort):
         self.logger.info(f"Position status reset attempt for {symbol} ignored - strategies should not track position state")
 
     def record_trade_result(self, symbol: str, is_profitable: bool, position_closed: bool = True,
-                            exit_time: datetime = None):
+                            exit_time: datetime = None, is_execution_unwind: bool = False):
         """Record the result of a trade for per-symbol Stop Loss cooldown tracking.
 
         E-P5.2: ``exit_time`` (the trade's simulated close time) drives the
@@ -578,32 +595,55 @@ class BaseStrategyAdapter(StrategyPort):
         wall-clock when absent, preserving live behavior.
         """
         now = exit_time or datetime.now()
-        if is_profitable:
+        sym_raw = str(symbol).upper()
+        sym_clean = sym_raw.replace("-", "").replace("/", "").replace("_", "")
+
+        if is_execution_unwind:
+            # B1 Emergency Unwind: Set SL exit timestamp to activate cooldown,
+            # but DO NOT increment consecutive losses (preserve win rate / statistics)
+            self.last_sl_exit_time[sym_raw] = now
+            self.last_sl_exit_time[sym_clean] = now
+            cooldown_min = self.config.get(
+                'symbol_stoploss_cooldown_minutes',
+                StrategyConfig.get_symbol_stoploss_cooldown_minutes(self.name, 60)
+            )
+            self.logger.warning(
+                f"🛑 B1 Emergency Unwind recorded for {symbol} ({sym_clean}). "
+                f"Activated {cooldown_min}m per-symbol Stop Loss cooldown (statistics preserved)."
+            )
+        elif is_profitable:
             # TP trade: Reset consecutive losses and clear SL exit timestamp
-            self.consecutive_losses[symbol] = 0
-            self.last_sl_exit_time[symbol] = None
+            self.consecutive_losses[sym_raw] = 0
+            self.consecutive_losses[sym_clean] = 0
+            self.last_sl_exit_time[sym_raw] = None
+            self.last_sl_exit_time[sym_clean] = None
             self.logger.info(f"✅ Trade result for {symbol}: TAKE PROFIT. Symbol remains immediately tradable.")
         else:
             # SL trade: Increment consecutive losses and record SL exit timestamp
-            current_losses = self.consecutive_losses.get(symbol, 0)
-            self.consecutive_losses[symbol] = current_losses + 1
-            self.last_loss_time[symbol] = now
-            self.last_sl_exit_time[symbol] = now
+            current_losses = self.consecutive_losses.get(sym_clean, 0)
+            self.consecutive_losses[sym_raw] = current_losses + 1
+            self.consecutive_losses[sym_clean] = current_losses + 1
+            self.last_loss_time[sym_raw] = now
+            self.last_loss_time[sym_clean] = now
+            self.last_sl_exit_time[sym_raw] = now
+            self.last_sl_exit_time[sym_clean] = now
             cooldown_min = self.config.get(
                 'symbol_stoploss_cooldown_minutes',
                 StrategyConfig.get_symbol_stoploss_cooldown_minutes(self.name, 60)
             )
             self.logger.info(
-                f"🛑 Trade result for {symbol}: STOP LOSS. "
+                f"🛑 Trade result for {symbol} ({sym_clean}): STOP LOSS. "
                 f"Activated {cooldown_min}m per-symbol Stop Loss cooldown."
             )
 
         # Optionally update exit time after recording the trade result (but don't modify position state)
         if position_closed:
             self.last_exit_time[symbol] = now
+            self.last_exit_time[sym_raw] = now
+            self.last_exit_time[sym_clean] = now
 
-        self.logger.debug(f"Trade result recorded for {symbol}: {'profit' if is_profitable else 'loss'}, "
-                         f"consecutive_losses={self.consecutive_losses[symbol]}, "
+        self.logger.debug(f"Trade result recorded for {symbol}: {'unwind' if is_execution_unwind else ('profit' if is_profitable else 'loss')}, "
+                         f"consecutive_losses={self.consecutive_losses.get(sym_clean, 0)}, "
                          f"position_closed={position_closed}")
 
     def should_execute(self, fused_signal: FusedSignal) -> bool:

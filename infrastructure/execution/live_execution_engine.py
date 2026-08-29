@@ -218,11 +218,17 @@ class BrokerAPIService(BrokerPort):
         return True
 
     def place_order(self, order) -> str:
-        """Place an order and return order ID."""
-        self.logger.info(f"Placing order for {order.symbol.value} | Side: {order.side} | Size: {order.quantity}")
+        """Place an order and return order ID under LiveExecutionGuard authorization."""
+        from shared.live_execution_guard import live_execution_guard
+        guard_decision, order_id = live_execution_guard.authorize_and_send(
+            broker_name="live_engine", settings=None, order=order,
+            send_fn=lambda: f"{getattr(order.symbol, 'value', str(order.symbol))}_{datetime.now().timestamp()}"
+        )
+        if not guard_decision.allowed or not order_id:
+            self.logger.error(f"🛑 LIVE EXECUTION ENGINE BLOCKED: Order rejected by Risk Gate: {guard_decision.reason}")
+            return ""
 
-        # For demonstration purposes, we'll return a simulated order ID
-        order_id = f"{order.symbol.value}_{datetime.now().timestamp()}"
+        self.logger.info(f"Placing order for {getattr(order.symbol, 'value', str(order.symbol))} | Side: {order.side} | Size: {order.quantity}")
         return order_id
 
     def cancel_order(self, order_id: str, symbol: Symbol) -> bool:

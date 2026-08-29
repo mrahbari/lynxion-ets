@@ -20,12 +20,14 @@ def _settings(paper, placement, testnet, broker="bingx"):
     return SimpleNamespace(broker=b)
 
 
-_ORDER = SimpleNamespace(symbol=SimpleNamespace(value="BTC/USDT"))
+_ORDER = SimpleNamespace(symbol=SimpleNamespace(value="TEST/USDT"))
 
 
 @pytest.fixture
 def guard():
-    return LiveExecutionGuard()
+    g = LiveExecutionGuard()
+    g._risk_enforcer = lambda o: (True, "")
+    return g
 
 
 @pytest.fixture(autouse=True)
@@ -34,8 +36,14 @@ def _clear_live_trading(monkeypatch):
     # Reset the process-global circuit breakers so OPEN state doesn't bleed between tests.
     from shared.circuit_breaker import circuit_breaker_manager
     circuit_breaker_manager.circuit_breakers.clear()
+    from shared.live_execution_guard import live_execution_guard
+    live_execution_guard.disengage_kill_switch()
+    old_enforcer = live_execution_guard._risk_enforcer
+    live_execution_guard._risk_enforcer = lambda o: (True, "")
     yield
     circuit_breaker_manager.circuit_breakers.clear()
+    live_execution_guard.disengage_kill_switch()
+    live_execution_guard._risk_enforcer = old_enforcer
 
 
 def test_paper_trading_is_absolute_override(guard, monkeypatch):
@@ -99,7 +107,7 @@ def test_unknown_broker_requires_explicit_flag(guard, monkeypatch):
 def test_simulated_order_id_is_marked_and_unique(guard):
     a = guard.simulated_order_id(_ORDER, "bingx")
     b = guard.simulated_order_id(_ORDER, "bingx")
-    assert a.startswith("PAPER-BINGX-BTCUSDT-") and a != b
+    assert a.startswith("PAPER-BINGX-TESTUSDT-") and a != b
 
 
 def test_circuit_breaker_blocks_when_open(guard):

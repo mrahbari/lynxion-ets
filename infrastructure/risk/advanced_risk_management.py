@@ -443,26 +443,25 @@ class AdvancedRiskManagementService:
         Returns:
             Updated stop loss price
         """
-        if position_side.upper() == 'LONG':
+        # Determine effective trail percentage adaptively if default 10% is passed
+        init_dist_pct = abs(entry_price - initial_stop_loss) / entry_price if entry_price > 0 else 0.015
+        effective_trail = min(trail_percentage, max(0.005, init_dist_pct)) if (trail_percentage == 0.10 and init_dist_pct > 0) else trail_percentage
+
+        side_clean = str(position_side).upper()
+        if side_clean in ('LONG', 'BUY'):
             # For long positions, trailing stop moves up as price increases
             if current_price > entry_price:
-                # Calculate trailing stop level (trail_percentage behind current price)
-                trailing_stop = current_price * (1 - trail_percentage)
-                # Never move stop loss below initial level or below entry
-                return max(initial_stop_loss, trailing_stop, entry_price * 0.95)  # Don't go below 5% of entry
+                trailing_stop = current_price * (1 - effective_trail)
+                return max(initial_stop_loss, trailing_stop)
             else:
-                # Price is below entry, don't adjust stop loss
                 return initial_stop_loss
-                
-        elif position_side.upper() == 'SHORT':
+
+        elif side_clean in ('SHORT', 'SELL'):
             # For short positions, trailing stop moves down as price decreases
             if current_price < entry_price:
-                # Calculate trailing stop level (trail_percentage ahead of current price)
-                trailing_stop = current_price * (1 + trail_percentage)
-                # Never move stop loss above initial level or above entry
-                return min(initial_stop_loss, trailing_stop, entry_price * 1.05)  # Don't go above 5% of entry
+                trailing_stop = current_price * (1 + effective_trail)
+                return min(initial_stop_loss, trailing_stop)
             else:
-                # Price is above entry, don't adjust stop loss
                 return initial_stop_loss
         else:
             raise ValueError(f"Invalid position side: {position_side}. Must be 'LONG' or 'SHORT'")

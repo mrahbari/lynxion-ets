@@ -20,8 +20,15 @@ class BrokerManagementService:
         logger.info("Connecting to all brokers")
     
     def place_order_via_best_broker(self, order: Order) -> str:
-        """Place an order using the best available broker"""
-        order_id = self.broker_manager.route_order(order)
+        """Place an order using the best available broker via LiveExecutionGuard authorization"""
+        from shared.live_execution_guard import live_execution_guard
+        guard_decision, order_id = live_execution_guard.authorize_and_send(
+            broker_name="multi_broker", settings=None, order=order,
+            send_fn=lambda: self.broker_manager.route_order(order)
+        )
+        if not guard_decision.allowed or not order_id:
+            logger.error(f"🛑 BROKER MANAGEMENT SERVICE BLOCKED: Order for {order.symbol.value} rejected by Risk Gate: {guard_decision.reason}")
+            return ""
         logger.info(f"Order placed via optimal broker, ID: {order_id}")
         return order_id
     

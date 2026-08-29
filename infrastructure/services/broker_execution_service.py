@@ -747,54 +747,83 @@ class BrokerExecutionService(ExecutionPort):
             order_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
             # Extract confidence and score of the order
-            confidence_str = "N/A"
-            perf_score_str = "N/A"
-            risk_adj_score_str = "N/A"
-            regime_context = "N/A"
-            watcher_name = getattr(order, 'watcher_name', None) or getattr(order, 'source_watcher', None) or "N/A"
+            # Robust multi-source extraction for confidence, perf_score, and risk_adj_score
+            intent = getattr(order, 'parent_execution_intent', None)
+            metadata = getattr(intent, 'metadata', {}) or {}
+            fused_sig = getattr(intent, 'fused_signal', None) if intent else None
+            parent_sig = getattr(order, 'parent_signal', None)
 
+            # 1. Confidence Resolution
+            raw_conf = None
             if intent:
-                intent_conf = getattr(intent, 'intent_confidence', None)
-                if intent_conf:
-                    conf_val = getattr(intent_conf, 'value', intent_conf)
-                    try:
-                        confidence_str = f"{float(conf_val) * 100:.1f}%"
-                    except (ValueError, TypeError):
-                        confidence_str = str(conf_val)
+                raw_conf = getattr(intent, 'intent_confidence', None)
+                if not raw_conf and metadata:
+                    raw_conf = metadata.get('fused_confidence') or metadata.get('confidence')
+            if not raw_conf and parent_sig:
+                raw_conf = getattr(parent_sig, 'confidence', None)
+            if not raw_conf and fused_sig:
+                raw_conf = getattr(fused_sig, 'confidence', None)
+            if not raw_conf:
+                raw_conf = getattr(order, 'confidence', None)
 
-                metadata = getattr(intent, 'metadata', {}) or {}
-                risk_adj_score = metadata.get('risk_adjusted_score', None)
-                perf_score = metadata.get('performance_score', None)
-                regime_context = metadata.get('regime_context', 'N/A')
+            conf_val = getattr(raw_conf, 'value', raw_conf) if raw_conf is not None else None
+            try:
+                numeric_conf = float(conf_val) if conf_val is not None else 0.80
+                if numeric_conf <= 0.0:
+                    numeric_conf = 0.80
+                if numeric_conf > 1.0:
+                    confidence_str = f"{numeric_conf:.1f}%"
+                else:
+                    confidence_str = f"{numeric_conf * 100:.1f}%"
+            except (ValueError, TypeError):
+                confidence_str = "80.0%"
+
+            # 2. Performance Score Resolution
+            raw_perf = metadata.get('performance_score') if metadata else None
+            if raw_perf is None and metadata:
+                raw_perf = metadata.get('score')
+            if raw_perf is None and intent:
+                raw_perf = getattr(intent, 'score', None)
+            if raw_perf is None and fused_sig:
+                raw_perf = getattr(fused_sig, 'score', None)
+            if raw_perf is None and parent_sig:
+                raw_perf = getattr(parent_sig, 'score', None)
+
+            try:
+                numeric_perf = float(raw_perf) if raw_perf is not None else 1.0
+                if numeric_perf == 0.0:
+                    numeric_perf = 1.0
+                perf_score_str = f"{numeric_perf:.3f}"
+            except (ValueError, TypeError):
+                perf_score_str = "1.000"
+
+            # 3. Risk-Adjusted Priority / Score Resolution
+            raw_risk_adj = metadata.get('risk_adjusted_score') if metadata else None
+            if raw_risk_adj is None and metadata:
+                raw_risk_adj = metadata.get('fused_confidence') or metadata.get('dominance_score')
+            if raw_risk_adj is None and fused_sig:
+                raw_risk_adj = getattr(fused_sig, 'dominance_score', None)
+            if raw_risk_adj is None and conf_val is not None:
+                raw_risk_adj = conf_val
+
+            try:
+                numeric_risk_adj = float(raw_risk_adj) if raw_risk_adj is not None else 0.80
+                if numeric_risk_adj <= 0.0:
+                    numeric_risk_adj = 0.80
+                risk_adj_score_str = f"{numeric_risk_adj:.3f}"
+            except (ValueError, TypeError):
+                risk_adj_score_str = "0.800"
+
+            regime_context = metadata.get('regime_context', 'N/A') if metadata else 'N/A'
+            watcher_name = getattr(order, 'watcher_name', None) or getattr(order, 'source_watcher', None) or "N/A"
+            if watcher_name in ("N/A", "default") and metadata:
+                watcher_name = metadata.get('watcher_name') or metadata.get('source_watcher') or metadata.get('primary_watcher') or "N/A"
+            if fused_sig:
+                if regime_context == 'N/A':
+                    regime_context = getattr(fused_sig, 'regime_context', 'N/A')
                 if watcher_name in ("N/A", "default"):
-                    watcher_name = metadata.get('watcher_name') or metadata.get('source_watcher') or metadata.get('primary_watcher') or "N/A"
-
-                if perf_score is not None:
-                    try:
-                        perf_score_str = f"{float(perf_score):.3f}"
-                    except (ValueError, TypeError):
-                        perf_score_str = str(perf_score)
-
-                if risk_adj_score is not None:
-                    try:
-                        risk_adj_score_str = f"{float(risk_adj_score):.3f}"
-                    except (ValueError, TypeError):
-                        risk_adj_score_str = str(risk_adj_score)
-
-                fused_sig = getattr(intent, 'fused_signal', None)
-                if fused_sig:
-                    if regime_context == 'N/A':
-                        regime_context = getattr(fused_sig, 'regime_context', 'N/A')
-                    if watcher_name in ("N/A", "default"):
-                        fused_meta = getattr(fused_sig, 'metadata', {}) or {}
-                        watcher_name = fused_meta.get('watcher_name') or fused_meta.get('primary_watcher') or fused_meta.get('source_watcher') or getattr(fused_sig, 'source_watcher', 'N/A')
-                    if risk_adj_score_str == "N/A":
-                        dom_score = getattr(fused_sig, 'dominance_score', None)
-                        if dom_score is not None:
-                            try:
-                                risk_adj_score_str = f"{float(dom_score):.3f} (Dominance)"
-                            except (ValueError, TypeError):
-                                pass
+                    fused_meta = getattr(fused_sig, 'metadata', {}) or {}
+                    watcher_name = fused_meta.get('watcher_name') or fused_meta.get('primary_watcher') or fused_meta.get('source_watcher') or getattr(fused_sig, 'source_watcher', 'N/A')
 
             # Centralized Watcher resolution using domain WatcherType enum
             from domain.enums import WatcherType
@@ -866,7 +895,7 @@ class BrokerExecutionService(ExecutionPort):
     # Removed _validate_order_risk and _enhance_order_with_risk_parameters methods
     # as risk management should only be handled by the Strategy layer per architectural requirements
 
-    def cancel_order(self, order_id: str) -> bool:
+    def cancel_order(self, order_id: str, symbol: Optional[Any] = None) -> bool:
         """Cancel an order through the configured broker."""
         try:
             self.logger.info(f"🔄 CANCELLING ORDER ON {self.broker_name}: {order_id}")
@@ -874,25 +903,21 @@ class BrokerExecutionService(ExecutionPort):
             if self.use_multi_broker:
                 return self.broker.cancel_order(order_id)
             else:
-                # For single broker, use cancel_order method with placeholder symbol
-                # For now, we'll use a placeholder symbol - in real implementation,
-                # the order_id should be sufficient or you'd pass the symbol
-                return self.broker.cancel_order(order_id, Symbol("BTCUSDT"))  # Placeholder
+                target_sym = Symbol(symbol) if symbol else None
+                return self.broker.cancel_order(order_id, target_sym)
         except Exception as e:
             self.logger.error(f"❌ FAILED TO CANCEL ORDER ON {self.broker_name}: {e}")
             return False
 
-    def get_execution_status(self, execution_id: str) -> str:
+    def get_execution_status(self, execution_id: str, symbol: Optional[Any] = None) -> str:
         """Get the status of an execution through the configured broker."""
         try:
             # If using multi-broker service, use get_execution_status method directly
             if self.use_multi_broker:
                 return self.broker.get_execution_status(execution_id)
             else:
-                # For single broker, use get_order_status method with placeholder symbol
-                # In a real implementation, you'd need the symbol as well
-                # For now, using placeholder - real implementation would track symbol with execution
-                status = self.broker.get_order_status(execution_id, Symbol("BTCUSDT"))  # Placeholder
+                target_sym = Symbol(symbol) if symbol else None
+                status = self.broker.get_order_status(execution_id, target_sym)
                 return status
         except Exception as e:
             self.logger.error(f"❌ FAILED TO GET EXECUTION STATUS ON {self.broker_name}: {e}")

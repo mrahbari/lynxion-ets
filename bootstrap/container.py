@@ -51,6 +51,10 @@ class Container:
     def registered_keys(self) -> List[str]:
         return list(self._factories)
 
+    def risk_enforcement(self) -> Any:
+        """Helper to return the active RiskEnforcement instance."""
+        return getattr(self, "_risk_enforcement", None)
+
     # -- lifecycle -----------------------------------------------------------------
 
     def shutdown(self) -> None:

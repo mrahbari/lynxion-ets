@@ -85,9 +85,10 @@ class BinanceBrokerAdapter(BrokerPort):
         try:
             side_str = order.side.value if hasattr(order.side, 'value') else str(order.side)
             binance_side = "BUY" if side_str.upper() == "BUY" else "SELL"
+            formatted_symbol = SymbolFormatHelper.format_symbol_for_exchange(order.symbol, 'binance')
 
             response = self.client.place_order(
-                symbol=order.symbol.value,
+                symbol=formatted_symbol,
                 side=binance_side,
                 order_type=order.order_type,
                 quantity=order.quantity,

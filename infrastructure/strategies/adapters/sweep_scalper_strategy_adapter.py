@@ -32,6 +32,10 @@ class SweepScalperAdapter(BaseStrategyAdapter):
 
     def generate_signal(self, symbol: Symbol) -> Optional[Signal]:
         """Generate signal using stop sweep setups."""
+        sym_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
+        if not self._passes_exit_cooldown_check(sym_str):
+            return None
+
         if len(self.data_buffer) < 25:
             return None
 
@@ -49,7 +53,9 @@ class SweepScalperAdapter(BaseStrategyAdapter):
                 lows=lows,
                 val=struct["val"],
                 vah=struct["vah"],
-                poc=struct["poc"]
+                poc=struct["poc"],
+                data_buffer=self.data_buffer,
+                config=self.config
             )
 
             # Filter setups to only match NGLS_SWEEP setups
@@ -62,6 +68,9 @@ class SweepScalperAdapter(BaseStrategyAdapter):
                 return None
 
 
+            from infrastructure.strategies.decision_pipeline import calculate_dynamic_metrics
+            dyn_conf_float, perf_score_float, risk_adj_score_float = calculate_dynamic_metrics(setup, struct, self.data_buffer)
+
             from domain.value_objects import Percentage
             from decimal import Decimal
 
@@ -69,13 +78,17 @@ class SweepScalperAdapter(BaseStrategyAdapter):
             return Signal(
                 symbol=symbol,
                 signal_type=signal_type,
-                confidence=Percentage(Decimal("0.8")),
+                confidence=Percentage(Decimal(str(dyn_conf_float))),
                 score=1.0 if setup.direction == "BUY" else -1.0,
                 timestamp=datetime.now(),
                 source_layer="strategy",
                 metadata={
                     "setup": setup,
-                    "struct": struct
+                    "struct": struct,
+                    "confidence": dyn_conf_float,
+                    "fused_confidence": dyn_conf_float,
+                    "performance_score": perf_score_float,
+                    "risk_adjusted_score": risk_adj_score_float
                 }
             )
 
@@ -84,6 +97,10 @@ class SweepScalperAdapter(BaseStrategyAdapter):
 
     def evaluate_fused_signal(self, fused_signal: FusedSignal) -> Optional[ExecutionIntent]:
         """Evaluate fused signal using stop sweep confirmation and optimization."""
+        sym_str = fused_signal.symbol.value if hasattr(fused_signal.symbol, 'value') else str(fused_signal.symbol)
+        if not self._passes_exit_cooldown_check(sym_str):
+            return None
+
         self.ensure_data_buffer(fused_signal.symbol)
         setup = fused_signal.metadata.get("setup") if fused_signal.metadata else None
 

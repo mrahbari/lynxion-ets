@@ -37,12 +37,18 @@ class DirectExecutionAdapter(BaseExecutionAdapter):
         self.order_id_counter = 1000
     
     def execute_order(self, order: Order) -> str:
-        """Execute an order directly through the broker"""
+        """Execute an order directly through the broker via LiveExecutionGuard authorization"""
         from infrastructure.adapters.broker_data_adapters import MockBrokerAdapter
+        from shared.live_execution_guard import live_execution_guard
         broker = MockBrokerAdapter()
         
-        # Place the order
-        order_id = broker.place_order(order)
+        guard_decision, order_id = live_execution_guard.authorize_and_send(
+            broker_name="mock", settings=None, order=order,
+            send_fn=lambda: broker.place_order(order)
+        )
+        if not guard_decision.allowed or not order_id:
+            logger.error(f"🛑 DIRECT EXECUTION BLOCKED: Order for {order.symbol.value} rejected by Risk Gate: {guard_decision.reason}")
+            return ""
         
         # Record in execution history
         self.execution_history[order_id] = {
@@ -54,13 +60,14 @@ class DirectExecutionAdapter(BaseExecutionAdapter):
         logger.info(f"Direct execution placed order: {order_id} for {order.symbol.value}")
         return order_id
     
-    def cancel_order(self, order_id: str) -> bool:
+    def cancel_order(self, order_id: str, symbol: Optional[Any] = None) -> bool:
         """Cancel an order"""
         from infrastructure.adapters.broker_data_adapters import MockBrokerAdapter
         broker = MockBrokerAdapter()
+        target_sym = Symbol(symbol) if symbol else None
         
         # Cancel the order
-        success = broker.cancel_order(order_id, Symbol("BTCUSDT"))  # Placeholder symbol
+        success = broker.cancel_order(order_id, target_sym)
         
         if success:
             if order_id in self.execution_history:
@@ -69,12 +76,13 @@ class DirectExecutionAdapter(BaseExecutionAdapter):
         logger.info(f"Direct execution cancel order {order_id}: {success}")
         return success
     
-    def get_execution_status(self, execution_id: str) -> str:
+    def get_execution_status(self, execution_id: str, symbol: Optional[Any] = None) -> str:
         """Get execution status"""
         from infrastructure.adapters.broker_data_adapters import MockBrokerAdapter
         broker = MockBrokerAdapter()
+        target_sym = Symbol(symbol) if symbol else None
         
-        status = broker.get_order_status(execution_id, Symbol("BTCUSDT"))  # Placeholder symbol
+        status = broker.get_order_status(execution_id, target_sym)
         
         logger.info(f"Direct execution status for {execution_id}: {status}")
         return status
@@ -89,21 +97,21 @@ class TWAPExecutionAdapter(ExecutionAlgorithmPort):
         self.slippage_tolerance = 0.005  # 0.5% slippage tolerance
     
     def execute_algorithmic_order(self, order: Order) -> str:
-        """Execute an order using TWAP algorithm"""
+        """Execute an order using TWAP algorithm via LiveExecutionGuard authorization"""
         logger.info(f"TWAP algorithm executing order for {order.symbol.value}")
-        
-        # In a real implementation, this would split the order into smaller
-        # pieces and execute them across time intervals
-        # For demonstration, we'll just call the broker after breaking down the order
-        
         from infrastructure.adapters.broker_data_adapters import MockBrokerAdapter
+        from shared.live_execution_guard import live_execution_guard
         broker = MockBrokerAdapter()
         
-        # This is a simplified version - real TWAP would calculate time intervals
-        # and execute portions of the order at regular intervals
-        order_id = broker.place_order(order)
+        guard_decision, order_id = live_execution_guard.authorize_and_send(
+            broker_name="mock", settings=None, order=order,
+            send_fn=lambda: broker.place_order(order)
+        )
+        if not guard_decision.allowed or not order_id:
+            logger.error(f"🛑 TWAP EXECUTION BLOCKED: Order for {order.symbol.value} rejected by Risk Gate: {guard_decision.reason}")
+            return ""
+
         logger.info(f"TWAP execution placed order: {order_id}")
-        
         return order_id
     
     def get_algorithm_name(self) -> str:
@@ -118,19 +126,21 @@ class VWAPExecutionAdapter(ExecutionAlgorithmPort):
         self.lookback_period = 20  # periods back to calculate VWAP
     
     def execute_algorithmic_order(self, order: Order) -> str:
-        """Execute an order using VWAP algorithm"""
+        """Execute an order using VWAP algorithm via LiveExecutionGuard authorization"""
         logger.info(f"VWAP algorithm executing order for {order.symbol.value}")
-        
-        # In a real implementation, this would calculate the volume-weighted average price
-        # and execute the order based on market volume patterns
-        # For demonstration, we'll just call the broker
-        
         from infrastructure.adapters.broker_data_adapters import MockBrokerAdapter
+        from shared.live_execution_guard import live_execution_guard
         broker = MockBrokerAdapter()
         
-        order_id = broker.place_order(order)
+        guard_decision, order_id = live_execution_guard.authorize_and_send(
+            broker_name="mock", settings=None, order=order,
+            send_fn=lambda: broker.place_order(order)
+        )
+        if not guard_decision.allowed or not order_id:
+            logger.error(f"🛑 VWAP EXECUTION BLOCKED: Order for {order.symbol.value} rejected by Risk Gate: {guard_decision.reason}")
+            return ""
+
         logger.info(f"VWAP execution placed order: {order_id}")
-        
         return order_id
     
     def get_algorithm_name(self) -> str:
@@ -146,36 +156,40 @@ class SmartRouterExecutionAdapter(ExecutionPort):
         self.preferred_broker = "Binance"
     
     def execute_order(self, order: Order) -> str:
-        """Execute an order using smart routing across available brokers"""
+        """Execute an order using smart routing via LiveExecutionGuard authorization"""
         logger.info(f"Smart router executing order for {order.symbol.value}")
-        
-        # In a real implementation, this would compare prices across brokers
-        # and route to the one with the best price and execution quality
-        # For demonstration, we'll just use a simple approach
-        
         from infrastructure.adapters.broker_data_adapters import MockBrokerAdapter
-        broker = MockBrokerAdapter()  # This could be swapped based on routing logic
+        from shared.live_execution_guard import live_execution_guard
+        broker = MockBrokerAdapter()
         
-        order_id = broker.place_order(order)
+        guard_decision, order_id = live_execution_guard.authorize_and_send(
+            broker_name="mock", settings=None, order=order,
+            send_fn=lambda: broker.place_order(order)
+        )
+        if not guard_decision.allowed or not order_id:
+            logger.error(f"🛑 SMART ROUTER EXECUTION BLOCKED: Order for {order.symbol.value} rejected by Risk Gate: {guard_decision.reason}")
+            return ""
+
         logger.info(f"Smart router placed order: {order_id} via {self.preferred_broker}")
-        
         return order_id
     
-    def cancel_order(self, order_id: str) -> bool:
+    def cancel_order(self, order_id: str, symbol: Optional[Any] = None) -> bool:
         """Cancel an order on the broker where it was placed"""
         from infrastructure.adapters.broker_data_adapters import MockBrokerAdapter
         broker = MockBrokerAdapter()
+        target_sym = Symbol(symbol) if symbol else None
         
         # This would need to know which broker has the order
-        success = broker.cancel_order(order_id, Symbol("BTCUSDT"))  # Placeholder
+        success = broker.cancel_order(order_id, target_sym)
         logger.info(f"Smart router cancel order {order_id}: {success}")
         return success
     
-    def get_execution_status(self, execution_id: str) -> str:
+    def get_execution_status(self, execution_id: str, symbol: Optional[Any] = None) -> str:
         """Get execution status from the relevant broker"""
         from infrastructure.adapters.broker_data_adapters import MockBrokerAdapter
         broker = MockBrokerAdapter()
+        target_sym = Symbol(symbol) if symbol else None
         
-        status = broker.get_order_status(execution_id, Symbol("BTCUSDT"))  # Placeholder
+        status = broker.get_order_status(execution_id, target_sym)
         logger.info(f"Smart router status for {execution_id}: {status}")
         return status

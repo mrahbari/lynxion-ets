@@ -58,11 +58,24 @@ class _AutoDetectionExecutionMixin:
                     # We'll let the broker service handle the actual rejection to avoid duplicate messages
                     # Continue to execution where the broker service will reject it
 
-        # Check if this is a stablecoin pair that should be filtered out
-            filter_stablecoin_pairs = self._settings.data.filter_out_stablecoin_pairs if self._settings.data and hasattr(self._settings.data, 'filter_out_stablecoin_pairs') else True
-            allowed_stablecoins = (self._settings.data.allowed_stablecoins if self._settings.data and self._settings.data.allowed_stablecoins else 'USDT,BUSD,USDC,DAI,PAX,TUSD,USDD,FDUSD').split(',')
-
             symbol_str = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
+
+            # Hard Symbol Cooldown & Health Gate Admission Check
+            try:
+                from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+                allowed, cooldown_reason = symbol_cooldown_gate.is_symbol_allowed(execution_intent.symbol)
+                if not allowed:
+                    self.logger.warning(
+                        f"🛑 COOLDOWN GATE REJECTION: {symbol_str} | Reason: {cooldown_reason} | "
+                        f"Strategy: {execution_intent.strategy_name} | Intent Confidence: {float(execution_intent.intent_confidence.value):.2%}"
+                    )
+                    self._remove_pending_execution_intent(execution_intent)
+                    return {
+                        'status': 'failed',
+                        'error': f"Cooldown active: {cooldown_reason}"
+                    }
+            except Exception as cd_err:
+                self.logger.error(f"Error checking symbol cooldown gate: {cd_err}")
 
             if filter_stablecoin_pairs:
                 # Check if both parts of the symbol are stablecoins (e.g., USDCUSDT)
@@ -210,19 +223,20 @@ class _AutoDetectionExecutionMixin:
             is_live = not hasattr(execution_service_to_use, 'is_backtest') or not getattr(execution_service_to_use, 'is_backtest', False)
             if is_live:
                 from infrastructure.messaging.event_system import signal_processor
-                last_time = getattr(signal_processor, '_last_market_data_times', {}).get(symbol_value)
+                symbol_key = str(symbol_value).upper().replace("-", "")
+                last_time = getattr(signal_processor, '_last_market_data_times', {}).get(symbol_key)
                 if last_time:
                     elapsed = (datetime.now() - last_time).total_seconds()
                     if elapsed > 90.0:
                         self.logger.warning(
                             f"❌ HEARTBEAT GUARD VETO: Market data heartbeat is stale by {elapsed:.1f}s (> 90s) for "
-                            f"{symbol_value}. Submission rejected."
+                            f"{symbol_key}. Submission rejected."
                         )
                         return {'status': 'failed', 'error': 'HEARTBEAT_STALE'}
                 else:
                     self.logger.warning(
                         f"❌ HEARTBEAT GUARD VETO: No market data heartbeat recorded for "
-                        f"{symbol_value}. Submission rejected."
+                        f"{symbol_key}. Submission rejected."
                     )
                     return {'status': 'failed', 'error': 'HEARTBEAT_MISSING'}
 
