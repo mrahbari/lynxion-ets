@@ -685,7 +685,16 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                 broker_root = getattr(es, "broker", es)
                 sub_brokers = getattr(broker_root, "brokers", None)
                 if isinstance(sub_brokers, dict) and sub_brokers:
-                    target_brokers.extend(sub_brokers.values())
+                    # Protection of actual VST positions must not wait behind
+                    # ancillary exchange adapters.  The execution service is
+                    # configured with BingX as primary for this mode.
+                    primary_name = str(getattr(broker_root, "primary_broker", "") or "").lower()
+                    primary_broker = sub_brokers.get(primary_name)
+                    if primary_broker:
+                        target_brokers.append(primary_broker)
+                    target_brokers.extend(
+                        broker for name, broker in sub_brokers.items() if name != primary_name
+                    )
                 elif broker_root:
                     target_brokers.append(broker_root)
 

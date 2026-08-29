@@ -34,6 +34,10 @@ could abort its full pass when an earlier non-BingX adapter raised, preventing l
 positions from being evaluated. Broker evaluation is now isolated, so a failure is logged and
 the loop continues to the remaining adapters, including BingX VST.
 
+The VST primary broker is now evaluated first in each protection pass. This prevents market
+data/API work for ancillary exchanges from delaying a BingX stop adjustment for qualifying
+positions such as CCUSDT, INJUSDT, or AAVEUSDT.
+
 ## Guardrails
 
 - Do not close, reduce, or otherwise alter an existing VST position without explicit operator

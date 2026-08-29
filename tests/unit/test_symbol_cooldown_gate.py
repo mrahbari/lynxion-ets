@@ -259,3 +259,34 @@ def test_active_position_loop_continues_to_bingx_after_another_broker_fails(monk
     manager.evaluate_open_positions.assert_called_once_with(
         bingx_broker, current_prices={"ZECUSDT": 815.58}
     )
+
+
+@pytest.mark.unit
+def test_active_position_loop_prioritizes_the_configured_primary_broker(monkeypatch):
+    """BingX VST protection runs before ancillary exchange adapters."""
+    from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator
+    from unittest.mock import MagicMock
+
+    binance_broker = object()
+    bingx_broker = object()
+
+    class BrokerRoot:
+        primary_broker = "bingx"
+        brokers = {"binance": binance_broker, "bingx": bingx_broker}
+
+    orchestrator = object.__new__(AutoDetectionOrchestrator)
+    orchestrator.logger = MagicMock()
+    orchestrator.execution_service = type("ExecutionService", (), {"broker": BrokerRoot()})()
+    orchestrator.is_running = True
+    visited = []
+
+    def manage(broker, manager):
+        visited.append(broker)
+
+    orchestrator._manage_active_positions_for_broker = manage
+    monkeypatch.setattr("infrastructure.orchestrators.auto_detection_orchestrator.time.sleep",
+                        lambda _: setattr(orchestrator, "is_running", False))
+
+    orchestrator._active_position_management_loop()
+
+    assert visited == [bingx_broker, binance_broker]

@@ -286,6 +286,14 @@ receive their protection pass. A regression test simulates a failing Binance ada
 asserts that the BingX position is evaluated in the same iteration. The running process must
 be restarted once more to load this correction before its exchange-side effect is assessed.
 
+**Primary-broker priority:** A later read-only VST check confirmed automatic trailing on
+AVAXUSDT: its short stop moved from 7.700 to 7.357, below its 7.553 entry, without a manual
+symbol-specific update. The same check showed ZECUSDT, CCUSDT, AAVEUSDT, UNIUSDT, and ONDOUSDT
+above their protection thresholds but still carrying unlocked stops. The active-position loop
+now evaluates the configured primary broker (BingX VST) before ancillary adapters. This is a
+generic ordering fix, applies to every qualifying position, and is covered by a regression
+test; it needs a runner reload before remaining exchange-side adjustments can occur.
+
 ## Reproducible Commands
 
     git status --short --branch
