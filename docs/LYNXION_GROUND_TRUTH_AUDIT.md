@@ -277,6 +277,15 @@ it could terminate without evaluating even once. The flag is now set before any 
 service starts, and a focused regression test observes that order. This requires one final
 controlled runner restart before exchange-side trailing behavior can be claimed.
 
+**Multi-broker isolation correction:** Live VST evidence after the startup correction still
+showed ZECUSDT (+27% estimated ROE) and AVAXUSDT (+31% estimated ROE) with their original
+unlocked stops. The active-position loop processed every configured broker in sequence under
+one exception boundary; a failure in an earlier adapter could prevent it from ever reaching
+BingX. Each broker evaluation is now isolated: its failure is logged and later brokers still
+receive their protection pass. A regression test simulates a failing Binance adapter and
+asserts that the BingX position is evaluated in the same iteration. The running process must
+be restarted once more to load this correction before its exchange-side effect is assessed.
+
 ## Reproducible Commands
 
     git status --short --branch

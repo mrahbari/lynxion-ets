@@ -214,3 +214,48 @@ def test_auto_detection_marks_running_before_starting_protection_threads():
 
     assert observed == [True]
     assert orchestrator.is_running is True
+
+
+@pytest.mark.unit
+def test_active_position_loop_continues_to_bingx_after_another_broker_fails(monkeypatch):
+    """A failed non-primary broker must not prevent VST stop management."""
+    from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator
+    from infrastructure.risk import active_position_manager as manager_module
+    from unittest.mock import MagicMock
+
+    class FailingBroker:
+        name = "binance"
+
+        @staticmethod
+        def get_all_positions():
+            raise RuntimeError("unavailable")
+
+    class BingxBroker:
+        name = "bingx"
+
+        @staticmethod
+        def get_all_positions():
+            return [{"symbol": "ZEC-USDT", "markPrice": 815.58}]
+
+    bad_broker = FailingBroker()
+    bingx_broker = BingxBroker()
+
+    manager = MagicMock()
+    manager.normalize_symbol.side_effect = lambda symbol: str(symbol).replace("-", "")
+    manager.evaluate_open_positions.return_value = []
+    monkeypatch.setattr(manager_module, "active_position_manager", manager)
+
+    orchestrator = object.__new__(AutoDetectionOrchestrator)
+    orchestrator.logger = MagicMock()
+    orchestrator.execution_service = MagicMock()
+    orchestrator.execution_service.broker.brokers = {"binance": bad_broker, "bingx": bingx_broker}
+    orchestrator.market_data_repo = None
+    orchestrator.is_running = True
+    monkeypatch.setattr("infrastructure.orchestrators.auto_detection_orchestrator.time.sleep",
+                        lambda _: setattr(orchestrator, "is_running", False))
+
+    orchestrator._active_position_management_loop()
+
+    manager.evaluate_open_positions.assert_called_once_with(
+        bingx_broker, current_prices={"ZECUSDT": 815.58}
+    )

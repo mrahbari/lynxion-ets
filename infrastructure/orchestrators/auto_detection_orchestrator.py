@@ -692,48 +692,58 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                 for broker in target_brokers:
                     if not broker:
                         continue
-                    positions = []
-                    if hasattr(broker, "get_open_positions"):
-                        positions = broker.get_open_positions() or []
-                    elif hasattr(broker, "get_all_positions"):
-                        positions = broker.get_all_positions() or []
-                    elif hasattr(broker, "get_positions"):
-                        positions = broker.get_positions() or []
-                    elif hasattr(broker, "_broker") and hasattr(broker._broker, "get_open_positions"):
-                        positions = broker._broker.get_open_positions() or []
-
-                    if not positions:
-                        continue
-
-                    current_prices = {}
-                    for pos in positions:
-                        raw_sym = getattr(pos, "symbol", "") or (pos.get("symbol") if isinstance(pos, dict) else "")
-                        clean_sym = active_position_manager.normalize_symbol(raw_sym)
-                        if not clean_sym:
-                            continue
-
-                        # 1. Mark price from position
-                        mark_p = getattr(pos, "mark_price", 0) or (pos.get("markPrice") if isinstance(pos, dict) else 0)
-                        if mark_p and float(mark_p) > 0:
-                            current_prices[clean_sym] = float(mark_p)
-                        elif hasattr(self, "market_data_repo") and self.market_data_repo:
-                            try:
-                                from domain.value_objects import Symbol as DomainSymbol
-                                p = self.market_data_repo.get_current_price(DomainSymbol(clean_sym))
-                                if p and float(p) > 0:
-                                    current_prices[clean_sym] = float(p)
-                            except Exception:
-                                pass
-
-                    actions = active_position_manager.evaluate_open_positions(broker, current_prices=current_prices)
-                    if actions:
-                        broker_name = getattr(broker, "name", "broker")
-                        self.logger.warning(f"🛡️ Active Position Manager executed {len(actions)} protection action(s) on {broker_name}: {actions}")
+                    self._manage_active_positions_for_broker(broker, active_position_manager)
 
                 time.sleep(5)
             except Exception as e:
                 self.logger.error(f"Error in active position management loop: {e}", exc_info=True)
                 time.sleep(5)
+
+    def _manage_active_positions_for_broker(self, broker, active_position_manager) -> None:
+        """Evaluate one broker without allowing it to block protection on another broker."""
+        try:
+            positions = []
+            if hasattr(broker, "get_open_positions"):
+                positions = broker.get_open_positions() or []
+            elif hasattr(broker, "get_all_positions"):
+                positions = broker.get_all_positions() or []
+            elif hasattr(broker, "get_positions"):
+                positions = broker.get_positions() or []
+            elif hasattr(broker, "_broker") and hasattr(broker._broker, "get_open_positions"):
+                positions = broker._broker.get_open_positions() or []
+
+            if not positions:
+                return
+
+            current_prices = {}
+            for pos in positions:
+                raw_sym = getattr(pos, "symbol", "") or (pos.get("symbol") if isinstance(pos, dict) else "")
+                clean_sym = active_position_manager.normalize_symbol(raw_sym)
+                if not clean_sym:
+                    continue
+
+                mark_p = getattr(pos, "mark_price", 0) or (pos.get("markPrice") if isinstance(pos, dict) else 0)
+                if mark_p and float(mark_p) > 0:
+                    current_prices[clean_sym] = float(mark_p)
+                elif hasattr(self, "market_data_repo") and self.market_data_repo:
+                    try:
+                        from domain.value_objects import Symbol as DomainSymbol
+                        p = self.market_data_repo.get_current_price(DomainSymbol(clean_sym))
+                        if p and float(p) > 0:
+                            current_prices[clean_sym] = float(p)
+                    except Exception:
+                        pass
+
+            actions = active_position_manager.evaluate_open_positions(broker, current_prices=current_prices)
+            if actions:
+                broker_name = getattr(broker, "name", "broker")
+                self.logger.warning(f"🛡️ Active Position Manager executed {len(actions)} protection action(s) on {broker_name}: {actions}")
+        except Exception as broker_error:
+            broker_name = getattr(broker, "name", type(broker).__name__)
+            self.logger.error(
+                f"Error managing active positions on {broker_name}; continuing with other brokers: {broker_error}",
+                exc_info=True,
+            )
 
     def run_auto_detection(self):
         """Main method to run the auto-detection system."""

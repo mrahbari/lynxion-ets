@@ -29,6 +29,11 @@ started while `is_running` was still false. The trailing loop uses that flag as 
 condition, so it could exit before its first evaluation. The corrected startup sequence sets
 the flag before launching any background thread; a regression test asserts that ordering.
 
+A third mechanical blocker was found from live evidence: the multi-broker protection loop
+could abort its full pass when an earlier non-BingX adapter raised, preventing later BingX
+positions from being evaluated. Broker evaluation is now isolated, so a failure is logged and
+the loop continues to the remaining adapters, including BingX VST.
+
 ## Guardrails
 
 - Do not close, reduce, or otherwise alter an existing VST position without explicit operator
