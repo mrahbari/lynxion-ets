@@ -26,6 +26,9 @@ qualifying positions after the corrected runner has loaded.
 - The manager now waits for broker-side order visibility before local success, starts its loop
   after `is_running` is set, isolates broker failures, prioritizes BingX VST, and hydrates the
   exchange stop after a restart.
+- Latest read-only VST coverage check: 11 open positions, each with one exchange-side
+  `STOP_MARKET` and one `TAKE_PROFIT_MARKET` order. Coverage is not treated as proof of
+  a profit lock.
 
 ## Changes made
 
@@ -50,7 +53,7 @@ qualifying positions after the corrected runner has loaded.
 ## Open risks
 
 - The running VST process must load the latest commits before their exchange-side effect can be
-  observed.
+  observed: PID 91102 began at 16:23, before the final protection commits at 16:34–16:49.
 - Restart persistence is achieved by broker-state hydration rather than a durable manager-state
   file; the behavior needs VST evidence.
 - Existing project-context documents contain stale operational and test-status claims.
