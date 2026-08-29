@@ -7,8 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK 000 closeout — P0 exchange-side profit-lock/trailing-stop correctness and VST execution
-liveness.
+TASK 002 — edge failure decomposition, with TASK 000 runtime reload evidence still open.
 
 ## Status
 
@@ -67,8 +66,9 @@ qualifying positions after the corrected runner has loaded.
 
 ## Next task
 
-After TASK 000 P0 closure: TASK 001 — performance attribution, followed by TASK 002 — edge
-failure decomposition. Research remains isolated from the production execution path.
+TASK 001 performance attribution is complete. TASK 002 must classify the XMR MARKET-exit
+cascade and MARKET exit sources before any strategy or exit mutation. Research remains
+isolated from the production execution path.
 
 ## Operator decision required
 
