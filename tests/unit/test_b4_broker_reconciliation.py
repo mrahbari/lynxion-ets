@@ -44,6 +44,21 @@ def test_no_drift_when_positions_known_and_orders_open(tmp_path):
     assert rep["halted"] is False and rep["unrecoverable"] == [] and halts == []
 
 
+def test_inspect_reports_drift_without_mutating_or_halting(tmp_path):
+    j = _journal(tmp_path)
+    ref = j.record_intent("BTC-USDT", "BUY", "0.001", "bingx", "x1")
+    j.record_submitted(ref, "OID1", "bingx")
+    before = (tmp_path / "j.jsonl").read_bytes()
+    halts = []
+    broker = _FakeBroker(positions=[_pos("ETH-USDT", 0.5)])
+
+    report = BrokerReconciliationService(halt_fn=halts.append).inspect(broker, j)
+
+    assert report["broker_positions_missing_from_journal"] == [{"symbol": "ETH-USDT", "quantity": "0.5", "side": "LONG"}]
+    assert halts == []
+    assert (tmp_path / "j.jsonl").read_bytes() == before
+
+
 def test_recoverable_resolves_inflight_order(tmp_path):
     j = _journal(tmp_path)
     ref = j.record_intent("BTC-USDT", "BUY", "0.001", "bingx", "x1")
@@ -173,4 +188,3 @@ def test_idempotent_closed_position_event(tmp_path, monkeypatch):
 
     # Assert called EXACTLY ONCE across multiple cycles
     assert trade_results == [("ADA-USDT", False)]
-

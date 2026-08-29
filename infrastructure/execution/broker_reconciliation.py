@@ -200,6 +200,69 @@ class BrokerReconciliationService:
                     exc_info=True
                 )
 
+    def inspect(self, broker, journal) -> Dict[str, Any]:
+        """Read broker positions and local journal state without writing or halting.
+
+        This is intentionally narrower than ``reconcile``: it does not query order
+        status, process position closures, persist snapshots, mutate the journal, or
+        engage the kill switch. It is the safe preflight required before any operator
+        chooses to run a state-changing reconciliation pass.
+        """
+        report: Dict[str, Any] = {
+            "errors": [],
+            "broker_positions": [],
+            "journal_symbols": [],
+            "journal_net_positions": {},
+            "in_flight_orders": [],
+            "broker_positions_missing_from_journal": [],
+        }
+        try:
+            broker_positions = broker.get_all_positions() or []
+        except Exception as exc:
+            report["errors"].append(f"get_all_positions failed: {exc}")
+            broker_positions = []
+
+        open_positions = [
+            position for position in broker_positions
+            if abs(float(getattr(position, "quantity", 0) or getattr(position, "position_amt", 0) or 0)) > 0
+        ]
+        report["broker_positions"] = [
+            {
+                "symbol": _sym(getattr(position, "symbol", "")),
+                "quantity": str(getattr(position, "quantity", "")),
+                "side": getattr(getattr(position, "side", None), "value", str(getattr(position, "side", ""))),
+            }
+            for position in open_positions
+        ]
+        try:
+            order_map = journal.order_exchange_map()
+            in_flight = journal.in_flight()
+            net_positions = journal.net_positions()
+        except Exception as exc:
+            report["errors"].append(f"journal read failed: {exc}")
+            order_map, in_flight, net_positions = {}, [], {}
+
+        journal_symbols = {
+            str(symbol).upper().replace("-", "").replace("/", "").replace("_", "")
+            for _exchange, symbol in order_map.values() if symbol
+        }
+        journal_symbols |= {
+            str(symbol).upper().replace("-", "").replace("/", "").replace("_", "")
+            for symbol in net_positions if symbol
+        }
+        journal_symbols |= {
+            str(order.get("symbol")).upper().replace("-", "").replace("/", "").replace("_", "")
+            for order in in_flight if order.get("symbol")
+        }
+        report["journal_symbols"] = sorted(journal_symbols)
+        report["journal_net_positions"] = {symbol: str(quantity) for symbol, quantity in net_positions.items()}
+        report["in_flight_orders"] = in_flight
+        report["broker_positions_missing_from_journal"] = [
+            position for position in report["broker_positions"]
+            if _sym(position["symbol"]).upper().replace("-", "").replace("/", "").replace("_", "") not in journal_symbols
+        ]
+        return report
+
     def reconcile(self, broker, journal, halt_on_unrecoverable: bool = True) -> Dict[str, Any]:
         """One reconciliation pass. Returns a structured drift report."""
         report: Dict[str, Any] = {
