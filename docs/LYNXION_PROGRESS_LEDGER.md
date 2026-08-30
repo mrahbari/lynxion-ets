@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Secure an independent historical holdout before testing the post-C-08 hypothesis that
-long-only daily relative strength works only in a positive BTC regime.
+Acquire and evaluate the frozen pre-2023 C-09 holdout for long-only daily relative strength in
+a positive BTC regime.
 
 ## Status
 
@@ -98,9 +98,8 @@ unchanged.
 
 ## Next task
 
-Freeze C-09 from the observed LONG/BTC-positive clue, then acquire an untouched pre-2023
-futures holdout before evaluation. Treat reverse-time confirmation as external historical
-evidence only and still require prospective VST validation before any promotion.
+Acquire the isolated, checksummed C-09 pre-2023 futures panel, then evaluate the already-frozen
+long/BTC-positive hypothesis. Reverse-time confirmation can only qualify prospective VST.
 
 ## Operator decision required
 
