@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Preregister one C-16 OI hypothesis against the kept official historical metrics panel while C-11
-prospective collection continues independently.
+Evaluate preregistered C-16 OI-confirmed price impulse while C-11 prospective collection
+continues independently.
 
 ## Status
 
@@ -131,8 +131,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Select and preregister exactly one causal C-16 specification before aligning OI with price or
-opening any conditional outcome.
+Acquire any missing six-symbol funding, implement strict causal OI/price alignment, and evaluate
+the unchanged C-16 protocol on separate primary and reverse-time samples.
 
 ## Operator decision required
 
