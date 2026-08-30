@@ -156,8 +156,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Close the failed near-book continuation family and perform evidence synthesis before selecting one
-genuinely distinct next mechanism. Do not reverse, reslice, or retune C-18 on the opened samples.
+Implement and evaluate the preregistered C-19 dynamic liquidity-withdrawal differential exactly
+once. Do not reverse, reslice, or retune C-18 or C-19 on their opened samples.
 
 ## Operator decision required
 
