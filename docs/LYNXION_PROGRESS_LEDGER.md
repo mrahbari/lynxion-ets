@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Acquire and validate the newly discovered official multi-year Binance OI metrics archive while
-C-11 prospective collection continues independently.
+Preregister one C-16 OI hypothesis against the kept official historical metrics panel while C-11
+prospective collection continues independently.
 
 ## Status
 
@@ -74,6 +74,8 @@ frozen promotion gates and production strategy logic is unchanged.
   daily aggregation, next-open entry, the fixed 28-day exit, future mutation, and costs.
 - TASK-0104 suite: 692 passed, 1 optional layering test skipped; C-15 adds custom-universe
   acquisition, disjoint-universe, and pre-admission LONG filtering coverage.
+- TASK-0106 suite: 697 passed, 1 optional layering test skipped; five OI acquisition tests cover
+  checksum binding/resume, exact/conflicting duplicates, and optional-ratio missingness.
 
 ## Rejected hypotheses
 
@@ -129,8 +131,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete TASK-0106's isolated, checksummed historical OI panel. Admit no C-16 until the data gate
-passes and one OI hypothesis is preregistered under the sequential research policy.
+Select and preregister exactly one causal C-16 specification before aligning OI with price or
+opening any conditional outcome.
 
 ## Operator decision required
 
