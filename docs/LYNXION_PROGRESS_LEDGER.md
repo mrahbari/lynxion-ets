@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Close frozen C-12 funding generalization and select the next independent, preregistered edge
-test while C-11 updates independently every eight hours.
+Execute frozen C-13 temporal funding generalization on unopened 2023–2026 BNB/XRP/ADA
+conditional samples while C-11 updates independently every eight hours.
 
 ## Status
 
@@ -114,8 +114,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Preregister the next independent test before opening any new conditional data. Do not tune C-12
-on the opened sample; C-11 prospective collection continues independently.
+After committing the C-13 boundary, acquire checksummed BNB/XRP/ADA funding for 2023–2026 and
+evaluate the unchanged rule standalone. Do not tune C-12 on its opened sample.
 
 ## Operator decision required
 
