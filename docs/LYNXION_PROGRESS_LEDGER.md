@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement frozen C-07 volume-confirmed acceleration with BTC context after C-06 showed
-essentially zero gross expectancy for market-neutral extreme reversal.
+Define the next independent longer-horizon relative-strength hypothesis after C-07 failed to
+survive costs across every fold, side, and symbol.
 
 ## Status
 
@@ -56,6 +56,8 @@ unchanged.
   pagination/range/integrity regressions.
 - TASK-0095 suite: 651 passed, 1 optional layering test skipped; this includes five C-06
   point-in-time/execution regressions.
+- TASK-0096 suite: 656 passed, 1 optional layering test skipped; this includes five C-07
+  causality/state/execution regressions.
 
 ## Rejected hypotheses
 
@@ -72,6 +74,8 @@ unchanged.
 - C-06 market-neutral extreme reversal: 15,810 pairs, -0.2999% net expectancy, PF 0.1345,
   bootstrap CI entirely negative, all folds/sides/symbols negative. Gross expectancy is
   effectively zero and the candidate is rejected.
+- C-07 volume-confirmed acceleration: 8,245 trades, -0.2834% net expectancy, PF 0.6331,
+  confidence interval entirely negative, all folds/sides/symbols/volume buckets negative.
 
 ## Open risks
 
@@ -89,8 +93,9 @@ unchanged.
 
 ## Next task
 
-Evaluate preregistered C-07 using point-in-time relative volume, non-overlapping acceleration,
-and BTC regime. Do not retune rejected candidates; production remains unchanged.
+Pre-register a longer-horizon cross-sectional relative-strength candidate designed to test
+whether signal magnitude can exceed friction without retuning C-06/C-07. Production remains
+unchanged until a candidate clears the full robustness gate.
 
 ## Operator decision required
 
