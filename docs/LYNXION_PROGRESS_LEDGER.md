@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Identify the next genuinely orthogonal, freely obtainable information class after price,
-volume, and BTC-context candidates failed to produce cost-surviving expectancy.
+Acquire and evaluate frozen C-10 extreme-negative funding on the independent pre-2023 BTC/ETH
+holdout with causal thresholds and full funding/cost economics.
 
 ## Status
 
@@ -102,9 +102,8 @@ unchanged.
 
 ## Next task
 
-Audit existing free derivatives datasets and prior funding/OI research to select a truly
-orthogonal hypothesis without repeating already rejected work. Paid data and production changes
-remain approval-gated.
+Acquire checksummed BTC/ETH funding for the frozen C-10 holdout, then evaluate the causal
+extreme-negative rebound hypothesis. Paid data and production changes remain approval-gated.
 
 ## Operator decision required
 
