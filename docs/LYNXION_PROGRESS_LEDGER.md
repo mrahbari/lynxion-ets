@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Maintain C-11 prospective collection and hold the historical candidate loop at the verified
-data/execution boundary pending an operator-gated envelope decision.
+Acquire and validate the newly discovered official multi-year Binance OI metrics archive while
+C-11 prospective collection continues independently.
 
 ## Status
 
@@ -129,15 +129,13 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Continue C-11 automatically. Do not admit C-16 from existing data. The next research program
-requires either auditable multi-year L2/liquidation/OI data or a materially lower-cost/lower-latency
-execution envelope.
+Complete TASK-0106's isolated, checksummed historical OI panel. Admit no C-16 until the data gate
+passes and one OI hypothesis is preregistered under the sequential research policy.
 
 ## Operator decision required
 
-**YES.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
+**NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
 verified commits, and controlled VST/paper runtime reloads after pre/post protection checks.
 Real funds, secrets, destructive/data-loss operations, security-boundary changes, paid services,
-legal/compliance decisions, and irreversible choices remain separately approval-gated. Advancing
-beyond the exhausted historical envelope now requires choosing whether to introduce paid/institutional
-historical derivatives data, change the execution envelope, or retain the no-live-trading disposition.
+legal/compliance decisions, and irreversible choices remain separately approval-gated. The official
+free Binance archive reopens historical OI acquisition without a paid-service or execution decision.
