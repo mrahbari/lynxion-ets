@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Close C-15 after its robustness failure and identify the next independent mechanism while C-11
-updates independently every eight hours.
+Maintain C-11 prospective collection and hold the historical candidate loop at the verified
+data/execution boundary pending an operator-gated envelope decision.
 
 ## Status
 
@@ -129,12 +129,15 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Do not tune the opened C-15 sample. Preserve its positive aggregate result as a weak clue only;
-select the next mechanism independently while C-11 continues prospective collection.
+Continue C-11 automatically. Do not admit C-16 from existing data. The next research program
+requires either auditable multi-year L2/liquidation/OI data or a materially lower-cost/lower-latency
+execution envelope.
 
 ## Operator decision required
 
-The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
+**YES.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
 verified commits, and controlled VST/paper runtime reloads after pre/post protection checks.
 Real funds, secrets, destructive/data-loss operations, security-boundary changes, paid services,
-legal/compliance decisions, and irreversible choices remain separately approval-gated.
+legal/compliance decisions, and irreversible choices remain separately approval-gated. Advancing
+beyond the exhausted historical envelope now requires choosing whether to introduce paid/institutional
+historical derivatives data, change the execution envelope, or retain the no-live-trading disposition.
