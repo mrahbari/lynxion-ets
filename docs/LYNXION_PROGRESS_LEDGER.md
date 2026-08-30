@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement frozen C-08 daily relative-strength continuation after C-07 failed to survive costs
-across every fold, side, and symbol.
+Secure an independent historical holdout before testing the post-C-08 hypothesis that
+long-only daily relative strength works only in a positive BTC regime.
 
 ## Status
 
@@ -58,6 +58,8 @@ unchanged.
   point-in-time/execution regressions.
 - TASK-0096 suite: 656 passed, 1 optional layering test skipped; this includes five C-07
   causality/state/execution regressions.
+- TASK-0097 suite: 661 passed, 1 optional layering test skipped; this includes five C-08
+  causality/pair-execution regressions.
 
 ## Rejected hypotheses
 
@@ -76,6 +78,9 @@ unchanged.
   effectively zero and the candidate is rejected.
 - C-07 volume-confirmed acceleration: 8,245 trades, -0.2834% net expectancy, PF 0.6331,
   confidence interval entirely negative, all folds/sides/symbols/volume buckets negative.
+- C-08 daily relative-strength pair: 559 pairs, -0.0738% net expectancy and PF 0.9124 at
+  primary cost; only one fold positive. LONG/BTC-positive cells are clues discovered post-result
+  and cannot be validated by re-slicing the same four folds.
 
 ## Open risks
 
@@ -93,8 +98,9 @@ unchanged.
 
 ## Next task
 
-Evaluate preregistered C-08 daily relative-strength continuation without retuning C-06/C-07.
-Production remains unchanged until a candidate clears the full robustness gate.
+Freeze C-09 from the observed LONG/BTC-positive clue, then acquire an untouched pre-2023
+futures holdout before evaluation. Treat reverse-time confirmation as external historical
+evidence only and still require prospective VST validation before any promotion.
 
 ## Operator decision required
 
