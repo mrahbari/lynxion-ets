@@ -1,0 +1,226 @@
+{
+  "bootstrap_95_ci": [
+    -0.11103853096939448,
+    0.011229177216950397
+  ],
+  "by_fold": {
+    "F1": {
+      "average_loss": -0.034879194630872516,
+      "average_win": 0.034283363140861854,
+      "expectancy": 0.011229177216950397,
+      "max_drawdown": 0.034879194630872516,
+      "n": 3,
+      "payoff_ratio": 0.982917280736658,
+      "profit_factor": 1.965834561473316,
+      "win_rate": 0.6666666666666666
+    },
+    "F2": {
+      "average_loss": null,
+      "average_win": null,
+      "expectancy": null,
+      "max_drawdown": null,
+      "n": 0,
+      "payoff_ratio": null,
+      "profit_factor": null,
+      "win_rate": null
+    },
+    "F3": {
+      "average_loss": null,
+      "average_win": null,
+      "expectancy": null,
+      "max_drawdown": null,
+      "n": 0,
+      "payoff_ratio": null,
+      "profit_factor": null,
+      "win_rate": null
+    },
+    "F4": {
+      "average_loss": -0.0983699834983637,
+      "average_win": 0.008167466241388675,
+      "expectancy": -0.06285750025177958,
+      "max_drawdown": 0.3771450015106775,
+      "n": 6,
+      "payoff_ratio": 0.0830280330536452,
+      "profit_factor": 0.0415140165268226,
+      "win_rate": 0.3333333333333333
+    }
+  },
+  "by_side": {
+    "LONG": {
+      "average_loss": -0.04762176785807193,
+      "average_win": 0.021225414691125266,
+      "expectancy": -0.001723646158607132,
+      "max_drawdown": 0.060364341085271334,
+      "n": 6,
+      "payoff_ratio": 0.44570824742130066,
+      "profit_factor": 0.8914164948426013,
+      "win_rate": 0.6666666666666666
+    },
+    "SHORT": {
+      "average_loss": -0.11103853096939449,
+      "average_win": null,
+      "expectancy": -0.11103853096939449,
+      "max_drawdown": 0.3331155929081835,
+      "n": 3,
+      "payoff_ratio": null,
+      "profit_factor": 0.0,
+      "win_rate": 0.0
+    }
+  },
+  "by_symbol": {
+    "ACT-USDT": {
+      "average_loss": null,
+      "average_win": 0.04908333333333338,
+      "expectancy": 0.04908333333333338,
+      "max_drawdown": 0.0,
+      "n": 1,
+      "payoff_ratio": null,
+      "profit_factor": null,
+      "win_rate": 1.0
+    },
+    "AVNT-USDT": {
+      "average_loss": null,
+      "average_win": 0.012727002967358965,
+      "expectancy": 0.012727002967358965,
+      "max_drawdown": 0.0,
+      "n": 1,
+      "payoff_ratio": null,
+      "profit_factor": null,
+      "win_rate": 1.0
+    },
+    "BERA-USDT": {
+      "average_loss": -0.26114536340852124,
+      "average_win": null,
+      "expectancy": -0.26114536340852124,
+      "max_drawdown": 0.26114536340852124,
+      "n": 1,
+      "payoff_ratio": null,
+      "profit_factor": 0.0,
+      "win_rate": 0.0
+    },
+    "BIO-USDT": {
+      "average_loss": null,
+      "average_win": 0.0036079295154183852,
+      "expectancy": 0.0036079295154183852,
+      "max_drawdown": 0.0,
+      "n": 1,
+      "payoff_ratio": null,
+      "profit_factor": null,
+      "win_rate": 1.0
+    },
+    "BLUR-USDT": {
+      "average_loss": -0.05964893617021277,
+      "average_win": null,
+      "expectancy": -0.05964893617021277,
+      "max_drawdown": 0.05964893617021277,
+      "n": 1,
+      "payoff_ratio": null,
+      "profit_factor": 0.0,
+      "win_rate": 0.0
+    },
+    "EPIC-USDT": {
+      "average_loss": -0.034879194630872516,
+      "average_win": null,
+      "expectancy": -0.034879194630872516,
+      "max_drawdown": 0.034879194630872516,
+      "n": 1,
+      "payoff_ratio": null,
+      "profit_factor": 0.0,
+      "win_rate": 0.0
+    },
+    "FOGO-USDT": {
+      "average_loss": -0.012321293329449486,
+      "average_win": null,
+      "expectancy": -0.012321293329449486,
+      "max_drawdown": 0.012321293329449486,
+      "n": 1,
+      "payoff_ratio": null,
+      "profit_factor": 0.0,
+      "win_rate": 0.0
+    },
+    "METIS-USDT": {
+      "average_loss": -0.060364341085271334,
+      "average_win": null,
+      "expectancy": -0.060364341085271334,
+      "max_drawdown": 0.060364341085271334,
+      "n": 1,
+      "payoff_ratio": null,
+      "profit_factor": 0.0,
+      "win_rate": 0.0
+    },
+    "MMT-USDT": {
+      "average_loss": null,
+      "average_win": 0.019483392948390327,
+      "expectancy": 0.019483392948390327,
+      "max_drawdown": 0.0,
+      "n": 1,
+      "payoff_ratio": null,
+      "profit_factor": null,
+      "win_rate": 1.0
+    }
+  },
+  "candidate": "C-05",
+  "census": {
+    "decision_timestamps": 920,
+    "insufficient_universe": 915,
+    "no_trade": 0
+  },
+  "cost_sensitivity": {
+    "0.002": {
+      "average_loss": -0.08467182572486547,
+      "average_win": 0.022225414691125264,
+      "expectancy": -0.03716194109553625,
+      "max_drawdown": 0.3711450015106775,
+      "n": 9,
+      "payoff_ratio": 0.2624889034912868,
+      "profit_factor": 0.20999112279302942,
+      "win_rate": 0.4444444444444444
+    },
+    "0.003": {
+      "average_loss": -0.08567182572486547,
+      "average_win": 0.021225414691125266,
+      "expectancy": -0.03816194109553625,
+      "max_drawdown": 0.3771450015106775,
+      "n": 9,
+      "payoff_ratio": 0.24775256639552135,
+      "profit_factor": 0.1982020531164171,
+      "win_rate": 0.4444444444444444
+    },
+    "0.005": {
+      "average_loss": -0.08767182572486545,
+      "average_win": 0.019225414691125264,
+      "expectancy": -0.04016194109553625,
+      "max_drawdown": 0.3891450015106775,
+      "n": 9,
+      "payoff_ratio": 0.21928840345425313,
+      "profit_factor": 0.1754307227634025,
+      "win_rate": 0.4444444444444444
+    }
+  },
+  "data_dir": "data/history/processed/15m",
+  "gate": {
+    "adequately_sampled_folds": 0,
+    "both_sides_non_negative_and_sampled": false,
+    "max_positive_pnl_symbol_concentration": 0.5781198394424777,
+    "positive_adequate_folds": 0,
+    "verdict": "REJECT"
+  },
+  "limitations": [
+    "Historical store does not preserve complete point-in-time exchange listing membership.",
+    "Historical bid/ask and funding observations are unavailable; fixed costs represent spread/slippage/fees and funding is unmodeled.",
+    "Fixed four-hour exits isolate selection quality and do not reproduce a production strategy exit policy."
+  ],
+  "overall": {
+    "average_loss": -0.08567182572486547,
+    "average_win": 0.021225414691125266,
+    "expectancy": -0.03816194109553625,
+    "max_drawdown": 0.3771450015106775,
+    "n": 9,
+    "payoff_ratio": 0.24775256639552135,
+    "profit_factor": 0.1982020531164171,
+    "win_rate": 0.4444444444444444
+  },
+  "protocol": "edge-candidate-register-v4",
+  "source_symbols_loaded": 470,
+  "unresolved_at_fold_end": 6
+}

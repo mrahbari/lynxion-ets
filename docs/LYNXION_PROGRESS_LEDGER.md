@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement the frozen C-05 cross-sectional momentum evaluator after all four initial strategy
-candidates failed the robust OOS promotion gate.
+Assess whether the existing history downloader can produce an aligned, sufficiently long
+liquid-universe panel after C-05 exposed fragmented cross-sectional coverage.
 
 ## Status
 
@@ -50,6 +50,8 @@ unchanged.
   characterization/contract, and 52 smoke/E2E tests.
 - Final TASK-0092 suite: 637 passed, 1 optional layering test skipped; this includes four
   focused C-01/C-02/C-03 evaluator regressions.
+- Final TASK-0093 suite: 642 passed, 1 optional layering test skipped; this includes five
+  focused cross-sectional leakage/execution regressions.
 
 ## Rejected hypotheses
 
@@ -60,6 +62,9 @@ unchanged.
   stability gates.
 - C-02 trend SELL: positive aggregate expectancy (+0.5389%, N=17) but insufficient fold
   samples, negative BTC expectancy, and ETH dependence; rejected for robustness.
+- C-05 cross-sectional momentum: only 9 completed trades survived the frozen 30-symbol
+  alignment rule; expectancy -3.8162%, PF 0.1982, and 95% cluster CI crosses zero. Rejected
+  without lowering the threshold post-result.
 
 ## Open risks
 
@@ -67,14 +72,15 @@ unchanged.
   frozen cost assumptions must remain explicit.
 - Initial candidates have small samples under path-dependent execution; positive-looking narrow
   cells cannot be promoted without robust OOS support.
+- The stored 15m universe is fragmented: 915/920 four-hour decision timestamps failed C-05's
+  preregistered minimum of 30 symbols after contiguous-history validation.
 - Existing project-context documents outside the active task/ledger may contain stale claims.
 
 ## Next task
 
-Evaluate preregistered C-05 cross-sectional relative strength/weakness using a dynamic liquid
-universe and broad-market median context. Stored BTC history overlaps the broad universe for
-only about one day, so unavailable BTC context is not fabricated. LONG/SHORT separation,
-realistic costs, confidence bounds, portfolio limits, and NO TRADE remain mandatory.
+Audit and, if safely reproducible, use the existing historical sync path to construct a fixed
+aligned panel for cross-sectional research. Dataset membership and dates must be frozen before
+another hypothesis is evaluated; no post-result relaxation of C-05 is allowed.
 
 ## Operator decision required
 
