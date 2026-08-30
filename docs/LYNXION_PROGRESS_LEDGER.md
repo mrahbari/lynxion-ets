@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Close C-13 after temporal falsification and identify the next genuinely independent candidate
-while C-11 updates independently every eight hours.
+Evaluate preregistered C-14 long-horizon time-series momentum while C-11 updates independently
+every eight hours.
 
 ## Status
 
@@ -119,8 +119,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Do not tune or reslice the opened funding samples. Select the next candidate from a distinct,
-causally available mechanism; C-11 prospective collection continues independently.
+Commit the C-14 boundary, implement causal daily aggregation/monthly decisions, and evaluate
+the unchanged rule on separate 2023–2026 and 2020–2022 samples.
 
 ## Operator decision required
 
