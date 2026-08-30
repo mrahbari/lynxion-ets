@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Assess whether the existing history downloader can produce an aligned, sufficiently long
-liquid-universe panel after C-05 exposed fragmented cross-sectional coverage.
+Build and validate the frozen six-major Binance perpetual 15m research panel after C-05
+exposed fragmented cross-sectional coverage and the existing helper proved spot-only.
 
 ## Status
 
@@ -74,13 +74,15 @@ unchanged.
   cells cannot be promoted without robust OOS support.
 - The stored 15m universe is fragmented: 915/920 four-hour decision timestamps failed C-05's
   preregistered minimum of 30 symbols after contiguous-history validation.
+- The existing `fetch_long_history.py`/`BinanceClient` path calls Spot `/api/v3/klines`, not
+  USDT-margined perpetual futures; it cannot silently supply the next futures experiment.
 - Existing project-context documents outside the active task/ledger may contain stale claims.
 
 ## Next task
 
-Audit and, if safely reproducible, use the existing historical sync path to construct a fixed
-aligned panel for cross-sectional research. Dataset membership and dates must be frozen before
-another hypothesis is evaluated; no post-result relaxation of C-05 is allowed.
+Acquire and integrity-check the isolated TASK-0094 futures panel under the frozen symbol/date
+manifest. Do not overwrite current history or preregister C-06 until exact aligned coverage is
+known; no post-result relaxation of C-05 is allowed.
 
 ## Operator decision required
 
