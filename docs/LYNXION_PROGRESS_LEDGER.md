@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Close C-14 after temporal instability and select a genuinely independent validation path while
-C-11 updates independently every eight hours.
+Execute preregistered C-15 on a new five-symbol futures universe while C-11 updates
+independently every eight hours.
 
 ## Status
 
@@ -124,8 +124,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Do not reslice C-14 on its opened samples. Any use of its LONG-positive/SHORT-negative clue
-requires a newly preregistered universe or prospective boundary.
+After committing the C-15 boundary, acquire and integrity-check DOGE/LINK/LTC/DOT/AVAX native
+futures bars before evaluating the unchanged LONG-only C-14 clue.
 
 ## Operator decision required
 
