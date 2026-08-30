@@ -1,0 +1,294 @@
+{
+  "candidate": "C-17",
+  "gate": {
+    "adequately_sampled_folds": 4,
+    "both_sides_positive_and_sampled": false,
+    "max_positive_pnl_symbol_concentration": 0.22879629525432912,
+    "positive_adequate_folds": 0,
+    "positive_sampled_symbols": 0,
+    "verdict": "REJECT"
+  },
+  "limitations": [
+    "Fixed 24-hour exits isolate signal information and are not production exits."
+  ],
+  "primary": {
+    "by_fold": {
+      "F1": {
+        "average_loss": -0.02911716674404506,
+        "average_win": 0.026036608625176906,
+        "expectancy": -0.001166355158625795,
+        "max_drawdown": 1.863485294000613,
+        "n": 590,
+        "payoff_ratio": 0.894201309284387,
+        "profit_factor": 0.9187841631478753,
+        "win_rate": 0.5067796610169492
+      },
+      "F2": {
+        "average_loss": -0.03772132569289991,
+        "average_win": 0.0297240488371743,
+        "expectancy": -0.0067365199681925485,
+        "max_drawdown": 4.256176694843908,
+        "n": 505,
+        "payoff_ratio": 0.7879905674356802,
+        "profit_factor": 0.6696476617035817,
+        "win_rate": 0.4594059405940594
+      },
+      "F3": {
+        "average_loss": -0.04197376703529826,
+        "average_win": 0.03731995623336177,
+        "expectancy": -0.004547129652490723,
+        "max_drawdown": 2.96839786668363,
+        "n": 500,
+        "payoff_ratio": 0.8891257294580488,
+        "profit_factor": 0.7948245157276498,
+        "win_rate": 0.472
+      },
+      "F4": {
+        "average_loss": -0.026529840992036497,
+        "average_win": 0.02556148537217309,
+        "expectancy": -0.0022074258465548933,
+        "max_drawdown": 1.839887755514717,
+        "n": 529,
+        "payoff_ratio": 0.9634993809365808,
+        "profit_factor": 0.8439161244373599,
+        "win_rate": 0.4669187145557656
+      }
+    },
+    "by_side": {
+      "LONG": {
+        "average_loss": -0.032082785366470676,
+        "average_win": 0.030329601937606313,
+        "expectancy": -0.0020519210679678353,
+        "max_drawdown": 4.296468996800865,
+        "n": 1301,
+        "payoff_ratio": 0.9453543883787412,
+        "profit_factor": 0.8767286624075438,
+        "win_rate": 0.4811683320522675
+      },
+      "SHORT": {
+        "average_loss": -0.036040521773296814,
+        "average_win": 0.027875750139718842,
+        "expectancy": -0.005907455549420659,
+        "max_drawdown": 5.125432682990485,
+        "n": 823,
+        "payoff_ratio": 0.7734557872126195,
+        "profit_factor": 0.6898870010080376,
+        "win_rate": 0.47144592952612396
+      }
+    },
+    "by_symbol": {
+      "AVAXUSDT": {
+        "average_loss": -0.035645447634687626,
+        "average_win": 0.034276012910968205,
+        "expectancy": -0.0032059238719194163,
+        "max_drawdown": 1.8431970155230204,
+        "n": 416,
+        "payoff_ratio": 0.9615817779102097,
+        "profit_factor": 0.832221000612872,
+        "win_rate": 0.4639423076923077
+      },
+      "DOGEUSDT": {
+        "average_loss": -0.03603640884942161,
+        "average_win": 0.029658206284245564,
+        "expectancy": -0.0048618808346026976,
+        "max_drawdown": 2.678533655275783,
+        "n": 432,
+        "payoff_ratio": 0.8230067099130934,
+        "profit_factor": 0.7432439450757011,
+        "win_rate": 0.47453703703703703
+      },
+      "DOTUSDT": {
+        "average_loss": -0.033834225768548096,
+        "average_win": 0.028809333526484696,
+        "expectancy": -0.0037288259131682583,
+        "max_drawdown": 1.7412838536528792,
+        "n": 412,
+        "payoff_ratio": 0.8514849349165695,
+        "profit_factor": 0.7878225098760784,
+        "win_rate": 0.48058252427184467
+      },
+      "LINKUSDT": {
+        "average_loss": -0.030657968658237302,
+        "average_win": 0.03443744986829552,
+        "expectancy": -0.0005437329847478179,
+        "max_drawdown": 0.9315669569153483,
+        "n": 428,
+        "payoff_ratio": 1.1232789181889495,
+        "profit_factor": 0.9669966339191828,
+        "win_rate": 0.46261682242990654
+      },
+      "LTCUSDT": {
+        "average_loss": -0.03200208498395324,
+        "average_win": 0.0208366180677217,
+        "expectancy": -0.005340354086319094,
+        "max_drawdown": 2.531884623000794,
+        "n": 436,
+        "payoff_ratio": 0.651101891585182,
+        "profit_factor": 0.6631593340219446,
+        "win_rate": 0.5045871559633027
+      }
+    },
+    "census": {
+      "AVAXUSDT": {
+        "eligible_after_warmup": 7472,
+        "missing_exit": 0,
+        "non_signal": 6857,
+        "overlap_rejected": 198,
+        "unresolved_at_fold_end": 1,
+        "valid_feature_decisions": 8014
+      },
+      "DOGEUSDT": {
+        "eligible_after_warmup": 7291,
+        "missing_exit": 0,
+        "non_signal": 6640,
+        "overlap_rejected": 218,
+        "unresolved_at_fold_end": 1,
+        "valid_feature_decisions": 8014
+      },
+      "DOTUSDT": {
+        "eligible_after_warmup": 7472,
+        "missing_exit": 0,
+        "non_signal": 6839,
+        "overlap_rejected": 220,
+        "unresolved_at_fold_end": 1,
+        "valid_feature_decisions": 8014
+      },
+      "LINKUSDT": {
+        "eligible_after_warmup": 7472,
+        "missing_exit": 0,
+        "non_signal": 6834,
+        "overlap_rejected": 210,
+        "unresolved_at_fold_end": 0,
+        "valid_feature_decisions": 8014
+      },
+      "LTCUSDT": {
+        "eligible_after_warmup": 7468,
+        "missing_exit": 0,
+        "non_signal": 6807,
+        "overlap_rejected": 225,
+        "unresolved_at_fold_end": 0,
+        "valid_feature_decisions": 8010
+      }
+    },
+    "cost_sensitivity": {
+      "0.002": {
+        "average_loss": -0.03327183508317372,
+        "average_win": 0.029783230124615298,
+        "expectancy": -0.0025458499183612787,
+        "max_drawdown": 6.584249643385633,
+        "n": 2124,
+        "payoff_ratio": 0.8951484055557043,
+        "profit_factor": 0.8507608813132727,
+        "win_rate": 0.4872881355932203
+      },
+      "0.003": {
+        "average_loss": -0.03363379017455119,
+        "average_win": 0.0293906527289472,
+        "expectancy": -0.0035458499183612787,
+        "max_drawdown": 7.912124834043642,
+        "n": 2124,
+        "payoff_ratio": 0.873843018476861,
+        "profit_factor": 0.7982674060680514,
+        "win_rate": 0.4774011299435028
+      },
+      "0.005": {
+        "average_loss": -0.033608133361898725,
+        "average_win": 0.02946518942548068,
+        "expectancy": -0.005545849918361279,
+        "max_drawdown": 11.98454754036921,
+        "n": 2124,
+        "payoff_ratio": 0.8767279369012839,
+        "profit_factor": 0.7027208654552275,
+        "win_rate": 0.4449152542372881
+      }
+    },
+    "day_cluster_bootstrap_95_ci": [
+      -0.005987011811282939,
+      -0.0011151564849167172
+    ],
+    "fold_boundaries": [
+      1675152000,
+      1704657600,
+      1731614400,
+      1761120000,
+      1788062400
+    ],
+    "mean_funding_return": -2.809070621468927e-05,
+    "overall_funding_inclusive": {
+      "average_loss": -0.03363379017455119,
+      "average_win": 0.0293906527289472,
+      "expectancy": -0.0035458499183612787,
+      "max_drawdown": 7.912124834043642,
+      "n": 2124,
+      "payoff_ratio": 0.873843018476861,
+      "profit_factor": 0.7982674060680514,
+      "win_rate": 0.4774011299435028
+    },
+    "overall_price_only": {
+      "average_loss": -0.033707045348227,
+      "average_win": 0.02940520244019307,
+      "expectancy": -0.003517759212146589,
+      "max_drawdown": 7.855455574043632,
+      "n": 2124,
+      "payoff_ratio": 0.8723755563980274,
+      "profit_factor": 0.7999400408848338,
+      "win_rate": 0.4783427495291902
+    }
+  },
+  "protocol": "edge-candidate-register-v16",
+  "reverse_time": {
+    "census": {
+      "AVAXUSDT": {
+        "eligible_after_warmup": 2011,
+        "missing_exit": 0,
+        "non_signal": 1865,
+        "overlap_rejected": 45,
+        "unresolved_at_fold_end": 0,
+        "valid_feature_decisions": 2374
+      },
+      "DOGEUSDT": {
+        "eligible_after_warmup": 2011,
+        "missing_exit": 0,
+        "non_signal": 1809,
+        "overlap_rejected": 85,
+        "unresolved_at_fold_end": 0,
+        "valid_feature_decisions": 2374
+      },
+      "DOTUSDT": {
+        "eligible_after_warmup": 2011,
+        "missing_exit": 0,
+        "non_signal": 1850,
+        "overlap_rejected": 59,
+        "unresolved_at_fold_end": 0,
+        "valid_feature_decisions": 2374
+      },
+      "LINKUSDT": {
+        "eligible_after_warmup": 2011,
+        "missing_exit": 0,
+        "non_signal": 1870,
+        "overlap_rejected": 42,
+        "unresolved_at_fold_end": 0,
+        "valid_feature_decisions": 2374
+      },
+      "LTCUSDT": {
+        "eligible_after_warmup": 2011,
+        "missing_exit": 0,
+        "non_signal": 1847,
+        "overlap_rejected": 52,
+        "unresolved_at_fold_end": 0,
+        "valid_feature_decisions": 2374
+      }
+    },
+    "fold_boundaries": null,
+    "overall_funding_inclusive": {
+      "average_loss": -0.04444658108303157,
+      "average_win": 0.04390696031486943,
+      "expectancy": 0.00014616674114445409,
+      "max_drawdown": 1.5637614373351107,
+      "n": 531,
+      "payoff_ratio": 0.9878591163816615,
+      "profit_factor": 1.0066397079478528,
+      "win_rate": 0.504708097928437
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "aligned": {
+    "first_timestamp": 1638316800,
+    "last_timestamp": 1672530300,
+    "rows": 38016
+  },
+  "endpoint": "https://fapi.binance.com/fapi/v1/klines",
+  "gate": {
+    "integrity_violations": 0,
+    "minimum_aligned_rows": 30000,
+    "verdict": "KEEP"
+  },
+  "interval": "15m",
+  "requested_end": "2022-12-31T23:45:00+00:00",
+  "requested_start": "2021-12-01T00:00:00+00:00",
+  "symbols": {
+    "AVAXUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "last_timestamp": 1672530300,
+      "missing_interval_count": 0,
+      "nonpositive_count": 0,
+      "ohlc_violation_count": 0,
+      "out_of_range_count": 0,
+      "rows": 38016,
+      "sha256": "30820954f5937d01a6bef8f8ee28ea740b9d633430412a2abb53b1c97f0a8787"
+    },
+    "DOGEUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "last_timestamp": 1672530300,
+      "missing_interval_count": 0,
+      "nonpositive_count": 0,
+      "ohlc_violation_count": 0,
+      "out_of_range_count": 0,
+      "rows": 38016,
+      "sha256": "bc89f4f41f39dbeb0a5cb9f1eb263e7c93a287acaf64d791ff9fdd7b86b0b013"
+    },
+    "DOTUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "last_timestamp": 1672530300,
+      "missing_interval_count": 0,
+      "nonpositive_count": 0,
+      "ohlc_violation_count": 0,
+      "out_of_range_count": 0,
+      "rows": 38016,
+      "sha256": "5c3e4ef533a989d97f48914cdb79c3f49ae5ab12f88b2ff034c9956d79e63d1c"
+    },
+    "LINKUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "last_timestamp": 1672530300,
+      "missing_interval_count": 0,
+      "nonpositive_count": 0,
+      "ohlc_violation_count": 0,
+      "out_of_range_count": 0,
+      "rows": 38016,
+      "sha256": "c4bbc2b19187f216987ff27af600330d05a01be5e1a323568caba2dac1692ae1"
+    },
+    "LTCUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "last_timestamp": 1672530300,
+      "missing_interval_count": 0,
+      "nonpositive_count": 0,
+      "ohlc_violation_count": 0,
+      "out_of_range_count": 0,
+      "rows": 38016,
+      "sha256": "543a4c6fbc94450f8f77f0c5b8a090a33c12363e317bd0eec3d4f513972be7f9"
+    }
+  },
+  "task": "TASK-0108"
+}

@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Evaluate preregistered C-17 OI-flush exhaustion reversal on a new five-symbol conditional
-universe while C-11 continues independently.
+Close the historical OI candidate family after two independent mechanism failures while C-11
+continues prospective collection.
 
 ## Status
 
@@ -79,6 +79,8 @@ frozen promotion gates and production strategy logic is unchanged.
 - TASK-0107 suite: 701 passed, 1 optional layering test skipped; four C-16 tests cover strict
   pre-decision alignment, current-observation exclusion, next-open/24h execution, funding sign,
   and cost application.
+- TASK-0108 suite: 704 passed, 1 optional layering test skipped; C-17 adds new-universe
+  disjointness, OI-contraction construction, and explicit acquisition-task provenance coverage.
 
 ## Rejected hypotheses
 
@@ -120,6 +122,9 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-16 OI-confirmed impulse: 2,471 primary trades, -0.1763% funding-inclusive expectancy,
   PF 0.8818, all four folds negative, only XRP positive, and reverse-time expectancy negative.
   The intended OI expansion/continuation mechanism is rejected.
+- C-17 OI-flush reversal: 2,124 primary trades, -0.3546% expectancy, PF 0.7983, CI fully below
+  zero, and every fold/side/symbol negative. A new universe independently rejects the distinct
+  OI contraction/reversal mechanism.
 
 ## Open risks
 
@@ -137,8 +142,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Acquire/checksum C-17's new-universe OI, reverse-time price, and funding panels before evaluating
-the unchanged exhaustion/reversal specification.
+Do not admit another OI threshold/horizon/side variant: expansion/continuation and
+contraction/reversal both failed on independent universes. Continue C-11; reassess only genuinely
+new data or execution mechanisms.
 
 ## Operator decision required
 

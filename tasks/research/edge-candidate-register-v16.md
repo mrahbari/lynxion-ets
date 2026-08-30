@@ -1,6 +1,6 @@
 # Edge Candidate Register v16 — C-17 OI-Flush Exhaustion Reversal
 
-**Status:** PRE-REGISTERED — NEW CONDITIONAL UNIVERSE UNOPENED
+**Status:** OPENED — C-17 REJECTED
 
 C-17 tests a causally distinct OI mechanism from C-16. C-16 asked whether expanding OI confirms
 continuation; C-17 asks whether a large price move accompanied by contracting OI indicates
@@ -40,3 +40,10 @@ position closure/exhaustion and reverses over the next day.
   - expectancy positive at 0.50% cost.
 
 A pass is historical KEEP only. No production or risk mutation is authorized.
+
+## Frozen Result
+
+C-17 returned 2,124 primary trades with -0.3546% expectancy, PF 0.7983, a fully negative
+bootstrap interval, and every fold/side/symbol negative. Reverse-time was approximately flat.
+The conjunctive gate rejects. Machine-readable output:
+`docs/reports/edge_candidate_c17_holdout.json`.

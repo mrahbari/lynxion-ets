@@ -76,3 +76,15 @@ def test_partial_optional_ratio_missingness_is_census_not_violation(tmp_path):
     _, checks = evaluator.parse_archive(path, "BTCUSDT")
     assert checks["ratio_missing_rows"] == 1
     assert checks["ratio_numeric_violations"] == 0
+
+
+def test_normalize_only_updates_explicit_task_identity(tmp_path, monkeypatch):
+    evaluator = module()
+    (tmp_path / "manifest.json").write_text(
+        '{"task":"TASK-0106","archives":{"X":[]}}', encoding="utf-8"
+    )
+    monkeypatch.setattr(evaluator, "normalize_symbol", lambda *args: {"unique_rows": 100000,
+        "conflicting_duplicates": 0, "schema_violations": 0, "symbol_violations": 0,
+        "oi_numeric_violations": 0, "ratio_numeric_violations": 0})
+    report = evaluator.normalize_only(tmp_path, "TASK-0108")
+    assert report["task"] == "TASK-0108"

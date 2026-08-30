@@ -180,7 +180,7 @@ def normalize_symbol(symbol: str, archive_records: list[dict[str, Any]], raw_roo
 
 
 def build(output_root: Path, workers: int = 12, symbols: tuple[str, ...] = SYMBOLS,
-          start: date = START, end: date = END) -> dict[str, Any]:
+          start: date = START, end: date = END, task: str = "TASK-0106") -> dict[str, Any]:
     raw_root = output_root / "raw"
     normalized_root = output_root / "normalized"
     listings = {symbol: list_archives(symbol, start, end) for symbol in symbols}
@@ -202,7 +202,7 @@ def build(output_root: Path, workers: int = 12, symbols: tuple[str, ...] = SYMBO
                                  "symbol_violations", "oi_numeric_violations",
                                  "ratio_numeric_violations"))
     adequate = all(summary["unique_rows"] >= 100_000 for summary in summaries.values())
-    manifest = {"task": "TASK-0106", "source": DATA_URL, "requested_start": start.isoformat(),
+    manifest = {"task": task, "source": DATA_URL, "requested_start": start.isoformat(),
                 "requested_end": end.isoformat(), "symbols": summaries,
                 "archives": {symbol: sorted(records[symbol], key=lambda item: item["key"])
                              for symbol in symbols},
@@ -215,9 +215,11 @@ def build(output_root: Path, workers: int = 12, symbols: tuple[str, ...] = SYMBO
     return manifest
 
 
-def normalize_only(output_root: Path) -> dict[str, Any]:
+def normalize_only(output_root: Path, task: str | None = None) -> dict[str, Any]:
     manifest_path = output_root / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if task:
+        manifest["task"] = task
     records = manifest["archives"]
     summaries = {
         symbol: normalize_symbol(symbol, items, output_root / "raw", output_root / "normalized")
@@ -242,9 +244,10 @@ def main() -> None:
     parser.add_argument("--start", type=date.fromisoformat, default=START)
     parser.add_argument("--end", type=date.fromisoformat, default=END)
     parser.add_argument("--normalize-only", action="store_true")
+    parser.add_argument("--task", default="TASK-0106")
     args = parser.parse_args()
-    report = normalize_only(Path(args.output_root)) if args.normalize_only else build(
-        Path(args.output_root), args.workers, tuple(args.symbols), args.start, args.end
+    report = normalize_only(Path(args.output_root), args.task) if args.normalize_only else build(
+        Path(args.output_root), args.workers, tuple(args.symbols), args.start, args.end, args.task
     )
     print(json.dumps({"task": report["task"], "symbols": report["symbols"],
                       "gate": report["gate"]}, indent=2, sort_keys=True))

@@ -1,0 +1,57 @@
+{
+  "endpoint": "https://fapi.binance.com/fapi/v1/fundingRate",
+  "gate": {
+    "integrity_violations": 0,
+    "verdict": "KEEP"
+  },
+  "requested_end": "2026-08-29T23:59:59+00:00",
+  "requested_start": "2021-12-01T00:00:00+00:00",
+  "symbols": {
+    "AVAXUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1788019200,
+      "out_of_range_count": 0,
+      "rows": 5199,
+      "sha256": "2aacfffc05219a440ba7e87766eea26af692a7399ef10f5be3b5d1d640ae591f"
+    },
+    "DOGEUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1788019200,
+      "out_of_range_count": 0,
+      "rows": 5199,
+      "sha256": "00132b8cc6ad3ff733ae382a385569e080fd016b62f65f7a8cbb4689eacd341b"
+    },
+    "DOTUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1788019200,
+      "out_of_range_count": 0,
+      "rows": 5199,
+      "sha256": "6a6ff1fed52b61201f1d63463d902a2e690338667ebfd57f1902dc5668702bb8"
+    },
+    "LINKUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1788019200,
+      "out_of_range_count": 0,
+      "rows": 5199,
+      "sha256": "c2dcd51c6c1b7b5e744d4de7b95a231cdbb200d05718a40d85c832b7d69d86a9"
+    },
+    "LTCUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1788019200,
+      "out_of_range_count": 0,
+      "rows": 5199,
+      "sha256": "b36acf3bee53ff5e5a4017503b80cd5ec7d8b0d1bb9d496b5809fe2d19e8bc9b"
+    }
+  },
+  "task": "TASK-0108"
+}
