@@ -26,3 +26,16 @@ def test_zero_threshold_severity_is_preserved_as_undefined():
     mechanics = evaluator._load_c10()
     assert mechanics.symbol_trades
     assert "undefined-zero-threshold" in Path(evaluator.__file__).read_text(encoding="utf-8")
+
+
+def test_report_identity_can_be_set_without_changing_mechanics(monkeypatch, tmp_path):
+    evaluator = module()
+    mechanics = evaluator._load_c10()
+    monkeypatch.setattr(mechanics, "causal_funding", lambda path: None)
+    monkeypatch.setattr(mechanics, "load_price", lambda path: None)
+    monkeypatch.setattr(mechanics, "symbol_trades", lambda symbol, funding, price: ([], {}))
+    monkeypatch.setattr(evaluator, "_load_c10", lambda: mechanics)
+    report = evaluator.build_report(tmp_path, tmp_path, "C-13", "edge-candidate-register-v12")
+    assert (report["candidate"], report["protocol"]) == (
+        "C-13", "edge-candidate-register-v12"
+    )

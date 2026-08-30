@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Execute frozen C-13 temporal funding generalization on unopened 2023–2026 BNB/XRP/ADA
-conditional samples while C-11 updates independently every eight hours.
+Close C-13 after temporal falsification and identify the next genuinely independent candidate
+while C-11 updates independently every eight hours.
 
 ## Status
 
@@ -68,6 +68,8 @@ frozen promotion gates and production strategy logic is unchanged.
   update correctly remained COLLECTING with N=0 and no pre-boundary leakage.
 - TASK-0101 suite: 684 passed, 1 optional layering test skipped; this includes the parameterized
   funding acquisition and C-12 evaluator boundary regressions.
+- TASK-0102 suite: 685 passed, 1 optional layering test skipped; C-13 reused the frozen C-12
+  mechanics with only report identity and dataset paths parameterized.
 
 ## Rejected hypotheses
 
@@ -97,6 +99,9 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-12 cross-symbol funding generalization: 455 trades, +0.5403% expectancy, PF 1.2763, all
   four folds and all three symbols positive, and 39.91% concentration. The bootstrap 95% lower
   bound was -0.0549%, so the preregistered confidence gate rejects despite broad stability.
+- C-13 unchanged temporal generalization: 628 trades, -0.0595% expectancy and PF 0.9555 at
+  0.30% cost; only two folds and XRP were positive. The later sample falsifies temporal
+  stability of the base negative-funding rebound rule.
 
 ## Open risks
 
@@ -114,8 +119,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-After committing the C-13 boundary, acquire checksummed BNB/XRP/ADA funding for 2023–2026 and
-evaluate the unchanged rule standalone. Do not tune C-12 on its opened sample.
+Do not tune or reslice the opened funding samples. Select the next candidate from a distinct,
+causally available mechanism; C-11 prospective collection continues independently.
 
 ## Operator decision required
 

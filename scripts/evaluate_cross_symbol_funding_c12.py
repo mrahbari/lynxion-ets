@@ -27,7 +27,8 @@ def _load_c10():
     return module
 
 
-def build_report(price_dir: Path, funding_dir: Path) -> dict[str, Any]:
+def build_report(price_dir: Path, funding_dir: Path, candidate: str = "C-12",
+                 protocol: str = "edge-candidate-register-v11") -> dict[str, Any]:
     mechanics = _load_c10()
     trades: list[dict[str, Any]] = []
     census: dict[str, dict[str, int]] = {}
@@ -101,8 +102,8 @@ def build_report(price_dir: Path, funding_dir: Path) -> dict[str, Any]:
         "verdict": "KEEP_FOR_FURTHER_VALIDATION" if keep else "REJECT",
     }
     return {
-        "candidate": "C-12",
-        "protocol": "edge-candidate-register-v11",
+        "candidate": candidate,
+        "protocol": protocol,
         "symbols": list(SYMBOLS),
         "census": census,
         "overall_funding_inclusive": overall,
@@ -115,7 +116,7 @@ def build_report(price_dir: Path, funding_dir: Path) -> dict[str, Any]:
         "cost_sensitivity": {f"{cost:.3f}": mechanics.metrics(trades, cost) for cost in COSTS},
         "gate": gate,
         "limitations": [
-            "Independent symbols, but the historical period overlaps the C-10 data boundary.",
+            "Price paths may have been used by other hypotheses; conditional funding membership was frozen separately.",
             "Funding cashflow uses the standard unit-notional rate approximation.",
         ],
     }
@@ -125,9 +126,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--price-dir", default="data/research/c09/binance_futures_15m")
     parser.add_argument("--funding-dir", default="data/research/c12/funding")
+    parser.add_argument("--candidate", default="C-12")
+    parser.add_argument("--protocol", default="edge-candidate-register-v11")
     parser.add_argument("--output")
     args = parser.parse_args()
-    report = build_report(Path(args.price_dir), Path(args.funding_dir))
+    report = build_report(
+        Path(args.price_dir), Path(args.funding_dir), args.candidate, args.protocol
+    )
     rendered = json.dumps(report, indent=2, sort_keys=True, allow_nan=False)
     if args.output:
         target = Path(args.output)
