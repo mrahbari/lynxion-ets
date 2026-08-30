@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement frozen C-06 market-neutral extreme reversal on the validated six-major Binance
-perpetual panel.
+Pre-register the next orthogonal price/volume/context hypothesis after C-06 showed essentially
+zero gross expectancy for market-neutral extreme reversal.
 
 ## Status
 
@@ -54,6 +54,8 @@ unchanged.
   focused cross-sectional leakage/execution regressions.
 - TASK-0094 acquisition suite: 646 passed, 1 optional layering test skipped; this includes four
   pagination/range/integrity regressions.
+- TASK-0095 suite: 651 passed, 1 optional layering test skipped; this includes five C-06
+  point-in-time/execution regressions.
 
 ## Rejected hypotheses
 
@@ -67,6 +69,9 @@ unchanged.
 - C-05 cross-sectional momentum: only 9 completed trades survived the frozen 30-symbol
   alignment rule; expectancy -3.8162%, PF 0.1982, and 95% cluster CI crosses zero. Rejected
   without lowering the threshold post-result.
+- C-06 market-neutral extreme reversal: 15,810 pairs, -0.2999% net expectancy, PF 0.1345,
+  bootstrap CI entirely negative, all folds/sides/symbols negative. Gross expectancy is
+  effectively zero and the candidate is rejected.
 
 ## Open risks
 
@@ -84,9 +89,9 @@ unchanged.
 
 ## Next task
 
-Evaluate preregistered C-06 extreme cross-sectional reversal with market-neutral paired legs,
-point-in-time dispersion gating, realistic costs, and four chronological folds. Production
-logic remains unchanged.
+Define a new orthogonal hypothesis using point-in-time relative volume/acceleration and BTC
+regime on the aligned panel. Do not retune the rejected C-06 horizon or dispersion threshold;
+freeze the next protocol before observing its result.
 
 ## Operator decision required
 
