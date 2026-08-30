@@ -7,32 +7,29 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Controlled evaluation of the remaining preregistered candidates after C-04 rejection, with
-TASK 000 runtime reload evidence still open.
+Define and pre-register the next symbol-selection/market-context hypothesis after all four
+initial strategy candidates failed the robust OOS promotion gate.
 
 ## Status
 
-In progress. The broad ground-truth audit is complete enough to identify the next engineering
-phase, but TASK 000 cannot close until generic VST profit-lock behavior is evidenced for all
-qualifying positions after the corrected runner has loaded.
+TASK 000 operational closure and TASK 001/002 attribution are complete. Controlled edge
+research remains in progress; C-01 through C-04 are rejected and production strategy logic is
+unchanged.
 
 ## Latest verified findings
 
-- The VST portfolio has exchange-side SL/TP coverage, but this alone does not prove profit
-  locks are correct.
-- AVAXUSDT SHORT moved from an unlocked stop at 7.700 to 7.357 below its 7.553 entry without
-  a symbol-specific manual update.
-- ZECUSDT, CCUSDT, AAVEUSDT, UNIUSDT, and ONDOUSDT were observed above the configured trigger
-  thresholds while their stops remained unlocked.
+- Generic profit-lock behavior was observed after runtime reload on ETHUSDT and BNBUSDT:
+  their exchange-side stops moved beyond entry in the profitable direction without manual or
+  symbol-specific intervention.
 - The manager now waits for broker-side order visibility before local success, starts its loop
   after `is_running` is set, isolates broker failures, prioritizes BingX VST, and hydrates the
   exchange stop after a restart.
-- Latest read-only VST coverage check: 11 open positions, each with one exchange-side
+- Latest read-only VST coverage check: 10 open positions, each with one exchange-side
   `STOP_MARKET` and one `TAKE_PROFIT_MARKET` order. Coverage is not treated as proof of
   a profit lock.
-- A runtime telemetry API drift prevented execution intents from reaching the broker call:
-  `EnhancedLogger.log_strategy_to_broker_flow` was called but not implemented. The minimal
-  logger-contract repair is locally verified; runtime reload evidence remains pending.
+- Final entry admission now reads authoritative BingX positions and atomically enforces
+  capacity, duplicate-symbol, exposure, cooldown, order-risk, and stop requirements at the
+  broker boundary. A dry live check failed closed at the configured 10-position capacity.
 
 ## Changes made
 
@@ -41,6 +38,9 @@ qualifying positions after the corrected runner has loaded.
 - `8cd80e1` isolate non-primary broker failures.
 - `25d069f` prioritize BingX VST protection checks.
 - `f649444` hydrate existing exchange stops after restart.
+- `700c748` enforce dynamic blacklist at the final broker boundary.
+- `b7cc9c3` keep the empty-opportunity loop idle-safe.
+- `7418c7d` enforce broker-backed final entry risk admission.
 
 ## Test evidence
 
@@ -48,28 +48,32 @@ qualifying positions after the corrected runner has loaded.
 - Full post-correction suite: 622 passed, 1 optional layering test skipped
   (`import-linter` is not installed locally). This includes 461 unit, 109
   characterization/contract, and 52 smoke/E2E tests.
-- Post telemetry-contract repair suite: 623 passed, 1 optional layering test skipped.
+- Final TASK-0092 suite: 637 passed, 1 optional layering test skipped; this includes four
+  focused C-01/C-02/C-03 evaluator regressions.
 
 ## Rejected hypotheses
 
 - Higher win rate alone is not evidence of an edge.
 - Adding new strategies, ML, or capital scaling before attribution/OOS evidence is not justified.
+- C-04 VWAP reversal: all four folds, all symbols, and both sides were negative after costs.
+- C-01 trend BUY and C-03 volatility breakout: negative aggregate expectancy and failed
+  stability gates.
+- C-02 trend SELL: positive aggregate expectancy (+0.5389%, N=17) but insufficient fold
+  samples, negative BTC expectancy, and ETH dependence; rejected for robustness.
 
 ## Open risks
 
-- The running VST process must load the latest commits before their exchange-side effect can be
-  observed: PID 91102 began at 16:23, before the final protection commits at 16:34–16:49.
-- Restart persistence is achieved by broker-state hydration rather than a durable manager-state
-  file; the behavior needs VST evidence.
-- Existing project-context documents contain stale operational and test-status claims.
-- The running VST process has not yet demonstrated that execution intents pass the repaired
-  strategy-to-broker telemetry call after a code reload.
+- The current historical files do not provide point-in-time funding or bid/ask observations;
+  frozen cost assumptions must remain explicit.
+- Initial candidates have small samples under path-dependent execution; positive-looking narrow
+  cells cannot be promoted without robust OOS support.
+- Existing project-context documents outside the active task/ledger may contain stale claims.
 
 ## Next task
 
-TASK 001 and TASK 002 are complete. The next task is a newly versioned, pre-registered,
-chronological OOS evaluation of C-01/C-02/C-03. C-04 VWAPReversal was rejected with zero of
-four positive folds after costs. Research remains isolated from the production execution path.
+Pre-register a cross-sectional symbol-selection candidate using existing data and point-in-time
+BTC market context. It must test relative strength/weakness before any production mutation,
+retain LONG/SHORT separation, use realistic costs, and preserve NO TRADE as a valid outcome.
 
 ## Operator decision required
 

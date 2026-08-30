@@ -1,7 +1,7 @@
 # TASK-0087 — Exchange-Side Profit Lock and Trailing Stop Verification
 
 **Priority:** P0 operational safety / execution correctness  
-**Status:** IN PROGRESS — mechanical defect verified; live VST repair remains approval-gated  
+**Status:** COMPLETE — repaired and verified on BingX VST
 **Scope:** Verify and minimally repair existing `ActivePositionManager` profit-lock and
 trailing-stop execution. Do not add a new exit framework or alter strategy parameters.
 
@@ -91,3 +91,12 @@ only amended if a later candidate is strictly more protective.
 - Do not claim economic benefit from trailing based solely on one or two positions.
 - Do not tune trigger thresholds from the current prospective cohort.
 - Do not use close prices to simulate intrabar stop behavior in research validation.
+
+## Runtime Closure Evidence
+
+After the corrected runner was loaded, ETHUSDT and BNBUSDT independently demonstrated the
+generic profit-lock path: their exchange-side `STOP_MARKET` orders moved beyond entry in the
+profitable direction without a symbol-specific or manual amendment. The subsequent coverage
+check found every one of 10 open VST positions protected by one exchange-side stop and one
+take-profit order. This closes the mechanical/runtime acceptance gate; it does not claim that
+the configured trailing thresholds improve economic expectancy.

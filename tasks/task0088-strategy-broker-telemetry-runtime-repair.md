@@ -1,7 +1,7 @@
 # TASK-0088 — Strategy-to-Broker Telemetry Runtime Repair
 
 **Priority:** P0 execution liveness
-**Status:** IMPLEMENTED AND LOCALLY VERIFIED — runtime reload pending
+**Status:** COMPLETE — implemented, locally verified, and runtime loaded
 
 ## Problem Evidence
 
@@ -41,6 +41,6 @@ limited to the concrete logger contract.
 
 ## Remaining Runtime Gate
 
-The currently running VST process must reload the corrected code before runtime recovery can
-be claimed. Restarting or otherwise controlling that external process remains an operational
-action; local test success is not represented as deployed evidence.
+The controlled VST restart loaded the corrected logger contract. The current runner continues
+past strategy-to-broker telemetry and reaches the protected execution path; this gate is
+closed.
