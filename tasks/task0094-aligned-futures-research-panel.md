@@ -1,6 +1,6 @@
 # TASK-0094 — Aligned Futures Research Panel
 
-**Status:** IN PROGRESS — DATASET SPECIFICATION FROZEN
+**Status:** COMPLETE — DATASET KEPT
 
 ## Problem Evidence
 
@@ -42,3 +42,18 @@ the production/raw stores, then verify alignment and integrity before any candid
 
 KEEP the dataset only if all six symbols have at least 30,000 aligned 15m bars and zero
 integrity violations. Otherwise document the blocker and do not weaken the gate post-result.
+
+## Result
+
+The isolated acquisition completed from the frozen Binance Futures endpoint. Every symbol has
+128,352 native 15m bars from epoch `1672531200` (2023-01-01 00:00 UTC) through `1788047100`
+(2026-08-29 23:45 UTC). The exact six-way timestamp intersection is also 128,352 bars.
+
+All symbols have zero missing intervals, duplicates, nonpositive values, OHLC violations, and
+out-of-range rows. SHA-256 values are recorded in the generated manifest. Four focused
+pagination/deduplication/range/integrity tests passed; the full suite completed with 646 passed
+and 1 optional layering test skipped.
+
+**Decision: KEEP.** The frozen >30,000 aligned-row gate passes with zero integrity violations.
+The panel is eligible for isolated research, not production ingestion. Existing history files
+were not overwritten.

@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Build and validate the frozen six-major Binance perpetual 15m research panel after C-05
-exposed fragmented cross-sectional coverage and the existing helper proved spot-only.
+Implement frozen C-06 market-neutral extreme reversal on the validated six-major Binance
+perpetual panel.
 
 ## Status
 
@@ -52,6 +52,8 @@ unchanged.
   focused C-01/C-02/C-03 evaluator regressions.
 - Final TASK-0093 suite: 642 passed, 1 optional layering test skipped; this includes five
   focused cross-sectional leakage/execution regressions.
+- TASK-0094 acquisition suite: 646 passed, 1 optional layering test skipped; this includes four
+  pagination/range/integrity regressions.
 
 ## Rejected hypotheses
 
@@ -76,13 +78,15 @@ unchanged.
   preregistered minimum of 30 symbols after contiguous-history validation.
 - The existing `fetch_long_history.py`/`BinanceClient` path calls Spot `/api/v3/klines`, not
   USDT-margined perpetual futures; it cannot silently supply the next futures experiment.
+- TASK-0094 acquired 128,352 exactly aligned native futures 15m bars per symbol across six
+  majors (2023-01-01 through 2026-08-29), with zero gaps or integrity violations.
 - Existing project-context documents outside the active task/ledger may contain stale claims.
 
 ## Next task
 
-Acquire and integrity-check the isolated TASK-0094 futures panel under the frozen symbol/date
-manifest. Do not overwrite current history or preregister C-06 until exact aligned coverage is
-known; no post-result relaxation of C-05 is allowed.
+Evaluate preregistered C-06 extreme cross-sectional reversal with market-neutral paired legs,
+point-in-time dispersion gating, realistic costs, and four chronological folds. Production
+logic remains unchanged.
 
 ## Operator decision required
 
