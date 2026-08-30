@@ -159,8 +159,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Synthesize the now-closed static and dynamic L2 continuation evidence before admitting another
-candidate. Do not reverse, reslice, or retune C-18 or C-19 on their opened samples.
+Complete TASK-0112's official premium-index checksum/schema/timestamp/OHLC/coverage gate. Admit no
+C20 until the basis panel receives a KEEP verdict and a single distinct hypothesis is preregistered.
 
 ## Operator decision required
 
