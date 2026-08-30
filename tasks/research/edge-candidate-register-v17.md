@@ -1,6 +1,6 @@
 # Edge Candidate Register v17 — C-18 Near-Book Depth Imbalance
 
-**Status:** FROZEN — OUTCOMES UNOPENED
+**Status:** OPENED — C-18 REJECTED
 
 C-18 tests whether an extreme imbalance between aggregated bid-side and ask-side notional within
 one percent of the market predicts same-direction price continuation over the next day. This is a
@@ -56,3 +56,10 @@ KEEP requires every condition:
 A pass is historical KEEP only. It does not authorize production deployment, risk changes, or
 real-money execution. A failure closes this exact hypothesis; post-result subgroups are diagnostic
 only and may not be promoted from the same sample.
+
+## Frozen Result
+
+C-18 returned 2,154 primary trades with -0.3568% funding-inclusive expectancy, PF 0.7685, a fully
+negative bootstrap interval, and negative expectancy in every fold, side, and symbol. The 2023
+temporal reverse sample was also negative (-0.2313%, PF 0.8230, N=726). The conjunctive gate
+rejects. Machine-readable output: `docs/reports/edge_candidate_c18_holdout.json`.

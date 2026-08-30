@@ -85,6 +85,9 @@ frozen promotion gates and production strategy logic is unchanged.
   normalized five-minute rows per symbol from 8,002 checksum-verified archives, with zero final
   integrity violations. Decimal-rendered integer levels and later official fractional extra levels
   have explicit regression coverage.
+- TASK-0110 focused suite: 10 passed across C-18 causality/execution and TASK-0109 acquisition
+  regressions. C-18 uses strict pre-decision book alignment, causal thresholds, prior-bar 24-hour
+  close, correct funding sign, and an explicit minimum-sample gate.
 
 ## Rejected hypotheses
 
@@ -129,6 +132,10 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-17 OI-flush reversal: 2,124 primary trades, -0.3546% expectancy, PF 0.7983, CI fully below
   zero, and every fold/side/symbol negative. A new universe independently rejects the distinct
   OI contraction/reversal mechanism.
+- C-18 near-book depth continuation: 2,154 primary trades, -0.3568% funding-inclusive expectancy,
+  PF 0.7685, CI fully below zero, and every fold/side/symbol negative. The 2023 temporal reverse
+  sample was also negative (-0.2313%, PF 0.8230, N=726). This exact L2 continuation mechanism is
+  rejected without post-result slicing.
 
 ## Open risks
 
@@ -149,9 +156,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Implement and evaluate the preregistered C-18 near-book depth imbalance candidate exactly once.
-The frozen protocol is `tasks/research/edge-candidate-register-v17.md`; condition-aligned outcomes
-remain unopened at this boundary.
+Close the failed near-book continuation family and perform evidence synthesis before selecting one
+genuinely distinct next mechanism. Do not reverse, reslice, or retune C-18 on the opened samples.
 
 ## Operator decision required
 
