@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement and start the frozen no-order C-11 prospective severe-funding cohort while continuing
-orthogonal engineering research independently.
+Start the next orthogonal free-data research task while the no-order C-11 prospective funding
+cohort updates independently every eight hours.
 
 ## Status
 
@@ -64,6 +64,8 @@ unchanged.
   holdout acquisition and five C-09 causality/execution regressions.
 - TASK-0099 suite: 676 passed, 1 optional layering test skipped; this includes four funding
   acquisition and five C-10 causal/economic regressions.
+- TASK-0100 collector suite: 680 passed, 1 optional layering test skipped; first prospective
+  update correctly remained COLLECTING with N=0 and no pre-boundary leakage.
 
 ## Rejected hypotheses
 
@@ -107,8 +109,8 @@ unchanged.
 
 ## Next task
 
-Run the idempotent C-11 shadow collector after its frozen boundary and schedule independent
-updates. It must place no orders and must not block other engineering research.
+Audit the free Binance aggregate-trade backfill path for a causal per-bar aggressor-flow/CVD
+dataset. C-11 monitoring continues independently and must not block this work.
 
 ## Operator decision required
 

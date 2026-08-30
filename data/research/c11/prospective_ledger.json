@@ -1,0 +1,13 @@
+{
+  "boundary": 1788082349,
+  "candidate": "C-11",
+  "metrics": {
+    "expectancy": null,
+    "n": 0,
+    "profit_factor": null,
+    "verdict": "COLLECTING"
+  },
+  "protocol": "edge-candidate-register-v10",
+  "records": [],
+  "updated_at": "2026-08-30T09:34:24+00:00"
+}
