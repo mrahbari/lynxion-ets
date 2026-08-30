@@ -136,6 +136,9 @@ frozen promotion gates and production strategy logic is unchanged.
   PF 0.7685, CI fully below zero, and every fold/side/symbol negative. The 2023 temporal reverse
   sample was also negative (-0.2313%, PF 0.8230, N=726). This exact L2 continuation mechanism is
   rejected without post-result slicing.
+- C-19 liquidity-withdrawal differential: 1,973 primary trades, -0.3533% expectancy, PF 0.7720,
+  CI fully below zero, every fold and both sides negative, and only ETH positive. The temporal
+  reverse was also negative (-0.3631%, PF 0.7368, N=668). The dynamic near-book mechanism is closed.
 
 ## Open risks
 
@@ -156,8 +159,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Implement and evaluate the preregistered C-19 dynamic liquidity-withdrawal differential exactly
-once. Do not reverse, reslice, or retune C-18 or C-19 on their opened samples.
+Synthesize the now-closed static and dynamic L2 continuation evidence before admitting another
+candidate. Do not reverse, reslice, or retune C-18 or C-19 on their opened samples.
 
 ## Operator decision required
 

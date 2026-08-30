@@ -1,6 +1,6 @@
 # Edge Candidate Register v18 — C-19 Liquidity-Withdrawal Differential
 
-**Status:** FROZEN — OUTCOMES UNOPENED
+**Status:** OPENED — C-19 REJECTED
 
 C-19 tests a dynamic liquidity-provision mechanism distinct from C-18's static imbalance. A larger
 four-hour withdrawal of ask depth than bid depth signals LONG; the symmetric bid withdrawal signals
@@ -45,3 +45,10 @@ SHORT.
 
 A pass is historical KEEP only and authorizes no production or risk mutation. Failure closes this
 exact dynamic mechanism; reversing or reslicing the opened outcomes is prohibited.
+
+## Frozen Result
+
+C-19 returned 1,973 primary trades with -0.3533% expectancy, PF 0.7720, a fully negative bootstrap
+interval, and negative results in every fold and both sides. Only ETH was positive; the 2023
+temporal reverse was also negative (-0.3631%, PF 0.7368, N=668). The gate rejects. Machine-readable
+output: `docs/reports/edge_candidate_c19_holdout.json`.
