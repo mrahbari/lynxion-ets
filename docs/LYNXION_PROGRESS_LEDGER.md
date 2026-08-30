@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Define and pre-register the next symbol-selection/market-context hypothesis after all four
-initial strategy candidates failed the robust OOS promotion gate.
+Implement the frozen C-05 cross-sectional momentum evaluator after all four initial strategy
+candidates failed the robust OOS promotion gate.
 
 ## Status
 
@@ -71,9 +71,10 @@ unchanged.
 
 ## Next task
 
-Pre-register a cross-sectional symbol-selection candidate using existing data and point-in-time
-BTC market context. It must test relative strength/weakness before any production mutation,
-retain LONG/SHORT separation, use realistic costs, and preserve NO TRADE as a valid outcome.
+Evaluate preregistered C-05 cross-sectional relative strength/weakness using a dynamic liquid
+universe and broad-market median context. Stored BTC history overlaps the broad universe for
+only about one day, so unavailable BTC context is not fabricated. LONG/SHORT separation,
+realistic costs, confidence bounds, portfolio limits, and NO TRADE remain mandatory.
 
 ## Operator decision required
 
