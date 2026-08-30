@@ -149,9 +149,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Preregister exactly one C18 order-book-depth imbalance candidate before opening price outcomes,
-then evaluate it once under frozen causal alignment, realistic costs/funding, temporal folds,
-day-cluster bootstrap, and concentration gates.
+Implement and evaluate the preregistered C-18 near-book depth imbalance candidate exactly once.
+The frozen protocol is `tasks/research/edge-candidate-register-v17.md`; condition-aligned outcomes
+remain unopened at this boundary.
 
 ## Operator decision required
 
