@@ -46,3 +46,13 @@ def test_validate_detects_duplicate_invalid_and_range():
 def test_write_is_reproducible(tmp_path):
     evaluator = module(); rows = [row(0), row(1)]
     assert evaluator.write_csv(tmp_path / "a.csv", rows) == evaluator.write_csv(tmp_path / "b.csv", rows)
+
+
+def test_build_records_explicit_symbols_and_task(tmp_path, monkeypatch):
+    evaluator = module()
+    monkeypatch.setattr(evaluator, "fetch_symbol", lambda *args, **kwargs: [row(0)])
+    manifest = evaluator.build(tmp_path, pause=0, symbols=("BNBUSDT",),
+                               start="1970-01-01T00:00:00+00:00",
+                               end="1970-01-01T00:00:00+00:00", task="TASK-X")
+    assert manifest["task"] == "TASK-X"
+    assert list(manifest["symbols"]) == ["BNBUSDT"]

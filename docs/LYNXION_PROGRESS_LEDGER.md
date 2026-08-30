@@ -7,14 +7,14 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Evaluate frozen C-12 funding generalization on unopened BNB/XRP/ADA conditional samples while
-C-11 updates independently every eight hours.
+Close frozen C-12 funding generalization and select the next independent, preregistered edge
+test while C-11 updates independently every eight hours.
 
 ## Status
 
 TASK 000 operational closure and TASK 001/002 attribution are complete. Controlled edge
-research remains in progress; C-01 through C-04 are rejected and production strategy logic is
-unchanged.
+research remains in progress; C-01 through C-12 historical candidates have not cleared their
+frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
@@ -66,6 +66,8 @@ unchanged.
   acquisition and five C-10 causal/economic regressions.
 - TASK-0100 collector suite: 680 passed, 1 optional layering test skipped; first prospective
   update correctly remained COLLECTING with N=0 and no pre-boundary leakage.
+- TASK-0101 suite: 684 passed, 1 optional layering test skipped; this includes the parameterized
+  funding acquisition and C-12 evaluator boundary regressions.
 
 ## Rejected hypotheses
 
@@ -92,6 +94,9 @@ unchanged.
 - C-10 causal extreme-negative funding: aggregate +0.2008%, PF 1.1175, and all four folds
   positive, but CI crosses zero and ETH is slightly negative. Frozen gate rejects; post-result
   severity >=2 is retained only for a new prospective cohort.
+- C-12 cross-symbol funding generalization: 455 trades, +0.5403% expectancy, PF 1.2763, all
+  four folds and all three symbols positive, and 39.91% concentration. The bootstrap 95% lower
+  bound was -0.0549%, so the preregistered confidence gate rejects despite broad stability.
 
 ## Open risks
 
@@ -109,8 +114,8 @@ unchanged.
 
 ## Next task
 
-Acquire BNB/XRP/ADA funding and evaluate C-12 with unchanged C-10 mechanics. Prior CVD/order-flow
-work is not repeated because existing evidence already rejects it across folds and costs.
+Preregister the next independent test before opening any new conditional data. Do not tune C-12
+on the opened sample; C-11 prospective collection continues independently.
 
 ## Operator decision required
 

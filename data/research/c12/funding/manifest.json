@@ -1,0 +1,39 @@
+{
+  "endpoint": "https://fapi.binance.com/fapi/v1/fundingRate",
+  "gate": {
+    "integrity_violations": 0,
+    "verdict": "KEEP"
+  },
+  "requested_end": "2022-12-31T23:59:59+00:00",
+  "requested_start": "2020-01-01T00:00:00+00:00",
+  "symbols": {
+    "ADAUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1579449600,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1672502400,
+      "out_of_range_count": 0,
+      "rows": 3232,
+      "sha256": "8ada064f14848e0ed31e12c7b8bfb2537c100d33888d41ee6cfb1d56c78dcd76"
+    },
+    "BNBUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1581321600,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1672502400,
+      "out_of_range_count": 0,
+      "rows": 3167,
+      "sha256": "e74072ff2b97c53628e3a691e87de831b163eef93421e7362b185c1a4fd3c245"
+    },
+    "XRPUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1578297600,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1672502400,
+      "out_of_range_count": 0,
+      "rows": 3272,
+      "sha256": "1b89a924e1a282997abc720616134214c5d660221bbfa68cccb1f022d69ebf30"
+    }
+  },
+  "task": "TASK-0101"
+}

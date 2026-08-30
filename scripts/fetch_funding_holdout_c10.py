@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import hashlib
 import json
@@ -74,11 +75,12 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def build(output_dir: Path, pause: float = 0.12) -> dict[str, Any]:
-    start_ms, end_ms = epoch_ms(START), epoch_ms(END)
-    manifest = {"task": "TASK-0099", "endpoint": ENDPOINT, "requested_start": START,
-                "requested_end": END, "symbols": {}}
-    for symbol in SYMBOLS:
+def build(output_dir: Path, pause: float = 0.12, symbols: tuple[str, ...] = SYMBOLS,
+          start: str = START, end: str = END, task: str = "TASK-0099") -> dict[str, Any]:
+    start_ms, end_ms = epoch_ms(start), epoch_ms(end)
+    manifest = {"task": task, "endpoint": ENDPOINT, "requested_start": start,
+                "requested_end": end, "symbols": {}}
+    for symbol in symbols:
         rows = fetch_symbol(symbol, start_ms, end_ms, pause=pause); checks = validate(rows, start_ms, end_ms)
         checks["sha256"] = write_csv(output_dir / f"{symbol}.csv", rows)
         manifest["symbols"][symbol] = checks
@@ -93,4 +95,10 @@ def build(output_dir: Path, pause: float = 0.12) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
-    print(json.dumps(build(Path("data/research/c10/funding")), indent=2, sort_keys=True))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", default="data/research/c10/funding")
+    parser.add_argument("--symbols", nargs="+", default=list(SYMBOLS))
+    parser.add_argument("--start", default=START); parser.add_argument("--end", default=END)
+    parser.add_argument("--task", default="TASK-0099"); parser.add_argument("--pause", type=float, default=0.12)
+    args = parser.parse_args()
+    print(json.dumps(build(Path(args.output_dir), args.pause, tuple(args.symbols), args.start, args.end, args.task), indent=2, sort_keys=True))

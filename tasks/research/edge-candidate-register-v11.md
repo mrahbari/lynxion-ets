@@ -1,6 +1,6 @@
 # Edge Candidate Register v11 — C-12 Cross-Symbol Funding Generalization
 
-**Status:** PRE-REGISTERED — INDEPENDENT CONDITIONAL TEST
+**Status:** OPENED — REJECTED BY FROZEN CONFIDENCE GATE
 
 C-12 tests whether C-10's aggregate extreme-negative funding rebound generalizes to three
 symbols whose funding-conditioned outcomes were not evaluated in Phase-14 or C-10. It is
@@ -38,3 +38,11 @@ frozen before acquiring their pre-2023 funding.
 Price paths have been used by earlier non-funding hypotheses, but funding-conditioned event
 membership for these three symbols is unopened. Funding notional uses the unit-return
 approximation documented in C-10.
+
+## Frozen Result
+
+C-12 produced 455 trades at the primary cost, +0.5403% expectancy, PF 1.2763, four positive
+folds, three positive adequately sampled symbols, and 39.91% maximum positive-PnL symbol
+concentration. The 95% bootstrap interval was [-0.0549%, +1.1266%], so its lower bound did not
+clear zero. Per the preregistered all-conditions gate, C-12 is rejected and cannot alter
+production. Full machine-readable output is in `docs/reports/edge_candidate_c12_holdout.json`.
