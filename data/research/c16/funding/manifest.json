@@ -1,0 +1,66 @@
+{
+  "endpoint": "https://fapi.binance.com/fapi/v1/fundingRate",
+  "gate": {
+    "integrity_violations": 0,
+    "verdict": "KEEP"
+  },
+  "requested_end": "2026-08-29T23:59:59+00:00",
+  "requested_start": "2021-12-01T00:00:00+00:00",
+  "symbols": {
+    "ADAUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1788019200,
+      "out_of_range_count": 0,
+      "rows": 5199,
+      "sha256": "f27f351e603c0563d9c1e0ea6be10640a8bf38c4a1640383d914cd5aaaa79301"
+    },
+    "BNBUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1788019200,
+      "out_of_range_count": 0,
+      "rows": 5199,
+      "sha256": "7edf30b5a20f5572361ba7bc41ff89b02df8105a82ff24c1b32a5dc807bca08d"
+    },
+    "BTCUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1788019200,
+      "out_of_range_count": 0,
+      "rows": 5199,
+      "sha256": "2fe89ca06907e7953cb49c2db052e74158ea9319f50f0bd9dac08fb2a579c097"
+    },
+    "ETHUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1788019200,
+      "out_of_range_count": 0,
+      "rows": 5199,
+      "sha256": "b978d9a54809ad232583b9419ed2695647d0557bc58074112082fa1472057148"
+    },
+    "SOLUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1788019200,
+      "out_of_range_count": 0,
+      "rows": 5274,
+      "sha256": "be28b9621e6baf0d3b50365c73e59352996274f4097cae60fe4ffce2528c55a3"
+    },
+    "XRPUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1638316800,
+      "invalid_rate_count": 0,
+      "last_timestamp": 1788019200,
+      "out_of_range_count": 0,
+      "rows": 5199,
+      "sha256": "2886be913f6678b660e827d481a2b60d426de6c8b406bcff3c282d3f275e74f9"
+    }
+  },
+  "task": "TASK-0107"
+}

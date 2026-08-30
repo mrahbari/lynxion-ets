@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Evaluate preregistered C-16 OI-confirmed price impulse while C-11 prospective collection
-continues independently.
+Close C-16 after independent OI-continuation rejection and reassess whether any distinct OI
+mechanism remains admissible while C-11 continues independently.
 
 ## Status
 
@@ -76,6 +76,9 @@ frozen promotion gates and production strategy logic is unchanged.
   acquisition, disjoint-universe, and pre-admission LONG filtering coverage.
 - TASK-0106 suite: 697 passed, 1 optional layering test skipped; five OI acquisition tests cover
   checksum binding/resume, exact/conflicting duplicates, and optional-ratio missingness.
+- TASK-0107 suite: 701 passed, 1 optional layering test skipped; four C-16 tests cover strict
+  pre-decision alignment, current-observation exclusion, next-open/24h execution, funding sign,
+  and cost application.
 
 ## Rejected hypotheses
 
@@ -114,6 +117,9 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-15 independent LONG holdout: +1.4752% expectancy and PF 1.1504 over 82 trades, but CI crossed
   zero, only one adequately sampled fold was positive, only two adequately sampled symbols
   were positive, and concentration exceeded its ceiling. Rejected for robustness.
+- C-16 OI-confirmed impulse: 2,471 primary trades, -0.1763% funding-inclusive expectancy,
+  PF 0.8818, all four folds negative, only XRP positive, and reverse-time expectancy negative.
+  The intended OI expansion/continuation mechanism is rejected.
 
 ## Open risks
 
@@ -131,8 +137,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Acquire any missing six-symbol funding, implement strict causal OI/price alignment, and evaluate
-the unchanged C-16 protocol on separate primary and reverse-time samples.
+Do not tune C-16 on opened outcomes. Determine whether a causally distinct OI mechanism—not a
+threshold/horizon/side reslice—can satisfy the sequential admission policy.
 
 ## Operator decision required
 

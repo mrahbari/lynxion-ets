@@ -1,6 +1,6 @@
 # Edge Candidate Register v15 — C-16 OI-Confirmed Price Impulse
 
-**Status:** PRE-REGISTERED — CONDITIONAL OUTCOMES UNOPENED
+**Status:** OPENED — C-16 REJECTED
 
 C-16 is the single primary candidate admitted after TASK-0106. It tests the intended open-interest
 mechanism that the legacy `oi_footprint` implementation never consumed: whether a large price move
@@ -52,3 +52,10 @@ supported by expanding open interest persists over the next day.
 
 A pass is `KEEP_FOR_PATH_DEPENDENT_CONFIRMATION`; otherwise `REJECT`. Historical evidence cannot
 modify production, risk controls, or orders.
+
+## Frozen Result
+
+C-16 returned 2,471 primary trades with -0.1763% funding-inclusive expectancy, PF 0.8818,
+four negative folds, five negative symbols, and a confidence interval crossing zero. The
+reverse-time sample was also negative. The conjunctive gate rejects. Machine-readable output:
+`docs/reports/edge_candidate_c16_holdout.json`.
