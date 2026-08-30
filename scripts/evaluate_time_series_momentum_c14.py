@@ -41,17 +41,22 @@ def monthly_decisions(bars: pd.DataFrame) -> pd.DataFrame:
     return eligible.groupby(month_key, sort=True).tail(1)
 
 
-def collect_trades(symbol: str, bars: pd.DataFrame, fold_boundaries: list[int] | None = None) -> tuple[list[dict[str, Any]], dict[str, int]]:
+def collect_trades(symbol: str, bars: pd.DataFrame, fold_boundaries: list[int] | None = None,
+                   long_only: bool = False) -> tuple[list[dict[str, Any]], dict[str, int]]:
     decisions = monthly_decisions(bars)
     price_times = bars.index.to_numpy(dtype=int)
     trades: list[dict[str, Any]] = []
     last_exit = -1
-    census = {"eligible_decisions": len(decisions), "zero_signal": 0, "overlap_rejected": 0,
+    census = {"eligible_decisions": len(decisions), "zero_signal": 0, "direction_filtered": 0,
+              "overlap_rejected": 0,
               "missing_price": 0, "unresolved_at_fold_end": 0}
     for row in decisions.itertuples():
         decision_timestamp, momentum = int(row.decision_timestamp), float(row.momentum)
         if momentum == 0:
             census["zero_signal"] += 1
+            continue
+        if long_only and momentum < 0:
+            census["direction_filtered"] += 1
             continue
         entry_position = int(np.searchsorted(price_times, decision_timestamp, side="left"))
         if entry_position >= len(price_times) or int(price_times[entry_position]) != decision_timestamp:

@@ -48,3 +48,13 @@ def test_future_mutation_does_not_change_prior_signal():
 def test_cost_is_subtracted_once_per_round_trip():
     evaluator = module()
     assert evaluator.metrics([{"gross_return": 0.01}], 0.003)["expectancy"] == 0.007
+
+
+def test_long_only_filters_negative_decisions_before_admission():
+    evaluator = module()
+    falling = bars()
+    falling[["open", "close"]] *= -1
+    falling[["open", "close"]] += 500
+    trades, census = evaluator.collect_trades("BTCUSDT", falling, long_only=True)
+    assert trades == []
+    assert census["direction_filtered"] > 0

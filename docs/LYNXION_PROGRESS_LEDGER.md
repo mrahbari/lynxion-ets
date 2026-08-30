@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Execute preregistered C-15 on a new five-symbol futures universe while C-11 updates
-independently every eight hours.
+Close C-15 after its robustness failure and identify the next independent mechanism while C-11
+updates independently every eight hours.
 
 ## Status
 
@@ -72,6 +72,8 @@ frozen promotion gates and production strategy logic is unchanged.
   mechanics with only report identity and dataset paths parameterized.
 - TASK-0103 suite: 689 passed, 1 optional layering test skipped; four C-14 tests cover causal
   daily aggregation, next-open entry, the fixed 28-day exit, future mutation, and costs.
+- TASK-0104 suite: 692 passed, 1 optional layering test skipped; C-15 adds custom-universe
+  acquisition, disjoint-universe, and pre-admission LONG filtering coverage.
 
 ## Rejected hypotheses
 
@@ -107,6 +109,9 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-14 long-horizon time-series momentum: the reverse-time period was strongly positive, but
   the primary 2023–2026 sample had 228 trades, -2.5269% expectancy, PF 0.7286, and only one
   positive fold. The signal is temporally unstable and rejected.
+- C-15 independent LONG holdout: +1.4752% expectancy and PF 1.1504 over 82 trades, but CI crossed
+  zero, only one adequately sampled fold was positive, only two adequately sampled symbols
+  were positive, and concentration exceeded its ceiling. Rejected for robustness.
 
 ## Open risks
 
@@ -124,8 +129,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-After committing the C-15 boundary, acquire and integrity-check DOGE/LINK/LTC/DOT/AVAX native
-futures bars before evaluating the unchanged LONG-only C-14 clue.
+Do not tune the opened C-15 sample. Preserve its positive aggregate result as a weak clue only;
+select the next mechanism independently while C-11 continues prospective collection.
 
 ## Operator decision required
 

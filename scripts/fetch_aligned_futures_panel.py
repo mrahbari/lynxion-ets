@@ -104,14 +104,14 @@ def write_csv(path: Path, rows: list[list[Any]]) -> str:
 
 
 def build_panel(output_dir: Path, pause: float = 0.12, start: str = START, end: str = END,
-                task: str = "TASK-0094") -> dict[str, Any]:
+                task: str = "TASK-0094", symbols: tuple[str, ...] | None = None) -> dict[str, Any]:
     start_ms, end_ms = epoch_ms(start), epoch_ms(end)
     manifest: dict[str, Any] = {
         "task": task, "endpoint": ENDPOINT, "interval": INTERVAL,
         "requested_start": start, "requested_end": end, "symbols": {},
     }
     timestamp_sets = []
-    for symbol in SYMBOLS:
+    for symbol in symbols or SYMBOLS:
         rows = fetch_symbol(symbol, start_ms, end_ms, pause=pause)
         checks = validate(rows, start_ms, end_ms)
         path = output_dir / f"{symbol}.csv"
@@ -143,8 +143,10 @@ def main() -> None:
     parser.add_argument("--start", default=START)
     parser.add_argument("--end", default=END)
     parser.add_argument("--task", default="TASK-0094")
+    parser.add_argument("--symbols", nargs="+", default=list(SYMBOLS))
     args = parser.parse_args()
-    print(json.dumps(build_panel(Path(args.output_dir), args.pause, args.start, args.end, args.task), indent=2, sort_keys=True))
+    print(json.dumps(build_panel(Path(args.output_dir), args.pause, args.start, args.end,
+                                 args.task, tuple(args.symbols)), indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # Edge Candidate Register v14 — C-15 Independent Long-Only Trend Holdout
 
-**Status:** PRE-REGISTERED — NEW UNIVERSE UNOPENED
+**Status:** OPENED — C-15 REJECTED BY ROBUSTNESS GATE
 
 C-14 exposed a positive LONG and strongly negative SHORT split in its primary period. C-15
 tests the LONG-only clue once on a new symbol universe. It does not reslice or amend C-14.
@@ -34,3 +34,10 @@ Every condition is required:
 
 A pass is `KEEP_FOR_PATH_DEPENDENT_CONFIRMATION`; otherwise `REJECT`. No production or risk
 mutation is authorized.
+
+## Frozen Result
+
+C-15 produced 82 trades, +1.4752% expectancy and PF 1.1504 at 0.30% cost, but its month-cluster
+CI crossed zero, only one adequately sampled fold was positive, only two adequately sampled
+symbols were positive, and concentration exceeded the ceiling. The conjunctive gate rejects.
+Machine-readable output is in `docs/reports/edge_candidate_c15_holdout.json`.
