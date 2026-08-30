@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Pre-register the next orthogonal price/volume/context hypothesis after C-06 showed essentially
-zero gross expectancy for market-neutral extreme reversal.
+Implement frozen C-07 volume-confirmed acceleration with BTC context after C-06 showed
+essentially zero gross expectancy for market-neutral extreme reversal.
 
 ## Status
 
@@ -89,9 +89,8 @@ unchanged.
 
 ## Next task
 
-Define a new orthogonal hypothesis using point-in-time relative volume/acceleration and BTC
-regime on the aligned panel. Do not retune the rejected C-06 horizon or dispersion threshold;
-freeze the next protocol before observing its result.
+Evaluate preregistered C-07 using point-in-time relative volume, non-overlapping acceleration,
+and BTC regime. Do not retune rejected candidates; production remains unchanged.
 
 ## Operator decision required
 
