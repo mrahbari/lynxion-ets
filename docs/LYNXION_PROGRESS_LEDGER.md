@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Close C-16 after independent OI-continuation rejection and reassess whether any distinct OI
-mechanism remains admissible while C-11 continues independently.
+Evaluate preregistered C-17 OI-flush exhaustion reversal on a new five-symbol conditional
+universe while C-11 continues independently.
 
 ## Status
 
@@ -137,8 +137,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Do not tune C-16 on opened outcomes. Determine whether a causally distinct OI mechanism—not a
-threshold/horizon/side reslice—can satisfy the sequential admission policy.
+Acquire/checksum C-17's new-universe OI, reverse-time price, and funding panels before evaluating
+the unchanged exhaustion/reversal specification.
 
 ## Operator decision required
 
