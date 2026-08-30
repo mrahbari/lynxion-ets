@@ -7,8 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Acquire and evaluate frozen C-10 extreme-negative funding on the independent pre-2023 BTC/ETH
-holdout with causal thresholds and full funding/cost economics.
+Freeze and start a no-order prospective cohort for the post-C-10 high-severity funding lead.
 
 ## Status
 
@@ -62,6 +61,8 @@ unchanged.
   causality/pair-execution regressions.
 - TASK-0098 suite: 667 passed, 1 optional layering test skipped; this includes the parameterized
   holdout acquisition and five C-09 causality/execution regressions.
+- TASK-0099 suite: 676 passed, 1 optional layering test skipped; this includes four funding
+  acquisition and five C-10 causal/economic regressions.
 
 ## Rejected hypotheses
 
@@ -85,6 +86,9 @@ unchanged.
   and cannot be validated by re-slicing the same four folds.
 - C-09 independent long/BTC-positive holdout: 135 trades, -0.3000% net expectancy, PF 0.8854,
   only one positive fold, and effectively zero gross expectancy. The C-08 clue did not reproduce.
+- C-10 causal extreme-negative funding: aggregate +0.2008%, PF 1.1175, and all four folds
+  positive, but CI crosses zero and ETH is slightly negative. Frozen gate rejects; post-result
+  severity >=2 is retained only for a new prospective cohort.
 
 ## Open risks
 
@@ -102,8 +106,8 @@ unchanged.
 
 ## Next task
 
-Acquire checksummed BTC/ETH funding for the frozen C-10 holdout, then evaluate the causal
-extreme-negative rebound hypothesis. Paid data and production changes remain approval-gated.
+Register C-11 severity >=2 before collecting another observation, then run a shadow-only
+funding/outcome ledger. It must place no orders and must not block other engineering research.
 
 ## Operator decision required
 
