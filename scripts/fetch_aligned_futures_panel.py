@@ -103,11 +103,12 @@ def write_csv(path: Path, rows: list[list[Any]]) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def build_panel(output_dir: Path, pause: float = 0.12) -> dict[str, Any]:
-    start_ms, end_ms = epoch_ms(START), epoch_ms(END)
+def build_panel(output_dir: Path, pause: float = 0.12, start: str = START, end: str = END,
+                task: str = "TASK-0094") -> dict[str, Any]:
+    start_ms, end_ms = epoch_ms(start), epoch_ms(end)
     manifest: dict[str, Any] = {
-        "task": "TASK-0094", "endpoint": ENDPOINT, "interval": INTERVAL,
-        "requested_start": START, "requested_end": END, "symbols": {},
+        "task": task, "endpoint": ENDPOINT, "interval": INTERVAL,
+        "requested_start": start, "requested_end": end, "symbols": {},
     }
     timestamp_sets = []
     for symbol in SYMBOLS:
@@ -139,8 +140,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", default="data/research/c06/binance_futures_15m")
     parser.add_argument("--pause", type=float, default=0.12)
+    parser.add_argument("--start", default=START)
+    parser.add_argument("--end", default=END)
+    parser.add_argument("--task", default="TASK-0094")
     args = parser.parse_args()
-    print(json.dumps(build_panel(Path(args.output_dir), args.pause), indent=2, sort_keys=True))
+    print(json.dumps(build_panel(Path(args.output_dir), args.pause, args.start, args.end, args.task), indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

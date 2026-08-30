@@ -75,3 +75,17 @@ def test_write_csv_has_reproducible_hash(tmp_path):
     second = evaluator.write_csv(tmp_path / "second.csv", rows)
 
     assert first == second
+
+
+def test_build_panel_records_explicit_task_and_bounds(tmp_path, monkeypatch):
+    evaluator = module()
+    monkeypatch.setattr(evaluator, "SYMBOLS", ("BTCUSDT",))
+    monkeypatch.setattr(evaluator, "fetch_symbol", lambda *args, **kwargs: [kline(0)])
+
+    manifest = evaluator.build_panel(
+        tmp_path, pause=0, start="1970-01-01T00:00:00+00:00",
+        end="1970-01-01T00:00:00+00:00", task="TASK-TEST",
+    )
+
+    assert manifest["task"] == "TASK-TEST"
+    assert manifest["requested_start"] == "1970-01-01T00:00:00+00:00"

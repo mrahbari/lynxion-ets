@@ -1,0 +1,85 @@
+{
+  "aligned": {
+    "first_timestamp": 1600066800,
+    "last_timestamp": 1672530300,
+    "rows": 80516
+  },
+  "endpoint": "https://fapi.binance.com/fapi/v1/klines",
+  "gate": {
+    "integrity_violations": 0,
+    "minimum_aligned_rows": 30000,
+    "verdict": "KEEP"
+  },
+  "interval": "15m",
+  "requested_end": "2022-12-31T23:45:00+00:00",
+  "requested_start": "2020-01-01T00:00:00+00:00",
+  "symbols": {
+    "ADAUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1580457600,
+      "last_timestamp": 1672530300,
+      "missing_interval_count": 0,
+      "nonpositive_count": 0,
+      "ohlc_violation_count": 0,
+      "out_of_range_count": 0,
+      "rows": 102304,
+      "sha256": "7ac7ca870083326197e5e977dc31db6abc5336814b3c3512781088145c722ef1"
+    },
+    "BNBUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1581321600,
+      "last_timestamp": 1672530300,
+      "missing_interval_count": 0,
+      "nonpositive_count": 0,
+      "ohlc_violation_count": 0,
+      "out_of_range_count": 0,
+      "rows": 101344,
+      "sha256": "e0987b51c7efb509645bb15b636b889d3433c4b47e0ca21e796918ec4da60da5"
+    },
+    "BTCUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1577836800,
+      "last_timestamp": 1672530300,
+      "missing_interval_count": 0,
+      "nonpositive_count": 0,
+      "ohlc_violation_count": 0,
+      "out_of_range_count": 0,
+      "rows": 105216,
+      "sha256": "acf4a7f5c58733f6db5e39e74387a9ab5a08ecc17a4600e8074555571b33fc09"
+    },
+    "ETHUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1577836800,
+      "last_timestamp": 1672530300,
+      "missing_interval_count": 0,
+      "nonpositive_count": 0,
+      "ohlc_violation_count": 0,
+      "out_of_range_count": 0,
+      "rows": 105216,
+      "sha256": "378bb36782172ee5cc4d3d7a983c674ecc09f0c38ddb35007aced58e437d0a54"
+    },
+    "SOLUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1600066800,
+      "last_timestamp": 1672530300,
+      "missing_interval_count": 0,
+      "nonpositive_count": 0,
+      "ohlc_violation_count": 0,
+      "out_of_range_count": 0,
+      "rows": 80516,
+      "sha256": "833b7f033ccd5eb86eb11730d019b1f5c84021689ef7dfd9dafda0bff0f0a449"
+    },
+    "XRPUSDT": {
+      "duplicate_count": 0,
+      "first_timestamp": 1578298500,
+      "last_timestamp": 1672530300,
+      "missing_interval_count": 0,
+      "nonpositive_count": 0,
+      "ohlc_violation_count": 0,
+      "out_of_range_count": 0,
+      "rows": 104703,
+      "sha256": "91003b36b91f2202066bf12456dd12f2103d79f7691b0b009a0b4de4767e12a2"
+    }
+  },
+  "task": "TASK-0098"
+}

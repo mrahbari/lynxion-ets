@@ -1,0 +1,227 @@
+{
+  "aligned_first_timestamp": 1600066800,
+  "aligned_last_timestamp": 1672530300,
+  "aligned_rows": 80516,
+  "bootstrap_95_ci": [
+    -0.014047769278671839,
+    0.008568737337120064
+  ],
+  "by_btc_return": {
+    "0-2%": {
+      "average_loss": -0.0395131888357301,
+      "average_win": 0.06444751049618035,
+      "expectancy": 0.005969617121980728,
+      "max_drawdown": 0.24048120646062143,
+      "n": 64,
+      "payoff_ratio": 1.631037949483419,
+      "profit_factor": 1.2685850718204372,
+      "win_rate": 0.4375
+    },
+    "2-5%": {
+      "average_loss": -0.04808172926903406,
+      "average_win": 0.047817382152882844,
+      "expectancy": -0.011893385336235235,
+      "max_drawdown": 0.6773557794650285,
+      "n": 53,
+      "payoff_ratio": 0.9945021295995387,
+      "profit_factor": 0.6027285633936598,
+      "win_rate": 0.37735849056603776
+    },
+    ">=5%": {
+      "average_loss": -0.05254096179254354,
+      "average_win": 0.04608759410777852,
+      "expectancy": -0.008706048059067072,
+      "max_drawdown": 0.24955615638248954,
+      "n": 18,
+      "payoff_ratio": 0.877174542212494,
+      "profit_factor": 0.7017396337699953,
+      "win_rate": 0.4444444444444444
+    }
+  },
+  "by_fold": {
+    "F1": {
+      "average_loss": -0.06039082070523054,
+      "average_win": 0.07853230270184856,
+      "expectancy": -0.0014537380476818149,
+      "max_drawdown": 0.5386364150481426,
+      "n": 33,
+      "payoff_ratio": 1.3004013157093386,
+      "profit_factor": 0.9581904431542496,
+      "win_rate": 0.42424242424242425
+    },
+    "F2": {
+      "average_loss": -0.03850256482562073,
+      "average_win": 0.0558031759550204,
+      "expectancy": 0.007221430704387091,
+      "max_drawdown": 0.14234236285294571,
+      "n": 33,
+      "payoff_ratio": 1.4493365885559744,
+      "profit_factor": 1.3640814951115052,
+      "win_rate": 0.48484848484848486
+    },
+    "F3": {
+      "average_loss": -0.049024863243080315,
+      "average_win": 0.05934250180410583,
+      "expectancy": -0.00688199905806348,
+      "max_drawdown": 0.49677393710718315,
+      "n": 36,
+      "payoff_ratio": 1.2104572634882733,
+      "profit_factor": 0.7702909858561738,
+      "win_rate": 0.3888888888888889
+    },
+    "F4": {
+      "average_loss": -0.031145966433673504,
+      "average_win": 0.0255400509541039,
+      "expectancy": -0.010532869201754452,
+      "max_drawdown": 0.3997316182442479,
+      "n": 33,
+      "payoff_ratio": 0.8200115096281373,
+      "profit_factor": 0.46857800550179274,
+      "win_rate": 0.36363636363636365
+    }
+  },
+  "by_spread_ratio": {
+    "1-1.5": {
+      "average_loss": -0.04215482809159826,
+      "average_win": 0.04894778376411921,
+      "expectancy": -0.0036607667441120074,
+      "max_drawdown": 0.5917263997835349,
+      "n": 71,
+      "payoff_ratio": 1.1611430049663714,
+      "profit_factor": 0.8496168329022229,
+      "win_rate": 0.4225352112676056
+    },
+    "1.5-2": {
+      "average_loss": -0.036571363431024975,
+      "average_win": 0.05506498735524358,
+      "expectancy": 0.0011612515986150261,
+      "max_drawdown": 0.2089632724798875,
+      "n": 34,
+      "payoff_ratio": 1.5056859298969891,
+      "profit_factor": 1.0539801509278925,
+      "win_rate": 0.4117647058823529
+    },
+    ">=2": {
+      "average_loss": -0.05971145897298972,
+      "average_win": 0.07418627949299571,
+      "expectancy": -0.006152363586595553,
+      "max_drawdown": 0.7127846660901824,
+      "n": 30,
+      "payoff_ratio": 1.2424127758551944,
+      "profit_factor": 0.8282751839034629,
+      "win_rate": 0.4
+    }
+  },
+  "by_symbol": {
+    "ADAUSDT": {
+      "average_loss": -0.05469039267024664,
+      "average_win": 0.08366633631181096,
+      "expectancy": 0.0006522989225764085,
+      "max_drawdown": 0.2065098706298758,
+      "n": 25,
+      "payoff_ratio": 1.529817802118802,
+      "profit_factor": 1.019878534745868,
+      "win_rate": 0.4
+    },
+    "BNBUSDT": {
+      "average_loss": -0.054484094394045446,
+      "average_win": 0.019024578084256182,
+      "expectancy": -0.03610692627447004,
+      "max_drawdown": 0.5777108203915207,
+      "n": 16,
+      "payoff_ratio": 0.349176733060197,
+      "profit_factor": 0.116392244353399,
+      "win_rate": 0.25
+    },
+    "ETHUSDT": {
+      "average_loss": -0.016914021574754055,
+      "average_win": 0.026159509019957568,
+      "expectancy": 0.0022297698006733323,
+      "max_drawdown": 0.11491425711594125,
+      "n": 18,
+      "payoff_ratio": 1.5466167466052763,
+      "profit_factor": 1.237293397284221,
+      "win_rate": 0.4444444444444444
+    },
+    "SOLUSDT": {
+      "average_loss": -0.05411166066046817,
+      "average_win": 0.06881843400923783,
+      "expectancy": -0.000663793412769912,
+      "max_drawdown": 0.5509440148576559,
+      "n": 46,
+      "payoff_ratio": 1.2717856589367962,
+      "profit_factor": 0.9782966607206125,
+      "win_rate": 0.43478260869565216
+    },
+    "XRPUSDT": {
+      "average_loss": -0.03027331663674282,
+      "average_win": 0.04508373300095595,
+      "expectancy": 0.004893306527516608,
+      "max_drawdown": 0.21011685490841805,
+      "n": 30,
+      "payoff_ratio": 1.4892234485546154,
+      "profit_factor": 1.3030705174852883,
+      "win_rate": 0.4666666666666667
+    }
+  },
+  "candidate": "C-09",
+  "census": {
+    "eligible_decisions": 657,
+    "no_trade": 521,
+    "unresolved_at_fold_end": 1
+  },
+  "cost_sensitivity": {
+    "0.002": {
+      "average_loss": -0.044306791301512854,
+      "average_win": 0.05589345490247535,
+      "expectancy": -0.0020000206820511707,
+      "max_drawdown": 0.7092393376651128,
+      "n": 135,
+      "payoff_ratio": 1.2615098782963972,
+      "profit_factor": 0.9218726033704441,
+      "win_rate": 0.4222222222222222
+    },
+    "0.003": {
+      "average_loss": -0.04474153774544105,
+      "average_win": 0.055885333746659556,
+      "expectancy": -0.003000020682051171,
+      "max_drawdown": 0.7672393376651128,
+      "n": 135,
+      "payoff_ratio": 1.2490704737200056,
+      "profit_factor": 0.8854170446622823,
+      "win_rate": 0.4148148148148148
+    },
+    "0.005": {
+      "average_loss": -0.04454748777370335,
+      "average_win": 0.05812382102193211,
+      "expectancy": -0.005000020682051172,
+      "max_drawdown": 0.8880473336796262,
+      "n": 135,
+      "payoff_ratio": 1.3047609175447814,
+      "profit_factor": 0.8174405748473329,
+      "win_rate": 0.3851851851851852
+    }
+  },
+  "gate": {
+    "adequately_sampled_folds": 0,
+    "max_positive_pnl_symbol_concentration": 0.4397936005459657,
+    "non_negative_symbols": 3,
+    "positive_adequate_folds": 0,
+    "verdict": "REJECT"
+  },
+  "limitations": [
+    "This independent holdout predates the discovery sample and is reverse-time evidence.",
+    "Funding is unavailable and unmodeled."
+  ],
+  "overall": {
+    "average_loss": -0.04474153774544105,
+    "average_win": 0.055885333746659556,
+    "expectancy": -0.003000020682051171,
+    "max_drawdown": 0.7672393376651128,
+    "n": 135,
+    "payoff_ratio": 1.2490704737200056,
+    "profit_factor": 0.8854170446622823,
+    "win_rate": 0.4148148148148148
+  },
+  "protocol": "edge-candidate-register-v8"
+}

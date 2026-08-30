@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Acquire and evaluate the frozen pre-2023 C-09 holdout for long-only daily relative strength in
-a positive BTC regime.
+Identify the next genuinely orthogonal, freely obtainable information class after price,
+volume, and BTC-context candidates failed to produce cost-surviving expectancy.
 
 ## Status
 
@@ -60,6 +60,8 @@ unchanged.
   causality/state/execution regressions.
 - TASK-0097 suite: 661 passed, 1 optional layering test skipped; this includes five C-08
   causality/pair-execution regressions.
+- TASK-0098 suite: 667 passed, 1 optional layering test skipped; this includes the parameterized
+  holdout acquisition and five C-09 causality/execution regressions.
 
 ## Rejected hypotheses
 
@@ -81,6 +83,8 @@ unchanged.
 - C-08 daily relative-strength pair: 559 pairs, -0.0738% net expectancy and PF 0.9124 at
   primary cost; only one fold positive. LONG/BTC-positive cells are clues discovered post-result
   and cannot be validated by re-slicing the same four folds.
+- C-09 independent long/BTC-positive holdout: 135 trades, -0.3000% net expectancy, PF 0.8854,
+  only one positive fold, and effectively zero gross expectancy. The C-08 clue did not reproduce.
 
 ## Open risks
 
@@ -98,8 +102,9 @@ unchanged.
 
 ## Next task
 
-Acquire the isolated, checksummed C-09 pre-2023 futures panel, then evaluate the already-frozen
-long/BTC-positive hypothesis. Reverse-time confirmation can only qualify prospective VST.
+Audit existing free derivatives datasets and prior funding/OI research to select a truly
+orthogonal hypothesis without repeating already rejected work. Paid data and production changes
+remain approval-gated.
 
 ## Operator decision required
 
