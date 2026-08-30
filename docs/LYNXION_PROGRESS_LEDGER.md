@@ -81,6 +81,10 @@ frozen promotion gates and production strategy logic is unchanged.
   and cost application.
 - TASK-0108 suite: 704 passed, 1 optional layering test skipped; C-17 adds new-universe
   disjointness, OI-contraction construction, and explicit acquisition-task provenance coverage.
+- TASK-0109 focused suite: 12 passed. The official book-depth panel retained 380,974–381,838
+  normalized five-minute rows per symbol from 8,002 checksum-verified archives, with zero final
+  integrity violations. Decimal-rendered integer levels and later official fractional extra levels
+  have explicit regression coverage.
 
 ## Rejected hypotheses
 
@@ -138,12 +142,16 @@ frozen promotion gates and production strategy logic is unchanged.
   USDT-margined perpetual futures; it cannot silently supply the next futures experiment.
 - TASK-0094 acquired 128,352 exactly aligned native futures 15m bars per symbol across six
   majors (2023-01-01 through 2026-08-29), with zero gaps or integrity violations.
+- TASK-0109 retained the official ten-level historical book-depth panel. The archive later adds
+  `-0.20/+0.20` levels; they are censused but excluded from the frozen panel. Cadence gaps remain
+  explicit and no observations are synthesized.
 - Existing project-context documents outside the active task/ledger may contain stale claims.
 
 ## Next task
 
-Complete TASK-0109's checksum/schema/level/cadence gate. Admit no C18 until the L2 data panel is
-kept and a single candidate is preregistered.
+Preregister exactly one C18 order-book-depth imbalance candidate before opening price outcomes,
+then evaluate it once under frozen causal alignment, realistic costs/funding, temporal folds,
+day-cluster bootstrap, and concentration gates.
 
 ## Operator decision required
 

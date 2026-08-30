@@ -1,6 +1,6 @@
 # TASK-0109 — Official Binance Historical Book-Depth Panel
 
-**Status:** IN PROGRESS — ACQUISITION PROTOCOL FROZEN
+**Status:** COMPLETE — DATA GATE KEEP
 
 ## Objective
 
@@ -26,3 +26,15 @@ L2 candidate.
 - No price outcome or C18 result is evaluated during acquisition.
 - Data verdict is KEEP or REJECT before candidate preregistration.
 - No production, broker, order, or risk interaction.
+
+## Verified Result
+
+- 8,002 official archives passed Binance SHA-256 verification.
+- The six-symbol panel contains 380,974–381,838 normalized five-minute rows per symbol.
+- Conflicting duplicates, schema violations, invalid expected levels, numeric violations, and
+  incomplete snapshots are all zero.
+- Binance's later official `-5.00` representation is accepted as the same frozen integer level.
+- Official `-0.20` and `+0.20` rows are measured separately as extra levels and excluded from the
+  frozen ten-level panel; no expected level is synthesized.
+- Final gate: `KEEP` with adequate coverage and zero integrity violations.
+- No price outcome was opened and no C18 hypothesis was evaluated during acquisition.
