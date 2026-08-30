@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Evaluate preregistered C-14 long-horizon time-series momentum while C-11 updates independently
-every eight hours.
+Close C-14 after temporal instability and select a genuinely independent validation path while
+C-11 updates independently every eight hours.
 
 ## Status
 
@@ -70,6 +70,8 @@ frozen promotion gates and production strategy logic is unchanged.
   funding acquisition and C-12 evaluator boundary regressions.
 - TASK-0102 suite: 685 passed, 1 optional layering test skipped; C-13 reused the frozen C-12
   mechanics with only report identity and dataset paths parameterized.
+- TASK-0103 suite: 689 passed, 1 optional layering test skipped; four C-14 tests cover causal
+  daily aggregation, next-open entry, the fixed 28-day exit, future mutation, and costs.
 
 ## Rejected hypotheses
 
@@ -102,6 +104,9 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-13 unchanged temporal generalization: 628 trades, -0.0595% expectancy and PF 0.9555 at
   0.30% cost; only two folds and XRP were positive. The later sample falsifies temporal
   stability of the base negative-funding rebound rule.
+- C-14 long-horizon time-series momentum: the reverse-time period was strongly positive, but
+  the primary 2023–2026 sample had 228 trades, -2.5269% expectancy, PF 0.7286, and only one
+  positive fold. The signal is temporally unstable and rejected.
 
 ## Open risks
 
@@ -119,8 +124,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Commit the C-14 boundary, implement causal daily aggregation/monthly decisions, and evaluate
-the unchanged rule on separate 2023–2026 and 2020–2022 samples.
+Do not reslice C-14 on its opened samples. Any use of its LONG-positive/SHORT-negative clue
+requires a newly preregistered universe or prospective boundary.
 
 ## Operator decision required
 

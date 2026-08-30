@@ -1,6 +1,6 @@
 # Edge Candidate Register v13 — C-14 Long-Horizon Time-Series Momentum
 
-**Status:** PRE-REGISTERED — CONDITIONAL OUTCOMES UNOPENED
+**Status:** OPENED — C-14 REJECTED
 
 C-14 tests a low-turnover, long-horizon trend mechanism that is distinct from the rejected
 short-horizon breakout, acceleration, reversal, cross-sectional ranking, and funding paths.
@@ -53,3 +53,11 @@ Every condition is required:
 
 A pass is `KEEP_FOR_PATH_DEPENDENT_CONFIRMATION`, not production authorization. Otherwise the
 candidate is `REJECT` with no parameter changes on opened outcomes.
+
+## Frozen Result
+
+The primary period returned 228 trades, -2.5269% expectancy, PF 0.7286, only one positive
+fold, and a month-cluster CI crossing zero. The reverse-time period was strongly positive but
+did not reproduce later. The conjunctive gate rejects C-14. The LONG/SHORT divergence is a
+post-result clue only. Machine-readable output is in
+`docs/reports/edge_candidate_c14_holdout.json`.
