@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Define the next independent longer-horizon relative-strength hypothesis after C-07 failed to
-survive costs across every fold, side, and symbol.
+Implement frozen C-08 daily relative-strength continuation after C-07 failed to survive costs
+across every fold, side, and symbol.
 
 ## Status
 
@@ -93,9 +93,8 @@ unchanged.
 
 ## Next task
 
-Pre-register a longer-horizon cross-sectional relative-strength candidate designed to test
-whether signal magnitude can exceed friction without retuning C-06/C-07. Production remains
-unchanged until a candidate clears the full robustness gate.
+Evaluate preregistered C-08 daily relative-strength continuation without retuning C-06/C-07.
+Production remains unchanged until a candidate clears the full robustness gate.
 
 ## Operator decision required
 
