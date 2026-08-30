@@ -23,5 +23,7 @@ Collect and resolve severe negative-funding rebound observations prospectively w
   optional layering test skipped.
 - App heartbeat `c11-funding-shadow-monitor` is ACTIVE every eight hours. It runs only the
   public-data shadow updater and explicitly prohibits broker/order/production mutations.
+- Manual health update at 2026-08-30 13:55:16 UTC completed successfully after network access;
+  N=0 and verdict remains `COLLECTING`. The ledger contains no backfilled or pre-boundary record.
 
 This task remains open by design while engineering proceeds independently.
