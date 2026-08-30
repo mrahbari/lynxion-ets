@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Start the next orthogonal free-data research task while the no-order C-11 prospective funding
-cohort updates independently every eight hours.
+Evaluate frozen C-12 funding generalization on unopened BNB/XRP/ADA conditional samples while
+C-11 updates independently every eight hours.
 
 ## Status
 
@@ -109,8 +109,8 @@ unchanged.
 
 ## Next task
 
-Audit the free Binance aggregate-trade backfill path for a causal per-bar aggressor-flow/CVD
-dataset. C-11 monitoring continues independently and must not block this work.
+Acquire BNB/XRP/ADA funding and evaluate C-12 with unchanged C-10 mechanics. Prior CVD/order-flow
+work is not repeated because existing evidence already rejects it across folds and costs.
 
 ## Operator decision required
 
