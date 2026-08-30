@@ -7,7 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Freeze and start a no-order prospective cohort for the post-C-10 high-severity funding lead.
+Implement and start the frozen no-order C-11 prospective severe-funding cohort while continuing
+orthogonal engineering research independently.
 
 ## Status
 
@@ -106,8 +107,8 @@ unchanged.
 
 ## Next task
 
-Register C-11 severity >=2 before collecting another observation, then run a shadow-only
-funding/outcome ledger. It must place no orders and must not block other engineering research.
+Run the idempotent C-11 shadow collector after its frozen boundary and schedule independent
+updates. It must place no orders and must not block other engineering research.
 
 ## Operator decision required
 
