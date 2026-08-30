@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Close the historical OI candidate family after two independent mechanism failures while C-11
+Acquire and validate the newly discovered official Binance book-depth archive while C-11
 continues prospective collection.
 
 ## Status
@@ -142,9 +142,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Do not admit another OI threshold/horizon/side variant: expansion/continuation and
-contraction/reversal both failed on independent universes. Continue C-11; reassess only genuinely
-new data or execution mechanisms.
+Complete TASK-0109's checksum/schema/level/cadence gate. Admit no C18 until the L2 data panel is
+kept and a single candidate is preregistered.
 
 ## Operator decision required
 
