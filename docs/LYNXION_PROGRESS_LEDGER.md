@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Acquire and validate the newly discovered official Binance book-depth archive while C-11
+Preregister the distinct C-23 delta-neutral spot/perpetual funding-carry candidate while C-11
 continues prospective collection.
 
 ## Status
@@ -93,6 +93,10 @@ frozen promotion gates and production strategy logic is unchanged.
   violations and explicit unfilled source gaps.
 - TASK-0114 acquisition: 8,022 checksum-verified archives produced exactly 128,352 aligned native
   15-minute taker-flow rows per symbol, with zero schema/timestamp/OHLC/flow/duplicate/gap violations.
+- TASK-0118 acquisition: 8,022 checksum-verified official spot archives produced 128,346 complete
+  native 15-minute rows per symbol. Core integrity violations are zero; one common partial
+  maintenance candle per symbol was excluded, all 36 resulting source gaps remain explicit, and
+  every retained timestamp aligns to the futures panel. The frozen data gate is KEEP.
 
 ## Rejected hypotheses
 
@@ -173,8 +177,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete TASK-0118's official spot checksum/schema/timestamp/OHLC/gap/alignment gate before defining
-the distinct delta-neutral funding-carry candidate C23.
+Preregister C-23's causal signal, two-leg execution, capital normalization, funding timing, costs,
+temporal folds, bootstrap, and frozen promotion gates before opening any outcome.
 
 ## Operator decision required
 

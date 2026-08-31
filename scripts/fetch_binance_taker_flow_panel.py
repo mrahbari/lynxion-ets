@@ -24,8 +24,9 @@ def _premium():
     s=importlib.util.spec_from_file_location("premium_common",p); m=importlib.util.module_from_spec(s)
     assert s.loader; s.loader.exec_module(m); return m
 
-def list_archives(symbol, start=START, end=END, get=requests.get):
-    prefix=f"data/futures/um/daily/klines/{symbol}/15m/"; keys=[]; token=None
+def list_archives(symbol, start=START, end=END, get=requests.get, market="futures"):
+    root = "data/spot" if market == "spot" else "data/futures/um"
+    prefix=f"{root}/daily/klines/{symbol}/15m/"; keys=[]; token=None
     while True:
         params={"list-type":"2","prefix":prefix,"max-keys":1000}
         if token: params["continuation-token"]=token
@@ -53,7 +54,7 @@ def download_archive(key, raw_root, get=requests.get):
 
 def parse_archive(path):
     common=_premium(); checks={"raw_rows":0,"schema_violations":0,"numeric_violations":0,
-        "timestamp_violations":0,"ohlc_violations":0,"flow_violations":0}; rows=[]
+        "timestamp_violations":0,"partial_source_candles":0,"ohlc_violations":0,"flow_violations":0}; rows=[]
     with zipfile.ZipFile(path) as z:
         members=[n for n in z.namelist() if n.endswith('.csv')]
         if len(members)!=1: raise ValueError(f"{path.name}: expected one CSV")
@@ -68,7 +69,11 @@ def parse_archive(path):
                 o,h,l,c=map(float,raw[1:5]); quote=float(raw[7]); count=int(raw[8]); taker=float(raw[10])
                 if not all(math.isfinite(v) for v in (o,h,l,c,quote,taker)): raise ValueError
             except (ValueError,TypeError,OverflowError): checks["numeric_violations"]+=1; continue
-            if opened%900 or closed!=opened+899: checks["timestamp_violations"]+=1; continue
+            if opened%900 or closed!=opened+899:
+                if not opened%900 and opened <= closed < opened+899 and quote==0 and taker==0 and count==0:
+                    checks["partial_source_candles"]+=1
+                else: checks["timestamp_violations"]+=1
+                continue
             if min(o,h,l,c)<=0 or h<max(o,c,l) or l>min(o,c,h): checks["ohlc_violations"]+=1; continue
             if quote<0 or taker<0 or taker>quote or count<0: checks["flow_violations"]+=1; continue
             rows.append((opened,o,h,l,c,quote,count,taker))
@@ -77,7 +82,7 @@ def parse_archive(path):
 def normalize(symbol,records,raw_root,out_root):
     totals={"archives":len(records),"raw_rows":0,"unique_rows":0,"exact_duplicates":0,
         "conflicting_duplicates":0,"schema_violations":0,"numeric_violations":0,
-        "timestamp_violations":0,"ohlc_violations":0,"flow_violations":0,"missing_intervals":0}
+        "timestamp_violations":0,"partial_source_candles":0,"ohlc_violations":0,"flow_violations":0,"missing_intervals":0}
     by={}
     for rec in sorted(records,key=lambda x:x["key"]):
         rows,checks=parse_archive(raw_root/symbol/Path(rec["key"]).name)
@@ -97,8 +102,8 @@ def normalize(symbol,records,raw_root,out_root):
     part.replace(target); totals.update({"first_timestamp":rows[0][0],"last_timestamp":rows[-1][0],
         "sha256":digest.hexdigest(),"file":str(target)}); return totals
 
-def build(root,workers=32,symbols=SYMBOLS,task="TASK-0114"):
-    raw,out=root/'raw',root/'normalized'; listings={s:list_archives(s) for s in symbols}; records={s:[] for s in symbols}
+def build(root,workers=32,symbols=SYMBOLS,task="TASK-0114",market="futures"):
+    raw,out=root/'raw',root/'normalized'; listings={s:list_archives(s,market=market) for s in symbols}; records={s:[] for s in symbols}
     jobs=[(s,k) for s,ks in listings.items() for k in ks]
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures={pool.submit(download_archive,k,raw):s for s,k in jobs}
@@ -108,10 +113,15 @@ def build(root,workers=32,symbols=SYMBOLS,task="TASK-0114"):
     summaries={s:normalize(s,records[s],raw,out) for s in symbols}
     core=sum(v[k] for v in summaries.values() for k in ("conflicting_duplicates","schema_violations","numeric_violations","timestamp_violations","ohlc_violations","flow_violations"))
     adequate=all(v["unique_rows"]>=120_000 for v in summaries.values())
-    manifest={"task":task,"source":DATA,"symbols":summaries,"archives":records,
-      "gate":{"core_integrity_violations":core,"source_gap_intervals":sum(v["missing_intervals"] for v in summaries.values()),"adequate_coverage":adequate,"verdict":"KEEP" if core==0 and adequate else "REJECT"}}
+    manifest={"task":task,"source":DATA,"market":market,"symbols":summaries,"archives":records,
+      "gate":{"core_integrity_violations":core,"source_gap_intervals":sum(v["missing_intervals"] for v in summaries.values()),"partial_source_candles":sum(v["partial_source_candles"] for v in summaries.values()),"adequate_coverage":adequate,"verdict":"KEEP" if core==0 and adequate else "REJECT"}}
     root.mkdir(parents=True,exist_ok=True); (root/'manifest.json').write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n"); return manifest
 
+def normalize_only(root):
+    p=root/'manifest.json'; manifest=json.loads(p.read_text()); records=manifest['archives']; raw,out=root/'raw',root/'normalized'
+    summaries={s:normalize(s,records[s],raw,out) for s in records}; core=sum(v[k] for v in summaries.values() for k in ("conflicting_duplicates","schema_violations","numeric_violations","timestamp_violations","ohlc_violations","flow_violations")); adequate=all(v['unique_rows']>=120000 for v in summaries.values())
+    manifest['symbols']=summaries; manifest['gate']={"core_integrity_violations":core,"source_gap_intervals":sum(v['missing_intervals'] for v in summaries.values()),"partial_source_candles":sum(v['partial_source_candles'] for v in summaries.values()),"adequate_coverage":adequate,"verdict":"KEEP" if core==0 and adequate else "REJECT"}; p.write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n"); return manifest
+
 if __name__=='__main__':
-    p=argparse.ArgumentParser(); p.add_argument('--output-root',default='data/research/taker_flow'); p.add_argument('--workers',type=int,default=32); p.add_argument('--symbols',nargs='+',default=list(SYMBOLS)); p.add_argument('--task',default='TASK-0114'); a=p.parse_args()
-    report=build(Path(a.output_root),a.workers,tuple(a.symbols),a.task); print(json.dumps({"symbols":report["symbols"],"gate":report["gate"]},indent=2,sort_keys=True))
+    p=argparse.ArgumentParser(); p.add_argument('--output-root',default='data/research/taker_flow'); p.add_argument('--workers',type=int,default=32); p.add_argument('--symbols',nargs='+',default=list(SYMBOLS)); p.add_argument('--task',default='TASK-0114'); p.add_argument('--market',choices=('futures','spot'),default='futures'); p.add_argument('--normalize-only',action='store_true'); a=p.parse_args()
+    report=normalize_only(Path(a.output_root)) if a.normalize_only else build(Path(a.output_root),a.workers,tuple(a.symbols),a.task,a.market); print(json.dumps({"symbols":report["symbols"],"gate":report["gate"]},indent=2,sort_keys=True))
