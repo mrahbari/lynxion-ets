@@ -91,6 +91,8 @@ frozen promotion gates and production strategy logic is unchanged.
 - TASK-0112 focused acquisition suite: 5 passed. The premium-index panel retained 205,981–233,560
   unique 15-minute rows per symbol from 14,101 checksum-verified archives, with zero core integrity
   violations and explicit unfilled source gaps.
+- TASK-0114 acquisition: 8,022 checksum-verified archives produced exactly 128,352 aligned native
+  15-minute taker-flow rows per symbol, with zero schema/timestamp/OHLC/flow/duplicate/gap violations.
 
 ## Rejected hypotheses
 
@@ -165,7 +167,7 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete TASK-0114's official taker-flow checksum/schema/timestamp/volume/coverage gate. Historical
+Preregister exactly one C21 taker-flow mechanism before opening aligned outcomes. Historical
 forced-liquidation research remains deferred because the official archive does not provide it.
 
 ## Operator decision required
