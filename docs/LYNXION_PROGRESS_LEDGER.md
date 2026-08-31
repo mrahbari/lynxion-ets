@@ -142,6 +142,9 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-19 liquidity-withdrawal differential: 1,973 primary trades, -0.3533% expectancy, PF 0.7720,
   CI fully below zero, every fold and both sides negative, and only ETH positive. The temporal
   reverse was also negative (-0.3631%, PF 0.7368, N=668). The dynamic near-book mechanism is closed.
+- C-20 symmetric premium-basis convergence: 1,264 primary trades, -0.2721% funding-inclusive
+  expectancy, PF 0.8125, and every fold/side/symbol negative. The 2023 reverse sample was positive
+  (+0.2649%, PF 1.2297, N=490), so the mechanism is temporally unstable and rejected.
 
 ## Open risks
 
@@ -162,8 +165,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Implement and evaluate the preregistered C-20 symmetric premium-basis convergence candidate exactly
-once under `tasks/research/edge-candidate-register-v19.md`.
+Close the temporally unstable basis-convergence family and perform source feasibility for a
+genuinely distinct forced-liquidation mechanism before admitting C21.
 
 ## Operator decision required
 

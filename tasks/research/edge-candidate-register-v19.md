@@ -1,6 +1,6 @@
 # Edge Candidate Register v19 — C-20 Symmetric Premium-Basis Convergence
 
-**Status:** FROZEN — OUTCOMES UNOPENED
+**Status:** OPENED — C-20 REJECTED
 
 C-20 tests whether an extreme futures premium or discount relative to the index converges over the
 next day. Unlike C-10/C-11's one-sided funding-settlement rule, this signal is symmetric, uses the
@@ -40,3 +40,10 @@ independent premium-index series, and applies no funding-level filter.
 
 A pass is historical KEEP only. Failure closes this exact hypothesis; post-result reversal,
 one-sided promotion, threshold changes, and reslicing are prohibited.
+
+## Frozen Result
+
+C-20 returned 1,264 primary trades with -0.2721% funding-inclusive expectancy, PF 0.8125, and
+negative results in every fold, side, and symbol. The reverse sample was positive, but the frozen
+primary and stability gates reject. Machine-readable output:
+`docs/reports/edge_candidate_c20_holdout.json`.

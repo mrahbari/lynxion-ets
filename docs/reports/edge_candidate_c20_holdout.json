@@ -1,0 +1,368 @@
+{
+  "candidate": "C-20",
+  "gate": {
+    "adequately_sampled_folds": 4,
+    "both_sides_positive_and_sampled": false,
+    "max_positive_pnl_symbol_concentration": 0.22341387368493762,
+    "positive_adequate_folds": 0,
+    "positive_sampled_symbols": 0,
+    "verdict": "REJECT"
+  },
+  "limitations": [
+    "Fixed 24-hour exits isolate signal information and are not production exits."
+  ],
+  "primary": {
+    "by_fold": {
+      "F1": {
+        "average_loss": -0.024896984396583804,
+        "average_win": 0.02401340192224084,
+        "expectancy": -0.00012001237981079367,
+        "max_drawdown": 1.412733834902522,
+        "n": 304,
+        "payoff_ratio": 0.9645104619793149,
+        "profit_factor": 0.9902307409654298,
+        "win_rate": 0.506578947368421
+      },
+      "F2": {
+        "average_loss": -0.033949202230855687,
+        "average_win": 0.02979688830223606,
+        "expectancy": -0.004145835228371234,
+        "max_drawdown": 1.7721254998519271,
+        "n": 308,
+        "payoff_ratio": 0.8776903828141894,
+        "profit_factor": 0.7706549702758737,
+        "win_rate": 0.4675324675324675
+      },
+      "F3": {
+        "average_loss": -0.025198161092514323,
+        "average_win": 0.025824624135970246,
+        "expectancy": -0.0008616352434016178,
+        "max_drawdown": 0.9932230924425303,
+        "n": 304,
+        "payoff_ratio": 1.0248614587848646,
+        "profit_factor": 0.9346220850553797,
+        "win_rate": 0.4769736842105263
+      },
+      "F4": {
+        "average_loss": -0.025526505427448283,
+        "average_win": 0.02096066436828364,
+        "expectancy": -0.005355348418380692,
+        "max_drawdown": 2.2029718068794395,
+        "n": 348,
+        "payoff_ratio": 0.8211333285654111,
+        "profit_factor": 0.6293966122506451,
+        "win_rate": 0.4339080459770115
+      }
+    },
+    "by_side": {
+      "LONG": {
+        "average_loss": -0.0260219984050571,
+        "average_win": 0.02637527347089027,
+        "expectancy": -0.0009031327118155205,
+        "max_drawdown": 3.0556407092889932,
+        "n": 922,
+        "payoff_ratio": 1.0135760159667258,
+        "profit_factor": 0.93333458136936,
+        "win_rate": 0.4793926247288503
+      },
+      "SHORT": {
+        "average_loss": -0.030773088283355694,
+        "average_win": 0.02131957734697433,
+        "expectancy": -0.007620792447653461,
+        "max_drawdown": 2.7113229731710655,
+        "n": 342,
+        "payoff_ratio": 0.6927994080628397,
+        "profit_factor": 0.5542395264502717,
+        "win_rate": 0.4444444444444444
+      }
+    },
+    "by_symbol": {
+      "ADAUSDT": {
+        "average_loss": -0.03447539195714171,
+        "average_win": 0.03140112899709225,
+        "expectancy": -0.001691771200574576,
+        "max_drawdown": 0.4975503058515479,
+        "n": 213,
+        "payoff_ratio": 0.9108273239105955,
+        "profit_factor": 0.9023149190142348,
+        "win_rate": 0.49765258215962443
+      },
+      "BNBUSDT": {
+        "average_loss": -0.021236866295665686,
+        "average_win": 0.016814440591179366,
+        "expectancy": -0.004531414491684932,
+        "max_drawdown": 1.0407439951519373,
+        "n": 205,
+        "payoff_ratio": 0.7917571433131398,
+        "profit_factor": 0.6196360252015877,
+        "win_rate": 0.43902439024390244
+      },
+      "BTCUSDT": {
+        "average_loss": -0.017492740881902735,
+        "average_win": 0.016512428339647816,
+        "expectancy": -0.002633339205258796,
+        "max_drawdown": 0.7135148379279415,
+        "n": 238,
+        "payoff_ratio": 0.9439588942137073,
+        "profit_factor": 0.7326248134195937,
+        "win_rate": 0.4369747899159664
+      },
+      "ETHUSDT": {
+        "average_loss": -0.0262556914617495,
+        "average_win": 0.02370648763883819,
+        "expectancy": -0.0033065565638719023,
+        "max_drawdown": 0.948822563596692,
+        "n": 209,
+        "payoff_ratio": 0.9029085245526628,
+        "profit_factor": 0.7670727288235011,
+        "win_rate": 0.45933014354066987
+      },
+      "SOLUSDT": {
+        "average_loss": -0.035203016626504983,
+        "average_win": 0.03136217532123842,
+        "expectancy": -0.0015737269445721214,
+        "max_drawdown": 0.5860639605008682,
+        "n": 192,
+        "payoff_ratio": 0.890894540487342,
+        "profit_factor": 0.9096502150239175,
+        "win_rate": 0.5052083333333334
+      },
+      "XRPUSDT": {
+        "average_loss": -0.03350124954696831,
+        "average_win": 0.029914662744195155,
+        "expectancy": -0.0025591860619078753,
+        "max_drawdown": 0.8309496290947201,
+        "n": 207,
+        "payoff_ratio": 0.8929417006447833,
+        "profit_factor": 0.850821809104935,
+        "win_rate": 0.48792270531400966
+      }
+    },
+    "census": {
+      "ADAUSDT": {
+        "eligible_after_warmup": 5826,
+        "max_book_age_seconds": 900,
+        "mean_book_age_seconds": 900.0,
+        "missing_entry_or_exit": 1,
+        "missing_or_stale_book": 6,
+        "non_signal": 5481,
+        "overlap_rejected": 130,
+        "price_decisions": 5832,
+        "unresolved_at_fold_end": 1,
+        "valid_book_decisions": 5826
+      },
+      "BNBUSDT": {
+        "eligible_after_warmup": 5832,
+        "max_book_age_seconds": 900,
+        "mean_book_age_seconds": 900.0,
+        "missing_entry_or_exit": 0,
+        "missing_or_stale_book": 0,
+        "non_signal": 5498,
+        "overlap_rejected": 128,
+        "price_decisions": 5832,
+        "unresolved_at_fold_end": 1,
+        "valid_book_decisions": 5832
+      },
+      "BTCUSDT": {
+        "eligible_after_warmup": 5832,
+        "max_book_age_seconds": 900,
+        "mean_book_age_seconds": 900.0,
+        "missing_entry_or_exit": 0,
+        "missing_or_stale_book": 0,
+        "non_signal": 5464,
+        "overlap_rejected": 127,
+        "price_decisions": 5832,
+        "unresolved_at_fold_end": 3,
+        "valid_book_decisions": 5832
+      },
+      "ETHUSDT": {
+        "eligible_after_warmup": 5832,
+        "max_book_age_seconds": 900,
+        "mean_book_age_seconds": 900.0,
+        "missing_entry_or_exit": 0,
+        "missing_or_stale_book": 0,
+        "non_signal": 5488,
+        "overlap_rejected": 134,
+        "price_decisions": 5832,
+        "unresolved_at_fold_end": 1,
+        "valid_book_decisions": 5832
+      },
+      "SOLUSDT": {
+        "eligible_after_warmup": 5832,
+        "max_book_age_seconds": 900,
+        "mean_book_age_seconds": 900.0,
+        "missing_entry_or_exit": 1,
+        "missing_or_stale_book": 0,
+        "non_signal": 5499,
+        "overlap_rejected": 139,
+        "price_decisions": 5832,
+        "unresolved_at_fold_end": 1,
+        "valid_book_decisions": 5832
+      },
+      "XRPUSDT": {
+        "eligible_after_warmup": 5832,
+        "max_book_age_seconds": 900,
+        "mean_book_age_seconds": 900.0,
+        "missing_entry_or_exit": 1,
+        "missing_or_stale_book": 0,
+        "non_signal": 5488,
+        "overlap_rejected": 136,
+        "price_decisions": 5832,
+        "unresolved_at_fold_end": 0,
+        "valid_book_decisions": 5832
+      }
+    },
+    "cost_sensitivity": {
+      "0.002": {
+        "average_loss": -0.02719564463802939,
+        "average_win": 0.02524783328555002,
+        "expectancy": -0.0017207273555311664,
+        "max_drawdown": 3.0067720067614863,
+        "n": 1264,
+        "payoff_ratio": 0.9283778201103707,
+        "profit_factor": 0.8769599716119502,
+        "win_rate": 0.48575949367088606
+      },
+      "0.003": {
+        "average_loss": -0.027369322400395506,
+        "average_win": 0.025081559984635685,
+        "expectancy": -0.0027207273555311666,
+        "max_drawdown": 3.7917720067614846,
+        "n": 1264,
+        "payoff_ratio": 0.9164114338568075,
+        "profit_factor": 0.8124602861357367,
+        "win_rate": 0.4699367088607595
+      },
+      "0.005": {
+        "average_loss": -0.027741404387706767,
+        "average_win": 0.02487728597155175,
+        "expectancy": -0.004720727355531166,
+        "max_drawdown": 6.071668310679082,
+        "n": 1264,
+        "payoff_ratio": 0.8967565456987386,
+        "profit_factor": 0.6974773133212411,
+        "win_rate": 0.4375
+      }
+    },
+    "day_cluster_bootstrap_95_ci": [
+      -0.005594539147031827,
+      7.509597875933173e-05
+    ],
+    "fold_boundaries": [
+      1704067200,
+      1725062400,
+      1746057600,
+      1767052800,
+      1788048000
+    ],
+    "mean_funding_return": 0.0002194961629746835,
+    "overall_funding_inclusive": {
+      "average_loss": -0.027369322400395506,
+      "average_win": 0.025081559984635685,
+      "expectancy": -0.0027207273555311666,
+      "max_drawdown": 3.7917720067614846,
+      "n": 1264,
+      "payoff_ratio": 0.9164114338568075,
+      "profit_factor": 0.8124602861357367,
+      "win_rate": 0.4699367088607595
+    },
+    "overall_price_only": {
+      "average_loss": -0.02747241419830522,
+      "average_win": 0.025084685834349706,
+      "expectancy": -0.00294022351850585,
+      "max_drawdown": 4.017547967993982,
+      "n": 1264,
+      "payoff_ratio": 0.9130863291911632,
+      "profit_factor": 0.7992892199151131,
+      "win_rate": 0.46677215189873417
+    }
+  },
+  "protocol": "edge-candidate-register-v19",
+  "reverse_time": {
+    "census": {
+      "ADAUSDT": {
+        "eligible_after_warmup": 2010,
+        "max_book_age_seconds": 900,
+        "mean_book_age_seconds": 900.0,
+        "missing_entry_or_exit": 0,
+        "missing_or_stale_book": 0,
+        "non_signal": 1877,
+        "overlap_rejected": 53,
+        "price_decisions": 2190,
+        "unresolved_at_fold_end": 0,
+        "valid_book_decisions": 2190
+      },
+      "BNBUSDT": {
+        "eligible_after_warmup": 2010,
+        "max_book_age_seconds": 900,
+        "mean_book_age_seconds": 900.0,
+        "missing_entry_or_exit": 0,
+        "missing_or_stale_book": 0,
+        "non_signal": 1842,
+        "overlap_rejected": 88,
+        "price_decisions": 2190,
+        "unresolved_at_fold_end": 0,
+        "valid_book_decisions": 2190
+      },
+      "BTCUSDT": {
+        "eligible_after_warmup": 2010,
+        "max_book_age_seconds": 900,
+        "mean_book_age_seconds": 900.0,
+        "missing_entry_or_exit": 0,
+        "missing_or_stale_book": 0,
+        "non_signal": 1862,
+        "overlap_rejected": 62,
+        "price_decisions": 2190,
+        "unresolved_at_fold_end": 0,
+        "valid_book_decisions": 2190
+      },
+      "ETHUSDT": {
+        "eligible_after_warmup": 2010,
+        "max_book_age_seconds": 900,
+        "mean_book_age_seconds": 900.0,
+        "missing_entry_or_exit": 0,
+        "missing_or_stale_book": 0,
+        "non_signal": 1885,
+        "overlap_rejected": 46,
+        "price_decisions": 2190,
+        "unresolved_at_fold_end": 0,
+        "valid_book_decisions": 2190
+      },
+      "SOLUSDT": {
+        "eligible_after_warmup": 2010,
+        "max_book_age_seconds": 900,
+        "mean_book_age_seconds": 900.0,
+        "missing_entry_or_exit": 0,
+        "missing_or_stale_book": 0,
+        "non_signal": 1891,
+        "overlap_rejected": 40,
+        "price_decisions": 2190,
+        "unresolved_at_fold_end": 0,
+        "valid_book_decisions": 2190
+      },
+      "XRPUSDT": {
+        "eligible_after_warmup": 2010,
+        "max_book_age_seconds": 900,
+        "mean_book_age_seconds": 900.0,
+        "missing_entry_or_exit": 0,
+        "missing_or_stale_book": 0,
+        "non_signal": 1874,
+        "overlap_rejected": 50,
+        "price_decisions": 2190,
+        "unresolved_at_fold_end": 0,
+        "valid_book_decisions": 2190
+      }
+    },
+    "fold_boundaries": null,
+    "overall_funding_inclusive": {
+      "average_loss": -0.021988051715819378,
+      "average_win": 0.029822954054880547,
+      "expectancy": 0.002648610211880791,
+      "max_drawdown": 0.8409693714529046,
+      "n": 490,
+      "payoff_ratio": 1.3563254462160612,
+      "profit_factor": 1.2296647041569737,
+      "win_rate": 0.47551020408163264
+    }
+  }
+}
