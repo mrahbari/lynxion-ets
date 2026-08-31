@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Synthesize post-C-23 evidence and select the next genuinely independent mechanism while C-11
+Preregister C-24 delta-neutral spot/perpetual basis convergence before opening outcomes while C-11
 continues prospective collection.
 
 ## Status
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- Post-C23 synthesis is complete. Funding-persistence variants are barred; the next admitted
+  independent family is direct delta-neutral spot/perpetual basis convergence. It differs from
+  directional C-20 and funding-selected C-23 and is enabled by TASK-0118's official spot panel.
 - TASK-0118's official spot data gate is KEEP. C-23 is now preregistered with outcome unopened:
   equal-notional LONG spot/SHORT perpetual after causally unusual positive completed funding,
   next-open execution through the next settlement, explicit two-unit capital normalization, and
@@ -186,8 +189,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete the post-C-23 cross-family synthesis before admitting another candidate; do not create a
-threshold or holding-period variant from the opened carry outcomes.
+Preregister C-24's direct basis-dislocation signal, two-leg execution, convergence/timeout exit,
+funding, costs, temporal validation, clustered bootstrap, and frozen gates before outcome opening.
 
 ## Operator decision required
 
