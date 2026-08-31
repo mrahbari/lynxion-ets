@@ -162,9 +162,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Preregister exactly one symmetric premium-basis convergence candidate before opening aligned price
-outcomes, then evaluate it once under causal thresholds, actual funding, costs, folds, bootstrap,
-and concentration gates.
+Implement and evaluate the preregistered C-20 symmetric premium-basis convergence candidate exactly
+once under `tasks/research/edge-candidate-register-v19.md`.
 
 ## Operator decision required
 
