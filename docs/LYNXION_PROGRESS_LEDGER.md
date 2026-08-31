@@ -167,8 +167,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Preregister exactly one C21 taker-flow mechanism before opening aligned outcomes. Historical
-forced-liquidation research remains deferred because the official archive does not provide it.
+Implement and evaluate the preregistered C-21 aggressive taker-flow continuation mechanism exactly
+once under `tasks/research/edge-candidate-register-v20.md`.
 
 ## Operator decision required
 
