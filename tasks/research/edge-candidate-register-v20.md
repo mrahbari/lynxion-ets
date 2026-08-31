@@ -1,6 +1,6 @@
 # Edge Candidate Register v20 — C-21 Aggressive Taker-Flow Continuation
 
-**Status:** FROZEN — OUTCOMES UNOPENED
+**Status:** OPENED — C-21 REJECTED
 
 C-21 tests whether extreme net aggressive taker flow over a fully completed four-hour window
 continues over the next day. It uses executed taker flow rather than resting book depth, OI, basis,
@@ -41,3 +41,10 @@ funding severity, or price momentum.
 
 A pass is historical KEEP only. Failure closes this exact mechanism; reversal, horizon/threshold
 changes, and post-result subgroup promotion are prohibited.
+
+## Frozen Result
+
+C-21 returned 2,326 primary trades with -0.2086% expectancy, PF 0.8384, a fully negative bootstrap
+interval, and all four folds negative. The reverse sample was also negative (-0.3853%, PF 0.6827,
+N=831). The frozen gate rejects. Machine-readable output:
+`docs/reports/edge_candidate_c21_holdout.json`.

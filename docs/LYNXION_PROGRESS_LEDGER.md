@@ -147,6 +147,9 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-20 symmetric premium-basis convergence: 1,264 primary trades, -0.2721% funding-inclusive
   expectancy, PF 0.8125, and every fold/side/symbol negative. The 2023 reverse sample was positive
   (+0.2649%, PF 1.2297, N=490), so the mechanism is temporally unstable and rejected.
+- C-21 aggressive taker-flow continuation: 2,326 primary trades, -0.2086% expectancy, PF 0.8384,
+  CI fully below zero, and all four folds negative. Reverse-time was also negative (-0.3853%,
+  PF 0.6827, N=831); narrow LONG/ETH cells are diagnostic only and not promoted.
 
 ## Open risks
 
@@ -167,8 +170,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Implement and evaluate the preregistered C-21 aggressive taker-flow continuation mechanism exactly
-once under `tasks/research/edge-candidate-register-v20.md`.
+Close taker-flow continuation and synthesize the expanded C-18 through C-21 evidence before
+admitting another genuinely distinct candidate; do not reverse or promote opened diagnostic cells.
 
 ## Operator decision required
 
