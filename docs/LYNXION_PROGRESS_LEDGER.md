@@ -170,8 +170,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Close taker-flow continuation and synthesize the expanded C-18 through C-21 evidence before
-admitting another genuinely distinct candidate; do not reverse or promote opened diagnostic cells.
+Acquire the disjoint five-symbol taker-flow panel and evaluate the preregistered unchanged C-22
+independent confirmation. Failure closes the taker-flow continuation family.
 
 ## Operator decision required
 
