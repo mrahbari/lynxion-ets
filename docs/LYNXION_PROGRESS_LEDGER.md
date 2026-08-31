@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement and evaluate preregistered C-24 delta-neutral spot/perpetual basis convergence while C-11
+Synthesize post-C-24 evidence without relaxing the opened dislocation threshold while C-11
 continues prospective collection.
 
 ## Status
@@ -172,6 +172,10 @@ frozen promotion gates and production strategy logic is unchanged.
   frozen 0.20% capital cost, PF 0, clustered CI fully negative, and every fold/symbol negative.
   Gross basis plus funding was only +0.0086%; reverse 2023 was also negative (-0.1902%, N=1,033).
   The unlevered next-settlement carry mechanism is rejected as economically unable to clear costs.
+- C-24 delta-neutral basis convergence: the frozen >0.40%/causal-p99 signal produced only seven
+  primary pairs. Net expectancy was +0.1038% with a positive clustered interval, but every minimum
+  sample/breadth gate failed and reverse N was only two. The sparse result is rejected and its
+  threshold cannot be relaxed on the opened panel.
 
 ## Open risks
 
@@ -192,8 +196,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Implement C-24 exactly as preregistered, cover causal/two-leg mechanics with focused regressions,
-then open the primary and reverse outcomes once and issue the frozen verdict.
+Complete post-C-24 synthesis. Treat the sparse positive basis observations only as diagnostic and
+do not lower the threshold or reuse them as an independent confirmation.
 
 ## Operator decision required
 

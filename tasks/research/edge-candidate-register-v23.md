@@ -1,6 +1,6 @@
 # Edge Candidate Register v23 — C-24 Delta-Neutral Basis Convergence
 
-**Status:** PREREGISTERED — OUTCOME UNOPENED
+**Status:** OPENED — C-24 REJECTED
 
 C-24 tests whether an unusually large positive perpetual premium over spot converges after an
 equal-notional LONG-spot/SHORT-perpetual entry. This direct basis-dislocation mechanism is distinct
@@ -59,3 +59,11 @@ from directional premium-index C-20 and funding-selected carry C-23.
 No threshold, lookback, convergence level, timeout, direction, cost, funding rule, universe, fold,
 or gate may change after outcome opening. No production, broker, risk, trailing, symbol-admission,
 paper-order, or real-order action is authorized.
+
+## Frozen Result
+
+C-24 produced only seven primary pairs. Net expectancy was +0.1038%, PF 139.41, and the clustered
+interval was positive, but N was far below 150; no fold or symbol met its minimum sample; and the
+reverse period had only two pairs. The 0.40% economic floor made the apparent payoff rare rather
+than robust. Per the all-conditions gate the verdict is **REJECT**. The positive sparse result cannot
+authorize a relaxed threshold or production action. Machine report: `docs/reports/edge_candidate_c24.json`.
