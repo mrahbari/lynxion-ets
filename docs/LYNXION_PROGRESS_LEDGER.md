@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0118's official spot data gate is KEEP. C-23 is now preregistered with outcome unopened:
+  equal-notional LONG spot/SHORT perpetual after causally unusual positive completed funding,
+  next-open execution through the next settlement, explicit two-unit capital normalization, and
+  clustered uncertainty.
+
 - Generic profit-lock behavior was observed after runtime reload on ETHUSDT and BNBUSDT:
   their exchange-side stops moved beyond entry in the profitable direction without manual or
   symbol-specific intervention.
