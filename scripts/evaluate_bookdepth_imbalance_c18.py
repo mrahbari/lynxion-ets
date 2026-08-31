@@ -26,6 +26,8 @@ REVERSE_START = int(pd.Timestamp("2023-01-01", tz="UTC").timestamp())
 REVERSE_END = int(pd.Timestamp("2023-12-31 23:59:59", tz="UTC").timestamp())
 PRIMARY_COST = 0.003
 COSTS = (0.002, 0.003, 0.005)
+POSITIVE_SYMBOLS_REQUIRED = 4
+MAX_CONCENTRATION = 0.30
 
 
 def _mechanics():
@@ -194,8 +196,9 @@ def build_report(price_dir: Path, book_dir: Path, funding_dir: Path) -> dict[str
     keep = (overall["n"] >= 600 and overall["expectancy"] is not None and overall["expectancy"] > 0
             and overall["profit_factor"] is not None and overall["profit_factor"] > 1
             and ci[0] is not None and ci[0] > 0 and gate["positive_adequate_folds"] >= 3
-            and gate["both_sides_positive_and_sampled"] and gate["positive_sampled_symbols"] >= 4
-            and concentration is not None and concentration <= 0.30
+            and gate["both_sides_positive_and_sampled"]
+            and gate["positive_sampled_symbols"] >= POSITIVE_SYMBOLS_REQUIRED
+            and concentration is not None and concentration <= MAX_CONCENTRATION
             and reverse_metrics["n"] >= 250 and reverse_metrics["expectancy"] > 0
             and reverse_metrics["profit_factor"] is not None and reverse_metrics["profit_factor"] > 1
             and costs["0.005"]["expectancy"] is not None and costs["0.005"]["expectancy"] > 0)

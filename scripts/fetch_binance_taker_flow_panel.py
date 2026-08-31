@@ -97,21 +97,21 @@ def normalize(symbol,records,raw_root,out_root):
     part.replace(target); totals.update({"first_timestamp":rows[0][0],"last_timestamp":rows[-1][0],
         "sha256":digest.hexdigest(),"file":str(target)}); return totals
 
-def build(root,workers=32):
-    raw,out=root/'raw',root/'normalized'; listings={s:list_archives(s) for s in SYMBOLS}; records={s:[] for s in SYMBOLS}
+def build(root,workers=32,symbols=SYMBOLS,task="TASK-0114"):
+    raw,out=root/'raw',root/'normalized'; listings={s:list_archives(s) for s in symbols}; records={s:[] for s in symbols}
     jobs=[(s,k) for s,ks in listings.items() for k in ks]
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures={pool.submit(download_archive,k,raw):s for s,k in jobs}
         for n,f in enumerate(as_completed(futures),1):
             records[futures[f]].append(f.result())
             if n%500==0 or n==len(jobs): print(f"downloaded/verified {n}/{len(jobs)}",flush=True)
-    summaries={s:normalize(s,records[s],raw,out) for s in SYMBOLS}
+    summaries={s:normalize(s,records[s],raw,out) for s in symbols}
     core=sum(v[k] for v in summaries.values() for k in ("conflicting_duplicates","schema_violations","numeric_violations","timestamp_violations","ohlc_violations","flow_violations"))
     adequate=all(v["unique_rows"]>=120_000 for v in summaries.values())
-    manifest={"task":"TASK-0114","source":DATA,"symbols":summaries,"archives":records,
+    manifest={"task":task,"source":DATA,"symbols":summaries,"archives":records,
       "gate":{"core_integrity_violations":core,"source_gap_intervals":sum(v["missing_intervals"] for v in summaries.values()),"adequate_coverage":adequate,"verdict":"KEEP" if core==0 and adequate else "REJECT"}}
     root.mkdir(parents=True,exist_ok=True); (root/'manifest.json').write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n"); return manifest
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(); p.add_argument('--output-root',default='data/research/taker_flow'); p.add_argument('--workers',type=int,default=32); a=p.parse_args()
-    report=build(Path(a.output_root),a.workers); print(json.dumps({"symbols":report["symbols"],"gate":report["gate"]},indent=2,sort_keys=True))
+    p=argparse.ArgumentParser(); p.add_argument('--output-root',default='data/research/taker_flow'); p.add_argument('--workers',type=int,default=32); p.add_argument('--symbols',nargs='+',default=list(SYMBOLS)); p.add_argument('--task',default='TASK-0114'); a=p.parse_args()
+    report=build(Path(a.output_root),a.workers,tuple(a.symbols),a.task); print(json.dumps({"symbols":report["symbols"],"gate":report["gate"]},indent=2,sort_keys=True))

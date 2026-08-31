@@ -150,6 +150,9 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-21 aggressive taker-flow continuation: 2,326 primary trades, -0.2086% expectancy, PF 0.8384,
   CI fully below zero, and all four folds negative. Reverse-time was also negative (-0.3853%,
   PF 0.6827, N=831); narrow LONG/ETH cells are diagnostic only and not promoted.
+- C-22 independent taker-flow confirmation: 1,928 primary trades, -0.1770% expectancy, PF 0.8906,
+  only 2/4 folds and 1/5 symbols positive; reverse was -0.4288% with PF 0.7015. This second disjoint
+  failure closes taker-flow continuation under the sequential policy.
 
 ## Open risks
 
@@ -170,8 +173,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Acquire the disjoint five-symbol taker-flow panel and evaluate the preregistered unchanged C-22
-independent confirmation. Failure closes the taker-flow continuation family.
+Perform cross-family evidence synthesis after C-22. Do not admit further continuation variants from
+price, OI, book depth, basis, or taker flow on the opened outcome panels.
 
 ## Operator decision required
 

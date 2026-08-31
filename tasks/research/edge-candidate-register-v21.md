@@ -1,6 +1,6 @@
 # Edge Candidate Register v21 — C-22 Independent Taker-Flow Confirmation
 
-**Status:** FROZEN — OUTCOMES UNOPENED
+**Status:** OPENED — C-22 REJECTED; FAMILY CLOSED
 
 C-22 is the one permitted independent confirmation of C-21 under the sequential research policy.
 It uses DOGEUSDT, LINKUSDT, LTCUSDT, DOTUSDT, and AVAXUSDT, whose taker-flow-conditioned outcomes
@@ -17,3 +17,9 @@ concentration<=35%; reverse N>=250 with expectancy>0 and PF>1; and primary posit
 
 Failure closes the taker-flow continuation family. No reversal, threshold/horizon change, symbol
 slice, or production mutation is authorized.
+
+## Frozen Result
+
+C-22 returned 1,928 primary trades with -0.1770% expectancy, PF 0.8906, only two positive folds and
+one positive symbol. Reverse-time was negative (-0.4288%, PF 0.7015, N=636). The independent gate
+rejects and closes the family. Machine report: `docs/reports/edge_candidate_c22_holdout.json`.
