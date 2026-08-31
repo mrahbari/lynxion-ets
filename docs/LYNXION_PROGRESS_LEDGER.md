@@ -173,8 +173,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Perform cross-family evidence synthesis after C-22. Do not admit further continuation variants from
-price, OI, book depth, basis, or taker flow on the opened outcome panels.
+Complete TASK-0118's official spot checksum/schema/timestamp/OHLC/gap/alignment gate before defining
+the distinct delta-neutral funding-carry candidate C23.
 
 ## Operator decision required
 
