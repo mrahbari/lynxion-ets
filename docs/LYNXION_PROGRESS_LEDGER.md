@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Preregister C-24 delta-neutral spot/perpetual basis convergence before opening outcomes while C-11
+Implement and evaluate preregistered C-24 delta-neutral spot/perpetual basis convergence while C-11
 continues prospective collection.
 
 ## Status
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- C-24 is preregistered with outcome unopened: positive basis above causal prior-2,880 p99 and
+  0.40%, next-open LONG spot/SHORT perpetual, causal convergence-or-24h exit, actual funding,
+  two-unit capital normalization, clustered bootstrap, reverse period, and frozen stability gates.
 - Post-C23 synthesis is complete. Funding-persistence variants are barred; the next admitted
   independent family is direct delta-neutral spot/perpetual basis convergence. It differs from
   directional C-20 and funding-selected C-23 and is enabled by TASK-0118's official spot panel.
@@ -189,8 +192,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Preregister C-24's direct basis-dislocation signal, two-leg execution, convergence/timeout exit,
-funding, costs, temporal validation, clustered bootstrap, and frozen gates before outcome opening.
+Implement C-24 exactly as preregistered, cover causal/two-leg mechanics with focused regressions,
+then open the primary and reverse outcomes once and issue the frozen verdict.
 
 ## Operator decision required
 
