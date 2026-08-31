@@ -165,8 +165,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Close the temporally unstable basis-convergence family and perform source feasibility for a
-genuinely distinct forced-liquidation mechanism before admitting C21.
+Complete TASK-0114's official taker-flow checksum/schema/timestamp/volume/coverage gate. Historical
+forced-liquidation research remains deferred because the official archive does not provide it.
 
 ## Operator decision required
 
