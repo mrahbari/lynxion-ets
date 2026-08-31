@@ -88,6 +88,9 @@ frozen promotion gates and production strategy logic is unchanged.
 - TASK-0110 focused suite: 10 passed across C-18 causality/execution and TASK-0109 acquisition
   regressions. C-18 uses strict pre-decision book alignment, causal thresholds, prior-bar 24-hour
   close, correct funding sign, and an explicit minimum-sample gate.
+- TASK-0112 focused acquisition suite: 5 passed. The premium-index panel retained 205,981–233,560
+  unique 15-minute rows per symbol from 14,101 checksum-verified archives, with zero core integrity
+  violations and explicit unfilled source gaps.
 
 ## Rejected hypotheses
 
@@ -159,8 +162,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete TASK-0112's official premium-index checksum/schema/timestamp/OHLC/coverage gate. Admit no
-C20 until the basis panel receives a KEEP verdict and a single distinct hypothesis is preregistered.
+Preregister exactly one symmetric premium-basis convergence candidate before opening aligned price
+outcomes, then evaluate it once under causal thresholds, actual funding, costs, folds, bootstrap,
+and concentration gates.
 
 ## Operator decision required
 
