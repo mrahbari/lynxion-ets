@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Preregister the distinct C-23 delta-neutral spot/perpetual funding-carry candidate while C-11
+Synthesize post-C-23 evidence and select the next genuinely independent mechanism while C-11
 continues prospective collection.
 
 ## Status
@@ -162,6 +162,10 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-22 independent taker-flow confirmation: 1,928 primary trades, -0.1770% expectancy, PF 0.8906,
   only 2/4 folds and 1/5 symbols positive; reverse was -0.4288% with PF 0.7015. This second disjoint
   failure closes taker-flow continuation under the sequential policy.
+- C-23 delta-neutral positive-funding carry: 3,407 primary pairs, -0.1914% net expectancy at the
+  frozen 0.20% capital cost, PF 0, clustered CI fully negative, and every fold/symbol negative.
+  Gross basis plus funding was only +0.0086%; reverse 2023 was also negative (-0.1902%, N=1,033).
+  The unlevered next-settlement carry mechanism is rejected as economically unable to clear costs.
 
 ## Open risks
 
@@ -182,8 +186,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Preregister C-23's causal signal, two-leg execution, capital normalization, funding timing, costs,
-temporal folds, bootstrap, and frozen promotion gates before opening any outcome.
+Complete the post-C-23 cross-family synthesis before admitting another candidate; do not create a
+threshold or holding-period variant from the opened carry outcomes.
 
 ## Operator decision required
 

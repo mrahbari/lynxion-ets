@@ -1,6 +1,6 @@
 # Edge Candidate Register v22 — C-23 Delta-Neutral Positive-Funding Carry
 
-**Status:** PREREGISTERED — OUTCOME UNOPENED
+**Status:** OPENED — C-23 REJECTED
 
 C-23 tests a new, non-directional mechanism: persistence of unusually positive completed
 funding may compensate a cash-and-carry position that is LONG spot and SHORT the matching
@@ -63,3 +63,12 @@ USDT perpetual. This is not a continuation/reversal bet and does not reopen a re
 
 No threshold, lookback, holding interval, cost, capital denominator, symbol slice, fold boundary,
 funding inclusion rule, or gate may change after the first outcome is opened. No orders are placed.
+
+## Frozen Result
+
+C-23 produced 3,407 primary pairs with -0.1914% net expectancy at 0.20% cost, PF 0, and a
+clustered 95% interval of [-0.1924%, -0.1904%]. Every fold and every symbol was negative. Mean
+capital-normalized basis return was +0.0019% and funding return +0.0067%, leaving only +0.0086%
+gross carry before costs. The 2023 reverse was also negative (-0.1902%, N=1,033). Every economic
+and stability gate except sample size fails; verdict **REJECT**. Machine report:
+`docs/reports/edge_candidate_c23.json`.
