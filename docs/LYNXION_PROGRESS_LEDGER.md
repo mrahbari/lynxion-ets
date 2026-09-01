@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Synthesize post-C-24 evidence without relaxing the opened dislocation threshold while C-11
-continues prospective collection.
+Acquire and integrity-gate the independent five-symbol official spot panel without opening C-25
+outcomes while C-11 continues prospective collection.
 
 ## Status
 
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- Post-C24 synthesis permits exactly one unchanged, disjoint confirmation on DOGE/LINK/LTC/DOT/
+  AVAX. C-24's sparse positive cells remain rejected; no threshold, horizon, exit, cost, or symbol
+  slice may change. TASK-0123 is data acquisition only and cannot open conditional outcomes.
 - C-24 is preregistered with outcome unopened: positive basis above causal prior-2,880 p99 and
   0.40%, next-open LONG spot/SHORT perpetual, causal convergence-or-24h exit, actual funding,
   two-unit capital normalization, clustered bootstrap, reverse period, and frozen stability gates.
@@ -196,8 +199,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete post-C-24 synthesis. Treat the sparse positive basis observations only as diagnostic and
-do not lower the threshold or reuse them as an independent confirmation.
+Complete TASK-0123's official spot checksum/integrity/alignment gate. Only after a data KEEP may
+the unchanged disjoint C-25 confirmation be preregistered before outcome opening.
 
 ## Operator decision required
 
