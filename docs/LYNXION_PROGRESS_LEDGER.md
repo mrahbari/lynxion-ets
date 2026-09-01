@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Synthesize the TASK-0127 storage NO_GO and identify a feasible genuinely new evidence source while
-C-11 continues prospective collection.
+Build the bounded official 2024–2026 BTC aggregate-trade panel under a hard 20 GiB reserve, without
+opening a candidate, while C-11 continues prospective collection.
 
 ## Status
 
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- Post-TASK-0127 synthesis retains the full-corpus NO_GO but finds a bounded BTC-only panel feasible:
+  2024–2026 compressed size is 18.35 GB (~17.1 GiB). Dates and acquisition-only features are frozen
+  before inspection; TASK-0128 must preserve the 20 GiB reserve and cannot define an outcome.
 - TASK-0127 is NO_GO under the frozen storage gate: complete BTC/ETH aggTrades coverage exists and
   sample checksums/schema pass, but the compressed corpus is ~45.8 GiB and cannot coexist with the
   required 20 GiB reserve on ~57.9 GiB free storage. No bulk download or outcome was opened.
@@ -223,9 +226,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete post-TASK-0127 synthesis. Do not bypass the storage reserve or download the 49.2 GB corpus;
-select a smaller official source, a bounded independent window justified before outcomes, or a true
-external-storage/operator gate.
+Complete TASK-0128's checksum/schema/semantics/aggregation/gap/hash/storage gate. Do not define a
+large-trade hypothesis until the bounded panel receives a data KEEP.
 
 ## Operator decision required
 
