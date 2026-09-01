@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Synthesize post-C-26 evidence and enforce the sequential admission policy while C-11 continues
-prospective collection.
+Run a listing-only official aggregate-trades feasibility census before any bulk acquisition or new
+candidate while C-11 continues prospective collection.
 
 ## Status
 
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- Post-C26 synthesis forbids response-band/horizon/symbol variants and pauses candidate churn.
+  TASK-0127 evaluates a genuinely richer aggregate-trade source using listings and minimal schema
+  samples only, with a storage gate before any bulk download.
 - C-26 is preregistered with outcome unopened: exact completed UTC-hour BTC shocks above causal
   p95/720 and 1.50%, same-direction alt response ratio 0–0.35, next-open directional alt entry,
   exact four-hour exit, actual funding, 0.30% cost, clustered uncertainty, and frozen gates.
@@ -217,8 +220,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete post-C-26 synthesis before admitting another candidate; do not promote the small positive
-SHORT or ETH/SOL diagnostic cells from the opened outcome.
+Complete TASK-0127's archive-count/coverage/byte/schema/storage census and issue GO/NO_GO before any
+aggregate-trade corpus download or candidate preregistration.
 
 ## Operator decision required
 
