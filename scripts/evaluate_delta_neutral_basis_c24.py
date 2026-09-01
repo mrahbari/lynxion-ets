@@ -95,7 +95,9 @@ def bootstrap(events,samples=10000):
 def collect(spot_dir,perp_dir,funding_dir,start,end):
     events=[]; census={}
     for s in SYMBOLS:
-        panel=aligned_basis(spot_dir/f'{s}.csv.gz',perp_dir/f'{s}.csv'); funding=load_funding(funding_dir/f'{s}.csv')
+        perp_path=perp_dir/f'{s}.csv'
+        if not perp_path.exists(): perp_path=perp_dir/f'{s}.csv.gz'
+        panel=aligned_basis(spot_dir/f'{s}.csv.gz',perp_path); funding=load_funding(funding_dir/f'{s}.csv')
         selected,counts=symbol_events(s,panel,funding,start,end); events+=selected; census[s]=counts
     assign_folds(events); return events,census
 
