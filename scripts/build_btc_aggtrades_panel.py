@@ -2,6 +2,7 @@
 """Build bounded checksum-verified BTCUSDT aggregate-trade 15m panel for TASK-0128."""
 from __future__ import annotations
 import argparse,csv,gzip,hashlib,importlib.util,io,itertools,json,math,shutil,zipfile
+from datetime import date,timedelta
 from pathlib import Path
 import numpy as np
 import requests
@@ -65,6 +66,41 @@ def write_daily(path,rows):
  fields=list(rows[0]) if rows else ['timestamp','trade_count','quote_volume','buyer_quote_volume','seller_quote_volume','signed_imbalance','max_quote_size','mean_quote_size','std_quote_size','top_1pct_quote_share']
  with gzip.open(path,'wt',newline='') as f:w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(rows)
 
+def sha256_file(path):
+ digest=hashlib.sha256()
+ with path.open('rb') as f:
+  for chunk in iter(lambda:f.read(1024*1024),b''):digest.update(chunk)
+ return digest.hexdigest()
+
+def expected_date_strings():
+ start=date.fromisoformat(START);end=date.fromisoformat(END)
+ return [(start+timedelta(days=i)).isoformat() for i in range((end-start).days+1)]
+
+def finalize(root,manifest):
+ fields=['timestamp','trade_count','quote_volume','buyer_quote_volume','seller_quote_volume','signed_imbalance','max_quote_size','mean_quote_size','std_quote_size','top_1pct_quote_share']
+ by_timestamp={};exact_duplicates=0;conflicting_duplicates=0
+ for day in expected_date_strings():
+  path=root/'daily'/f'{day}.csv.gz'
+  if not path.exists():continue
+  with gzip.open(path,'rt',newline='') as f:
+   for row in csv.DictReader(f):
+    ts=int(row['timestamp']);normalized=tuple(row[name] for name in fields)
+    if ts in by_timestamp:
+     if by_timestamp[ts]==normalized:exact_duplicates+=1
+     else:conflicting_duplicates+=1
+    else:by_timestamp[ts]=normalized
+ target=root/'normalized'/f'{SYMBOL}.csv.gz';target.parent.mkdir(parents=True,exist_ok=True);part=target.with_suffix('.csv.gz.part')
+ with part.open('wb') as raw:
+  with gzip.GzipFile(filename='',mode='wb',fileobj=raw,mtime=0) as zipped:
+   with io.TextIOWrapper(zipped,encoding='utf-8',newline='') as text:
+    writer=csv.writer(text);writer.writerow(fields);writer.writerows(by_timestamp[ts] for ts in sorted(by_timestamp))
+ part.replace(target)
+ core=sum(item['checks'][key] for item in manifest['days'].values() for key in ('schema_violations','numeric_violations','timestamp_violations','side_violations','id_time_violations','duplicate_ids'))+conflicting_duplicates
+ timestamps=sorted(by_timestamp);missing=sum(max(0,(b-a)//900-1) for a,b in zip(timestamps,timestamps[1:]));reserve_ok=shutil.disk_usage(root).free>=RESERVE
+ manifest['normalized']={'file':str(target),'rows':len(timestamps),'first_timestamp':timestamps[0] if timestamps else None,'last_timestamp':timestamps[-1] if timestamps else None,'sha256':sha256_file(target),'exact_duplicates':exact_duplicates,'conflicting_duplicates':conflicting_duplicates,'missing_intervals':missing}
+ manifest['gate']={'complete_days':len(manifest['days'])==len(expected_date_strings()),'core_integrity_violations':core,'adequate_coverage':len(timestamps)>=90000,'storage_reserve_preserved':reserve_ok,'verdict':'KEEP' if len(manifest['days'])==len(expected_date_strings()) and core==0 and len(timestamps)>=90000 and reserve_ok else 'REJECT'}
+ return manifest
+
 def build(root):
  c=census_module();objects=c.list_objects(SYMBOL);by,complete,missing,_=c.classify(SYMBOL,objects)
  complete=[d for d in complete if START<=d<=END]
@@ -74,12 +110,12 @@ def build(root):
  for date in complete:
   rec=by[date];raw=root/'raw'/Path(rec['zip']['key']).name;checksum=root/'raw'/Path(rec['checksum']['key']).name;daily=root/'daily'/f'{date}.csv.gz'
   download(rec['checksum']['key'],checksum);download(rec['zip']['key'],raw)
-  expected=checksum.read_text().strip().split()[0];digest=hashlib.sha256(raw.read_bytes()).hexdigest()
+  expected=checksum.read_text().strip().split()[0];digest=sha256_file(raw)
   if digest!=expected:raise ValueError(f'{date}: checksum mismatch')
   if daily.exists() and date in manifest['days']:continue
   rows,checks=parse_archive(raw);write_daily(daily,rows);manifest['days'][date]={'zip_sha256':digest,'rows':len(rows),'checks':checks}
   manifest_path.parent.mkdir(parents=True,exist_ok=True);manifest_path.write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n')
- return manifest
+ manifest=finalize(root,manifest);manifest_path.write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n');return manifest
 
 def main():
  p=argparse.ArgumentParser();p.add_argument('--output-root',default='data/research/btc_aggtrades');a=p.parse_args();print(json.dumps(build(Path(a.output_root)),indent=2,sort_keys=True))
