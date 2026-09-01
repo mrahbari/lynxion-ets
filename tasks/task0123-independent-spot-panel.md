@@ -1,6 +1,6 @@
 # TASK-0123 — Independent Official Binance Spot Panel
 
-**Status:** IN PROGRESS — ACQUISITION PROTOCOL FROZEN
+**Status:** COMPLETE — KEEP
 
 ## Objective
 
@@ -19,3 +19,14 @@ confirmation of C-24 without opening basis-conditioned outcomes.
 - KEEP requires zero core integrity violations and at least 120,000 complete rows per symbol.
 - Acquisition may not compute basis, signal counts, trades, PnL, or candidate verdicts.
 - No orders or production/risk/trailing/symbol-admission changes.
+
+## Verified Result
+
+- Downloaded and checksum-verified 6,685 official archives (1,337 per symbol).
+- Retained 128,346 complete native 15-minute rows per symbol with zero schema, numeric,
+  timestamp, OHLC, duplicate, or flow violations.
+- Excluded and censused one zero-volume partial maintenance candle per symbol. Six missing
+  intervals per symbol remain explicit; no observation was filled or synthesized.
+- Every retained spot timestamp aligns to the C-22 futures panel: 128,346 common rows,
+  zero spot-only rows, and six futures-only maintenance rows per symbol.
+- Frozen data verdict: **KEEP**. No basis or trading outcome was computed.

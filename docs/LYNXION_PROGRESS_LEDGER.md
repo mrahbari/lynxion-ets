@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Acquire and integrity-gate the independent five-symbol official spot panel without opening C-25
-outcomes while C-11 continues prospective collection.
+Preregister the unchanged disjoint C-25 basis-convergence confirmation before opening outcomes
+while C-11 continues prospective collection.
 
 ## Status
 
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0123 data gate is KEEP: 6,685 checksum-verified spot archives yielded 128,346 complete
+  rows per DOGE/LINK/LTC/DOT/AVAX, zero core violations, explicit maintenance gaps, and exact
+  alignment of every retained timestamp to the C-22 futures panel. No C-25 outcome was opened.
 - Post-C24 synthesis permits exactly one unchanged, disjoint confirmation on DOGE/LINK/LTC/DOT/
   AVAX. C-24's sparse positive cells remain rejected; no threshold, horizon, exit, cost, or symbol
   slice may change. TASK-0123 is data acquisition only and cannot open conditional outcomes.
@@ -199,8 +202,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete TASK-0123's official spot checksum/integrity/alignment gate. Only after a data KEEP may
-the unchanged disjoint C-25 confirmation be preregistered before outcome opening.
+Preregister C-25 on the disjoint five-symbol panel with C-24 mechanics unchanged and adjusted only
+for the frozen five-symbol breadth denominator before opening any conditional outcome.
 
 ## Operator decision required
 
