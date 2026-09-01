@@ -1,6 +1,6 @@
 # TASK-0127 — Official Aggregate-Trades Feasibility Census
 
-**Status:** IN PROGRESS — LISTING-ONLY PROTOCOL FROZEN
+**Status:** COMPLETE — NO_GO
 
 ## Objective
 
@@ -18,3 +18,17 @@ new candidate definition.
 - Emit a deterministic feasibility report with `GO` or `NO_GO`; do not download the corpus,
   aggregate features, define signals, or open outcomes.
 - No production or order-path changes.
+
+## Verified Result
+
+- Complete official coverage exists for both BTCUSDT and ETHUSDT: 1,337 ZIP/checksum pairs per
+  symbol from 2023-01-01 through 2026-08-29, with no missing dates.
+- Two downloaded schema samples passed SHA-256 and contained the expected seven aggregate-trade
+  fields.
+- The compressed corpus is 49,175,610,837 bytes (~45.8 GiB); conservative full expansion is
+  ~277 GiB. A resumable raw-cache/streaming workflow plus the frozen 20 GiB reserve requires more
+  than the currently available ~57.9 GiB.
+- Frozen feasibility verdict: **NO_GO**. No bulk corpus was downloaded and no signal/outcome was
+  constructed.
+
+Machine report: `docs/reports/aggtrades_feasibility.json`.

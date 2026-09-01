@@ -1,0 +1,70 @@
+{
+  "gate": {
+    "checks": {
+      "complete_coverage": true,
+      "sample_schema": true,
+      "streaming_storage_with_reserve": false
+    },
+    "verdict": "NO_GO"
+  },
+  "source": "https://data.binance.vision/",
+  "storage": {
+    "compressed_corpus_bytes": 49175610837,
+    "free_bytes": 62160367616,
+    "projected_full_expanded_bytes": 297455130752,
+    "projected_normalized_bytes": 16429056,
+    "projected_streaming_peak_bytes": 49226940489,
+    "safety_reserve_bytes": 21474836480
+  },
+  "symbols": {
+    "BTCUSDT": {
+      "complete_dates": 1337,
+      "compressed_zip_bytes": 23685473417,
+      "first_date": "2023-01-01",
+      "last_date": "2026-08-29",
+      "missing_dates": [],
+      "sample": {
+        "compressed_bytes": 3116010,
+        "header": [
+          "agg_trade_id",
+          "price",
+          "quantity",
+          "first_trade_id",
+          "last_trade_id",
+          "transact_time",
+          "is_buyer_maker"
+        ],
+        "key": "data/futures/um/daily/aggTrades/BTCUSDT/BTCUSDT-aggTrades-2023-01-01.zip",
+        "rows_including_header": 223277,
+        "sha256": "583fcedebe5f31d0654692a32aedca839827bb8696941dae2078ddab1aab12ea",
+        "uncompressed_bytes": 15078583
+      },
+      "unexpected_dates": []
+    },
+    "ETHUSDT": {
+      "complete_dates": 1337,
+      "compressed_zip_bytes": 25490137420,
+      "first_date": "2023-01-01",
+      "last_date": "2026-08-29",
+      "missing_dates": [],
+      "sample": {
+        "compressed_bytes": 3816144,
+        "header": [
+          "agg_trade_id",
+          "price",
+          "quantity",
+          "first_trade_id",
+          "last_trade_id",
+          "transact_time",
+          "is_buyer_maker"
+        ],
+        "key": "data/futures/um/daily/aggTrades/ETHUSDT/ETHUSDT-aggTrades-2023-01-01.zip",
+        "rows_including_header": 261858,
+        "sha256": "078076e17ed984a08f136a785bf9e5225ae9830c4766928a61c59e8bcd9de528",
+        "uncompressed_bytes": 17450298
+      },
+      "unexpected_dates": []
+    }
+  },
+  "task": "TASK-0127"
+}

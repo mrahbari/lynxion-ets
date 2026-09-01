@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Run a listing-only official aggregate-trades feasibility census before any bulk acquisition or new
-candidate while C-11 continues prospective collection.
+Synthesize the TASK-0127 storage NO_GO and identify a feasible genuinely new evidence source while
+C-11 continues prospective collection.
 
 ## Status
 
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0127 is NO_GO under the frozen storage gate: complete BTC/ETH aggTrades coverage exists and
+  sample checksums/schema pass, but the compressed corpus is ~45.8 GiB and cannot coexist with the
+  required 20 GiB reserve on ~57.9 GiB free storage. No bulk download or outcome was opened.
 - Post-C26 synthesis forbids response-band/horizon/symbol variants and pauses candidate churn.
   TASK-0127 evaluates a genuinely richer aggregate-trade source using listings and minimal schema
   samples only, with a storage gate before any bulk download.
@@ -220,8 +223,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete TASK-0127's archive-count/coverage/byte/schema/storage census and issue GO/NO_GO before any
-aggregate-trade corpus download or candidate preregistration.
+Complete post-TASK-0127 synthesis. Do not bypass the storage reserve or download the 49.2 GB corpus;
+select a smaller official source, a bounded independent window justified before outcomes, or a true
+external-storage/operator gate.
 
 ## Operator decision required
 
