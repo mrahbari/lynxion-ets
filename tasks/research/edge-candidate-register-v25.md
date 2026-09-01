@@ -1,6 +1,6 @@
 # Edge Candidate Register v25 — C-26 BTC-Lead / Alt-Underreaction
 
-**Status:** PREREGISTERED — OUTCOME UNOPENED
+**Status:** OPENED — C-26 REJECTED
 
 C-26 tests delayed cross-market propagation after a causally extreme completed BTC hourly move.
 It is a market-context lead/lag mechanism, distinct from own-symbol momentum, simultaneous
@@ -57,3 +57,11 @@ cross-sectional ranking, and taker-flow continuation.
 No shock floor, percentile/lookback, response band, direction, horizon, cost, funding rule, universe,
 fold, or gate may change after outcome opening. No production, broker, risk, trailing,
 symbol-admission, paper-order, or real-order action is authorized.
+
+## Frozen Result
+
+C-26 produced 103 primary trades with -0.2102% expectancy, PF 0.744, and a clustered interval that
+crossed zero. Only one fold was positive; LONG was negative, only ETH/SOL were positive with small
+samples, and N missed the frozen minimum. Reverse 2023 was decisively negative (-0.9667%, PF 0.238,
+N=49) with every fold, side, and symbol negative. Verdict **REJECT**. Machine report:
+`docs/reports/edge_candidate_c26.json`.

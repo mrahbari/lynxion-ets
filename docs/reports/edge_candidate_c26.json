@@ -1,0 +1,380 @@
+{
+  "candidate": "C-26",
+  "gate": {
+    "checks": {
+      "bootstrap": false,
+      "concentration": true,
+      "cost_005": false,
+      "folds": false,
+      "primary_n": false,
+      "primary_pf": false,
+      "primary_positive": false,
+      "reverse": false,
+      "sides": false,
+      "symbols": false
+    },
+    "verdict": "REJECT"
+  },
+  "max_positive_pnl_symbol_concentration": 0.30535358669695306,
+  "primary": {
+    "by_fold": {
+      "F1": {
+        "expectancy": -0.005218519734737598,
+        "max_drawdown": 0.13091149011731815,
+        "n": 24,
+        "profit_factor": 0.37085257955242323,
+        "win_rate": 0.3333333333333333
+      },
+      "F2": {
+        "expectancy": 0.0022433681124300617,
+        "max_drawdown": 0.18815568603899394,
+        "n": 27,
+        "profit_factor": 1.2423234537081194,
+        "win_rate": 0.3333333333333333
+      },
+      "F3": {
+        "expectancy": -0.0028344163832079963,
+        "max_drawdown": 0.10636220215276,
+        "n": 26,
+        "profit_factor": 0.6623481318788288,
+        "win_rate": 0.38461538461538464
+      },
+      "F4": {
+        "expectancy": -0.0030059219739648904,
+        "max_drawdown": 0.14852522238449323,
+        "n": 26,
+        "profit_factor": 0.562066966668806,
+        "win_rate": 0.38461538461538464
+      }
+    },
+    "by_side": {
+      "LONG": {
+        "expectancy": -0.003692623256154578,
+        "max_drawdown": 0.300001704386865,
+        "n": 69,
+        "profit_factor": 0.4972904077255605,
+        "win_rate": 0.37681159420289856
+      },
+      "SHORT": {
+        "expectancy": 0.0011255491997082395,
+        "max_drawdown": 0.27120703382874656,
+        "n": 34,
+        "profit_factor": 1.112916364572001,
+        "win_rate": 0.3235294117647059
+      }
+    },
+    "by_symbol": {
+      "ADAUSDT": {
+        "expectancy": -0.0075545321573786545,
+        "max_drawdown": 0.10557399720096829,
+        "n": 13,
+        "profit_factor": 0.2734246629421597,
+        "win_rate": 0.23076923076923078
+      },
+      "BNBUSDT": {
+        "expectancy": -0.002221671940916784,
+        "max_drawdown": 0.154604403472339,
+        "n": 38,
+        "profit_factor": 0.6947365135466351,
+        "win_rate": 0.39473684210526316
+      },
+      "ETHUSDT": {
+        "expectancy": 0.01261841594193335,
+        "max_drawdown": 0.023946565813441012,
+        "n": 8,
+        "profit_factor": 4.509337433184453,
+        "win_rate": 0.5
+      },
+      "SOLUSDT": {
+        "expectancy": 0.0011898011286749035,
+        "max_drawdown": 0.10196690958455779,
+        "n": 18,
+        "profit_factor": 1.1298503918848923,
+        "win_rate": 0.4444444444444444
+      },
+      "XRPUSDT": {
+        "expectancy": -0.006009754920593866,
+        "max_drawdown": 0.18157837818192746,
+        "n": 26,
+        "profit_factor": 0.3498202873537586,
+        "win_rate": 0.2692307692307692
+      }
+    },
+    "by_year": {
+      "2024": {
+        "expectancy": -0.0019589232247504127,
+        "max_drawdown": 0.3244139457846391,
+        "n": 76,
+        "profit_factor": 0.7768900306556479,
+        "win_rate": 0.34210526315789475
+      },
+      "2025": {
+        "expectancy": -0.0036303957011405734,
+        "max_drawdown": 0.13288886565854516,
+        "n": 21,
+        "profit_factor": 0.5512039528084968,
+        "win_rate": 0.38095238095238093
+      },
+      "2026": {
+        "expectancy": 0.0014323571533996129,
+        "max_drawdown": 0.007808240889456467,
+        "n": 6,
+        "profit_factor": 2.0007086527269777,
+        "win_rate": 0.5
+      }
+    },
+    "clustered_bootstrap_95_ci": [
+      -0.006995522443485736,
+      0.004035001926652183
+    ],
+    "cost_sensitivity": {
+      "0.002": {
+        "expectancy": -0.0011021585619862694,
+        "max_drawdown": 0.38078513343878595,
+        "n": 103,
+        "profit_factor": 0.8545381440233419,
+        "win_rate": 0.39805825242718446
+      },
+      "0.003": {
+        "expectancy": -0.0021021585619862694,
+        "max_drawdown": 0.4617851334387861,
+        "n": 103,
+        "profit_factor": 0.7439868868351392,
+        "win_rate": 0.3592233009708738
+      },
+      "0.005": {
+        "expectancy": -0.00410215856198627,
+        "max_drawdown": 0.623785133438786,
+        "n": 103,
+        "profit_factor": 0.5707707574312472,
+        "win_rate": 0.30097087378640774
+      }
+    },
+    "mean_btc_shock": 0.020765232131683402,
+    "mean_funding_return": -1.8235825242718447e-05,
+    "mean_response_ratio": 0.2131003686283063,
+    "overall": {
+      "expectancy": -0.0021021585619862694,
+      "max_drawdown": 0.4617851334387861,
+      "n": 103,
+      "profit_factor": 0.7439868868351392,
+      "win_rate": 0.3592233009708738
+    }
+  },
+  "primary_census": {
+    "ADAUSDT": {
+      "aligned_hours": 23329,
+      "missing_path": 0,
+      "non_shock": 22838,
+      "non_underreaction": 478,
+      "overlap_rejected": 0,
+      "warmup_rejected": 0
+    },
+    "BNBUSDT": {
+      "aligned_hours": 23329,
+      "missing_path": 0,
+      "non_shock": 22838,
+      "non_underreaction": 450,
+      "overlap_rejected": 3,
+      "warmup_rejected": 0
+    },
+    "ETHUSDT": {
+      "aligned_hours": 23329,
+      "missing_path": 0,
+      "non_shock": 22838,
+      "non_underreaction": 483,
+      "overlap_rejected": 0,
+      "warmup_rejected": 0
+    },
+    "SOLUSDT": {
+      "aligned_hours": 23329,
+      "missing_path": 0,
+      "non_shock": 22838,
+      "non_underreaction": 472,
+      "overlap_rejected": 1,
+      "warmup_rejected": 0
+    },
+    "XRPUSDT": {
+      "aligned_hours": 23329,
+      "missing_path": 0,
+      "non_shock": 22838,
+      "non_underreaction": 465,
+      "overlap_rejected": 0,
+      "warmup_rejected": 0
+    }
+  },
+  "protocol": "edge-candidate-register-v25",
+  "reverse": {
+    "by_fold": {
+      "F1": {
+        "expectancy": -0.008888348887619467,
+        "max_drawdown": 0.10666018665143359,
+        "n": 12,
+        "profit_factor": 0.2299144315474344,
+        "win_rate": 0.16666666666666666
+      },
+      "F2": {
+        "expectancy": -0.0017310437235684324,
+        "max_drawdown": 0.03587025945682519,
+        "n": 12,
+        "profit_factor": 0.7464083306059225,
+        "win_rate": 0.3333333333333333
+      },
+      "F3": {
+        "expectancy": -0.010408622938412018,
+        "max_drawdown": 0.12490347526094424,
+        "n": 12,
+        "profit_factor": 0.06689415852838057,
+        "win_rate": 0.08333333333333333
+      },
+      "F4": {
+        "expectancy": -0.017028335986169558,
+        "max_drawdown": 0.2353862323725811,
+        "n": 13,
+        "profit_factor": 0.17301900663388306,
+        "win_rate": 0.23076923076923078
+      }
+    },
+    "by_side": {
+      "LONG": {
+        "expectancy": -0.00947415020062951,
+        "max_drawdown": 0.3171906709725213,
+        "n": 32,
+        "profit_factor": 0.10943531127991865,
+        "win_rate": 0.15625
+      },
+      "SHORT": {
+        "expectancy": -0.010031279293838758,
+        "max_drawdown": 0.18893240747191123,
+        "n": 17,
+        "profit_factor": 0.39426861015694625,
+        "win_rate": 0.29411764705882354
+      }
+    },
+    "by_symbol": {
+      "ADAUSDT": {
+        "expectancy": -0.007979459516231665,
+        "max_drawdown": 0.07653016195391296,
+        "n": 8,
+        "profit_factor": 0.3898714379560903,
+        "win_rate": 0.25
+      },
+      "BNBUSDT": {
+        "expectancy": -0.0031203078840713327,
+        "max_drawdown": 0.05540586858906074,
+        "n": 16,
+        "profit_factor": 0.521298569152687,
+        "win_rate": 0.25
+      },
+      "ETHUSDT": {
+        "expectancy": -0.010178395807924638,
+        "max_drawdown": 0.030535187423773914,
+        "n": 3,
+        "profit_factor": 0.31463309314658433,
+        "win_rate": 0.3333333333333333
+      },
+      "SOLUSDT": {
+        "expectancy": -0.023745690128636962,
+        "max_drawdown": 0.21371121115773267,
+        "n": 9,
+        "profit_factor": 0.0010646324866867578,
+        "win_rate": 0.1111111111111111
+      },
+      "XRPUSDT": {
+        "expectancy": -0.008899811812223235,
+        "max_drawdown": 0.15454688238720843,
+        "n": 13,
+        "profit_factor": 0.2513756876115533,
+        "win_rate": 0.15384615384615385
+      }
+    },
+    "by_year": {
+      "2023": {
+        "expectancy": -0.009667439886028638,
+        "max_drawdown": 0.4737045544154033,
+        "n": 49,
+        "profit_factor": 0.23836558965124452,
+        "win_rate": 0.20408163265306123
+      }
+    },
+    "clustered_bootstrap_95_ci": [
+      -0.016481857569795717,
+      -0.00307880462817868
+    ],
+    "cost_sensitivity": {
+      "0.002": {
+        "expectancy": -0.00866743988602864,
+        "max_drawdown": 0.4247045544154033,
+        "n": 49,
+        "profit_factor": 0.27261423323529754,
+        "win_rate": 0.24489795918367346
+      },
+      "0.003": {
+        "expectancy": -0.009667439886028638,
+        "max_drawdown": 0.4737045544154033,
+        "n": 49,
+        "profit_factor": 0.23836558965124452,
+        "win_rate": 0.20408163265306123
+      },
+      "0.005": {
+        "expectancy": -0.011667439886028638,
+        "max_drawdown": 0.5717045544154034,
+        "n": 49,
+        "profit_factor": 0.18529287837534447,
+        "win_rate": 0.1836734693877551
+      }
+    },
+    "mean_btc_shock": 0.019103843071070586,
+    "mean_funding_return": 7.937142857142859e-06,
+    "mean_response_ratio": 0.21710703036771706,
+    "overall": {
+      "expectancy": -0.009667439886028638,
+      "max_drawdown": 0.4737045544154033,
+      "n": 49,
+      "profit_factor": 0.23836558965124452,
+      "win_rate": 0.20408163265306123
+    }
+  },
+  "reverse_census": {
+    "ADAUSDT": {
+      "aligned_hours": 8759,
+      "missing_path": 0,
+      "non_shock": 7926,
+      "non_underreaction": 105,
+      "overlap_rejected": 0,
+      "warmup_rejected": 720
+    },
+    "BNBUSDT": {
+      "aligned_hours": 8759,
+      "missing_path": 0,
+      "non_shock": 7926,
+      "non_underreaction": 97,
+      "overlap_rejected": 0,
+      "warmup_rejected": 720
+    },
+    "ETHUSDT": {
+      "aligned_hours": 8759,
+      "missing_path": 0,
+      "non_shock": 7926,
+      "non_underreaction": 110,
+      "overlap_rejected": 0,
+      "warmup_rejected": 720
+    },
+    "SOLUSDT": {
+      "aligned_hours": 8759,
+      "missing_path": 0,
+      "non_shock": 7926,
+      "non_underreaction": 104,
+      "overlap_rejected": 0,
+      "warmup_rejected": 720
+    },
+    "XRPUSDT": {
+      "aligned_hours": 8759,
+      "missing_path": 0,
+      "non_shock": 7926,
+      "non_underreaction": 100,
+      "overlap_rejected": 0,
+      "warmup_rejected": 720
+    }
+  }
+}

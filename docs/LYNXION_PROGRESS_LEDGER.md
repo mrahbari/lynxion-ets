@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement and evaluate preregistered C-26 BTC-lead/alt-underreaction while C-11 continues
+Synthesize post-C-26 evidence and enforce the sequential admission policy while C-11 continues
 prospective collection.
 
 ## Status
@@ -194,6 +194,9 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-25 unchanged independent basis convergence: only two primary pairs survived, both DOGE, with
   +0.3117% expectancy; reverse had zero pairs. Sample, breadth, concentration, PF, and reverse gates
   failed. Together with C-24, this closes direct basis convergence without threshold relaxation.
+- C-26 BTC-lead/alt-underreaction: 103 primary trades, -0.2102% expectancy, PF 0.744, CI crossing
+  zero, and only one positive fold. Reverse 2023 was -0.9667%, PF 0.238, with every fold/side/symbol
+  negative. The frozen market-context propagation candidate is rejected.
 
 ## Open risks
 
@@ -214,8 +217,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Implement C-26 exactly as preregistered, cover hourly causality and execution mechanics with focused
-regressions, then open primary/reverse outcomes once and issue the frozen verdict.
+Complete post-C-26 synthesis before admitting another candidate; do not promote the small positive
+SHORT or ETH/SOL diagnostic cells from the opened outcome.
 
 ## Operator decision required
 
