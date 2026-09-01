@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Preregister a single C-26 BTC-lead/alt-underreaction candidate before opening conditional outcomes
-while C-11 continues prospective collection.
+Implement and evaluate preregistered C-26 BTC-lead/alt-underreaction while C-11 continues
+prospective collection.
 
 ## Status
 
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- C-26 is preregistered with outcome unopened: exact completed UTC-hour BTC shocks above causal
+  p95/720 and 1.50%, same-direction alt response ratio 0–0.35, next-open directional alt entry,
+  exact four-hour exit, actual funding, 0.30% cost, clustered uncertainty, and frozen gates.
 - Post-C25 synthesis closes direct basis convergence and admits causal BTC-lead/alt-underreaction
   as the next distinct market-context family. No conditional membership has been computed; one
   complete specification must be frozen before evaluation.
@@ -211,9 +214,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Preregister C-26's BTC shock, alt underreaction, direction, timing, overlap, horizon, funding,
-costs, folds, reverse period, clustered uncertainty, breadth, and concentration gates before opening
-any conditional outcome.
+Implement C-26 exactly as preregistered, cover hourly causality and execution mechanics with focused
+regressions, then open primary/reverse outcomes once and issue the frozen verdict.
 
 ## Operator decision required
 
