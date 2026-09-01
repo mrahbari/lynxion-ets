@@ -18,6 +18,16 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0129 read-only exit audit reconstructed the latest 50 completed BingX VST positions. In a
+  10x sensitivity view, 23 reached estimated MFE >=10% ROE, 19 reached >=12%, and 14 reached >=10%
+  before exiting below +5% net ROE; nine finished between +2% and +5%. Forty-eight exits were
+  `STOP_MARKET` and two were `TAKE_PROFIT_MARKET`. One-minute candle extremes make MFE/MAE estimates,
+  not proof that the manager observed the extreme or successfully amended the exchange stop.
+- BingX `allOrders` omitted historical leverage. All three currently open VST positions report 10x,
+  while loaded risk settings report `max_leverage=5.0` and ActivePositionManager models ROE with a
+  hard-coded default 10x. Add a separate fail-closed leverage-consistency audit; do not change live
+  leverage or trailing thresholds from this diagnostic sample.
+
 - Post-TASK-0127 synthesis retains the full-corpus NO_GO but finds a bounded BTC-only panel feasible:
   2024–2026 compressed size is 18.35 GB (~17.1 GiB). Dates and acquisition-only features are frozen
   before inspection; TASK-0128 must preserve the 20 GiB reserve and cannot define an outcome.
@@ -208,6 +218,13 @@ frozen promotion gates and production strategy logic is unchanged.
   negative. The frozen market-context propagation candidate is rejected.
 
 ## Open risks
+
+- Recent exit evidence is consistent with profit giveback after favorable excursion. Required
+  follow-up: correlate manager evaluation timestamps, submitted/replaced stop prices, exchange order
+  visibility, mark-price trigger semantics, fills/slippage, and restart hydration for each position.
+  Preregister any +10/+12 trigger and +4/+5 lock comparison on a separate forward/OOS sample.
+- Exchange leverage currently reports 10x on open VST positions despite a loaded 5x local risk cap;
+  the authoritative leverage-set/admission path has not yet been proven fail-closed.
 
 - The current historical files do not provide point-in-time funding or bid/ask observations;
   frozen cost assumptions must remain explicit.
