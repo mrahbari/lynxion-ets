@@ -1,6 +1,6 @@
 # Edge Candidate Register v24 — C-25 Independent Basis-Convergence Confirmation
 
-**Status:** PREREGISTERED — OUTCOME UNOPENED
+**Status:** OPENED — C-25 REJECTED; FAMILY CLOSED
 
 C-25 is the one permitted independent historical confirmation of C-24. It uses the disjoint
 DOGEUSDT, LINKUSDT, LTCUSDT, DOTUSDT, and AVAXUSDT panel whose spot/perpetual basis-conditioned
@@ -25,3 +25,11 @@ and PF>1; timeout share<=50%; and positive primary expectancy at 0.30% cost.
 
 Failure is REJECT and closes direct basis convergence at family level. No threshold, horizon, exit,
 cost, direction, or symbol slice may change. No production or order action is authorized.
+
+## Frozen Result
+
+C-25 produced only two primary pairs, both DOGEUSDT, with +0.3117% expectancy and no losses; the
+reverse period produced zero pairs. Primary N, PF definition, folds, symbols, concentration, and
+reverse gates failed. The frozen verdict is **REJECT**, and together with C-24 this closes direct
+basis convergence at family level. Sparse positive events cannot authorize threshold relaxation or
+production action. Machine report: `docs/reports/edge_candidate_c25.json`.

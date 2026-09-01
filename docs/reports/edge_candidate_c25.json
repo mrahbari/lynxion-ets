@@ -1,0 +1,349 @@
+{
+  "candidate": "C-25",
+  "gate": {
+    "checks": {
+      "bootstrap": true,
+      "concentration": false,
+      "cost_003": true,
+      "folds": false,
+      "primary_n": false,
+      "primary_pf": false,
+      "primary_positive": true,
+      "reverse": false,
+      "symbols": false,
+      "timeout": true
+    },
+    "verdict": "REJECT"
+  },
+  "max_positive_pnl_symbol_concentration": 1.0,
+  "primary": {
+    "by_fold": {
+      "F1": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "F2": {
+        "expectancy": 0.0024133423655226145,
+        "max_drawdown": 0.0,
+        "n": 1,
+        "profit_factor": null,
+        "win_rate": 1.0
+      },
+      "F3": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "F4": {
+        "expectancy": 0.003821473515159513,
+        "max_drawdown": 0.0,
+        "n": 1,
+        "profit_factor": null,
+        "win_rate": 1.0
+      }
+    },
+    "by_symbol": {
+      "AVAXUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "DOGEUSDT": {
+        "expectancy": 0.0031174079403410637,
+        "max_drawdown": 0.0,
+        "n": 2,
+        "profit_factor": null,
+        "win_rate": 1.0
+      },
+      "DOTUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "LINKUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "LTCUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      }
+    },
+    "by_year": {
+      "2024": {
+        "expectancy": 0.0024133423655226145,
+        "max_drawdown": 0.0,
+        "n": 1,
+        "profit_factor": null,
+        "win_rate": 1.0
+      },
+      "2025": {
+        "expectancy": 0.003821473515159513,
+        "max_drawdown": 0.0,
+        "n": 1,
+        "profit_factor": null,
+        "win_rate": 1.0
+      }
+    },
+    "clustered_bootstrap_95_ci": [
+      0.0024133423655226145,
+      0.003821473515159513
+    ],
+    "cost_sensitivity": {
+      "0.0015": {
+        "expectancy": 0.003617407940341064,
+        "max_drawdown": 0.0,
+        "n": 2,
+        "profit_factor": null,
+        "win_rate": 1.0
+      },
+      "0.0020": {
+        "expectancy": 0.0031174079403410637,
+        "max_drawdown": 0.0,
+        "n": 2,
+        "profit_factor": null,
+        "win_rate": 1.0
+      },
+      "0.0030": {
+        "expectancy": 0.0021174079403410637,
+        "max_drawdown": 0.0,
+        "n": 2,
+        "profit_factor": null,
+        "win_rate": 1.0
+      },
+      "0.0050": {
+        "expectancy": 0.00011740794034106362,
+        "max_drawdown": 0.0005866576344773855,
+        "n": 2,
+        "profit_factor": 1.400260504393349,
+        "win_rate": 0.5
+      }
+    },
+    "mean_basis_return": 0.005117407940341064,
+    "mean_funding_return": 0.0,
+    "mean_signal_basis": 0.00933701932655906,
+    "overall": {
+      "expectancy": 0.0031174079403410637,
+      "max_drawdown": 0.0,
+      "n": 2,
+      "profit_factor": null,
+      "win_rate": 1.0
+    },
+    "timeout_share": 0.0
+  },
+  "primary_census": {
+    "AVAXUSDT": {
+      "completed_bars": 93311,
+      "missing_next_open": 0,
+      "non_signal": 93311,
+      "overlap_rejected": 0,
+      "timeouts": 0,
+      "warmup_rejected": 0
+    },
+    "DOGEUSDT": {
+      "completed_bars": 93311,
+      "missing_next_open": 0,
+      "non_signal": 93307,
+      "overlap_rejected": 2,
+      "timeouts": 0,
+      "warmup_rejected": 0
+    },
+    "DOTUSDT": {
+      "completed_bars": 93311,
+      "missing_next_open": 0,
+      "non_signal": 93311,
+      "overlap_rejected": 0,
+      "timeouts": 0,
+      "warmup_rejected": 0
+    },
+    "LINKUSDT": {
+      "completed_bars": 93311,
+      "missing_next_open": 0,
+      "non_signal": 93311,
+      "overlap_rejected": 0,
+      "timeouts": 0,
+      "warmup_rejected": 0
+    },
+    "LTCUSDT": {
+      "completed_bars": 93311,
+      "missing_next_open": 0,
+      "non_signal": 93311,
+      "overlap_rejected": 0,
+      "timeouts": 0,
+      "warmup_rejected": 0
+    }
+  },
+  "protocol": "edge-candidate-register-v24",
+  "reverse": {
+    "by_fold": {
+      "F1": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "F2": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "F3": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "F4": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      }
+    },
+    "by_symbol": {
+      "AVAXUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "DOGEUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "DOTUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "LINKUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "LTCUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      }
+    },
+    "by_year": {},
+    "clustered_bootstrap_95_ci": [
+      null,
+      null
+    ],
+    "cost_sensitivity": {
+      "0.0015": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "0.0020": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "0.0030": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "0.0050": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      }
+    },
+    "mean_basis_return": null,
+    "mean_funding_return": null,
+    "mean_signal_basis": null,
+    "overall": {
+      "expectancy": null,
+      "max_drawdown": null,
+      "n": 0,
+      "profit_factor": null,
+      "win_rate": null
+    },
+    "timeout_share": null
+  },
+  "reverse_census": {
+    "AVAXUSDT": {
+      "completed_bars": 35034,
+      "missing_next_open": 0,
+      "non_signal": 32154,
+      "overlap_rejected": 0,
+      "timeouts": 0,
+      "warmup_rejected": 2880
+    },
+    "DOGEUSDT": {
+      "completed_bars": 35034,
+      "missing_next_open": 0,
+      "non_signal": 32154,
+      "overlap_rejected": 0,
+      "timeouts": 0,
+      "warmup_rejected": 2880
+    },
+    "DOTUSDT": {
+      "completed_bars": 35034,
+      "missing_next_open": 0,
+      "non_signal": 32154,
+      "overlap_rejected": 0,
+      "timeouts": 0,
+      "warmup_rejected": 2880
+    },
+    "LINKUSDT": {
+      "completed_bars": 35034,
+      "missing_next_open": 0,
+      "non_signal": 32154,
+      "overlap_rejected": 0,
+      "timeouts": 0,
+      "warmup_rejected": 2880
+    },
+    "LTCUSDT": {
+      "completed_bars": 35034,
+      "missing_next_open": 0,
+      "non_signal": 32154,
+      "overlap_rejected": 0,
+      "timeouts": 0,
+      "warmup_rejected": 2880
+    }
+  }
+}

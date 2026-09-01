@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement and evaluate preregistered C-25 unchanged basis convergence on the disjoint five-symbol
-panel while C-11 continues prospective collection.
+Perform post-C-25 family synthesis and select a genuinely new evidence source or mechanism while
+C-11 continues prospective collection.
 
 ## Status
 
@@ -185,6 +185,9 @@ frozen promotion gates and production strategy logic is unchanged.
   primary pairs. Net expectancy was +0.1038% with a positive clustered interval, but every minimum
   sample/breadth gate failed and reverse N was only two. The sparse result is rejected and its
   threshold cannot be relaxed on the opened panel.
+- C-25 unchanged independent basis convergence: only two primary pairs survived, both DOGE, with
+  +0.3117% expectancy; reverse had zero pairs. Sample, breadth, concentration, PF, and reverse gates
+  failed. Together with C-24, this closes direct basis convergence without threshold relaxation.
 
 ## Open risks
 
@@ -205,8 +208,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Parameterize the tested C-24 evaluator only for C-25 identity, disjoint paths/universe, and frozen
-five-symbol breadth denominator; then open the independent outcome once and apply every gate.
+Complete post-C-25 synthesis. Do not create another basis threshold/horizon variant; require a new
+causal evidence source or clearly distinct mechanism before admitting another candidate.
 
 ## Operator decision required
 
