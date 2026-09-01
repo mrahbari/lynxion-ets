@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Preregister the unchanged disjoint C-25 basis-convergence confirmation before opening outcomes
-while C-11 continues prospective collection.
+Implement and evaluate preregistered C-25 unchanged basis convergence on the disjoint five-symbol
+panel while C-11 continues prospective collection.
 
 ## Status
 
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- C-25 is preregistered with outcome unopened. It preserves C-24's p99/2,880, 0.40% floor,
+  two-leg execution, convergence/timeout, funding, costs, periods, bootstrap, and gates unchanged;
+  only the disjoint five-symbol universe and its breadth denominator differ.
 - TASK-0123 data gate is KEEP: 6,685 checksum-verified spot archives yielded 128,346 complete
   rows per DOGE/LINK/LTC/DOT/AVAX, zero core violations, explicit maintenance gaps, and exact
   alignment of every retained timestamp to the C-22 futures panel. No C-25 outcome was opened.
@@ -202,8 +205,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Preregister C-25 on the disjoint five-symbol panel with C-24 mechanics unchanged and adjusted only
-for the frozen five-symbol breadth denominator before opening any conditional outcome.
+Parameterize the tested C-24 evaluator only for C-25 identity, disjoint paths/universe, and frozen
+five-symbol breadth denominator; then open the independent outcome once and apply every gate.
 
 ## Operator decision required
 
