@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Perform post-C-25 family synthesis and select a genuinely new evidence source or mechanism while
-C-11 continues prospective collection.
+Preregister a single C-26 BTC-lead/alt-underreaction candidate before opening conditional outcomes
+while C-11 continues prospective collection.
 
 ## Status
 
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- Post-C25 synthesis closes direct basis convergence and admits causal BTC-lead/alt-underreaction
+  as the next distinct market-context family. No conditional membership has been computed; one
+  complete specification must be frozen before evaluation.
 - C-25 is preregistered with outcome unopened. It preserves C-24's p99/2,880, 0.40% floor,
   two-leg execution, convergence/timeout, funding, costs, periods, bootstrap, and gates unchanged;
   only the disjoint five-symbol universe and its breadth denominator differ.
@@ -208,8 +211,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete post-C-25 synthesis. Do not create another basis threshold/horizon variant; require a new
-causal evidence source or clearly distinct mechanism before admitting another candidate.
+Preregister C-26's BTC shock, alt underreaction, direction, timing, overlap, horizon, funding,
+costs, folds, reverse period, clustered uncertainty, breadth, and concentration gates before opening
+any conditional outcome.
 
 ## Operator decision required
 
