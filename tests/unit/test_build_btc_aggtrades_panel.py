@@ -32,3 +32,7 @@ def test_finalizer_is_deterministic_and_reports_conflicts(tmp_path,monkeypatch):
  checks={k:0 for k in ('schema_violations','numeric_violations','timestamp_violations','side_violations','id_time_violations','duplicate_ids')};manifest={'days':{'2024-01-01':{'checks':checks},'2024-01-02':{'checks':checks}}}
  out=m.finalize(tmp_path,manifest);first=out['normalized']['sha256'];out=m.finalize(tmp_path,manifest)
  assert out['normalized']['conflicting_duplicates']==1 and out['normalized']['sha256']==first and out['gate']['verdict']=='REJECT'
+
+def test_cli_exposes_bounded_resume_batches():
+ m=module()
+ assert 'max_days' in m.build.__code__.co_varnames

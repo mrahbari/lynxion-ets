@@ -101,22 +101,28 @@ def finalize(root,manifest):
  manifest['gate']={'complete_days':len(manifest['days'])==len(expected_date_strings()),'core_integrity_violations':core,'adequate_coverage':len(timestamps)>=90000,'storage_reserve_preserved':reserve_ok,'verdict':'KEEP' if len(manifest['days'])==len(expected_date_strings()) and core==0 and len(timestamps)>=90000 and reserve_ok else 'REJECT'}
  return manifest
 
-def build(root):
+def build(root,max_days=None):
  c=census_module();objects=c.list_objects(SYMBOL);by,complete,missing,_=c.classify(SYMBOL,objects)
  complete=[d for d in complete if START<=d<=END]
  if missing_in_range:=sorted({d for d in c.expected_dates() if START<=d<=END}-set(complete)):raise ValueError(f'missing dates: {missing_in_range[:3]}')
  manifest_path=root/'manifest.json'
  manifest=json.loads(manifest_path.read_text()) if manifest_path.exists() else {'task':'TASK-0128','symbol':SYMBOL,'start':START,'end':END,'days':{},'gate':{'verdict':'COLLECTING'}}
- for date in complete:
+ pending=[day for day in complete if day not in manifest['days']]
+ if max_days is not None:pending=pending[:max_days]
+ for index,date in enumerate(pending,1):
   rec=by[date];raw=root/'raw'/Path(rec['zip']['key']).name;checksum=root/'raw'/Path(rec['checksum']['key']).name;daily=root/'daily'/f'{date}.csv.gz'
   download(rec['checksum']['key'],checksum);download(rec['zip']['key'],raw)
   expected=checksum.read_text().strip().split()[0];digest=sha256_file(raw)
   if digest!=expected:raise ValueError(f'{date}: checksum mismatch')
   if daily.exists() and date in manifest['days']:continue
   rows,checks=parse_archive(raw);write_daily(daily,rows);manifest['days'][date]={'zip_sha256':digest,'rows':len(rows),'checks':checks}
+  manifest['progress']={'completed_days':len(manifest['days']),'expected_days':len(complete),'last_completed_date':date}
   manifest_path.parent.mkdir(parents=True,exist_ok=True);manifest_path.write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n')
- manifest=finalize(root,manifest);manifest_path.write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n');return manifest
+  if index%10==0 or index==len(pending):print(f"processed {len(manifest['days'])}/{len(complete)} days",flush=True)
+ if len(manifest['days'])==len(complete):manifest=finalize(root,manifest)
+ else:manifest['gate']={'verdict':'COLLECTING'}
+ manifest_path.write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n');return manifest
 
 def main():
- p=argparse.ArgumentParser();p.add_argument('--output-root',default='data/research/btc_aggtrades');a=p.parse_args();print(json.dumps(build(Path(a.output_root)),indent=2,sort_keys=True))
+ p=argparse.ArgumentParser();p.add_argument('--output-root',default='data/research/btc_aggtrades');p.add_argument('--max-days',type=int);a=p.parse_args();print(json.dumps(build(Path(a.output_root),a.max_days),indent=2,sort_keys=True))
 if __name__=='__main__':main()
