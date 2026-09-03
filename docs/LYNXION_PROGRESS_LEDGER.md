@@ -97,6 +97,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Test evidence
 
+- C-27 pre-outcome focused suite: 5 passed for causal threshold exclusion, signal conjunction,
+  reversal direction, next-open/exact-four-hour execution, funding sign, missing paths, and costs.
 - Focused active-position regression tests: 11 passed after the restart-hydration correction.
 - Full post-correction suite: 622 passed, 1 optional layering test skipped
   (`import-linter` is not installed locally). This includes 461 unit, 109
