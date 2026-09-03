@@ -2,6 +2,7 @@
 
 from decimal import Decimal
 from types import SimpleNamespace
+import logging
 
 
 def _adapter_with_positions(rows):
@@ -75,3 +76,136 @@ def test_non_derivatives_contracts_remain_backward_compatible():
     assert intent.requested_leverage is None
     assert order.requested_leverage is None
     assert position.leverage is None and position.isolated is None
+
+
+def _entry_order(leverage="5"):
+    from domain.entities import Order, OrderSide, PositionSide
+    from domain.value_objects import Money, Symbol
+
+    return Order(
+        symbol=Symbol("NEWUSDT"),
+        side=OrderSide.BUY,
+        position_side=PositionSide.LONG,
+        quantity=Decimal("0.1"),
+        price=Money(Decimal("100"), "USDT"),
+        stop_loss_price=Money(Decimal("98"), "USDT"),
+        requested_leverage=Decimal(leverage),
+    )
+
+
+def _admission_broker(monkeypatch, *, exchange="5", margin="ISOLATED", positions=None,
+                      configured=5, ceiling=5, fail_endpoint=None, leverage_data=None,
+                      readback_time=None):
+    from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
+
+    broker = object.__new__(_BingXBroker)
+    broker.logger = logging.getLogger("task0135")
+    calls = []
+
+    def request(method, endpoint, **kwargs):
+        calls.append((method, endpoint, kwargs.get("params")))
+        if endpoint == fail_endpoint:
+            return {"code": 1, "data": None}
+        if endpoint.endswith("/user/positions"):
+            return {"code": 0, "data": positions or []}
+        if endpoint.endswith("/marginType") and method == "GET":
+            return {"code": 0, "data": {"marginType": margin}, "timestamp": readback_time}
+        if endpoint.endswith("/leverage") and method == "GET":
+            return {
+                "code": 0,
+                "data": leverage_data if leverage_data is not None else {
+                    "longLeverage": exchange, "shortLeverage": exchange,
+                },
+                "timestamp": readback_time,
+            }
+        return {"code": 0, "data": {}}
+
+    monkeypatch.setattr(broker, "_make_request", request)
+    monkeypatch.setattr(
+        "infrastructure.risk.risk_enforcement.build_vst_risk_enforcement",
+        lambda: SimpleNamespace(enforce=lambda order: (True, "approved")),
+    )
+    monkeypatch.setattr(
+        "bootstrap.settings.loaders.load_settings",
+        lambda: SimpleNamespace(
+            safety=SimpleNamespace(max_open_positions=5),
+            risk=SimpleNamespace(max_leverage=configured, max_leverage_limit=ceiling),
+        ),
+    )
+    return broker, calls
+
+
+def test_exact_configured_and_exchange_leverage_agreement_permits_boundary(monkeypatch):
+    broker, calls = _admission_broker(monkeypatch)
+
+    allowed, reason = broker._assert_entry_admission(_entry_order())
+
+    assert allowed is True
+    assert "authoritative leverage" in reason
+    assert [call[:2] for call in calls[-4:]] == [
+        ("POST", "/openApi/swap/v2/trade/marginType"),
+        ("POST", "/openApi/swap/v2/trade/leverage"),
+        ("GET", "/openApi/swap/v2/trade/marginType"),
+        ("GET", "/openApi/swap/v2/trade/leverage"),
+    ]
+
+
+def test_exchange_leverage_mismatch_rejects(monkeypatch):
+    broker, _ = _admission_broker(monkeypatch, exchange="10")
+    allowed, reason = broker._assert_entry_admission(_entry_order())
+    assert allowed is False and "mismatch" in reason
+
+
+def test_missing_leverage_readback_rejects(monkeypatch):
+    broker, _ = _admission_broker(monkeypatch, leverage_data={})
+    allowed, reason = broker._assert_entry_admission(_entry_order())
+    assert allowed is False and "malformed" in reason
+
+
+def test_stale_leverage_readback_rejects(monkeypatch):
+    broker, _ = _admission_broker(monkeypatch, readback_time=1)
+    allowed, reason = broker._assert_entry_admission(_entry_order())
+    assert allowed is False and "stale" in reason
+
+
+def test_cross_margin_readback_rejects(monkeypatch):
+    broker, _ = _admission_broker(monkeypatch, margin="CROSSED")
+    allowed, reason = broker._assert_entry_admission(_entry_order())
+    assert allowed is False and "cross-margin" in reason
+
+
+def test_conflicting_configured_ceilings_reject(monkeypatch):
+    broker, calls = _admission_broker(monkeypatch, configured=5, ceiling=10)
+    allowed, reason = broker._assert_entry_admission(_entry_order())
+    assert allowed is False and "conflicting leverage ceilings" in reason
+    assert calls == []
+
+
+def test_existing_excessive_leverage_blocks_new_symbol(monkeypatch):
+    existing = _position_row("BTC-USDT", leverage="10")
+    broker, calls = _admission_broker(monkeypatch, positions=[existing])
+    allowed, reason = broker._assert_entry_admission(_entry_order())
+    assert allowed is False and "existing position leverage" in reason
+    assert not any(method == "POST" for method, _, _ in calls)
+
+
+def test_broker_write_error_rejects(monkeypatch):
+    endpoint = "/openApi/swap/v2/trade/leverage"
+    broker, _ = _admission_broker(monkeypatch, fail_endpoint=endpoint)
+    allowed, reason = broker._assert_entry_admission(_entry_order())
+    assert allowed is False and "broker rejected" in reason
+
+
+def test_rejection_never_reaches_order_execution(monkeypatch):
+    broker, _ = _admission_broker(monkeypatch, exchange="10")
+    reached = []
+    monkeypatch.setattr(
+        broker,
+        "_execute_order_after_admission",
+        lambda order: reached.append(order) or {"success": True},
+    )
+
+    result = broker.execute_order(_entry_order())
+
+    assert result["success"] is False
+    assert reached == []

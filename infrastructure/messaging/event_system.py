@@ -606,7 +606,8 @@ class SignalProcessor:
                 position_side=position_side,  # Add position side for futures trading
                 stop_loss_price=stop_loss_price,  # SL from strategy or recalculated
                 take_profit_price=take_profit_price,  # TP from strategy or recalculated
-                parent_execution_intent=execution_intent  # Link back to the execution intent
+                parent_execution_intent=execution_intent,  # Link back to the execution intent
+                requested_leverage=Decimal(str(load_settings().risk.max_leverage)),
             )
 
             # Execute order through execution service

@@ -507,6 +507,93 @@ class _BingXBroker:
         precision = precision_info.get('quantityPrecision', 4)
         return f"{quantity:.{precision}f}"
 
+    @staticmethod
+    def _parse_leverage(value: Any) -> Decimal:
+        if value is None or isinstance(value, bool):
+            raise ValueError("leverage is missing or malformed")
+        leverage = Decimal(str(value))
+        if not leverage.is_finite() or leverage < Decimal('1') or leverage != leverage.to_integral_value():
+            raise ValueError("leverage must be a finite integer >= 1")
+        return leverage
+
+    @classmethod
+    def _configured_leverage(cls, settings: Any) -> Decimal:
+        risk = settings.risk
+        configured = cls._parse_leverage(getattr(risk, 'max_leverage', None))
+        ceiling = cls._parse_leverage(getattr(risk, 'max_leverage_limit', None))
+        if configured != ceiling:
+            raise ValueError(
+                f"conflicting leverage ceilings: max_leverage={configured}, "
+                f"max_leverage_limit={ceiling}"
+            )
+        return configured
+
+    def _establish_and_verify_leverage(self, order: Order, requested: Decimal) -> tuple[bool, str]:
+        """Set isolated mode/leverage and verify a post-write authoritative readback."""
+        from infrastructure.services.symbol_validator import symbol_validator
+
+        write_started_ms = int(time.time() * 1000)
+        symbol = symbol_validator.normalize_symbol(order.symbol)
+        if symbol.endswith('USDT') and '-' not in symbol:
+            symbol = f"{symbol[:-4]}-USDT"
+
+        position_side = getattr(order, 'position_side', None)
+        side = getattr(position_side, 'value', position_side)
+        side = str(side or 'BOTH').upper()
+        if side not in {'LONG', 'SHORT'}:
+            side = 'BOTH'
+
+        writes = (
+            self._make_request(
+                'POST', '/openApi/swap/v2/trade/marginType', signed=True,
+                params={'symbol': symbol, 'marginType': 'ISOLATED'},
+            ),
+            self._make_request(
+                'POST', '/openApi/swap/v2/trade/leverage', signed=True,
+                params={'symbol': symbol, 'side': side, 'leverage': int(requested)},
+            ),
+        )
+        if any(response.get('code') != 0 for response in writes):
+            return False, "broker rejected isolated margin or leverage establishment"
+
+        margin_response = self._make_request(
+            'GET', '/openApi/swap/v2/trade/marginType', signed=True, params={'symbol': symbol}
+        )
+        leverage_response = self._make_request(
+            'GET', '/openApi/swap/v2/trade/leverage', signed=True, params={'symbol': symbol}
+        )
+        if margin_response.get('code') != 0 or leverage_response.get('code') != 0:
+            return False, "authoritative leverage readback unavailable"
+        for response in (margin_response, leverage_response):
+            response_time = response.get('timestamp', response.get('time'))
+            if response_time is not None:
+                try:
+                    if int(response_time) < write_started_ms - 5_000:
+                        return False, "authoritative leverage readback is stale"
+                except (TypeError, ValueError):
+                    return False, "authoritative leverage readback timestamp malformed"
+        margin_data = margin_response.get('data')
+        leverage_data = leverage_response.get('data')
+        if not isinstance(margin_data, dict) or not isinstance(leverage_data, dict):
+            return False, "authoritative leverage readback malformed"
+        margin_type = str(margin_data.get('marginType', '')).upper()
+        if margin_type not in {'ISOLATED', 'SEPARATE_ISOLATED'}:
+            return False, f"cross-margin state rejected: {margin_type or 'missing'}"
+
+        keys = ('longLeverage', 'shortLeverage') if side == 'BOTH' else (
+            'longLeverage' if side == 'LONG' else 'shortLeverage',
+        )
+        try:
+            readbacks = [self._parse_leverage(leverage_data.get(key)) for key in keys]
+        except Exception as exc:
+            return False, f"authoritative leverage readback malformed: {exc}"
+        if any(value != requested for value in readbacks):
+            return False, (
+                f"authoritative leverage mismatch: requested {requested}, "
+                f"exchange {','.join(str(value) for value in readbacks)}"
+            )
+        return True, "authoritative isolated leverage verified"
+
     def _assert_entry_admission(self, order: Order) -> tuple[bool, str]:
         """Fail-closed final risk check against the authoritative broker snapshot."""
         try:
@@ -515,6 +602,16 @@ class _BingXBroker:
             allowed, reason = build_vst_risk_enforcement().enforce(order)
             if not allowed:
                 return False, reason
+
+            from bootstrap.settings.loaders import load_settings
+            settings = load_settings()
+            configured_leverage = self._configured_leverage(settings)
+            requested_leverage = self._parse_leverage(getattr(order, 'requested_leverage', None))
+            if requested_leverage != configured_leverage:
+                return False, (
+                    f"requested leverage {requested_leverage} does not match configured "
+                    f"leverage {configured_leverage}"
+                )
 
             response = self._make_request(
                 'GET', '/openApi/swap/v2/user/positions', signed=True, params={}
@@ -526,10 +623,14 @@ class _BingXBroker:
             for position in response['data']:
                 quantity = abs(float(position.get('positionAmt', 0) or 0))
                 if quantity > 0:
+                    position_leverage = self._parse_leverage(position.get('leverage'))
+                    if position_leverage > configured_leverage:
+                        return False, (
+                            f"existing position leverage {position_leverage} exceeds configured "
+                            f"ceiling {configured_leverage}"
+                        )
                     open_positions.append(position)
 
-            from bootstrap.settings.loaders import load_settings
-            settings = load_settings()
             max_open_positions = int(getattr(settings.safety, 'max_open_positions', 5))
             if len(open_positions) >= max_open_positions:
                 return False, (
@@ -556,7 +657,12 @@ class _BingXBroker:
                     f"portfolio exposure limit exceeded: ${current_exposure + order_notional:.2f} "
                     f"> ${max_portfolio_exposure:.2f}"
                 )
-            return True, "broker-backed risk admission approved"
+            leverage_allowed, leverage_reason = self._establish_and_verify_leverage(
+                order, requested_leverage
+            )
+            if not leverage_allowed:
+                return False, leverage_reason
+            return True, "broker-backed risk admission and authoritative leverage approved"
         except Exception as admission_error:
             return False, f"broker-backed risk admission error: {admission_error}"
 

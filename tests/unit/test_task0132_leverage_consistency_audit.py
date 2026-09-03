@@ -19,7 +19,7 @@ def test_order_and_position_contracts_carry_authoritative_leverage_fields():
     assert {"leverage", "isolated"} <= {f.name for f in fields(Position)}
 
 
-def test_bingx_admission_currently_allows_exchange_leverage_above_config(monkeypatch):
+def test_bingx_admission_rejects_missing_requested_leverage(monkeypatch):
     from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
     broker=object.__new__(_BingXBroker);broker.logger=logging.getLogger("task0132")
     monkeypatch.setattr(
@@ -31,9 +31,12 @@ def test_bingx_admission_currently_allows_exchange_leverage_above_config(monkeyp
         lambda:SimpleNamespace(enforce=lambda order:(True,"approved")))
     monkeypatch.setattr(
         "bootstrap.settings.loaders.load_settings",
-        lambda:SimpleNamespace(safety=SimpleNamespace(max_open_positions=5),risk=SimpleNamespace(max_leverage=5.0)))
+        lambda:SimpleNamespace(
+            safety=SimpleNamespace(max_open_positions=5),
+            risk=SimpleNamespace(max_leverage=5.0, max_leverage_limit=5.0),
+        ))
     allowed,reason=broker._assert_entry_admission(_order())
-    assert allowed is True and reason=="broker-backed risk admission approved"
+    assert allowed is False and "leverage" in reason
 
 
 def test_active_position_manager_default_is_not_loaded_from_risk_config():

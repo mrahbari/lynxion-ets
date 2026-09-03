@@ -286,7 +286,8 @@ class _AutoDetectionExecutionMixin:
                 position_side=position_side,  # Add position side for futures trading
                 stop_loss_price=getattr(execution_intent, 'stop_loss_price', None),  # SL from strategy
                 take_profit_price=getattr(execution_intent, 'take_profit_price', None),  # TP from strategy
-                parent_execution_intent=execution_intent  # Link back to the execution intent
+                parent_execution_intent=execution_intent,  # Link back to the execution intent
+                requested_leverage=Decimal(str(self._settings.risk.max_leverage)),
             )
 
             # Log the order creation with comprehensive details

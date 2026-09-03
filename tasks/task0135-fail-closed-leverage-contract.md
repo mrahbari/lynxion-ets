@@ -57,5 +57,10 @@ margin-mode query/set, leverage query/set, and position readback contracts; no e
 - Hydrated positions now retain validated finite leverage and boolean isolated-margin state;
   malformed values remain explicitly unknown without aborting reconciliation.
 - The BingX adapter's formatted order clone preserves requested leverage.
-- Six focused TASK-0132/TASK-0135 contract and hydration tests pass. Entry admission, authoritative
-  pre-order readback, and per-position ActivePositionManager enforcement remain unfinished.
+- The two live-domain order constructors now source requested leverage from the loaded risk config.
+- BingX admission now rejects missing/non-integral leverage, conflicting config ceilings, excessive
+  existing-position leverage, broker write failures, stale/malformed/cross-margin readback, and
+  exchange mismatch before `_execute_order_after_admission` is reachable. Exact 5x agreement is
+  covered by mocked endpoint sequencing.
+- Twenty-two focused leverage and broker failure-injection tests pass. Per-position
+  ActivePositionManager enforcement and the full suite remain unfinished.

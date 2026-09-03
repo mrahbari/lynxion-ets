@@ -22,6 +22,10 @@ frozen promotion gates and production strategy logic is unchanged.
   hydrated positions retain validated authoritative leverage and isolated state, and the formatted
   BingX adapter clone preserves the invariant. Six focused contract/hydration tests pass; no broker
   endpoint, runtime, account setting, or order was touched.
+- TASK-0135's mocked final admission boundary now establishes isolated mode and configured leverage,
+  performs a post-write readback, and fails closed on missing, malformed, stale, cross-margin,
+  excessive, conflicting, broker-error, or mismatched state before order execution. Twenty-two
+  focused leverage/failure-injection tests pass; no authenticated endpoint was called.
 - TASK-0135 now freezes the minimal fail-closed correction boundary and its failure-injection tests,
   and repository-only implementation is now authorized while runtime/deployment remains blocked.
 - TASK-0135's implementation map inventories every canonical contract, live Order constructor,
