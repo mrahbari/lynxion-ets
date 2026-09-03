@@ -42,3 +42,10 @@ authoritative, fail-closed part of every BingX derivatives entry and hydrated po
   change, trailing-policy change, or real/paper order is authorized by this task specification.
 - No runtime implementation may begin until the active automation prohibition is amended or a
   separate authorized task supersedes it.
+
+## Prepared Evidence
+
+The exact domain, order-construction, BingX admission/hydration, and active-position-manager
+touchpoints are inventoried in `docs/LYNXION_LEVERAGE_IMPLEMENTATION_MAP.md`. No existing BingX
+leverage/margin endpoint implementation was found; official API semantics must be verified before
+coding rather than inferred.

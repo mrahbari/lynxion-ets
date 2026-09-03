@@ -21,6 +21,9 @@ frozen promotion gates and production strategy logic is unchanged.
 - TASK-0135 now freezes the minimal fail-closed correction boundary and its failure-injection tests,
   but implementation remains blocked by the active automation's explicit prohibition on production
   risk/admission/leverage changes.
+- TASK-0135's implementation map inventories every canonical contract, live Order constructor,
+  risk-adjusted clone, BingX admission/hydration boundary, and position-manager consumer. No current
+  BingX leverage/margin endpoint exists locally; official semantics must be verified before coding.
 - TASK-0134 implements the disconnected exit-event ledger writer/validator with atomic daily JSONL
   append, secret rejection, causal validation, corruption detection, and deterministic hashes. It is
   not imported by any runtime path and changed no production behavior.
