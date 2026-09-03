@@ -1,6 +1,6 @@
 # TASK-0128 — Bounded Official BTC Aggregate-Trades Panel
 
-**Status:** IN PROGRESS — ACQUISITION PROTOCOL FROZEN
+**Status:** COMPLETE — DATA GATE KEEP
 
 ## Objective
 
@@ -29,3 +29,14 @@ official corpus, without defining or opening a trading candidate.
 - At least 90,000 normalized 15-minute buckets with explicit, unfilled gaps.
 - Storage reserve preserved.
 - Passing verdict is `KEEP` for later preregistration only.
+
+## Final Evidence
+
+- All 972 expected daily ZIP/checksum pairs from 2024-01-01 through 2026-08-29 were acquired and
+  verified.
+- The normalized panel contains 93,312 complete native 15-minute rows with zero missing intervals,
+  exact duplicates, or conflicting duplicates.
+- Core schema, numeric, timestamp, side, duplicate-ID, and ID/time violations are all zero.
+- The normalized artifact SHA-256 is
+  `3e5975b6e1369685877c57944375a330548515ce7eb064f240b3c81885ef9edf`.
+- The 20 GiB storage reserve remained preserved. Final verdict: `KEEP` for preregistration only.

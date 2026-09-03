@@ -7,17 +7,23 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Build the bounded official 2024–2026 BTC aggregate-trade panel under a hard 20 GiB reserve, without
-opening a candidate, while C-11 continues prospective collection.
+Synthesize TASK-0128's now-complete BTC aggregate-trade panel and preregister one independent
+large-trade/microstructure candidate before opening any outcome, while C-11 continues prospective
+collection.
 
 ## Status
 
 TASK 000 operational closure and TASK 001/002 attribution are complete. Controlled edge
-research remains in progress; C-01 through C-12 historical candidates have not cleared their
+research remains in progress; C-01 through C-26 historical candidates have not cleared their
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0128's data gate is KEEP: all 972 expected official BTCUSDT aggregate-trade archives were
+  checksum verified and produced 93,312 complete native 15-minute rows from 2024-01-01 through
+  2026-08-29. Core integrity violations and missing intervals are zero, the normalized SHA-256 is
+  `3e5975b6e1369685877c57944375a330548515ce7eb064f240b3c81885ef9edf`, and the 20 GiB storage
+  reserve was preserved. No trading outcome was opened.
 - TASK-0129 read-only exit audit reconstructed the latest 50 completed BingX VST positions. In a
   10x sensitivity view, 23 reached estimated MFE >=10% ROE, 19 reached >=12%, and 14 reached >=10%
   before exiting below +5% net ROE; nine finished between +2% and +5%. Forty-eight exits were
@@ -243,8 +249,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete TASK-0128's checksum/schema/semantics/aggregation/gap/hash/storage gate. Do not define a
-large-trade hypothesis until the bounded panel receives a data KEEP.
+Preregister one independent BTC aggregate-trade candidate with causal features, next-open
+execution, frozen costs/funding, time folds, reverse-period validation, clustered uncertainty, and
+minimum-sample/stability gates before opening any outcome.
 
 ## Operator decision required
 
