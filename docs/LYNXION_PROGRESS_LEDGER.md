@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Resolve the verified TASK-0132 leverage fail-open defect under a separately authorized production
-risk/admission boundary; until then, continue only non-execution research and C-11 collection.
+Implement TASK-0134's disconnected exit-event ledger writer while the P0 leverage correction remains
+approval-blocked; continue C-11 collection independently.
 
 ## Status
 
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0133 freezes the forward exit-observability contract: append-only manager evaluations,
+  stop request/response/visibility/state transitions, restart hydration, leverage readback, and exit
+  fills. No trailing threshold is selected and no production path changed.
 - TASK-0132 verifies a P0 fail-open leverage defect: configured `max_leverage=5.0` is absent from
   ExecutionIntent/Order/Position, BingX admission neither sets nor verifies exchange leverage,
   hydration drops it, and ActivePositionManager independently assumes 10x. A characterized 10x
@@ -270,10 +273,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Implement a fail-closed authoritative leverage contract only under a separate production
-risk/admission authorization: carry intended leverage, set-or-verify isolated leverage before entry,
-read it back, reject mismatch/unavailable state, preserve it through hydration, and remove the
-position manager's independent 10x assumption.
+Implement and test TASK-0134's standalone event writer/validator without connecting it to production.
+The fail-closed leverage correction still requires amendment of the active automation boundary before
+any production risk/admission behavior changes.
 
 ## Operator decision required
 
