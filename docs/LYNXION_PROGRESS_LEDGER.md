@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement repository-only forward exit observability for a causal profit-lock comparison while
-C-11 prospective collection continues; do not tune trailing thresholds from historical outcomes.
+Implement TASK-0137's injectable, runtime-disabled forward exit observer for a causal profit-lock
+comparison while C-11 collection continues; do not tune thresholds or open outcomes.
 
 ## Status
 
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0137 freezes a repository-only integration boundary: observe existing manager evaluations
+  and stop-sync attempts through an optional sink, add no broker calls or retries, keep runtime
+  disabled, and defer visibility claims, prospective boundary, and deployment to later gates.
 - TASK-0136 rejects immediate `+10/+4-5` threshold tuning as non-distinct: at 10x the existing
   intended +10% trigger and 0.5% price trail already imply about +4.95% locked ROE before friction.
   The 50-position giveback cannot distinguish stop math from cadence, broker visibility, restart,
