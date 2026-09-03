@@ -7,9 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Perform post-C27 cross-family synthesis and admit another historical candidate only if it satisfies
-the sequential policy's distinct-mechanism and economic-capability gates, while C-11 continues
-prospective collection.
+Perform TASK-0132's bounded read-only leverage-consistency audit while historical candidate churn is
+paused and C-11 continues prospective collection.
 
 ## Status
 
@@ -19,6 +18,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- Post-C27 synthesis pauses historical candidate creation: available families are rejected or
+  already assigned to C-11 prospective confirmation, and no unopened mechanism currently clears
+  the sequential admission gate. Next work moves to authoritative leverage correctness and the
+  event observability required for a future forward profit-lock comparison.
 - C-27 concentrated-aggressor exhaustion is REJECTED: 186 primary trades had -0.3418% expectancy,
   PF 0.2533, and a daily-clustered 95% interval wholly below zero. Every fold, both sides, both
   primary years, and the 2024 temporal reverse were negative; even gross expectancy before the
@@ -260,8 +263,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete a bounded post-C27 synthesis across the exhausted historical families. Do not create a
-threshold, direction, horizon, or cost variant from C-27's opened outcome.
+Complete TASK-0132's read-only trace of configured, requested, cached, and authoritative exchange
+leverage. Do not alter leverage or call an execution path; scope any verified fix separately.
 
 ## Operator decision required
 
