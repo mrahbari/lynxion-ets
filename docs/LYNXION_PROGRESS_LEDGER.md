@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0135 now freezes the minimal fail-closed correction boundary and its failure-injection tests,
+  but implementation remains blocked by the active automation's explicit prohibition on production
+  risk/admission/leverage changes.
 - TASK-0134 implements the disconnected exit-event ledger writer/validator with atomic daily JSONL
   append, secret rejection, causal validation, corruption detection, and deterministic hashes. It is
   not imported by any runtime path and changed no production behavior.
@@ -279,9 +282,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Amend the active automation boundary or provide a separate authorized task for the fail-closed
-leverage correction. Do not connect the event ledger to runtime or permit new entries while the
-authoritative leverage path remains fail-open.
+Amend the active automation boundary or provide a separate authorized task that explicitly permits
+TASK-0135's production risk/admission/leverage correction. The implementation scope and mandatory
+failure-injection tests are frozen; do not connect the event ledger or permit new entries first.
 
 ## Operator decision required
 
