@@ -1,6 +1,6 @@
 # TASK-0132 — Leverage Consistency Audit
 
-**Status:** PLANNED — READ-ONLY BOUNDARY
+**Status:** COMPLETE — FAIL-OPEN P0 VERIFIED
 
 ## Objective
 
@@ -15,3 +15,15 @@ hydration, and authoritative exchange state, and determine whether any mismatch 
   trailing, symbol admission, or broker execution state.
 - Record any required correction as a separately scoped implementation task.
 - Place no real or paper order and call no broker execution path.
+
+## Result
+
+- Configured leverage is not represented in ExecutionIntent, Order, or Position.
+- The BingX request does not set leverage and final admission does not compare authoritative
+  exchange leverage with the configured 5x ceiling.
+- Position hydration drops exchange leverage; ActivePositionManager independently assumes 10x.
+- Focused characterization demonstrates that a 10x exchange state does not fail closed against a
+  configured 5x maximum.
+- No runtime or production setting changed. A separate implementation boundary is required.
+
+Evidence: `docs/LYNXION_LEVERAGE_CONSISTENCY_AUDIT.md`.

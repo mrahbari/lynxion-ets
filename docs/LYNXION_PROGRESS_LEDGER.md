@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Perform TASK-0132's bounded read-only leverage-consistency audit while historical candidate churn is
-paused and C-11 continues prospective collection.
+Resolve the verified TASK-0132 leverage fail-open defect under a separately authorized production
+risk/admission boundary; until then, continue only non-execution research and C-11 collection.
 
 ## Status
 
@@ -18,6 +18,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0132 verifies a P0 fail-open leverage defect: configured `max_leverage=5.0` is absent from
+  ExecutionIntent/Order/Position, BingX admission neither sets nor verifies exchange leverage,
+  hydration drops it, and ActivePositionManager independently assumes 10x. A characterized 10x
+  authoritative snapshot is admitted under a mocked 5x configuration. No runtime setting changed.
 - Post-C27 synthesis pauses historical candidate creation: available families are rejected or
   already assigned to C-11 prospective confirmation, and no unopened mechanism currently clears
   the sequential admission gate. Next work moves to authoritative leverage correctness and the
@@ -102,6 +106,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Test evidence
 
+- TASK-0132 focused leverage/risk-admission characterization: 25 passed; the three new tests prove
+  leverage is absent from Order/Position, a 10x authoritative snapshot does not fail against a
+  mocked 5x configuration, and ActivePositionManager independently defaults to 10x.
 - C-27 full post-outcome suite: 764 passed, 1 optional layering test skipped (`import-linter` is
   not installed locally).
 - C-27 pre-outcome focused suite: 5 passed for causal threshold exclusion, signal conjunction,
@@ -263,8 +270,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Complete TASK-0132's read-only trace of configured, requested, cached, and authoritative exchange
-leverage. Do not alter leverage or call an execution path; scope any verified fix separately.
+Implement a fail-closed authoritative leverage contract only under a separate production
+risk/admission authorization: carry intended leverage, set-or-verify isolated leverage before entry,
+read it back, reject mismatch/unavailable state, preserve it through hydration, and remove the
+position manager's independent 10x assumption.
 
 ## Operator decision required
 
