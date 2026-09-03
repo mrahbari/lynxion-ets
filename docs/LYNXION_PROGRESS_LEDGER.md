@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Hold TASK-0135's completed fail-closed leverage correction behind the separate runtime/deployment
-approval gate while C-11 prospective collection continues.
+Implement repository-only forward exit observability for a causal profit-lock comparison while
+C-11 prospective collection continues; do not tune trailing thresholds from historical outcomes.
 
 ## Status
 
@@ -18,6 +18,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0136 rejects immediate `+10/+4-5` threshold tuning as non-distinct: at 10x the existing
+  intended +10% trigger and 0.5% price trail already imply about +4.95% locked ROE before friction.
+  The 50-position giveback cannot distinguish stop math from cadence, broker visibility, restart,
+  slippage, or fill failures. TASK-0137 will connect forward observability without changing policy.
 - TASK-0135 repository implementation is COMPLETE. ActivePositionManager now uses per-position
   authoritative leverage and skips all stop mutation when it is unavailable; it cannot substitute
   the prior 10x default. Thirty-four focused tests and the full 787-test suite pass, with one
