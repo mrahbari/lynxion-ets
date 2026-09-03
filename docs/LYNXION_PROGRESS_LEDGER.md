@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Hold runtime integration behind the verified P0 leverage correction; continue only C-11 collection
-and non-production validation until the automation boundary authorizes risk/admission changes.
+Implement TASK-0135's authorized repository-only fail-closed leverage correction, then hold runtime
+integration behind a separate deployment approval gate while C-11 collection continues.
 
 ## Status
 
@@ -18,9 +18,12 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0135 implementation has started: execution/order contracts carry requested leverage,
+  hydrated positions retain validated authoritative leverage and isolated state, and the formatted
+  BingX adapter clone preserves the invariant. Six focused contract/hydration tests pass; no broker
+  endpoint, runtime, account setting, or order was touched.
 - TASK-0135 now freezes the minimal fail-closed correction boundary and its failure-injection tests,
-  but implementation remains blocked by the active automation's explicit prohibition on production
-  risk/admission/leverage changes.
+  and repository-only implementation is now authorized while runtime/deployment remains blocked.
 - TASK-0135's implementation map inventories every canonical contract, live Order constructor,
   risk-adjusted clone, BingX admission/hydration boundary, and position-manager consumer. No current
   BingX leverage/margin endpoint exists locally; official semantics must be verified before coding.

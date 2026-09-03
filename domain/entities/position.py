@@ -21,6 +21,8 @@ class Position:
     margin_used: Optional[Money] = None
     strategy_name: Optional[str] = None
     mark_price: Optional[float] = 0.0
+    leverage: Optional[Decimal] = None
+    isolated: Optional[bool] = None
 
     def calculate_unrealized_pnl(self, current_price: Money) -> Money:
         """Calculate unrealized P&L based on current market price"""

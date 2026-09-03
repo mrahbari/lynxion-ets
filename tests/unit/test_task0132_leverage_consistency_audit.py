@@ -12,10 +12,11 @@ def _order():
                  price=Money(Decimal("100"),"USDT"),stop_loss_price=Money(Decimal("98"),"USDT"))
 
 
-def test_order_and_position_contracts_carry_no_leverage():
-    from domain.entities import Order, Position
-    assert "leverage" not in {f.name for f in fields(Order)}
-    assert "leverage" not in {f.name for f in fields(Position)}
+def test_order_and_position_contracts_carry_authoritative_leverage_fields():
+    from domain.entities import ExecutionIntent, Order, Position
+    assert "requested_leverage" in {f.name for f in fields(ExecutionIntent)}
+    assert "requested_leverage" in {f.name for f in fields(Order)}
+    assert {"leverage", "isolated"} <= {f.name for f in fields(Position)}
 
 
 def test_bingx_admission_currently_allows_exchange_leverage_above_config(monkeypatch):

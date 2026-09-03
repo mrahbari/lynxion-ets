@@ -1,6 +1,6 @@
 # TASK-0135 — Fail-Closed Authoritative Leverage Contract
 
-**Status:** BLOCKED — ACTIVE AUTOMATION FORBIDS PRODUCTION RISK/ADMISSION/LEVERAGE CHANGES
+**Status:** IN PROGRESS — REPOSITORY-ONLY IMPLEMENTATION AUTHORIZED
 
 ## Objective
 
@@ -49,3 +49,13 @@ The exact domain, order-construction, BingX admission/hydration, and active-posi
 touchpoints are inventoried in `docs/LYNXION_LEVERAGE_IMPLEMENTATION_MAP.md`. No existing BingX
 leverage/margin endpoint implementation was found locally. Official BingX references now verify the
 margin-mode query/set, leverage query/set, and position readback contracts; no endpoint was called.
+
+## Implementation Progress
+
+- The canonical execution intent/order contracts now carry optional requested leverage while
+  preserving compatibility for non-derivatives callers.
+- Hydrated positions now retain validated finite leverage and boolean isolated-margin state;
+  malformed values remain explicitly unknown without aborting reconciliation.
+- The BingX adapter's formatted order clone preserves requested leverage.
+- Six focused TASK-0132/TASK-0135 contract and hydration tests pass. Entry admission, authoritative
+  pre-order readback, and per-position ActivePositionManager enforcement remain unfinished.

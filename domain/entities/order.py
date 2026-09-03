@@ -22,6 +22,7 @@ class ExecutionIntent:
     timestamp: datetime
     fused_signal: Optional[FusedSignal] = None  # Reference to the fused signal that triggered this
     metadata: Optional[Dict[str, Any]] = None
+    requested_leverage: Optional[Decimal] = None
 
     def __post_init__(self):
         if not 0.0 <= float(self.intent_confidence.value) <= 1.0:
@@ -52,6 +53,7 @@ class Order:
     risk_adjusted_quantity: Optional[Decimal] = None
     stop_loss_price: Optional[Money] = None
     take_profit_price: Optional[Money] = None
+    requested_leverage: Optional[Decimal] = None
 
     def is_market_order(self) -> bool:
         return self.order_type.upper() == "MARKET"

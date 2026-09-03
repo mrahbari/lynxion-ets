@@ -159,4 +159,6 @@ def position_to_domain(dto: "PositionDTO") -> Position:
             else None
         ),
         strategy_name=dto.strategy_name,
+        leverage=getattr(dto, "leverage", None),
+        isolated=getattr(dto, "isolated", None),
     )

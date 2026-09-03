@@ -5,6 +5,7 @@ import time
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
+from decimal import Decimal
 import logging
 from enum import Enum
 import json
@@ -125,7 +126,8 @@ class BingXBrokerAdapter(BrokerPort):
             parent_signal=getattr(order, 'parent_signal', None),
             risk_adjusted_quantity=getattr(order, 'risk_adjusted_quantity', None),
             stop_loss_price=getattr(order, 'stop_loss_price', None),  # Add stop loss price
-            take_profit_price=getattr(order, 'take_profit_price', None)  # Add take profit price
+            take_profit_price=getattr(order, 'take_profit_price', None),  # Add take profit price
+            requested_leverage=getattr(order, 'requested_leverage', None)
         )
 
         result = self._broker.execute_order(temp_order)
@@ -223,6 +225,17 @@ class BingXBrokerAdapter(BrokerPort):
                     continue  # not an open position
                 pnl_value = float(p.get('unrealisedPnl', p.get('unrealizedPnl', 0)))
                 mark_p = float(p.get('markPrice', 0) or p.get('mark_price', 0) or 0)
+                leverage = None
+                raw_leverage = p.get('leverage')
+                if raw_leverage is not None:
+                    try:
+                        parsed_leverage = Decimal(str(raw_leverage))
+                        if parsed_leverage.is_finite() and parsed_leverage >= Decimal('1'):
+                            leverage = parsed_leverage
+                    except Exception:
+                        leverage = None
+                raw_isolated = p.get('isolated')
+                isolated = raw_isolated if isinstance(raw_isolated, bool) else None
                 pos_side_raw = str(p.get('positionSide', '')).upper()
                 is_short_side = pos_side_raw == 'SHORT' or float(p['positionAmt']) < 0
                 positions.append(
@@ -233,7 +246,9 @@ class BingXBrokerAdapter(BrokerPort):
                         entry_price=Money(amount=float(p['avgPrice']), currency='USDT'),
                         unrealized_pnl=Money(amount=pnl_value, currency='USDT'),
                         timestamp=datetime.fromtimestamp(int(p.get('time', time.time() * 1000)) / 1000),
-                        mark_price=mark_p
+                        mark_price=mark_p,
+                        leverage=leverage,
+                        isolated=isolated,
                     )
                 )
             except Exception as e:
