@@ -17,6 +17,7 @@ import math
 import os
 import threading
 import time
+import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -36,6 +37,8 @@ class ActivePositionManager:
         trail_distance_pct: float = 0.005,  # 0.5% trailing distance from peak price
         fee_buffer_pct: float = 0.0035,
         leverage_multiplier: Optional[float] = None,
+        exit_observer: Optional[Any] = None,
+        observer_run_id: Optional[str] = None,
     ):
         self.be_trigger_roe = be_trigger_roe
         self.trail_trigger_roe = trail_trigger_roe
@@ -44,10 +47,70 @@ class ActivePositionManager:
         # Retained only for constructor compatibility. Production calculations never use this
         # value; every mutation requires authoritative leverage on the hydrated position.
         self.leverage_multiplier = leverage_multiplier
+        self.exit_observer = exit_observer
+        self.observer_run_id = observer_run_id or f"apm-{uuid.uuid4().hex}"
+        self.observer_failures = 0
+        self._evaluation_sequence = 0
 
         # symbol -> position tracking state
         self._positions_state: Dict[str, Dict[str, Any]] = {}
         self._last_eval_time: float = 0.0
+
+    def _emit_exit_observation(self, event: Dict[str, Any]) -> None:
+        if self.exit_observer is None:
+            return
+        try:
+            if callable(self.exit_observer):
+                self.exit_observer(event)
+            else:
+                self.exit_observer.append(event)
+        except Exception as exc:
+            self.observer_failures += 1
+            logger.error(f"Exit observer failed without affecting position management: {exc}")
+
+    def _observation_base(
+        self,
+        *,
+        event_type: str,
+        evaluation_id: str,
+        position_key: str,
+        symbol: str,
+        is_long: bool,
+        quantity: float,
+        entry_price: float,
+        current_price: Optional[float],
+        exchange_leverage: Optional[float],
+        roe_pct: Optional[float],
+        peak_price: Optional[float],
+        peak_roe_pct: Optional[float],
+        state_before: Dict[str, Any],
+        state_after: Dict[str, Any],
+        error: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "event_id": f"{evaluation_id}:{event_type.lower()}",
+            "event_type": event_type,
+            "event_time_utc": datetime.now(timezone.utc).isoformat(),
+            "run_id": self.observer_run_id,
+            "evaluation_id": evaluation_id,
+            "position_key": position_key,
+            "symbol": symbol,
+            "side": "LONG" if is_long else "SHORT",
+            "quantity": float(abs(quantity)),
+            "entry_price": float(entry_price),
+            "current_price": float(current_price) if current_price is not None else None,
+            "price_source": "MARK" if current_price is not None else None,
+            "configured_leverage": None,
+            "requested_leverage": None,
+            "exchange_leverage": exchange_leverage,
+            "roe_pct": roe_pct,
+            "peak_price": peak_price,
+            "peak_roe_pct": peak_roe_pct,
+            "manager_state_before": state_before,
+            "manager_state_after": state_after,
+            "error": error,
+        }
 
     @classmethod
     def get_instance(cls) -> ActivePositionManager:
@@ -132,6 +195,10 @@ class ActivePositionManager:
                     if entry_price <= 0:
                         continue
 
+                    self._evaluation_sequence += 1
+                    evaluation_id = f"{self.observer_run_id}:eval:{self._evaluation_sequence}"
+                    position_key = f"{clean_sym}:{'LONG' if is_long else 'SHORT'}:{entry_price:.12g}"
+
                     leverage_val = (
                         getattr(pos, "leverage", None)
                         if not isinstance(pos, dict)
@@ -139,6 +206,24 @@ class ActivePositionManager:
                     )
                     position_leverage = self._extract_float(leverage_val)
                     if not math.isfinite(position_leverage) or position_leverage < 1.0:
+                        error = "authoritative leverage unavailable or malformed"
+                        base = self._observation_base(
+                            event_type="POSITION_OBSERVED", evaluation_id=evaluation_id,
+                            position_key=position_key, symbol=clean_sym, is_long=is_long,
+                            quantity=qty, entry_price=entry_price, current_price=None,
+                            exchange_leverage=None, roe_pct=None, peak_price=None,
+                            peak_roe_pct=None, state_before={}, state_after={}, error=error,
+                        )
+                        self._emit_exit_observation(base)
+                        self._emit_exit_observation(
+                            self._observation_base(
+                                event_type="MANAGER_EVALUATED", evaluation_id=evaluation_id,
+                                position_key=position_key, symbol=clean_sym, is_long=is_long,
+                                quantity=qty, entry_price=entry_price, current_price=None,
+                                exchange_leverage=None, roe_pct=None, peak_price=None,
+                                peak_roe_pct=None, state_before={}, state_after={}, error=error,
+                            ) | {"decision": "SKIP_UNTRUSTED_LEVERAGE"}
+                        )
                         logger.error(
                             f"Authoritative leverage unavailable for {clean_sym}; "
                             "skipping all stop mutations"
@@ -176,6 +261,8 @@ class ActivePositionManager:
                     if not curr_price or curr_price <= 0:
                         continue
 
+                    position_action_start = len(actions_taken)
+
                     # Initialize state if not tracked
                     if clean_sym not in self._positions_state:
                         self._positions_state[clean_sym] = {
@@ -207,6 +294,17 @@ class ActivePositionManager:
                     roe_pct = price_pnl_pct * position_leverage * 100.0
                     state["peak_roe"] = max(state.get("peak_roe", 0.0), roe_pct)
                     peak_p = state["peak_price"]
+                    state_before = dict(state)
+                    self._emit_exit_observation(
+                        self._observation_base(
+                            event_type="POSITION_OBSERVED", evaluation_id=evaluation_id,
+                            position_key=position_key, symbol=clean_sym, is_long=is_long,
+                            quantity=qty, entry_price=entry_price, current_price=curr_price,
+                            exchange_leverage=position_leverage, roe_pct=roe_pct,
+                            peak_price=peak_p, peak_roe_pct=state["peak_roe"],
+                            state_before=state_before, state_after=state_before,
+                        )
+                    )
 
                     # --- STAGE 0: VERIFY / ATTACH INITIAL PROTECTIVE STOP LOSS ON BROKER ---
                     if not state.get("initial_sl_verified", False):
@@ -450,6 +548,19 @@ class ActivePositionManager:
                                 "roe_pct": roe_pct,
                             }
                             actions_taken.append(action)
+
+                    position_actions = actions_taken[position_action_start:]
+                    decision = position_actions[-1]["type"] if position_actions else "NO_ACTION"
+                    self._emit_exit_observation(
+                        self._observation_base(
+                            event_type="MANAGER_EVALUATED", evaluation_id=evaluation_id,
+                            position_key=position_key, symbol=clean_sym, is_long=is_long,
+                            quantity=qty, entry_price=entry_price, current_price=curr_price,
+                            exchange_leverage=position_leverage, roe_pct=roe_pct,
+                            peak_price=peak_p, peak_roe_pct=state["peak_roe"],
+                            state_before=state_before, state_after=dict(state),
+                        ) | {"decision": decision}
+                    )
 
                 # Clean up closed positions from memory
                 for sym in list(self._positions_state.keys()):

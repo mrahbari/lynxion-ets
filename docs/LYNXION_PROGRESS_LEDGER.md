@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0137's first implementation unit adds a default-disabled injectable observer for position
+  and manager-evaluation events. It records explicit no-action/untrusted-leverage decisions and
+  isolates observer failures from protection behavior; four focused regressions pass.
 - TASK-0137 freezes a repository-only integration boundary: observe existing manager evaluations
   and stop-sync attempts through an optional sink, add no broker calls or retries, keep runtime
   disabled, and defer visibility claims, prospective boundary, and deployment to later gates.

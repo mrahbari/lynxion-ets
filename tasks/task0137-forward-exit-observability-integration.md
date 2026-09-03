@@ -1,6 +1,6 @@
 # TASK-0137 — Forward Exit Observability Integration
 
-**Status:** READY — REPOSITORY-ONLY, RUNTIME DISABLED
+**Status:** IN PROGRESS — REPOSITORY-ONLY, RUNTIME DISABLED
 
 ## Objective
 
@@ -41,3 +41,12 @@ exit decision or enabling collection in the current runtime.
 - No threshold, distance, leverage, sizing, symbol, entry, exit, retry, or broker behavior change.
 - No runtime start/reload, deployment, order, authenticated endpoint, or historical backfill.
 - No profit-lock candidate, counterfactual outcome, or profitability claim is opened by this task.
+
+## Implementation Progress
+
+- ActivePositionManager accepts an optional observer that remains disabled in every composition
+  root and canonical singleton.
+- Eligible evaluations emit `POSITION_OBSERVED` and `MANAGER_EVALUATED`, including explicit
+  `NO_ACTION`; untrusted leverage emits an explicit skip/error and performs no stop mutation.
+- Observer exceptions are isolated and counted without changing the manager action or broker call.
+- Four focused observer regressions pass; stop request/response wrapping and the full suite remain.
