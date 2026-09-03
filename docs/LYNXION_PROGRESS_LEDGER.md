@@ -7,8 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement and evaluate preregistered C-27 concentrated-aggressor exhaustion without changing its
-frozen specification, while C-11 continues prospective collection.
+Perform post-C27 cross-family synthesis and admit another historical candidate only if it satisfies
+the sequential policy's distinct-mechanism and economic-capability gates, while C-11 continues
+prospective collection.
 
 ## Status
 
@@ -18,9 +19,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
-- C-27 is preregistered with its outcome unopened: causal prior-2,880 p99 large-trade concentration,
-  causal p95 and 0.30 absolute imbalance, next-open reversal, exact four-hour exit, actual funding,
-  0.30% cost, 2025–2026 primary, 2024 temporal reverse, daily-cluster uncertainty, and frozen gates.
+- C-27 concentrated-aggressor exhaustion is REJECTED: 186 primary trades had -0.3418% expectancy,
+  PF 0.2533, and a daily-clustered 95% interval wholly below zero. Every fold, both sides, both
+  primary years, and the 2024 temporal reverse were negative; even gross expectancy before the
+  frozen 0.30% cost was negative. No threshold or direction variant is admitted on this panel.
 - TASK-0128's data gate is KEEP: all 972 expected official BTCUSDT aggregate-trade archives were
   checksum verified and produced 93,312 complete native 15-minute rows from 2024-01-01 through
   2026-08-29. Core integrity violations and missing intervals are zero, the normalized SHA-256 is
@@ -97,6 +99,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Test evidence
 
+- C-27 full post-outcome suite: 764 passed, 1 optional layering test skipped (`import-linter` is
+  not installed locally).
 - C-27 pre-outcome focused suite: 5 passed for causal threshold exclusion, signal conjunction,
   reversal direction, next-open/exact-four-hour execution, funding sign, missing paths, and costs.
 - Focused active-position regression tests: 11 passed after the restart-hydration correction.
@@ -226,6 +230,9 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-26 BTC-lead/alt-underreaction: 103 primary trades, -0.2102% expectancy, PF 0.744, CI crossing
   zero, and only one positive fold. Reverse 2023 was -0.9667%, PF 0.238, with every fold/side/symbol
   negative. The frozen market-context propagation candidate is rejected.
+- C-27 concentrated-aggressor exhaustion: 186 primary trades, -0.3418% expectancy, PF 0.2533,
+  clustered CI fully below zero, and every fold/side/year negative. Reverse 2024 was -0.4978%,
+  PF 0.1936, N=71. The exact large-trade concentration reversal is rejected without variants.
 
 ## Open risks
 
@@ -253,8 +260,8 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Implement C-27 with focused causal/execution regressions, then open the outcome exactly once and
-evaluate every frozen primary, reverse-period, uncertainty, friction, and stability gate.
+Complete a bounded post-C27 synthesis across the exhausted historical families. Do not create a
+threshold, direction, horizon, or cost variant from C-27's opened outcome.
 
 ## Operator decision required
 

@@ -1,6 +1,6 @@
 # Edge Candidate Register v26 — C-27 Concentrated Aggressor Exhaustion
 
-**Status:** PREREGISTERED — OUTCOME UNOPENED
+**Status:** OPENED — C-27 REJECTED
 
 C-27 tests whether unusually concentrated, strongly one-sided aggregate-trade flow marks short-term
 aggressor exhaustion and reverses after the completed 15-minute bucket. The large-trade
@@ -56,3 +56,11 @@ No percentile, lookback, imbalance floor, direction, holding period, cost, fundi
 rule, period, fold, cluster, or gate may change after outcome opening. Diagnostics cannot alter the
 verdict. No order, production strategy, risk, trailing, symbol-admission, or leverage change is
 authorized.
+
+## Frozen Result
+
+C-27 produced 186 primary trades with -0.3418% expectancy, PF 0.2533, and a daily-clustered 95%
+interval of [-0.4429%, -0.2402%]. Every fold, both sides, and both primary years were negative;
+expectancy remained negative at 0.20% and 0.50% costs. The 2024 temporal reverse was also negative
+(-0.4978%, PF 0.1936, N=71). Verdict **REJECT**. Machine report:
+`docs/reports/edge_candidate_c27.json`.

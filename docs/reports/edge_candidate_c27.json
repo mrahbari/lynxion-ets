@@ -1,0 +1,233 @@
+{
+  "candidate": "C-27",
+  "gate": {
+    "checks": {
+      "bootstrap": false,
+      "concentration": true,
+      "cost_005": false,
+      "folds": false,
+      "primary_n": false,
+      "primary_pf": false,
+      "primary_positive": false,
+      "reverse": false,
+      "sides": false,
+      "years": false
+    },
+    "verdict": "REJECT"
+  },
+  "max_positive_pnl_month_concentration": 0.16423368076084194,
+  "primary": {
+    "by_fold": {
+      "F1": {
+        "expectancy": -0.002067026201965224,
+        "max_drawdown": 0.12907979045708168,
+        "n": 46,
+        "profit_factor": 0.49909961227188904,
+        "win_rate": 0.21739130434782608
+      },
+      "F2": {
+        "expectancy": -0.004818294837498272,
+        "max_drawdown": 0.22826714201604945,
+        "n": 47,
+        "profit_factor": 0.09758570516588894,
+        "win_rate": 0.1276595744680851
+      },
+      "F3": {
+        "expectancy": -0.004340927993609707,
+        "max_drawdown": 0.19968268770604664,
+        "n": 46,
+        "profit_factor": 0.15254486044619192,
+        "win_rate": 0.21739130434782608
+      },
+      "F4": {
+        "expectancy": -0.002438000235021511,
+        "max_drawdown": 0.141217274762849,
+        "n": 47,
+        "profit_factor": 0.3456245512960087,
+        "win_rate": 0.3191489361702128
+      }
+    },
+    "by_side": {
+      "LONG": {
+        "expectancy": -0.00318187456793534,
+        "max_drawdown": 0.32201655361639564,
+        "n": 98,
+        "profit_factor": 0.2646335881099124,
+        "win_rate": 0.25510204081632654
+      },
+      "SHORT": {
+        "expectancy": -0.0036816824289456064,
+        "max_drawdown": 0.3465264859391475,
+        "n": 88,
+        "profit_factor": 0.24207756358171711,
+        "win_rate": 0.18181818181818182
+      }
+    },
+    "by_year": {
+      "2025": {
+        "expectancy": -0.0034525072862028675,
+        "max_drawdown": 0.35428409356521173,
+        "n": 99,
+        "profit_factor": 0.2586182126566229,
+        "win_rate": 0.16161616161616163
+      },
+      "2026": {
+        "expectancy": -0.0033794659778252057,
+        "max_drawdown": 0.3035976368789126,
+        "n": 87,
+        "profit_factor": 0.24704303832037922,
+        "win_rate": 0.28735632183908044
+      }
+    },
+    "clustered_bootstrap_95_ci": [
+      -0.00442933505714249,
+      -0.0024017940360300757
+    ],
+    "cost_sensitivity": {
+      "0.002": {
+        "expectancy": -0.002418342803252025,
+        "max_drawdown": 0.47929796264632557,
+        "n": 186,
+        "profit_factor": 0.3692629122268546,
+        "win_rate": 0.3172043010752688
+      },
+      "0.003": {
+        "expectancy": -0.0034183428032520252,
+        "max_drawdown": 0.6578817304441246,
+        "n": 186,
+        "profit_factor": 0.253310145460091,
+        "win_rate": 0.22043010752688172
+      },
+      "0.005": {
+        "expectancy": -0.005418342803252025,
+        "max_drawdown": 1.0158817304441239,
+        "n": 186,
+        "profit_factor": 0.12958521671306378,
+        "win_rate": 0.13978494623655913
+      }
+    },
+    "mean_abs_imbalance": 0.4611724817624159,
+    "mean_funding_return": -6.30053763440861e-07,
+    "mean_top_1pct_share": 0.6182043484170993,
+    "overall": {
+      "expectancy": -0.0034183428032520252,
+      "max_drawdown": 0.6578817304441246,
+      "n": 186,
+      "profit_factor": 0.253310145460091,
+      "win_rate": 0.22043010752688172
+    }
+  },
+  "primary_census": {
+    "concentration_rejected": 57533,
+    "imbalance_rejected": 414,
+    "missing_path": 0,
+    "overlap_rejected": 44,
+    "period_rows": 58177,
+    "signals": 230,
+    "warmup_rejected": 0
+  },
+  "protocol": "edge-candidate-register-v26",
+  "reverse": {
+    "by_fold": {
+      "F1": {
+        "expectancy": -0.0031534877221933073,
+        "max_drawdown": 0.05957752848544647,
+        "n": 17,
+        "profit_factor": 0.4477818099407126,
+        "win_rate": 0.47058823529411764
+      },
+      "F2": {
+        "expectancy": -0.0048143631451440716,
+        "max_drawdown": 0.0866585366125933,
+        "n": 18,
+        "profit_factor": 0.03680286672908145,
+        "win_rate": 0.1111111111111111
+      },
+      "F3": {
+        "expectancy": -0.007067436776436188,
+        "max_drawdown": 0.12721386197585136,
+        "n": 18,
+        "profit_factor": 0.019578981856136483,
+        "win_rate": 0.16666666666666666
+      },
+      "F4": {
+        "expectancy": -0.004773416710468971,
+        "max_drawdown": 0.10110792853314128,
+        "n": 18,
+        "profit_factor": 0.2923943376209137,
+        "win_rate": 0.2777777777777778
+      }
+    },
+    "by_side": {
+      "LONG": {
+        "expectancy": -0.0040556497120102205,
+        "max_drawdown": 0.1492453061347115,
+        "n": 34,
+        "profit_factor": 0.29456776702852716,
+        "win_rate": 0.3235294117647059
+      },
+      "SHORT": {
+        "expectancy": -0.005824624336373644,
+        "max_drawdown": 0.21551110044582486,
+        "n": 37,
+        "profit_factor": 0.11223825966100416,
+        "win_rate": 0.1891891891891892
+      }
+    },
+    "by_year": {
+      "2024": {
+        "expectancy": -0.004977509727523555,
+        "max_drawdown": 0.35340319065417247,
+        "n": 71,
+        "profit_factor": 0.19356611421218164,
+        "win_rate": 0.2535211267605634
+      }
+    },
+    "clustered_bootstrap_95_ci": [
+      -0.007780248786709584,
+      -0.002641913268173251
+    ],
+    "cost_sensitivity": {
+      "0.002": {
+        "expectancy": -0.003977509727523555,
+        "max_drawdown": 0.2837431352319125,
+        "n": 71,
+        "profit_factor": 0.2687680136496998,
+        "win_rate": 0.29577464788732394
+      },
+      "0.003": {
+        "expectancy": -0.004977509727523555,
+        "max_drawdown": 0.35340319065417247,
+        "n": 71,
+        "profit_factor": 0.19356611421218164,
+        "win_rate": 0.2535211267605634
+      },
+      "0.005": {
+        "expectancy": -0.006977509727523555,
+        "max_drawdown": 0.49540319065417254,
+        "n": 71,
+        "profit_factor": 0.09955859215336055,
+        "win_rate": 0.18309859154929578
+      }
+    },
+    "mean_abs_imbalance": 0.40390292326826543,
+    "mean_funding_return": -1.830563380281691e-06,
+    "mean_top_1pct_share": 0.5106850257210478,
+    "overall": {
+      "expectancy": -0.004977509727523555,
+      "max_drawdown": 0.35340319065417247,
+      "n": 71,
+      "profit_factor": 0.19356611421218164,
+      "win_rate": 0.2535211267605634
+    }
+  },
+  "reverse_census": {
+    "concentration_rejected": 31840,
+    "imbalance_rejected": 333,
+    "missing_path": 0,
+    "overlap_rejected": 11,
+    "period_rows": 35135,
+    "signals": 82,
+    "warmup_rejected": 2880
+  }
+}
