@@ -23,3 +23,5 @@ to ActivePositionManager, a broker, or any execution path.
   duplicate IDs, causal references, state-commit visibility, corruption, and timestamp ordering.
 - Daily append uses process-local locking, flush, and fsync; concurrent append is covered.
 - Six focused tests passed. No runtime module imports the writer and no production behavior changed.
+- Full regression suite: 773 passed, 1 optional layering test skipped because `import-linter` is not
+  installed locally.

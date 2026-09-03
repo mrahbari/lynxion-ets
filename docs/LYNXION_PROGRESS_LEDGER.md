@@ -114,7 +114,7 @@ frozen promotion gates and production strategy logic is unchanged.
 
 - TASK-0134 disconnected ledger suite: 6 passed, covering deterministic append/validation,
   corruption, duplicates, timestamps, sensitive fields, causal references, state commits, and
-  concurrent writers.
+  concurrent writers. Full post-task suite: 773 passed, 1 optional layering test skipped.
 - TASK-0132 focused leverage/risk-admission characterization: 25 passed; the three new tests prove
   leverage is absent from Order/Position, a 10x authoritative snapshot does not fail against a
   mocked 5x configuration, and ActivePositionManager independently defaults to 10x.
