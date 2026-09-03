@@ -209,3 +209,58 @@ def test_rejection_never_reaches_order_execution(monkeypatch):
 
     assert result["success"] is False
     assert reached == []
+
+
+def _managed_position(leverage):
+    from domain.entities import Position, PositionSide
+    from domain.value_objects import Money, Symbol
+    from datetime import datetime
+
+    return Position(
+        symbol=Symbol("BTCUSDT"),
+        side=PositionSide.LONG,
+        quantity=Decimal("1"),
+        entry_price=Money(Decimal("100"), "USDT"),
+        mark_price=102.0,
+        timestamp=datetime.now(),
+        leverage=leverage,
+        isolated=True,
+    )
+
+
+def test_active_manager_uses_each_positions_authoritative_leverage(monkeypatch):
+    from infrastructure.risk.active_position_manager import ActivePositionManager
+
+    manager = ActivePositionManager(be_trigger_roe=9.0, trail_trigger_roe=20.0)
+    synced = []
+    monkeypatch.setattr(
+        manager,
+        "_sync_sl_to_exchange",
+        lambda broker, symbol, is_long, quantity, stop: synced.append(stop) or True,
+    )
+    broker = SimpleNamespace(get_all_positions=lambda: [_managed_position(Decimal("5"))])
+
+    actions = manager.evaluate_open_positions(broker)
+
+    assert synced
+    assert actions[0]["type"] == "BREAKEVEN_ACTIVATED"
+    assert actions[0]["roe_pct"] == 10.0
+
+
+def test_active_manager_never_substitutes_leverage_when_hydration_is_unknown(monkeypatch):
+    from infrastructure.risk.active_position_manager import ActivePositionManager
+
+    manager = ActivePositionManager(leverage_multiplier=10.0)
+    synced = []
+    monkeypatch.setattr(
+        manager,
+        "_sync_sl_to_exchange",
+        lambda *args: synced.append(args) or True,
+    )
+    broker = SimpleNamespace(get_all_positions=lambda: [_managed_position(None)])
+
+    actions = manager.evaluate_open_positions(broker)
+
+    assert actions == []
+    assert synced == []
+    assert manager._positions_state == {}

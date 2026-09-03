@@ -1,9 +1,9 @@
 """Production Active Position Trailing Stop & Breakeven Protection Engine.
 
 Provides real-time dynamic position management across all active positions:
-1. Breakeven Protection: When ROE >= +5.0% (+0.5% price gain at 10x leverage),
+1. Breakeven Protection: When ROE reaches the configured trigger using authoritative leverage,
    moves Stop Loss to entry_price +/- 0.1% fee buffer, guaranteeing the trade cannot turn negative.
-2. Dynamic Trailing Stop: When ROE >= +10.0% (+1.0% price gain at 10x leverage),
+2. Dynamic Trailing Stop: When ROE reaches the configured trigger using authoritative leverage,
    continuously trails the Stop Loss 0.5% behind the peak high-water mark price, locking in gains.
 3. Clean Full-Position Exits: Eliminates flawed partial closing friction, ensuring high-expectancy
    clean exits at profit without orphan slices or minimum lot-size rejections.
@@ -13,6 +13,7 @@ Provides real-time dynamic position management across all active positions:
 from __future__ import annotations
 
 import json
+import math
 import os
 import threading
 import time
@@ -33,13 +34,15 @@ class ActivePositionManager:
         be_trigger_roe: float = 6.0,        # +6.0% ROE to trigger Breakeven (+0.6% price move @ 10x)
         trail_trigger_roe: float = 10.0,    # +10.0% ROE to activate Trailing Stop (+1.0% price move @ 10x)
         trail_distance_pct: float = 0.005,  # 0.5% trailing distance from peak price
-        fee_buffer_pct: float = 0.0035,     # 0.35% price buffer (3.5% ROE @ 10x) to strictly cover taker fees + spread + slippage
-        leverage_multiplier: float = 10.0   # Default leverage calculation factor
+        fee_buffer_pct: float = 0.0035,
+        leverage_multiplier: Optional[float] = None,
     ):
         self.be_trigger_roe = be_trigger_roe
         self.trail_trigger_roe = trail_trigger_roe
         self.trail_distance_pct = trail_distance_pct
         self.fee_buffer_pct = fee_buffer_pct
+        # Retained only for constructor compatibility. Production calculations never use this
+        # value; every mutation requires authoritative leverage on the hydrated position.
         self.leverage_multiplier = leverage_multiplier
 
         # symbol -> position tracking state
@@ -129,6 +132,19 @@ class ActivePositionManager:
                     if entry_price <= 0:
                         continue
 
+                    leverage_val = (
+                        getattr(pos, "leverage", None)
+                        if not isinstance(pos, dict)
+                        else pos.get("leverage")
+                    )
+                    position_leverage = self._extract_float(leverage_val)
+                    if not math.isfinite(position_leverage) or position_leverage < 1.0:
+                        logger.error(
+                            f"Authoritative leverage unavailable for {clean_sym}; "
+                            "skipping all stop mutations"
+                        )
+                        continue
+
                     # Determine current price
                     curr_price = None
                     if current_prices and clean_sym in current_prices:
@@ -188,7 +204,7 @@ class ActivePositionManager:
                         price_pnl_pct = (entry_price - curr_price) / entry_price
                         state["peak_price"] = min(state.get("peak_price", curr_price), curr_price)
 
-                    roe_pct = price_pnl_pct * self.leverage_multiplier * 100.0
+                    roe_pct = price_pnl_pct * position_leverage * 100.0
                     state["peak_roe"] = max(state.get("peak_roe", 0.0), roe_pct)
                     peak_p = state["peak_price"]
 
@@ -277,7 +293,7 @@ class ActivePositionManager:
                     elapsed_hours = (time.time() - state.get("first_seen", time.time())) / 3600.0
 
                     # 1. Stale in-profit trade (>= 3.0h open & ROE >= +3.5% fee coverage) -> Force Breakeven Lock
-                    if elapsed_hours >= 3.0 and roe_pct >= (self.fee_buffer_pct * self.leverage_multiplier * 100.0) and not state.get("breakeven_active", False):
+                    if elapsed_hours >= 3.0 and roe_pct >= (self.fee_buffer_pct * position_leverage * 100.0) and not state.get("breakeven_active", False):
                         if is_long:
                             be_sl = entry_price * (1.0 + self.fee_buffer_pct)
                             if be_sl >= curr_price:
@@ -356,11 +372,11 @@ class ActivePositionManager:
                                     )
 
                     # --- STAGE 2: DYNAMIC TRAILING STOP RATCHET (+10.0% ROE) ---
-                    min_locked_roe = self.fee_buffer_pct * self.leverage_multiplier * 100.0  # +3.5% ROE minimum
+                    min_locked_roe = self.fee_buffer_pct * position_leverage * 100.0
                     if roe_pct >= self.trail_trigger_roe:
                         if is_long:
                             candidate_sl = min(peak_p * (1.0 - self.trail_distance_pct), curr_price * 0.997)
-                            locked_roe = ((candidate_sl - entry_price) / entry_price) * self.leverage_multiplier * 100.0
+                            locked_roe = ((candidate_sl - entry_price) / entry_price) * position_leverage * 100.0
                             # Long SL can only increase (monotonic ratchet) and must lock >= min_locked_roe
                             if candidate_sl > state.get("trailing_sl_price", 0.0) and locked_roe >= min_locked_roe:
                                 action = {
@@ -385,7 +401,7 @@ class ActivePositionManager:
                                     )
                         else:
                             candidate_sl = max(peak_p * (1.0 + self.trail_distance_pct), curr_price * 1.003)
-                            locked_roe = ((entry_price - candidate_sl) / entry_price) * self.leverage_multiplier * 100.0
+                            locked_roe = ((entry_price - candidate_sl) / entry_price) * position_leverage * 100.0
                             # Short SL can only decrease (monotonic ratchet) and must lock >= min_locked_roe
                             if (state.get("trailing_sl_price", 0.0) == 0.0 or candidate_sl < state.get("trailing_sl_price", 0.0)) and locked_roe >= min_locked_roe:
                                 action = {

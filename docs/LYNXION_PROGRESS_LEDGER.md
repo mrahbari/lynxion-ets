@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement TASK-0135's authorized repository-only fail-closed leverage correction, then hold runtime
-integration behind a separate deployment approval gate while C-11 collection continues.
+Hold TASK-0135's completed fail-closed leverage correction behind the separate runtime/deployment
+approval gate while C-11 prospective collection continues.
 
 ## Status
 
@@ -18,6 +18,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0135 repository implementation is COMPLETE. ActivePositionManager now uses per-position
+  authoritative leverage and skips all stop mutation when it is unavailable; it cannot substitute
+  the prior 10x default. Thirty-four focused tests and the full 787-test suite pass, with one
+  optional import-linter skip. Runtime/deployment and VST observation remain unperformed and gated.
 - TASK-0135 implementation has started: execution/order contracts carry requested leverage,
   hydrated positions retain validated authoritative leverage and isolated state, and the formatted
   BingX adapter clone preserves the invariant. Six focused contract/hydration tests pass; no broker

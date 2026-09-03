@@ -18,6 +18,7 @@ def _broker_admission_order(symbol="NEWUSDT"):
         price=Money(Decimal("100"), "USDT"),
         stop_loss_price=Money(Decimal("98"), "USDT"),
         take_profit_price=Money(Decimal("104"), "USDT"),
+        requested_leverage=Decimal("5"),
     )
 
 
@@ -30,15 +31,18 @@ def test_bingx_final_admission_blocks_at_real_broker_position_capacity(monkeypat
     broker = object.__new__(_BingXBroker)
     broker.logger = logging.getLogger("test_capacity_admission")
     positions = [
-        {"symbol": "BTC-USDT", "positionAmt": "0.01", "avgPrice": "100", "markPrice": "100"},
-        {"symbol": "ETH-USDT", "positionAmt": "0.01", "avgPrice": "100", "markPrice": "100"},
+        {"symbol": "BTC-USDT", "positionAmt": "0.01", "avgPrice": "100", "markPrice": "100", "leverage": "5"},
+        {"symbol": "ETH-USDT", "positionAmt": "0.01", "avgPrice": "100", "markPrice": "100", "leverage": "5"},
     ]
     monkeypatch.setattr(
         broker, "_make_request", lambda *args, **kwargs: {"code": 0, "data": positions}
     )
     monkeypatch.setattr(
         "bootstrap.settings.loaders.load_settings",
-        lambda: SimpleNamespace(safety=SimpleNamespace(max_open_positions=2)),
+        lambda: SimpleNamespace(
+            safety=SimpleNamespace(max_open_positions=2),
+            risk=SimpleNamespace(max_leverage=5, max_leverage_limit=5),
+        ),
     )
 
     allowed, reason = broker._assert_entry_admission(_broker_admission_order())
@@ -59,12 +63,15 @@ def test_bingx_final_admission_blocks_duplicate_from_real_broker_snapshot(monkey
         "_make_request",
         lambda *args, **kwargs: {
             "code": 0,
-            "data": [{"symbol": "NEW-USDT", "positionAmt": "1", "avgPrice": "100", "markPrice": "100"}],
+                "data": [{"symbol": "NEW-USDT", "positionAmt": "1", "avgPrice": "100", "markPrice": "100", "leverage": "5"}],
         },
     )
     monkeypatch.setattr(
         "bootstrap.settings.loaders.load_settings",
-        lambda: SimpleNamespace(safety=SimpleNamespace(max_open_positions=5)),
+        lambda: SimpleNamespace(
+            safety=SimpleNamespace(max_open_positions=5),
+            risk=SimpleNamespace(max_leverage=5, max_leverage_limit=5),
+        ),
     )
 
     allowed, reason = broker._assert_entry_admission(_broker_admission_order())

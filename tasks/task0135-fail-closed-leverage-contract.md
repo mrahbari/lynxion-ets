@@ -1,6 +1,6 @@
 # TASK-0135 — Fail-Closed Authoritative Leverage Contract
 
-**Status:** IN PROGRESS — REPOSITORY-ONLY IMPLEMENTATION AUTHORIZED
+**Status:** COMPLETE — RUNTIME/DEPLOYMENT APPROVAL REQUIRED
 
 ## Objective
 
@@ -62,5 +62,11 @@ margin-mode query/set, leverage query/set, and position readback contracts; no e
   existing-position leverage, broker write failures, stale/malformed/cross-margin readback, and
   exchange mismatch before `_execute_order_after_admission` is reachable. Exact 5x agreement is
   covered by mocked endpoint sequencing.
-- Twenty-two focused leverage and broker failure-injection tests pass. Per-position
-  ActivePositionManager enforcement and the full suite remain unfinished.
+- ActivePositionManager now calculates ROE and profit-lock values from each hydrated position's
+  authoritative leverage. Missing or malformed leverage skips every stop mutation; the retained
+  constructor argument is compatibility-only and is never a production fallback.
+- Thirty-four focused leverage/position-manager regressions pass. The full repository suite passes
+  with 787 tests and one optional import-linter skip.
+- Repository implementation is complete. No runtime was started or reloaded, no authenticated
+  endpoint was called, no account setting changed, and no order was placed. Controlled deployment
+  and VST observation remain behind the explicit approval gate.

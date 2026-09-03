@@ -39,6 +39,6 @@ def test_bingx_admission_rejects_missing_requested_leverage(monkeypatch):
     assert allowed is False and "leverage" in reason
 
 
-def test_active_position_manager_default_is_not_loaded_from_risk_config():
+def test_active_position_manager_has_no_production_leverage_default():
     from infrastructure.risk.active_position_manager import ActivePositionManager
-    assert ActivePositionManager().leverage_multiplier==10.0
+    assert ActivePositionManager().leverage_multiplier is None

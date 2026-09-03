@@ -149,6 +149,7 @@ def test_active_position_manager_breakeven_and_trailing():
     mock_pos_long.quantity = 1.0
     mock_pos_long.entry_price = 2000.0
     mock_pos_long.current_price = 2000.0
+    mock_pos_long.leverage = 10.0
 
     mock_broker = MagicMock()
     mock_broker.get_all_positions.return_value = [mock_pos_long]
