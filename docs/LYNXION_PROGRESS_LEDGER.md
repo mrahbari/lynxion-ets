@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement TASK-0134's disconnected exit-event ledger writer while the P0 leverage correction remains
-approval-blocked; continue C-11 collection independently.
+Hold runtime integration behind the verified P0 leverage correction; continue only C-11 collection
+and non-production validation until the automation boundary authorizes risk/admission changes.
 
 ## Status
 
@@ -18,6 +18,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0134 implements the disconnected exit-event ledger writer/validator with atomic daily JSONL
+  append, secret rejection, causal validation, corruption detection, and deterministic hashes. It is
+  not imported by any runtime path and changed no production behavior.
 - TASK-0133 freezes the forward exit-observability contract: append-only manager evaluations,
   stop request/response/visibility/state transitions, restart hydration, leverage readback, and exit
   fills. No trailing threshold is selected and no production path changed.
@@ -109,6 +112,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Test evidence
 
+- TASK-0134 disconnected ledger suite: 6 passed, covering deterministic append/validation,
+  corruption, duplicates, timestamps, sensitive fields, causal references, state commits, and
+  concurrent writers.
 - TASK-0132 focused leverage/risk-admission characterization: 25 passed; the three new tests prove
   leverage is absent from Order/Position, a 10x authoritative snapshot does not fail against a
   mocked 5x configuration, and ActivePositionManager independently defaults to 10x.
@@ -273,9 +279,9 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Implement and test TASK-0134's standalone event writer/validator without connecting it to production.
-The fail-closed leverage correction still requires amendment of the active automation boundary before
-any production risk/admission behavior changes.
+Amend the active automation boundary or provide a separate authorized task for the fail-closed
+leverage correction. Do not connect the event ledger to runtime or permit new entries while the
+authoritative leverage path remains fail-open.
 
 ## Operator decision required
 

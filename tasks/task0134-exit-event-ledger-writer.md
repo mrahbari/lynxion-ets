@@ -1,6 +1,6 @@
 # TASK-0134 — Exit Event Ledger Writer
 
-**Status:** PLANNED — DISCONNECTED IMPLEMENTATION ONLY
+**Status:** COMPLETE — DISCONNECTED AND TESTED
 
 ## Objective
 
@@ -15,3 +15,11 @@ to ActivePositionManager, a broker, or any execution path.
 - Reject secrets and account-identifying fields.
 - Test corruption, duplicates, invalid references, concurrent append, and deterministic validation.
 - Do not import historical events or alter production risk, trailing, admission, leverage, or orders.
+
+## Result
+
+- Added an unconnected append-only JSONL writer and deterministic validator.
+- Validation covers common/event fields, UTC timestamps, finite values, sides, sensitive fields,
+  duplicate IDs, causal references, state-commit visibility, corruption, and timestamp ordering.
+- Daily append uses process-local locking, flush, and fsync; concurrent append is covered.
+- Six focused tests passed. No runtime module imports the writer and no production behavior changed.
