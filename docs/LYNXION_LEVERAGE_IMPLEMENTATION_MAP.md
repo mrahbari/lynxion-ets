@@ -32,9 +32,21 @@ preserve requested leverage; otherwise a valid upstream value is lost at the fin
 - `BingXBrokerAdapter.get_all_positions` must parse finite leverage and margin mode from the
   authoritative response into Position. A malformed individual position stays explicitly
   untrusted and must not silently become 10x.
-- No leverage/margin API exists in the current adapter. The exact endpoint, request fields, response
-  schema, VST behavior, and readback semantics must be verified against official BingX documentation
-  immediately before implementation; this map deliberately does not invent them.
+- No leverage/margin API exists in the current adapter. Official BingX API references confirm:
+  - `GET /openApi/swap/v2/trade/marginType` queries `marginType`; `POST` on the same path accepts
+    `symbol` and `marginType` (`ISOLATED`, `CROSSED`, or `SEPARATE_ISOLATED`).
+  - `GET /openApi/swap/v2/trade/leverage` accepts `symbol` and returns `longLeverage`,
+    `shortLeverage`, their maxima, and available volume.
+  - `POST /openApi/swap/v2/trade/leverage` accepts `symbol`, `side` (`LONG`, `SHORT`, or `BOTH`),
+    and integer `leverage`, returning the applied leverage.
+  - `GET /openApi/swap/v2/user/positions` returns per-position integer `leverage` and boolean
+    `isolated`, providing an independent post-entry/hydration readback.
+- The fail-closed sequence can therefore query margin mode, set/query side-specific leverage, and
+  verify the authoritative result before the existing order endpoint. VST behavior must still be
+  exercised only through mocked failure injection until runtime authorization exists.
+
+Official references: [BingX perpetual swap trade API](https://github.com/BingX-API/api-ai-skills/blob/main/skills/swap-trade/api-reference.md)
+and [BingX swap account API](https://github.com/BingX-API/api-ai-skills/blob/main/skills/swap-account/api-reference.md).
 
 ## Position Management Touchpoints
 

@@ -47,5 +47,5 @@ authoritative, fail-closed part of every BingX derivatives entry and hydrated po
 
 The exact domain, order-construction, BingX admission/hydration, and active-position-manager
 touchpoints are inventoried in `docs/LYNXION_LEVERAGE_IMPLEMENTATION_MAP.md`. No existing BingX
-leverage/margin endpoint implementation was found; official API semantics must be verified before
-coding rather than inferred.
+leverage/margin endpoint implementation was found locally. Official BingX references now verify the
+margin-mode query/set, leverage query/set, and position readback contracts; no endpoint was called.
