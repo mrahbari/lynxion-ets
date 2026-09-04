@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Define the optional reconciliation integration boundary after TASK-0146 while C-11 collection
-continues; do not wire runtime, tune thresholds, or open outcomes.
+Implement TASK-0147's optional, runtime-disabled reconciliation terminal observer while C-11
+collection continues; do not wire runtime, tune thresholds, or open outcomes.
 
 ## Status
 
@@ -18,6 +18,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0147 freezes the optional reconciliation boundary: reuse the existing history call and order
+  selector, resolve one exact open identity, emit admitted terminal evidence, and advance identity
+  completeness without altering operational reconciliation. Missing/ambiguous evidence and observer
+  failures remain observational; runtime and production storage stay disabled.
 - TASK-0146 is COMPLETE and disconnected. Its pure extractor fail-closes unknown identity/side or
   symbol mismatches and admits fill economics only from frozen authoritative fields; missing data
   remains null and incomplete. Five focused extractor tests and the full 817-test suite pass with
