@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Define the restart-hydration and exit-fill evidence boundary after TASK-0139 while C-11 collection
+Implement TASK-0141's runtime-disabled restart-hydration observation while C-11 collection
 continues; do not enable collection, tune thresholds, or open outcomes.
 
 ## Status
@@ -18,6 +18,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0140 confirms the forward causal chain is still incomplete across restart and terminal fill.
+  Existing hydration drops selected stop identity and emits no event; reconciliation is separate and
+  drops fill price, quantity, fees, trigger details, and stable manager linkage from the evidence
+  contract. TASK-0141 is limited to observing the existing hydration read; runtime must remain off.
 - TASK-0139 is COMPLETE at repository level and remains runtime-disabled. Existing stop attempts
   now preserve structured visibility evidence and emit a causal request, response, visibility, and
   post-mutation state-commit chain with collision-free IDs. Broker requests, polls, sleeps, retries,
