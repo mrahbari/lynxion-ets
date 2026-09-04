@@ -1,6 +1,6 @@
 # TASK-0139 — Stop Visibility and State Observability
 
-**Status:** IN PROGRESS — REPOSITORY-ONLY, RUNTIME DISABLED
+**Status:** COMPLETE — REPOSITORY-ONLY, RUNTIME DISABLED
 
 ## Objective
 
@@ -44,4 +44,9 @@ evidence, without changing broker or exit behavior.
 - Accepted attempts now emit a causally linked verified/failed visibility event after the broker
   response. Focused tests preserve the existing broker request and one-poll success / three-poll
   exhaustion counts; observer failure still cannot generate a retry.
-- Caller-side state-commit linkage remains.
+- Callers now emit `STATE_COMMITTED` only after their existing successful local mutation and link it
+  to verified exchange visibility. Per-sync event suffixes prevent collisions when one evaluation
+  performs more than one existing stop action.
+- Thirty focused regressions and the full 798-test suite pass, with one optional import-linter
+  check skipped because the local package is absent. No production ledger file was created and no
+  observer was enabled in a composition root.

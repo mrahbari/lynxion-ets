@@ -1,6 +1,8 @@
 """Structured exchange-visibility evidence for TASK-0139."""
 
-from tests.unit.test_task0137_exit_observer import _observation_context
+import pytest
+
+from tests.unit.test_task0137_exit_observer import _observation_context, _position
 
 
 def test_pending_stop_verification_preserves_matching_exchange_evidence():
@@ -148,3 +150,66 @@ def test_invisible_accepted_stop_emits_one_failed_visibility_per_existing_attemp
         event["event_id"] for event in responses
     ]
     assert "verified_visibility_event_id" not in context
+    assert not [event for event in events if event["event_type"] == "STATE_COMMITTED"]
+
+
+def test_manager_emits_state_commit_only_after_existing_state_mutation():
+    from infrastructure.risk.active_position_manager import ActivePositionManager
+
+    class Broker:
+        def __init__(self):
+            self.place_calls = 0
+            self.pending_calls = 0
+
+        def get_all_positions(self):
+            return [_position(price=102.0)]
+
+        def _place_conditional_order(self, **kwargs):
+            self.place_calls += 1
+            self.stop_price = kwargs["stop_price"]
+            return {"success": True, "order_id": "be-stop-1"}
+
+        def get_pending_orders(self, symbol):
+            self.pending_calls += 1
+            return [{
+                "orderId": "be-stop-1",
+                "type": "STOP_MARKET",
+                "side": "SELL",
+                "positionSide": "LONG",
+                "stopPrice": self.stop_price,
+            }]
+
+    events = []
+    broker = Broker()
+    manager = ActivePositionManager(
+        be_trigger_roe=5.0,
+        trail_trigger_roe=50.0,
+        exit_observer=events.append,
+        observer_run_id="run-commit",
+    )
+    manager._positions_state["BTCUSDT"] = {
+        "symbol": "BTCUSDT",
+        "is_long": True,
+        "entry_price": 100.0,
+        "quantity": 1.0,
+        "peak_price": 100.0,
+        "peak_roe": 0.0,
+        "breakeven_active": False,
+        "current_sl_price": 95.0,
+        "trailing_sl_price": 0.0,
+        "first_seen": 1.0,
+        "initial_sl_verified": True,
+    }
+
+    actions = manager.evaluate_open_positions(broker)
+
+    commits = [event for event in events if event["event_type"] == "STATE_COMMITTED"]
+    visibility = [event for event in events if event["event_type"] == "STOP_VISIBILITY_VERIFIED"]
+    assert [action["type"] for action in actions] == ["BREAKEVEN_ACTIVATED"]
+    assert broker.place_calls == 1
+    assert broker.pending_calls == 1
+    assert len(visibility) == len(commits) == 1
+    assert commits[0]["causal_event_id"] == visibility[0]["event_id"]
+    assert commits[0]["causal_event_type"] == "STOP_VISIBILITY_VERIFIED"
+    assert commits[0]["manager_state_after"]["breakeven_active"] is True
+    assert commits[0]["manager_state_after"]["current_sl_price"] == pytest.approx(100.35)

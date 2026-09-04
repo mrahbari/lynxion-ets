@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement TASK-0139's runtime-disabled stop-visibility/state causal link while C-11 collection
+Define the restart-hydration and exit-fill evidence boundary after TASK-0139 while C-11 collection
 continues; do not enable collection, tune thresholds, or open outcomes.
 
 ## Status
@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0139 is COMPLETE at repository level and remains runtime-disabled. Existing stop attempts
+  now preserve structured visibility evidence and emit a causal request, response, visibility, and
+  post-mutation state-commit chain with collision-free IDs. Broker requests, polls, sleeps, retries,
+  stop decisions, and state behavior are unchanged. Thirty focused regressions and the full
+  798-test suite pass with one optional import-linter skip; no production ledger file was created.
 - TASK-0139's first unit preserves structured evidence from the existing pending-stop query: the
   matched exchange order ID, actual visible stop price, and UTC observation time. The public sync
   result and existing one-poll-success/three-poll-exhaustion behavior are unchanged; 21 focused

@@ -51,6 +51,7 @@ class ActivePositionManager:
         self.observer_run_id = observer_run_id or f"apm-{uuid.uuid4().hex}"
         self.observer_failures = 0
         self._evaluation_sequence = 0
+        self._stop_sync_sequence = 0
 
         # symbol -> position tracking state
         self._positions_state: Dict[str, Dict[str, Any]] = {}
@@ -121,6 +122,34 @@ class ActivePositionManager:
             "manager_state_after": state_after,
             "error": error,
         }
+
+    @staticmethod
+    def _observation_fields(context: Dict[str, Any]) -> Dict[str, Any]:
+        keys = {
+            "evaluation_id", "position_key", "symbol", "is_long", "quantity",
+            "entry_price", "current_price", "exchange_leverage", "roe_pct",
+            "peak_price", "peak_roe_pct", "state_before",
+        }
+        return {key: context[key] for key in keys}
+
+    def _emit_state_committed(
+        self, observation_context: Dict[str, Any], state_after: Dict[str, Any]
+    ) -> None:
+        visibility_event_id = observation_context.pop("verified_visibility_event_id", None)
+        stop_sync_id = observation_context.pop("stop_sync_id", None)
+        if visibility_event_id is None:
+            return
+        self._emit_exit_observation(
+            self._observation_base(
+                event_type="STATE_COMMITTED",
+                state_after=dict(state_after),
+                event_suffix=str(stop_sync_id) if stop_sync_id is not None else None,
+                **self._observation_fields(observation_context),
+            ) | {
+                "causal_event_id": visibility_event_id,
+                "causal_event_type": "STOP_VISIBILITY_VERIFIED",
+            }
+        )
 
     @classmethod
     def get_instance(cls) -> ActivePositionManager:
@@ -378,6 +407,7 @@ class ActivePositionManager:
                                         observation_context=observation_context,
                                     ):
                                         state["current_sl_price"] = init_sl
+                                        self._emit_state_committed(observation_context, state)
                                     else:
                                         state["initial_sl_verified"] = False
                             except Exception as ex:
@@ -401,6 +431,7 @@ class ActivePositionManager:
                             state["breakeven_active"] = True
                             state["current_sl_price"] = be_sl
                             state["trailing_sl_price"] = be_sl
+                            self._emit_state_committed(observation_context, state)
                             action = {
                                 "type": "BREAKEVEN_ACTIVATED",
                                 "symbol": clean_sym,
@@ -438,6 +469,7 @@ class ActivePositionManager:
                             state["breakeven_active"] = True
                             state["current_sl_price"] = be_sl
                             state["trailing_sl_price"] = be_sl
+                            self._emit_state_committed(observation_context, state)
                             action = {
                                 "type": "TIME_DECAY_BREAKEVEN_ACTIVATED",
                                 "symbol": clean_sym,
@@ -477,6 +509,7 @@ class ActivePositionManager:
                                     observation_context=observation_context,
                                 ):
                                     state["current_sl_price"] = tightened_sl
+                                    self._emit_state_committed(observation_context, state)
                                     actions_taken.append(action)
                                     logger.warning(
                                         f"⏳ [ACTIVE POSITION MANAGER] TIME-DECAY SL TIGHTENED: {clean_sym} LONG "
@@ -501,6 +534,7 @@ class ActivePositionManager:
                                     observation_context=observation_context,
                                 ):
                                     state["current_sl_price"] = tightened_sl
+                                    self._emit_state_committed(observation_context, state)
                                     actions_taken.append(action)
                                     logger.warning(
                                         f"⏳ [ACTIVE POSITION MANAGER] TIME-DECAY SL TIGHTENED: {clean_sym} SHORT "
@@ -533,6 +567,7 @@ class ActivePositionManager:
                                 ):
                                     state["trailing_sl_price"] = candidate_sl
                                     state["current_sl_price"] = max(state.get("current_sl_price", 0.0), candidate_sl)
+                                    self._emit_state_committed(observation_context, state)
                                     actions_taken.append(action)
                                     logger.warning(
                                         f"📈 [ACTIVE POSITION MANAGER] TRAILING STOP RATCHET: {clean_sym} LONG "
@@ -561,6 +596,7 @@ class ActivePositionManager:
                                 ):
                                     state["trailing_sl_price"] = candidate_sl
                                     state["current_sl_price"] = min(state.get("current_sl_price", 999999.0), candidate_sl)
+                                    self._emit_state_committed(observation_context, state)
                                     actions_taken.append(action)
                                     logger.warning(
                                         f"📉 [ACTIVE POSITION MANAGER] TRAILING STOP RATCHET: {clean_sym} SHORT "
@@ -643,6 +679,14 @@ class ActivePositionManager:
         rather than being reported as protected based on local state alone.
         """
         try:
+            observation_fields = None
+            stop_sync_id = None
+            if observation_context is not None:
+                self._stop_sync_sequence += 1
+                stop_sync_id = self._stop_sync_sequence
+                observation_context.pop("verified_visibility_event_id", None)
+                observation_context["stop_sync_id"] = stop_sync_id
+                observation_fields = self._observation_fields(observation_context)
             target_broker = self._resolve_target_broker(broker)
             close_side = "SELL" if is_long else "BUY"
             pos_side = "LONG" if is_long else "SHORT"
@@ -658,13 +702,14 @@ class ActivePositionManager:
             max_sl_attempts = 3
             placed = False
             for attempt in range(1, max_sl_attempts + 1):
+                event_suffix = f"{stop_sync_id}:{attempt}" if stop_sync_id is not None else str(attempt)
                 request_event = None
-                if observation_context is not None:
+                if observation_fields is not None:
                     request_event = self._observation_base(
                         event_type="STOP_REPLACE_REQUESTED",
                         state_after=dict(self._positions_state.get(symbol, {})),
-                        event_suffix=str(attempt),
-                        **observation_context,
+                        event_suffix=event_suffix,
+                        **observation_fields,
                     ) | {
                         "requested_stop_price": float(new_sl_price),
                         "attempt": attempt,
@@ -678,14 +723,14 @@ class ActivePositionManager:
 
                 def emit_response() -> Optional[Dict[str, Any]]:
                     nonlocal response_event
-                    if observation_context is None or request_event is None or response_event is not None:
+                    if observation_fields is None or request_event is None or response_event is not None:
                         return response_event
                     response_event = self._observation_base(
                         event_type="STOP_REPLACE_RESPONDED",
                         state_after=dict(self._positions_state.get(symbol, {})),
                         error=response_error,
-                        event_suffix=str(attempt),
-                        **observation_context,
+                        event_suffix=event_suffix,
+                        **observation_fields,
                     ) | {
                         "causal_event_id": request_event["event_id"],
                         "requested_stop_price": float(new_sl_price),
@@ -727,15 +772,15 @@ class ActivePositionManager:
                             target_broker, formatted_symbol, close_side, pos_side, new_sl_price
                         )
                         placed = visibility_evidence is not None
-                        if observation_context is not None and response_event is not None:
+                        if observation_fields is not None and response_event is not None:
                             visibility_type = (
                                 "STOP_VISIBILITY_VERIFIED" if placed else "STOP_VISIBILITY_FAILED"
                             )
                             visibility_event = self._observation_base(
                                 event_type=visibility_type,
                                 state_after=dict(self._positions_state.get(symbol, {})),
-                                event_suffix=str(attempt),
-                                **observation_context,
+                                event_suffix=event_suffix,
+                                **observation_fields,
                             ) | {"causal_event_id": response_event["event_id"]}
                             if placed:
                                 visibility_event |= {
