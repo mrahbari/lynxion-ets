@@ -1,6 +1,6 @@
 # TASK-0146 — Terminal Evidence Extractor
 
-**Status:** READY — DISCONNECTED IMPLEMENTATION
+**Status:** COMPLETE — DISCONNECTED AND TESTED
 
 ## Objective
 
@@ -25,3 +25,13 @@ exact identity record under TASK-0145's frozen admission rules.
 
 - No reconciliation integration, identity lifecycle write, exit-ledger event, broker call, runtime
   wiring, historical import, prospective boundary, strategy change, or profitability conclusion.
+
+## Result
+
+- Added a pure extractor that requires known terminal order identity, explicit side, normalized
+  symbol/side agreement, and an open identity record.
+- Authoritative fill price, quantity, realized PnL, fees, exchange time, trigger price/basis, and
+  order type are admitted only from frozen raw fields. Missing/malformed economics remain null and
+  make terminal evidence incomplete rather than becoming zero.
+- Five focused extractor tests, eleven identity/ledger tests, and the full 817-test suite pass with
+  one optional import-linter skip. No runtime component imports the extractor.

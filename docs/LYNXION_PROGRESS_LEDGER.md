@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement TASK-0146's disconnected terminal-evidence extractor while C-11 collection continues;
-do not wire reconciliation/runtime, tune thresholds, or open outcomes.
+Define the optional reconciliation integration boundary after TASK-0146 while C-11 collection
+continues; do not wire runtime, tune thresholds, or open outcomes.
 
 ## Status
 
@@ -18,6 +18,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0146 is COMPLETE and disconnected. Its pure extractor fail-closes unknown identity/side or
+  symbol mismatches and admits fill economics only from frozen authoritative fields; missing data
+  remains null and incomplete. Five focused extractor tests and the full 817-test suite pass with
+  one optional import-linter skip. No runtime import, broker call, or production file was added.
 - TASK-0145 freezes terminal-field admission from the already-selected reconciliation order. Exact
   symbol/explicit side identity is mandatory; malformed or missing economics remain null, and an
   outcome is complete only with authoritative fill price, quantity, realized PnL, fees, and exchange
