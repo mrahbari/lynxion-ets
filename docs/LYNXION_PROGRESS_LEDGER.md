@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement TASK-0144's optional, runtime-disabled position-identity capture while C-11 collection
-continues; do not wire reconciliation/runtime, tune thresholds, or open outcomes.
+Define reconciliation-side identity consumption and terminal-field admission after TASK-0144 while
+C-11 collection continues; do not wire runtime, tune thresholds, or open outcomes.
 
 ## Status
 
@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0144 is COMPLETE at repository level and remains runtime-disabled. ActivePositionManager can
+  optionally persist authoritative open identity and update quantity/time without duplication;
+  disabled/corrupt/conflicting/ambiguous/write-failure paths cannot change actions or broker calls.
+  Eleven focused identity/capture tests and the full 812-test suite pass with one optional
+  import-linter skip. No production snapshot or ledger exists.
 - TASK-0144 freezes the minimal integration boundary: ActivePositionManager may write authoritative
   open-position identity through an optional store, but the canonical singleton and composition
   roots remain disabled. Store failures must be observational only; no broker calls, reconciliation,

@@ -39,6 +39,7 @@ class ActivePositionManager:
         leverage_multiplier: Optional[float] = None,
         exit_observer: Optional[Any] = None,
         observer_run_id: Optional[str] = None,
+        position_identity_store: Optional[Any] = None,
     ):
         self.be_trigger_roe = be_trigger_roe
         self.trail_trigger_roe = trail_trigger_roe
@@ -50,6 +51,8 @@ class ActivePositionManager:
         self.exit_observer = exit_observer
         self.observer_run_id = observer_run_id or f"apm-{uuid.uuid4().hex}"
         self.observer_failures = 0
+        self.identity_store_failures = 0
+        self.position_identity_store = position_identity_store
         self._evaluation_sequence = 0
         self._stop_sync_sequence = 0
 
@@ -68,6 +71,77 @@ class ActivePositionManager:
         except Exception as exc:
             self.observer_failures += 1
             logger.error(f"Exit observer failed without affecting position management: {exc}")
+
+    def _capture_position_identity(
+        self,
+        pos: Any,
+        *,
+        position_key: str,
+        symbol: str,
+        is_long: bool,
+        quantity: float,
+        entry_price: float,
+        exchange_leverage: float,
+    ) -> None:
+        if self.position_identity_store is None:
+            return
+        try:
+            from infrastructure.observability.position_identity_snapshot import (
+                PositionIdentityError,
+                deterministic_record_id,
+            )
+
+            side = "LONG" if is_long else "SHORT"
+            existing = self.position_identity_store.resolve_open(symbol, side)
+            now = datetime.now(timezone.utc).isoformat()
+            if existing is not None:
+                if (
+                    existing["position_key"] != position_key
+                    or existing["observer_run_id"] != self.observer_run_id
+                    or float(existing["entry_price"]) != float(entry_price)
+                ):
+                    raise PositionIdentityError("open identity conflicts with current position")
+                record = dict(existing)
+                record["quantity"] = float(abs(quantity))
+                record["last_observed_utc"] = now
+            else:
+                first_observed = now
+                record = {
+                    "schema_version": 1,
+                    "record_id": deterministic_record_id(
+                        position_key, self.observer_run_id, first_observed
+                    ),
+                    "position_key": position_key,
+                    "symbol": symbol,
+                    "side": side,
+                    "entry_price": float(entry_price),
+                    "quantity": float(abs(quantity)),
+                    "exchange_leverage": float(exchange_leverage),
+                    "first_observed_utc": first_observed,
+                    "last_observed_utc": first_observed,
+                    "observer_run_id": self.observer_run_id,
+                    "exchange_position_id": None,
+                    "exchange_order_id": None,
+                    "lifecycle_state": "OPEN",
+                }
+
+            def present_value(*names: str) -> Any:
+                for name in names:
+                    value = pos.get(name) if isinstance(pos, dict) else getattr(pos, name, None)
+                    if value not in (None, ""):
+                        return value
+                return None
+
+            position_id = present_value("positionId", "position_id")
+            order_id = present_value("orderId", "order_id")
+            if position_id is not None:
+                record["exchange_position_id"] = str(position_id)
+            if order_id is not None:
+                record["exchange_order_id"] = str(order_id)
+            self.position_identity_store.upsert(record)
+        except Exception as exc:
+            self.identity_store_failures += 1
+            logger.error(f"Position identity capture failed without affecting management: {exc}")
 
     def _observation_base(
         self,
@@ -358,6 +432,15 @@ class ActivePositionManager:
                         "peak_roe_pct": state["peak_roe"],
                         "state_before": state_before,
                     }
+                    self._capture_position_identity(
+                        pos,
+                        position_key=position_key,
+                        symbol=clean_sym,
+                        is_long=is_long,
+                        quantity=qty,
+                        entry_price=entry_price,
+                        exchange_leverage=position_leverage,
+                    )
 
                     # --- STAGE 0: VERIFY / ATTACH INITIAL PROTECTIVE STOP LOSS ON BROKER ---
                     if not state.get("initial_sl_verified", False):

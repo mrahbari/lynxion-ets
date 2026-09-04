@@ -1,6 +1,6 @@
 # TASK-0144 — Position Identity Capture Integration
 
-**Status:** READY — REPOSITORY-ONLY, RUNTIME DISABLED
+**Status:** COMPLETE — REPOSITORY-ONLY, RUNTIME DISABLED
 
 ## Objective
 
@@ -37,3 +37,13 @@ enabling runtime persistence or changing trading behavior.
 
 - No reconciliation integration, terminal-fill event, runtime wiring/deployment, threshold or
   strategy change, authenticated broker call, historical backfill, or profitability conclusion.
+
+## Result
+
+- ActivePositionManager accepts an optional identity store and records validated open-position
+  identity after authoritative inputs are available. Repeated observations update quantity/time
+  without duplicating the deterministic record.
+- Disabled, corrupt, conflicting, ambiguous, and write-failure paths remain observational only;
+  they do not change actions or broker-call counts. The canonical singleton remains disabled.
+- Eleven focused identity/capture tests and the full 812-test suite pass with one optional
+  import-linter skip. No production identity snapshot or exit ledger was created.
