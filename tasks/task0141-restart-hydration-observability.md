@@ -1,6 +1,6 @@
 # TASK-0141 — Restart Hydration Observability
 
-**Status:** READY — REPOSITORY-ONLY, RUNTIME DISABLED
+**Status:** COMPLETE — REPOSITORY-ONLY, RUNTIME DISABLED
 
 ## Objective
 
@@ -32,3 +32,13 @@ without changing stop selection, manager state, broker calls, or runtime composi
 
 - No exit-fill integration, cross-component identity redesign, runtime wiring, threshold change,
   broker behavior change, or profitability conclusion.
+
+## Result
+
+- Existing positive stop hydration emits one `POSITION_HYDRATED` event with the exact selected
+  order identity, recovered price, authoritative leverage, source, existing profit-lock
+  classification, and post-hydration manager state.
+- Absent/non-positive stops emit no hydration event. Observer exceptions remain isolated and do
+  not change state or broker-call counts.
+- Thirty-three focused regressions and the full 801-test suite pass with one optional import-linter
+  skip. No production ledger file was created and runtime remains disabled.

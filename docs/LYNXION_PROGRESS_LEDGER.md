@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement TASK-0141's runtime-disabled restart-hydration observation while C-11 collection
-continues; do not enable collection, tune thresholds, or open outcomes.
+Define authoritative terminal-fill identity and field coverage after TASK-0141 while C-11
+collection continues; do not enable collection, tune thresholds, or open outcomes.
 
 ## Status
 
@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0141 is COMPLETE at repository level and remains runtime-disabled. Existing positive stop
+  hydration now records the exact selected order ID/price/source, authoritative leverage, existing
+  profit-lock classification, and post-hydration state. It adds no broker call or mutation; observer
+  failure is isolated. Thirty-three focused regressions and the full 801-test suite pass with one
+  optional import-linter skip; no production ledger file was created.
 - TASK-0140 confirms the forward causal chain is still incomplete across restart and terminal fill.
   Existing hydration drops selected stop identity and emits no event; reconciliation is separate and
   drops fill price, quantity, fees, trigger details, and stable manager linkage from the evidence

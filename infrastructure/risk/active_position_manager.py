@@ -392,6 +392,24 @@ class ActivePositionManager:
                                         if locked_at_breakeven:
                                             state["breakeven_active"] = True
                                             state["trailing_sl_price"] = existing_sl
+                                        selected_order_id = stop_orders[0].get(
+                                            "orderId", stop_orders[0].get("order_id")
+                                        )
+                                        self._emit_exit_observation(
+                                            self._observation_base(
+                                                event_type="POSITION_HYDRATED",
+                                                state_after=dict(state),
+                                                **self._observation_fields(observation_context),
+                                            ) | {
+                                                "hydration_source": "BINGX_PENDING_ORDERS",
+                                                "exchange_order_id": (
+                                                    str(selected_order_id)
+                                                    if selected_order_id is not None else None
+                                                ),
+                                                "recovered_stop_price": existing_sl,
+                                                "recovered_profit_lock": locked_at_breakeven,
+                                            }
+                                        )
                                 if not has_sl and not state.get("breakeven_active", False) and state.get("current_sl_price", 0.0) == 0.0:
                                     default_sl_pct = 0.03  # 3% protective initial stop loss
                                     if is_long:
