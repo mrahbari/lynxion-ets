@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement TASK-0147's optional, runtime-disabled reconciliation terminal observer while C-11
-collection continues; do not wire runtime, tune thresholds, or open outcomes.
+Define the post-TASK-0147 forward-evidence admission gate while C-11 collection continues; do not
+wire runtime, tune thresholds, or open outcomes.
 
 ## Status
 
@@ -17,6 +17,12 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0147 is COMPLETE at repository level and remains runtime-disabled. The reconciliation
+  service can optionally resolve one exact open identity from its already-selected terminal order,
+  emit null-preserving terminal evidence, and advance lifecycle state without adding broker calls
+  or changing operational closure behavior. Twenty-three focused tests and the full 824-test suite
+  pass with one optional import-linter skip; no production snapshot or exit ledger was created.
 
 - TASK-0147 freezes the optional reconciliation boundary: reuse the existing history call and order
   selector, resolve one exact open identity, emit admitted terminal evidence, and advance identity

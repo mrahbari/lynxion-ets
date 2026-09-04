@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Callable, Dict, List, Optional
 
@@ -48,14 +49,90 @@ _TERMINAL_ORDER_STATES = {"FILLED", "CANCELLED", "CANCELED", "REJECTED", "EXPIRE
 class BrokerReconciliationService:
     """Reconcile journal vs broker; halt on unrecoverable drift."""
 
-    def __init__(self, halt_fn: Optional[Callable[[str], None]] = None):
+    def __init__(self, halt_fn: Optional[Callable[[str], None]] = None,
+                 position_identity_store=None, terminal_observer=None):
         # Default halt = engage the live execution guard kill switch (imported lazily).
         self._halt_fn = halt_fn
+        self._position_identity_store = position_identity_store
+        self._terminal_observer = terminal_observer
+        self._terminal_observation_counts = {"emitted": 0, "excluded": 0, "errors": 0}
         from shared.logger import EnhancedLogger
         self.logger = EnhancedLogger("BrokerReconciliationService")
         # Persistent tracking for active position transitions and closed position idempotency across restarts
         self._previous_active_symbols: set[str] = self._load_active_symbols()
         self._processed_closed_exits: set[str] = set()
+
+    def _observe_terminal_order(self, symbol: str, order: Dict[str, Any]) -> None:
+        """Observe already-selected terminal evidence without changing reconciliation."""
+        if self._position_identity_store is None or self._terminal_observer is None:
+            return
+        try:
+            normalized_symbol = _sym(order.get("symbol", "")).upper().replace("-", "").replace("/", "").replace("_", "")
+            position_side = str(order.get("positionSide", "")).upper()
+            order_id = order.get("orderId")
+            if not normalized_symbol or normalized_symbol != _sym(symbol).upper().replace("-", "").replace("/", "").replace("_", ""):
+                self._terminal_observation_counts["excluded"] += 1
+                return
+            if position_side not in {"LONG", "SHORT"} or order_id in (None, "", "UNKNOWN"):
+                self._terminal_observation_counts["excluded"] += 1
+                return
+
+            identity = self._position_identity_store.resolve_open(normalized_symbol, position_side)
+            if identity is None:
+                self._terminal_observation_counts["excluded"] += 1
+                return
+
+            from infrastructure.observability.terminal_evidence_extractor import extract_terminal_evidence
+            evidence = extract_terminal_evidence(order, identity)
+            if not evidence.get("eligible"):
+                self._terminal_observation_counts["excluded"] += 1
+                return
+
+            observed_at = datetime.now(timezone.utc).isoformat()
+            evaluation_id = f"terminal:{identity['record_id']}:{order_id}"
+            event = {
+                "schema_version": 1,
+                "event_id": f"{evaluation_id}:exit_fill_observed",
+                "event_type": "EXIT_FILL_OBSERVED",
+                "event_time_utc": observed_at,
+                "run_id": identity["observer_run_id"],
+                "evaluation_id": evaluation_id,
+                "position_key": identity["position_key"],
+                "symbol": normalized_symbol,
+                "side": position_side,
+                "quantity": identity.get("quantity"),
+                "entry_price": identity.get("entry_price"),
+                "current_price": None,
+                "price_source": None,
+                "configured_leverage": None,
+                "requested_leverage": None,
+                "exchange_leverage": identity.get("exchange_leverage"),
+                "roe_pct": None,
+                "peak_price": None,
+                "peak_roe_pct": None,
+                "manager_state_before": "OPEN",
+                "manager_state_after": (
+                    "TERMINAL_EVIDENCE_COMPLETE" if evidence["terminal_evidence_complete"]
+                    else "CLOSURE_OBSERVED"
+                ),
+                "error": None,
+                **{key: evidence.get(key) for key in (
+                    "terminal_order_id", "exit_order_type", "fill_price", "fill_quantity",
+                    "realized_pnl", "fees", "fill_time_utc", "trigger_price", "trigger_basis",
+                    "missing_fields",
+                )},
+            }
+            self._terminal_observer.append(event)
+
+            advanced = dict(identity)
+            advanced["lifecycle_state"] = event["manager_state_after"]
+            advanced["last_observed_utc"] = observed_at
+            advanced["terminal_order_id"] = str(order_id)
+            self._position_identity_store.upsert(advanced)
+            self._terminal_observation_counts["emitted"] += 1
+        except Exception as exc:
+            self._terminal_observation_counts["errors"] += 1
+            self.logger.warning(f"Terminal evidence observation failed for {symbol}: {exc}")
 
     def _load_active_symbols(self) -> set[str]:
         try:
@@ -156,6 +233,11 @@ class BrokerReconciliationService:
 
                 # ATOMICITY: Register idempotency key BEFORE emitting to prevent duplicate propagation on crash
                 self._processed_closed_exits.add(exit_key)
+
+                # Optional repository-only observer. The selected order and all
+                # operational closure behavior above/below remain unchanged.
+                if closing_order_id != "UNKNOWN":
+                    self._observe_terminal_order(sym, order)
 
                 # 3. Propagate to strategy_manager and register with SymbolCooldownGate
                 from infrastructure.strategies.strategy_manager import strategy_manager

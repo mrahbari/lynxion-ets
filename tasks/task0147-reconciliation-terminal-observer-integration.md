@@ -1,6 +1,6 @@
 # TASK-0147 — Reconciliation Terminal Observer Integration
 
-**Status:** READY — REPOSITORY-ONLY, RUNTIME DISABLED
+**Status:** COMPLETE — REPOSITORY-ONLY, RUNTIME DISABLED
 
 ## Objective
 
@@ -40,4 +40,15 @@ broker calls, or runtime composition.
 ## Non-Goals
 
 - No runtime wiring/deployment, broker API expansion, fee reconstruction, historical backfill,
-  threshold/strategy change, prospective cohort, or profitability conclusion.
+threshold/strategy change, prospective cohort, or profitability conclusion.
+
+## Completion Evidence
+
+- `BrokerReconciliationService` accepts optional identity-store and terminal-observer dependencies;
+  every existing caller leaves both disabled.
+- The observer reuses the already-selected terminal order, requires exact symbol and explicit
+  `positionSide`, preserves unknown economics as null, and advances identity state monotonically.
+- Observation, extraction, and snapshot failures remain isolated from operational reconciliation.
+- Focused observer/extractor/identity/reconciliation suite: 23 passed.
+- Full repository suite: 824 passed, 1 optional import-linter check skipped.
+- No runtime composition, broker query, production ledger, or trading behavior was enabled.
