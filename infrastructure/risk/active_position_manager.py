@@ -86,10 +86,14 @@ class ActivePositionManager:
         state_before: Dict[str, Any],
         state_after: Dict[str, Any],
         error: Optional[str] = None,
+        event_suffix: Optional[str] = None,
     ) -> Dict[str, Any]:
+        event_id = f"{evaluation_id}:{event_type.lower()}"
+        if event_suffix:
+            event_id = f"{event_id}:{event_suffix}"
         return {
             "schema_version": 1,
-            "event_id": f"{evaluation_id}:{event_type.lower()}",
+            "event_id": event_id,
             "event_type": event_type,
             "event_time_utc": datetime.now(timezone.utc).isoformat(),
             "run_id": self.observer_run_id,
@@ -107,6 +111,12 @@ class ActivePositionManager:
             "roe_pct": roe_pct,
             "peak_price": peak_price,
             "peak_roe_pct": peak_roe_pct,
+            "manager_thresholds": {
+                "breakeven_trigger_roe_pct": self.be_trigger_roe,
+                "trailing_trigger_roe_pct": self.trail_trigger_roe,
+                "trailing_distance_price_pct": self.trail_distance_pct,
+                "fee_buffer_price_pct": self.fee_buffer_pct,
+            },
             "manager_state_before": state_before,
             "manager_state_after": state_after,
             "error": error,
@@ -305,6 +315,20 @@ class ActivePositionManager:
                             state_before=state_before, state_after=state_before,
                         )
                     )
+                    observation_context = {
+                        "evaluation_id": evaluation_id,
+                        "position_key": position_key,
+                        "symbol": clean_sym,
+                        "is_long": is_long,
+                        "quantity": qty,
+                        "entry_price": entry_price,
+                        "current_price": curr_price,
+                        "exchange_leverage": position_leverage,
+                        "roe_pct": roe_pct,
+                        "peak_price": peak_p,
+                        "peak_roe_pct": state["peak_roe"],
+                        "state_before": state_before,
+                    }
 
                     # --- STAGE 0: VERIFY / ATTACH INITIAL PROTECTIVE STOP LOSS ON BROKER ---
                     if not state.get("initial_sl_verified", False):
@@ -349,7 +373,10 @@ class ActivePositionManager:
                                         f"🚨 [ACTIVE POSITION MANAGER] MISSING STOP LOSS DETECTED: {clean_sym} "
                                         f"has no active Stop Loss on exchange! Attaching protective SL at ${init_sl:.4f}"
                                     )
-                                    if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), init_sl):
+                                    if self._sync_sl_to_exchange(
+                                        broker, clean_sym, is_long, abs(qty), init_sl,
+                                        observation_context=observation_context,
+                                    ):
                                         state["current_sl_price"] = init_sl
                                     else:
                                         state["initial_sl_verified"] = False
@@ -367,7 +394,10 @@ class ActivePositionManager:
                             if be_sl <= curr_price:
                                 be_sl = curr_price * 1.002
 
-                        if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), be_sl):
+                        if self._sync_sl_to_exchange(
+                            broker, clean_sym, is_long, abs(qty), be_sl,
+                            observation_context=observation_context,
+                        ):
                             state["breakeven_active"] = True
                             state["current_sl_price"] = be_sl
                             state["trailing_sl_price"] = be_sl
@@ -401,7 +431,10 @@ class ActivePositionManager:
                             if be_sl <= curr_price:
                                 be_sl = curr_price * 1.002
 
-                        if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), be_sl):
+                        if self._sync_sl_to_exchange(
+                            broker, clean_sym, is_long, abs(qty), be_sl,
+                            observation_context=observation_context,
+                        ):
                             state["breakeven_active"] = True
                             state["current_sl_price"] = be_sl
                             state["trailing_sl_price"] = be_sl
@@ -439,7 +472,10 @@ class ActivePositionManager:
                                     "new_sl_price": tightened_sl,
                                     "elapsed_hours": elapsed_hours
                                 }
-                                if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), tightened_sl):
+                                if self._sync_sl_to_exchange(
+                                    broker, clean_sym, is_long, abs(qty), tightened_sl,
+                                    observation_context=observation_context,
+                                ):
                                     state["current_sl_price"] = tightened_sl
                                     actions_taken.append(action)
                                     logger.warning(
@@ -460,7 +496,10 @@ class ActivePositionManager:
                                     "new_sl_price": tightened_sl,
                                     "elapsed_hours": elapsed_hours
                                 }
-                                if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), tightened_sl):
+                                if self._sync_sl_to_exchange(
+                                    broker, clean_sym, is_long, abs(qty), tightened_sl,
+                                    observation_context=observation_context,
+                                ):
                                     state["current_sl_price"] = tightened_sl
                                     actions_taken.append(action)
                                     logger.warning(
@@ -488,7 +527,10 @@ class ActivePositionManager:
                                     "new_sl_price": candidate_sl,
                                     "locked_roe_pct": locked_roe,
                                 }
-                                if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), candidate_sl):
+                                if self._sync_sl_to_exchange(
+                                    broker, clean_sym, is_long, abs(qty), candidate_sl,
+                                    observation_context=observation_context,
+                                ):
                                     state["trailing_sl_price"] = candidate_sl
                                     state["current_sl_price"] = max(state.get("current_sl_price", 0.0), candidate_sl)
                                     actions_taken.append(action)
@@ -513,7 +555,10 @@ class ActivePositionManager:
                                     "new_sl_price": candidate_sl,
                                     "locked_roe_pct": locked_roe,
                                 }
-                                if self._sync_sl_to_exchange(broker, clean_sym, is_long, abs(qty), candidate_sl):
+                                if self._sync_sl_to_exchange(
+                                    broker, clean_sym, is_long, abs(qty), candidate_sl,
+                                    observation_context=observation_context,
+                                ):
                                     state["trailing_sl_price"] = candidate_sl
                                     state["current_sl_price"] = min(state.get("current_sl_price", 999999.0), candidate_sl)
                                     actions_taken.append(action)
@@ -582,7 +627,15 @@ class ActivePositionManager:
             target = target.broker
         return target
 
-    def _sync_sl_to_exchange(self, broker: Any, symbol: str, is_long: bool, quantity: float, new_sl_price: float) -> bool:
+    def _sync_sl_to_exchange(
+        self,
+        broker: Any,
+        symbol: str,
+        is_long: bool,
+        quantity: float,
+        new_sl_price: float,
+        observation_context: Optional[Dict[str, Any]] = None,
+    ) -> bool:
         """Replace a broker stop and confirm that the requested stop is actually pending.
 
         State is deliberately not updated by this method's callers until this returns
@@ -605,6 +658,22 @@ class ActivePositionManager:
             max_sl_attempts = 3
             placed = False
             for attempt in range(1, max_sl_attempts + 1):
+                request_event = None
+                if observation_context is not None:
+                    request_event = self._observation_base(
+                        event_type="STOP_REPLACE_REQUESTED",
+                        state_after=dict(self._positions_state.get(symbol, {})),
+                        event_suffix=str(attempt),
+                        **observation_context,
+                    ) | {
+                        "requested_stop_price": float(new_sl_price),
+                        "attempt": attempt,
+                    }
+                    self._emit_exit_observation(request_event)
+                attempt_started = time.monotonic()
+                response_latency_ms = None
+                response_error = None
+                response_accepted = False
                 try:
                     if hasattr(target_broker, "_place_conditional_order"):
                         res = target_broker._place_conditional_order(
@@ -627,6 +696,9 @@ class ActivePositionManager:
                     else:
                         res = {"success": False, "error": "No _place_conditional_order method available"}
 
+                    response_accepted = bool(res.get("success"))
+                    response_error = None if response_accepted else str(res.get("error", "Unknown error"))
+                    response_latency_ms = (time.monotonic() - attempt_started) * 1000.0
                     if res.get("success"):
                         placed = self._verify_pending_stop(
                             target_broker, formatted_symbol, close_side, pos_side, new_sl_price
@@ -641,9 +713,28 @@ class ActivePositionManager:
                         if attempt < max_sl_attempts:
                             time.sleep(0.30)
                 except Exception as place_err:
+                    response_latency_ms = (time.monotonic() - attempt_started) * 1000.0
+                    response_error = str(place_err)
                     logger.warning(f"Error during SL placement attempt {attempt}/{max_sl_attempts} on {symbol}: {place_err}")
                     if attempt < max_sl_attempts:
                         time.sleep(0.30)
+                finally:
+                    if observation_context is not None and request_event is not None:
+                        self._emit_exit_observation(
+                            self._observation_base(
+                                event_type="STOP_REPLACE_RESPONDED",
+                                state_after=dict(self._positions_state.get(symbol, {})),
+                                error=response_error,
+                                event_suffix=str(attempt),
+                                **observation_context,
+                            ) | {
+                                "causal_event_id": request_event["event_id"],
+                                "requested_stop_price": float(new_sl_price),
+                                "attempt": attempt,
+                                "accepted": response_accepted,
+                                "latency_ms": response_latency_ms,
+                            }
+                        )
 
             if not placed:
                 logger.error(f"❌ Failed to update Broker Stop Loss on exchange for {symbol} after {max_sl_attempts} attempts")

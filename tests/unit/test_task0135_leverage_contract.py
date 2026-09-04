@@ -236,7 +236,7 @@ def test_active_manager_uses_each_positions_authoritative_leverage(monkeypatch):
     monkeypatch.setattr(
         manager,
         "_sync_sl_to_exchange",
-        lambda broker, symbol, is_long, quantity, stop: synced.append(stop) or True,
+        lambda broker, symbol, is_long, quantity, stop, **kwargs: synced.append(stop) or True,
     )
     broker = SimpleNamespace(get_all_positions=lambda: [_managed_position(Decimal("5"))])
 
@@ -255,7 +255,7 @@ def test_active_manager_never_substitutes_leverage_when_hydration_is_unknown(mon
     monkeypatch.setattr(
         manager,
         "_sync_sl_to_exchange",
-        lambda *args: synced.append(args) or True,
+        lambda *args, **kwargs: synced.append((args, kwargs)) or True,
     )
     broker = SimpleNamespace(get_all_positions=lambda: [_managed_position(None)])
 

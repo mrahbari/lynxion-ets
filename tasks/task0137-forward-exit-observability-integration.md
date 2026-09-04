@@ -1,6 +1,6 @@
 # TASK-0137 — Forward Exit Observability Integration
 
-**Status:** IN PROGRESS — REPOSITORY-ONLY, RUNTIME DISABLED
+**Status:** COMPLETE — REPOSITORY-ONLY, RUNTIME DISABLED
 
 ## Objective
 
@@ -49,4 +49,9 @@ exit decision or enabling collection in the current runtime.
 - Eligible evaluations emit `POSITION_OBSERVED` and `MANAGER_EVALUATED`, including explicit
   `NO_ACTION`; untrusted leverage emits an explicit skip/error and performs no stop mutation.
 - Observer exceptions are isolated and counted without changing the manager action or broker call.
-- Four focused observer regressions pass; stop request/response wrapping and the full suite remain.
+- Every existing stop-sync attempt now emits one causally linked request/response pair with its
+  accepted result and broker-response latency; the observer adds no broker request, visibility
+  query, retry, or state mutation.
+- Six focused observer regressions and the full 793-test suite pass. One optional import-linter
+  check remains skipped because that local package is not installed. No production ledger file was
+  created, no observer was enabled in a composition root, and runtime/deployment remains gated.

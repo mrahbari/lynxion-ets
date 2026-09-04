@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement TASK-0137's injectable, runtime-disabled forward exit observer for a causal profit-lock
-comparison while C-11 collection continues; do not tune thresholds or open outcomes.
+Define the next evidence gate after TASK-0137's runtime-disabled forward exit observer while C-11
+collection continues; do not tune thresholds or open outcomes without preregistration.
 
 ## Status
 
@@ -18,9 +18,12 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
-- TASK-0137's first implementation unit adds a default-disabled injectable observer for position
-  and manager-evaluation events. It records explicit no-action/untrusted-leverage decisions and
-  isolates observer failures from protection behavior; four focused regressions pass.
+- TASK-0137 is COMPLETE at repository level and remains runtime-disabled. The optional observer
+  records eligible position/manager evaluations plus one causally linked request/response pair for
+  every existing stop-sync attempt, including thresholds, accepted result, and response latency.
+  It adds no broker request, visibility query, retry, or state mutation. Six focused observer tests
+  and the full 793-test suite pass with one optional import-linter skip; no production ledger file
+  was created and no composition root enables collection.
 - TASK-0137 freezes a repository-only integration boundary: observe existing manager evaluations
   and stop-sync attempts through an optional sink, add no broker calls or retries, keep runtime
   disabled, and defer visibility claims, prospective boundary, and deployment to later gates.
