@@ -226,12 +226,18 @@ class MultiBrokerExecutionService(ExecutionPort):
 
         # Initialize Phemex
         try:
+            enabled_brokers = {
+                str(name).lower()
+                for name in getattr(self._settings.broker, 'enabled_brokers', ["bingx"])
+            }
             phemex_api_key = self._settings.broker.phemex_api_key if self._settings.broker and self._settings.broker.phemex_api_key else ''
             phemex_secret_key = self._settings.broker.phemex_secret_key if self._settings.broker and self._settings.broker.phemex_secret_key else ''
             phemex_testnet = self._settings.broker.phemex_testnet if self._settings.broker and hasattr(self._settings.broker,
                                                                                          'phemex_testnet') else True
 
-            if phemex_api_key and phemex_secret_key:
+            if 'phemex' not in enabled_brokers:
+                self.logger.info("⏸️ Phemex broker disabled by enabled_brokers")
+            elif phemex_api_key and phemex_secret_key:
                 # Use testnet URL if testnet is enabled
                 base_url = "https://testnet-api.phemex.com" if phemex_testnet else "https://api.phemex.com"
                 self.brokers['phemex'] = PhemexBrokerAdapter(

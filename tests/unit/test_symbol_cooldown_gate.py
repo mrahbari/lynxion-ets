@@ -371,4 +371,64 @@ def test_active_position_loop_prioritizes_the_configured_primary_broker(monkeypa
 
     orchestrator._active_position_management_loop()
 
-    assert visited == [bingx_broker, binance_broker]
+    assert visited == [bingx_broker]
+
+
+@pytest.mark.unit
+def test_active_position_loop_skips_spot_only_brokers(monkeypatch):
+    """Spot-only Binance/MEXC adapters must not be queried for futures positions."""
+    from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator
+    from unittest.mock import MagicMock
+
+    bingx_broker = object()
+
+    class BrokerRoot:
+        primary_broker = "bingx"
+        brokers = {
+            "bingx": bingx_broker,
+            "binance": object(),
+            "mexc": object(),
+        }
+
+    orchestrator = object.__new__(AutoDetectionOrchestrator)
+    orchestrator.logger = MagicMock()
+    orchestrator.execution_service = type("ExecutionService", (), {"broker": BrokerRoot()})()
+    orchestrator.is_running = True
+    visited = []
+    orchestrator._manage_active_positions_for_broker = lambda broker, manager: visited.append(broker)
+    monkeypatch.setattr(
+        "infrastructure.orchestrators.auto_detection_orchestrator.time.sleep",
+        lambda _: setattr(orchestrator, "is_running", False),
+    )
+
+    orchestrator._active_position_management_loop()
+
+    assert visited == [bingx_broker]
+
+
+@pytest.mark.unit
+def test_active_position_loop_skips_a_spot_only_primary(monkeypatch):
+    """A spot adapter remains ineligible even when misconfigured as primary."""
+    from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator
+    from unittest.mock import MagicMock
+
+    bingx_broker = object()
+
+    class BrokerRoot:
+        primary_broker = "binance"
+        brokers = {"binance": object(), "bingx": bingx_broker}
+
+    orchestrator = object.__new__(AutoDetectionOrchestrator)
+    orchestrator.logger = MagicMock()
+    orchestrator.execution_service = type("ExecutionService", (), {"broker": BrokerRoot()})()
+    orchestrator.is_running = True
+    visited = []
+    orchestrator._manage_active_positions_for_broker = lambda broker, manager: visited.append(broker)
+    monkeypatch.setattr(
+        "infrastructure.orchestrators.auto_detection_orchestrator.time.sleep",
+        lambda _: setattr(orchestrator, "is_running", False),
+    )
+
+    orchestrator._active_position_management_loop()
+
+    assert visited == [bingx_broker]

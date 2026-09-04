@@ -693,10 +693,16 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                     # configured with BingX as primary for this mode.
                     primary_name = str(getattr(broker_root, "primary_broker", "") or "").lower()
                     primary_broker = sub_brokers.get(primary_name)
-                    if primary_broker:
+                    # Binance and MEXC adapters in this service are spot-only.
+                    # They may remain registered for market data / spot execution,
+                    # but must never be polled for futures position protection.
+                    spot_only_brokers = {"binance", "mexc"}
+                    if primary_broker and primary_name not in spot_only_brokers:
                         target_brokers.append(primary_broker)
                     target_brokers.extend(
-                        broker for name, broker in sub_brokers.items() if name != primary_name
+                        broker
+                        for name, broker in sub_brokers.items()
+                        if name != primary_name and name not in spot_only_brokers
                     )
                 elif broker_root:
                     target_brokers.append(broker_root)
