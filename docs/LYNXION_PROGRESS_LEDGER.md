@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Define authoritative terminal-fill identity and field coverage after TASK-0141 while C-11
-collection continues; do not enable collection, tune thresholds, or open outcomes.
+Implement TASK-0143's disconnected restart-safe position-identity snapshot contract while C-11
+collection continues; do not wire runtime, tune thresholds, or open outcomes.
 
 ## Status
 
@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0142 verifies that terminal-fill integration cannot yet be validly joined. Reconciliation
+  persists only active symbols, so side, entry, quantity, leverage, manager position key, and run
+  identity are lost at closure; terminal order payloads may also omit fill price, fees, quantity,
+  trigger details, or time. Symbol/latest-order matching is ambiguous. TASK-0143 is limited to a
+  disconnected, fail-closed identity snapshot contract before any fill observer is allowed.
 - TASK-0141 is COMPLETE at repository level and remains runtime-disabled. Existing positive stop
   hydration now records the exact selected order ID/price/source, authoritative leverage, existing
   profit-lock classification, and post-hydration state. It adds no broker call or mutation; observer
