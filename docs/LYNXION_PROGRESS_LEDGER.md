@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Define the next evidence gate after TASK-0137's runtime-disabled forward exit observer while C-11
-collection continues; do not tune thresholds or open outcomes without preregistration.
+Implement TASK-0139's runtime-disabled stop-visibility/state causal link while C-11 collection
+continues; do not enable collection, tune thresholds, or open outcomes.
 
 ## Status
 
@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0138 finds TASK-0137 necessary but insufficient for profit-lock inference. The existing
+  pending-stop verification discards matched order identity and visible price; local state commits,
+  restart hydration, and later exit reconciliation are not causally linked. The next sealed unit
+  may expose structured evidence from the existing query and emit visibility/state events without
+  adding any broker call or enabling runtime collection.
 - TASK-0137 is COMPLETE at repository level and remains runtime-disabled. The optional observer
   records eligible position/manager evaluations plus one causally linked request/response pair for
   every existing stop-sync attempt, including thresholds, accepted result, and response latency.
