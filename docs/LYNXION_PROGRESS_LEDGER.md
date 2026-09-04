@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Define the repository-only identity-capture integration boundary after TASK-0143 while C-11
-collection continues; do not wire runtime, tune thresholds, or open outcomes.
+Implement TASK-0144's optional, runtime-disabled position-identity capture while C-11 collection
+continues; do not wire reconciliation/runtime, tune thresholds, or open outcomes.
 
 ## Status
 
@@ -18,6 +18,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0144 freezes the minimal integration boundary: ActivePositionManager may write authoritative
+  open-position identity through an optional store, but the canonical singleton and composition
+  roots remain disabled. Store failures must be observational only; no broker calls, reconciliation,
+  fills, production files, or prospective boundary are permitted.
 - TASK-0143 is COMPLETE and disconnected. The restart-safe identity snapshot enforces deterministic
   IDs, authoritative normalized fields, secret/corruption rejection, atomic replacement, monotonic
   lifecycle/time, and fail-closed ambiguous matching. Five focused identity tests, six ledger tests,
