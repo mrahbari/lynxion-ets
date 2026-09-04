@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Define reconciliation-side identity consumption and terminal-field admission after TASK-0144 while
-C-11 collection continues; do not wire runtime, tune thresholds, or open outcomes.
+Implement TASK-0146's disconnected terminal-evidence extractor while C-11 collection continues;
+do not wire reconciliation/runtime, tune thresholds, or open outcomes.
 
 ## Status
 
@@ -18,6 +18,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0145 freezes terminal-field admission from the already-selected reconciliation order. Exact
+  symbol/explicit side identity is mandatory; malformed or missing economics remain null, and an
+  outcome is complete only with authoritative fill price, quantity, realized PnL, fees, and exchange
+  time. Existing mocked terminal fixtures are incomplete and cannot support cost-adjusted outcomes.
 - TASK-0144 is COMPLETE at repository level and remains runtime-disabled. ActivePositionManager can
   optionally persist authoritative open identity and update quantity/time without duplication;
   disabled/corrupt/conflicting/ambiguous/write-failure paths cannot change actions or broker calls.
