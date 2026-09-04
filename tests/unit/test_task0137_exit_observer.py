@@ -205,4 +205,4 @@ def test_stop_observer_failure_does_not_generate_broker_retry():
 
     assert result is True
     assert broker.place_calls == 1
-    assert manager.observer_failures == 2
+    assert manager.observer_failures == 3

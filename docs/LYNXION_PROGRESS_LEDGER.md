@@ -21,7 +21,10 @@ frozen promotion gates and production strategy logic is unchanged.
 - TASK-0139's first unit preserves structured evidence from the existing pending-stop query: the
   matched exchange order ID, actual visible stop price, and UTC observation time. The public sync
   result and existing one-poll-success/three-poll-exhaustion behavior are unchanged; 21 focused
-  regressions pass. Visibility-event emission and state-commit linkage remain.
+  regressions pass.
+- TASK-0139 now emits causally linked verified/failed visibility evidence after each accepted
+  existing stop attempt without changing broker requests, verification polls, sleeps, or retries.
+  Twenty-three focused regressions pass; caller-side state-commit linkage remains.
 - TASK-0138 finds TASK-0137 necessary but insufficient for profit-lock inference. The existing
   pending-stop verification discards matched order identity and visible price; local state commits,
   restart hydration, and later exit reconciliation are not causally linked. The next sealed unit

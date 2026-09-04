@@ -674,6 +674,28 @@ class ActivePositionManager:
                 response_latency_ms = None
                 response_error = None
                 response_accepted = False
+                response_event = None
+
+                def emit_response() -> Optional[Dict[str, Any]]:
+                    nonlocal response_event
+                    if observation_context is None or request_event is None or response_event is not None:
+                        return response_event
+                    response_event = self._observation_base(
+                        event_type="STOP_REPLACE_RESPONDED",
+                        state_after=dict(self._positions_state.get(symbol, {})),
+                        error=response_error,
+                        event_suffix=str(attempt),
+                        **observation_context,
+                    ) | {
+                        "causal_event_id": request_event["event_id"],
+                        "requested_stop_price": float(new_sl_price),
+                        "attempt": attempt,
+                        "accepted": response_accepted,
+                        "latency_ms": response_latency_ms,
+                    }
+                    self._emit_exit_observation(response_event)
+                    return response_event
+
                 try:
                     if hasattr(target_broker, "_place_conditional_order"):
                         res = target_broker._place_conditional_order(
@@ -699,11 +721,32 @@ class ActivePositionManager:
                     response_accepted = bool(res.get("success"))
                     response_error = None if response_accepted else str(res.get("error", "Unknown error"))
                     response_latency_ms = (time.monotonic() - attempt_started) * 1000.0
+                    emit_response()
                     if res.get("success"):
                         visibility_evidence = self._verify_pending_stop(
                             target_broker, formatted_symbol, close_side, pos_side, new_sl_price
                         )
                         placed = visibility_evidence is not None
+                        if observation_context is not None and response_event is not None:
+                            visibility_type = (
+                                "STOP_VISIBILITY_VERIFIED" if placed else "STOP_VISIBILITY_FAILED"
+                            )
+                            visibility_event = self._observation_base(
+                                event_type=visibility_type,
+                                state_after=dict(self._positions_state.get(symbol, {})),
+                                event_suffix=str(attempt),
+                                **observation_context,
+                            ) | {"causal_event_id": response_event["event_id"]}
+                            if placed:
+                                visibility_event |= {
+                                    "event_time_utc": visibility_evidence["observed_at_utc"],
+                                    "exchange_order_id": visibility_evidence["order_id"],
+                                    "visible_stop_price": visibility_evidence["visible_stop_price"],
+                                }
+                                observation_context["verified_visibility_event_id"] = visibility_event["event_id"]
+                            else:
+                                visibility_event["mismatch_reason"] = "requested stop not visible after existing verification polls"
+                            self._emit_exit_observation(visibility_event)
                         if placed:
                             logger.warning(f"✅ Confirmed Broker Stop Loss on exchange for {symbol}: ${new_sl_price:.4f} (Attempt {attempt})")
                             break
@@ -716,26 +759,10 @@ class ActivePositionManager:
                 except Exception as place_err:
                     response_latency_ms = (time.monotonic() - attempt_started) * 1000.0
                     response_error = str(place_err)
+                    emit_response()
                     logger.warning(f"Error during SL placement attempt {attempt}/{max_sl_attempts} on {symbol}: {place_err}")
                     if attempt < max_sl_attempts:
                         time.sleep(0.30)
-                finally:
-                    if observation_context is not None and request_event is not None:
-                        self._emit_exit_observation(
-                            self._observation_base(
-                                event_type="STOP_REPLACE_RESPONDED",
-                                state_after=dict(self._positions_state.get(symbol, {})),
-                                error=response_error,
-                                event_suffix=str(attempt),
-                                **observation_context,
-                            ) | {
-                                "causal_event_id": request_event["event_id"],
-                                "requested_stop_price": float(new_sl_price),
-                                "attempt": attempt,
-                                "accepted": response_accepted,
-                                "latency_ms": response_latency_ms,
-                            }
-                        )
 
             if not placed:
                 logger.error(f"❌ Failed to update Broker Stop Loss on exchange for {symbol} after {max_sl_attempts} attempts")

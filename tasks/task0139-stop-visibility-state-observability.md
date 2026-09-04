@@ -41,5 +41,7 @@ evidence, without changing broker or exit behavior.
 
 - The existing verifier now returns the matched exchange order ID, actual visible stop price, and
   UTC observation time while `_sync_sl_to_exchange` retains its boolean result.
-- Focused tests preserve the existing one-poll success and three-poll exhaustion counts. Event
-  emission and caller-side state-commit linkage remain.
+- Accepted attempts now emit a causally linked verified/failed visibility event after the broker
+  response. Focused tests preserve the existing broker request and one-poll success / three-poll
+  exhaustion counts; observer failure still cannot generate a retry.
+- Caller-side state-commit linkage remains.
