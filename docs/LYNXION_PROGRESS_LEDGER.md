@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement TASK-0143's disconnected restart-safe position-identity snapshot contract while C-11
+Define the repository-only identity-capture integration boundary after TASK-0143 while C-11
 collection continues; do not wire runtime, tune thresholds, or open outcomes.
 
 ## Status
@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0143 is COMPLETE and disconnected. The restart-safe identity snapshot enforces deterministic
+  IDs, authoritative normalized fields, secret/corruption rejection, atomic replacement, monotonic
+  lifecycle/time, and fail-closed ambiguous matching. Five focused identity tests, six ledger tests,
+  and the full 806-test suite pass with one optional import-linter skip. No runtime component imports
+  it and no production snapshot exists.
 - TASK-0142 verifies that terminal-fill integration cannot yet be validly joined. Reconciliation
   persists only active symbols, so side, entry, quantity, leverage, manager position key, and run
   identity are lost at closure; terminal order payloads may also omit fill price, fees, quantity,
