@@ -1,6 +1,6 @@
 # TASK-0139 — Stop Visibility and State Observability
 
-**Status:** READY — REPOSITORY-ONLY, RUNTIME DISABLED
+**Status:** IN PROGRESS — REPOSITORY-ONLY, RUNTIME DISABLED
 
 ## Objective
 
@@ -36,3 +36,10 @@ evidence, without changing broker or exit behavior.
 
 - No restart-hydration event, exit-fill integration, runtime wiring, threshold change, strategy
   change, order placement beyond existing mocked tests, or profitability conclusion.
+
+## Implementation Progress
+
+- The existing verifier now returns the matched exchange order ID, actual visible stop price, and
+  UTC observation time while `_sync_sl_to_exchange` retains its boolean result.
+- Focused tests preserve the existing one-poll success and three-poll exhaustion counts. Event
+  emission and caller-side state-commit linkage remain.

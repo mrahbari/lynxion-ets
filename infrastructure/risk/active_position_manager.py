@@ -700,9 +700,10 @@ class ActivePositionManager:
                     response_error = None if response_accepted else str(res.get("error", "Unknown error"))
                     response_latency_ms = (time.monotonic() - attempt_started) * 1000.0
                     if res.get("success"):
-                        placed = self._verify_pending_stop(
+                        visibility_evidence = self._verify_pending_stop(
                             target_broker, formatted_symbol, close_side, pos_side, new_sl_price
                         )
+                        placed = visibility_evidence is not None
                         if placed:
                             logger.warning(f"✅ Confirmed Broker Stop Loss on exchange for {symbol}: ${new_sl_price:.4f} (Attempt {attempt})")
                             break
@@ -745,10 +746,10 @@ class ActivePositionManager:
 
     @staticmethod
     def _verify_pending_stop(target_broker: Any, formatted_symbol: str, close_side: str,
-                             position_side: str, expected_stop_price: float) -> bool:
-        """Return true only when the requested position-closing stop is visible."""
+                             position_side: str, expected_stop_price: float) -> Optional[Dict[str, Any]]:
+        """Return genuine evidence only when the requested position-closing stop is visible."""
         if not hasattr(target_broker, "get_pending_orders"):
-            return False
+            return None
         for _ in range(3):
             try:
                 pending = target_broker.get_pending_orders(formatted_symbol) or []
@@ -764,11 +765,16 @@ class ActivePositionManager:
                     )
                     tolerance = max(abs(expected_stop_price) * 0.0001, 1e-8)
                     if abs(actual - expected_stop_price) <= tolerance:
-                        return True
+                        order_id = order.get("orderId", order.get("order_id"))
+                        return {
+                            "order_id": str(order_id) if order_id is not None else None,
+                            "visible_stop_price": actual,
+                            "observed_at_utc": datetime.now(timezone.utc).isoformat(),
+                        }
             except Exception as verify_err:
                 logger.warning(f"Could not verify pending stop for {formatted_symbol}: {verify_err}")
             time.sleep(0.2)
-        return False
+        return None
 
     def _execute_market_close(self, broker: Any, symbol: str, is_long: bool, quantity: float) -> None:
         """Execute a market close order for the position."""
