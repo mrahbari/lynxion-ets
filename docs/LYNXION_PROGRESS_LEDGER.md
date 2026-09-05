@@ -19,6 +19,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- C-28's evaluator is implemented while outcomes remain unopened. Four disconnected tests verify
+  causal exclusion of the current candle, frozen LONG/SHORT rejection direction, strict funding
+  settlement boundaries, and fail-closed empty metrics. The next unit is an independent source/test
+  review followed by the one authorized report generation; no parameter may change first.
+
 - C-28 is preregistered with outcomes unopened. It tests a distinct failed-extreme volatility-sweep
   rejection mechanism across six native futures symbols, with causal range/extreme lookbacks,
   next-open execution, funding and cost accounting, temporal reverse validation, daily-clustered
