@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- C-11 admitted its first prospective candidate at the 2026-09-05 08:00 UTC BTCUSDT funding
+  settlement. The observation is strictly after boundary `1788082349`, has severity ratio 2.8409,
+  and remains PENDING until its frozen 24-hour virtual exit is available. No pre-boundary record
+  exists; N=0 completed and the verdict correctly remains COLLECTING.
+
 - TASK-0151 is ACTIVE/COLLECTING. The operator restarted exactly one auto-detection VST runner via
   `./lynxion` at 06:49:11 UTC on commit `54d7c9c`. The manifest freezes boundary
   `2026-09-05T06:49:11.585276+00:00`, run ID `task0151-20260905T064911Z`, and prohibits historical
