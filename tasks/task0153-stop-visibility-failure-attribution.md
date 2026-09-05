@@ -1,6 +1,6 @@
 # TASK-0153 — Stop Visibility Failure Attribution
 
-**Status:** IN PROGRESS — SOURCE SEMANTICS PARTIALLY ATTRIBUTED
+**Status:** COMPLETE — PARTIAL_ATTRIBUTION
 
 ## Objective
 
@@ -53,3 +53,9 @@ diagnosis, not authorization to alter production behavior.
   but current records cannot distinguish exchange non-persistence from query failure, schema
   mismatch, account/product mismatch, or a genuinely empty order book.
 - Detailed evidence: `docs/reports/task0153_stop_visibility_failure_attribution.md`.
+- A deterministic read-only counter reports request outcome and visibility outcome by symbol and
+  attempt. Four focused tests pass across the attribution tools; the full repository suite passes
+  851 tests with one optional import-linter skip.
+- At the closing snapshot, 84 requests comprise 73 accepted, 10 rejected, and one missing response;
+  65 accepted paths failed visibility and eight were verified. This is descriptive operational
+  evidence, not proof of the exchange-side cause.

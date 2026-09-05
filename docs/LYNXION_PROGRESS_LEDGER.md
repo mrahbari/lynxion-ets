@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Diagnose TASK-0153's accepted-but-invisible stop evidence using frozen events and disconnected code
-tests while TASK-0151 and C-11 continue prospective collection.
+Implement TASK-0154's repository-only stop identity/query-evidence contract with disconnected
+failure injection while TASK-0151 and C-11 continue prospective collection.
 
 ## Status
 
@@ -17,6 +17,15 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0153 is COMPLETE with verdict PARTIAL_ATTRIBUTION. Its deterministic counter separates
+  symbol/attempt response and visibility outcomes; four focused tests and the full 851-test suite
+  pass with one optional import-linter skip. The closing snapshot has 84 requests: 73 accepted,
+  10 rejected, one missing response, 65 visibility failures, and eight verified paths. Local
+  evidence defects are confirmed; the exchange-side cause remains unknown.
+- TASK-0154 freezes the minimal repository correction: preserve placement identity, distinguish
+  pending-query failure from success-empty, prefer exact order-ID visibility, label fallback
+  matching, and add failure-injection coverage. Runtime activation is explicitly excluded.
 
 - TASK-0153 reaches PARTIAL_ATTRIBUTION at the source-semantics layer. Placement treats BingX
   `code=0` as success even when `order_id` is absent; pending-order API and transport errors collapse
