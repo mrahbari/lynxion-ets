@@ -28,8 +28,17 @@ prior candidate outcomes.
   `64aaf6be57a3036687319c043f5a7da08e4ee385a07c2d72d0089cbba35996fe`, ADA
   `0c1c29430a77e04c96a4c35c99bbb0f6b4400787fee0641f26bc10739a031d53`, and SOL
   `8aec2bcdfcc72c23cd88d6cb0a54f886eead0d5f345e6549632ddf14938b1718`.
-- Price and funding inputs and their exact hashes are unchanged from C-28's frozen six-symbol
-  TASK-0094/TASK-0106 files; the evaluator must enforce every full hash before calculating outcomes.
+- Primary price and funding inputs and their exact hashes are unchanged from C-28's frozen
+  six-symbol TASK-0094/TASK-0106 files.
+- The reverse-time price files are the existing C-09 native futures holdout, with exact SHA-256:
+  BTC `acf4a7f5c58733f6db5e39e74387a9ab5a08ecc17a4600e8074555571b33fc09`, ETH
+  `378bb36782172ee5cc4d3d7a983c674ecc09f0c38ddb35007aced58e437d0a54`, BNB
+  `e0987b51c7efb509645bb15b636b889d3433c4b47e0ca21e796918ec4da60da5`, XRP
+  `91003b36b91f2202066bf12456dd12f2103d79f7691b0b009a0b4de4767e12a2`, ADA
+  `7ac7ca870083326197e5e977dc31db6abc5336814b3c3512781088145c722ef1`, and SOL
+  `833b7f033ccd5eb86eb11730d019b1f5c84021689ef7dfd9dafda0bff0f0a449`.
+- The evaluator must enforce every full metrics, primary-price, reverse-price, and funding hash
+  before calculating any outcome.
 - Primary: 2023-01-01 through 2026-08-29. Temporal reverse: 2021-12-01 through 2022-12-31.
 - No interpolation, forward fill, nearest match, or synthetic observation is allowed.
 

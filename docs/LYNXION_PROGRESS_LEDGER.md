@@ -19,6 +19,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- C-29 pre-outcome review corrected an input-provenance omission: its 2021-2022 reverse sample
+  requires the separately frozen C-09 native futures price files, not the 2023+ primary files.
+  Their six exact hashes are now preregistered and mandatory alongside metrics, primary price, and
+  funding hashes. Outcomes remain unopened; no signal or gate parameter changed.
+
 - C-29 is admitted and preregistered with outcomes unopened. It uses previously untested official
   global-account and top-trader position-size ratios, exact pre-decision alignment, causal rolling
   thresholds, next-open execution, funding/cost accounting, temporal reverse validation, and strict
