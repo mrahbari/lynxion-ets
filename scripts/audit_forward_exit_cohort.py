@@ -91,9 +91,39 @@ def audit(root: Path | str = DEFAULT_ROOT) -> dict[str, Any]:
     completed = [item for item in identities if item.get("lifecycle_state") in {
         "CLOSURE_OBSERVED", "TERMINAL_EVIDENCE_COMPLETE"
     }]
+    terminal_events = [event for event in events if event.get("event_type") == "EXIT_FILL_OBSERVED"]
+    terminal_by_position: dict[str, list[dict[str, Any]]] = {}
+    for event in terminal_events:
+        terminal_by_position.setdefault(event["position_key"], []).append(event)
+    terminal_linked = [item for item in completed if item.get("terminal_order_id") not in (None, "")]
+    terminal_fields = ("fill_price", "fill_quantity", "realized_pnl", "fees", "fill_time_utc")
+    terminal_complete = [
+        item for item in completed
+        if any(all(event.get(field) is not None for field in terminal_fields)
+               for event in terminal_by_position.get(item["position_key"], []))
+    ]
+    trailing_eligible = []
+    for identity in completed:
+        observations = [event for event in events if event.get("position_key") == identity["position_key"]]
+        eligible = any(
+            isinstance(event.get("manager_thresholds"), dict)
+            and isinstance(event.get("peak_roe_pct"), (int, float))
+            and event["peak_roe_pct"] >= event["manager_thresholds"].get(
+                "trailing_trigger_roe_pct", float("inf")
+            )
+            for event in observations
+        )
+        if eligible:
+            trailing_eligible.append(identity)
+    completed_weeks = sorted({
+        f"{stamp.isocalendar().year}-W{stamp.isocalendar().week:02d}"
+        for event in terminal_events
+        for stamp in [_utc(event.get("fill_time_utc") or event["event_time_utc"])]
+    })
     sides = Counter(item.get("side") for item in completed)
     symbols = Counter(item.get("symbol") for item in completed)
     event_types = Counter(item.get("event_type") for item in events)
+    exit_types = Counter(event.get("exit_order_type") for event in terminal_events)
     by_cause: dict[str, list[dict[str, Any]]] = {}
     for event in events:
         causal = event.get("causal_event_id")
@@ -142,11 +172,20 @@ def audit(root: Path | str = DEFAULT_ROOT) -> dict[str, Any]:
         "counts": {
             "identities": len(identities),
             "completed_identities": len(completed),
+            "trailing_eligible_completed": len(trailing_eligible),
+            "completed_utc_weeks": completed_weeks,
             "events": len(events),
             "event_types": dict(sorted(event_types.items())),
             "completed_by_symbol": dict(sorted(symbols.items())),
             "completed_by_side": dict(sorted(sides.items())),
+            "exit_types": dict(sorted(exit_types.items())),
             "observer_run_ids": sorted({event.get("run_id") for event in events}),
+        },
+        "terminal_completeness": {
+            "linked": len(terminal_linked),
+            "authoritative_fields_complete": len(terminal_complete),
+            "linkage_pct": (len(terminal_linked) / len(completed)) if completed else None,
+            "authoritative_fields_pct": (len(terminal_complete) / len(completed)) if completed else None,
         },
         "stop_chains": dict(sorted(chain_counts.items())),
         "violations": dict(sorted(violations.items())),

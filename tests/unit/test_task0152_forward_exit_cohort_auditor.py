@@ -18,7 +18,7 @@ def _manifest(root, boundary="2026-09-05T00:00:00+00:00"):
     }))
 
 
-def _identity(root, state="OPEN"):
+def _identity(root, state="OPEN", terminal_order_id=None):
     first = "2026-09-05T00:01:00+00:00"
     record = {
         "schema_version": 1,
@@ -36,6 +36,8 @@ def _identity(root, state="OPEN"):
         "exchange_order_id": None,
         "lifecycle_state": state,
     }
+    if terminal_order_id is not None:
+        record["terminal_order_id"] = terminal_order_id
     PositionIdentitySnapshot(root / "position_identities.json").upsert(record)
 
 
@@ -134,4 +136,29 @@ def test_stop_chain_counts_complete_failed_and_rejected_paths(tmp_path):
         "requests": 3,
         "visibility_failed": 1,
         "visibility_verified": 1,
+    }
+
+
+def test_terminal_coverage_preserves_incomplete_fields_and_trailing_eligibility(tmp_path):
+    _manifest(tmp_path)
+    _identity(tmp_path, state="TERMINAL_EVIDENCE_COMPLETE", terminal_order_id="order-1")
+    observed = _base_event("o1", "POSITION_OBSERVED", 1, manager_thresholds={
+        "trailing_trigger_roe_pct": 10.0,
+    }, peak_roe_pct=12.0)
+    terminal = _base_event(
+        "x1", "EXIT_FILL_OBSERVED", 2, exit_order_type="STOP_MARKET",
+        fill_price=101.0, fill_quantity=1.0, realized_pnl=1.0, fees=None,
+        fill_time_utc="2026-09-05T00:02:00+00:00",
+    )
+    _write_events(tmp_path, [observed, terminal])
+    report = audit(tmp_path)
+    assert report["counts"]["completed_identities"] == 1
+    assert report["counts"]["trailing_eligible_completed"] == 1
+    assert report["counts"]["completed_utc_weeks"] == ["2026-W36"]
+    assert report["counts"]["exit_types"] == {"STOP_MARKET": 1}
+    assert report["terminal_completeness"] == {
+        "linked": 1,
+        "authoritative_fields_complete": 0,
+        "linkage_pct": 1.0,
+        "authoritative_fields_pct": 0.0,
     }

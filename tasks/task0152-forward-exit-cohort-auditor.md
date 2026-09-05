@@ -58,3 +58,7 @@ order placement, or production change.
   verified state commit. Five focused tests pass. At the read-only snapshot, 34 requests contain
   one complete chain, 29 accepted-but-not-visible chains, three rejected responses, and one
   accepted response without a visibility result; integrity violations remain zero.
+- The third unit reports terminal linkage, authoritative terminal-field completeness, exit types,
+  completed UTC weeks, and trailing-eligible completed identities without imputing missing values.
+  Six focused tests pass. The live cohort still has zero completed identities, so both completeness
+  percentages remain null rather than being represented as zero coverage.

@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0152 now measures terminal linkage, complete fill economics, exit-type/week coverage, and
+  trailing eligibility while preserving unknowns. Six focused tests pass. The live cohort still
+  has zero completed identities, so terminal percentages correctly remain null and no exit-policy
+  conclusion can be calculated.
+
 - TASK-0152 now audits stop chains by exact causal references. Five focused tests pass. The latest
   read-only snapshot has 34 requests: one complete verified/committed chain, 29 visibility
   failures, three rejected responses, and one accepted response without a visibility result.
