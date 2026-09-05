@@ -1,6 +1,6 @@
 # TASK-0148 — Disconnected Exit-Evidence Chain Verification
 
-**Status:** READY — TEST-ONLY, RUNTIME DISABLED
+**Status:** COMPLETE — TEST-ONLY, RUNTIME DISABLED
 
 ## Objective
 
@@ -38,7 +38,19 @@ ledger implementations before any runtime-wiring or prospective-data decision is
   null-preserving incomplete evidence, lifecycle-based restart idempotency, ambiguity rejection,
   corrupt-snapshot rejection, and ledger validation.
 - Seventeen focused TASK-0143/0146/0147/0148 tests pass.
-- The remaining sealed unit is reconciliation-selector failure injection and full-suite validation.
+- Reconciliation-selector tests preserve the exact history query and strategy, cooldown, journal,
+  and alert call counts when observation succeeds, is excluded, or fails.
+- Final focused selector/observer suite: 19 passed. Full repository suite: 830 passed with one
+  optional import-linter check skipped.
+- No production snapshot, event ledger, broker call, runtime wiring, or policy change was created.
+
+## Deferred Finding
+
+The pre-existing reconciliation journal-sync branch calls `live_order_journal.record_result`, but
+the current journal object exposes no such method. The exception is caught, so reconciliation
+continues, but its stated terminal journal synchronization does not occur. This was not modified
+inside TASK-0148; TASK-0149 must characterize and minimally restore that contract before any
+forward-evidence runtime approval gate.
 
 ## Decision After Completion
 

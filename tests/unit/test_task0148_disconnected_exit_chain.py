@@ -1,4 +1,5 @@
 import json
+from unittest.mock import MagicMock
 
 from infrastructure.execution.broker_reconciliation import BrokerReconciliationService
 from infrastructure.observability.exit_event_ledger import ExitEventLedger
@@ -117,3 +118,98 @@ def test_ambiguous_and_corrupt_identity_fail_without_event_file(tmp_path):
     service._observe_terminal_order("BTC-USDT", _terminal_order())
     assert service._terminal_observation_counts["errors"] == 2
     assert not (tmp_path / "events").exists()
+
+
+def _run_selected_closure(monkeypatch, tmp_path, *, identity_store=None, observer=None,
+                          order_changes=None):
+    import infrastructure.execution.broker_reconciliation as reconciliation_module
+    from infrastructure.execution.live_order_journal import live_order_journal
+    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+    from infrastructure.strategies.strategy_manager import strategy_manager
+
+    monkeypatch.setattr(
+        reconciliation_module,
+        "ACTIVE_POSITIONS_JOURNAL_PATH",
+        str(tmp_path / "active_positions.json"),
+    )
+    history = MagicMock(return_value=[_terminal_order(type="TAKE_PROFIT_MARKET", **(order_changes or {}))])
+    broker = MagicMock()
+    broker.get_order_history = history
+    trade_result = MagicMock()
+    take_profit = MagicMock()
+    journal_result = MagicMock()
+    telegram = MagicMock()
+    monkeypatch.setattr(strategy_manager, "record_trade_result", trade_result)
+    monkeypatch.setattr(symbol_cooldown_gate, "record_take_profit_exit", take_profit)
+    monkeypatch.setattr(live_order_journal, "record_result", journal_result, raising=False)
+    monkeypatch.setattr("infrastructure.services.risk_alerts.send_telegram", telegram)
+
+    service = BrokerReconciliationService(
+        halt_fn=lambda _: None,
+        position_identity_store=identity_store,
+        terminal_observer=observer,
+    )
+    service._previous_active_symbols = {"BTC-USDT"}
+    service._process_position_closures(broker, set())
+    return service, history, trade_result, take_profit, journal_result, telegram
+
+
+def test_selected_closure_keeps_operational_calls_with_observer_enabled(monkeypatch, tmp_path):
+    snapshot = PositionIdentitySnapshot(tmp_path / "identities.json")
+    snapshot.upsert(_open_identity())
+    ledger = ExitEventLedger(tmp_path / "events")
+
+    result = _run_selected_closure(
+        monkeypatch, tmp_path, identity_store=snapshot, observer=ledger
+    )
+    service, history, trade_result, take_profit, journal_result, telegram = result
+
+    history.assert_called_once_with("BTC-USDT", limit=20)
+    trade_result.assert_called_once_with("BTC-USDT", is_profitable=True, position_closed=True)
+    take_profit.assert_called_once_with("BTC-USDT")
+    journal_result.assert_called_once()
+    telegram.assert_called_once()
+    assert service._terminal_observation_counts["emitted"] == 1
+    event_path = next((tmp_path / "events").glob("*.jsonl"))
+    assert ledger.validate_file(event_path)["events"] == 1
+
+
+def test_observer_failure_does_not_change_selected_closure_calls(monkeypatch, tmp_path):
+    store = MagicMock()
+    store.resolve_open.return_value = _open_identity()
+    observer = MagicMock()
+    observer.append.side_effect = RuntimeError("observer unavailable")
+
+    result = _run_selected_closure(
+        monkeypatch, tmp_path, identity_store=store, observer=observer
+    )
+    service, history, trade_result, take_profit, journal_result, telegram = result
+
+    history.assert_called_once_with("BTC-USDT", limit=20)
+    trade_result.assert_called_once()
+    take_profit.assert_called_once()
+    journal_result.assert_called_once()
+    telegram.assert_called_once()
+    assert service._terminal_observation_counts["errors"] == 1
+
+
+def test_unknown_terminal_side_is_excluded_but_closure_still_propagates(monkeypatch, tmp_path):
+    store = MagicMock()
+    observer = MagicMock()
+    result = _run_selected_closure(
+        monkeypatch,
+        tmp_path,
+        identity_store=store,
+        observer=observer,
+        order_changes={"positionSide": ""},
+    )
+    service, history, trade_result, take_profit, journal_result, telegram = result
+
+    history.assert_called_once()
+    trade_result.assert_called_once()
+    take_profit.assert_called_once()
+    journal_result.assert_called_once()
+    telegram.assert_called_once()
+    store.resolve_open.assert_not_called()
+    observer.append.assert_not_called()
+    assert service._terminal_observation_counts["excluded"] == 1

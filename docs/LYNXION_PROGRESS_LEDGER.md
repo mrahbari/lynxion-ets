@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Execute TASK-0148's disconnected end-to-end exit-evidence verification while C-11 collection
+Execute TASK-0149's minimal terminal-journal synchronization correction while C-11 collection
 continues; do not wire runtime, tune thresholds, or open outcomes.
 
 ## Status
@@ -17,6 +17,15 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0148 is COMPLETE and runtime-disabled. Real temporary snapshot/ledger tests validate the
+  end-to-end terminal chain, null preservation, restart idempotency, corrupt/ambiguous identity
+  rejection, selector call invariants, and observer failure isolation. Nineteen focused tests and
+  the full 830-test suite pass with one optional import-linter skip; no production artifacts exist.
+- TASK-0148 also confirms a pre-existing terminal journal-sync mismatch: reconciliation calls
+  `live_order_journal.record_result`, which the current journal does not expose. The caught failure
+  does not stop closure handling, but terminal synchronization is ineffective. TASK-0149 freezes a
+  minimal repository-only correction before any forward-evidence runtime gate.
 
 - TASK-0148's first disconnected unit uses the real snapshot and ledger on temporary paths. It
   validates complete and incomplete terminal evidence, restart idempotency, ambiguous identities,
