@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -20,6 +21,28 @@ PRIMARY_COST = 0.003
 COSTS = (0.002, 0.003, 0.005)
 PRIMARY_START, PRIMARY_END = 1704067200, 1788134400
 REVERSE_START, REVERSE_END = 1672531200, 1704067200
+PRICE_SHA256 = {
+    "BTCUSDT": "30e02acebd29a4e47032be70baa7dd3ec0c38a246915fa8329e899edbc07aabb",
+    "ETHUSDT": "d44a16a5a7363d6833d0e4e60035acd63826e3e9f65fb3aef260e4c4fde08843",
+    "BNBUSDT": "7c9f289c34040f6228f8cdfe415fa045f641b2e7292108bf97bdde34db74c0c0",
+    "XRPUSDT": "89629283deadf39234f7d9cd07ad27f0e378c4c81e6d3a227798494667dcfd57",
+    "ADAUSDT": "643dc2f29d3e50fb008391fd4787472836dd88eeab7dd92f71ff0820b5dea79a",
+    "SOLUSDT": "e6efc15ec3544227426076b059bcaec71a2557520d64433f08cea398c554a382",
+}
+FUNDING_SHA256 = {
+    "BTCUSDT": "2fe89ca06907e7953cb49c2db052e74158ea9319f50f0bd9dac08fb2a579c097",
+    "ETHUSDT": "b978d9a54809ad232583b9419ed2695647d0557bc58074112082fa1472057148",
+    "BNBUSDT": "7edf30b5a20f5572361ba7bc41ff89b02df8105a82ff24c1b32a5dc807bca08d",
+    "XRPUSDT": "2886be913f6678b660e827d481a2b60d426de6c8b406bcff3c282d3f275e74f9",
+    "ADAUSDT": "f27f351e603c0563d9c1e0ea6be10640a8bf38c4a1640383d914cd5aaaa79301",
+    "SOLUSDT": "be28b9621e6baf0d3b50365c73e59352996274f4097cae60fe4ffce2528c55a3",
+}
+
+
+def verify_source(path: Path, expected_sha256: str) -> None:
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if digest != expected_sha256:
+        raise ValueError(f"frozen source hash mismatch: {path}")
 
 
 def load_price(path: Path) -> pd.DataFrame:
@@ -197,8 +220,12 @@ def positive_symbol_concentration(events: list[dict]) -> float | None:
 def build_report(price_dir: Path, funding_dir: Path) -> dict:
     primary, reverse, primary_census, reverse_census = [], [], {}, {}
     for symbol in SYMBOLS:
-        features = causal_features(load_price(price_dir / f"{symbol}.csv"))
-        funding = load_funding(funding_dir / f"{symbol}.csv")
+        price_path = price_dir / f"{symbol}.csv"
+        funding_path = funding_dir / f"{symbol}.csv"
+        verify_source(price_path, PRICE_SHA256[symbol])
+        verify_source(funding_path, FUNDING_SHA256[symbol])
+        features = causal_features(load_price(price_path))
+        funding = load_funding(funding_path)
         selected, counts = collect_events(symbol, features, funding, PRIMARY_START, PRIMARY_END)
         primary.extend(selected); primary_census[symbol] = counts
         selected, counts = collect_events(symbol, features, funding, REVERSE_START, REVERSE_END)

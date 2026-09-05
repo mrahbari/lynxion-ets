@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 
+import hashlib
+
 import pandas as pd
 
 from scripts import evaluate_volatility_sweep_c28 as candidate
@@ -57,3 +59,17 @@ def test_funding_boundaries_are_strict_after_entry_and_inclusive_at_exit(monkeyp
 def test_empty_metrics_and_report_gate_are_fail_closed():
     assert candidate.metrics([])["expectancy"] is None
     assert candidate.bootstrap([]) == [None, None]
+
+
+def test_frozen_source_hash_fails_closed(tmp_path):
+    source = tmp_path / "source.csv"
+    source.write_bytes(b"frozen")
+    expected = hashlib.sha256(b"frozen").hexdigest()
+    candidate.verify_source(source, expected)
+    source.write_bytes(b"changed")
+    try:
+        candidate.verify_source(source, expected)
+    except ValueError as error:
+        assert "frozen source hash mismatch" in str(error)
+    else:
+        raise AssertionError("changed source must fail closed")

@@ -19,10 +19,12 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
-- C-28's evaluator is implemented while outcomes remain unopened. Four disconnected tests verify
+- C-28's evaluator is implemented while outcomes remain unopened. Independent review added exact
+  SHA-256 enforcement for every frozen price and funding input so changed sources fail before any
+  outcome is calculated. Five disconnected tests verify this guard alongside
   causal exclusion of the current candle, frozen LONG/SHORT rejection direction, strict funding
-  settlement boundaries, and fail-closed empty metrics. The next unit is an independent source/test
-  review followed by the one authorized report generation; no parameter may change first.
+  settlement boundaries, and fail-closed empty metrics. The next unit is the one authorized report
+  generation; no parameter may change first.
 
 - C-28 is preregistered with outcomes unopened. It tests a distinct failed-extreme volatility-sweep
   rejection mechanism across six native futures symbols, with causal range/extreme lookbacks,
