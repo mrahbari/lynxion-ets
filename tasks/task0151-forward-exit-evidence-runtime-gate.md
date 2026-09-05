@@ -1,6 +1,6 @@
 # TASK-0151 — Forward Exit-Evidence Runtime Gate
 
-**Status:** APPROVED — REPOSITORY WIRING COMPLETE, ACTIVATION PENDING
+**Status:** ACTIVE — FORWARD-ONLY VST COHORT COLLECTING
 
 ## Objective
 
@@ -92,3 +92,12 @@ Proposed paths are `data/observability/forward_exit/position_identities.json` an
   and activation manifest to both position management and reconciliation.
 - Existing/cohort-conflicting manifests fail closed, and events must be strictly after boundary.
 - Focused suite: 28 passed. Full repository suite: 836 passed with one optional import-linter skip.
+- The operator restarted the runner through the tracked `./lynxion` entry point on 2026-09-05.
+  Read-only verification found exactly one auto-detection runner, started at 06:49:11 UTC from
+  commit `54d7c9ce2ec38876b6c6541f1cdb7c27038ff038`.
+- The activation manifest freezes run ID `task0151-20260905T064911Z`, boundary
+  `2026-09-05T06:49:11.585276+00:00`, and `historical_import_allowed=false`.
+- The first ledger event is at `2026-09-05T06:49:52.949480+00:00`, strictly after the boundary.
+  The identity snapshot and event ledger validate successfully; one `POSITION_OBSERVED` event is
+  present and the pre-boundary count is zero. This starts collection but does not satisfy any
+  outcome, trailing-performance, or profitability gate.

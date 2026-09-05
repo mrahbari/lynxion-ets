@@ -7,9 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Complete the approved TASK-0151 activation: commit tested opt-in wiring, freeze UTC/commit metadata,
-reload exactly one verified auto-detection VST runner, and validate forward-only evidence and
-protective coverage without changing policy or placing orders.
+Maintain the active TASK-0151 forward-only VST cohort until its frozen coverage gates are met,
+while continuing independent profitability research without changing production policy.
 
 ## Status
 
@@ -18,6 +17,13 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0151 is ACTIVE/COLLECTING. The operator restarted exactly one auto-detection VST runner via
+  `./lynxion` at 06:49:11 UTC on commit `54d7c9c`. The manifest freezes boundary
+  `2026-09-05T06:49:11.585276+00:00`, run ID `task0151-20260905T064911Z`, and prohibits historical
+  import. The snapshot and ledger validate; the first of one event is strictly post-boundary and
+  no pre-boundary observation exists. Only `POSITION_OBSERVED` has been emitted, so no trailing,
+  terminal-completeness, or profitability conclusion is available.
 
 - TASK-0151 received explicit operator approval. Opt-in auto-detection wiring now shares one run ID,
   identity snapshot, boundary-enforcing event observer, and activation manifest across position
@@ -440,9 +446,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Next task
 
-Amend the active automation boundary or provide a separate authorized task that explicitly permits
-TASK-0135's production risk/admission/leverage correction. The implementation scope and mandatory
-failure-injection tests are frozen; do not connect the event ledger or permit new entries first.
+Keep TASK-0151's forward-only exit-evidence cohort collecting under its frozen gates while the
+engineering loop continues with the next independent, preregistered profitability hypothesis.
+Do not tune exit thresholds from the opened cohort or spend roadmap cycles on leverage refinement
+unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
