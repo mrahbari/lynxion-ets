@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0148's first disconnected unit uses the real snapshot and ledger on temporary paths. It
+  validates complete and incomplete terminal evidence, restart idempotency, ambiguous identities,
+  corrupt snapshots, null preservation, and persisted lifecycle transitions. Seventeen focused
+  tests pass; selector-level failure injection and the full suite remain.
+
 - TASK-0148 freezes the final repository-only gate before any forward exit-data deployment can be
   considered: real identity snapshot, terminal extractor, exit ledger, and reconciliation closure
   must work together only on temporary paths, remain restart-idempotent, preserve null unknowns,

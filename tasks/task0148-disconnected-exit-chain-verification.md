@@ -32,6 +32,14 @@ ledger implementations before any runtime-wiring or prospective-data decision is
 - Failure-injection tests demonstrate operational reconciliation remains unchanged.
 - Focused and full suites pass and leave no production evidence artifacts.
 
+## Progress
+
+- Real temporary snapshot and ledger components now prove complete evidence persistence,
+  null-preserving incomplete evidence, lifecycle-based restart idempotency, ambiguity rejection,
+  corrupt-snapshot rejection, and ledger validation.
+- Seventeen focused TASK-0143/0146/0147/0148 tests pass.
+- The remaining sealed unit is reconciliation-selector failure injection and full-suite validation.
+
 ## Decision After Completion
 
 TASK-0148 may establish repository readiness only. Enabling forward collection remains a separate
