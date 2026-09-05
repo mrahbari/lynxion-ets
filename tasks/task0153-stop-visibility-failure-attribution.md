@@ -1,6 +1,6 @@
 # TASK-0153 — Stop Visibility Failure Attribution
 
-**Status:** PRE-REGISTERED — DIAGNOSIS PENDING
+**Status:** IN PROGRESS — SOURCE SEMANTICS PARTIALLY ATTRIBUTED
 
 ## Objective
 
@@ -44,3 +44,12 @@ diagnosis, not authorization to alter production behavior.
 - Rejected-price and accepted-but-invisible paths are not conflated.
 - No production artifact, policy, order, broker state, or runtime process is modified.
 
+## Evidence
+
+- Three disconnected tests confirm that code-zero placement can succeed without an order ID,
+  pending-order API/transport failures collapse to the same empty list as a genuine empty result,
+  and attribute matching can verify an order with no exchange identity.
+- The source/evidence verdict is `PARTIAL_ATTRIBUTION`: local observability defects are confirmed,
+  but current records cannot distinguish exchange non-persistence from query failure, schema
+  mismatch, account/product mismatch, or a genuinely empty order book.
+- Detailed evidence: `docs/reports/task0153_stop_visibility_failure_attribution.md`.

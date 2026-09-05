@@ -18,6 +18,12 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0153 reaches PARTIAL_ATTRIBUTION at the source-semantics layer. Placement treats BingX
+  `code=0` as success even when `order_id` is absent; pending-order API and transport errors collapse
+  to the same empty list as a valid empty query; visibility does not correlate the placement order
+  ID and can accept an identity-less match. Three disconnected tests reproduce these defects. The
+  evidence cannot yet prove why ADA/NEAR orders were absent exchange-side.
+
 - TASK-0153 preregisters a bounded, read-only attribution of accepted-but-invisible stop
   replacements. It separates explicit price rejection from placement acceptance, pending-order
   normalization/filtering, timing, and false-positive response semantics. Any justified correction
