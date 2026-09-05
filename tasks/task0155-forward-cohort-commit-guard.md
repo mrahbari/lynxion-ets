@@ -1,6 +1,6 @@
 # TASK-0155 — Forward Cohort Commit Guard
 
-**Status:** COMPLETE — REPOSITORY ONLY, DEPLOYMENT PENDING
+**Status:** COMPLETE — DEPLOYED UNDER TASK-0156
 
 ## Objective
 
@@ -47,5 +47,5 @@ code under a new cohort remains a separate runtime approval gate.
 - A wrapper-level subprocess test proves that commit mismatch exits before the runtime entrypoint,
   even when runner uniqueness succeeds. Six focused tests and the full 871-test suite pass with one
   optional import-linter skip.
-- Repository hardening is complete. Starting TASK-0154 code requires an operator-approved restart
-  with a new empty cohort root; direct continuation of TASK-0151 at the new HEAD now fails closed.
+- Repository hardening is complete. The operator-approved TASK-0156 restart activated current HEAD
+  under a new empty cohort; the legacy TASK-0151 cohort was preserved rather than continued.

@@ -7,8 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Hold TASK-0154/0155 at the explicit runtime approval gate. If authorized, preserve legacy TASK-0151
-and activate current HEAD only under a new empty forward cohort root with controlled verification.
+Keep TASK-0156's post-fix forward cohort collecting under its frozen gates while continuing the
+next independent, preregistered profitability hypothesis. Do not mix the legacy TASK-0151 cohort
+with post-fix observations or tune exit thresholds from either opened cohort.
 
 ## Status
 
@@ -17,6 +18,13 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0156 is COMPLETE and the corrected stop-identity runtime is active on the approved BingX VST
+  path. Preflight reported TESTNET with `live_trading=False`; exactly one replacement runner was
+  observed. Its new empty cohort freezes boundary `2026-09-05T18:38:08.780489+00:00`, commit
+  `bf93cc0`, and `historical_import_allowed=false`. Its first observed event is strictly after the
+  frozen boundary and the current audit has zero violations, so its honest verdict is `COLLECTING`;
+  no trailing or profitability conclusion is yet justified.
 
 - TASK-0155 is COMPLETE at repository level. A wrapper subprocess test proves commit mismatch exits
   before the runtime entrypoint. Six focused tests and the full 871-test suite pass with one optional
