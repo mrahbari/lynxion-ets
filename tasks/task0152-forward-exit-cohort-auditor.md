@@ -62,3 +62,7 @@ order placement, or production change.
   completed UTC weeks, and trailing-eligible completed identities without imputing missing values.
   Six focused tests pass. The live cohort still has zero completed identities, so both completeness
   percentages remain null rather than being represented as zero coverage.
+- The fourth unit encodes every frozen numeric, breadth, completeness, and verified-chain threshold
+  as explicit booleans and allows eligibility only when all pass. Seven focused tests pass,
+  including exact boundary values. The live verdict remains COLLECTING with only the verified-stop
+  chain gate currently true; this is not a policy or profitability verdict.

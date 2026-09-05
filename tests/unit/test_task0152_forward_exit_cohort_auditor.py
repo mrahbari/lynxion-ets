@@ -4,7 +4,7 @@ from infrastructure.observability.position_identity_snapshot import (
     PositionIdentitySnapshot,
     deterministic_record_id,
 )
-from scripts.audit_forward_exit_cohort import audit
+from scripts.audit_forward_exit_cohort import audit, evaluate_gates
 
 
 def _manifest(root, boundary="2026-09-05T00:00:00+00:00"):
@@ -162,3 +162,21 @@ def test_terminal_coverage_preserves_incomplete_fields_and_trailing_eligibility(
         "linkage_pct": 1.0,
         "authoritative_fields_pct": 0.0,
     }
+
+
+def test_frozen_gate_thresholds_are_exact_and_only_then_eligible():
+    counts = {
+        "completed_identities": 100,
+        "trailing_eligible_completed": 30,
+        "completed_utc_weeks": [f"2026-W{week:02d}" for week in range(1, 9)],
+        "completed_by_symbol": {symbol: 20 for symbol in ("A", "B", "C", "D", "E")},
+        "completed_by_side": {"LONG": 85, "SHORT": 15},
+    }
+    terminal = {"linkage_pct": 0.95, "authoritative_fields_pct": 0.90}
+    chains = {"visibility_verified": 4, "complete": 4}
+    assert all(evaluate_gates(counts, terminal, chains).values())
+
+    counts["completed_by_side"]["SHORT"] = 14
+    gates = evaluate_gates(counts, terminal, chains)
+    assert gates["minimum_short_completed"] is False
+    assert sum(gates.values()) == len(gates) - 1

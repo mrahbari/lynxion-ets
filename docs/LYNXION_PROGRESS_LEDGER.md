@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0152 now evaluates all frozen coverage thresholds explicitly and cannot transition from
+  COLLECTING unless every gate passes. Seven focused tests cover exact boundary values. The live
+  cohort currently passes only verified-stop-chain commit integrity; it has no completed exits and
+  remains ineligible for any policy comparison.
+
 - TASK-0152 now measures terminal linkage, complete fill economics, exit-type/week coverage, and
   trailing eligibility while preserving unknowns. Six focused tests pass. The live cohort still
   has zero completed identities, so terminal percentages correctly remain null and no exit-policy

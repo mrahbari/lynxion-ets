@@ -30,6 +30,28 @@ def _utc(value: Any) -> datetime:
     return parsed
 
 
+def evaluate_gates(counts: dict[str, Any], terminal: dict[str, Any],
+                   stop_chains: dict[str, int]) -> dict[str, bool]:
+    sides = counts["completed_by_side"]
+    return {
+        "minimum_completed_identities": counts["completed_identities"] >= 100,
+        "minimum_trailing_eligible_completed": counts["trailing_eligible_completed"] >= 30,
+        "minimum_completed_utc_weeks": len(counts["completed_utc_weeks"]) >= 8,
+        "minimum_completed_symbols": len(counts["completed_by_symbol"]) >= 5,
+        "minimum_long_completed": sides.get("LONG", 0) >= 15,
+        "minimum_short_completed": sides.get("SHORT", 0) >= 15,
+        "terminal_linkage": terminal["linkage_pct"] is not None and terminal["linkage_pct"] >= 0.95,
+        "authoritative_terminal_fields": (
+            terminal["authoritative_fields_pct"] is not None
+            and terminal["authoritative_fields_pct"] >= 0.90
+        ),
+        "verified_stop_chains_committed": (
+            stop_chains.get("complete", 0) == stop_chains.get("visibility_verified", 0)
+            and stop_chains.get("verified_missing_or_ambiguous_state_commit", 0) == 0
+        ),
+    }
+
+
 def audit(root: Path | str = DEFAULT_ROOT) -> dict[str, Any]:
     root = Path(root)
     violations = Counter()
@@ -162,6 +184,32 @@ def audit(root: Path | str = DEFAULT_ROOT) -> dict[str, Any]:
             continue
         chain_counts["complete"] += 1
 
+    counts = {
+        "identities": len(identities),
+        "completed_identities": len(completed),
+        "trailing_eligible_completed": len(trailing_eligible),
+        "completed_utc_weeks": completed_weeks,
+        "events": len(events),
+        "event_types": dict(sorted(event_types.items())),
+        "completed_by_symbol": dict(sorted(symbols.items())),
+        "completed_by_side": dict(sorted(sides.items())),
+        "exit_types": dict(sorted(exit_types.items())),
+        "observer_run_ids": sorted({event.get("run_id") for event in events}),
+    }
+    terminal = {
+        "linked": len(terminal_linked),
+        "authoritative_fields_complete": len(terminal_complete),
+        "linkage_pct": (len(terminal_linked) / len(completed)) if completed else None,
+        "authoritative_fields_pct": (len(terminal_complete) / len(completed)) if completed else None,
+    }
+    stop_chain_report = dict(sorted(chain_counts.items()))
+    gates = evaluate_gates(counts, terminal, stop_chain_report)
+    if sum(violations.values()):
+        verdict = "DATA_INVALID"
+    elif all(gates.values()):
+        verdict = "ELIGIBLE_FOR_POLICY_PREREGISTRATION"
+    else:
+        verdict = "COLLECTING"
     report = {
         "schema_version": 1,
         "manifest": {
@@ -169,27 +217,12 @@ def audit(root: Path | str = DEFAULT_ROOT) -> dict[str, Any]:
                 "run_id", "activation_boundary_utc", "commit", "historical_import_allowed"
             )
         },
-        "counts": {
-            "identities": len(identities),
-            "completed_identities": len(completed),
-            "trailing_eligible_completed": len(trailing_eligible),
-            "completed_utc_weeks": completed_weeks,
-            "events": len(events),
-            "event_types": dict(sorted(event_types.items())),
-            "completed_by_symbol": dict(sorted(symbols.items())),
-            "completed_by_side": dict(sorted(sides.items())),
-            "exit_types": dict(sorted(exit_types.items())),
-            "observer_run_ids": sorted({event.get("run_id") for event in events}),
-        },
-        "terminal_completeness": {
-            "linked": len(terminal_linked),
-            "authoritative_fields_complete": len(terminal_complete),
-            "linkage_pct": (len(terminal_linked) / len(completed)) if completed else None,
-            "authoritative_fields_pct": (len(terminal_complete) / len(completed)) if completed else None,
-        },
-        "stop_chains": dict(sorted(chain_counts.items())),
+        "counts": counts,
+        "terminal_completeness": terminal,
+        "stop_chains": stop_chain_report,
+        "gates": gates,
         "violations": dict(sorted(violations.items())),
-        "verdict": "DATA_INVALID" if sum(violations.values()) else "COLLECTING",
+        "verdict": verdict,
     }
     return report
 
