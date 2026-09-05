@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0154's first repository unit distinguishes a genuinely successful empty pending-order query
+  from nonzero exchange responses, malformed payloads, and exceptions, while preserving the legacy
+  list API. Error evidence is deliberately non-sensitive. Twelve focused regressions pass; no
+  runtime or broker state changed.
+
 - TASK-0153 is COMPLETE with verdict PARTIAL_ATTRIBUTION. Its deterministic counter separates
   symbol/attempt response and visibility outcomes; four focused tests and the full 851-test suite
   pass with one optional import-linter skip. The closing snapshot has 84 requests: 73 accepted,

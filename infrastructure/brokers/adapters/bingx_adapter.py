@@ -269,6 +269,13 @@ class BingXBrokerAdapter(BrokerPort):
         sym_str = self._format_symbol(symbol) if symbol else None
         return self._broker.get_pending_orders(sym_str)
 
+    def get_pending_orders_evidence(self, symbol: Any = None) -> Dict[str, Any]:
+        """Return structured query evidence without changing the legacy list contract."""
+        if not self.connected:
+            self.connect()
+        sym_str = self._format_symbol(symbol) if symbol else None
+        return self._broker.get_pending_orders_evidence(sym_str)
+
     def _place_conditional_order(self, symbol: Any, side: str, quantity: str, stop_price: str,
                                 order_type: str, position_side: str) -> Dict[str, Any]:
         """Place a conditional stop order directly on the exchange."""
@@ -1178,25 +1185,31 @@ class _BingXBroker:
 
     def get_pending_orders(self, symbol: str = None) -> List[Dict]:
         """Get all pending orders."""
+        evidence = self.get_pending_orders_evidence(symbol)
+        return evidence["orders"] if evidence["status"] == "OK" else []
+
+    def get_pending_orders_evidence(self, symbol: str = None) -> Dict[str, Any]:
+        """Distinguish successful empty results from query and payload failures."""
         try:
             params = {}
             if symbol:
                 params['symbol'] = self._format_symbol_str(symbol)
 
             response = self._make_request('GET', '/openApi/swap/v2/trade/openOrders', params=params, signed=True)
-
-            if response.get('code') == 0:
-                data = response.get('data', {})
-                if isinstance(data, dict) and 'orders' in data:
-                    return data['orders']
-                elif isinstance(data, list):
-                    return data
-                else:
-                    return []
-            else:
-                return []
-        except Exception as e:
-            return []
+            if not isinstance(response, dict):
+                return {"status": "MALFORMED", "orders": [], "error": "response_not_object"}
+            if response.get('code') != 0:
+                return {
+                    "status": "API_ERROR", "orders": [],
+                    "error": f"exchange_code:{response.get('code')}",
+                }
+            data = response.get('data')
+            orders = data.get('orders') if isinstance(data, dict) else data
+            if not isinstance(orders, list):
+                return {"status": "MALFORMED", "orders": [], "error": "orders_not_list"}
+            return {"status": "OK", "orders": orders, "error": None}
+        except Exception as error:
+            return {"status": "EXCEPTION", "orders": [], "error": type(error).__name__}
 
     def get_order_history(
             self,

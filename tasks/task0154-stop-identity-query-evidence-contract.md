@@ -1,6 +1,6 @@
 # TASK-0154 — Stop Identity and Query-Evidence Contract
 
-**Status:** PRE-REGISTERED — REPOSITORY IMPLEMENTATION PENDING
+**Status:** IN PROGRESS — STRUCTURED QUERY EVIDENCE COMPLETE
 
 ## Objective
 
@@ -36,3 +36,12 @@ order intent, retry cadence, symbol admission, account settings, or runtime acti
 Repository implementation and disconnected tests only. Do not reload the runner, call a broker,
 place/cancel/replace orders, change policy, or activate the correction. Any runtime deployment is a
 separate approval gate after focused and full suites pass.
+
+## Implementation Evidence
+
+- The first unit adds a structured pending-order result with distinct `OK`, `API_ERROR`,
+  `MALFORMED`, and `EXCEPTION` states. Error evidence contains only exchange code or exception type;
+  response/exception text is not retained.
+- The legacy list-returning method delegates to the structured method and preserves its existing
+  empty-list failure behavior for unrelated callers.
+- Twelve focused TASK-0139/0153/0154 tests pass. No runtime was reloaded and no broker was called.
