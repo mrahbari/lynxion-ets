@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Maintain the active TASK-0151 forward-only VST cohort until its frozen coverage gates are met,
-while continuing independent profitability research without changing production policy.
+Implement TASK-0152's preregistered read-only cohort auditor while TASK-0151 continues collecting,
+without opening outcomes or changing production policy.
 
 ## Status
 
@@ -17,6 +17,11 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0152 preregisters a deterministic, read-only auditor for every frozen TASK-0151 sample,
+  breadth, terminal-completeness, causal-chain, and integrity gate. Its output is limited to
+  COLLECTING, DATA_INVALID, or eligibility for a separately preregistered policy comparison; it
+  cannot tune thresholds, import history, call a broker, or modify evidence.
 
 - C-11 admitted its first prospective candidate at the 2026-09-05 08:00 UTC BTCUSDT funding
   settlement. The observation is strictly after boundary `1788082349`, has severity ratio 2.8409,
