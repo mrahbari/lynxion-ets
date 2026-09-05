@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Execute TASK-0149's minimal terminal-journal synchronization correction while C-11 collection
+Execute TASK-0150's minimal paper terminal-journal contract correction while C-11 collection
 continues; do not wire runtime, tune thresholds, or open outcomes.
 
 ## Status
@@ -17,6 +17,14 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0149 is COMPLETE at repository level. Reconciliation now resolves an exact exchange order
+  ID to one journal lifecycle reference and uses the supported terminal transition; unknown and
+  ambiguous identities remain unchanged. Twenty-one focused tests and the full 832-test suite pass
+  with one optional import-linter skip; no runtime or trading behavior was changed.
+- A second pre-existing `record_result` call remains isolated to the multi-broker simulated-fill
+  branch. TASK-0150 limits its correction to repository tests and the existing terminal transition;
+  no paper order, real order, or runtime action is permitted.
 
 - TASK-0149's first unit restores exact terminal journal identity resolution: one unique exchange
   order ID maps to its existing lifecycle reference, while missing/ambiguous matches remain

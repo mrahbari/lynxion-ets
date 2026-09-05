@@ -1,6 +1,6 @@
 # TASK-0149 — Terminal Journal Synchronization Contract
 
-**Status:** READY — REPOSITORY-ONLY
+**Status:** COMPLETE — REPOSITORY-ONLY
 
 ## Objective
 
@@ -31,6 +31,10 @@ setting, historical rewrite, or prospective outcome is permitted.
 - Reconciliation uses the existing `record_terminal` transition only after exact resolution. It no
   longer calls the nonexistent `record_result` method or treats an exchange order ID as a journal
   lifecycle identity.
-- Twenty-one focused journal/reconciliation/observer tests pass. Full-suite validation remains.
+- Twenty-one focused journal/reconciliation/observer tests pass. Full repository suite: 832 passed
+  with one optional import-linter check skipped.
 - A separate pre-existing `record_result` call in multi-broker order execution is outside this
   task's reconciliation boundary and remains deferred for independent characterization.
+
+No runtime, broker/API, order, strategy, risk, trailing, leverage, symbol, or account-setting change
+was made.
