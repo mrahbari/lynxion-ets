@@ -19,6 +19,12 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0151 now freezes the forward data gate before activation: at least 100 post-boundary
+  completed VST positions, 30 trailing-eligible closures, eight UTC weeks, five symbols, both sides,
+  high identity/terminal completeness, complete stop causal chains, and zero duplicate, lifecycle,
+  corruption, sensitive-field, or pre-boundary violations. These are collection gates only; no
+  threshold comparison or policy outcome may be opened from them.
+
 - TASK-0151's read-only preflight finds two internal reconciliation constructors and an import-time
   active-position singleton. A valid deployment must configure one shared run ID, identity store,
   and event ledger before threads start and inject the same components into the active VST
