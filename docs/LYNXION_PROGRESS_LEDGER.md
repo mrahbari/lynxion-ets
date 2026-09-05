@@ -7,8 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Execute TASK-0150's minimal paper terminal-journal contract correction while C-11 collection
-continues; do not wire runtime, tune thresholds, or open outcomes.
+TASK-0151 is at an explicit runtime approval gate. Continue C-11 collection, but do not wire or
+reload the VST runner, create production evidence files, tune thresholds, or open outcomes without
+operator approval for the frozen forward-only deployment boundary.
 
 ## Status
 
@@ -17,6 +18,15 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0150 rejects a code correction: the remaining unsupported `record_result` statement is
+  unreachable for simulated fills because `journal_ref` is created only for real-send routes and
+  remains null in paper mode. Paper evidence already uses the Execution Truth Ledger. Eighteen
+  focused tests pass; changing dead guarded code would be cleanup rather than correctness work.
+- TASK-0151 reaches the runtime approval boundary. The repository evidence chain is ready for a
+  forward-only VST cohort, but activation requires composition wiring, new production observation
+  files, a frozen UTC boundary, and a controlled VST runner reload. No such action is authorized by
+  the current automation.
 
 - TASK-0149 is COMPLETE at repository level. Reconciliation now resolves an exact exchange order
   ID to one journal lifecycle reference and uses the supported terminal transition; unknown and

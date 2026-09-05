@@ -1,6 +1,6 @@
 # TASK-0150 — Paper Terminal Journal Contract
 
-**Status:** READY — REPOSITORY-ONLY
+**Status:** COMPLETE — NO CODE CHANGE REQUIRED
 
 ## Objective
 
@@ -21,3 +21,15 @@ result.
 
 No paper or real order may be placed. No runtime, broker/API, account, strategy, risk, leverage,
 trailing, symbol, prospective evidence, or profitability setting may change.
+
+## Verdict
+
+**REJECT CORRECTION.** The suspected simulated-fill mismatch is unreachable under the current
+contract. `journal_ref` starts as null and is created only inside the `is_real_send` branch; an
+admitted simulated result therefore cannot enter the guarded `if journal_ref` block containing the
+unsupported method call. The live order journal explicitly stores LIVE/TESTNET lifecycle state,
+while paper fills are already recorded by the Execution Truth Ledger.
+
+Removing or changing the dead guarded statement would not improve evidence correctness and would
+be cleanup outside the profitability roadmap. Eighteen focused execution-guard, paper E2E, and
+journal tests pass. No paper order, broker call, runtime, or code change was made.
