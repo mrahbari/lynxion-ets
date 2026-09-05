@@ -4,7 +4,7 @@ from infrastructure.observability.position_identity_snapshot import (
     PositionIdentitySnapshot,
     deterministic_record_id,
 )
-from scripts.audit_forward_exit_cohort import audit, evaluate_gates
+from scripts.audit_forward_exit_cohort import audit, evaluate_gates, select_verdict
 
 
 def _manifest(root, boundary="2026-09-05T00:00:00+00:00"):
@@ -215,3 +215,30 @@ def test_audit_is_read_only_and_deterministic(tmp_path):
     after = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
     assert first == second
     assert before == after
+
+
+def test_remaining_invalidity_classes_fail_closed(tmp_path):
+    _manifest(tmp_path)
+    manifest_path = tmp_path / "activation.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["historical_import_allowed"] = True
+    manifest_path.write_text(json.dumps(manifest))
+    (tmp_path / "position_identities.json").write_text("not-json")
+    events_path = tmp_path / "events" / "2026-09-05.jsonl"
+    events_path.parent.mkdir()
+    later = _base_event("later", "POSITION_OBSERVED", 3)
+    earlier = _base_event("earlier", "POSITION_OBSERVED", 2)
+    events_path.write_text(json.dumps(later) + "\n" + json.dumps(earlier) + "\nnot-json\n")
+    report = audit(tmp_path)
+    assert report["verdict"] == "DATA_INVALID"
+    assert report["violations"]["historical_import_allowed"] == 1
+    assert report["violations"]["snapshot_corrupt"] == 1
+    assert report["violations"]["event_time_regressions"] == 1
+    assert report["violations"]["corrupt_events"] == 1
+
+
+def test_verdict_precedence_and_eligible_output():
+    passing = {"a": True, "b": True}
+    assert select_verdict(passing, {}) == "ELIGIBLE_FOR_POLICY_PREREGISTRATION"
+    assert select_verdict({"a": True, "b": False}, {}) == "COLLECTING"
+    assert select_verdict(passing, {"corrupt_events": 1}) == "DATA_INVALID"

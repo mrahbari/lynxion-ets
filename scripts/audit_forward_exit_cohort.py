@@ -53,6 +53,14 @@ def evaluate_gates(counts: dict[str, Any], terminal: dict[str, Any],
     }
 
 
+def select_verdict(gates: dict[str, bool], violations: dict[str, int]) -> str:
+    if sum(violations.values()):
+        return "DATA_INVALID"
+    if all(gates.values()):
+        return "ELIGIBLE_FOR_POLICY_PREREGISTRATION"
+    return "COLLECTING"
+
+
 def audit(root: Path | str = DEFAULT_ROOT) -> dict[str, Any]:
     root = Path(root)
     violations = Counter()
@@ -217,12 +225,7 @@ def audit(root: Path | str = DEFAULT_ROOT) -> dict[str, Any]:
     }
     stop_chain_report = dict(sorted(chain_counts.items()))
     gates = evaluate_gates(counts, terminal, stop_chain_report)
-    if sum(violations.values()):
-        verdict = "DATA_INVALID"
-    elif all(gates.values()):
-        verdict = "ELIGIBLE_FOR_POLICY_PREREGISTRATION"
-    else:
-        verdict = "COLLECTING"
+    verdict = select_verdict(gates, violations)
     report = {
         "schema_version": 1,
         "manifest": {

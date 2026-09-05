@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement TASK-0152's preregistered read-only cohort auditor while TASK-0151 continues collecting,
-without opening outcomes or changing production policy.
+Maintain TASK-0151 and C-11 prospective collection while selecting the next genuinely independent
+profitability research unit without reopening rejected mechanisms or changing production policy.
 
 ## Status
 
@@ -17,6 +17,11 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0152 is COMPLETE. Its deterministic read-only auditor reports every frozen sample, breadth,
+  terminal-completeness, stop-chain, and integrity gate, with strict DATA_INVALID precedence and no
+  outcome opening. Eleven focused tests and the full 847-test suite pass with one optional
+  import-linter skip. The live cohort remains COLLECTING.
 
 - TASK-0152 now proves byte-for-byte read-only determinism and separately reports duplicate IDs,
   lifecycle regressions, sensitive fields, and unknown causal references. Nine focused tests pass;

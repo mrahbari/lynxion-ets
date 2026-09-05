@@ -1,6 +1,6 @@
 # TASK-0152 — Forward Exit Cohort Gate Auditor
 
-**Status:** IN PROGRESS — CORE INTEGRITY AUDITOR COMPLETE
+**Status:** COMPLETE
 
 ## Objective
 
@@ -69,3 +69,7 @@ order placement, or production change.
 - The fifth unit adds explicit duplicate-ID, lifecycle-regression, sensitive-field, and unknown-
   cause classifications plus a byte-for-byte read-only determinism test. Nine focused tests pass.
   The live evidence still has zero integrity violations and remains COLLECTING.
+- Final coverage adds the remaining manifest, snapshot, event-corruption, timestamp-order, and
+  verdict-precedence cases. The focused suite passes 11 tests; the full repository suite passes
+  847 tests with one optional import-linter skip. TASK-0152 is complete and the live cohort remains
+  COLLECTING; the auditor neither opens outcomes nor changes runtime policy.
