@@ -18,6 +18,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0154 now preserves the placement exchange order ID in each causal response event, including
+  explicit null when absent, without changing visibility matching or state behavior. Twenty-two
+  focused regressions pass; runtime remains on the prior commit and was not reloaded.
+
 - TASK-0154's first repository unit distinguishes a genuinely successful empty pending-order query
   from nonzero exchange responses, malformed payloads, and exceptions, while preserving the legacy
   list API. Error evidence is deliberately non-sensitive. Twelve focused regressions pass; no

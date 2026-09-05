@@ -830,6 +830,7 @@ class ActivePositionManager:
                 response_latency_ms = None
                 response_error = None
                 response_accepted = False
+                response_order_id = None
                 response_event = None
 
                 def emit_response() -> Optional[Dict[str, Any]]:
@@ -847,6 +848,7 @@ class ActivePositionManager:
                         "requested_stop_price": float(new_sl_price),
                         "attempt": attempt,
                         "accepted": response_accepted,
+                        "exchange_order_id": response_order_id,
                         "latency_ms": response_latency_ms,
                     }
                     self._emit_exit_observation(response_event)
@@ -875,6 +877,8 @@ class ActivePositionManager:
                         res = {"success": False, "error": "No _place_conditional_order method available"}
 
                     response_accepted = bool(res.get("success"))
+                    raw_order_id = res.get("order_id")
+                    response_order_id = str(raw_order_id) if raw_order_id not in (None, "") else None
                     response_error = None if response_accepted else str(res.get("error", "Unknown error"))
                     response_latency_ms = (time.monotonic() - attempt_started) * 1000.0
                     emit_response()

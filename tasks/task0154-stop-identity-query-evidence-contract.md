@@ -45,3 +45,6 @@ separate approval gate after focused and full suites pass.
 - The legacy list-returning method delegates to the structured method and preserves its existing
   empty-list failure behavior for unrelated callers.
 - Twelve focused TASK-0139/0153/0154 tests pass. No runtime was reloaded and no broker was called.
+- The second unit preserves a non-empty placement `order_id` as a string in the causal
+  `STOP_REPLACE_RESPONDED` event and records null when it is absent. It does not yet change matching
+  or state-commit behavior. Twenty-two focused ledger/observer/query tests pass.
