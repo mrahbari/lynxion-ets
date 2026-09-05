@@ -180,3 +180,38 @@ def test_frozen_gate_thresholds_are_exact_and_only_then_eligible():
     gates = evaluate_gates(counts, terminal, chains)
     assert gates["minimum_short_completed"] is False
     assert sum(gates.values()) == len(gates) - 1
+
+
+def test_duplicate_sensitive_unknown_cause_and_lifecycle_regression_are_explicit(tmp_path):
+    _manifest(tmp_path)
+    events = [
+        _base_event("same", "POSITION_OBSERVED", 1),
+        _base_event("same", "POSITION_OBSERVED", 2),
+        _base_event("secret", "POSITION_OBSERVED", 3, api_key="forbidden"),
+        _base_event("unknown", "STOP_REPLACE_RESPONDED", 4,
+                    causal_event_id="missing", accepted=True),
+        _base_event("closed", "EXIT_FILL_OBSERVED", 5, manager_state_after="CLOSURE_OBSERVED",
+                    exit_order_type="STOP_MARKET", fill_price=None, fill_quantity=None),
+        _base_event("reopened", "POSITION_OBSERVED", 6, manager_state_after="OPEN"),
+    ]
+    _write_events(tmp_path, events)
+    report = audit(tmp_path)
+    assert report["verdict"] == "DATA_INVALID"
+    assert report["violations"] == {
+        "duplicate_event_ids": 1,
+        "lifecycle_regressions": 1,
+        "sensitive_field_violations": 1,
+        "unknown_causal_references": 1,
+    }
+
+
+def test_audit_is_read_only_and_deterministic(tmp_path):
+    _manifest(tmp_path)
+    _identity(tmp_path)
+    _event(tmp_path)
+    before = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    first = audit(tmp_path)
+    second = audit(tmp_path)
+    after = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    assert first == second
+    assert before == after

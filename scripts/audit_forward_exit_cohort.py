@@ -19,6 +19,7 @@ from infrastructure.observability.position_identity_snapshot import PositionIden
 
 
 DEFAULT_ROOT = Path("data/observability/forward_exit")
+LIFECYCLE_ORDER = {"OPEN": 0, "CLOSURE_OBSERVED": 1, "TERMINAL_EVIDENCE_COMPLETE": 2}
 
 
 def _utc(value: Any) -> datetime:
@@ -77,11 +78,15 @@ def audit(root: Path | str = DEFAULT_ROOT) -> dict[str, Any]:
         if snapshot_path.exists():
             payload = json.loads(snapshot_path.read_text(encoding="utf-8"))
             identities = list(payload["records"].values())
-    except Exception:
-        violations["snapshot_corrupt"] += 1
+    except Exception as error:
+        if "sensitive" in str(error):
+            violations["sensitive_field_violations"] += 1
+        else:
+            violations["snapshot_corrupt"] += 1
 
     known_ids: set[str] = set()
     previous_time: datetime | None = None
+    lifecycle_by_position: dict[str, int] = {}
     for path in sorted((root / "events").glob("*.jsonl")):
         for line in path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -98,6 +103,14 @@ def audit(root: Path | str = DEFAULT_ROOT) -> dict[str, Any]:
                     violations["pre_boundary_events"] += 1
                 if manifest and event.get("run_id") != manifest.get("run_id"):
                     violations["foreign_run_events"] += 1
+                lifecycle = event.get("manager_state_after")
+                if isinstance(lifecycle, str) and lifecycle in LIFECYCLE_ORDER:
+                    previous_lifecycle = lifecycle_by_position.get(event["position_key"], -1)
+                    if LIFECYCLE_ORDER[lifecycle] < previous_lifecycle:
+                        violations["lifecycle_regressions"] += 1
+                    lifecycle_by_position[event["position_key"]] = max(
+                        previous_lifecycle, LIFECYCLE_ORDER[lifecycle]
+                    )
                 known_ids.add(event["event_id"])
                 previous_time = event_time
                 events.append(event)

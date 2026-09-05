@@ -66,3 +66,6 @@ order placement, or production change.
   as explicit booleans and allows eligibility only when all pass. Seven focused tests pass,
   including exact boundary values. The live verdict remains COLLECTING with only the verified-stop
   chain gate currently true; this is not a policy or profitability verdict.
+- The fifth unit adds explicit duplicate-ID, lifecycle-regression, sensitive-field, and unknown-
+  cause classifications plus a byte-for-byte read-only determinism test. Nine focused tests pass.
+  The live evidence still has zero integrity violations and remains COLLECTING.

@@ -18,6 +18,10 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0152 now proves byte-for-byte read-only determinism and separately reports duplicate IDs,
+  lifecycle regressions, sensitive fields, and unknown causal references. Nine focused tests pass;
+  the live cohort has zero such integrity violations and remains COLLECTING.
+
 - TASK-0152 now evaluates all frozen coverage thresholds explicitly and cannot transition from
   COLLECTING unless every gate passes. Seven focused tests cover exact boundary values. The live
   cohort currently passes only verified-stop-chain commit integrity; it has no completed exits and
