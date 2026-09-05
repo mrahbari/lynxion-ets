@@ -65,3 +65,20 @@ temporal validation, clustered uncertainty, and promotion criteria.
 
 No real/paper order, broker mutation, account change, threshold tuning, historical backfill, or
 profitability claim is permitted.
+
+## Frozen Deployment and Rollback Checklist
+
+1. Identify the single intended VST PID, launch command, commit, and orchestrator read-only; abort
+   if runners are duplicated or identity is ambiguous.
+2. Construct one shared observer bundle before background threads while preserving disabled
+   defaults elsewhere; run focused and full suites.
+3. Record activation UTC and commit before the first event; events at or before it are inadmissible.
+4. Reload only the verified VST runner once without changing secrets, account settings, policy, or
+   symbol admission.
+5. Verify one runner, BingX VST identity, protective-order coverage, writable evidence paths, and
+   forward-only valid records read-only.
+6. On failure, disable injection and restore the prior launch configuration with one reload. Retain
+   but invalidate collected evidence; do not delete or reuse it.
+
+Proposed paths are `data/observability/forward_exit/position_identities.json` and
+`data/observability/forward_exit/events/`. They remain unwritten before approval and activation.

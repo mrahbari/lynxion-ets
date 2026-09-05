@@ -19,6 +19,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0151 now freezes its deployment and rollback checklist: establish exactly one VST runner and
+  orchestrator, test shared wiring, record activation UTC/commit before events, reload that runner
+  once, validate forward-only artifacts and protection read-only, and disable injection with one
+  rollback reload on failure. Proposed production evidence paths remain unwritten pending approval.
+
 - TASK-0151 now freezes the forward data gate before activation: at least 100 post-boundary
   completed VST positions, 30 trailing-eligible closures, eight UTC weeks, five symbols, both sides,
   high identity/terminal completeness, complete stop causal chains, and zero duplicate, lifecycle,
