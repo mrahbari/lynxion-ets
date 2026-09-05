@@ -1,6 +1,6 @@
 # TASK-0152 — Forward Exit Cohort Gate Auditor
 
-**Status:** PRE-REGISTERED — IMPLEMENTATION PENDING
+**Status:** IN PROGRESS — CORE INTEGRITY AUDITOR COMPLETE
 
 ## Objective
 
@@ -45,3 +45,12 @@ cannot produce KEEP, change thresholds, or authorize deployment.
 
 No policy comparison, threshold selection, PnL optimization, historical backfill, runtime reload,
 order placement, or production change.
+
+## Implementation Evidence
+
+- The first unit adds a standalone local auditor and four tests covering a valid partial cohort,
+  strict boundary exclusion, foreign-run exclusion, and corrupt-manifest fail-closed behavior.
+- The live read-only audit found 11 identities and 239 valid post-boundary events with no manifest,
+  snapshot, boundary, run-identity, schema, causal-reference, or sensitive-field violation.
+- The cohort has no completed identities and remains COLLECTING. Full frozen gate computation and
+  chain-completeness tests remain pending.

@@ -18,6 +18,13 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0152's core read-only auditor passes four focused tests and reports 11 identities plus 239
+  valid post-boundary events with no integrity violation; the cohort has no completed identity and
+  remains COLLECTING. Operationally, 25 stop-replace responses were accepted, but only one DOGE
+  mutation became exchange-visible while 24 visibility checks failed (21 ADA, 3 NEAR); three
+  rejected responses explicitly report a stop below current price. This is evidence of unresolved
+  protective-order visibility, not evidence that trailing is reliable.
+
 - TASK-0152 preregisters a deterministic, read-only auditor for every frozen TASK-0151 sample,
   breadth, terminal-completeness, causal-chain, and integrity gate. Its output is limited to
   COLLECTING, DATA_INVALID, or eligibility for a separately preregistered policy comparison; it
