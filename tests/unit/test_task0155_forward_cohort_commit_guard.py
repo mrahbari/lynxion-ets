@@ -1,4 +1,8 @@
 import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
 
 import pytest
 
@@ -51,3 +55,33 @@ def test_empty_new_root_resolves_actual_head_and_new_metadata_without_writing(tm
         "historical_import_allowed": False,
     }
     assert list(tmp_path.iterdir()) == before
+
+
+def test_wrapper_commit_mismatch_exits_before_runtime_entrypoint(tmp_path):
+    project_root = Path(__file__).resolve().parents[2]
+    shutil.copy(project_root / "lynxion", tmp_path / "lynxion")
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    shutil.copy(project_root / "scripts" / "resolve_forward_exit_cohort.py", scripts)
+    sentinel = tmp_path / "runtime_started"
+    (tmp_path / "run_trading_system.py").write_text(
+        f"from pathlib import Path\nPath({str(sentinel)!r}).write_text('started')\n"
+    )
+    cohort = tmp_path / "old-cohort"
+    _manifest(cohort, "old-head")
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    (fake_bin / "pgrep").write_text("#!/bin/sh\nexit 1\n")
+    (fake_bin / "git").write_text("#!/bin/sh\necho new-head\n")
+    for command in fake_bin.iterdir():
+        command.chmod(0o755)
+    env = dict(os.environ)
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["LYNXION_FORWARD_EXIT_ROOT_OVERRIDE"] = str(cohort)
+    result = subprocess.run(
+        ["zsh", "lynxion"], cwd=tmp_path, env=env, text=True,
+        capture_output=True, timeout=10,
+    )
+    assert result.returncode != 0
+    assert "commit differs from HEAD" in result.stderr
+    assert not sentinel.exists()

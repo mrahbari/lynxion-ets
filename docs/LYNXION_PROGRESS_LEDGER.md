@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement TASK-0155's repository-only cohort commit guard before any approved TASK-0154 runtime
-activation; keep TASK-0151 and C-11 collecting without a reload.
+Hold TASK-0154/0155 at the explicit runtime approval gate. If authorized, preserve legacy TASK-0151
+and activate current HEAD only under a new empty forward cohort root with controlled verification.
 
 ## Status
 
@@ -17,6 +17,11 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0155 is COMPLETE at repository level. A wrapper subprocess test proves commit mismatch exits
+  before the runtime entrypoint. Six focused tests and the full 871-test suite pass with one optional
+  import-linter skip. The current runner and legacy cohort remain unchanged; a new-cohort restart is
+  still approval-gated.
 
 - TASK-0155 now has a fail-closed launch resolver: same-commit cohorts continue, while commit
   mismatch, malformed manifest, or non-empty unmanifested roots abort before runtime. Explicit new

@@ -1,6 +1,6 @@
 # TASK-0155 — Forward Cohort Commit Guard
 
-**Status:** IN PROGRESS — FAIL-CLOSED RESOLVER COMPLETE
+**Status:** COMPLETE — REPOSITORY ONLY, DEPLOYMENT PENDING
 
 ## Objective
 
@@ -44,3 +44,8 @@ code under a new cohort remains a separate runtime approval gate.
   otherwise preserves the existing single-runner guard and launch arguments.
 - Five disconnected resolver tests and `zsh -n lynxion` pass. The live runner was not restarted and
   the legacy TASK-0151 cohort was not modified.
+- A wrapper-level subprocess test proves that commit mismatch exits before the runtime entrypoint,
+  even when runner uniqueness succeeds. Six focused tests and the full 871-test suite pass with one
+  optional import-linter skip.
+- Repository hardening is complete. Starting TASK-0154 code requires an operator-approved restart
+  with a new empty cohort root; direct continuation of TASK-0151 at the new HEAD now fails closed.
