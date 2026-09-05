@@ -1,3 +1,37 @@
 #!/usr/bin/env zsh
 # Lynxion Trading System - Fast Production Auto-Detect Runner
-LOG_LEVEL=WARNING python run_trading_system.py --mode production --auto-detect "$@"
+set -euo pipefail
+
+set +e
+pgrep -f "[p]ython .*run_trading_system.py --mode production --auto-detect" >/dev/null
+runner_lookup_status=$?
+set -e
+if [[ ${runner_lookup_status} -eq 0 ]]; then
+  print -u2 "Lynxion auto-detect runner is already active; refusing to start a duplicate."
+  exit 1
+elif [[ ${runner_lookup_status} -ne 1 ]]; then
+  print -u2 "Unable to verify runner uniqueness; refusing to start fail-closed."
+  exit 1
+fi
+
+evidence_root="data/observability/forward_exit"
+activation_manifest="${evidence_root}/activation.json"
+
+if [[ -f "${activation_manifest}" ]]; then
+  cohort_run_id="$(python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["run_id"])' "${activation_manifest}")"
+  cohort_boundary="$(python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["activation_boundary_utc"])' "${activation_manifest}")"
+  cohort_commit="$(python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["commit"])' "${activation_manifest}")"
+else
+  cohort_run_id="task0151-$(date -u +%Y%m%dT%H%M%SZ)"
+  cohort_boundary="$(python -c 'from datetime import datetime,timezone; print(datetime.now(timezone.utc).isoformat())')"
+  cohort_commit="$(git rev-parse HEAD)"
+fi
+
+env \
+  LOG_LEVEL=WARNING \
+  LYNXION_FORWARD_EXIT_OBSERVER_ENABLED=true \
+  LYNXION_FORWARD_EXIT_ROOT="${evidence_root}" \
+  LYNXION_FORWARD_EXIT_RUN_ID="${cohort_run_id}" \
+  LYNXION_FORWARD_EXIT_BOUNDARY_UTC="${cohort_boundary}" \
+  LYNXION_FORWARD_EXIT_COMMIT="${cohort_commit}" \
+  python run_trading_system.py --mode production --auto-detect "$@"
