@@ -55,6 +55,27 @@ def _event(root, *, event_time="2026-09-05T00:02:00+00:00", run_id="run-1"):
     path.write_text(json.dumps(event) + "\n")
 
 
+def _write_events(root, events):
+    path = root / "events" / "2026-09-05.jsonl"
+    path.parent.mkdir(exist_ok=True)
+    path.write_text("".join(json.dumps(event) + "\n" for event in events))
+
+
+def _base_event(event_id, event_type, minute, **extra):
+    event = {
+        "schema_version": 1, "event_id": event_id, "event_type": event_type,
+        "event_time_utc": f"2026-09-05T00:{minute:02d}:00+00:00", "run_id": "run-1",
+        "evaluation_id": "eval-1", "position_key": "BTCUSDT:LONG:100",
+        "symbol": "BTCUSDT", "side": "LONG", "quantity": 1.0, "entry_price": 100.0,
+        "current_price": 101.0, "price_source": "broker", "configured_leverage": None,
+        "requested_leverage": None, "exchange_leverage": 10.0, "roe_pct": 10.0,
+        "peak_price": 101.0, "peak_roe_pct": 10.0, "manager_state_before": None,
+        "manager_state_after": None, "error": None,
+    }
+    event.update(extra)
+    return event
+
+
 def test_valid_partial_cohort_is_collecting(tmp_path):
     _manifest(tmp_path)
     _identity(tmp_path)
@@ -88,3 +109,29 @@ def test_corrupt_manifest_fails_closed(tmp_path):
     report = audit(tmp_path)
     assert report["verdict"] == "DATA_INVALID"
     assert report["violations"]["manifest_invalid"] == 1
+
+
+def test_stop_chain_counts_complete_failed_and_rejected_paths(tmp_path):
+    _manifest(tmp_path)
+    events = [
+        _base_event("r1", "STOP_REPLACE_REQUESTED", 1, requested_stop_price=101.0, attempt=1),
+        _base_event("p1", "STOP_REPLACE_RESPONDED", 2, causal_event_id="r1", accepted=True),
+        _base_event("v1", "STOP_VISIBILITY_VERIFIED", 3, causal_event_id="p1", visible_stop_price=101.0),
+        _base_event("c1", "STATE_COMMITTED", 4, causal_event_id="v1", causal_event_type="STOP_VISIBILITY_VERIFIED"),
+        _base_event("r2", "STOP_REPLACE_REQUESTED", 5, requested_stop_price=102.0, attempt=1),
+        _base_event("p2", "STOP_REPLACE_RESPONDED", 6, causal_event_id="r2", accepted=True),
+        _base_event("v2", "STOP_VISIBILITY_FAILED", 7, causal_event_id="p2", mismatch_reason="not visible"),
+        _base_event("r3", "STOP_REPLACE_REQUESTED", 8, requested_stop_price=103.0, attempt=1),
+        _base_event("p3", "STOP_REPLACE_RESPONDED", 9, causal_event_id="r3", accepted=False),
+    ]
+    _write_events(tmp_path, events)
+    report = audit(tmp_path)
+    assert report["verdict"] == "COLLECTING"
+    assert report["stop_chains"] == {
+        "accepted_responses": 2,
+        "complete": 1,
+        "rejected_responses": 1,
+        "requests": 3,
+        "visibility_failed": 1,
+        "visibility_verified": 1,
+    }

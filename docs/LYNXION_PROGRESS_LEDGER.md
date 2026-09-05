@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0152 now audits stop chains by exact causal references. Five focused tests pass. The latest
+  read-only snapshot has 34 requests: one complete verified/committed chain, 29 visibility
+  failures, three rejected responses, and one accepted response without a visibility result.
+  Integrity violations remain zero; the operational visibility concern remains unresolved.
+
 - TASK-0152's core read-only auditor passes four focused tests and reports 11 identities plus 239
   valid post-boundary events with no integrity violation; the cohort has no completed identity and
   remains COLLECTING. Operationally, 25 stop-replace responses were accepted, but only one DOGE

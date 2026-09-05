@@ -54,3 +54,7 @@ order placement, or production change.
   snapshot, boundary, run-identity, schema, causal-reference, or sensitive-field violation.
 - The cohort has no completed identities and remains COLLECTING. Full frozen gate computation and
   chain-completeness tests remain pending.
+- The second unit causally joins each stop request to its unique response, visibility result, and
+  verified state commit. Five focused tests pass. At the read-only snapshot, 34 requests contain
+  one complete chain, 29 accepted-but-not-visible chains, three rejected responses, and one
+  accepted response without a visibility result; integrity violations remain zero.

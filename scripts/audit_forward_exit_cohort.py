@@ -94,6 +94,44 @@ def audit(root: Path | str = DEFAULT_ROOT) -> dict[str, Any]:
     sides = Counter(item.get("side") for item in completed)
     symbols = Counter(item.get("symbol") for item in completed)
     event_types = Counter(item.get("event_type") for item in events)
+    by_cause: dict[str, list[dict[str, Any]]] = {}
+    for event in events:
+        causal = event.get("causal_event_id")
+        if causal:
+            by_cause.setdefault(causal, []).append(event)
+
+    chain_counts = Counter()
+    requests = [event for event in events if event.get("event_type") == "STOP_REPLACE_REQUESTED"]
+    for request in requests:
+        chain_counts["requests"] += 1
+        responses = [event for event in by_cause.get(request["event_id"], [])
+                     if event.get("event_type") == "STOP_REPLACE_RESPONDED"]
+        if len(responses) != 1:
+            chain_counts["missing_or_ambiguous_response"] += 1
+            continue
+        response = responses[0]
+        if not response.get("accepted"):
+            chain_counts["rejected_responses"] += 1
+            continue
+        chain_counts["accepted_responses"] += 1
+        visibility = [event for event in by_cause.get(response["event_id"], [])
+                      if event.get("event_type") in {
+                          "STOP_VISIBILITY_VERIFIED", "STOP_VISIBILITY_FAILED"
+                      }]
+        if len(visibility) != 1:
+            chain_counts["accepted_missing_or_ambiguous_visibility"] += 1
+            continue
+        if visibility[0]["event_type"] == "STOP_VISIBILITY_FAILED":
+            chain_counts["visibility_failed"] += 1
+            continue
+        chain_counts["visibility_verified"] += 1
+        commits = [event for event in by_cause.get(visibility[0]["event_id"], [])
+                   if event.get("event_type") == "STATE_COMMITTED"]
+        if len(commits) != 1:
+            chain_counts["verified_missing_or_ambiguous_state_commit"] += 1
+            continue
+        chain_counts["complete"] += 1
+
     report = {
         "schema_version": 1,
         "manifest": {
@@ -108,7 +146,9 @@ def audit(root: Path | str = DEFAULT_ROOT) -> dict[str, Any]:
             "event_types": dict(sorted(event_types.items())),
             "completed_by_symbol": dict(sorted(symbols.items())),
             "completed_by_side": dict(sorted(sides.items())),
+            "observer_run_ids": sorted({event.get("run_id") for event in events}),
         },
+        "stop_chains": dict(sorted(chain_counts.items())),
         "violations": dict(sorted(violations.items())),
         "verdict": "DATA_INVALID" if sum(violations.values()) else "COLLECTING",
     }
