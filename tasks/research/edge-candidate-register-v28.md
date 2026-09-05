@@ -70,7 +70,7 @@ prior candidate outcomes.
 - Report alignment, validity, warmup, threshold, signal, path, and overlap census; N, expectancy,
   PF, win rate, drawdown, funding, costs, folds, sides, symbols, years, and concentration.
 - Form four global chronological primary folds and cluster-bootstrap 10,000 samples by UTC entry
-  day with seed 290029.
+  day with seed 290029. Positions crossing a primary fold boundary are excluded.
 - KEEP requires every condition: primary N>=300; expectancy>0; PF>1; clustered 95% lower bound>0;
   >=3/4 positive folds with N>=50; both sides positive with N>=75; >=4/6 symbols positive with
   N>=40; every primary calendar year positive with N>=50; maximum positive-PnL symbol
