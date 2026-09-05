@@ -131,3 +131,54 @@ def test_exact_identity_and_attributes_return_structured_evidence():
     assert evidence["order_id"] == "expected"
     assert evidence["match_mode"] == "EXACT_ORDER_ID"
     assert evidence["query_status"] == "OK"
+
+
+def test_missing_placement_identity_uses_labelled_identity_bearing_fallback():
+    order = {
+        "symbol": "BTC-USDT", "orderId": "returned-id", "type": "STOP_MARKET",
+        "side": "SELL", "positionSide": "LONG", "stopPrice": "101",
+    }
+    evidence = ActivePositionManager._query_pending_stop_visibility(
+        _visibility_broker(order), "BTC-USDT", "SELL", "LONG", 101.0,
+        expected_order_id=None,
+    )
+    assert evidence["verified"] is True
+    assert evidence["order_id"] == "returned-id"
+    assert evidence["match_mode"] == "ATTRIBUTE_FALLBACK"
+
+
+def test_query_failure_is_emitted_without_false_success_or_extra_attempts(monkeypatch):
+    class Broker:
+        def __init__(self):
+            self.place_calls = 0
+            self.query_calls = 0
+
+        def _place_conditional_order(self, **kwargs):
+            self.place_calls += 1
+            return {"success": True, "order_id": f"stop-{self.place_calls}"}
+
+        def get_pending_orders_evidence(self, symbol):
+            self.query_calls += 1
+            return {"status": "API_ERROR", "orders": [], "error": "exchange_code:100001"}
+
+    events = []
+    broker = Broker()
+    manager = ActivePositionManager(exit_observer=events.append, observer_run_id="run-1")
+    monkeypatch.setattr("infrastructure.risk.active_position_manager.time.sleep", lambda _: None)
+    context = {
+        "evaluation_id": "eval-1", "position_key": "BTCUSDT:LONG:100",
+        "symbol": "BTCUSDT", "is_long": True, "quantity": 1.0,
+        "entry_price": 100.0, "current_price": 102.0, "exchange_leverage": 10.0,
+        "roe_pct": 20.0, "peak_price": 102.0, "peak_roe_pct": 20.0,
+        "state_before": {},
+    }
+    assert manager._sync_sl_to_exchange(
+        broker, "BTCUSDT", True, 1.0, 101.0, observation_context=context,
+    ) is False
+    assert broker.place_calls == 3
+    assert broker.query_calls == 9
+    failed = [event for event in events if event["event_type"] == "STOP_VISIBILITY_FAILED"]
+    assert len(failed) == 3
+    assert all(event["query_status"] == "API_ERROR" for event in failed)
+    assert all(event["query_error"] == "exchange_code:100001" for event in failed)
+    assert not any(event["event_type"] == "STATE_COMMITTED" for event in events)

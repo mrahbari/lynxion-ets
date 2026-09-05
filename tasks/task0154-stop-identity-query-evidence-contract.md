@@ -1,6 +1,6 @@
 # TASK-0154 — Stop Identity and Query-Evidence Contract
 
-**Status:** IN PROGRESS — STRUCTURED QUERY EVIDENCE COMPLETE
+**Status:** COMPLETE — REPOSITORY ONLY, RUNTIME INACTIVE
 
 ## Objective
 
@@ -54,3 +54,9 @@ separate approval gate after focused and full suites pass.
   emitted without sensitive text.
 - Twenty-six focused TASK-0137/0139/0153/0154 tests pass. Existing retry and poll counts remain
   unchanged; repository changes are not active in the running process.
+- Final failure injection confirms labelled fallback, non-sensitive query failure events, unchanged
+  three-placement/nine-query exhaustion, zero false state commits, and exact-identity success.
+  Thirty-two focused tests pass. The full repository suite passes 865 tests with one optional
+  import-linter skip.
+- TASK-0154 is complete at repository level. The runner remains on the earlier activation commit;
+  loading this correction requires a separate runtime approval and controlled reload/verification.

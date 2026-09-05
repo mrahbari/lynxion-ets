@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement TASK-0154's repository-only stop identity/query-evidence contract with disconnected
-failure injection while TASK-0151 and C-11 continue prospective collection.
+Hold TASK-0154 at its explicit runtime approval gate while TASK-0151 and C-11 continue prospective
+collection; do not reload or activate the repository correction without operator authorization.
 
 ## Status
 
@@ -17,6 +17,11 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0154 is COMPLETE at repository level and runtime-inactive. Exact-ID and fallback visibility,
+  structured query failures, unchanged exhaustion counts, and zero false commits have failure-
+  injection coverage. Thirty-two focused tests and the full 865-test suite pass with one optional
+  import-linter skip. A controlled runner reload is a separate approval gate.
 
 - TASK-0154 now performs exact placement-order-ID visibility when identity is available, rejects
   every mismatched frozen attribute, requires exchange identity for labelled fallback matching,

@@ -214,6 +214,7 @@ def test_active_position_manager_confirms_pending_stop_before_reporting_success(
 
         def _place_conditional_order(self, **kwargs):
             self.pending = [{
+                "orderId": "replacement-stop",
                 "type": kwargs["order_type"],
                 "side": kwargs["side"],
                 "positionSide": kwargs["position_side"],
