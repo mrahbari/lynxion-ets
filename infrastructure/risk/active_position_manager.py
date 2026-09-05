@@ -883,10 +883,11 @@ class ActivePositionManager:
                     response_latency_ms = (time.monotonic() - attempt_started) * 1000.0
                     emit_response()
                     if res.get("success"):
-                        visibility_evidence = self._verify_pending_stop(
-                            target_broker, formatted_symbol, close_side, pos_side, new_sl_price
+                        visibility_evidence = self._query_pending_stop_visibility(
+                            target_broker, formatted_symbol, close_side, pos_side, new_sl_price,
+                            expected_order_id=response_order_id,
                         )
-                        placed = visibility_evidence is not None
+                        placed = visibility_evidence["verified"]
                         if observation_fields is not None and response_event is not None:
                             visibility_type = (
                                 "STOP_VISIBILITY_VERIFIED" if placed else "STOP_VISIBILITY_FAILED"
@@ -896,7 +897,12 @@ class ActivePositionManager:
                                 state_after=dict(self._positions_state.get(symbol, {})),
                                 event_suffix=event_suffix,
                                 **observation_fields,
-                            ) | {"causal_event_id": response_event["event_id"]}
+                            ) | {
+                                "causal_event_id": response_event["event_id"],
+                                "query_status": visibility_evidence["query_status"],
+                                "query_error": visibility_evidence["query_error"],
+                                "match_mode": visibility_evidence["match_mode"],
+                            }
                             if placed:
                                 visibility_event |= {
                                     "event_time_utc": visibility_evidence["observed_at_utc"],
@@ -905,7 +911,7 @@ class ActivePositionManager:
                                 }
                                 observation_context["verified_visibility_event_id"] = visibility_event["event_id"]
                             else:
-                                visibility_event["mismatch_reason"] = "requested stop not visible after existing verification polls"
+                                visibility_event["mismatch_reason"] = visibility_evidence["mismatch_reason"]
                             self._emit_exit_observation(visibility_event)
                         if placed:
                             logger.warning(f"✅ Confirmed Broker Stop Loss on exchange for {symbol}: ${new_sl_price:.4f} (Attempt {attempt})")
@@ -933,14 +939,48 @@ class ActivePositionManager:
 
     @staticmethod
     def _verify_pending_stop(target_broker: Any, formatted_symbol: str, close_side: str,
-                             position_side: str, expected_stop_price: float) -> Optional[Dict[str, Any]]:
+                             position_side: str, expected_stop_price: float,
+                             expected_order_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Return genuine evidence only when the requested position-closing stop is visible."""
-        if not hasattr(target_broker, "get_pending_orders"):
-            return None
+        evidence = ActivePositionManager._query_pending_stop_visibility(
+            target_broker, formatted_symbol, close_side, position_side, expected_stop_price,
+            expected_order_id=expected_order_id,
+        )
+        return evidence if evidence["verified"] else None
+
+    @staticmethod
+    def _query_pending_stop_visibility(
+        target_broker: Any, formatted_symbol: str, close_side: str, position_side: str,
+        expected_stop_price: float, expected_order_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Return identity-aware visibility and non-sensitive query evidence."""
+        has_structured_query = hasattr(target_broker, "get_pending_orders_evidence")
+        if not has_structured_query and not hasattr(target_broker, "get_pending_orders"):
+            return {
+                "verified": False, "query_status": "UNAVAILABLE", "query_error": None,
+                "match_mode": None, "mismatch_reason": "pending order query unavailable",
+            }
+        latest_status = "LEGACY_OK"
+        latest_error = None
         for _ in range(3):
             try:
-                pending = target_broker.get_pending_orders(formatted_symbol) or []
+                if has_structured_query:
+                    query = target_broker.get_pending_orders_evidence(formatted_symbol)
+                    latest_status = str(query.get("status", "MALFORMED"))
+                    latest_error = query.get("error")
+                    if latest_status != "OK":
+                        time.sleep(0.2)
+                        continue
+                    pending = query.get("orders", [])
+                else:
+                    pending = target_broker.get_pending_orders(formatted_symbol) or []
                 for order in pending:
+                    raw_symbol = order.get("symbol")
+                    if raw_symbol is not None:
+                        normalized_actual = str(raw_symbol).upper().replace("-", "").replace("/", "").replace("_", "")
+                        normalized_expected = str(formatted_symbol).upper().replace("-", "").replace("/", "").replace("_", "")
+                        if normalized_actual != normalized_expected:
+                            continue
                     if "STOP" not in str(order.get("type", "")).upper():
                         continue
                     if str(order.get("side", "")).upper() != close_side:
@@ -950,18 +990,36 @@ class ActivePositionManager:
                     actual = ActivePositionManager._extract_float(
                         order.get("stopPrice", order.get("stop_price", order.get("triggerPrice")))
                     )
+                    order_id = order.get("orderId", order.get("order_id"))
+                    if order_id in (None, ""):
+                        continue
+                    actual_order_id = str(order_id)
+                    if expected_order_id is not None and actual_order_id != str(expected_order_id):
+                        continue
                     tolerance = max(abs(expected_stop_price) * 0.0001, 1e-8)
                     if abs(actual - expected_stop_price) <= tolerance:
-                        order_id = order.get("orderId", order.get("order_id"))
                         return {
-                            "order_id": str(order_id) if order_id is not None else None,
+                            "verified": True,
+                            "order_id": actual_order_id,
                             "visible_stop_price": actual,
                             "observed_at_utc": datetime.now(timezone.utc).isoformat(),
+                            "query_status": latest_status,
+                            "query_error": latest_error,
+                            "match_mode": "EXACT_ORDER_ID" if expected_order_id is not None else "ATTRIBUTE_FALLBACK",
+                            "mismatch_reason": None,
                         }
             except Exception as verify_err:
                 logger.warning(f"Could not verify pending stop for {formatted_symbol}: {verify_err}")
+                latest_status = "EXCEPTION"
+                latest_error = type(verify_err).__name__
             time.sleep(0.2)
-        return None
+        return {
+            "verified": False,
+            "query_status": latest_status,
+            "query_error": latest_error,
+            "match_mode": "EXACT_ORDER_ID" if expected_order_id is not None else "ATTRIBUTE_FALLBACK",
+            "mismatch_reason": "requested stop identity and attributes not visible after existing verification polls",
+        }
 
     def _execute_market_close(self, broker: Any, symbol: str, is_long: bool, quantity: float) -> None:
         """Execute a market close order for the position."""

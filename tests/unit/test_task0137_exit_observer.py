@@ -139,7 +139,7 @@ def test_each_existing_stop_attempt_emits_one_request_and_response(monkeypatch):
             self.place_calls += 1
             if self.place_calls < 3:
                 return {"success": False, "error": "rejected"}
-            return {"success": True}
+            return {"success": True, "order_id": "stop-3"}
 
         def get_pending_orders(self, symbol):
             self.pending_calls += 1
@@ -148,6 +148,7 @@ def test_each_existing_stop_attempt_emits_one_request_and_response(monkeypatch):
                 "side": "SELL",
                 "positionSide": "LONG",
                 "stopPrice": "101.0",
+                "orderId": "stop-3",
             }]
 
     events = []
@@ -182,7 +183,7 @@ def test_stop_observer_failure_does_not_generate_broker_retry():
 
         def _place_conditional_order(self, **kwargs):
             self.place_calls += 1
-            return {"success": True}
+            return {"success": True, "order_id": "stop-1"}
 
         def get_pending_orders(self, symbol):
             return [{
@@ -190,6 +191,7 @@ def test_stop_observer_failure_does_not_generate_broker_retry():
                 "side": "SELL",
                 "positionSide": "LONG",
                 "stopPrice": "101.0",
+                "orderId": "stop-1",
             }]
 
     def broken_observer(event):

@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0154 now performs exact placement-order-ID visibility when identity is available, rejects
+  every mismatched frozen attribute, requires exchange identity for labelled fallback matching,
+  and emits structured non-sensitive query/match evidence. Twenty-six focused tests pass. Poll and
+  retry counts are unchanged and the running process has not loaded these repository changes.
+
 - TASK-0154 now preserves the placement exchange order ID in each causal response event, including
   explicit null when absent, without changing visibility matching or state behavior. Twenty-two
   focused regressions pass; runtime remains on the prior commit and was not reloaded.

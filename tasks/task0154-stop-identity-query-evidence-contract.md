@@ -48,3 +48,9 @@ separate approval gate after focused and full suites pass.
 - The second unit preserves a non-empty placement `order_id` as a string in the causal
   `STOP_REPLACE_RESPONDED` event and records null when it is absent. It does not yet change matching
   or state-commit behavior. Twenty-two focused ledger/observer/query tests pass.
+- The third unit adds structured, identity-aware visibility matching. Exact-ID mode rejects wrong
+  identity or wrong symbol, type, side, position side, and price. Attribute fallback requires a
+  returned exchange order ID and is explicitly labelled. Query status/error and match mode are
+  emitted without sensitive text.
+- Twenty-six focused TASK-0137/0139/0153/0154 tests pass. Existing retry and poll counts remain
+  unchanged; repository changes are not active in the running process.

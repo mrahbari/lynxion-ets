@@ -36,7 +36,7 @@ def test_pending_query_conflates_exchange_error_exception_and_empty_book():
     assert api_error == transport_error == genuinely_empty == []
 
 
-def test_visibility_match_does_not_require_placement_order_id(monkeypatch):
+def test_visibility_match_now_requires_returned_order_identity(monkeypatch):
     class Broker:
         def get_pending_orders(self, symbol):
             return [{
@@ -48,8 +48,4 @@ def test_visibility_match_does_not_require_placement_order_id(monkeypatch):
     evidence = ActivePositionManager._verify_pending_stop(
         Broker(), "BTC-USDT", "SELL", "LONG", 99.0
     )
-    assert evidence == {
-        "order_id": None,
-        "visible_stop_price": 99.0,
-        "observed_at_utc": evidence["observed_at_utc"],
-    }
+    assert evidence is None

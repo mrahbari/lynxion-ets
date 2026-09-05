@@ -1,3 +1,5 @@
+import pytest
+
 from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
 from infrastructure.risk.active_position_manager import ActivePositionManager
 
@@ -72,3 +74,60 @@ def test_stop_response_preserves_exchange_order_identity(monkeypatch):
     ) is True
     response = next(event for event in events if event["event_type"] == "STOP_REPLACE_RESPONDED")
     assert response["exchange_order_id"] == "12345"
+
+
+def _visibility_broker(order):
+    class Broker:
+        def get_pending_orders_evidence(self, symbol):
+            return {"status": "OK", "orders": [order], "error": None}
+    return Broker()
+
+
+def test_wrong_order_id_is_not_exact_visibility(monkeypatch):
+    monkeypatch.setattr("infrastructure.risk.active_position_manager.time.sleep", lambda _: None)
+    order = {
+        "symbol": "BTC-USDT", "orderId": "other", "type": "STOP_MARKET",
+        "side": "SELL", "positionSide": "LONG", "stopPrice": "101",
+    }
+    evidence = ActivePositionManager._query_pending_stop_visibility(
+        _visibility_broker(order), "BTC-USDT", "SELL", "LONG", 101.0,
+        expected_order_id="expected",
+    )
+    assert evidence["verified"] is False
+    assert evidence["match_mode"] == "EXACT_ORDER_ID"
+
+
+@pytest.mark.parametrize("field,value", [
+    ("symbol", "ETH-USDT"),
+    ("type", "TAKE_PROFIT_MARKET"),
+    ("side", "BUY"),
+    ("positionSide", "SHORT"),
+    ("stopPrice", "103"),
+])
+def test_exact_id_with_wrong_frozen_attribute_is_rejected(monkeypatch, field, value):
+    monkeypatch.setattr("infrastructure.risk.active_position_manager.time.sleep", lambda _: None)
+    order = {
+        "symbol": "BTC-USDT", "orderId": "expected", "type": "STOP_MARKET",
+        "side": "SELL", "positionSide": "LONG", "stopPrice": "101",
+    }
+    order[field] = value
+    evidence = ActivePositionManager._query_pending_stop_visibility(
+        _visibility_broker(order), "BTC-USDT", "SELL", "LONG", 101.0,
+        expected_order_id="expected",
+    )
+    assert evidence["verified"] is False
+
+
+def test_exact_identity_and_attributes_return_structured_evidence():
+    order = {
+        "symbol": "BTC-USDT", "orderId": "expected", "type": "STOP_MARKET",
+        "side": "SELL", "positionSide": "LONG", "stopPrice": "101",
+    }
+    evidence = ActivePositionManager._query_pending_stop_visibility(
+        _visibility_broker(order), "BTC-USDT", "SELL", "LONG", 101.0,
+        expected_order_id="expected",
+    )
+    assert evidence["verified"] is True
+    assert evidence["order_id"] == "expected"
+    assert evidence["match_mode"] == "EXACT_ORDER_ID"
+    assert evidence["query_status"] == "OK"
