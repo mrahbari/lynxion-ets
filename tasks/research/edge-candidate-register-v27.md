@@ -1,6 +1,6 @@
 # Edge Candidate Register v27 — C-28 Volatility-Sweep Rejection
 
-**Status:** PREREGISTERED — OUTCOMES UNOPENED
+**Status:** OPENED — C-28 REJECTED
 
 C-28 tests a distinct market-structure mechanism: an unusually large completed 15-minute candle
 that trades beyond a causal multi-day extreme but closes back inside that extreme may represent a
@@ -67,3 +67,13 @@ retune of a rejected momentum, funding, basis, OI, depth, or taker-flow candidat
 No lookback, percentile, wick share, direction, holding period, cost, funding rule, overlap rule,
 period, symbol, fold, cluster, or gate may change after outcomes are opened. Diagnostics cannot
 alter the verdict. No order or production strategy/risk/trailing/symbol/leverage change is allowed.
+
+## Frozen Result
+
+C-28 produced 986 primary trades with -0.2581% net expectancy, PF 0.6782, and a daily-clustered
+95% interval of [-0.4258%, -0.0866%]. Every fold, side, symbol, and primary calendar year was
+negative; expectancy was also negative at 0.20% and 0.50% costs. The 2023 temporal reverse was
+negative (-0.3081%, PF 0.5804, N=518). Only the concentration gate passed. Verdict **REJECT**.
+Machine report: `docs/reports/edge_candidate_c28.json`.
+The report reproduced byte-for-byte on a second run; five focused tests and the full suite pass
+with 876 passed and one optional import-linter skip.

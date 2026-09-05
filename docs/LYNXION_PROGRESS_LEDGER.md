@@ -7,24 +7,31 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement and independently review C-28 only against its frozen volatility-sweep rejection
-preregistration, then open outcomes once. Keep TASK-0156's post-fix cohort collecting separately;
-do not mix cohorts or tune exit thresholds from opened evidence.
+Keep TASK-0156's post-fix cohort collecting separately and admit the next edge candidate only if it
+passes the sequential-policy mechanism and independent-boundary gate. Do not reslice or retune the
+rejected C-28 result.
 
 ## Status
 
 TASK 000 operational closure and TASK 001/002 attribution are complete. Controlled edge
-research remains in progress; C-01 through C-27 historical candidates have not cleared their
+research remains in progress; C-01 through C-28 historical candidates have not cleared their
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
-- C-28's evaluator is implemented while outcomes remain unopened. Independent review added exact
+- C-28 volatility-sweep rejection is REJECTED. Its 986 primary trades lost 0.2581% per trade after
+  frozen cost/funding, PF was 0.6782, and the daily-clustered 95% interval was fully negative.
+  Every fold, side, symbol, and year was negative; 2023 temporal reverse was also negative at
+  -0.3081% with PF 0.5804 over 518 trades. Only concentration passed, so no diagnostic reslicing or
+  production change is allowed. The report reproduced byte-for-byte; five focused tests and the
+  full suite pass with 876 passed and one optional import-linter skip.
+
+- Before C-28 outcomes were opened, independent evaluator review added exact
   SHA-256 enforcement for every frozen price and funding input so changed sources fail before any
   outcome is calculated. Five disconnected tests verify this guard alongside
   causal exclusion of the current candle, frozen LONG/SHORT rejection direction, strict funding
-  settlement boundaries, and fail-closed empty metrics. The next unit is the one authorized report
-  generation; no parameter may change first.
+  settlement boundaries, and fail-closed empty metrics. The report was then generated once without
+  changing any frozen parameter.
 
 - C-28 is preregistered with outcomes unopened. It tests a distinct failed-extreme volatility-sweep
   rejection mechanism across six native futures symbols, with causal range/extreme lookbacks,

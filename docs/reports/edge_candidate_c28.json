@@ -1,0 +1,431 @@
+{
+  "candidate": "C-28",
+  "gate": {
+    "checks": {
+      "bootstrap": false,
+      "concentration": true,
+      "cost_005": false,
+      "folds": false,
+      "primary_n": true,
+      "primary_pf": false,
+      "primary_positive": false,
+      "reverse": false,
+      "sides": false,
+      "symbols": false,
+      "years": false
+    },
+    "verdict": "REJECT"
+  },
+  "max_positive_pnl_symbol_concentration": 0.21486956764920165,
+  "primary": {
+    "by_fold": {
+      "F1": {
+        "expectancy": -0.002918619282330605,
+        "max_drawdown": 0.997514955130768,
+        "n": 246,
+        "profit_factor": 0.6329763279894217,
+        "win_rate": 0.4105691056910569
+      },
+      "F2": {
+        "expectancy": -0.002760819594975895,
+        "max_drawdown": 0.8020333862706777,
+        "n": 247,
+        "profit_factor": 0.7205161122590416,
+        "win_rate": 0.4331983805668016
+      },
+      "F3": {
+        "expectancy": -0.0014531262187125627,
+        "max_drawdown": 0.45786958679197926,
+        "n": 244,
+        "profit_factor": 0.7775852874171933,
+        "win_rate": 0.47540983606557374
+      },
+      "F4": {
+        "expectancy": -0.0031735360110913273,
+        "max_drawdown": 0.8254681212377437,
+        "n": 249,
+        "profit_factor": 0.5878197575881159,
+        "win_rate": 0.43373493975903615
+      }
+    },
+    "by_side": {
+      "LONG": {
+        "expectancy": -0.0002275080175487956,
+        "max_drawdown": 0.6554560206729573,
+        "n": 605,
+        "profit_factor": 0.9658363048409779,
+        "win_rate": 0.4859504132231405
+      },
+      "SHORT": {
+        "expectancy": -0.006317673745204617,
+        "max_drawdown": 2.423251114679767,
+        "n": 381,
+        "profit_factor": 0.3793986959676189,
+        "win_rate": 0.36220472440944884
+      }
+    },
+    "by_symbol": {
+      "ADAUSDT": {
+        "expectancy": -0.0015370633034352764,
+        "max_drawdown": 0.36441806008689903,
+        "n": 156,
+        "profit_factor": 0.8277528638800252,
+        "win_rate": 0.47435897435897434
+      },
+      "BNBUSDT": {
+        "expectancy": -0.0025907121451218718,
+        "max_drawdown": 0.4101815791664356,
+        "n": 156,
+        "profit_factor": 0.6263350829873056,
+        "win_rate": 0.40384615384615385
+      },
+      "BTCUSDT": {
+        "expectancy": -0.003545973154583704,
+        "max_drawdown": 0.6287367147955325,
+        "n": 176,
+        "profit_factor": 0.46733091715673547,
+        "win_rate": 0.3977272727272727
+      },
+      "ETHUSDT": {
+        "expectancy": -0.004727808296147089,
+        "max_drawdown": 0.9733947024717162,
+        "n": 198,
+        "profit_factor": 0.4536287787786496,
+        "win_rate": 0.42424242424242425
+      },
+      "SOLUSDT": {
+        "expectancy": -0.0007170654230453658,
+        "max_drawdown": 0.4443953502895538,
+        "n": 150,
+        "profit_factor": 0.9141365597356033,
+        "win_rate": 0.4866666666666667
+      },
+      "XRPUSDT": {
+        "expectancy": -0.0015532396417627023,
+        "max_drawdown": 0.4225384474258976,
+        "n": 150,
+        "profit_factor": 0.8202491295701927,
+        "win_rate": 0.4533333333333333
+      }
+    },
+    "by_year": {
+      "2024": {
+        "expectancy": -0.0025068970016590797,
+        "max_drawdown": 1.3540404117139238,
+        "n": 401,
+        "profit_factor": 0.6756176608853,
+        "win_rate": 0.4164588528678304
+      },
+      "2025": {
+        "expectancy": -0.002325693200010246,
+        "max_drawdown": 0.8836981756807684,
+        "n": 357,
+        "profit_factor": 0.7351293320975751,
+        "win_rate": 0.47619047619047616
+      },
+      "2026": {
+        "expectancy": -0.003110253848557159,
+        "max_drawdown": 0.721544832598308,
+        "n": 228,
+        "profit_factor": 0.5763329635277626,
+        "win_rate": 0.4166666666666667
+      }
+    },
+    "clustered_bootstrap_95_ci": [
+      -0.004258441273247119,
+      -0.000865756996390675
+    ],
+    "cost_sensitivity": {
+      "0.002": {
+        "expectancy": -0.0015808073504462283,
+        "max_drawdown": 1.8233876507332711,
+        "n": 986,
+        "profit_factor": 0.7885650747797741,
+        "win_rate": 0.4726166328600406
+      },
+      "0.003": {
+        "expectancy": -0.002580807350446228,
+        "max_drawdown": 2.563387650733257,
+        "n": 986,
+        "profit_factor": 0.6781929028394461,
+        "win_rate": 0.4381338742393509
+      },
+      "0.005": {
+        "expectancy": -0.004580807350446229,
+        "max_drawdown": 4.521887747260942,
+        "n": 986,
+        "profit_factor": 0.5024538420671949,
+        "win_rate": 0.3762677484787018
+      }
+    },
+    "mean_funding_return": 3.43526369168357e-06,
+    "overall": {
+      "expectancy": -0.002580807350446228,
+      "max_drawdown": 2.563387650733257,
+      "n": 986,
+      "profit_factor": 0.6781929028394461,
+      "win_rate": 0.4381338742393509
+    }
+  },
+  "primary_census": {
+    "ADAUSDT": {
+      "ambiguous_rejected": 0,
+      "missing_path": 0,
+      "overlap_rejected": 5,
+      "period_rows": 93313,
+      "range_rejected": 88349,
+      "signals": 161,
+      "sweep_rejected": 4803,
+      "warmup_rejected": 0
+    },
+    "BNBUSDT": {
+      "ambiguous_rejected": 0,
+      "missing_path": 0,
+      "overlap_rejected": 18,
+      "period_rows": 93313,
+      "range_rejected": 87818,
+      "signals": 174,
+      "sweep_rejected": 5321,
+      "warmup_rejected": 0
+    },
+    "BTCUSDT": {
+      "ambiguous_rejected": 0,
+      "missing_path": 0,
+      "overlap_rejected": 23,
+      "period_rows": 93313,
+      "range_rejected": 88118,
+      "signals": 199,
+      "sweep_rejected": 4996,
+      "warmup_rejected": 0
+    },
+    "ETHUSDT": {
+      "ambiguous_rejected": 0,
+      "missing_path": 0,
+      "overlap_rejected": 11,
+      "period_rows": 93313,
+      "range_rejected": 88150,
+      "signals": 209,
+      "sweep_rejected": 4954,
+      "warmup_rejected": 0
+    },
+    "SOLUSDT": {
+      "ambiguous_rejected": 0,
+      "missing_path": 0,
+      "overlap_rejected": 7,
+      "period_rows": 93313,
+      "range_rejected": 88200,
+      "signals": 157,
+      "sweep_rejected": 4956,
+      "warmup_rejected": 0
+    },
+    "XRPUSDT": {
+      "ambiguous_rejected": 0,
+      "missing_path": 0,
+      "overlap_rejected": 14,
+      "period_rows": 93313,
+      "range_rejected": 87672,
+      "signals": 164,
+      "sweep_rejected": 5477,
+      "warmup_rejected": 0
+    }
+  },
+  "protocol": "edge-candidate-register-v27",
+  "reverse": {
+    "by_fold": {
+      "F1": {
+        "expectancy": -0.005154728778186051,
+        "max_drawdown": 0.7027250396681622,
+        "n": 129,
+        "profit_factor": 0.46046035504804667,
+        "win_rate": 0.49612403100775193
+      },
+      "F2": {
+        "expectancy": -0.00307023164207313,
+        "max_drawdown": 0.49353199520408253,
+        "n": 130,
+        "profit_factor": 0.6259474281952925,
+        "win_rate": 0.4
+      },
+      "F3": {
+        "expectancy": -0.0007351275399291485,
+        "max_drawdown": 0.12462945033369101,
+        "n": 129,
+        "profit_factor": 0.7526539483301187,
+        "win_rate": 0.4573643410852713
+      },
+      "F4": {
+        "expectancy": -0.003363475552529248,
+        "max_drawdown": 0.47318024376266593,
+        "n": 130,
+        "profit_factor": 0.6099778277804725,
+        "win_rate": 0.4230769230769231
+      }
+    },
+    "by_side": {
+      "LONG": {
+        "expectancy": -0.00114912467024569,
+        "max_drawdown": 0.523020452968893,
+        "n": 288,
+        "profit_factor": 0.8003158086437114,
+        "win_rate": 0.4826388888888889
+      },
+      "SHORT": {
+        "expectancy": -0.005500980414367006,
+        "max_drawdown": 1.324794470905827,
+        "n": 230,
+        "profit_factor": 0.41060055201160733,
+        "win_rate": 0.39565217391304347
+      }
+    },
+    "by_symbol": {
+      "ADAUSDT": {
+        "expectancy": -0.0022495125274501282,
+        "max_drawdown": 0.16277504518097294,
+        "n": 64,
+        "profit_factor": 0.7282942085418743,
+        "win_rate": 0.484375
+      },
+      "BNBUSDT": {
+        "expectancy": -0.0014138512248426036,
+        "max_drawdown": 0.16595747966550062,
+        "n": 76,
+        "profit_factor": 0.7366235099126285,
+        "win_rate": 0.39473684210526316
+      },
+      "BTCUSDT": {
+        "expectancy": -0.003286940165251223,
+        "max_drawdown": 0.44124371916110855,
+        "n": 119,
+        "profit_factor": 0.40191646387357244,
+        "win_rate": 0.40336134453781514
+      },
+      "ETHUSDT": {
+        "expectancy": 8.480256384354819e-05,
+        "max_drawdown": 0.10546903298905913,
+        "n": 102,
+        "profit_factor": 1.0200500670748365,
+        "win_rate": 0.49019607843137253
+      },
+      "SOLUSDT": {
+        "expectancy": -0.007039394606854835,
+        "max_drawdown": 0.5427648336274117,
+        "n": 72,
+        "profit_factor": 0.4775560620256464,
+        "win_rate": 0.4444444444444444
+      },
+      "XRPUSDT": {
+        "expectancy": -0.005357876184046144,
+        "max_drawdown": 0.5387973040353414,
+        "n": 85,
+        "profit_factor": 0.43817148173839776,
+        "win_rate": 0.4588235294117647
+      }
+    },
+    "by_year": {
+      "2023": {
+        "expectancy": -0.003081415830762876,
+        "max_drawdown": 1.6594392506738258,
+        "n": 518,
+        "profit_factor": 0.5803951281275384,
+        "win_rate": 0.444015444015444
+      }
+    },
+    "clustered_bootstrap_95_ci": [
+      -0.005254116889365842,
+      -0.000983279308010256
+    ],
+    "cost_sensitivity": {
+      "0.002": {
+        "expectancy": -0.002081415830762877,
+        "max_drawdown": 1.1514392506738302,
+        "n": 518,
+        "profit_factor": 0.6950807147466211,
+        "win_rate": 0.5077220077220077
+      },
+      "0.003": {
+        "expectancy": -0.003081415830762876,
+        "max_drawdown": 1.6594392506738258,
+        "n": 518,
+        "profit_factor": 0.5803951281275384,
+        "win_rate": 0.444015444015444
+      },
+      "0.005": {
+        "expectancy": -0.005081415830762877,
+        "max_drawdown": 2.6754392506738234,
+        "n": 518,
+        "profit_factor": 0.4046576842243615,
+        "win_rate": 0.3667953667953668
+      }
+    },
+    "mean_funding_return": 1.4000250965250966e-05,
+    "overall": {
+      "expectancy": -0.003081415830762876,
+      "max_drawdown": 1.6594392506738258,
+      "n": 518,
+      "profit_factor": 0.5803951281275384,
+      "win_rate": 0.444015444015444
+    }
+  },
+  "reverse_census": {
+    "ADAUSDT": {
+      "ambiguous_rejected": 0,
+      "missing_path": 0,
+      "overlap_rejected": 5,
+      "period_rows": 35039,
+      "range_rejected": 30206,
+      "signals": 69,
+      "sweep_rejected": 1883,
+      "warmup_rejected": 2881
+    },
+    "BNBUSDT": {
+      "ambiguous_rejected": 0,
+      "missing_path": 0,
+      "overlap_rejected": 10,
+      "period_rows": 35039,
+      "range_rejected": 30304,
+      "signals": 86,
+      "sweep_rejected": 1768,
+      "warmup_rejected": 2881
+    },
+    "BTCUSDT": {
+      "ambiguous_rejected": 0,
+      "missing_path": 0,
+      "overlap_rejected": 11,
+      "period_rows": 35039,
+      "range_rejected": 30412,
+      "signals": 130,
+      "sweep_rejected": 1616,
+      "warmup_rejected": 2881
+    },
+    "ETHUSDT": {
+      "ambiguous_rejected": 0,
+      "missing_path": 0,
+      "overlap_rejected": 14,
+      "period_rows": 35039,
+      "range_rejected": 30437,
+      "signals": 116,
+      "sweep_rejected": 1605,
+      "warmup_rejected": 2881
+    },
+    "SOLUSDT": {
+      "ambiguous_rejected": 0,
+      "missing_path": 0,
+      "overlap_rejected": 14,
+      "period_rows": 35039,
+      "range_rejected": 29902,
+      "signals": 86,
+      "sweep_rejected": 2170,
+      "warmup_rejected": 2881
+    },
+    "XRPUSDT": {
+      "ambiguous_rejected": 0,
+      "missing_path": 0,
+      "overlap_rejected": 9,
+      "period_rows": 35039,
+      "range_rejected": 30328,
+      "signals": 94,
+      "sweep_rejected": 1736,
+      "warmup_rejected": 2881
+    }
+  }
+}
