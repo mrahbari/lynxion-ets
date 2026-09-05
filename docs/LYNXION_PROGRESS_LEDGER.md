@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0151 is at an explicit runtime approval gate. Continue C-11 collection, but do not wire or
-reload the VST runner, create production evidence files, tune thresholds, or open outcomes without
-operator approval for the frozen forward-only deployment boundary.
+Complete the approved TASK-0151 activation: commit tested opt-in wiring, freeze UTC/commit metadata,
+reload exactly one verified auto-detection VST runner, and validate forward-only evidence and
+protective coverage without changing policy or placing orders.
 
 ## Status
 
@@ -18,6 +18,12 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0151 received explicit operator approval. Opt-in auto-detection wiring now shares one run ID,
+  identity snapshot, boundary-enforcing event observer, and activation manifest across position
+  management and reconciliation. Conflicting cohorts and pre-boundary events fail closed. Twenty-
+  eight focused tests and the full 836-test suite pass with one optional import-linter skip; runtime
+  activation remains pending the wiring commit and frozen launch metadata.
 
 - TASK-0151 now freezes its deployment and rollback checklist: establish exactly one VST runner and
   orchestrator, test shared wiring, record activation UTC/commit before events, reload that runner

@@ -119,6 +119,22 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
         from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
         self._pending_orders_tracker = PendingOrdersTracker
 
+        # TASK-0151: explicitly opt-in, forward-only evidence wiring. Disabled
+        # by default for every existing constructor and non-approved runtime.
+        from infrastructure.observability.forward_exit_runtime import build_forward_exit_runtime_bundle
+        self._forward_exit_bundle = build_forward_exit_runtime_bundle()
+        if self._forward_exit_bundle is not None:
+            from infrastructure.risk.active_position_manager import active_position_manager
+            active_position_manager.configure_forward_observation(
+                exit_observer=self._forward_exit_bundle.observer,
+                observer_run_id=self._forward_exit_bundle.run_id,
+                position_identity_store=self._forward_exit_bundle.identity_store,
+            )
+            self.logger.info(
+                f"Forward exit evidence enabled: run_id={self._forward_exit_bundle.run_id} "
+                f"boundary={self._forward_exit_bundle.boundary_utc}"
+            )
+
     def initialize_system(self):
         """Initialize the auto-detection system."""
         self.logger.info("🚀 Initializing Auto-Detection Orchestrator with correct architecture...")
@@ -606,7 +622,11 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
         self.logger.info("Broker reconciliation monitoring started")
         from infrastructure.execution.broker_reconciliation import BrokerReconciliationService
         from infrastructure.execution.live_order_journal import live_order_journal
-        svc = BrokerReconciliationService()
+        bundle = getattr(self, "_forward_exit_bundle", None)
+        svc = BrokerReconciliationService(
+            position_identity_store=bundle.identity_store if bundle is not None else None,
+            terminal_observer=bundle.observer if bundle is not None else None,
+        )
         while self.is_running:
             try:
                 broker = self._get_reconcile_broker()

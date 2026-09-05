@@ -1,6 +1,6 @@
 # TASK-0151 — Forward Exit-Evidence Runtime Gate
 
-**Status:** BLOCKED — OPERATOR RUNTIME APPROVAL REQUIRED
+**Status:** APPROVED — REPOSITORY WIRING COMPLETE, ACTIVATION PENDING
 
 ## Objective
 
@@ -82,3 +82,13 @@ profitability claim is permitted.
 
 Proposed paths are `data/observability/forward_exit/position_identities.json` and
 `data/observability/forward_exit/events/`. They remain unwritten before approval and activation.
+
+## Repository Evidence
+
+- Operator approval was received on 2026-09-05.
+- Auto-detection wiring is opt-in and remains disabled unless all frozen environment metadata is
+  present; production-orchestrator and existing constructor defaults remain disabled.
+- One shared bundle supplies run ID, identity snapshot, forward-boundary-enforcing event observer,
+  and activation manifest to both position management and reconciliation.
+- Existing/cohort-conflicting manifests fail closed, and events must be strictly after boundary.
+- Focused suite: 28 passed. Full repository suite: 836 passed with one optional import-linter skip.

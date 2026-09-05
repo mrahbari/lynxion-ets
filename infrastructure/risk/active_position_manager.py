@@ -60,6 +60,16 @@ class ActivePositionManager:
         self._positions_state: Dict[str, Dict[str, Any]] = {}
         self._last_eval_time: float = 0.0
 
+    def configure_forward_observation(self, *, exit_observer, observer_run_id: str,
+                                      position_identity_store) -> None:
+        """Configure one observer cohort before position-management evaluation starts."""
+        with self._lock:
+            if self._evaluation_sequence or self._positions_state:
+                raise RuntimeError("forward observation cannot be configured after evaluation starts")
+            self.exit_observer = exit_observer
+            self.observer_run_id = observer_run_id
+            self.position_identity_store = position_identity_store
+
     def _emit_exit_observation(self, event: Dict[str, Any]) -> None:
         if self.exit_observer is None:
             return
