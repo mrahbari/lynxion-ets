@@ -7,17 +7,22 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156's post-fix forward cohort collecting under its frozen gates while continuing the
-next independent, preregistered profitability hypothesis. Do not mix the legacy TASK-0151 cohort
-with post-fix observations or tune exit thresholds from either opened cohort.
+Implement and independently review C-28 only against its frozen volatility-sweep rejection
+preregistration, then open outcomes once. Keep TASK-0156's post-fix cohort collecting separately;
+do not mix cohorts or tune exit thresholds from opened evidence.
 
 ## Status
 
 TASK 000 operational closure and TASK 001/002 attribution are complete. Controlled edge
-research remains in progress; C-01 through C-26 historical candidates have not cleared their
+research remains in progress; C-01 through C-27 historical candidates have not cleared their
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- C-28 is preregistered with outcomes unopened. It tests a distinct failed-extreme volatility-sweep
+  rejection mechanism across six native futures symbols, with causal range/extreme lookbacks,
+  next-open execution, funding and cost accounting, temporal reverse validation, daily-clustered
+  bootstrap uncertainty, breadth/concentration gates, and a single immutable verdict specification.
 
 - TASK-0156 is COMPLETE and the corrected stop-identity runtime is active on the approved BingX VST
   path. Preflight reported TESTNET with `live_trading=False`; exactly one replacement runner was
