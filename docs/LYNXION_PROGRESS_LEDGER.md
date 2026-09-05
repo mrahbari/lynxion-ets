@@ -7,25 +7,32 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement and independently review C-29 only against its frozen top-trader/crowd positioning-
-divergence preregistration, then open outcomes once. Keep TASK-0156's cohort collecting separately
-and do not reslice or retune rejected candidates.
+Keep TASK-0156's cohort collecting separately and admit another candidate only if a genuinely new,
+point-in-time mechanism and unopened validation boundary remain. Do not promote or retune C-29's
+near-zero aggregate or sparse reverse-time cells.
 
 ## Status
 
 TASK 000 operational closure and TASK 001/002 attribution are complete. Controlled edge
-research remains in progress; C-01 through C-28 historical candidates have not cleared their
+research remains in progress; C-01 through C-29 historical candidates have not cleared their
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
-- C-29's evaluator is implemented with outcomes still unopened. The implementation enforces every
+- C-29 positioning divergence is REJECTED. Primary N=202, net expectancy was only +0.0010% and PF
+  1.0010 at 0.30% cost, with a wide clustered interval crossing zero. SHORT, 2025, and 2026 were
+  negative; LONG had only 39 observations; expectancy failed at 0.50% cost. The positive-looking
+  reverse sample had only 20 all-SHORT trades versus its frozen N>=150 gate, so it cannot support
+  promotion or a post-result variant. The report reproduced byte-for-byte; seven focused tests and
+  the full suite pass with 883 passed and one optional import-linter skip.
+
+- Before C-29 outcomes were opened, its evaluator enforced every
   frozen source hash, exact five-minute pre-decision positioning alignment, causal thresholds,
   contiguous next-open/24-hour execution, funding boundaries, overlap and fold isolation, and the
   conjunctive frozen gate. Independent review adds explicit tests that the decision-time metric is
   ignored and fold-crossing positions are excluded. Seven focused tests now cover causal alignment,
-  direction, funding boundaries, empty fail-closed behavior, source hashes, and fold isolation;
-  outcomes remain unopened.
+  direction, funding boundaries, empty fail-closed behavior, source hashes, and fold isolation. The
+  report was then generated once without changing the frozen specification.
 
 - C-29 pre-outcome review corrected an input-provenance omission: its 2021-2022 reverse sample
   requires the separately frozen C-09 native futures price files, not the 2023+ primary files.

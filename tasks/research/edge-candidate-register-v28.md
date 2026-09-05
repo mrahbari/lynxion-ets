@@ -1,6 +1,6 @@
 # Edge Candidate Register v28 — C-29 Top-Trader / Crowd Positioning Divergence
 
-**Status:** PREREGISTERED — OUTCOMES UNOPENED
+**Status:** OPENED — C-29 REJECTED
 
 C-29 tests a previously unused derivatives-sentiment mechanism. When the broad account crowd is
 extremely positioned in one direction but top-trader position size is on the opposite side, the
@@ -84,3 +84,15 @@ No ratio definition, threshold, lookback, alignment, direction, horizon, cost, f
 overlap rule, period, symbol, fold, cluster, or gate may change after outcomes open. Diagnostics
 cannot alter the verdict. No order or production strategy/risk/trailing/symbol/leverage change is
 authorized.
+
+## Frozen Result
+
+C-29 produced 202 primary trades with +0.0010% net expectancy and PF 1.0010 at the frozen 0.30%
+cost, but its daily-clustered 95% interval was [-0.4534%, +0.4478%]. Three folds were positive,
+yet 2025 and 2026 were negative, SHORT expectancy was negative, LONG had only 39 observations,
+and no breadth/sample gate was satisfied. Expectancy became -0.1990% at 0.50% cost. The reverse
+sample looked positive but contained only 20 all-SHORT trades, far below its N>=150 gate. Verdict
+**REJECT**; these sparse cells are diagnostic only. Machine report:
+`docs/reports/edge_candidate_c29.json`.
+The report reproduced byte-for-byte on a second run; seven focused tests and the full suite pass
+with 883 passed and one optional import-linter skip.
