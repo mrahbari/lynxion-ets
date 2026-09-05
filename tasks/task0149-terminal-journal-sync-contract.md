@@ -23,3 +23,14 @@ the TASK-0148 evidence observer.
 
 No runtime wiring, broker/API call, order, strategy, risk, leverage, trailing threshold, symbol
 setting, historical rewrite, or prospective outcome is permitted.
+
+## Progress
+
+- `LiveOrderJournal` now resolves an exact lifecycle `order_ref` from one unique exchange order ID;
+  missing and ambiguous matches fail closed.
+- Reconciliation uses the existing `record_terminal` transition only after exact resolution. It no
+  longer calls the nonexistent `record_result` method or treats an exchange order ID as a journal
+  lifecycle identity.
+- Twenty-one focused journal/reconciliation/observer tests pass. Full-suite validation remains.
+- A separate pre-existing `record_result` call in multi-broker order execution is outside this
+  task's reconciliation boundary and remains deferred for independent characterization.

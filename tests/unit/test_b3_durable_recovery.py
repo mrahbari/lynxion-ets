@@ -48,3 +48,22 @@ def test_failed_intent_not_in_flight(tmp_path):
     ref = j.record_intent("BTC-USDT", "BUY", "0.001", "bingx")
     j.record_failed(ref, "rejected")
     assert j.in_flight() == []                           # failed -> not in-flight
+
+
+def test_exact_exchange_order_id_resolves_lifecycle_reference(tmp_path):
+    j = LiveOrderJournal(path=str(tmp_path / "j.jsonl"))
+    ref = j.record_intent("BTC-USDT", "BUY", "0.001", "bingx")
+    j.record_submitted(ref, "OID-EXACT", "bingx")
+
+    assert j.order_ref_for_exchange_order("OID-EXACT") == ref
+    assert j.order_ref_for_exchange_order("UNKNOWN") is None
+
+
+def test_ambiguous_exchange_order_id_fails_closed(tmp_path):
+    j = LiveOrderJournal(path=str(tmp_path / "j.jsonl"))
+    first = j.record_intent("BTC-USDT", "BUY", "0.001", "bingx")
+    second = j.record_intent("ETH-USDT", "BUY", "0.01", "bingx")
+    j.record_submitted(first, "OID-DUPLICATE", "bingx")
+    j.record_submitted(second, "OID-DUPLICATE", "bingx")
+
+    assert j.order_ref_for_exchange_order("OID-DUPLICATE") is None

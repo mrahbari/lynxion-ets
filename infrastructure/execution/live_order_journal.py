@@ -162,6 +162,16 @@ class LiveOrderJournal:
                     out[str(o["order_id"])] = (o.get("exchange"), o.get("symbol"))
             return out
 
+    def order_ref_for_exchange_order(self, order_id: str) -> Optional[str]:
+        """Resolve one journal lifecycle identity from an exact exchange order id."""
+        target = str(order_id)
+        with self._lock:
+            matches = [
+                ref for ref, order in self._orders.items()
+                if order.get("order_id") is not None and str(order["order_id"]) == target
+            ]
+        return matches[0] if len(matches) == 1 else None
+
     def recover(self) -> Dict[str, Any]:
         """Startup recovery summary: counts, in-flight orders, and the order->exchange map."""
         with self._lock:

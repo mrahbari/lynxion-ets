@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0149's first unit restores exact terminal journal identity resolution: one unique exchange
+  order ID maps to its existing lifecycle reference, while missing/ambiguous matches remain
+  unchanged. Reconciliation now uses the journal's supported `record_terminal` transition instead
+  of the nonexistent `record_result`; 21 focused tests pass and the full suite remains.
+
 - TASK-0148 is COMPLETE and runtime-disabled. Real temporary snapshot/ledger tests validate the
   end-to-end terminal chain, null preservation, restart idempotency, corrupt/ambiguous identity
   rejection, selector call invariants, and observer failure isolation. Nineteen focused tests and

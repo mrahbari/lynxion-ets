@@ -259,13 +259,20 @@ class BrokerReconciliationService:
                 try:
                     from infrastructure.execution.live_order_journal import live_order_journal
                     if closing_order_id and closing_order_id != "UNKNOWN":
-                        live_order_journal.record_result(
-                            order_ref=closing_order_id,
-                            status="FILLED",
-                            order_id=closing_order_id,
-                            realized_pnl=realized_pnl,
-                            symbol=sym
-                        )
+                        order_ref = live_order_journal.order_ref_for_exchange_order(closing_order_id)
+                        if order_ref is not None:
+                            live_order_journal.record_terminal(
+                                order_ref,
+                                "FILLED",
+                                order_id=closing_order_id,
+                                realized_pnl=realized_pnl,
+                                symbol=sym,
+                            )
+                        else:
+                            self.logger.warning(
+                                f"Could not match closed exchange order {closing_order_id} "
+                                f"to one live_order_journal identity for {sym}"
+                            )
                 except Exception as journal_sync_err:
                     self.logger.warning(f"Could not sync closed position to live_order_journal for {sym}: {journal_sync_err}")
 

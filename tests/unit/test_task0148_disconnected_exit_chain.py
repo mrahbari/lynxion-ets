@@ -141,7 +141,12 @@ def _run_selected_closure(monkeypatch, tmp_path, *, identity_store=None, observe
     telegram = MagicMock()
     monkeypatch.setattr(strategy_manager, "record_trade_result", trade_result)
     monkeypatch.setattr(symbol_cooldown_gate, "record_take_profit_exit", take_profit)
-    monkeypatch.setattr(live_order_journal, "record_result", journal_result, raising=False)
+    monkeypatch.setattr(
+        live_order_journal,
+        "order_ref_for_exchange_order",
+        MagicMock(return_value="journal-ref"),
+    )
+    monkeypatch.setattr(live_order_journal, "record_terminal", journal_result)
     monkeypatch.setattr("infrastructure.services.risk_alerts.send_telegram", telegram)
 
     service = BrokerReconciliationService(
