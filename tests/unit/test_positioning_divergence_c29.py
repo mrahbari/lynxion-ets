@@ -14,6 +14,10 @@ def test_features_use_exact_predecision_metric_and_prior_threshold(monkeypatch):
     price,m,_=fixture(monkeypatch);f=c.causal_features(price,m);ts=f.index[2];base=f.loc[ts].copy();m.loc[ts-300,'count_long_short_ratio']=20;changed=c.causal_features(price,m)
     assert changed.loc[ts,'crowd_threshold']==base.crowd_threshold
     assert changed.loc[ts,'crowd']!=base.crowd
+def test_metric_at_decision_is_not_used(monkeypatch):
+    price,m,_=fixture(monkeypatch);baseline=c.causal_features(price,m);ts=baseline.index[2]
+    m.loc[ts]=[100.,.01];changed=c.causal_features(price,m)
+    pd.testing.assert_series_equal(baseline.loc[ts],changed.loc[ts])
 def test_trade_follows_top_and_funding_boundary(monkeypatch):
     price,m,_=fixture(monkeypatch);features=c.causal_features(price,m);ts=features.dropna().index[0];features.loc[ts,['crowd','top','crowd_threshold','divergence_threshold','divergence']]=[1,-1,.1,.1,2]
     funding=pd.DataFrame({'timestamp':[ts,ts+900,ts+1800],'funding_rate':[.1,.02,.04]})
@@ -26,3 +30,9 @@ def test_empty_outputs_fail_closed():
 def test_hash_guard_fails_closed(tmp_path):
     path=tmp_path/'source';path.write_bytes(b'frozen');digest=hashlib.sha256(b'frozen').hexdigest();c.verify(path,digest);path.write_bytes(b'changed')
     with pytest.raises(ValueError,match='frozen source hash mismatch'):c.verify(path,digest)
+def test_fold_crossing_position_is_excluded(monkeypatch):
+    monkeypatch.setattr(c,'HOLD',100)
+    events=[{'entry_timestamp':0,'exit_timestamp':50},{'entry_timestamp':10,'exit_timestamp':110},
+            {'entry_timestamp':20,'exit_timestamp':30},{'entry_timestamp':30,'exit_timestamp':40}]
+    kept=c.assign_folds(events)
+    assert events[1] not in kept

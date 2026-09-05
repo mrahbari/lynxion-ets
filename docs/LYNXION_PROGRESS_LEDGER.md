@@ -22,8 +22,10 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-29's evaluator is implemented with outcomes still unopened. The implementation enforces every
   frozen source hash, exact five-minute pre-decision positioning alignment, causal thresholds,
   contiguous next-open/24-hour execution, funding boundaries, overlap and fold isolation, and the
-  conjunctive frozen gate. Five focused tests cover causal exclusion, direction, funding boundaries,
-  empty fail-closed behavior, and source-hash refusal; outcomes remain unopened.
+  conjunctive frozen gate. Independent review adds explicit tests that the decision-time metric is
+  ignored and fold-crossing positions are excluded. Seven focused tests now cover causal alignment,
+  direction, funding boundaries, empty fail-closed behavior, source hashes, and fold isolation;
+  outcomes remain unopened.
 
 - C-29 pre-outcome review corrected an input-provenance omission: its 2021-2022 reverse sample
   requires the separately frozen C-09 native futures price files, not the 2023+ primary files.
