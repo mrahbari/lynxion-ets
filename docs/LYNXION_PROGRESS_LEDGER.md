@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Hold TASK-0154 at its explicit runtime approval gate while TASK-0151 and C-11 continue prospective
-collection; do not reload or activate the repository correction without operator authorization.
+Implement TASK-0155's repository-only cohort commit guard before any approved TASK-0154 runtime
+activation; keep TASK-0151 and C-11 collecting without a reload.
 
 ## Status
 
@@ -17,6 +17,11 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0155 identifies a provenance-critical restart defect: `lynxion` reuses the existing
+  manifest's old commit without comparing it to HEAD. Restarting TASK-0154 directly would mix two
+  code revisions under one frozen cohort label. A fail-closed commit guard and a separate new-cohort
+  activation are preregistered; no reload is permitted yet.
 
 - TASK-0154 is COMPLETE at repository level and runtime-inactive. Exact-ID and fallback visibility,
   structured query failures, unchanged exhaustion counts, and zero false commits have failure-
