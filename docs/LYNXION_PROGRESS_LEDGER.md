@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Maintain TASK-0151 and C-11 prospective collection while selecting the next genuinely independent
-profitability research unit without reopening rejected mechanisms or changing production policy.
+Diagnose TASK-0153's accepted-but-invisible stop evidence using frozen events and disconnected code
+tests while TASK-0151 and C-11 continue prospective collection.
 
 ## Status
 
@@ -17,6 +17,11 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0153 preregisters a bounded, read-only attribution of accepted-but-invisible stop
+  replacements. It separates explicit price rejection from placement acceptance, pending-order
+  normalization/filtering, timing, and false-positive response semantics. Any justified correction
+  must be frozen separately; this diagnosis cannot call a broker or change runtime behavior.
 
 - TASK-0152 is COMPLETE. Its deterministic read-only auditor reports every frozen sample, breadth,
   terminal-completeness, stop-chain, and integrity gate, with strict DATA_INVALID precedence and no
