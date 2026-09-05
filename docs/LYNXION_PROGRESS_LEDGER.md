@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156's post-fix cohort collecting separately and admit the next edge candidate only if it
-passes the sequential-policy mechanism and independent-boundary gate. Do not reslice or retune the
-rejected C-28 result.
+Implement and independently review C-29 only against its frozen top-trader/crowd positioning-
+divergence preregistration, then open outcomes once. Keep TASK-0156's cohort collecting separately
+and do not reslice or retune rejected candidates.
 
 ## Status
 
@@ -18,6 +18,11 @@ research remains in progress; C-01 through C-28 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- C-29 is admitted and preregistered with outcomes unopened. It uses previously untested official
+  global-account and top-trader position-size ratios, exact pre-decision alignment, causal rolling
+  thresholds, next-open execution, funding/cost accounting, temporal reverse validation, and strict
+  uncertainty/breadth gates. It is one positioning-divergence specification, not an OI/taker retune.
 
 - C-28 volatility-sweep rejection is REJECTED. Its 986 primary trades lost 0.2581% per trade after
   frozen cost/funding, PF was 0.6782, and the daily-clustered 95% interval was fully negative.
