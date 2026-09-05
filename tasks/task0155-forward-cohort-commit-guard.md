@@ -1,6 +1,6 @@
 # TASK-0155 — Forward Cohort Commit Guard
 
-**Status:** PRE-REGISTERED — REPOSITORY IMPLEMENTATION PENDING
+**Status:** IN PROGRESS — FAIL-CLOSED RESOLVER COMPLETE
 
 ## Objective
 
@@ -34,3 +34,13 @@ direct restart would therefore label new-code events with the old commit and con
 
 Repository hardening is authorized as ordinary fail-closed engineering. Starting the TASK-0154
 code under a new cohort remains a separate runtime approval gate.
+
+## Implementation Evidence
+
+- A read-only resolver validates the exact manifest schema, UTC boundary, safety flag, and commit.
+  Existing cohorts continue only when manifest commit equals HEAD; mismatch or malformed state fails
+  before Python runtime startup.
+- `lynxion` accepts an explicit root override, resolves new metadata only for an empty root, and
+  otherwise preserves the existing single-runner guard and launch arguments.
+- Five disconnected resolver tests and `zsh -n lynxion` pass. The live runner was not restarted and
+  the legacy TASK-0151 cohort was not modified.

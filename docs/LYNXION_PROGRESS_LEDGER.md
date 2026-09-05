@@ -18,6 +18,11 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0155 now has a fail-closed launch resolver: same-commit cohorts continue, while commit
+  mismatch, malformed manifest, or non-empty unmanifested roots abort before runtime. Explicit new
+  roots must be empty and receive actual HEAD/new run/new UTC metadata. Five disconnected tests and
+  wrapper syntax validation pass; the active runner was not reloaded.
+
 - TASK-0155 identifies a provenance-critical restart defect: `lynxion` reuses the existing
   manifest's old commit without comparing it to HEAD. Restarting TASK-0154 directly would mix two
   code revisions under one frozen cohort label. A fail-closed commit guard and a separate new-cohort
