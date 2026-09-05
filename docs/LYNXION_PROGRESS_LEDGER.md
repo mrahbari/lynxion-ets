@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Define the post-TASK-0147 forward-evidence admission gate while C-11 collection continues; do not
-wire runtime, tune thresholds, or open outcomes.
+Execute TASK-0148's disconnected end-to-end exit-evidence verification while C-11 collection
+continues; do not wire runtime, tune thresholds, or open outcomes.
 
 ## Status
 
@@ -17,6 +17,11 @@ research remains in progress; C-01 through C-26 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0148 freezes the final repository-only gate before any forward exit-data deployment can be
+  considered: real identity snapshot, terminal extractor, exit ledger, and reconciliation closure
+  must work together only on temporary paths, remain restart-idempotent, preserve null unknowns,
+  and isolate every storage/observer failure from operational reconciliation.
 
 - TASK-0147 is COMPLETE at repository level and remains runtime-disabled. The reconciliation
   service can optionally resolve one exact open identity from its already-selected terminal order,
