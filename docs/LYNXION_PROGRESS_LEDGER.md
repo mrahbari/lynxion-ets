@@ -19,6 +19,12 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- TASK-0151's read-only preflight finds two internal reconciliation constructors and an import-time
+  active-position singleton. A valid deployment must configure one shared run ID, identity store,
+  and event ledger before threads start and inject the same components into the active VST
+  orchestrator. Repository state cannot establish which orchestrator/process is currently running;
+  that must be verified in the approved runtime preflight before a single controlled reload.
+
 - TASK-0150 rejects a code correction: the remaining unsupported `record_result` statement is
   unreachable for simulated fills because `journal_ref` is created only for real-send routes and
   remains null in paper mode. Paper evidence already uses the Execution Truth Ledger. Eighteen

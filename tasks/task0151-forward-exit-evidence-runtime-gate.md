@@ -23,6 +23,22 @@ This task changes runtime composition, creates production observation files, and
 controlled runner reload. Repository tests cannot authorize it. Explicit operator approval for
 this exact deployment boundary is required before implementation or activation.
 
+## Read-Only Composition Preflight
+
+- Both `AutoDetectionOrchestrator` and `ProductionTradingOrchestrator` construct their own
+  `BrokerReconciliationService()` inside their reconciliation loops; neither currently receives
+  observer dependencies from the container.
+- `active_position_manager` is a canonical process singleton created at module import with its
+  observer and identity store disabled. It must be configured once before protection threads start,
+  not mutated after event collection begins.
+- `bootstrap/container.py` is the common construction boundary for both orchestrator variants, but
+  the running VST variant cannot be inferred safely from repository configuration alone.
+- Local process enumeration is restricted in the current sandbox. Runtime identity and single-runner
+  status must therefore be verified during the approved deployment preflight, before any reload.
+- The minimal implementation must share one run ID, identity snapshot, and event ledger between the
+  active-position manager and the reconciliation service; wiring only one side would leave terminal
+  evidence unjoinable.
+
 ## Non-Goals
 
 No real/paper order, broker mutation, account change, threshold tuning, historical backfill, or
