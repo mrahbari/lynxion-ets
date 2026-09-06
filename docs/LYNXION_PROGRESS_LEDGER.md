@@ -749,6 +749,17 @@ unless new evidence shows that it blocks valid edge measurement.
   suite pass, with one optional import-linter skip.
 - Next: TASK-0171 select a genuinely independent candidate from unused causal mechanisms/data.
 
+## 2026-09-06 — TASK-0171 next independent edge selection
+
+- Selected C-34 cross-venue aggressive-flow divergence; no conditional outcome was opened.
+- The candidate uses the previously unused causal disagreement between Spot and USD-M perpetual
+  taker-buy shares. It is not a threshold/horizon/symbol variant of rejected single-venue taker flow
+  and does not reuse C-31's nonexistent price-underreaction state.
+- Official aligned Spot and futures flow panels can support strict point-in-time reconstruction,
+  explicit source gaps, exact funding, and 0.30%/0.50% cost evaluation.
+- Next: TASK-0172 freeze the single C-34 specification and all robustness/rejection gates before
+  calculating any forward return.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
