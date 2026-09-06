@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 SYMBOLS=("BTCUSDT","ETHUSDT","BNBUSDT","XRPUSDT","ADAUSDT","SOLUSDT")
+CANDIDATE="C-29";PROTOCOL="edge-candidate-register-v28";BOOTSTRAP_SEED=290029
 DECISION=14400; METRIC_LAG=300; WARMUP=180; HOLD=86400; PRIMARY_COST=.003; COSTS=(.002,.003,.005)
 PRIMARY_START,PRIMARY_END=1672531200,1788134400
 REVERSE_START,REVERSE_END=1638316800,1672531200
@@ -70,7 +71,7 @@ def bootstrap(events):
     if not events:return [None,None]
     clusters={}
     for e in events:clusters.setdefault(e['entry_timestamp']//86400,[]).append(e['gross_return']-PRIMARY_COST)
-    keys=sorted(clusters);rng=np.random.default_rng(290029);out=[]
+    keys=sorted(clusters);rng=np.random.default_rng(BOOTSTRAP_SEED);out=[]
     for _ in range(10000):
         chosen=rng.choice(keys,len(keys),replace=True);out.append(np.mean([v for k in chosen for v in clusters[int(k)]]))
     return [float(x) for x in np.quantile(out,[.025,.975])]
@@ -88,7 +89,7 @@ def build_report(primary_dir,reverse_dir,metric_dir,funding_dir):
     pe=assign_folds(pe);assign_folds(re);p=summary(pe);r=summary(re)
     positive={s:sum(max(0,e['gross_return']-PRIMARY_COST) for e in pe if e['symbol']==s) for s in SYMBOLS};total=sum(positive.values());conc=max(positive.values(),default=0)/total if total else None;o=p['overall']
     checks={'primary_n':o['n']>=300,'primary_positive':o['expectancy'] is not None and o['expectancy']>0,'primary_pf':o['profit_factor'] is not None and o['profit_factor']>1,'bootstrap':p['clustered_bootstrap_95_ci'][0] is not None and p['clustered_bootstrap_95_ci'][0]>0,'folds':sum(v['n']>=50 and v['expectancy']>0 for v in p['by_fold'].values())>=3,'sides':all(v['n']>=75 and v['expectancy'] is not None and v['expectancy']>0 for v in p['by_side'].values()),'symbols':sum(v['n']>=40 and v['expectancy'] is not None and v['expectancy']>0 for v in p['by_symbol'].values())>=4,'years':all(p['by_year'].get(str(y),{'n':0})['n']>=50 and p['by_year'][str(y)]['expectancy']>0 for y in (2023,2024,2025,2026)),'concentration':conc is not None and conc<=.35,'reverse':r['overall']['n']>=150 and r['overall']['expectancy'] is not None and r['overall']['expectancy']>0 and r['overall']['profit_factor'] is not None and r['overall']['profit_factor']>1,'cost_005':p['cost_sensitivity']['0.005']['expectancy'] is not None and p['cost_sensitivity']['0.005']['expectancy']>0}
-    return {'candidate':'C-29','protocol':'edge-candidate-register-v28','primary_census':pc,'reverse_census':rc,'primary':p,'reverse':r,'max_positive_pnl_symbol_concentration':conc,'gate':{'checks':checks,'verdict':'KEEP_FOR_PROSPECTIVE_VALIDATION' if all(checks.values()) else 'REJECT'}}
+    return {'candidate':CANDIDATE,'protocol':PROTOCOL,'primary_census':pc,'reverse_census':rc,'primary':p,'reverse':r,'max_positive_pnl_symbol_concentration':conc,'gate':{'checks':checks,'verdict':'KEEP_FOR_PROSPECTIVE_VALIDATION' if all(checks.values()) else 'REJECT'}}
 def main():
     a=argparse.ArgumentParser();a.add_argument('--primary-price-dir',default='data/research/c06/binance_futures_15m');a.add_argument('--reverse-price-dir',default='data/research/c09/binance_futures_15m');a.add_argument('--metric-dir',default='data/research/oi_metrics/normalized');a.add_argument('--funding-dir',default='data/research/c16/funding');a.add_argument('--output',default='docs/reports/edge_candidate_c29.json');x=a.parse_args();report=build_report(Path(x.primary_price_dir),Path(x.reverse_price_dir),Path(x.metric_dir),Path(x.funding_dir));rendered=json.dumps(report,indent=2,sort_keys=True,allow_nan=False);target=Path(x.output);target.parent.mkdir(parents=True,exist_ok=True);target.write_text(rendered+'\n');print(rendered)
 if __name__=='__main__':main()

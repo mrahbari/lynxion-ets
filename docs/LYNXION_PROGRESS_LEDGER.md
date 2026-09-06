@@ -19,6 +19,14 @@ frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
+- C-30's evaluator is implemented with outcomes unopened by reusing C-29's unchanged mechanics and
+  substituting only the preregistered disjoint universe, four frozen hash maps, report identity, and
+  bootstrap seed. C-29's default identity/seed remain unchanged, and import-order isolation passes
+  in both directions. Nine combined focused tests pass; C-30 outcomes remain unopened.
+
+- C-11 updated at `2026-09-06T00:34:52+00:00`: its sole BTC candidate remains PENDING, N=0, and
+  `COLLECTING`. Its funding timestamp is strictly after epoch `1788082349`; no history was imported.
+
 - C-30 is preregistered with outcomes unopened as the single independent confirmation of C-29 on
   five disjoint symbols. Signal, alignment, 24-hour execution, costs, funding, uncertainty, and
   absolute sample gates are unchanged; all new input hashes are frozen. Failure closes this family.
