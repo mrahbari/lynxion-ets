@@ -728,6 +728,16 @@ unless new evidence shows that it blocks valid edge measurement.
   collection evidence only, not an edge result; `COLLECTING` remains mandatory.
 - Next: TASK-0169 deterministic committed-snapshot verification without opening thresholds/signals.
 
+## 2026-09-06 — TASK-0169 C-33 snapshot verifier
+
+- Added a deterministic offline verifier for committed C-33 warmup artifacts, including exact schema,
+  frozen universe, UTC bucket boundaries, row uniqueness/order, digest format, and count/notional checks.
+- TASK-0168 independently verifies at 25 buckets, 150 rows, 170 eligible observed snapshots, and
+  901,832.46278 USDT observed notional; verdict remains `COLLECTING`.
+- Verification: 12 focused tests and the full 928-test suite pass; one optional import-linter check is skipped.
+- Next: TASK-0170 sparse milestone cadence so C-33 collection does not consume the edge roadmap with
+  repetitive audits while its prospective warmup matures.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
