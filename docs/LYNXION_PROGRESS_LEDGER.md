@@ -7,9 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156 collecting separately. C-32 is data-blocked before activation because its frozen
-BingX book cannot supply the required unauthenticated per-book server time. TASK-0161 must select a
-new mechanism/data source without altering C-32 post-result.
+Keep TASK-0156 collecting separately. TASK-0161 selected prospective Binance forced-liquidation
+exhaustion as a distinct direction; TASK-0162 must preregister it before any stream connection.
 
 ## Status
 
@@ -18,6 +17,11 @@ research remains in progress; C-01 through C-31 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0161 is COMPLETE. The next independent direction is prospective reversal after an exceptional
+  cluster of exchange-labelled Binance USD-M forced liquidations. The public stream provides causal
+  event/trade time and fill fields but is explicitly a latest-event-per-symbol 1,000-ms snapshot,
+  so it cannot be represented as complete liquidation volume. No connection or outcome was opened.
 
 - TASK-0160 is COMPLETE and C-32 is `DATA_BLOCKED` before its first observation. Official Binance
   depth semantics match the collector, but the official BingX depth shape lacks the frozen per-book
