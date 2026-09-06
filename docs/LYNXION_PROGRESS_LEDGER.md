@@ -885,6 +885,10 @@ unless new evidence shows that it blocks valid edge measurement.
   much weaker, SHORT aggregate was negative, and symbol contribution was uneven.
 - All 98 historical leverage fields were absent and MFE uses one-minute extremes.
   Result: `PERSISTENT_GIVEBACK_DIAGNOSTIC`, not evidence selecting a 5% policy.
+- Post-result provenance clarification: the operator confirmed every scoped trade was
+  10x isolated and verified in the BingX account. The 10x metrics therefore match the
+  stated account policy, although the archived `allOrders` artifact cannot independently
+  reproduce leverage because its per-trade fields remain absent.
 - Next: resume the bounded stop-mutation correction; use the prospective lifecycle
   cohort for any future frozen exit-policy comparison.
 

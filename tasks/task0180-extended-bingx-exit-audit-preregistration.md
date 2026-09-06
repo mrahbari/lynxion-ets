@@ -34,7 +34,9 @@ an older temporal block without selecting or deploying new exit thresholds.
   MFE/MAE/giveback, exit types, side/symbol concentration, and counts crossing estimated
   +10%/+12% MFE before exiting below +5% net ROE.
 - Historical leverage missing from `allOrders` remains explicit. Any normalized 10x
-  view is sensitivity analysis, not authoritative historical ROE.
+  view initially remains sensitivity analysis. Post-outcome provenance note: the
+  operator confirmed on 2026-09-06 that all scoped trades were 10x isolated and that
+  this is verified in BingX; the history artifact itself still omits the field.
 - One-minute candle extremes estimate opportunity; they do not prove manager observation,
   exchange-visible stop state, or executable fill at the extreme.
 

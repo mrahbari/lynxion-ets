@@ -16,7 +16,7 @@ executable.
 - Realized account result: +6.001067 VST/USDT-equivalent total; +0.061235 per position;
   realized-profit PF 1.6088; 74/98 net-positive.
 - Exit orders: 89 `STOP_MARKET`, seven `TAKE_PROFIT_MARKET`, and two `MARKET`.
-- Ten-times sensitivity: median estimated MFE +11.61% ROE, median net exit +2.29%,
+- Operator-confirmed 10x view: median estimated MFE +11.61% ROE, median net exit +2.29%,
   and median MFE-to-exit giveback 10.19 percentage points.
 - 56/98 reached estimated MFE >=10%; 47/98 reached >=12%; 27/98 reached >=10%
   but exited below +5%. Thirty-one exits finished between +2% and +5%.
@@ -40,10 +40,19 @@ block's apparent profitability.
 - The result is not broad enough to claim strategy edge: several symbols were negative,
   and PROM/ZEC contributed materially to the positive aggregate.
 
+## Leverage provenance
+
+The operator confirmed on 2026-09-06 that every position in scope used 10x isolated
+leverage and that this is verified in the BingX account. Accordingly, the normalized
+10x metrics are the intended account-leverage interpretation, not an arbitrary
+sensitivity scenario. The downloaded historical `allOrders` response itself still
+omits leverage for all 98 positions, so an independent reproduction from this artifact
+alone cannot verify that account fact.
+
 ## Hard limits
 
-- Historical leverage is absent for all 98 positions. Every 10x ROE statistic is a
-  normalized sensitivity view, not authoritative realized account ROE.
+- Historical leverage is absent for all 98 positions in the API artifact; 10x is
+  supported by operator/account attestation rather than per-trade API fields.
 - MFE/MAE use public one-minute candle extremes. They do not prove that the manager
   observed the extreme, that a replacement reached the exchange, or that the stop
   could fill at the proposed level.
