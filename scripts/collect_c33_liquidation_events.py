@@ -319,7 +319,7 @@ async def collect(output: Path, activation_boundary: int) -> None:
                 raw_message = await asyncio.wait_for(socket.recv(), timeout=70)
                 raw = raw_message.encode() if isinstance(raw_message, str) else bytes(raw_message)
                 record = parse_stream_message(raw, receipt_monotonic_ns=time.monotonic_ns(), session_id=session_id)
-                if record is not None:
+                if record is not None and _record_epoch_seconds(record) > activation_boundary:
                     append_record(output, record, activation_boundary)
                 current_minute = int(time.time()) // 60
                 if current_minute != last_heartbeat_minute:

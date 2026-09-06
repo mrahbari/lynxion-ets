@@ -164,3 +164,13 @@ def test_collect_waits_until_strictly_after_activation_boundary(monkeypatch, tmp
     with pytest.raises(RuntimeError, match="stop"):
         asyncio.run(collector.collect(tmp_path / "events.jsonl", BOUNDARY + 10))
     assert sleeps == [pytest.approx(0.75)]
+
+
+def test_partial_first_kline_is_valid_candidate_data_but_pre_activation():
+    start = (BOUNDARY // 60 + 1) * 60_000
+    payload = {"e": "kline", "E": start + 60_000, "s": "BTCUSDT", "k": {
+        "s": "BTCUSDT", "i": "1m", "x": True, "t": start, "T": start + 59_999,
+        "o": "100", "h": "101", "l": "99", "c": "100",
+    }}
+    record = parse_stream_message(raw(payload), receipt_monotonic_ns=10, session_id="run")
+    assert collector._record_epoch_seconds(record) <= start // 1000 + 100
