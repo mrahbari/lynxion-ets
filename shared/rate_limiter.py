@@ -3,6 +3,7 @@ Rate limiter for API requests to prevent exceeding rate limits.
 """
 import time
 import threading
+from collections import deque
 from typing import Dict, Optional
 from shared.logger import EnhancedLogger
 
@@ -25,6 +26,8 @@ class RateLimiter:
         self.tokens = max_requests
         self.last_refill = time.time()
         self.lock = threading.Lock()
+        self._condition = threading.Condition(self.lock)
+        self._priority_waiters = deque()
         self.logger = EnhancedLogger("RateLimiter")
         
     def _refill_tokens(self):
@@ -57,15 +60,47 @@ class RateLimiter:
             else:
                 return False
     
-    def wait_for_tokens(self, num_tokens: int = 1):
+    def wait_for_tokens(
+        self, num_tokens: int = 1, *, priority: bool = False,
+        timeout: Optional[float] = None,
+    ) -> bool:
         """
         Wait until tokens are available.
         
         Args:
             num_tokens: Number of tokens to wait for (default 1)
         """
-        while not self.acquire(num_tokens):
-            time.sleep(0.1)  # Wait 100ms before checking again
+        deadline = None if timeout is None else time.monotonic() + max(0.0, timeout)
+        waiter = object() if priority else None
+        with self._condition:
+            if waiter is not None:
+                self._priority_waiters.append(waiter)
+            try:
+                while True:
+                    self._refill_tokens()
+                    priority_turn = (
+                        waiter is not None
+                        and self._priority_waiters
+                        and self._priority_waiters[0] is waiter
+                    )
+                    ordinary_turn = waiter is None and not self._priority_waiters
+                    if self.tokens >= num_tokens and (priority_turn or ordinary_turn):
+                        self.tokens -= num_tokens
+                        if waiter is not None:
+                            self._priority_waiters.popleft()
+                        self._condition.notify_all()
+                        return True
+
+                    remaining = None if deadline is None else deadline - time.monotonic()
+                    if remaining is not None and remaining <= 0:
+                        return False
+                    self._condition.wait(
+                        timeout=0.1 if remaining is None else min(0.1, remaining)
+                    )
+            finally:
+                if waiter is not None and waiter in self._priority_waiters:
+                    self._priority_waiters.remove(waiter)
+                    self._condition.notify_all()
 
 
 class GlobalRateLimiter:
@@ -111,10 +146,15 @@ class GlobalRateLimiter:
         limiter = self.get_limiter(exchange)
         return limiter.acquire(num_tokens)
     
-    def wait_for_tokens(self, exchange: str, num_tokens: int = 1):
+    def wait_for_tokens(
+        self, exchange: str, num_tokens: int = 1, *, priority: bool = False,
+        timeout: Optional[float] = None,
+    ) -> bool:
         """Wait for tokens for specific exchange."""
         limiter = self.get_limiter(exchange)
-        limiter.wait_for_tokens(num_tokens)
+        return limiter.wait_for_tokens(
+            num_tokens, priority=priority, timeout=timeout
+        )
 
 
 # Module-level instantiation retired (E2.T6): access is now mediated by the

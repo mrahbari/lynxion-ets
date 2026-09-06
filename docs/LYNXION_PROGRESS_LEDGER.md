@@ -910,6 +910,15 @@ unless new evidence shows that it blocks valid edge measurement.
   remains mandatory before any local state commit.
 - Next: TASK-0183 bounded FIFO priority admission in the existing global limiter.
 
+## 2026-09-07 — TASK-0183 bounded FIFO priority limiter
+
+- Added optional FIFO priority and monotonic timeout to the existing single token
+  bucket; ordinary callers remain unchanged and no exchange capacity was increased.
+- Priority waiters cannot bypass aggregate capacity and timed-out waiters cannot block
+  the queue.
+- Next: TASK-0184 wire bounded priority only to stop mutations with stage telemetry
+  and failure-injection tests; no runtime reload or broker call.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
