@@ -718,6 +718,16 @@ unless new evidence shows that it blocks valid edge measurement.
 - Next: TASK-0168 reproducible live warmup artifact and continued forward collection toward 8,640
   eligible buckets per symbol.
 
+## 2026-09-06 — TASK-0168 C-33 live warmup snapshot
+
+- Committed the first reproducible C-33 warmup artifact, bound to exact event-source SHA-256
+  `c72b3e2207e6873c66ae5084baea432d84ed3c9211a5e48cee69c2bc35ac06bb`.
+- Snapshot contains 25 eligible completed buckets and 150 exact bucket-symbol rows. Of 175 stored
+  liquidation snapshots, 170 are in eligible buckets; excluded partial-bucket events remain absent.
+- Eligible observed notional is 901,832.46278 USDT across 54 non-zero bucket-symbol rows. This is
+  collection evidence only, not an edge result; `COLLECTING` remains mandatory.
+- Next: TASK-0169 deterministic committed-snapshot verification without opening thresholds/signals.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
