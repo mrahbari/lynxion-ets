@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156 collecting separately. TASK-0161 selected prospective Binance forced-liquidation
-exhaustion as a distinct direction; TASK-0162 must preregister it before any stream connection.
+Keep TASK-0156 collecting separately. C-33 is preregistered with no stream opened; TASK-0163 must
+implement its append-only event/liveness collector with disconnected tests only.
 
 ## Status
 
@@ -17,6 +17,12 @@ research remains in progress; C-01 through C-31 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0162 is COMPLETE. C-33 freezes a forward-only Binance USD-M liquidation-exhaustion reversal
+  using liveness-complete five-minute buckets, a causal 30-day p99 plus absolute/dominance gates,
+  next-minute/four-hour execution, funding, costs, temporal folds, clustered uncertainty, breadth,
+  concentration, and drawdown. The feed is explicitly treated as censored snapshots. No stream,
+  observation, outcome, broker, or runtime was opened.
 
 - TASK-0161 is COMPLETE. The next independent direction is prospective reversal after an exceptional
   cluster of exchange-labelled Binance USD-M forced liquidations. The public stream provides causal
