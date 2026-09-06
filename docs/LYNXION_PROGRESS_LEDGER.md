@@ -738,6 +738,17 @@ unless new evidence shows that it blocks valid edge measurement.
 - Next: TASK-0170 sparse milestone cadence so C-33 collection does not consume the edge roadmap with
   repetitive audits while its prospective warmup matures.
 
+## 2026-09-06 — TASK-0170 C-33 sparse checkpoint cadence
+
+- Frozen evidence milestones: 25, 100, 500, 1,000, 2,000, 4,000, 8,000, and 8,640 eligible buckets.
+- The checker verifies the prior committed artifact and fails closed on count regression; it never
+  writes a snapshot or opens signal/outcome calculations.
+- The 25-bucket checkpoint is complete. Until 100 buckets, C-33 returns to quiet liveness/error
+  monitoring so the roadmap can resume independent profitability research.
+- Live check: 38 eligible buckets; no checkpoint due. Nineteen focused tests and the full 935-test
+  suite pass, with one optional import-linter skip.
+- Next: TASK-0171 select a genuinely independent candidate from unused causal mechanisms/data.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
