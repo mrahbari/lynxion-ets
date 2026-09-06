@@ -806,6 +806,18 @@ unless new evidence shows that it blocks valid edge measurement.
 - Next: TASK-0176 new-source feasibility review; select at most one defensible source or record
   `NO_ADMISSIBLE_SOURCE` without manufacturing another hypothesis.
 
+## 2026-09-06 — TASK-0176 new public source feasibility review
+
+- Verdict `NO_ADMISSIBLE_SOURCE`; no C-35 was created and no outcome/data endpoint was opened.
+- Deribit DVOL history lacks the executable historical option surface needed for an options-premium
+  test; DVOL as a directional filter would reuse opened BTC outcomes.
+- Binance dated/COIN-M futures remains an already tested basis/carry family and adds multiplier,
+  lifecycle, roll, and synchronized-depth requirements.
+- Public stablecoin history lacks established immutable point-in-time revision/publication metadata;
+  stronger flow endpoints are paid and therefore approval-gated.
+- Next: TASK-0177 audit the active forward-exit cohort against frozen coverage/linkage gates and the
+  operator's profit-giveback concern without changing the +5% policy.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
