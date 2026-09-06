@@ -22,8 +22,8 @@ frozen promotion gates and production strategy logic is unchanged.
 - C-31's evaluator is implemented with outcomes unopened. It enforces all frozen hashes, exact
   completed Spot/perpetual alignment, causal shock thresholds, underreaction direction/ratio,
   contiguous next-open execution, funding boundaries, fold isolation, clustered uncertainty, and
-  the conjunctive gate. Four focused C-31 tests and nine relevant tests pass; outcomes remain
-  unopened pending an independent review unit.
+  the conjunctive gate. Independent review adds strict sign/response and fold-crossing tests. Six
+  focused C-31 tests and eleven relevant tests pass; outcomes remain unopened.
 
 - C-31 is preregistered with outcomes unopened. It tests a new same-asset cross-venue price-
   discovery mechanism using exact aligned Spot/perpetual bars, causal Spot-shock thresholds, frozen
