@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156 collecting separately. C-32 is preregistered with no observations opened; TASK-0159
-must implement and disconnect-test its public-data collector before the prospective first run.
+Keep TASK-0156 collecting separately. TASK-0159 implemented C-32's collector without network use;
+TASK-0160 must independently review it and freeze activation metadata before the first public call.
 
 ## Status
 
@@ -17,6 +17,12 @@ research remains in progress; C-01 through C-31 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0159 is COMPLETE at repository level. Its standalone collector validates synchronized public
+  Binance/BingX books, walks depth for identical quantity, hashes raw responses, and fail-closes on
+  boundary, duplicate, stale, malformed, crossed, or insufficient-depth observations. Network use
+  requires an explicit flag and was not activated; no outcome, broker, order, or runtime was opened.
+  Ten focused tests and the full suite pass with 902 passed and one optional import-linter skip.
 
 - TASK-0158 is COMPLETE. C-32 freezes a prospective boundary, public Binance/BingX perpetual books,
   exact time/depth validity, 1,000-USDT two-leg VWAP, 0.60% admission, convergence/four-hour exit,
