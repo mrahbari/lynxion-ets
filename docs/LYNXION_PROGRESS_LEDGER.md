@@ -696,6 +696,17 @@ engineering loop continues with the next independent, preregistered profitabilit
 Do not tune exit thresholds from the opened cohort or spend roadmap cycles on leverage refinement
 unless new evidence shows that it blocks valid edge measurement.
 
+## 2026-09-06 — TASK-0166 C-33 collection auditor
+
+- Added a deterministic read-only auditor for the active prospective C-33 append-only ledger.
+- It fail-closes on activation-boundary, manifest, key, raw-hash, lifecycle, universe, or timestamp
+  violations and treats incomplete liveness buckets as missing rather than zero activity.
+- Live snapshot: `COLLECTING`, seven eligible completed five-minute buckets, one expected partial
+  activation bucket excluded, and two eligible observed forced-liquidation snapshots. No threshold,
+  signal, trade, or outcome gate has been opened.
+- Verification: 4 focused tests passed; full suite 920 passed with one optional import-linter skip.
+- Next: TASK-0167 forward-only warmup materializer specification while collection continues.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
