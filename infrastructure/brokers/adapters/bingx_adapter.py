@@ -25,6 +25,14 @@ from shared.utils import format_price_for_api
 _BINGX_ENTRY_ADMISSION_LOCK = threading.RLock()
 
 
+class RateLimitAdmissionTimeout(TimeoutError):
+    """A local request was not admitted before its bounded queue deadline."""
+
+    def __init__(self, wait_ms: float):
+        super().__init__("BingX rate-limit admission timed out")
+        self.wait_ms = wait_ms
+
+
 def ensure_client_order_id(order) -> str:
     """B2: return the order's client_order_id, generating + assigning one once if absent.
 
@@ -348,16 +356,25 @@ class _BingXBroker:
         ).hexdigest()
         return signature
 
-    def _rate_limit(self) -> None:
+    def _rate_limit(self, *, priority: bool = False, timeout: Optional[float] = None) -> float:
         """Implement rate limiting for API requests using global rate limiter."""
-        # Wait for a token from the global rate limiter for BingX
-        global_rate_limiter.wait_for_tokens('bingx', 1)
+        started = time.monotonic()
+        admitted = global_rate_limiter.wait_for_tokens(
+            'bingx', 1, priority=priority, timeout=timeout
+        )
+        wait_ms = (time.monotonic() - started) * 1000.0
+        if not admitted:
+            raise RateLimitAdmissionTimeout(wait_ms)
+        return wait_ms
 
     def _make_request(self, method: str, endpoint: str, params: Dict = None, data: Dict = None,
-                      signed: bool = False) -> Dict:
+                      signed: bool = False, *, request_priority: bool = False,
+                      rate_limit_timeout: Optional[float] = None) -> Dict:
         """Make authenticated request to BingX API with transient fault retries."""
         try:
-            self._rate_limit()  # Apply rate limiting before making the request
+            rate_limit_wait_ms = self._rate_limit(
+                priority=request_priority, timeout=rate_limit_timeout
+            )
             url = f"{self.base_url}{endpoint}"
             headers = {
                 'X-BX-APIKEY': self.api_key
@@ -430,7 +447,7 @@ class _BingXBroker:
                 return False
 
             from shared.retry import retry_with_backoff
-            return retry_with_backoff(
+            result = retry_with_backoff(
                 send_api_call,
                 max_attempts=3,
                 base_delay=0.5,
@@ -440,7 +457,12 @@ class _BingXBroker:
                     f"⚠️ BingX API {method} {endpoint} failed (attempt {attempt}): {exc}; retrying in {delay:.2f}s..."
                 )
             )
+            if isinstance(result, dict):
+                result["_client_rate_limit_wait_ms"] = rate_limit_wait_ms
+            return result
 
+        except RateLimitAdmissionTimeout:
+            raise
         except requests.exceptions.RequestException as e:
             self.logger.error(f"Request failed: {str(e)}\n{traceback.format_exc()}")
             raise
@@ -1066,7 +1088,10 @@ class _BingXBroker:
             }
 
             endpoint = "/openApi/swap/v2/trade/order"
-            response = self._make_request('POST', endpoint, params=conditional_order_data, signed=True)
+            response = self._make_request(
+                'POST', endpoint, params=conditional_order_data, signed=True,
+                request_priority=True, rate_limit_timeout=15.0,
+            )
 
             resp_code = response.get('code')
             resp_msg = str(response.get('msg', '')).lower()
@@ -1080,7 +1105,8 @@ class _BingXBroker:
                 return {
                     'success': True,
                     'order_id': order_info.get('orderId'),
-                    'response': response['data']
+                    'response': response['data'],
+                    'rate_limit_wait_ms': response.get('_client_rate_limit_wait_ms'),
                 }
             elif is_conflict:
                 # Position SL/TP conflict: cancel existing conditional order on this symbol and retry
@@ -1093,24 +1119,32 @@ class _BingXBroker:
                         if oid:
                             self.cancel_order(oid, formatted_sym)
                 time.sleep(0.25)
-                retry_resp = self._make_request('POST', endpoint, params=conditional_order_data, signed=True)
+                retry_resp = self._make_request(
+                    'POST', endpoint, params=conditional_order_data, signed=True,
+                    request_priority=True, rate_limit_timeout=15.0,
+                )
                 if retry_resp.get('code') == 0:
                     order_info = retry_resp.get('data', {}).get('order', {})
                     return {
                         'success': True,
                         'order_id': order_info.get('orderId'),
-                        'response': retry_resp['data']
+                        'response': retry_resp['data'],
+                        'rate_limit_wait_ms': retry_resp.get('_client_rate_limit_wait_ms'),
                     }
                 elif retry_resp.get('code') in (110406, 110407, 110411, 100404, 100405, 80016) or 'already exists' in str(retry_resp.get('msg', '')).lower():
                     # Second retry with longer propagation cushion
                     time.sleep(0.40)
-                    retry2_resp = self._make_request('POST', endpoint, params=conditional_order_data, signed=True)
+                    retry2_resp = self._make_request(
+                        'POST', endpoint, params=conditional_order_data, signed=True,
+                        request_priority=True, rate_limit_timeout=15.0,
+                    )
                     if retry2_resp.get('code') == 0:
                         order_info = retry2_resp.get('data', {}).get('order', {})
                         return {
                             'success': True,
                             'order_id': order_info.get('orderId'),
-                            'response': retry2_resp['data']
+                            'response': retry2_resp['data'],
+                            'rate_limit_wait_ms': retry2_resp.get('_client_rate_limit_wait_ms'),
                         }
                     else:
                         return {'success': False, 'error': retry2_resp.get('msg', str(retry2_resp))}
@@ -1120,6 +1154,13 @@ class _BingXBroker:
                 error_msg = response.get('msg', str(response))
                 self.logger.error(f"BingX Swap V2 conditional order failed on {formatted_sym}: {error_msg}")
                 return {'success': False, 'error': error_msg}
+        except RateLimitAdmissionTimeout as e:
+            self.logger.error(f"BingX stop mutation admission timed out for {symbol}")
+            return {
+                'success': False,
+                'error': 'rate limit admission timeout',
+                'rate_limit_wait_ms': e.wait_ms,
+            }
         except Exception as e:
             self.logger.error(f"Failed to place conditional order on BingX Swap V2 for {symbol}: {e}")
             return {'success': False, 'error': str(e)}

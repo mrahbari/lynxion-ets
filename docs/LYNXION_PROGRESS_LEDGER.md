@@ -919,6 +919,16 @@ unless new evidence shows that it blocks valid edge measurement.
 - Next: TASK-0184 wire bounded priority only to stop mutations with stage telemetry
   and failure-injection tests; no runtime reload or broker call.
 
+## 2026-09-07 — TASK-0184 stop priority-admission wiring
+
+- BingX conditional stop POSTs now request FIFO priority from the unchanged global
+  bucket with a 15-second local admission deadline.
+- Admission timeout fails before HTTP, and queue wait is included in prospective
+  response telemetry. Ordinary BingX calls remain non-priority and blocking.
+- Repository-only: no runner reload, broker request, account change, capacity increase,
+  or exit-policy change occurred.
+- Next: TASK-0185 independent review/tests and explicit cohort/deployment decision.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,

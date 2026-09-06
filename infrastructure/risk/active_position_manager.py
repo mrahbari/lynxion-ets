@@ -852,6 +852,7 @@ class ActivePositionManager:
                 response_order_id = None
                 response_classification = None
                 retry_decision = None
+                rate_limit_wait_ms = None
                 response_event = None
 
                 def emit_response() -> Optional[Dict[str, Any]]:
@@ -871,6 +872,7 @@ class ActivePositionManager:
                         "accepted": response_accepted,
                         "exchange_order_id": response_order_id,
                         "latency_ms": response_latency_ms,
+                        "rate_limit_wait_ms": rate_limit_wait_ms,
                         "failure_classification": response_classification,
                         "retry_decision": retry_decision,
                     }
@@ -902,6 +904,7 @@ class ActivePositionManager:
                     response_accepted = bool(res.get("success"))
                     raw_order_id = res.get("order_id")
                     response_order_id = str(raw_order_id) if raw_order_id not in (None, "") else None
+                    rate_limit_wait_ms = res.get("rate_limit_wait_ms")
                     response_error = None if response_accepted else str(res.get("error", "Unknown error"))
                     response_latency_ms = (time.monotonic() - attempt_started) * 1000.0
                     if response_accepted:
