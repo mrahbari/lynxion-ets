@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156's cohort collecting separately and admit another candidate only if a genuinely new,
-point-in-time mechanism and unopened validation boundary remain. Do not promote or retune C-29's
-near-zero aggregate or sparse reverse-time cells.
+Implement C-30 as the single unchanged, independent-universe confirmation of positioning divergence,
+then open it once after review. Keep TASK-0156's cohort collecting separately and do not reslice or
+retune C-29.
 
 ## Status
 
@@ -18,6 +18,10 @@ research remains in progress; C-01 through C-29 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- C-30 is preregistered with outcomes unopened as the single independent confirmation of C-29 on
+  five disjoint symbols. Signal, alignment, 24-hour execution, costs, funding, uncertainty, and
+  absolute sample gates are unchanged; all new input hashes are frozen. Failure closes this family.
 
 - C-29 positioning divergence is REJECTED. Primary N=202, net expectancy was only +0.0010% and PF
   1.0010 at 0.30% cost, with a wide clustered interval crossing zero. SHORT, 2025, and 2026 were
