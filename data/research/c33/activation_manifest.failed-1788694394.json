@@ -1,0 +1,9 @@
+{
+  "activation_boundary": 1788694394,
+  "candidate": "C-33",
+  "candidate_boundary": 1788678803,
+  "collector_commit": "93f361adf82fc52476b5d29d82a1f8895eb74980",
+  "historical_import_allowed": false,
+  "output": "data/research/c33/events.jsonl",
+  "protocol": "edge-candidate-register-v32"
+}

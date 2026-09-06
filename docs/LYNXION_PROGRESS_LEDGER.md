@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156 collecting separately. TASK-0164 completed C-33 collector review; TASK-0165 is at an
-approval gate because valid evidence requires starting a dedicated long-lived research process.
+Keep TASK-0156 collecting separately. TASK-0165 activated one approved C-33 public-data collector;
+TASK-0166 must add a deterministic liveness/bucket auditor while collection continues.
 
 ## Status
 
@@ -17,6 +17,17 @@ research remains in progress; C-01 through C-31 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0165 is ACTIVE/COLLECTING with explicit operator authorization. Exactly one standalone
+  public-data process was verified (PID 86852) on source commit `1c46d42`, with activation boundary
+  `1788694535` and historical import disabled. Its first 17 records use one session, unique keys,
+  four heartbeats and twelve complete symbol klines; minimum epoch `1788694536` is strictly after
+  activation. No liquidation or outcome was yet admitted. Thirteen focused tests and the full suite
+  pass with 916 passed and one optional import-linter skip.
+
+- Three failed C-33 activation attempts are retained outside the active cohort. They fail-closed on
+  same-second activation, live discriminator nesting/universe filtering, and a partial first candle;
+  no failed-cohort candle or liquidation observation was imported into the active ledger.
 
 - TASK-0164 is COMPLETE at repository level. Review canonicalized numeric event identity, added
   original/fill consistency, and verified fail-closed boundary/interruption behavior. No connection
