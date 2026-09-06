@@ -23,7 +23,7 @@ def liquidation(**overrides):
         "E": trade_time + 1,
         "ps": "BTCUSDT",
         "st": 1,
-        "o": {"s": "BTCUSDT", "S": "SELL", "z": "2", "ap": "50000", "X": "FILLED", "T": trade_time},
+        "o": {"s": "BTCUSDT", "S": "SELL", "q": "2", "z": "2", "ap": "50000", "X": "FILLED", "T": trade_time},
     }
     payload.update(overrides)
     return payload
@@ -54,6 +54,21 @@ def test_invalid_fill_and_preboundary_fail_closed():
     payload["o"]["T"] = BOUNDARY * 1000
     with pytest.raises(InvalidC33Event, match="pre-boundary"):
         parse_stream_message(raw(payload), receipt_monotonic_ns=10, session_id="run")
+
+    payload = liquidation()
+    payload["o"]["q"] = "1"
+    with pytest.raises(InvalidC33Event, match="exceeds original"):
+        parse_stream_message(raw(payload), receipt_monotonic_ns=10, session_id="run")
+
+
+def test_semantically_identical_decimal_format_has_same_dedupe_key():
+    first = liquidation()
+    second = liquidation()
+    second["o"]["q"] = second["o"]["z"] = "2.00"
+    second["o"]["ap"] = "50000.0"
+    first_record = parse_stream_message(raw(first), receipt_monotonic_ns=10, session_id="run")
+    second_record = parse_stream_message(raw(second), receipt_monotonic_ns=11, session_id="run")
+    assert first_record["key"] == second_record["key"]
 
 
 def test_only_closed_exact_one_minute_kline_is_persisted():

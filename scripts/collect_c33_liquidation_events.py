@@ -12,6 +12,7 @@ import math
 import os
 import time
 import uuid
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Callable
 
@@ -46,6 +47,16 @@ def _integer(value: Any, field: str) -> int:
         raise InvalidC33Event(f"{field} must be an integer") from error
 
 
+def _canonical_decimal(value: Any, field: str) -> str:
+    try:
+        number = Decimal(str(value))
+    except (InvalidOperation, ValueError) as error:
+        raise InvalidC33Event(f"{field} must be decimal") from error
+    if not number.is_finite() or number <= 0:
+        raise InvalidC33Event(f"{field} must be finite and positive")
+    return format(number.normalize(), "f")
+
+
 def _raw_fields(raw: bytes) -> dict[str, str]:
     return {
         "raw_base64": base64.b64encode(raw).decode("ascii"),
@@ -76,17 +87,22 @@ def parse_stream_message(raw: bytes, *, receipt_monotonic_ns: int, session_id: s
         side = order.get("S")
         trade_time = _integer(order.get("T"), "trade time")
         event_time = _integer(payload.get("E"), "event time")
-        quantity = _positive(order.get("z"), "filled quantity")
-        average_price = _positive(order.get("ap"), "average price")
+        quantity_text = _canonical_decimal(order.get("z"), "filled quantity")
+        average_price_text = _canonical_decimal(order.get("ap"), "average price")
+        original_quantity = _positive(order.get("q"), "original quantity")
+        quantity = _positive(quantity_text, "filled quantity")
+        average_price = _positive(average_price_text, "average price")
         if payload.get("st") != 1:
             raise InvalidC33Event("event is not USD-M")
         if symbol not in SYMBOLS or pair != symbol:
             raise InvalidC33Event("symbol or pair is outside frozen universe")
         if side not in ("BUY", "SELL") or order.get("X") != "FILLED":
             raise InvalidC33Event("side or fill status is invalid")
+        if quantity > original_quantity:
+            raise InvalidC33Event("filled quantity exceeds original quantity")
         if trade_time // 1000 <= BOUNDARY or event_time < trade_time:
             raise InvalidC33Event("event is pre-boundary or causally invalid")
-        key = f"liquidation:1:{symbol}:{side}:{trade_time}:{order.get('z')}:{order.get('ap')}"
+        key = f"liquidation:1:{symbol}:{side}:{trade_time}:{quantity_text}:{average_price_text}"
         return {
             "record_type": "liquidation",
             "key": key,

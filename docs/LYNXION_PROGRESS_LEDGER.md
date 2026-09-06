@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156 collecting separately. TASK-0163 implemented C-33's event/liveness collector without
-network use; TASK-0164 must independently review it before any forward activation.
+Keep TASK-0156 collecting separately. TASK-0164 completed C-33 collector review; TASK-0165 is at an
+approval gate because valid evidence requires starting a dedicated long-lived research process.
 
 ## Status
 
@@ -17,6 +17,11 @@ research remains in progress; C-01 through C-31 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0164 is COMPLETE at repository level. Review canonicalized numeric event identity, added
+  original/fill consistency, and verified fail-closed boundary/interruption behavior. No connection
+  was made. C-33 is now at an approval gate: its continuous public websocket collector is a new
+  long-lived runtime, which the current heartbeat is not authorized to start.
 
 - TASK-0163 is COMPLETE at repository level. A standalone, fail-closed collector now preserves raw
   USD-M liquidation snapshots, exact closed one-minute candles, public time heartbeats, and session
