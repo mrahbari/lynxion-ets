@@ -84,7 +84,15 @@ def parse_stream_message(raw: bytes, *, receipt_monotonic_ns: int, session_id: s
         order = payload.get("o")
         if not isinstance(order, dict):
             raise InvalidC33Event("liquidation order is missing")
-        symbol, pair = order.get("s"), payload.get("ps")
+        symbol = order.get("s")
+        outer_pair, inner_pair = payload.get("ps"), order.get("ps")
+        outer_type, inner_type = payload.get("st"), order.get("st")
+        if outer_pair is not None and inner_pair is not None and outer_pair != inner_pair:
+            raise InvalidC33Event("outer and inner pair fields disagree")
+        if outer_type is not None and inner_type is not None and outer_type != inner_type:
+            raise InvalidC33Event("outer and inner contract types disagree")
+        pair = inner_pair if inner_pair is not None else outer_pair
+        contract_type = inner_type if inner_type is not None else outer_type
         side = order.get("S")
         trade_time = _integer(order.get("T"), "trade time")
         event_time = _integer(payload.get("E"), "event time")
@@ -93,10 +101,12 @@ def parse_stream_message(raw: bytes, *, receipt_monotonic_ns: int, session_id: s
         original_quantity = _positive(order.get("q"), "original quantity")
         quantity = _positive(quantity_text, "filled quantity")
         average_price = _positive(average_price_text, "average price")
-        if payload.get("st") != 1:
-            raise InvalidC33Event("event is not USD-M")
-        if symbol not in SYMBOLS or pair != symbol:
-            raise InvalidC33Event("symbol or pair is outside frozen universe")
+        if contract_type not in (1, 2):
+            raise InvalidC33Event("contract type is missing or invalid")
+        if contract_type != 1 or symbol not in SYMBOLS:
+            return None
+        if pair != symbol:
+            raise InvalidC33Event("symbol and pair are inconsistent")
         if side not in ("BUY", "SELL") or order.get("X") != "FILLED":
             raise InvalidC33Event("side or fill status is invalid")
         if quantity > original_quantity:

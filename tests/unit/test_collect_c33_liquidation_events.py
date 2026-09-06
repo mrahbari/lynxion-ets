@@ -41,11 +41,20 @@ def test_liquidation_parser_preserves_raw_identity_and_censored_notional():
     assert result["raw_sha256"] and result["raw_base64"]
 
 
-@pytest.mark.parametrize("field,value,message", [("st", 2, "USD-M"), ("ps", "ETHUSDT", "symbol" )])
-def test_liquidation_contract_mismatch_fails_closed(field, value, message):
-    payload = liquidation(**{field: value})
-    with pytest.raises(InvalidC33Event, match=message):
-        parse_stream_message(raw(payload), receipt_monotonic_ns=10, session_id="run")
+def test_non_usdm_and_outside_universe_snapshots_are_ignored():
+    assert parse_stream_message(raw(liquidation(st=2)), receipt_monotonic_ns=10, session_id="run") is None
+    payload = liquidation(ps="UNIUSDT")
+    payload["o"]["s"] = "UNIUSDT"
+    assert parse_stream_message(raw(payload), receipt_monotonic_ns=10, session_id="run") is None
+
+
+def test_pair_mismatch_fails_closed_and_nested_discriminator_is_accepted():
+    with pytest.raises(InvalidC33Event, match="inconsistent"):
+        parse_stream_message(raw(liquidation(ps="ETHUSDT")), receipt_monotonic_ns=10, session_id="run")
+    payload = liquidation()
+    payload["o"]["ps"] = payload.pop("ps")
+    payload["o"]["st"] = payload.pop("st")
+    assert parse_stream_message(raw(payload), receipt_monotonic_ns=10, session_id="run")["symbol"] == "BTCUSDT"
 
 
 def test_invalid_fill_and_preboundary_fail_closed():
