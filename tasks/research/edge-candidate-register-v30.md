@@ -1,6 +1,6 @@
 # Edge Candidate Register v30 — C-31 Spot-Led Perpetual Underreaction
 
-**Status:** PREREGISTERED — OUTCOMES UNOPENED
+**Status:** OPENED — C-31 REJECTED
 
 C-31 tests a distinct cross-venue price-discovery mechanism: a large completed Spot move that is
 only partially reflected in the same asset's perpetual may predict short-horizon perpetual catch-up.
@@ -68,3 +68,14 @@ the aligned Spot-versus-perpetual return response has not been opened by prior c
 No shock, lookback, response ratio, direction, horizon, cost, funding rule, overlap rule, period,
 symbol, fold, cluster, or gate may change after outcomes open. Diagnostics cannot alter the verdict.
 No order or production strategy/risk/trailing/symbol/leverage change is authorized.
+
+## Frozen Result
+
+C-31 admitted zero trades in both samples. In the primary period, each symbol had roughly
+1,041-1,251 large Spot shocks after the frozen shock gates, but every same-direction observation
+failed the <=0.50 perpetual/Spot response-ratio condition. Spot and perpetual prices were therefore
+already too closely synchronized at hourly resolution for the preregistered underreaction state to
+exist. All gates fail and verdict is **REJECT**. The response threshold cannot be relaxed on this
+opened panel. Machine report: `docs/reports/edge_candidate_c31.json`.
+The report reproduced byte-for-byte; six focused tests and the full suite pass with 892 passed and
+one optional import-linter skip.

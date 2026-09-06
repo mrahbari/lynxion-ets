@@ -7,23 +7,30 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement and independently review C-31 only against its frozen same-asset Spot-led perpetual-
-underreaction register, then open outcomes once. Keep TASK-0156 collecting separately; do not slice
-C-30's sparse positive cells.
+Keep TASK-0156 collecting separately. C-31 has shown that hourly Spot/perpetual underreaction is
+absent under its frozen definition; do not relax its response ratio. Admit only a genuinely new
+point-in-time mechanism with an unopened boundary.
 
 ## Status
 
 TASK 000 operational closure and TASK 001/002 attribution are complete. Controlled edge
-research remains in progress; C-01 through C-30 historical candidates have not cleared their
+research remains in progress; C-01 through C-31 historical candidates have not cleared their
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
-- C-31's evaluator is implemented with outcomes unopened. It enforces all frozen hashes, exact
+- C-31 Spot-led perpetual underreaction is REJECTED with zero admitted trades. Across each symbol,
+  roughly 1,041-1,251 primary Spot shocks cleared the frozen shock gates, but none had a same-sign
+  perpetual response at or below 50% of Spot. At hourly resolution the venues were already too
+  synchronized for the preregistered state to exist; relaxing the opened response threshold is
+  prohibited. The report reproduced byte-for-byte; six focused tests and the full suite pass with
+  892 passed and one optional import-linter skip.
+
+- Before C-31 outcomes were opened, its evaluator enforced all frozen hashes, exact
   completed Spot/perpetual alignment, causal shock thresholds, underreaction direction/ratio,
   contiguous next-open execution, funding boundaries, fold isolation, clustered uncertainty, and
   the conjunctive gate. Independent review adds strict sign/response and fold-crossing tests. Six
-  focused C-31 tests and eleven relevant tests pass; outcomes remain unopened.
+  focused C-31 tests and eleven relevant tests passed.
 
 - C-31 is preregistered with outcomes unopened. It tests a new same-asset cross-venue price-
   discovery mechanism using exact aligned Spot/perpetual bars, causal Spot-shock thresholds, frozen
