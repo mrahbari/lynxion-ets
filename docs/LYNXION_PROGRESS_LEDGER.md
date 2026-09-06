@@ -818,6 +818,19 @@ unless new evidence shows that it blocks valid edge measurement.
 - Next: TASK-0177 audit the active forward-exit cohort against frozen coverage/linkage gates and the
   operator's profit-giveback concern without changing the +5% policy.
 
+## 2026-09-06 — TASK-0177 active forward-exit cohort audit
+
+- The cohort remains `COLLECTING`: 4,356 prospective events cover 14 identities but
+  no completed position yet, so no exit-profitability verdict is possible.
+- Four accepted stop replacements have complete visibility/commit chains, but 11 of
+  15 responses were rejected and mutation latency reached roughly 248 seconds.
+- Recorded attempts include a nonexistent `UNIUSDT` position, invalid stop-price and
+  timestamp responses, plus below-6%-exchange-ROE breakeven attempts with missing
+  configured-leverage provenance. These are execution-path concerns, not proof for a
+  new 5% floor.
+- Next: TASK-0178 read-only source/event diagnosis of leverage attribution, stale
+  positions, stop validation, and latency before any code or policy change.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
