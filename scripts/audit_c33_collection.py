@@ -41,13 +41,9 @@ def _load_object(path: Path) -> dict[str, Any]:
     return value
 
 
-def _load_rows(path: Path) -> list[dict[str, Any]]:
+def _parse_rows(text: str) -> list[dict[str, Any]]:
     rows = []
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError as error:
-        raise InvalidC33Ledger(f"cannot read {path}") from error
-    for number, line in enumerate(lines, 1):
+    for number, line in enumerate(text.splitlines(), 1):
         if not line.strip():
             continue
         try:
@@ -58,6 +54,13 @@ def _load_rows(path: Path) -> list[dict[str, Any]]:
             raise InvalidC33Ledger(f"line {number} is not an object")
         rows.append(row)
     return rows
+
+
+def _load_rows(path: Path) -> list[dict[str, Any]]:
+    try:
+        return _parse_rows(path.read_text(encoding="utf-8"))
+    except OSError as error:
+        raise InvalidC33Ledger(f"cannot read {path}") from error
 
 
 def _verify_raw(row: dict[str, Any]) -> None:
@@ -71,7 +74,12 @@ def _verify_raw(row: dict[str, Any]) -> None:
         raise InvalidC33Ledger("record raw SHA-256 mismatch")
 
 
-def audit(manifest_path: Path, events_path: Path | None = None) -> dict[str, Any]:
+def audit(
+    manifest_path: Path,
+    events_path: Path | None = None,
+    *,
+    event_bytes: bytes | None = None,
+) -> dict[str, Any]:
     manifest = _load_object(manifest_path)
     required = {
         "candidate": "C-33",
@@ -90,7 +98,13 @@ def audit(manifest_path: Path, events_path: Path | None = None) -> dict[str, Any
     elif str(events_path) != str(configured_output):
         raise InvalidC33Ledger("event path differs from the activation manifest")
 
-    rows = _load_rows(events_path)
+    if event_bytes is None:
+        rows = _load_rows(events_path)
+    else:
+        try:
+            rows = _parse_rows(event_bytes.decode("utf-8"))
+        except UnicodeDecodeError as error:
+            raise InvalidC33Ledger("event snapshot is not UTF-8") from error
     keys: set[str] = set()
     sessions: dict[str, dict[str, int | None]] = {}
     heartbeats: set[tuple[str, int]] = set()

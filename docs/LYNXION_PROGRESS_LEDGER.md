@@ -707,6 +707,17 @@ unless new evidence shows that it blocks valid edge measurement.
 - Verification: 4 focused tests passed; full suite 920 passed with one optional import-linter skip.
 - Next: TASK-0167 forward-only warmup materializer specification while collection continues.
 
+## 2026-09-06 — TASK-0167 C-33 forward warmup materializer
+
+- Added a deterministic snapshot-bound materializer for eligible completed C-33 five-minute buckets.
+- Every eligible bucket expands across the six frozen symbols; verified liveness silence is represented
+  as explicit zero BUY/SELL observed snapshot activity, while incomplete buckets remain absent.
+- No percentile, dominance, signal, trade, funding, or outcome calculation is opened.
+- Focused verification: 6 auditor/materializer tests passed. Live snapshot remains `COLLECTING` with
+  19 eligible buckets and 114 bucket-symbol rows at the captured read.
+- Next: TASK-0168 reproducible live warmup artifact and continued forward collection toward 8,640
+  eligible buckets per symbol.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
