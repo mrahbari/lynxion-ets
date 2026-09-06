@@ -1,0 +1,373 @@
+{
+  "candidate": "C-30",
+  "gate": {
+    "checks": {
+      "bootstrap": false,
+      "concentration": false,
+      "cost_005": true,
+      "folds": false,
+      "primary_n": false,
+      "primary_pf": true,
+      "primary_positive": true,
+      "reverse": false,
+      "sides": false,
+      "symbols": false,
+      "years": false
+    },
+    "verdict": "REJECT"
+  },
+  "max_positive_pnl_symbol_concentration": 0.757433924860934,
+  "primary": {
+    "by_fold": {
+      "F1": {
+        "expectancy": 0.008483113697727244,
+        "max_drawdown": 0.037979218316831535,
+        "n": 13,
+        "profit_factor": 2.677280340449244,
+        "win_rate": 0.6923076923076923
+      },
+      "F2": {
+        "expectancy": -0.002561152216385907,
+        "max_drawdown": 0.11397589221982718,
+        "n": 14,
+        "profit_factor": 0.766016179310991,
+        "win_rate": 0.5
+      },
+      "F3": {
+        "expectancy": -0.005458868066695328,
+        "max_drawdown": 0.0846958457908775,
+        "n": 14,
+        "profit_factor": 0.290675370049247,
+        "win_rate": 0.21428571428571427
+      },
+      "F4": {
+        "expectancy": 0.013637059250978998,
+        "max_drawdown": 0.041958395604993225,
+        "n": 15,
+        "profit_factor": 4.332382234105841,
+        "win_rate": 0.7333333333333333
+      }
+    },
+    "by_side": {
+      "LONG": {
+        "expectancy": 0.07163873791862932,
+        "max_drawdown": 0.0,
+        "n": 2,
+        "profit_factor": null,
+        "win_rate": 1.0
+      },
+      "SHORT": {
+        "expectancy": 0.0010977519821248744,
+        "max_drawdown": 0.11830022627767538,
+        "n": 54,
+        "profit_factor": 1.152733494584875,
+        "win_rate": 0.5185185185185185
+      }
+    },
+    "by_symbol": {
+      "AVAXUSDT": {
+        "expectancy": -0.023486641735322604,
+        "max_drawdown": 0.023486641735322604,
+        "n": 1,
+        "profit_factor": 0.0,
+        "win_rate": 0.0
+      },
+      "DOGEUSDT": {
+        "expectancy": -0.015421067328575809,
+        "max_drawdown": 0.015421067328575809,
+        "n": 1,
+        "profit_factor": 0.0,
+        "win_rate": 0.0
+      },
+      "DOTUSDT": {
+        "expectancy": 0.001888198386512339,
+        "max_drawdown": 0.11830022627767536,
+        "n": 52,
+        "profit_factor": 1.2811667916548055,
+        "win_rate": 0.5384615384615384
+      },
+      "LINKUSDT": {
+        "expectancy": 0.07163873791862932,
+        "max_drawdown": 0.0,
+        "n": 2,
+        "profit_factor": null,
+        "win_rate": 1.0
+      },
+      "LTCUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      }
+    },
+    "by_year": {
+      "2023": {
+        "expectancy": 0.0036170729084286047,
+        "max_drawdown": 0.11830022627767538,
+        "n": 56,
+        "profit_factor": 1.5218931404432652,
+        "win_rate": 0.5357142857142857
+      }
+    },
+    "clustered_bootstrap_95_ci": [
+      -0.0021959747531778767,
+      0.009953054727363918
+    ],
+    "cost_sensitivity": {
+      "0.002": {
+        "expectancy": 0.004617072908428604,
+        "max_drawdown": 0.10697589221982716,
+        "n": 56,
+        "profit_factor": 1.7132199820670826,
+        "win_rate": 0.5535714285714286
+      },
+      "0.003": {
+        "expectancy": 0.0036170729084286047,
+        "max_drawdown": 0.11830022627767538,
+        "n": 56,
+        "profit_factor": 1.5218931404432652,
+        "win_rate": 0.5357142857142857
+      },
+      "0.005": {
+        "expectancy": 0.0016170729084286045,
+        "max_drawdown": 0.1771200229618532,
+        "n": 56,
+        "profit_factor": 1.2051568369627508,
+        "win_rate": 0.5
+      }
+    },
+    "mean_funding_return": -0.00019759696428571426,
+    "overall": {
+      "expectancy": 0.0036170729084286047,
+      "max_drawdown": 0.11830022627767538,
+      "n": 56,
+      "profit_factor": 1.5218931404432652,
+      "win_rate": 0.5357142857142857
+    }
+  },
+  "primary_census": {
+    "AVAXUSDT": {
+      "missing_path": 0,
+      "overlap_rejected": 4,
+      "period_rows": 8015,
+      "same_side_rejected": 7559,
+      "signals": 5,
+      "threshold_rejected": 271,
+      "warmup_rejected": 180
+    },
+    "DOGEUSDT": {
+      "missing_path": 0,
+      "overlap_rejected": 2,
+      "period_rows": 8015,
+      "same_side_rejected": 7723,
+      "signals": 3,
+      "threshold_rejected": 109,
+      "warmup_rejected": 180
+    },
+    "DOTUSDT": {
+      "missing_path": 0,
+      "overlap_rejected": 157,
+      "period_rows": 8015,
+      "same_side_rejected": 6396,
+      "signals": 210,
+      "threshold_rejected": 1229,
+      "warmup_rejected": 180
+    },
+    "LINKUSDT": {
+      "missing_path": 0,
+      "overlap_rejected": 7,
+      "period_rows": 8015,
+      "same_side_rejected": 7587,
+      "signals": 9,
+      "threshold_rejected": 239,
+      "warmup_rejected": 180
+    },
+    "LTCUSDT": {
+      "missing_path": 0,
+      "overlap_rejected": 0,
+      "period_rows": 8013,
+      "same_side_rejected": 7720,
+      "signals": 0,
+      "threshold_rejected": 113,
+      "warmup_rejected": 180
+    }
+  },
+  "protocol": "edge-candidate-register-v29",
+  "reverse": {
+    "by_fold": {
+      "F1": {
+        "expectancy": 0.0816360928641403,
+        "max_drawdown": 0.010526682049497221,
+        "n": 2,
+        "profit_factor": 16.510317967291385,
+        "win_rate": 0.5
+      },
+      "F2": {
+        "expectancy": -0.0066520259496098775,
+        "max_drawdown": 0.013304051899219755,
+        "n": 2,
+        "profit_factor": 0.0,
+        "win_rate": 0.0
+      },
+      "F3": {
+        "expectancy": 0.004713144934577204,
+        "max_drawdown": 0.0,
+        "n": 3,
+        "profit_factor": null,
+        "win_rate": 1.0
+      },
+      "F4": {
+        "expectancy": -0.004205535675753628,
+        "max_drawdown": 0.027593361699355265,
+        "n": 4,
+        "profit_factor": 0.390355445403828,
+        "win_rate": 0.5
+      }
+    },
+    "by_side": {
+      "LONG": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "SHORT": {
+        "expectancy": 0.020543097897441107,
+        "max_drawdown": 0.02759336169935528,
+        "n": 13,
+        "profit_factor": 6.193290602413264,
+        "win_rate": 0.6153846153846154
+      }
+    },
+    "by_symbol": {
+      "AVAXUSDT": {
+        "expectancy": 0.0585163199373665,
+        "max_drawdown": 0.0013333125188410289,
+        "n": 3,
+        "profit_factor": 132.663775245052,
+        "win_rate": 0.6666666666666666
+      },
+      "DOGEUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "DOTUSDT": {
+        "expectancy": 0.009151131285463496,
+        "max_drawdown": 0.027593361699355265,
+        "n": 10,
+        "profit_factor": 2.8269092064011296,
+        "win_rate": 0.6
+      },
+      "LINKUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      },
+      "LTCUSDT": {
+        "expectancy": null,
+        "max_drawdown": null,
+        "n": 0,
+        "profit_factor": null,
+        "win_rate": null
+      }
+    },
+    "by_year": {
+      "2022": {
+        "expectancy": 0.020543097897441107,
+        "max_drawdown": 0.02759336169935528,
+        "n": 13,
+        "profit_factor": 6.193290602413264,
+        "win_rate": 0.6153846153846154
+      }
+    },
+    "clustered_bootstrap_95_ci": [
+      -0.003360878376987042,
+      0.05515862882893495
+    ],
+    "cost_sensitivity": {
+      "0.002": {
+        "expectancy": 0.021543097897441108,
+        "max_drawdown": 0.025593361699355277,
+        "n": 13,
+        "profit_factor": 7.032648967247333,
+        "win_rate": 0.6153846153846154
+      },
+      "0.003": {
+        "expectancy": 0.020543097897441107,
+        "max_drawdown": 0.02759336169935528,
+        "n": 13,
+        "profit_factor": 6.193290602413264,
+        "win_rate": 0.6153846153846154
+      },
+      "0.005": {
+        "expectancy": 0.018543097897441106,
+        "max_drawdown": 0.03159336169935528,
+        "n": 13,
+        "profit_factor": 4.924522943697584,
+        "win_rate": 0.6153846153846154
+      }
+    },
+    "mean_funding_return": -0.00024456538461538454,
+    "overall": {
+      "expectancy": 0.020543097897441107,
+      "max_drawdown": 0.02759336169935528,
+      "n": 13,
+      "profit_factor": 6.193290602413264,
+      "win_rate": 0.6153846153846154
+    }
+  },
+  "reverse_census": {
+    "AVAXUSDT": {
+      "missing_path": 0,
+      "overlap_rejected": 4,
+      "period_rows": 457,
+      "same_side_rejected": 95,
+      "signals": 7,
+      "threshold_rejected": 175,
+      "warmup_rejected": 180
+    },
+    "DOGEUSDT": {
+      "missing_path": 0,
+      "overlap_rejected": 0,
+      "period_rows": 457,
+      "same_side_rejected": 126,
+      "signals": 0,
+      "threshold_rejected": 151,
+      "warmup_rejected": 180
+    },
+    "DOTUSDT": {
+      "missing_path": 0,
+      "overlap_rejected": 32,
+      "period_rows": 457,
+      "same_side_rejected": 14,
+      "signals": 42,
+      "threshold_rejected": 221,
+      "warmup_rejected": 180
+    },
+    "LINKUSDT": {
+      "missing_path": 0,
+      "overlap_rejected": 0,
+      "period_rows": 457,
+      "same_side_rejected": 108,
+      "signals": 0,
+      "threshold_rejected": 169,
+      "warmup_rejected": 180
+    },
+    "LTCUSDT": {
+      "missing_path": 0,
+      "overlap_rejected": 0,
+      "period_rows": 457,
+      "same_side_rejected": 115,
+      "signals": 0,
+      "threshold_rejected": 162,
+      "warmup_rejected": 180
+    }
+  }
+}

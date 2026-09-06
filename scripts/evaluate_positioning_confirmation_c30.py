@@ -3,7 +3,10 @@
 from __future__ import annotations
 import argparse, json
 from pathlib import Path
-from scripts import evaluate_positioning_divergence_c29 as evaluator
+try:
+    from scripts import evaluate_positioning_divergence_c29 as evaluator
+except ModuleNotFoundError:  # Direct `python scripts/...` execution.
+    import evaluate_positioning_divergence_c29 as evaluator
 
 SYMBOLS=("AVAXUSDT","DOGEUSDT","DOTUSDT","LINKUSDT","LTCUSDT")
 CANDIDATE="C-30";PROTOCOL="edge-candidate-register-v29";BOOTSTRAP_SEED=300030

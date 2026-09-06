@@ -1,6 +1,6 @@
 # Edge Candidate Register v29 — C-30 Independent Positioning-Divergence Confirmation
 
-**Status:** PREREGISTERED — OUTCOMES UNOPENED
+**Status:** OPENED — C-30 REJECTED; FAMILY CLOSED
 
 C-30 is the one permitted independent confirmation of C-29's top-trader/crowd positioning-
 divergence mechanism. It preserves the signal and economic specification exactly but moves to five
@@ -64,3 +64,16 @@ the positioning-divergence family closes under the sequential research policy.
 
 No C-29 parameter or gate is relaxed. No post-result slice or variant is permitted. No order or
 production strategy/risk/trailing/symbol/leverage change is authorized.
+
+## Frozen Result
+
+C-30 produced only 56 primary trades. Net expectancy was +0.3617% and PF 1.5219 at 0.30% cost,
+and remained positive at 0.50%, but the daily-clustered interval crossed zero
+[-0.2196%, +0.9953%]. Two folds were negative; only two LONG trades occurred; 52/56 trades were
+DOT; concentration was 75.74%; and only 2023 had observations. The positive reverse result had
+only 13 all-SHORT trades. Every minimum sample, breadth, side, year, reverse, uncertainty, and
+concentration gate failed. Verdict **REJECT**. Together with C-29, this closes the exact
+positioning-divergence family without threshold/symbol/direction variants. Machine report:
+`docs/reports/edge_candidate_c30.json`.
+The report reproduced byte-for-byte; ten focused tests and the full suite pass with 886 passed and
+one optional import-linter skip.

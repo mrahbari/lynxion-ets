@@ -7,22 +7,33 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Implement C-30 as the single unchanged, independent-universe confirmation of positioning divergence,
-then open it once after review. Keep TASK-0156's cohort collecting separately and do not reslice or
-retune C-29.
+Keep TASK-0156's cohort collecting separately. Close positioning divergence after C-29/C-30 and
+admit future work only from a genuinely different mechanism with point-in-time data and an unopened
+boundary; do not slice the sparse positive C-30 cells.
 
 ## Status
 
 TASK 000 operational closure and TASK 001/002 attribution are complete. Controlled edge
-research remains in progress; C-01 through C-29 historical candidates have not cleared their
+research remains in progress; C-01 through C-30 historical candidates have not cleared their
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
 
-- C-30's evaluator is implemented with outcomes unopened by reusing C-29's unchanged mechanics and
+- C-30 is REJECTED and the positioning-divergence family is closed. Its +0.3617% primary expectancy
+  and PF 1.5219 came from only 56 trades, including 52 DOT and only two LONGs; the clustered interval
+  crossed zero, concentration was 75.74%, two folds were negative, and later primary years had no
+  observations. Reverse was just 13 all-SHORT trades. These sparse positives cannot be promoted or
+  re-sliced despite remaining positive at 0.50% cost. The report reproduced byte-for-byte; ten
+  focused tests and the full suite pass with 886 passed and one optional import-linter skip.
+
+- Before outcomes were opened, C-30's evaluator reused C-29's unchanged mechanics and
   substituting only the preregistered disjoint universe, four frozen hash maps, report identity, and
   bootstrap seed. C-29's default identity/seed remain unchanged, and import-order isolation passes
-  in both directions. Nine combined focused tests pass; C-30 outcomes remain unopened.
+  in both directions.
+
+- C-30's first direct CLI preflight exposed a local module-resolution error before any source was
+  loaded or outcome calculated. The wrapper now supports both package import and direct-script
+  execution, with a subprocess regression test; the frozen research specification is unchanged.
 
 - C-11 updated at `2026-09-06T00:34:52+00:00`: its sole BTC candidate remains PENDING, N=0, and
   `COLLECTING`. Its funding timestamp is strictly after epoch `1788082349`; no history was imported.
