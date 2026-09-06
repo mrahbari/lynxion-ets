@@ -779,6 +779,19 @@ unless new evidence shows that it blocks valid edge measurement.
   gates are explicit.
 - Next: TASK-0174 independent implementation review and tests before the one authorized outcome run.
 
+## 2026-09-06 — TASK-0174 review and open C-34
+
+- Seven focused regressions and the full 942-test suite passed (one optional import-linter skip)
+  before the frozen outcome run.
+- C-34 is **REJECTED**: primary N=688, expectancy -0.2800%, PF 0.7733, daily-clustered 95% CI
+  [-0.5296%, -0.0341%], only one positive fold, both sides negative, all years negative, and four of
+  six symbols negative. Reverse 2023 was also negative (-0.2987%, PF 0.7210, N=267).
+- Even 0.20% friction remained negative (-0.1800%); 0.50% produced -0.4800%. Concentration passed
+  but cannot rescue the negative economics. Report reproduced byte-for-byte.
+- C-11's due update added no record; all funding timestamps remain strictly post-boundary and its
+  verdict remains `COLLECTING` at N=1.
+- Next: TASK-0175 cross-family synthesis and historical-research stop/admission decision.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,

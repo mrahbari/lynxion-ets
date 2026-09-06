@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 from scripts.evaluate_cross_venue_flow_c34 import (
-    BAR_SECONDS, DECISION_SECONDS, HOLD_BARS, WARMUP, bootstrap, causal_features, collect,
+    BAR_SECONDS, DECISION_SECONDS, HOLD_BARS, WARMUP, bootstrap, causal_features, collect, verify,
 )
 
 
@@ -63,6 +63,32 @@ def test_same_sign_flow_is_not_a_signal():
     events, census = collect("BTCUSDT", features, price, funding, timestamp, timestamp + 1)
     assert events == []
     assert census["opposition_rejected"] == 1
+
+
+def test_equal_threshold_and_incomplete_path_fail_closed():
+    timestamp = 1_704_067_200
+    features = pd.DataFrame([{
+        "decision_timestamp": timestamp, "spot_score": 0.8, "futures_score": -0.2,
+        "divergence": 1.0, "spot_threshold": 0.8, "divergence_threshold": 0.7,
+    }]).set_index("decision_timestamp")
+    empty_price = pd.DataFrame({"timestamp": [], "open": []}).set_index("timestamp")
+    funding = pd.DataFrame({"timestamp": [], "funding_rate": []})
+    events, census = collect("BTCUSDT", features, empty_price, funding, timestamp, timestamp + 1)
+    assert events == []
+    assert census["spot_threshold_rejected"] == 1
+
+    features.loc[timestamp, "spot_threshold"] = 0.
+    events, census = collect("BTCUSDT", features, empty_price, funding, timestamp, timestamp + 1)
+    assert events == []
+    assert census["signals"] == 1
+    assert census["missing_path"] == 1
+
+
+def test_full_file_hash_mismatch_fails_before_parsing(tmp_path):
+    path = tmp_path / "source.csv.gz"
+    path.write_bytes(b"changed")
+    with pytest.raises(ValueError, match="hash mismatch"):
+        verify(path, "0" * 64)
 
 
 def test_bootstrap_clusters_same_utc_day(monkeypatch):

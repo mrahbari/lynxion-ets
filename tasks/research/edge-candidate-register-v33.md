@@ -1,6 +1,6 @@
 # Edge Candidate Register v33 — C-34 Cross-Venue Aggressive-Flow Divergence
 
-**Status:** PRE-REGISTERED — OUTCOMES SEALED
+**Status:** OPENED — C-34 REJECTED
 
 C-34 tests whether aggressive Spot flow contains information when same-asset USD-M perpetual flow
 leans the other way. The new causal moderator is venue-of-origin disagreement; this is not a
@@ -92,3 +92,15 @@ No source, universe, window, score, threshold, lookback, opposition rule, direct
 funding boundary, overlap rule, sample gate, fold, bootstrap, concentration, drawdown, or period may
 change after outcomes open. Diagnostics cannot change the verdict. No new variant, historical
 reslice, order, broker call, production strategy/risk/trailing/symbol/leverage change is authorized.
+
+## Frozen Result
+
+C-34 produced 688 primary trades with -0.2800% net expectancy, PF 0.7733, and a daily-clustered
+95% interval of [-0.5296%, -0.0341%]. Only fold 2 was positive; both sides, all three primary years,
+and four of six symbols were negative. Even the 0.20% cost sensitivity was negative (-0.1800%),
+while 0.50% cost produced -0.4800%. The 2023 temporal reverse was also negative (-0.2987%,
+PF 0.7210, N=267). Only sample size and concentration gates passed; verdict **REJECT**.
+
+Machine report: `docs/reports/edge_candidate_c34.json`, SHA-256
+`a0f2b50bd4e4cd6f2dbef1cd127055a186a43e7a53b8950b647389e65cc30144`. A second run reproduced
+the report byte-for-byte.
