@@ -900,6 +900,16 @@ unless new evidence shows that it blocks valid edge measurement.
 - Next: TASK-0182 consume the classification in synchronization, add telemetry, and
   prove bounded attempts without deployment or threshold changes.
 
+## 2026-09-06 — TASK-0182 bounded stop-retry consumer
+
+- Wired terminal failure classification into stop synchronization without changing
+  exit thresholds, leverage, limiter capacity, broker settings, or runtime state.
+- Stale/ambiguous failures now defer after one attempt; timestamp failures receive at
+  most one newly signed outer retry; adapter exceptions no longer multiply retries.
+- Prospective responses now include failure class and retry decision. Exact visibility
+  remains mandatory before any local state commit.
+- Next: TASK-0183 bounded FIFO priority admission in the existing global limiter.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,

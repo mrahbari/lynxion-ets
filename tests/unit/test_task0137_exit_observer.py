@@ -137,9 +137,9 @@ def test_each_existing_stop_attempt_emits_one_request_and_response(monkeypatch):
 
         def _place_conditional_order(self, **kwargs):
             self.place_calls += 1
-            if self.place_calls < 3:
-                return {"success": False, "error": "rejected"}
-            return {"success": True, "order_id": "stop-3"}
+            if self.place_calls == 1:
+                return {"success": False, "error": "timestamp is invalid"}
+            return {"success": True, "order_id": "stop-2"}
 
         def get_pending_orders(self, symbol):
             self.pending_calls += 1
@@ -148,7 +148,7 @@ def test_each_existing_stop_attempt_emits_one_request_and_response(monkeypatch):
                 "side": "SELL",
                 "positionSide": "LONG",
                 "stopPrice": "101.0",
-                "orderId": "stop-3",
+                "orderId": "stop-2",
             }]
 
     events = []
@@ -164,14 +164,14 @@ def test_each_existing_stop_attempt_emits_one_request_and_response(monkeypatch):
     requests = [event for event in events if event["event_type"] == "STOP_REPLACE_REQUESTED"]
     responses = [event for event in events if event["event_type"] == "STOP_REPLACE_RESPONDED"]
     assert result is True
-    assert broker.place_calls == 3
+    assert broker.place_calls == 2
     assert broker.pending_calls == 1
-    assert [event["attempt"] for event in requests] == [1, 2, 3]
-    assert [event["attempt"] for event in responses] == [1, 2, 3]
+    assert [event["attempt"] for event in requests] == [1, 2]
+    assert [event["attempt"] for event in responses] == [1, 2]
     assert [event["causal_event_id"] for event in responses] == [
         event["event_id"] for event in requests
     ]
-    assert [event["accepted"] for event in responses] == [False, False, True]
+    assert [event["accepted"] for event in responses] == [False, True]
 
 
 def test_stop_observer_failure_does_not_generate_broker_retry():

@@ -850,6 +850,8 @@ class ActivePositionManager:
                 response_error = None
                 response_accepted = False
                 response_order_id = None
+                response_classification = None
+                retry_decision = None
                 response_event = None
 
                 def emit_response() -> Optional[Dict[str, Any]]:
@@ -869,6 +871,8 @@ class ActivePositionManager:
                         "accepted": response_accepted,
                         "exchange_order_id": response_order_id,
                         "latency_ms": response_latency_ms,
+                        "failure_classification": response_classification,
+                        "retry_decision": retry_decision,
                     }
                     self._emit_exit_observation(response_event)
                     return response_event
@@ -900,6 +904,15 @@ class ActivePositionManager:
                     response_order_id = str(raw_order_id) if raw_order_id not in (None, "") else None
                     response_error = None if response_accepted else str(res.get("error", "Unknown error"))
                     response_latency_ms = (time.monotonic() - attempt_started) * 1000.0
+                    if response_accepted:
+                        response_classification = None
+                        retry_decision = "VERIFY_VISIBILITY"
+                    else:
+                        response_classification = self._classify_stop_failure(response_error)
+                        if response_classification == "TIMESTAMP_RETRYABLE" and attempt == 1:
+                            retry_decision = "RETRY_NEW_TIMESTAMP"
+                        else:
+                            retry_decision = "DEFER_FRESH_EVALUATION"
                     emit_response()
                     if res.get("success"):
                         visibility_evidence = self._query_pending_stop_visibility(
@@ -939,15 +952,18 @@ class ActivePositionManager:
                     else:
                         err_msg = res.get("error", "Unknown error")
                         logger.warning(f"SL placement attempt {attempt}/{max_sl_attempts} failed on {symbol}: {err_msg}")
-                        if attempt < max_sl_attempts:
+                        if retry_decision == "RETRY_NEW_TIMESTAMP":
                             time.sleep(0.30)
+                            continue
+                        break
                 except Exception as place_err:
                     response_latency_ms = (time.monotonic() - attempt_started) * 1000.0
                     response_error = str(place_err)
+                    response_classification = "TRANSPORT_OR_ADAPTER_TERMINAL"
+                    retry_decision = "DEFER_FRESH_EVALUATION"
                     emit_response()
                     logger.warning(f"Error during SL placement attempt {attempt}/{max_sl_attempts} on {symbol}: {place_err}")
-                    if attempt < max_sl_attempts:
-                        time.sleep(0.30)
+                    break
 
             if not placed:
                 logger.error(f"❌ Failed to update Broker Stop Loss on exchange for {symbol} after {max_sl_attempts} attempts")
