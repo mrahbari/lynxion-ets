@@ -23,6 +23,12 @@ def test_parse_book_normalizes_both_venues():
     assert parse_book("bingx", json.loads(raw_book(bid=99, ask=100, timestamp=1, bingx=True)))["asks"] == [(100.0, 20.0)]
 
 
+def test_documented_bingx_depth_shape_without_server_time_fails_closed():
+    payload = {"code": 0, "data": {"bids": [["99", "20"]], "asks": [["100", "20"]]}}
+    with pytest.raises(InvalidObservation, match="server timestamp is missing"):
+        parse_book("bingx", payload)
+
+
 def test_depth_vwap_walks_levels_and_rejects_partial_depth():
     assert depth_vwap([(100.0, 2.0), (101.0, 3.0)], 4.0) == pytest.approx(100.5)
     with pytest.raises(InvalidObservation, match="insufficient depth"):

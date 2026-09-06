@@ -7,8 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156 collecting separately. TASK-0159 implemented C-32's collector without network use;
-TASK-0160 must independently review it and freeze activation metadata before the first public call.
+Keep TASK-0156 collecting separately. C-32 is data-blocked before activation because its frozen
+BingX book cannot supply the required unauthenticated per-book server time. TASK-0161 must select a
+new mechanism/data source without altering C-32 post-result.
 
 ## Status
 
@@ -17,6 +18,12 @@ research remains in progress; C-01 through C-31 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0160 is COMPLETE and C-32 is `DATA_BLOCKED` before its first observation. Official Binance
+  depth semantics match the collector, but the official BingX depth shape lacks the frozen per-book
+  server timestamp; newer BingX instructions also require signed key-bearing market-data requests.
+  Substitution would alter the preregistration, so no activation manifest or network call occurred.
+  Eleven focused tests and the full suite pass with 903 passed and one optional import-linter skip.
 
 - TASK-0159 is COMPLETE at repository level. Its standalone collector validates synchronized public
   Binance/BingX books, walks depth for identical quantity, hashes raw responses, and fail-closes on

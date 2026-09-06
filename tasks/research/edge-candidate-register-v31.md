@@ -1,6 +1,6 @@
 # Edge Candidate Register v31 — C-32 Cross-Venue Perpetual Dislocation
 
-**Status:** PRE-REGISTERED — PROSPECTIVE READ-ONLY COLLECTION ONLY
+**Status:** DATA_BLOCKED BEFORE FIRST OBSERVATION
 
 **Prospective boundary:** `2026-09-06T04:39:12Z` (`1788669552` epoch seconds).
 
@@ -68,3 +68,11 @@ No threshold, notional, venue, symbol, timing tolerance, convergence rule, horiz
 funding boundary, overlap rule, sample gate, fold, bootstrap, concentration, or drawdown gate may
 change after the first accepted observation. No backfill, diagnostic reslicing, paper order, real
 order, broker execution call, production integration, account change, or secret is authorized.
+
+## Frozen Feasibility Result
+
+TASK-0160 found that BingX's official depth response contract does not provide the per-book server
+timestamp required by this preregistration, while its newer official market-data instructions also
+require signed API-key requests. Substituting receipt time, a separate clock, authentication, or a
+different venue would change the frozen contract. No endpoint was called and no observation exists.
+C-32 is therefore `DATA_BLOCKED`; it cannot transition to COLLECTING under this specification.
