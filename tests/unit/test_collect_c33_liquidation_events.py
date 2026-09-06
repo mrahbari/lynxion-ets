@@ -5,6 +5,7 @@ import pytest
 from scripts.collect_c33_liquidation_events import (
     BOUNDARY,
     InvalidC33Event,
+    activate,
     append_record,
     lifecycle_record,
     parse_heartbeat,
@@ -111,3 +112,30 @@ def test_append_is_idempotent_and_corruption_fails_closed(tmp_path):
 def test_append_rejects_unknown_or_preboundary_records(tmp_path):
     with pytest.raises(InvalidC33Event, match="unknown or pre-boundary"):
         append_record(tmp_path / "events.jsonl", {"record_type": "unknown", "key": "x"})
+
+
+def test_activation_creates_frozen_manifest_only_for_empty_output(tmp_path):
+    output = tmp_path / "events.jsonl"
+    manifest_path = tmp_path / "activation.json"
+    manifest = activate(manifest_path, output, now=BOUNDARY + 100, commit="abc")
+    assert manifest["activation_boundary"] == BOUNDARY + 100
+    assert manifest["historical_import_allowed"] is False
+    assert activate(manifest_path, output, now=BOUNDARY + 200, commit="abc") == manifest
+
+    other_output = tmp_path / "nonempty.jsonl"
+    other_output.write_text("x")
+    with pytest.raises(InvalidC33Event, match="empty output"):
+        activate(tmp_path / "other.json", other_output, now=BOUNDARY + 100, commit="abc")
+
+
+def test_activation_rejects_commit_drift_and_post_prereg_pre_activation_row(tmp_path):
+    output = tmp_path / "events.jsonl"
+    manifest_path = tmp_path / "activation.json"
+    activate(manifest_path, output, now=BOUNDARY + 100, commit="abc")
+    with pytest.raises(InvalidC33Event, match="current launch"):
+        activate(manifest_path, output, now=BOUNDARY + 200, commit="def")
+
+    record = lifecycle_record("run", "STARTED", (BOUNDARY + 50) * 1000, 10)
+    output.write_text(json.dumps(record) + "\n")
+    with pytest.raises(InvalidC33Event, match="pre-boundary"):
+        activate(manifest_path, output, now=BOUNDARY + 200, commit="abc")

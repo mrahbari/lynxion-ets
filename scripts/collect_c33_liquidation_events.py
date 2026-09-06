@@ -10,6 +10,7 @@ import hashlib
 import json
 import math
 import os
+import subprocess
 import time
 import uuid
 from decimal import Decimal, InvalidOperation
@@ -187,7 +188,7 @@ def lifecycle_record(session_id: str, state: str, timestamp_ms: int, monotonic_n
     }
 
 
-def _validate_record_boundary(record: dict[str, Any]) -> None:
+def _record_epoch_seconds(record: dict[str, Any]) -> int:
     field_by_type = {
         "liquidation": "trade_time_ms",
         "kline_close": "open_time_ms",
@@ -195,15 +196,21 @@ def _validate_record_boundary(record: dict[str, Any]) -> None:
         "session": "timestamp_ms",
     }
     field = field_by_type.get(record.get("record_type"))
-    if field is None or _integer(record.get(field), field) // 1000 <= BOUNDARY:
+    if field is None:
+        raise InvalidC33Event("record is unknown or pre-boundary")
+    return _integer(record.get(field), field) // 1000
+
+
+def _validate_record_boundary(record: dict[str, Any], boundary: int = BOUNDARY) -> None:
+    if _record_epoch_seconds(record) <= boundary:
         raise InvalidC33Event("record is unknown or pre-boundary")
 
 
-def append_record(path: Path, record: dict[str, Any]) -> bool:
+def append_record(path: Path, record: dict[str, Any], boundary: int = BOUNDARY) -> bool:
     key = str(record.get("key", ""))
     if not key:
         raise InvalidC33Event("record key is required")
-    _validate_record_boundary(record)
+    _validate_record_boundary(record, boundary)
     keys: set[str] = set()
     if path.exists():
         for line in path.read_text(encoding="utf-8").splitlines():
@@ -215,7 +222,7 @@ def append_record(path: Path, record: dict[str, Any]) -> bool:
                 raise InvalidC33Event("ledger contains malformed JSON") from error
             if not isinstance(existing, dict):
                 raise InvalidC33Event("ledger contains a non-object record")
-            _validate_record_boundary(existing)
+            _validate_record_boundary(existing, boundary)
             existing_key = str(existing.get("key", ""))
             if not existing_key or existing_key in keys:
                 raise InvalidC33Event("ledger contains invalid or duplicate key")
@@ -237,9 +244,59 @@ def fetch_heartbeat(get: Callable[..., Any] = requests.get) -> bytes:
     return bytes(response.content)
 
 
-async def collect(output: Path) -> None:
+def activate(manifest_path: Path, output: Path, *, now: int | None = None, commit: str | None = None) -> dict[str, Any]:
+    now = int(time.time()) if now is None else int(now)
+    if commit is None:
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
+        ).stdout.strip()
+    if not commit or now <= BOUNDARY:
+        raise InvalidC33Event("activation metadata is invalid")
+    if manifest_path.exists():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        expected = {
+            "candidate": "C-33",
+            "protocol": "edge-candidate-register-v32",
+            "candidate_boundary": BOUNDARY,
+            "collector_commit": commit,
+            "output": str(output),
+            "historical_import_allowed": False,
+        }
+        if any(manifest.get(key) != value for key, value in expected.items()):
+            raise InvalidC33Event("activation manifest does not match current launch")
+        activation_boundary = _integer(manifest.get("activation_boundary"), "activation boundary")
+        if activation_boundary <= BOUNDARY:
+            raise InvalidC33Event("activation boundary is invalid")
+        if output.exists():
+            for line in output.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    _validate_record_boundary(json.loads(line), activation_boundary)
+        return manifest
+    if output.exists() and output.stat().st_size:
+        raise InvalidC33Event("new activation requires an empty output")
+    manifest = {
+        "candidate": "C-33",
+        "protocol": "edge-candidate-register-v32",
+        "candidate_boundary": BOUNDARY,
+        "activation_boundary": now,
+        "collector_commit": commit,
+        "output": str(output),
+        "historical_import_allowed": False,
+    }
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = manifest_path.with_suffix(manifest_path.suffix + ".tmp")
+    temporary.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(temporary, manifest_path)
+    return manifest
+
+
+async def collect(output: Path, activation_boundary: int) -> None:
     session_id = str(uuid.uuid4())
-    append_record(output, lifecycle_record(session_id, "STARTED", int(time.time() * 1000), time.monotonic_ns()))
+    append_record(
+        output,
+        lifecycle_record(session_id, "STARTED", int(time.time() * 1000), time.monotonic_ns()),
+        activation_boundary,
+    )
     streams = ["!forceOrder@arr", *(f"{symbol.lower()}@kline_1m" for symbol in SYMBOLS)]
     uri = STREAM_URL + "/".join(streams)
     try:
@@ -250,27 +307,35 @@ async def collect(output: Path) -> None:
                 raw = raw_message.encode() if isinstance(raw_message, str) else bytes(raw_message)
                 record = parse_stream_message(raw, receipt_monotonic_ns=time.monotonic_ns(), session_id=session_id)
                 if record is not None:
-                    append_record(output, record)
+                    append_record(output, record, activation_boundary)
                 current_minute = int(time.time()) // 60
                 if current_minute != last_heartbeat_minute:
                     heartbeat_raw = await asyncio.to_thread(fetch_heartbeat)
                     heartbeat = parse_heartbeat(
                         heartbeat_raw, receipt_monotonic_ns=time.monotonic_ns(), session_id=session_id
                     )
-                    append_record(output, heartbeat)
+                    append_record(output, heartbeat, activation_boundary)
                     last_heartbeat_minute = current_minute
     finally:
-        append_record(output, lifecycle_record(session_id, "ENDED", int(time.time() * 1000), time.monotonic_ns()))
+        append_record(
+            output,
+            lifecycle_record(session_id, "ENDED", int(time.time() * 1000), time.monotonic_ns()),
+            activation_boundary,
+        )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path("data/research/c33/events.jsonl"))
+    parser.add_argument(
+        "--activation-manifest", type=Path, default=Path("data/research/c33/activation_manifest.json")
+    )
     parser.add_argument("--enable-network", action="store_true")
     args = parser.parse_args()
     if not args.enable_network:
         raise SystemExit("network collection is fail-closed; pass --enable-network explicitly")
-    asyncio.run(collect(args.output))
+    manifest = activate(args.activation_manifest, args.output)
+    asyncio.run(collect(args.output, int(manifest["activation_boundary"])))
 
 
 if __name__ == "__main__":
