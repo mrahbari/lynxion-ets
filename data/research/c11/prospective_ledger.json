@@ -2,24 +2,29 @@
   "boundary": 1788082349,
   "candidate": "C-11",
   "metrics": {
-    "expectancy": null,
-    "n": 0,
-    "profit_factor": null,
+    "expectancy": -0.0003663239570894242,
+    "n": 1,
+    "profit_factor": 0.0,
     "verdict": "COLLECTING"
   },
   "protocol": "edge-candidate-register-v10",
   "records": [
     {
+      "entry_price": 79616.6,
+      "exit_price": 79832.5,
       "expected_entry_timestamp": 1788596100,
       "expected_exit_timestamp": 1788682500,
       "funding_rate": -1.5e-06,
+      "funding_return": -7.807e-05,
       "funding_timestamp": 1788595200,
       "key": "BTCUSDT:1788595200",
+      "net_return": -0.0003663239570894242,
+      "price_return": 0.002711746042910576,
       "severity_ratio": 2.840909090909092,
-      "status": "PENDING",
+      "status": "COMPLETE",
       "symbol": "BTCUSDT",
       "threshold": 5.279999999999998e-07
     }
   ],
-  "updated_at": "2026-09-06T00:34:52+00:00"
+  "updated_at": "2026-09-06T08:52:47+00:00"
 }

@@ -97,8 +97,10 @@ frozen promotion gates and production strategy logic is unchanged.
   loaded or outcome calculated. The wrapper now supports both package import and direct-script
   execution, with a subprocess regression test; the frozen research specification is unchanged.
 
-- C-11 updated at `2026-09-06T00:34:52+00:00`: its sole BTC candidate remains PENDING, N=0, and
-  `COLLECTING`. Its funding timestamp is strictly after epoch `1788082349`; no history was imported.
+- C-11 updated at `2026-09-06T08:52:47+00:00`: its first prospective BTC outcome is COMPLETE with
+  -0.0366% net return after frozen cost and funding (N=1, PF=0). Its funding timestamp `1788595200`
+  is strictly after boundary `1788082349`; no history was imported. This single loss is not a
+  candidate verdict and C-11 correctly remains `COLLECTING` until every frozen gate is satisfied.
 
 - C-30 is preregistered with outcomes unopened as the single independent confirmation of C-29 on
   five disjoint symbols. Signal, alignment, 24-hour execution, costs, funding, uncertainty, and
