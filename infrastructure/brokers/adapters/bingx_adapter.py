@@ -372,15 +372,19 @@ class _BingXBroker:
                       rate_limit_timeout: Optional[float] = None) -> Dict:
         """Make authenticated request to BingX API with transient fault retries."""
         try:
-            rate_limit_wait_ms = self._rate_limit(
-                priority=request_priority, timeout=rate_limit_timeout
-            )
+            rate_limit_wait_ms = 0.0
             url = f"{self.base_url}{endpoint}"
             headers = {
                 'X-BX-APIKEY': self.api_key
             }
 
             def send_api_call():
+                nonlocal rate_limit_wait_ms
+                # Every physical HTTP attempt consumes capacity. Admission outside
+                # the retry callback would let transient retries bypass the bucket.
+                rate_limit_wait_ms += self._rate_limit(
+                    priority=request_priority, timeout=rate_limit_timeout
+                )
                 if signed:
                     all_params = {}
                     if params:

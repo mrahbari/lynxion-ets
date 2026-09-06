@@ -929,6 +929,16 @@ unless new evidence shows that it blocks valid edge measurement.
   or exit-policy change occurred.
 - Next: TASK-0185 independent review/tests and explicit cohort/deployment decision.
 
+## 2026-09-07 — TASK-0185 stop-admission independent review
+
+- Review found and fixed one capacity-accounting gap: transient HTTP retries previously
+  reacquired no token because admission sat outside the retry callback. Every physical
+  attempt now consumes the unchanged global capacity and contributes queue timing.
+- All frozen retry, priority, visibility, and state-commit invariants are preserved.
+- Verdict: `REPOSITORY_READY — DEPLOYMENT_GATED`. The live process still runs old code;
+  reload requires a new empty prospective cohort bound to the new commit and explicit
+  runtime approval. No runtime or broker action occurred.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
