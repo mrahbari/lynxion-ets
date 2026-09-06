@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156's cohort collecting separately. Close positioning divergence after C-29/C-30 and
-admit future work only from a genuinely different mechanism with point-in-time data and an unopened
-boundary; do not slice the sparse positive C-30 cells.
+Implement and independently review C-31 only against its frozen same-asset Spot-led perpetual-
+underreaction register, then open outcomes once. Keep TASK-0156 collecting separately; do not slice
+C-30's sparse positive cells.
 
 ## Status
 
@@ -18,6 +18,11 @@ research remains in progress; C-01 through C-30 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- C-31 is preregistered with outcomes unopened. It tests a new same-asset cross-venue price-
+  discovery mechanism using exact aligned Spot/perpetual bars, causal Spot-shock thresholds, frozen
+  underreaction ratio, next-open perpetual execution, funding/costs, temporal reverse, uncertainty,
+  breadth, and concentration gates. It is not a basis or cross-symbol lead-lag variant.
 
 - C-30 is REJECTED and the positioning-divergence family is closed. Its +0.3617% primary expectancy
   and PF 1.5219 came from only 56 trades, including 52 DOT and only two LONGs; the clustered interval
