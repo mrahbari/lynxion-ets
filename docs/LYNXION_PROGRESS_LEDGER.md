@@ -760,6 +760,15 @@ unless new evidence shows that it blocks valid edge measurement.
 - Next: TASK-0172 freeze the single C-34 specification and all robustness/rejection gates before
   calculating any forward return.
 
+## 2026-09-06 — TASK-0172 preregister C-34 cross-venue flow divergence
+
+- Committed Edge Candidate Register v33 before opening any C-34 conditional outcome.
+- Frozen one exact Spot-versus-futures aggressive-flow disagreement signal, causal prior-180 p90
+  thresholds, Spot direction, exact next-open/24-hour execution, funding, 0.30% primary/0.50% stress
+  cost, temporal folds/reverse, clustered uncertainty, breadth, concentration, and drawdown gates.
+- All 24 Spot/futures-flow/perpetual-price/funding file hashes and strict missing-data rules are bound.
+- Next: TASK-0173 implement the evaluator unchanged with hash-first and causality/execution tests.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
