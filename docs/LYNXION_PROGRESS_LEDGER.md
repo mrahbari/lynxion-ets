@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156 collecting separately. C-31 has shown that hourly Spot/perpetual underreaction is
-absent under its frozen definition; do not relax its response ratio. Admit only a genuinely new
-point-in-time mechanism with an unopened boundary.
+Keep TASK-0156 collecting separately. TASK-0157 selected a prospective cross-venue perpetual
+dislocation mechanism; TASK-0158 must preregister its read-only data-feasibility collector before
+any conditional observation or outcome is opened.
 
 ## Status
 
@@ -18,6 +18,11 @@ research remains in progress; C-01 through C-31 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0157 is COMPLETE. It prohibits further variants from the opened directional panels and
+  admits one distinct market-neutral direction for data-feasibility preregistration only:
+  prospective cross-venue perpetual price dislocation using executable public quotes and full
+  two-leg costs. No edge is claimed, no outcome was opened, and no runtime setting changed.
 
 - C-31 Spot-led perpetual underreaction is REJECTED with zero admitted trades. Across each symbol,
   roughly 1,041-1,251 primary Spot shocks cleared the frozen shock gates, but none had a same-sign
