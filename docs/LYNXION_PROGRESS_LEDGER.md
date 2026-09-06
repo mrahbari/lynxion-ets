@@ -771,6 +771,14 @@ unless new evidence shows that it blocks valid edge measurement.
   digests; no candidate mechanic changed.
 - Next: TASK-0173 implement the evaluator unchanged with hash-first and causality/execution tests.
 
+## 2026-09-06 — TASK-0173 implement C-34 evaluator
+
+- Implemented register v33 without opening frozen panel outcomes.
+- Hash-first enforcement, exact completed-window alignment, prior-only p90 thresholds, opposition,
+  direction, 24-hour next-open execution, funding, costs, folds, daily clustering, and all frozen
+  gates are explicit.
+- Next: TASK-0174 independent implementation review and tests before the one authorized outcome run.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
