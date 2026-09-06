@@ -128,6 +128,7 @@ def summarize(trades: list[dict[str, Any]]) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--limit", type=int, default=50)
+    parser.add_argument("--order-limit", type=int, default=500, choices=range(1, 1001))
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
@@ -143,7 +144,7 @@ def main() -> None:
     })._broker
     response = adapter._make_request(
         "GET", "/openApi/swap/v2/trade/allOrders",
-        data={"marginCoin": "VST", "limit": 500}, signed=True,
+        data={"marginCoin": "VST", "limit": args.order_limit}, signed=True,
     )
     if response.get("code") != 0:
         raise RuntimeError(f"BingX history request failed: code={response.get('code')}")

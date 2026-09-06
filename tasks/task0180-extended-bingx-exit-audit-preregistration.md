@@ -4,6 +4,14 @@
 
 `PREREGISTERED — OUTCOMES UNOPENED`
 
+## Data-availability amendment (outcomes still unopened)
+
+The official maximum single-response limit of 1,000 orders produced 98 fully
+reconstructable completed positions. Before requesting any candle or calculating any
+excursion/outcome metric, freeze all 98 as a labeled `INSUFFICIENT_FOR_N100` diagnostic
+sample. Compare positions 1–49 with 50–98. This availability-only amendment changes no
+metric, trade definition, threshold, or interpretation gate.
+
 ## Objective
 
 Extend the read-only TASK-0129 diagnostic from 50 to the latest 100 completed BingX
