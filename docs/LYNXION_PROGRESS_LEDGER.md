@@ -792,6 +792,20 @@ unless new evidence shows that it blocks valid edge measurement.
   verdict remains `COLLECTING` at N=1.
 - Next: TASK-0175 cross-family synthesis and historical-research stop/admission decision.
 
+## 2026-09-06 — TASK-0175 cross-family historical stop decision
+
+- **STOP CURRENT HISTORICAL PANEL:** no candidate passed all frozen profitability, uncertainty,
+  temporal, breadth, concentration, drawdown, and stress-cost gates.
+- Further combinations or threshold/symbol/direction/horizon variants on the opened price, volume,
+  funding, OI, depth, basis, positioning, taker-flow, and Spot/perpetual panels are now disallowed as
+  insufficiently independent and too exposed to data snooping.
+- This does not stop the objective: C-11, C-33, and the forward exit-management cohort continue under
+  their prospective gates.
+- A new historical candidate requires a genuinely new public point-in-time source, distinct mechanism,
+  executable economics, reliable timestamps, and unopened boundary.
+- Next: TASK-0176 new-source feasibility review; select at most one defensible source or record
+  `NO_ADMISSIBLE_SOURCE` without manufacturing another hypothesis.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
