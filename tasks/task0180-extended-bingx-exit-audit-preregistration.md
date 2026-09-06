@@ -1,0 +1,44 @@
+# TASK-0180 — Extended recent BingX exit audit preregistration
+
+## Status
+
+`PREREGISTERED — OUTCOMES UNOPENED`
+
+## Objective
+
+Extend the read-only TASK-0129 diagnostic from 50 to the latest 100 completed BingX
+VST positions, or up to 150 only if the same single history response supports that
+many fully reconstructable positions. Determine whether profit giveback persists in
+an older temporal block without selecting or deploying new exit thresholds.
+
+## Frozen analysis
+
+- Source: one authoritative BingX VST `allOrders` response plus public BingX one-minute
+  candles from each reconstructed entry through exit.
+- Position reconstruction: filled non-reduce-only entry and filled reduce-only exit
+  sharing a non-zero `positionID`, identical to TASK-0129.
+- Primary sample: latest 100 completed positions. If fewer than 100 are reconstructable,
+  report insufficiency and do not substitute another endpoint or widen the definition.
+- Optional extension: latest 150 only when already reconstructable from that response;
+  do not paginate adaptively after seeing outcomes.
+- Primary temporal comparison: newest positions 1–50 versus positions 51–100.
+- Metrics: sample size, net realized PnL/estimated ROE, profit factor, win rate, median
+  MFE/MAE/giveback, exit types, side/symbol concentration, and counts crossing estimated
+  +10%/+12% MFE before exiting below +5% net ROE.
+- Historical leverage missing from `allOrders` remains explicit. Any normalized 10x
+  view is sensitivity analysis, not authoritative historical ROE.
+- One-minute candle extremes estimate opportunity; they do not prove manager observation,
+  exchange-visible stop state, or executable fill at the extreme.
+
+## Interpretation gate
+
+This is diagnostic attribution, not a trading-edge admission test. Persistence of
+giveback across both 50-position blocks may prioritize execution-path remediation and
+a prospective exit-policy comparison. It cannot select a 5% floor from the same data.
+No result authorizes a threshold, runtime, account, or order mutation.
+
+## Next
+
+Run the frozen read-only acquisition. Preserve an aggregate reproducible report without
+publishing credentials or unnecessary raw identifiers. Resume the TASK-0179 correction
+implementation after this bounded operator-requested audit.

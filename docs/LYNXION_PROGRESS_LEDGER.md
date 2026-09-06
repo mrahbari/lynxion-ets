@@ -860,6 +860,18 @@ unless new evidence shows that it blocks valid edge measurement.
 - Next: TASK-0180 implement deterministic tests and the minimal source change; no
   threshold change, broker access, runtime reload, or deployment.
 
+## 2026-09-06 — TASK-0180 extended BingX exit audit preregistration
+
+- Preregistered the operator-requested extension before reopening outcomes: latest 100
+  reconstructable VST positions, with 150 allowed only if the same response already
+  contains them.
+- Froze a newest-50 versus older-50 temporal comparison and the existing net/MFE/MAE,
+  giveback, exit-type, side, symbol, concentration, and friction-aware diagnostics.
+- Historical leverage absence and one-minute excursion limitations remain explicit.
+  This audit cannot select or deploy a 5% floor from its own result.
+- Next: perform one read-only acquisition and then resume implementation of the bounded
+  stop-mutation correction from TASK-0179.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
