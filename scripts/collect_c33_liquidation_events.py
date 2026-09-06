@@ -291,6 +291,9 @@ def activate(manifest_path: Path, output: Path, *, now: int | None = None, commi
 
 
 async def collect(output: Path, activation_boundary: int) -> None:
+    delay = activation_boundary + 1 - time.time()
+    if delay > 0:
+        await asyncio.sleep(delay)
     session_id = str(uuid.uuid4())
     append_record(
         output,

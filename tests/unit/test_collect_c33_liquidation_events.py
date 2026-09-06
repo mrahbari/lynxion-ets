@@ -1,4 +1,5 @@
 import json
+import asyncio
 
 import pytest
 
@@ -11,6 +12,7 @@ from scripts.collect_c33_liquidation_events import (
     parse_heartbeat,
     parse_stream_message,
 )
+import scripts.collect_c33_liquidation_events as collector
 
 
 def raw(payload):
@@ -139,3 +141,17 @@ def test_activation_rejects_commit_drift_and_post_prereg_pre_activation_row(tmp_
     output.write_text(json.dumps(record) + "\n")
     with pytest.raises(InvalidC33Event, match="pre-boundary"):
         activate(manifest_path, output, now=BOUNDARY + 200, commit="abc")
+
+
+def test_collect_waits_until_strictly_after_activation_boundary(monkeypatch, tmp_path):
+    sleeps = []
+
+    async def fake_sleep(delay):
+        sleeps.append(delay)
+
+    monkeypatch.setattr(collector.time, "time", lambda: BOUNDARY + 10.25)
+    monkeypatch.setattr(collector.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(collector, "lifecycle_record", lambda *args: (_ for _ in ()).throw(RuntimeError("stop")))
+    with pytest.raises(RuntimeError, match="stop"):
+        asyncio.run(collector.collect(tmp_path / "events.jsonl", BOUNDARY + 10))
+    assert sleeps == [pytest.approx(0.75)]
