@@ -18,10 +18,10 @@ Command:
   broker reported did not exist; the remaining failures include invalid stop-price
   placement and an invalid timestamp before later retries succeeded.
 - Observed replacement latency ranged into minutes (up to about 248 seconds).
-- `LINKUSDT` and `BCHUSDT` breakeven replacement attempts were emitted while the
-  recorded exchange-leverage ROE was below the frozen 6% trigger. Their events have
-  `configured_leverage=null` and `exchange_leverage=5.0`, so leverage provenance or
-  trigger attribution is not yet sufficient to explain the decision.
+- `LINKUSDT` and `BCHUSDT` breakeven replacement attempts were emitted below the
+  normal 6% trigger. Follow-up source attribution identifies these as the separate
+  three-hour time-decay rule, whose 5x fee-coverage threshold is 1.75% ROE; they are
+  therefore not evidence of incorrect leverage selection.
 - No schema/integrity violation is reported by the cohort auditor, and every accepted
   mutation has a complete request/response/visibility/commit chain.
 

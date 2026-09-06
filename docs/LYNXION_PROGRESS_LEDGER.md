@@ -824,12 +824,27 @@ unless new evidence shows that it blocks valid edge measurement.
   no completed position yet, so no exit-profitability verdict is possible.
 - Four accepted stop replacements have complete visibility/commit chains, but 11 of
   15 responses were rejected and mutation latency reached roughly 248 seconds.
-- Recorded attempts include a nonexistent `UNIUSDT` position, invalid stop-price and
-  timestamp responses, plus below-6%-exchange-ROE breakeven attempts with missing
-  configured-leverage provenance. These are execution-path concerns, not proof for a
-  new 5% floor.
+- Recorded attempts include a nonexistent `UNIUSDT` position plus invalid stop-price
+  and timestamp responses. Below-6%-ROE LINK/BCH attempts were subsequently attributed
+  to the separate intended three-hour time-decay rule, not a leverage defect. None of
+  this is proof for a new 5% floor.
 - Next: TASK-0178 read-only source/event diagnosis of leverage attribution, stale
   positions, stop validation, and latency before any code or policy change.
+
+## 2026-09-06 — TASK-0178 forward-exit mutation latency diagnosis
+
+- Corrected TASK-0177 attribution: the below-6% LINK/BCH breakeven requests came from
+  the intended three-hour time-decay rule (1.75% fee-coverage ROE at observed 5x), not
+  from incorrect leverage selection.
+- Diagnosed the execution concern as a synchronous queue/retry problem: all BingX
+  traffic shares a five-request-per-minute blocking token bucket, stop replacement is
+  serial, and manager/adapter/HTTP retry layers can nest.
+- The failed UNI sequence alone occupied roughly 235.5 seconds. Position and mark
+  price are not refreshed immediately before later submissions, explaining stale
+  `position not exist` and invalid stop-price responses without proving exchange fault.
+- Status: `DIAGNOSED_NOT_FIXED`; this can contaminate exit-edge measurement and must
+  be bounded before a 5% profit-floor experiment. Next: TASK-0179 minimal fail-closed
+  correction specification and tests, with no deployment or threshold change.
 
 ## Operator decision required
 
