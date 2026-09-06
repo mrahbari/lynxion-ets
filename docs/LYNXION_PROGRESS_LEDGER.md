@@ -7,9 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156 collecting separately. TASK-0157 selected a prospective cross-venue perpetual
-dislocation mechanism; TASK-0158 must preregister its read-only data-feasibility collector before
-any conditional observation or outcome is opened.
+Keep TASK-0156 collecting separately. C-32 is preregistered with no observations opened; TASK-0159
+must implement and disconnect-test its public-data collector before the prospective first run.
 
 ## Status
 
@@ -18,6 +17,12 @@ research remains in progress; C-01 through C-31 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0158 is COMPLETE. C-32 freezes a prospective boundary, public Binance/BingX perpetual books,
+  exact time/depth validity, 1,000-USDT two-leg VWAP, 0.60% admission, convergence/four-hour exit,
+  funding, 0.30% primary and 0.50% stress friction, chronological folds, clustered uncertainty,
+  breadth, concentration, and drawdown gates. No observation or outcome was opened and no network,
+  broker, or runtime path was called.
 
 - TASK-0157 is COMPLETE. It prohibits further variants from the opened directional panels and
   admits one distinct market-neutral direction for data-feasibility preregistration only:
