@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156 collecting separately. C-33 is preregistered with no stream opened; TASK-0163 must
-implement its append-only event/liveness collector with disconnected tests only.
+Keep TASK-0156 collecting separately. TASK-0163 implemented C-33's event/liveness collector without
+network use; TASK-0164 must independently review it before any forward activation.
 
 ## Status
 
@@ -17,6 +17,12 @@ research remains in progress; C-01 through C-31 historical candidates have not c
 frozen promotion gates and production strategy logic is unchanged.
 
 ## Latest verified findings
+
+- TASK-0163 is COMPLETE at repository level. A standalone, fail-closed collector now preserves raw
+  USD-M liquidation snapshots, exact closed one-minute candles, public time heartbeats, and session
+  lifecycle with append-only restart dedupe. Network requires an explicit flag and was not used;
+  signal, outcomes, broker, orders, and runtime remain unopened. Eight focused tests and the full
+  suite pass with 911 passed and one optional import-linter skip.
 
 - TASK-0162 is COMPLETE. C-33 freezes a forward-only Binance USD-M liquidation-exhaustion reversal
   using liveness-complete five-minute buckets, a causal 30-day p99 plus absolute/dominance gates,

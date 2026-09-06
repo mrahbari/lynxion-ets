@@ -1,0 +1,98 @@
+import json
+
+import pytest
+
+from scripts.collect_c33_liquidation_events import (
+    BOUNDARY,
+    InvalidC33Event,
+    append_record,
+    lifecycle_record,
+    parse_heartbeat,
+    parse_stream_message,
+)
+
+
+def raw(payload):
+    return json.dumps(payload, separators=(",", ":")).encode()
+
+
+def liquidation(**overrides):
+    trade_time = (BOUNDARY + 10) * 1000
+    payload = {
+        "e": "forceOrder",
+        "E": trade_time + 1,
+        "ps": "BTCUSDT",
+        "st": 1,
+        "o": {"s": "BTCUSDT", "S": "SELL", "z": "2", "ap": "50000", "X": "FILLED", "T": trade_time},
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_liquidation_parser_preserves_raw_identity_and_censored_notional():
+    body = raw({"stream": "!forceOrder@arr", "data": liquidation()})
+    result = parse_stream_message(body, receipt_monotonic_ns=10, session_id="run")
+    assert result["record_type"] == "liquidation"
+    assert result["observed_notional"] == 100_000
+    assert result["snapshot_censored"] is True
+    assert result["raw_sha256"] and result["raw_base64"]
+
+
+@pytest.mark.parametrize("field,value,message", [("st", 2, "USD-M"), ("ps", "ETHUSDT", "symbol" )])
+def test_liquidation_contract_mismatch_fails_closed(field, value, message):
+    payload = liquidation(**{field: value})
+    with pytest.raises(InvalidC33Event, match=message):
+        parse_stream_message(raw(payload), receipt_monotonic_ns=10, session_id="run")
+
+
+def test_invalid_fill_and_preboundary_fail_closed():
+    payload = liquidation()
+    payload["o"]["X"] = "NEW"
+    with pytest.raises(InvalidC33Event, match="fill status"):
+        parse_stream_message(raw(payload), receipt_monotonic_ns=10, session_id="run")
+    payload = liquidation()
+    payload["o"]["T"] = BOUNDARY * 1000
+    with pytest.raises(InvalidC33Event, match="pre-boundary"):
+        parse_stream_message(raw(payload), receipt_monotonic_ns=10, session_id="run")
+
+
+def test_only_closed_exact_one_minute_kline_is_persisted():
+    start = ((BOUNDARY + 100) * 1000 // 60_000 + 1) * 60_000
+    payload = {"e": "kline", "E": start + 60_000, "s": "BTCUSDT", "k": {
+        "s": "BTCUSDT", "i": "1m", "x": False, "t": start, "T": start + 59_999,
+        "o": "100", "h": "102", "l": "99", "c": "101",
+    }}
+    assert parse_stream_message(raw(payload), receipt_monotonic_ns=10, session_id="run") is None
+    payload["k"]["x"] = True
+    result = parse_stream_message(raw(payload), receipt_monotonic_ns=10, session_id="run")
+    assert result["key"] == f"kline:BTCUSDT:{start}"
+    assert result["close"] == 101
+
+    payload["k"]["h"] = "100"
+    with pytest.raises(InvalidC33Event, match="OHLC"):
+        parse_stream_message(raw(payload), receipt_monotonic_ns=10, session_id="run")
+
+
+def test_heartbeat_and_lifecycle_are_boundary_guarded():
+    heartbeat = parse_heartbeat(
+        raw({"serverTime": (BOUNDARY + 100) * 1000}), receipt_monotonic_ns=10, session_id="run"
+    )
+    assert heartbeat["record_type"] == "heartbeat"
+    assert lifecycle_record("run", "STARTED", (BOUNDARY + 1) * 1000, 10)["state"] == "STARTED"
+    with pytest.raises(InvalidC33Event):
+        lifecycle_record("run", "STARTED", BOUNDARY * 1000, 10)
+
+
+def test_append_is_idempotent_and_corruption_fails_closed(tmp_path):
+    path = tmp_path / "events.jsonl"
+    record = lifecycle_record("run", "STARTED", (BOUNDARY + 1) * 1000, 10)
+    assert append_record(path, record) is True
+    assert append_record(path, record) is False
+    path.write_text("bad-json\n")
+    with pytest.raises(InvalidC33Event, match="malformed JSON"):
+        append_record(path, record)
+
+
+def test_append_rejects_unknown_or_preboundary_records(tmp_path):
+    with pytest.raises(InvalidC33Event, match="unknown or pre-boundary"):
+        append_record(tmp_path / "events.jsonl", {"record_type": "unknown", "key": "x"})
