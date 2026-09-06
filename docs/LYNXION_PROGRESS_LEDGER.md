@@ -846,6 +846,20 @@ unless new evidence shows that it blocks valid edge measurement.
   be bounded before a 5% profit-floor experiment. Next: TASK-0179 minimal fail-closed
   correction specification and tests, with no deployment or threshold change.
 
+## 2026-09-06 — TASK-0179 fail-closed stop-mutation contract
+
+- Froze a minimal correction contract without changing exit policy: one global BingX
+  capacity, FIFO priority for trade mutations, bounded queue admission, and terminal
+  stale-snapshot error classification.
+- `position not exist` and wrong-side stop-price errors must stop immediately and wait
+  for a fresh evaluation; timestamp failures get at most one newly signed retry.
+- Existing protective stops cannot be cancelled on queue, transport, stale-position,
+  invalid-price, or ambiguous failures. State still advances only after exact broker
+  visibility and commit evidence.
+- Added explicit queue/adapter/total latency and retry-decision telemetry requirements.
+- Next: TASK-0180 implement deterministic tests and the minimal source change; no
+  threshold change, broker access, runtime reload, or deployment.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
