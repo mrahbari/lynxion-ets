@@ -767,6 +767,8 @@ unless new evidence shows that it blocks valid edge measurement.
   thresholds, Spot direction, exact next-open/24-hour execution, funding, 0.30% primary/0.50% stress
   cost, temporal folds/reverse, clustered uncertainty, breadth, concentration, and drawdown gates.
 - All 24 Spot/futures-flow/perpetual-price/funding file hashes and strict missing-data rules are bound.
+- Before any outcome opened, manifest content digests were replaced by actual full compressed-file
+  digests; no candidate mechanic changed.
 - Next: TASK-0173 implement the evaluator unchanged with hash-first and causality/execution tests.
 
 ## Operator decision required

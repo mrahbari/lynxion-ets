@@ -18,20 +18,20 @@ threshold, symbol, direction, or horizon variant of rejected single-venue taker-
 ## Frozen Data and Boundaries
 
 - Symbols: BTCUSDT, ETHUSDT, BNBUSDT, XRPUSDT, ADAUSDT, and SOLUSDT.
-- Spot flow files from TASK-0118 (`quote_volume`, `taker_buy_quote_volume`) SHA-256: BTC
-  `dd81f6a4dc01fce15e284bbfea6ac7099ee96de939c3f9ce542d64548769687a`, ETH
-  `ac98650b7c4060d5583c6bb8252e6677eaeafa22f06bf961bc379a0d3ff7538d`, BNB
-  `856e8b07116b6db6460d509ea846f4da84dcfe6516950bf5146a870f4256adce`, XRP
-  `cf8eda963a37fc1f7d9a11eaedcc3471980c29ba162520dd4693b087215d45e0`, ADA
-  `b8e7a38729dd68542467ce16e1da29426c9c1af95439a7a3e64fba2d1dc73c10`, SOL
-  `a842335380d6c5ec86345868147b220555568e1820ed1aa04aaf0e78f5cf14f4`.
-- Futures flow files from TASK-0114 (`quote_volume`, `taker_buy_quote_volume`) SHA-256: BTC
-  `0c3f30c211be9e30a48f02506bb8dca5628ef145a0732f08b399360bb87f56e1`, ETH
-  `963d93764e16dee6abb16f088f81af3411ad3302f5115555834b738c74036796`, BNB
-  `a7feedd9df834b916a9178687b667730a3de2a543f263385d7e265f94683d3e6`, XRP
-  `102016f14d3493d5b40072ee73d75a0089fc3ad0fe41311136e96cbf591518b9`, ADA
-  `32f9e871946887fed4319d8880b961a427dbc5f69a89c43d689af83657dcc7e6`, SOL
-  `94fda3caebea1bc52e1a45be3315c445fb1c588a20dd55c8c428a5402246dfb0`.
+- Spot flow files from TASK-0118 (`quote_volume`, `taker_buy_quote_volume`) full compressed-file
+  SHA-256: BTC `2b58717c3f464e84ab531db07f4263b4c83b52c2f6b460a5445ec150f9c5dec3`, ETH
+  `79e83e1947022c51126093ef72ab97f0e38fe3d40851fed8c3ad5a15afce75fa`, BNB
+  `29294ff4fe8c7ee52b3e35f36e944735c7fed09fb5e3878f0720d7ae3352c4c8`, XRP
+  `a87b83e107e7536fa4e68b280c27700da9bd3f6dbd8b96ca8e39aa104c817455`, ADA
+  `f081b9da47ce30e2746a235d6a78ad7269ef7add8d6738eac49ac8b1af7c5452`, SOL
+  `7ac0701eeb2b50ac30cd3575219ada620d567783a3cd10be98813f39869c9011`.
+- Futures flow files from TASK-0114 (`quote_volume`, `taker_buy_quote_volume`) full compressed-file
+  SHA-256: BTC `f0af424c2b0d001b479f91f3ed0429d0d089b990c007f8968e09761138dd5a93`, ETH
+  `166467c924a404d5c9927c450c9da927532aabcbd828918c38bd53638d3fd970`, BNB
+  `79d701f617d3d1920cea26f0217c9a5c8ef6cc24a869a59cc846fcbb93e49276`, XRP
+  `e11d0e30bdd00574dbc6b2bef2c60b66bd6a8a102806544ad3305d0a24898805`, ADA
+  `b088031506c7fa0c42f609b1afa6eb9a49ab9898cb848ed6dd00c6b5b71b9520`, SOL
+  `d45916f83648f1f534e1cc6ab2adba28679403491963279134118a8e8b2c1b29`.
 - Native perpetual price SHA-256: BTC `30e02acebd29a4e47032be70baa7dd3ec0c38a246915fa8329e899edbc07aabb`,
   ETH `d44a16a5a7363d6833d0e4e60035acd63826e3e9f65fb3aef260e4c4fde08843`, BNB
   `7c9f289c34040f6228f8cdfe415fa045f641b2e7292108bf97bdde34db74c0c0`, XRP

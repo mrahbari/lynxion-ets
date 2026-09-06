@@ -10,6 +10,10 @@ concentration, drawdown, reverse-time, and no-relaxation rules.
 No evaluator was implemented or executed in this task. No signal count, return, trade, PnL, or
 diagnostic conditional cell has been opened.
 
+Before evaluator implementation, manifest content digests were corrected to the actual full
+compressed-file SHA-256 values. This pre-outcome correction changes no signal or gate and makes
+hash-first enforcement executable.
+
 ## Next unit
 
 TASK-0173 must implement the deterministic evaluator directly from register v33 with hash enforcement
