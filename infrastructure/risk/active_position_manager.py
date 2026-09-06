@@ -774,6 +774,25 @@ class ActivePositionManager:
             target = target.broker
         return target
 
+    @staticmethod
+    def _classify_stop_failure(error: Any) -> str:
+        """Classify a rejected stop mutation without exposing exchange payloads."""
+        message = str(error or "").strip().lower()
+        stale_markers = (
+            "position not exist",
+            "position does not exist",
+            "position side",
+            "stop loss price should be lower",
+            "stop loss price should be higher",
+            "stop price should be lower",
+            "stop price should be higher",
+        )
+        if any(marker in message for marker in stale_markers):
+            return "STALE_SNAPSHOT_TERMINAL"
+        if "timestamp" in message and ("invalid" in message or "expired" in message):
+            return "TIMESTAMP_RETRYABLE"
+        return "AMBIGUOUS_TERMINAL"
+
     def _sync_sl_to_exchange(
         self,
         broker: Any,

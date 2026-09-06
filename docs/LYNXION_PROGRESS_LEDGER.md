@@ -888,6 +888,14 @@ unless new evidence shows that it blocks valid edge measurement.
 - Next: resume the bounded stop-mutation correction; use the prospective lifecycle
   cohort for any future frozen exit-policy comparison.
 
+## 2026-09-06 — TASK-0181 stop-failure classification primitive
+
+- Added a pure fail-closed classifier with no broker or retry behavior change.
+- Stale position/side/price failures are terminal, timestamp invalid/expired is the
+  sole retryable class, and unknown failures are ambiguous-terminal.
+- Next: TASK-0182 consume the classification in synchronization, add telemetry, and
+  prove bounded attempts without deployment or threshold changes.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
