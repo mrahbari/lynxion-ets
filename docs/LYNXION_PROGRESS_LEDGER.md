@@ -872,6 +872,22 @@ unless new evidence shows that it blocks valid edge measurement.
 - Next: perform one read-only acquisition and then resume implementation of the bounded
   stop-mutation correction from TASK-0179.
 
+## 2026-09-06 — TASK-0180 extended BingX exit audit outcome
+
+- The official maximum single response reconstructed 98 completed VST positions;
+  this remains explicitly short of the preregistered N=100 target.
+- Persistent giveback is supported diagnostically: 56/98 reached estimated 10x MFE
+  >=10%, and 27 of those exited below +5%. Median estimated MFE was +11.61%, median
+  net exit +2.29%, and median giveback 10.19 points.
+- Persistence held across temporal blocks: newest 49 had 12 giveback cases and older
+  49 had 15; their median giveback was 10.10 versus 10.26 points.
+- Aggregate realized net PnL was +6.001067 with PF 1.6088, but the older block was
+  much weaker, SHORT aggregate was negative, and symbol contribution was uneven.
+- All 98 historical leverage fields were absent and MFE uses one-minute extremes.
+  Result: `PERSISTENT_GIVEBACK_DIAGNOSTIC`, not evidence selecting a 5% policy.
+- Next: resume the bounded stop-mutation correction; use the prospective lifecycle
+  cohort for any future frozen exit-policy comparison.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,

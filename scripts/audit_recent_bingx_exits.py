@@ -129,11 +129,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--limit", type=int, default=50)
     parser.add_argument("--order-limit", type=int, default=500, choices=range(1, 1001))
+    parser.add_argument("--audit-rate-per-minute", type=int, default=60)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
     from bootstrap.settings.loaders import load_settings
     from infrastructure.brokers.adapters.bingx_adapter import BingXBrokerAdapter
+    from shared.rate_limiter import GlobalRateLimiter
+
+    # This script runs in an isolated read-only process. Keep the runtime default
+    # untouched while avoiding its five-request/minute execution-path throttle.
+    audit_limiter = GlobalRateLimiter().get_limiter("bingx")
+    audit_limiter.max_requests = max(1, args.audit_rate_per_minute)
+    audit_limiter.tokens = audit_limiter.max_requests
 
     settings = load_settings()
     broker = settings.broker

@@ -2,7 +2,7 @@
 
 ## Status
 
-`PREREGISTERED — OUTCOMES UNOPENED`
+`COMPLETE — PERSISTENT_GIVEBACK_DIAGNOSTIC`
 
 ## Data-availability amendment (outcomes still unopened)
 
@@ -47,6 +47,6 @@ No result authorizes a threshold, runtime, account, or order mutation.
 
 ## Next
 
-Run the frozen read-only acquisition. Preserve an aggregate reproducible report without
-publishing credentials or unnecessary raw identifiers. Resume the TASK-0179 correction
-implementation after this bounded operator-requested audit.
+The 98-position result is recorded in `docs/LYNXION_EXTENDED_BINGX_EXIT_AUDIT.md`.
+Resume the TASK-0179 correction implementation after this bounded operator-requested
+audit; do not select a 5% floor from these outcomes.
