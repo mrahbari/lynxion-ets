@@ -1126,6 +1126,15 @@ unless new evidence shows that it blocks valid edge measurement.
 - Admission exposes no metrics, and no prospective record or result was opened.
 - Next: TASK-0204 implement the deterministic evaluator on synthetic fixtures only.
 
+## 2026-09-07 — TASK-0204 deterministic shadow aggregate evaluator
+
+- Implemented all frozen paired, bootstrap, aggregate/fold, stress, side, concentration,
+  drawdown, and worst-5% tail gates using the preregistered constants.
+- A closed coverage gate returns `COLLECTING` without reading economic fields; after it
+  opens, all gates pass to separate deployment review or any failure is `REJECT`.
+- Only synthetic fixtures were evaluated; no prospective result was opened.
+- Next: TASK-0205 independent review and full regression suite.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
