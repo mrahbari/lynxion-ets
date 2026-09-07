@@ -1077,6 +1077,15 @@ unless new evidence shows that it blocks valid edge measurement.
   no return, fill simulation, cohort outcome, or broker path was opened.
 - Next: TASK-0199 funding linkage and primary/stress slippage input contract.
 
+## 2026-09-07 — TASK-0199 funding and slippage inputs
+
+- Added fail-closed funding admission with complete entry-to-exit coverage, strict
+  between-settlement timing, unique IDs, source/hash provenance, and correct side sign.
+- Froze the exact preregistered 0.10% primary, 0.20% stress, and 0.10% candidate
+  remaining-exit slippage inputs; any variant is rejected.
+- No endpoint, runtime, cohort outcome, PnL, or trading setting was accessed.
+- Next: TASK-0200 paired per-position outcome calculation behind the coverage gate.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
