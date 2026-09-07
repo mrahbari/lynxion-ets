@@ -1146,6 +1146,16 @@ unless new evidence shows that it blocks valid edge measurement.
 - Verdict: `EVALUATOR_REPOSITORY_READY — PROSPECTIVE COVERAGE CLOSED`; no outcome opened.
 - Next: TASK-0206 freeze the artifact manifest and activation blockers.
 
+## 2026-09-07 — TASK-0206 exit-shadow artifact freeze
+
+- Added a deterministic manifest over 24 preregistration, source, and test artifacts,
+  with individual SHA-256 values and one artifact-set hash.
+- Activation remains blocked by the aborted VST protection check, absence of a verified
+  collecting post-fix cohort, and missing real fee/entry/funding evidence.
+- Status: `EVALUATOR_FROZEN_OUTCOMES_UNOPENED`; repository readiness is not runtime or
+  profitability evidence.
+- Next: continue safe edge work while runtime/broker activation remains approval-gated.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,

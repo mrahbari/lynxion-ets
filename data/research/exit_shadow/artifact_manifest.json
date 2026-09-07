@@ -1,0 +1,128 @@
+{
+  "artifact_set_sha256": "e98ba7b1ea286e36515103290c1e59cebf33bf513422de319c713ee9771602fb",
+  "artifacts": [
+    {
+      "bytes": 4025,
+      "path": "tasks/research/exit-policy-register-v1.md",
+      "sha256": "ef2c791e1a0b2bbbf49e6eb0f1d6f510ed8ea9e30f31a1c1b1b2dedf2d08cd6b"
+    },
+    {
+      "bytes": 5291,
+      "path": "infrastructure/research/exit_policy_shadow.py",
+      "sha256": "827fab3a0e612840265fe2fe83705515381bf7955d74d0ab3c6e4861fda2615f"
+    },
+    {
+      "bytes": 4836,
+      "path": "infrastructure/research/exit_policy_shadow_input.py",
+      "sha256": "7c4f648ea104c3a81b896b03da5c4297ba9f9482df7d45a8d48ba3d93162b9fd"
+    },
+    {
+      "bytes": 4191,
+      "path": "infrastructure/observability/entry_fee_evidence_extractor.py",
+      "sha256": "5febc7bf1ee895256d6221b35cfdc218558967bbb69603c04d7d3227ffd5f8da"
+    },
+    {
+      "bytes": 2793,
+      "path": "infrastructure/observability/fee_schedule_snapshot.py",
+      "sha256": "402d3707a49a04f9bcdd478b2e7ad0094b3d97f73963ed079416715cd7124a41"
+    },
+    {
+      "bytes": 4566,
+      "path": "infrastructure/observability/terminal_evidence_extractor.py",
+      "sha256": "92ac29e5801a229271cb7b9a2e32b295636ee0b08b5b77b096cefc4211addb0b"
+    },
+    {
+      "bytes": 7491,
+      "path": "infrastructure/research/shadow_position_inputs.py",
+      "sha256": "016c0d7aedfbd45edbbc1559e578f181f5e138098ac12400f0a3a1fc0491665b"
+    },
+    {
+      "bytes": 4452,
+      "path": "infrastructure/research/shadow_friction_inputs.py",
+      "sha256": "884e5e42ff0c4f2f35bd1854bd073aede0f5f561077d072f1f3ee0f1e53baf16"
+    },
+    {
+      "bytes": 4639,
+      "path": "infrastructure/research/paired_exit_outcome.py",
+      "sha256": "cd3fc0e53d46da8506dcf96b19d7129a896e09166484e4f323da12e602add3f5"
+    },
+    {
+      "bytes": 2680,
+      "path": "infrastructure/research/paired_exit_evaluator.py",
+      "sha256": "6712d77666cf124418732c785f252f90831ac07f0de664b841871d7cee0e1ca6"
+    },
+    {
+      "bytes": 2893,
+      "path": "infrastructure/research/exit_shadow_coverage_gate.py",
+      "sha256": "27f8ce10b100f7e9d18ac6eff2a320050c6fd526567d5b8b886f77827389a271"
+    },
+    {
+      "bytes": 2973,
+      "path": "infrastructure/research/exit_shadow_aggregate_protocol.py",
+      "sha256": "7b1a869e8aeaccb0a1e00dba49b6115a63f434405ed4d202a46295803b1a2fd9"
+    },
+    {
+      "bytes": 6038,
+      "path": "infrastructure/research/exit_shadow_aggregate_evaluator.py",
+      "sha256": "7c369168210d5efef2a3df365627636c709606b7399594e7585cb8afc59b8538"
+    },
+    {
+      "bytes": 1788,
+      "path": "tests/unit/test_task0190_shadow_net_floor_math.py",
+      "sha256": "d1465d8166b2679328ce5e367210d383de932c7fa28328d04f871748fc6cdd40"
+    },
+    {
+      "bytes": 3041,
+      "path": "tests/unit/test_task0192_shadow_input_binding.py",
+      "sha256": "cd2af01526cdff9cc2d1430426039dad1cc921d291bd50ea61eff623165fc98b"
+    },
+    {
+      "bytes": 2237,
+      "path": "tests/unit/test_task0194_entry_fee_evidence.py",
+      "sha256": "4c675deb378189a33dc9270c981a64e378783ac4202cf2446deab2ff2aef59ab"
+    },
+    {
+      "bytes": 1924,
+      "path": "tests/unit/test_task0195_fee_schedule_snapshot.py",
+      "sha256": "4470f1595a9e34a1077cce2d5af1af78cb043802faf5afcd7e4b4a04d276deab"
+    },
+    {
+      "bytes": 4840,
+      "path": "tests/unit/test_task0196_shadow_position_inputs.py",
+      "sha256": "31592f91e7ef6d90cd1d6ec4fb2042c31c7081f9c2b36b7d6214854f2c6ea6eb"
+    },
+    {
+      "bytes": 2392,
+      "path": "tests/unit/test_task0199_shadow_friction_inputs.py",
+      "sha256": "bdf3fab307335c84fe918ae9f90108965ca80fc226129686d283789416c881c7"
+    },
+    {
+      "bytes": 3176,
+      "path": "tests/unit/test_task0200_paired_exit_outcome.py",
+      "sha256": "c7e2b9948d4a610f4d252ab3b7a619d281da7e538e96f3a2ded52c8e34bec2a7"
+    },
+    {
+      "bytes": 2288,
+      "path": "tests/unit/test_task0201_paired_exit_evaluator.py",
+      "sha256": "6df91631ab99e34892bc4daf1ce7217290637a1d9b3bebef3e83b19797cb6a3d"
+    },
+    {
+      "bytes": 2257,
+      "path": "tests/unit/test_task0202_exit_shadow_coverage_gate.py",
+      "sha256": "bcc14ffec899029766b79930c6a7a28dacac25324d013a89e0ff783a27e91978"
+    },
+    {
+      "bytes": 3144,
+      "path": "tests/unit/test_task0203_exit_shadow_aggregate_protocol.py",
+      "sha256": "d0e195021ac507b81bc52a47007d440fa063bdcb15b1ab0b96c05bf92ffc94fa"
+    },
+    {
+      "bytes": 2038,
+      "path": "tests/unit/test_task0204_exit_shadow_aggregate_evaluator.py",
+      "sha256": "d97a71eefe73c460b69f65a61b284bf05d509fe47ec184cbf07ec51f78384444"
+    }
+  ],
+  "candidate": "EXIT_NET_FLOOR_12_5",
+  "schema_version": 1,
+  "status": "EVALUATOR_FROZEN_OUTCOMES_UNOPENED"
+}
