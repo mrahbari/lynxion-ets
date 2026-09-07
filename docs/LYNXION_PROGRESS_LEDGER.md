@@ -1196,6 +1196,19 @@ unless new evidence shows that it blocks valid edge measurement.
   interval failures. No collector, network, ledger mutation, or outcome was accessed.
 - Status: `OFFLINE VERIFIER READY — COLLECTOR REMAINS STOPPED`.
 
+## 2026-09-08 — TASK-0211 edge-search admission audit
+
+- Audited the post-policy candidate boundary: C-16 through C-31 and C-34 are rejected,
+  C-32 is data-blocked before observation, and prospective C-33 is stopped at 351
+  eligible buckets.
+- No C-35 historical test is admitted from already-opened panels; a new threshold,
+  symbol, direction, horizon, or diagnostic combination would violate the frozen
+  sequential policy and inflate multiplicity.
+- The admissible paths are the frozen C-33 prospective resume, the separately gated
+  prospective exit shadow, or a genuinely new mechanism on an unopened outcome boundary
+  preregistered before access.
+- Status: `NO NEW HISTORICAL CANDIDATE ADMITTED — INDEPENDENT EVIDENCE ROUTE REQUIRED`.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
