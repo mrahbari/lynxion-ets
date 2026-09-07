@@ -20,6 +20,7 @@ class CostedShadowPosition:
     leverage: float
     quantity: float
     entry_order_id: str
+    entry_fill_time_utc: str
     entry_fee_price_pct: float
     expected_exit_fee_price_pct: float
     fee_schedule_sha256: str
@@ -104,11 +105,15 @@ def group_costed_shadow_positions(
         entry_order_id = str(entry_fee.get("entry_order_id") or "")
         if not entry_order_id:
             raise ValueError("entry order identity missing")
+        entry_fill_time = str(entry_fee.get("entry_fill_time_utc") or "")
+        if not entry_fill_time or _utc(entry_fill_time) > _utc(first.event_time_utc):
+            raise ValueError("entry fill time missing or after first observation")
         result.append(CostedShadowPosition(
             run_id=first.run_id, position_key=position_key, symbol=first.symbol,
             is_long=first.is_long, entry_price=first.entry_price,
             leverage=first.leverage, quantity=first.quantity,
             entry_order_id=entry_order_id,
+            entry_fill_time_utc=entry_fill_time,
             entry_fee_price_pct=_cost(entry_fee.get("entry_fee_price_pct"), "entry fee"),
             expected_exit_fee_price_pct=exit_fee,
             fee_schedule_sha256=schedule_hash,

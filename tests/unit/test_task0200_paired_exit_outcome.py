@@ -19,6 +19,7 @@ def linked(is_long=True):
         run_id="r1", position_key="BTC:position", symbol="BTCUSDT",
         is_long=is_long, entry_price=100.0, leverage=10.0, quantity=2.0,
         entry_order_id="entry", entry_fee_price_pct=0.05,
+        entry_fill_time_utc="2026-09-07T00:00:00+00:00",
         expected_exit_fee_price_pct=0.05, fee_schedule_sha256="a" * 64,
         observations=(observation,),
     )

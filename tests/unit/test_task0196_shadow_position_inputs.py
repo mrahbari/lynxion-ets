@@ -21,7 +21,11 @@ def observation(sequence=0, position_key="BTC:LONG:100", **updates):
 
 
 def entry_fee(**updates):
-    value = {"eligible": True, "entry_order_id": "entry-1", "entry_fee_price_pct": 0.05}
+    value = {
+        "eligible": True, "entry_order_id": "entry-1",
+        "entry_fill_time_utc": "2026-09-07T00:00:00+00:00",
+        "entry_fee_price_pct": 0.05,
+    }
     value.update(updates)
     return value
 

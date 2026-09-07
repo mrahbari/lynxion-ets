@@ -1096,6 +1096,17 @@ unless new evidence shows that it blocks valid edge measurement.
   bootstrap, gate, or verdict was opened.
 - Next: TASK-0201 bind state-machine fill times to funding and per-position economics.
 
+## 2026-09-07 — TASK-0201 state/funding/outcome binding
+
+- Preserved authoritative entry-fill time and required it no later than the first
+  prospective observation.
+- Bound candidate fill sequence to its exact observation UTC and admitted separate
+  baseline/candidate funding windows before per-position economics.
+- A candidate without an earlier fill shares the authoritative terminal and funding;
+  incomplete coverage fails closed.
+- No aggregate result, bootstrap, gate, verdict, cohort, runtime, or broker path opened.
+- Next: TASK-0202 frozen minimum-coverage gate counter.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
