@@ -986,6 +986,15 @@ unless new evidence shows that it blocks valid edge measurement.
 - No policy or runtime changed; activation still depends on TASK-0185 deployment approval
   and a new empty cohort.
 
+## 2026-09-07 — TASK-0190 shadow net-floor math
+
+- Implemented disconnected +12% activation and cost-reserved +5% net-floor price math
+  for both sides; no cohort or outcome was read.
+- The frozen formula requires authoritative 10x leverage, entry/expected-exit fee
+  fractions, and 0.10% remaining slippage; invalid or missing inputs fail closed.
+- Runtime wiring, policy changes, broker access, and event membership remain absent.
+- Next: TASK-0191 causal shadow transitions and subsequent-observation crossing tests.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,

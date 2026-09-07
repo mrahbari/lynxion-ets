@@ -34,6 +34,12 @@ outcomes. No +10/+4, +10/+5, +12/+4, symbol, side, or regime variants may be ope
   the correct side sign.
 - Candidate floor conversion includes remaining exit friction; it may not equate gross
   ROE with net ROE.
+- Frozen conversion from filled entry price `E` is: reserve price fraction
+  `R = 0.05 / L + entry_fee_fraction + expected_exit_fee_fraction + 0.001`; request
+  `E * (1 + R)` for LONG and `E * (1 - R)` for SHORT. Fee fractions must come from
+  the authoritative entry fill and the frozen broker fee schedule available before
+  outcome; missing inputs make the position ineligible. Stress slippage affects the
+  evaluation, not the primary policy's requested stop.
 - A shadow stop can fill only after a subsequent mark/candle observation crosses it.
   Same-observation activation and fill are forbidden. Adverse gap fills use the first
   available executable price, never the requested stop price.
