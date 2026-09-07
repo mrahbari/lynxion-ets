@@ -1013,6 +1013,19 @@ unless new evidence shows that it blocks valid edge measurement.
   membership, fill, PnL, or outcome was opened.
 - Next: TASK-0193 per-position grouping and authoritative fee-source contract.
 
+## 2026-09-07 — TASK-0193 shadow fee-provenance gap
+
+- The future shadow policy cannot yet prove its net +5% floor: manager observations
+  contain no entry commission/fee rate, hydrated identities commonly lack exchange
+  entry linkage, and terminal events expose only exit-order commission.
+- Verdict: `DATA_CONTRACT_BLOCKED — ENTRY_FEE_PROVENANCE MISSING`. Guessing zero,
+  historical averages, or a hard-coded fee is forbidden.
+- Minimal resolution is observational: preserve supplied exchange linkage and admit a
+  matching filled entry order/commission before activation; ambiguous evidence excludes
+  the position.
+- Next: TASK-0194 exact field map and pure disconnected entry-fee extractor. Runtime
+  wiring stays behind the existing controlled-reload approval gate.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
