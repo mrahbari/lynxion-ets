@@ -1231,6 +1231,18 @@ unless new evidence shows that it blocks valid edge measurement.
   activation. No runtime, network, cohort mutation, or outcome was accessed.
 - Status: `STATIC RESUME BLOCKER FIXED — RUNTIME START REMAINS PROHIBITED`.
 
+## 2026-09-08 — TASK-0214 C-33 resume preflight freeze
+
+- Re-audited the stopped append-only cohort and froze a machine-readable pre-resume
+  baseline: one ended session, zero active sessions, 351 eligible buckets, and exact
+  manifest/event-ledger hashes.
+- The baseline can feed TASK-0210 after a separately authorized resume; it is metadata
+  only and imports no observation.
+- C-11's due public-data update also completed with no new candidate: N=1, expectancy
+  -0.03663%, verdict `COLLECTING`, and its only settlement remains strictly after epoch
+  1788082349.
+- No collector, runtime, broker, order, backfill, or edge outcome was opened.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,

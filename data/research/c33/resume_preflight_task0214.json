@@ -1,0 +1,17 @@
+{
+  "activation_boundary": 1788694535,
+  "active_session_count": 0,
+  "candidate": "C-33",
+  "eligible_completed_bucket_count": 351,
+  "events_sha256": "c2268ef6eeaaad88bd7af380073fbc98934a0a8fc9608a4cbfe43a103d2c85e4",
+  "latest_record_ms": 1788803251089,
+  "manifest_sha256": "2f85de0a699a55eee2664668a6f6b0d0b9543b02b35c90ede72307878ebce04a",
+  "record_counts": {
+    "heartbeat": 1777,
+    "kline_close": 10686,
+    "liquidation": 3271,
+    "session": 2
+  },
+  "session_count": 1,
+  "verdict": "COLLECTING"
+}
