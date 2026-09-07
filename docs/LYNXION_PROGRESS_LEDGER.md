@@ -1107,6 +1107,15 @@ unless new evidence shows that it blocks valid edge measurement.
 - No aggregate result, bootstrap, gate, verdict, cohort, runtime, or broker path opened.
 - Next: TASK-0202 frozen minimum-coverage gate counter.
 
+## 2026-09-07 — TASK-0202 frozen shadow coverage gate
+
+- Added a metadata-only gate for the exact preregistered 100 pairs, 30 activations,
+  eight UTC weeks, five symbols, 15 LONG, and 15 SHORT minima.
+- Aggregate access opens only when every minimum passes simultaneously; economic fields,
+  duplicate identities, schema drift, and invalid UTC/side/activation metadata fail closed.
+- No prospective or economic record was opened; tests use synthetic coverage metadata.
+- Next: TASK-0203 freeze the aggregate evaluation interface behind this gate.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
