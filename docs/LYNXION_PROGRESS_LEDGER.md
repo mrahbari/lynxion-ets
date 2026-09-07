@@ -961,6 +961,17 @@ unless new evidence shows that it blocks valid edge measurement.
 - This confirms deployment urgency without changing the approval gate or allowing old
   events into a post-fix cohort.
 
+## 2026-09-07 — TASK-0188 controlled deployment runbook
+
+- Froze the VST-only reload sequence without executing it: exact runner identification,
+  final old-cohort audit, graceful stop, new empty commit-bound cohort, existing launcher,
+  one-runner/testnet checks, and read-only visible-stop verification.
+- C-33 is explicitly excluded from interruption and no policy/settings override is
+  permitted.
+- Fail-closed aborts cover duplicate runner, live mode, non-empty root, commit mismatch,
+  pre-boundary event, historical import, or missing broker-visible protection.
+- Status remains `READY — EXPLICIT RUNTIME APPROVAL PENDING`.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
