@@ -1209,6 +1209,17 @@ unless new evidence shows that it blocks valid edge measurement.
   preregistered before access.
 - Status: `NO NEW HISTORICAL CANDIDATE ADMITTED — INDEPENDENT EVIDENCE ROUTE REQUIRED`.
 
+## 2026-09-08 — TASK-0212 local data independence audit
+
+- Audited the committed local research manifests and candidate boundaries without
+  reopening any return outcome.
+- Existing historical price/flow, Spot, depth, OI, premium, funding, aggregate-trade,
+  and exit evidence belongs to already-opened periods or confirmations; recombination
+  cannot qualify as an independent C-35 test.
+- Only the stopped C-33 forward ledger and the gated post-fix exit-shadow cohort retain
+  unopened prospective outcomes. No download, runtime, broker, or cohort mutation ran.
+- Status: `NO UNOPENED LOCAL HISTORICAL OUTCOME BOUNDARY`.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
