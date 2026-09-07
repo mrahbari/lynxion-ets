@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import random
+from datetime import datetime
 from typing import Any
 
 from infrastructure.research.exit_shadow_aggregate_protocol import (
@@ -55,7 +56,10 @@ def evaluate_shadow_aggregates(
     if admission.get("eligible") is not True:
         return {"verdict": "COLLECTING", "reason": admission["reason"], "metrics": None}
 
-    ordered = sorted(records, key=lambda row: row["terminal_time_utc"])
+    ordered = sorted(
+        records,
+        key=lambda row: datetime.fromisoformat(row["terminal_time_utc"].replace("Z", "+00:00")),
+    )
     numeric_fields = [
         "baseline_primary_net_roe_pct", "candidate_primary_net_roe_pct",
         "baseline_stress_net_roe_pct", "candidate_stress_net_roe_pct",
@@ -105,9 +109,10 @@ def evaluate_shadow_aggregates(
         and (fold["candidate_profit_factor"] is None or fold["candidate_profit_factor"] > 1.10)
         for fold in folds
     )
+    bootstrap_lower = _bootstrap_lower(deltas)
     gates = {
         "paired_mean_improvement": _mean(deltas) > 0,
-        "bootstrap_lower_bound": _bootstrap_lower(deltas) > 0,
+        "bootstrap_lower_bound": bootstrap_lower > 0,
         "aggregate_expectancy": _mean(candidate) > 0,
         "aggregate_profit_factor": candidate_pf is None or candidate_pf > 1.10,
         "three_of_four_folds": fold_passes >= 3,
@@ -123,7 +128,7 @@ def evaluate_shadow_aggregates(
     }
     metrics = {
         "paired_mean_delta": _mean(deltas),
-        "bootstrap_ci_lower": _bootstrap_lower(deltas),
+        "bootstrap_ci_lower": bootstrap_lower,
         "candidate_expectancy": _mean(candidate),
         "candidate_profit_factor": candidate_pf,
         "folds": folds,

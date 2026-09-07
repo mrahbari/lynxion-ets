@@ -1135,6 +1135,17 @@ unless new evidence shows that it blocks valid edge measurement.
 - Only synthetic fixtures were evaluated; no prospective result was opened.
 - Next: TASK-0205 independent review and full regression suite.
 
+## 2026-09-07 — TASK-0205 shadow evaluator independent review
+
+- Review found and fixed an evidence-boundary gap: aggregate economics were count-bound
+  but not hash-bound to the exact coverage membership. Canonical metadata SHA-256 plus
+  recomputed counts/gates now prevents record substitution.
+- Corrected fold ordering to parsed UTC datetimes instead of timestamp strings and
+  removed duplicate bootstrap calculation without changing the frozen result.
+- Focused tests: 17 passed. Full suite: 1,017 passed, one optional import-linter skip.
+- Verdict: `EVALUATOR_REPOSITORY_READY — PROSPECTIVE COVERAGE CLOSED`; no outcome opened.
+- Next: TASK-0206 freeze the artifact manifest and activation blockers.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,

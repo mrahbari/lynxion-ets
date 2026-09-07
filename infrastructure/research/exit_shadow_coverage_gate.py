@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import hashlib
+import json
 from typing import Any
 
 
@@ -64,9 +66,11 @@ def shadow_coverage_gate(records: list[dict[str, Any]]) -> dict[str, Any]:
         "short_positions": short_count,
     }
     gates = {name: counts[name] >= minimum for name, minimum in FROZEN_MINIMUMS.items()}
+    canonical = json.dumps(records, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     return {
         "status": "READY_TO_OPEN_AGGREGATES" if all(gates.values()) else "COLLECTING",
         "counts": counts,
         "minimums": dict(FROZEN_MINIMUMS),
         "gates": gates,
+        "membership_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
     }

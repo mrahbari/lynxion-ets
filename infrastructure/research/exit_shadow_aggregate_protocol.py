@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from infrastructure.research.exit_shadow_coverage_gate import FROZEN_MINIMUMS
+from infrastructure.research.exit_shadow_coverage_gate import FROZEN_MINIMUMS, shadow_coverage_gate
 
 
 AGGREGATE_PROTOCOL = {
@@ -51,6 +51,18 @@ def admit_aggregate_request(
         if not isinstance(key, str) or not key or key in identities:
             return {"eligible": False, "reason": "aggregate position identity invalid"}
         identities.add(key)
+    metadata = [{
+        key: record[key] for key in (
+            "position_key", "symbol", "side", "terminal_time_utc", "candidate_activated",
+        )
+    } for record in records]
+    derived = shadow_coverage_gate(metadata)
+    if (
+        derived["membership_sha256"] != coverage.get("membership_sha256")
+        or derived["counts"] != coverage.get("counts")
+        or derived["gates"] != gates
+    ):
+        return {"eligible": False, "reason": "aggregate membership differs from coverage evidence"}
     return {
         "eligible": True,
         "reason": None,
