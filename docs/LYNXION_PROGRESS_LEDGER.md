@@ -1185,6 +1185,17 @@ unless new evidence shows that it blocks valid edge measurement.
 - Status remains `READY — RUNTIME START PROHIBITED BY ACTIVE HEARTBEAT POLICY`; this task
   performed no process, network, broker, or outcome action.
 
+## 2026-09-07 — TASK-0210 C-33 resume verifier
+
+- Added a pure fail-closed comparison of the pre-resume and first-complete-interval
+  post-resume C-33 audit snapshots.
+- It requires exactly one new active session, strictly newer append-only records, no
+  counter or eligible-bucket regression, five new heartbeats, and all 30 symbol-minute
+  klines in the first complete interval.
+- Synthetic tests cover valid resume, lifecycle mismatch, regression, and incomplete
+  interval failures. No collector, network, ledger mutation, or outcome was accessed.
+- Status: `OFFLINE VERIFIER READY — COLLECTOR REMAINS STOPPED`.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
