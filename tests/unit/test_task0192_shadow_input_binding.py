@@ -48,6 +48,9 @@ def test_exact_post_boundary_manager_observation_binds_without_outcome():
     observations = bind(event())
     assert len(observations) == 1
     assert observations[0].leverage == 10.0
+    assert observations[0].quantity == 1.0
+    assert observations[0].event_time_utc == "2026-09-07T00:01:00+00:00"
+    assert observations[0].run_id == "post-fix-run"
     assert observations[0].reviewed_stop_price == 100.35
 
 

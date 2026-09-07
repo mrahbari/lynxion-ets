@@ -16,9 +16,12 @@ from infrastructure.observability.exit_event_ledger import ExitEventLedger
 class BoundShadowObservation:
     sequence: int
     event_id: str
+    event_time_utc: str
+    run_id: str
     position_key: str
     symbol: str
     is_long: bool
+    quantity: float
     entry_price: float
     mark_price: float
     roe_pct: float
@@ -91,15 +94,22 @@ def bind_shadow_observations(
         state = event.get("manager_state_after")
         stop = state.get("current_sl_price") if isinstance(state, dict) else None
         stop = float(stop) if stop not in (None, 0, 0.0) else None
-        numeric = (event.get("entry_price"), event.get("current_price"), event.get("roe_pct"))
+        numeric = (
+            event.get("entry_price"), event.get("current_price"), event.get("roe_pct"),
+            event.get("quantity"),
+        )
         if not all(isinstance(value, (int, float)) and math.isfinite(value) for value in numeric):
             raise ValueError("shadow observation price/ROE is invalid")
+        if event["entry_price"] <= 0 or event["current_price"] <= 0 or event["quantity"] <= 0:
+            raise ValueError("shadow observation price/quantity must be positive")
         if event.get("price_source") != "MARK":
             raise ValueError("shadow observation must use mark price")
         observations.append(BoundShadowObservation(
             sequence=len(observations), event_id=event["event_id"],
+            event_time_utc=event["event_time_utc"], run_id=event["run_id"],
             position_key=event["position_key"], symbol=event["symbol"],
-            is_long=event["side"] == "LONG", entry_price=float(event["entry_price"]),
+            is_long=event["side"] == "LONG", quantity=float(event["quantity"]),
+            entry_price=float(event["entry_price"]),
             mark_price=float(event["current_price"]), roe_pct=float(event["roe_pct"]),
             leverage=float(leverage), reviewed_stop_price=stop,
         ))

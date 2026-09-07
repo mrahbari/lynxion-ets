@@ -1068,6 +1068,15 @@ unless new evidence shows that it blocks valid edge measurement.
   opened and position-key-only linkage is forbidden.
 - Next: TASK-0198 preserve time/quantity and implement the pure fail-closed terminal join.
 
+## 2026-09-07 — TASK-0198 terminal causal linkage
+
+- Preserved source event time, activation run, and quantity through binding and grouping.
+- Added a pure terminal join requiring complete admitted evidence, exact identity/run,
+  full quantity, strictly later fill time, and a unique terminal order ID.
+- Realized terminal commission remains distinct from the preregistered expected exit fee;
+  no return, fill simulation, cohort outcome, or broker path was opened.
+- Next: TASK-0199 funding linkage and primary/stress slippage input contract.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
