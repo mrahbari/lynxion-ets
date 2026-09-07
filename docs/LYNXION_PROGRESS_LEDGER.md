@@ -1176,6 +1176,15 @@ unless new evidence shows that it blocks valid edge measurement.
   remains 500 buckets.
 - No process was restarted because the active heartbeat policy forbids runtime starts.
 
+## 2026-09-07 — TASK-0209 C-33 public collector resume runbook
+
+- Froze an exact append-only restart sequence for the unauthenticated collector: one
+  process, one new unique session, strict post-END ordering, no truncation/backfill, and
+  a five-minute post-start integrity audit.
+- Inter-session gaps remain ineligible and bucket count may never regress.
+- Status remains `READY — RUNTIME START PROHIBITED BY ACTIVE HEARTBEAT POLICY`; this task
+  performed no process, network, broker, or outcome action.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
