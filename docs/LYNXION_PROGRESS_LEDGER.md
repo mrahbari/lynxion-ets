@@ -1026,6 +1026,17 @@ unless new evidence shows that it blocks valid edge measurement.
 - Next: TASK-0194 exact field map and pure disconnected entry-fee extractor. Runtime
   wiring stays behind the existing controlled-reload approval gate.
 
+## 2026-09-07 — TASK-0194 entry-fee evidence extractor
+
+- Added a disconnected fail-closed extractor for one authoritative filled entry order,
+  matching position ID when supplied or an explicitly unique symbol/side/price/quantity/
+  time composite fallback.
+- Ambiguous, post-observation, reduce-only, missing-fee, or cross-position rows are
+  excluded; no history endpoint or outcome was opened.
+- Entry commission provenance is now representable. Expected exit fee schedule remains
+  missing and cannot be silently proxied from the entry fee.
+- Next: TASK-0195 explicit pre-activation fee-schedule snapshot contract.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
