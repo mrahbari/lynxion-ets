@@ -1057,6 +1057,17 @@ unless new evidence shows that it blocks valid edge measurement.
   fill, terminal, PnL, or candidate outcome is evaluated.
 - Next: TASK-0197 authoritative terminal-event linkage and cost attribution contract.
 
+## 2026-09-07 — TASK-0197 terminal linkage contract
+
+- Froze the authoritative terminal join: exact run/position, symbol, side, entry,
+  leverage, full quantity, strictly later fill time, unique order, and complete terminal
+  economics are mandatory before outcome evaluation.
+- Found that the bound shadow observation drops source event time and quantity, so the
+  current grouped input cannot prove causal ordering or reject partial fills.
+- Verdict: `DATA_CONTRACT_BLOCKED — TERMINAL CAUSAL LINKAGE INCOMPLETE`; no outcome was
+  opened and position-key-only linkage is forbidden.
+- Next: TASK-0198 preserve time/quantity and implement the pure fail-closed terminal join.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
