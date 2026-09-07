@@ -1166,6 +1166,16 @@ unless new evidence shows that it blocks valid edge measurement.
   authority. No runtime, broker, or prospective outcome was accessed.
 - Next: continue independent safe edge research until activation is separately verified.
 
+## 2026-09-07 — TASK-0208 C-33 collection liveness incident
+
+- C-33 reached 351 eligible five-minute buckets, but its second session explicitly ended
+  at 2026-09-07T17:47:31.089Z and no collector process is active.
+- Existing forward buckets remain valid; the stopped gap cannot be imported or treated
+  as uninterrupted coverage.
+- Verdict: `COLLECTING_BLOCKED — PUBLIC_COLLECTOR_STOPPED`; the frozen next checkpoint
+  remains 500 buckets.
+- No process was restarted because the active heartbeat policy forbids runtime starts.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
