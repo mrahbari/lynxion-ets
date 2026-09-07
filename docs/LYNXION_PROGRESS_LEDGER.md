@@ -1156,6 +1156,16 @@ unless new evidence shows that it blocks valid edge measurement.
   profitability evidence.
 - Next: continue safe edge work while runtime/broker activation remains approval-gated.
 
+## 2026-09-07 — TASK-0207 exit-shadow activation-readiness gate
+
+- Added a pure gate over reproducible artifact hashes, a new empty commit-bound cohort,
+  an admitted fee schedule, and supplied one-runner TESTNET protection evidence.
+- Any live mode, historical/nonempty cohort, artifact/commit drift, missing fee evidence,
+  or visible-stop gap blocks readiness.
+- Passing means only `READY_FOR_CONTROLLED_RUNTIME_REVIEW` and grants no runtime or broker
+  authority. No runtime, broker, or prospective outcome was accessed.
+- Next: continue independent safe edge research until activation is separately verified.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
