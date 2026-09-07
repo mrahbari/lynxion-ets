@@ -1037,6 +1037,16 @@ unless new evidence shows that it blocks valid edge measurement.
   missing and cannot be silently proxied from the entry fee.
 - Next: TASK-0195 explicit pre-activation fee-schedule snapshot contract.
 
+## 2026-09-07 — TASK-0195 fee-schedule snapshot contract
+
+- Added a disconnected fail-closed contract for a sourced BingX perpetual account-tier
+  taker-fee schedule captured and effective no later than shadow activation.
+- The admitted exit-cost percentage is bound to a canonical SHA-256; wrong market,
+  incomplete provenance, invalid rates, non-UTC time, and post-activation evidence fail.
+- No broker endpoint, runtime, cohort outcome, strategy, or account setting was accessed.
+- Next: TASK-0196 group validated observations and join both fee evidence inputs without
+  evaluating terminal outcomes.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
