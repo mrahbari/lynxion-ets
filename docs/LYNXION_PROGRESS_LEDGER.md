@@ -949,6 +949,18 @@ unless new evidence shows that it blocks valid edge measurement.
 - Verdict remains `COLLECTING`; no signal, threshold, virtual trade, funding, or
   outcome was opened. Next sparse checkpoint is 500 buckets.
 
+## 2026-09-07 — TASK-0187 pre-deployment forward-cohort audit
+
+- The old runtime cohort now has 6,677 events and 43 stop requests: 23 accepted, 20
+  rejected, and two accepted NEAR replacements that failed exact visibility before a
+  later `position not exist` response.
+- ETH/XRP added stale wrong-side stop-price failures; response latency remains roughly
+  23–348 seconds even for accepted requests.
+- All 21 visible chains committed and the ledger has no structural violation, but the
+  operational verdict is `COLLECTING_WITH_RECURRING_EXECUTION_ERRORS`.
+- This confirms deployment urgency without changing the approval gate or allowing old
+  events into a post-fix cohort.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
