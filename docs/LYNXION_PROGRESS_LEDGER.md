@@ -1116,6 +1116,16 @@ unless new evidence shows that it blocks valid edge measurement.
 - No prospective or economic record was opened; tests use synthetic coverage metadata.
 - Next: TASK-0203 freeze the aggregate evaluation interface behind this gate.
 
+## 2026-09-07 — TASK-0203 frozen shadow aggregate protocol
+
+- Froze a 10,000-resample position bootstrap with seed 20260907 and 95% CI, four
+  terminal-time contiguous folds, PF >1.10, worst-5% tail risk, equal-weight drawdown,
+  and top paired-contribution symbol exclusion.
+- Exact primary/stress record schema is admitted only after every coverage minimum;
+  protocol drift, count mismatch, duplicates, and schema drift fail closed.
+- Admission exposes no metrics, and no prospective record or result was opened.
+- Next: TASK-0204 implement the deterministic evaluator on synthetic fixtures only.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
