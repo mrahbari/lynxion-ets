@@ -995,6 +995,15 @@ unless new evidence shows that it blocks valid edge measurement.
 - Runtime wiring, policy changes, broker access, and event membership remain absent.
 - Next: TASK-0191 causal shadow transitions and subsequent-observation crossing tests.
 
+## 2026-09-07 — TASK-0191 causal shadow transitions
+
+- Added disconnected, strictly ordered shadow state transitions for the frozen
+  +12%/+5% candidate.
+- Same-observation activation/fill is forbidden; subsequent gaps fill at observed mark;
+  baseline and candidate stops remain monotonic for both sides.
+- No cohort, outcome, broker, runtime, or production policy was accessed or changed.
+- Next: TASK-0192 bind validated post-fix lifecycle events without opening outcomes.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
