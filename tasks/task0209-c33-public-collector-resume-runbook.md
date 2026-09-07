@@ -22,8 +22,8 @@ or historical endpoint is involved.
 
 ## Resume sequence
 
-1. Start exactly one existing command:
-   `python scripts/collect_c33_liquidation_events.py --enable-network`.
+1. Start exactly one reviewed resume command:
+   `python scripts/resume_c33_liquidation_collector.py --enable-network`.
 2. Do not replace, truncate, copy, normalize, or backfill the existing ledger.
 3. Require one new unique `STARTED` session record strictly after the prior `ENDED`
    timestamp; all subsequent records must carry that new session ID.

@@ -1220,6 +1220,17 @@ unless new evidence shows that it blocks valid edge measurement.
   unopened prospective outcomes. No download, runtime, broker, or cohort mutation ran.
 - Status: `NO UNOPENED LOCAL HISTORICAL OUTCOME BOUNDARY`.
 
+## 2026-09-08 — TASK-0213 C-33 resume commit binding
+
+- Static review found that the TASK-0209 resume command would reject the existing
+  manifest because repository HEAD advanced beyond its pinned collector commit.
+- The collector source blob is identical at both commits, so a dedicated resume launcher
+  retains the pinned commit only after Git proves exact collector-blob equality; any
+  source drift fails closed, while the original collector remains byte-identical.
+- Focused synthetic tests cover equal-blob resume, changed-blob rejection, and new
+  activation. No runtime, network, cohort mutation, or outcome was accessed.
+- Status: `STATIC RESUME BLOCKER FIXED — RUNTIME START REMAINS PROHIBITED`.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
