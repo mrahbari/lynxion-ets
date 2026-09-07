@@ -1086,6 +1086,16 @@ unless new evidence shows that it blocks valid edge measurement.
 - No endpoint, runtime, cohort outcome, PnL, or trading setting was accessed.
 - Next: TASK-0200 paired per-position outcome calculation behind the coverage gate.
 
+## 2026-09-07 — TASK-0200 paired position economics
+
+- Added pure per-position LONG/SHORT economics using entry fee, authoritative baseline
+  exit commission, candidate scheduled exit fee, funding, and frozen slippage at 10x.
+- Candidate early exits use their causal executable price; otherwise they inherit the
+  same authoritative terminal price and fee as baseline.
+- Primary/stress paired deltas are emitted only per position; no aggregate cohort result,
+  bootstrap, gate, or verdict was opened.
+- Next: TASK-0201 bind state-machine fill times to funding and per-position economics.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
