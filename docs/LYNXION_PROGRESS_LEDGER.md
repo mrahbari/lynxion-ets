@@ -972,6 +972,20 @@ unless new evidence shows that it blocks valid edge measurement.
   pre-boundary event, historical import, or missing broker-visible protection.
 - Status remains `READY — EXPLICIT RUNTIME APPROVAL PENDING`.
 
+## 2026-09-07 — TASK-0189 prospective net-floor preregistration
+
+- Preregistered one shadow-only +12% activation / +5% net-profit-floor candidate
+  against the current reviewed policy before any post-fix outcome exists.
+- The 98 historical exits and all pre-fix lifecycle events are excluded; no threshold
+  variants or post-result symbol/side/regime slices are allowed.
+- Frozen gates include actual fees, funding, primary/stress slippage, delayed executable
+  stop crossing, paired clustered bootstrap, four time folds, both sides, breadth,
+  concentration, drawdown, and tail risk.
+- Minimum coverage is 100 paired terminals, 30 +12%-eligible positions, eight weeks,
+  five symbols, and both sides. Status is `OUTCOMES UNOPENED — RUNTIME DISABLED`.
+- No policy or runtime changed; activation still depends on TASK-0185 deployment approval
+  and a new empty cohort.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
