@@ -1047,6 +1047,16 @@ unless new evidence shows that it blocks valid edge measurement.
 - Next: TASK-0196 group validated observations and join both fee evidence inputs without
   evaluating terminal outcomes.
 
+## 2026-09-07 — TASK-0196 shadow position cost binding
+
+- Added deterministic grouping of validated observations by immutable position identity
+  with a strictly increasing global sequence.
+- Entry-fee evidence must exactly cover all groups, and each group carries the admitted
+  entry cost, expected exit cost, entry order identity, and canonical schedule hash.
+- Missing, extra, unadmitted, inconsistent, or malformed inputs fail closed before any
+  fill, terminal, PnL, or candidate outcome is evaluated.
+- Next: TASK-0197 authoritative terminal-event linkage and cost attribution contract.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
