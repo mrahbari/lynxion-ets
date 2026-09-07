@@ -1004,6 +1004,15 @@ unless new evidence shows that it blocks valid edge measurement.
 - No cohort, outcome, broker, runtime, or production policy was accessed or changed.
 - Next: TASK-0192 bind validated post-fix lifecycle events without opening outcomes.
 
+## 2026-09-07 — TASK-0192 shadow lifecycle input binding
+
+- Added hash-first binding for a future post-fix lifecycle snapshot: exact commit/run,
+  strict boundary, no historical import, causal schema, order, mark source, frozen
+  thresholds, and authoritative 10x leverage all fail closed.
+- The binder emits only disconnected state-machine observations; no current cohort,
+  membership, fill, PnL, or outcome was opened.
+- Next: TASK-0193 per-position grouping and authoritative fee-source contract.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
