@@ -1243,6 +1243,16 @@ unless new evidence shows that it blocks valid edge measurement.
   1788082349.
 - No collector, runtime, broker, order, backfill, or edge outcome was opened.
 
+## 2026-09-08 — TASK-0215 C-33 preflight integrity verifier
+
+- Added a pure pre-start gate that requires byte-exact TASK-0214 manifest/ledger hashes,
+  a fresh passing C-33 audit, identical frozen counters and watermarks, and zero active
+  sessions.
+- Synthetic tests cover both artifact mutations, audit drift, and an already-active
+  session; the real 351-bucket baseline also verifies.
+- Status: `PREFLIGHT_VERIFIED — RUNTIME START REMAINS PROHIBITED`; no network, runtime,
+  broker, ledger mutation, backfill, or edge outcome was accessed.
+
 ## Operator decision required
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
