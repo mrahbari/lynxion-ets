@@ -1,0 +1,15 @@
+{
+  "activation_boundary": 1788694535,
+  "active_session_count": 1,
+  "candidate": "C-33",
+  "eligible_completed_bucket_count": 351,
+  "record_count_increments": {
+    "heartbeat": 7,
+    "kline_close": 36,
+    "liquidation": 11,
+    "session": 1
+  },
+  "session_count": 2,
+  "status": "RESUME_VERIFIED",
+  "verdict": "COLLECTING"
+}

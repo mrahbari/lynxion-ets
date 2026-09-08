@@ -1263,10 +1263,22 @@ unless new evidence shows that it blocks valid edge measurement.
 - Status: `BLOCKED — EXPLICIT RUNTIME POLICY CHANGE REQUIRED`. The smallest unblock is
   C-33-only collector resume authority; it grants no trading runtime or broker action.
 
+## 2026-09-08 — TASK-0217 C-33 controlled resume
+
+- The operator granted the narrow C-33-only public collector authority and the heartbeat
+  was updated without granting trading-runtime or broker/execution access.
+- TASK-0215 preflight passed, exactly one collector session started, and TASK-0210
+  verified the first complete interval with increments of seven heartbeats, 36 klines,
+  11 liquidation snapshots, and one lifecycle record.
+- Exactly one session is active, eligible buckets did not regress from 351, and the
+  collector remains active toward the frozen 500-bucket checkpoint.
+- Gate transition: `COLLECTING_BLOCKED — PUBLIC_COLLECTOR_STOPPED` to `COLLECTING`.
+  This is not a profitability or edge verdict.
+
 ## Operator decision required
 
-**YES for TASK-0216.** The active heartbeat must explicitly permit the bounded C-33
-public collector resume before prospective edge collection can continue.
+**NO for TASK-0216.** The bounded C-33 public collector resume was authorized and
+verified in TASK-0217; trading runtime and broker/execution authority remain excluded.
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
 verified commits, and controlled VST/paper runtime reloads after pre/post protection checks.

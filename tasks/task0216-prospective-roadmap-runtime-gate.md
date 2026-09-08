@@ -2,7 +2,7 @@
 
 ## Status
 
-`BLOCKED — EXPLICIT RUNTIME POLICY CHANGE REQUIRED`
+`COMPLETE — NARROW C-33 AUTHORITY GRANTED`
 
 ## Ground truth
 
@@ -32,5 +32,5 @@ from TASK-0209, after TASK-0215 preflight, then verify its first full interval w
 TASK-0210. This authority would not include the trading runtime, broker authentication,
 orders, account changes, strategy/risk changes, backfill, or historical import.
 
-If that narrow runtime change is not granted, continue only C-11 monitoring; no further
-edge conclusion can be produced from the present local evidence.
+The operator granted that narrow runtime change. TASK-0217 resumed and verified C-33;
+the trading runtime and all broker/execution permissions remain prohibited.

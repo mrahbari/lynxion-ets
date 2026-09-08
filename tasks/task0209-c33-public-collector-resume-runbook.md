@@ -2,7 +2,7 @@
 
 ## Status
 
-`READY — RUNTIME START PROHIBITED BY ACTIVE HEARTBEAT POLICY`
+`COMPLETE — EXECUTED AND VERIFIED BY TASK-0217`
 
 ## Boundary
 
@@ -41,6 +41,5 @@ or historical endpoint is involved.
 
 ## Acceptance
 
-This runbook is documentation only. C-33 remains
-`COLLECTING_BLOCKED — PUBLIC_COLLECTOR_STOPPED` until the allowed resume is executed and
-verified.
+The resume was executed after explicit operator authorization and verified by TASK-0217.
+C-33 is again `COLLECTING` toward its frozen 500-bucket checkpoint.
