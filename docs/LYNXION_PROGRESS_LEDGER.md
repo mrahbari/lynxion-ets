@@ -1293,6 +1293,16 @@ unless new evidence shows that it blocks valid edge measurement.
 - Status: `COLLECTING — SUPERVISED`; the 443-bucket baseline remains valid and gaps stay
   excluded. This is liveness recovery, not positive edge evidence.
 
+## 2026-09-08 — TASK-0220 C-33 500-bucket checkpoint
+
+- C-33 crossed the frozen sparse checkpoint at 504 eligible five-minute buckets;
+  exactly one supervised public-data collector session was active at capture.
+- The frozen snapshot independently verifies 3,024 rows, 5,142 eligible liquidation
+  snapshots, and 84,808,248.8088769 USDT observed notional across the six-symbol universe.
+- Status remains `COLLECTING`: this proves collection integrity/liveness only. No
+  threshold, signal, trade, funding, or outcome was opened; the next sparse checkpoint
+  is 1,000 and the actual frozen warmup gate remains 8,640 eligible buckets.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and
