@@ -1275,6 +1275,15 @@ unless new evidence shows that it blocks valid edge measurement.
 - Gate transition: `COLLECTING_BLOCKED — PUBLIC_COLLECTOR_STOPPED` to `COLLECTING`.
   This is not a profitability or edge verdict.
 
+## 2026-09-08 — TASK-0218 C-33 transient reconnect
+
+- The public WebSocket peer reset the connection after C-33 reached 443 eligible
+  buckets; the collector safely appended `ENDED`, with zero active sessions and no
+  ledger-integrity failure.
+- Added a launcher-only transient reconnect supervisor with capped exponential backoff;
+  every attempt remains a separate auditable session and all gaps stay ineligible.
+- The pinned collector blob, protocol, thresholds, and outcomes remain unchanged.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and

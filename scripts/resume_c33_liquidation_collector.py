@@ -7,8 +7,12 @@ import argparse
 import asyncio
 import json
 import subprocess
+import time
 from pathlib import Path
 from typing import Callable
+
+from requests import RequestException
+from websockets.exceptions import ConnectionClosed
 
 try:
     from scripts.collect_c33_liquidation_events import InvalidC33Event, activate, collect
@@ -17,6 +21,7 @@ except ModuleNotFoundError:  # Direct ``python scripts/...`` execution.
 
 
 COLLECTOR_PATH = "scripts/collect_c33_liquidation_events.py"
+MAX_RECONNECT_DELAY_SECONDS = 60
 
 
 def resolve_pinned_commit(
@@ -42,6 +47,31 @@ def resolve_pinned_commit(
     return pinned
 
 
+async def supervise(
+    output: Path,
+    activation_boundary: int,
+    *,
+    collect_fn: Callable[[Path, int], object] = collect,
+    sleep_fn: Callable[[float], object] = asyncio.sleep,
+    monotonic_fn: Callable[[], float] = time.monotonic,
+    max_attempts: int | None = None,
+) -> None:
+    """Restart clean sessions after transient public-network failures."""
+    delay = 1
+    attempts = 0
+    while max_attempts is None or attempts < max_attempts:
+        attempts += 1
+        started = monotonic_fn()
+        try:
+            await collect_fn(output, activation_boundary)  # type: ignore[misc]
+        except (OSError, asyncio.TimeoutError, RequestException, ConnectionClosed):
+            pass
+        if monotonic_fn() - started >= 300:
+            delay = 1
+        await sleep_fn(delay)  # type: ignore[misc]
+        delay = min(delay * 2, MAX_RECONNECT_DELAY_SECONDS)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path("data/research/c33/events.jsonl"))
@@ -54,7 +84,7 @@ def main() -> None:
         raise SystemExit("network collection is fail-closed; pass --enable-network explicitly")
     pinned = resolve_pinned_commit(args.activation_manifest)
     manifest = activate(args.activation_manifest, args.output, commit=pinned)
-    asyncio.run(collect(args.output, int(manifest["activation_boundary"])))
+    asyncio.run(supervise(args.output, int(manifest["activation_boundary"])))
 
 
 if __name__ == "__main__":
