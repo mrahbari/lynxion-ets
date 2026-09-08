@@ -1253,7 +1253,20 @@ unless new evidence shows that it blocks valid edge measurement.
 - Status: `PREFLIGHT_VERIFIED — RUNTIME START REMAINS PROHIBITED`; no network, runtime,
   broker, ledger mutation, backfill, or edge outcome was accessed.
 
+## 2026-09-08 — TASK-0216 prospective roadmap runtime gate
+
+- The defensible offline edge queue is exhausted: prior historical panels cannot be
+  reopened, C-32 is data-blocked, C-11 has N=1, and C-33/exit-shadow are the only
+  unopened prospective paths.
+- All offline C-33 resume controls now pass, but the active heartbeat policy explicitly
+  forbids starting any runtime, including its unauthenticated public collector.
+- Status: `BLOCKED — EXPLICIT RUNTIME POLICY CHANGE REQUIRED`. The smallest unblock is
+  C-33-only collector resume authority; it grants no trading runtime or broker action.
+
 ## Operator decision required
+
+**YES for TASK-0216.** The active heartbeat must explicitly permit the bounded C-33
+public collector resume before prospective edge collection can continue.
 
 **NO for TASK-0106.** The operator granted standing authorization on 2026-08-29 for ordinary engineering/research,
 verified commits, and controlled VST/paper runtime reloads after pre/post protection checks.
