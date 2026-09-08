@@ -1284,6 +1284,15 @@ unless new evidence shows that it blocks valid edge measurement.
   every attempt remains a separate auditable session and all gaps stay ineligible.
 - The pinned collector blob, protocol, thresholds, and outcomes remain unchanged.
 
+## 2026-09-08 — TASK-0219 C-33 reconnect recovery
+
+- Restarted the C-33-only public collector under the new supervisor after verifying
+  zero active sessions and unchanged pinned collector source.
+- Exactly one new session is active; its first full interval appended five heartbeats
+  and 30 klines with no eligible-bucket regression or audit error.
+- Status: `COLLECTING — SUPERVISED`; the 443-bucket baseline remains valid and gaps stay
+  excluded. This is liveness recovery, not positive edge evidence.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and
