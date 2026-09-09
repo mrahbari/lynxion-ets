@@ -84,6 +84,12 @@ def default_forensic_path() -> str:
     return os.getenv("FORENSIC_LOG_PATH") or os.path.join(_project_root(), "logs", "forensic.log")
 
 
+def default_demo_registry_path() -> str:
+    return os.getenv("INVESTOR_DEMO_REGISTRY_PATH") or os.path.join(
+        _project_root(), "data", "research", "investor_release", "demo_order_registry.jsonl"
+    )
+
+
 class TradeFeatureCollector:
     """Non-blocking background collector for canonical data/trade_journal.csv."""
 
@@ -93,6 +99,7 @@ class TradeFeatureCollector:
         journal_path: Optional[str] = None,
         ledger_path: Optional[str] = None,
         forensic_path: Optional[str] = None,
+        demo_registry_path: Optional[str] = None,
         poll_interval_seconds: float = 30.0,
     ):
         self.enabled = os.getenv("TRADE_JOURNAL_COLLECTOR_ENABLED", "true").lower() in ("true", "1", "yes")
@@ -101,6 +108,7 @@ class TradeFeatureCollector:
         self.journal_path = journal_path or default_journal_path()
         self.ledger_path = ledger_path or default_ledger_path()
         self.forensic_path = forensic_path or default_forensic_path()
+        self.demo_registry_path = demo_registry_path or default_demo_registry_path()
         self.poll_interval_seconds = poll_interval_seconds
 
         self._lock = threading.RLock()
@@ -113,6 +121,26 @@ class TradeFeatureCollector:
             self._load_recorded_ids()
         else:
             logger.info("TRADE_JOURNAL: TradeFeatureCollector is currently DISABLED via configuration toggle.")
+
+    def _load_demo_order_ids(self) -> Set[str]:
+        """Load identifiers that must be labelled as technical demos, never strategy evidence."""
+        identifiers: Set[str] = set()
+        if not os.path.exists(self.demo_registry_path):
+            return identifiers
+        try:
+            with open(self.demo_registry_path, "r", encoding="utf-8") as source:
+                for line in source:
+                    try:
+                        record = json.loads(line)
+                    except (TypeError, ValueError):
+                        continue
+                    for field in ("client_order_id", "order_id"):
+                        value = record.get(field)
+                        if value:
+                            identifiers.add(str(value))
+        except OSError as error:
+            logger.warning(f"TRADE_JOURNAL: Could not load investor demo registry: {error}")
+        return identifiers
 
     def _ensure_csv_headers(self) -> None:
         """Create data directory and CSV headers for trade_journal.csv."""
@@ -370,6 +398,7 @@ class TradeFeatureCollector:
             adapter.connect()
 
             intent_meta = self._load_intent_metadata_map()
+            demo_order_ids = self._load_demo_order_ids()
 
             now_ms = int(time.time() * 1000)
             seven_days_ms = 7 * 24 * 3600 * 1000
@@ -449,7 +478,12 @@ class TradeFeatureCollector:
                     tp_val = meta.get("initial_take_profit", "")
                     conf_val = meta.get("confidence", "")
                     reg_val = meta.get("regime", "")
-                    strat_val = meta.get("strategy") or "trend_following"
+                    is_technical_demo = order_ref in demo_order_ids or order_id in demo_order_ids
+                    strat_val = (
+                        "INVESTOR_TECHNICAL_DEMO"
+                        if is_technical_demo
+                        else (meta.get("strategy") or "trend_following")
+                    )
 
                     risk_usdt = ""
                     r_multiple = ""

@@ -1402,6 +1402,20 @@ unless new evidence shows that it blocks valid edge measurement.
 - Status: `KEEP — HANDOFF NARRATIVE AND REVIEW CONTRACT COMPLETE`; both documents preserve the
   no-trade default and distinguish VST functionality from unproven profitability.
 
+## 2026-09-09 — TASK-0230 investor-demo and research-data separation
+
+- Adopted the investor-delivery/edge-acceleration directive as a finite two-track plan: freeze the
+  technical package after its explicit outputs, then return priority to at most five independent,
+  preregistered causal hypotheses without weakening promotion gates.
+- Found that a direct VST demo could later lose its in-memory strategy label during exchange-history
+  reconstruction and fall back to a normal strategy. Added an append-only identity registry,
+  canonical `INVESTOR_TECHNICAL_DEMO` classification, and explicit exclusion from descriptive and
+  prospective edge reports.
+- Focused suite: 21 passed. The frozen TASK-0228 artifact remains byte-identical under its recorded
+  reproduction command and SHA-256.
+- Status: `KEEP — DEMO/RESEARCH SEPARATION ENFORCED`; no broker, order, runtime, configuration,
+  historical record, or prospective cohort was changed.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and

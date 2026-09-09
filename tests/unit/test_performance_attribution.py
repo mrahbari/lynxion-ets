@@ -41,3 +41,27 @@ def test_attribution_deduplicates_adjusts_for_fees_and_computes_drawdown(tmp_pat
     assert report["by_side"]["SELL"]["execution_unwinds"] == 1
     assert report["by_confidence_bucket"]["0.70-0.80"]["n"] == 1
     assert path.read_bytes() == before
+
+
+def test_attribution_excludes_investor_technical_demo(tmp_path):
+    path = tmp_path / "trades.csv"
+    fields = [
+        "trade_id", "symbol", "strategy", "side", "entry_timestamp", "exit_timestamp",
+        "entry_price", "quantity", "pnl_usdt", "fees_usdt", "exit_reason",
+    ]
+    with path.open("w", newline="", encoding="utf-8") as target:
+        writer = csv.DictWriter(target, fieldnames=fields)
+        writer.writeheader()
+        writer.writerow({
+            "trade_id": "demo", "symbol": "DOGEUSDT", "strategy": "INVESTOR_TECHNICAL_DEMO",
+            "side": "BUY", "entry_timestamp": "2026-09-09T09:00:00+00:00",
+            "exit_timestamp": "2026-09-09T10:00:00+00:00", "entry_price": "0.09",
+            "quantity": "219", "pnl_usdt": "100", "fees_usdt": "-0.01",
+            "exit_reason": "TAKE_PROFIT_MARKET",
+        })
+
+    report = _module().build_report(str(path))
+
+    assert report["data_quality"]["excluded_technical_demo_records"] == 1
+    assert report["overall"]["n"] == 0
+    assert report["overall"]["cost_adjusted_pnl_usdt"] == 0

@@ -76,6 +76,23 @@ def test_csv_initialization_and_header(temp_collector):
         assert header == CSV_HEADER
 
 
+def test_demo_registry_loads_order_and_client_id(tmp_path):
+    registry = tmp_path / "demo.jsonl"
+    registry.write_text(
+        '{"purpose":"INVESTOR_TECHNICAL_DEMO","client_order_id":"client-demo"}\n'
+        '{"purpose":"INVESTOR_TECHNICAL_DEMO","order_id":"order-demo"}\n',
+        encoding="utf-8",
+    )
+    collector = TradeFeatureCollector(
+        csv_path=str(tmp_path / "trades.csv"),
+        journal_path=str(tmp_path / "journal.jsonl"),
+        ledger_path=str(tmp_path / "ledger.jsonl"),
+        forensic_path=str(tmp_path / "forensic.log"),
+        demo_registry_path=str(registry),
+    )
+    assert collector._load_demo_order_ids() == {"client-demo", "order-demo"}
+
+
 @pytest.mark.unit
 def test_backfill_historical_trades_and_idempotency(temp_collector):
     collector, csv_p, _, _, _ = temp_collector

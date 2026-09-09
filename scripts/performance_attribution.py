@@ -11,6 +11,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Optional
 
+TECHNICAL_DEMO_STRATEGIES = {"INVESTOR_TECHNICAL_DEMO", "INVESTOR_VST_DEMO"}
+
+
+def _is_technical_demo(row: Dict[str, str]) -> bool:
+    return str(row.get("strategy") or "").strip().upper() in TECHNICAL_DEMO_STRATEGIES
+
 
 def _number(row: Dict[str, str], field: str) -> float:
     try:
@@ -126,6 +132,9 @@ def build_report(
 ) -> Dict[str, Any]:
     with open(path, newline="", encoding="utf-8") as source:
         records, source_rows, missing_ids = _final_records(csv.DictReader(source))
+    unique_trade_ids = len(records)
+    technical_demo_records = [row for row in records if _is_technical_demo(row)]
+    records = [row for row in records if not _is_technical_demo(row)]
     start = _timestamp(cohort_start) if cohort_start else None
     cohort = [
         row for row in records
@@ -135,15 +144,15 @@ def build_report(
         )
     ]
     required = ("strategy", "side", "entry_timestamp", "exit_timestamp", "pnl_usdt", "fees_usdt")
-    return {
+    report = {
         "version": 1,
         "journal_path": str(Path(path)),
         "cohort_start": cohort_start,
         "cohort_timestamp_field": cohort_timestamp_field,
         "data_quality": {
             "source_rows": source_rows,
-            "unique_trade_ids": len(records),
-            "duplicate_rows": source_rows - len(records) - missing_ids,
+            "unique_trade_ids": unique_trade_ids,
+            "duplicate_rows": source_rows - unique_trade_ids - missing_ids,
             "records_without_trade_id": missing_ids,
             "cohort_trade_ids": len(cohort),
             "rows_missing_required_fields": sum(any(row.get(field) in (None, "") for field in required) for row in cohort),
@@ -171,6 +180,9 @@ def build_report(
             else ">$1000",
         ),
     }
+    if technical_demo_records:
+        report["data_quality"]["excluded_technical_demo_records"] = len(technical_demo_records)
+    return report
 
 
 def main() -> None:

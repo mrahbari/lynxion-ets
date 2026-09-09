@@ -19,6 +19,11 @@ from infrastructure.results_tracking.edge_ledger import compute_edge_records
 REQUIRED_ATTRIBUTION_FIELDS = (
     "strategy", "regime", "confidence", "initial_stop_loss", "initial_take_profit", "risk_usdt", "r_multiple",
 )
+TECHNICAL_DEMO_STRATEGIES = {"INVESTOR_TECHNICAL_DEMO", "INVESTOR_VST_DEMO"}
+
+
+def _is_technical_demo(row: Dict[str, str]) -> bool:
+    return str(row.get("strategy") or "").strip().upper() in TECHNICAL_DEMO_STRATEGIES
 
 
 def _parse_timestamp(value: str) -> datetime:
@@ -38,8 +43,11 @@ def build_prospective_edge_report(
     historical trades created before the deployment that repaired attribution.
     """
     start = _parse_timestamp(cohort_start)
+    source_rows = list(rows)
+    eligible_rows = [row for row in source_rows if not _is_technical_demo(row)]
+    excluded_demo_count = len(source_rows) - len(eligible_rows)
     cohort = [
-        row for row in rows
+        row for row in eligible_rows
         if row.get("exit_timestamp") and _parse_timestamp(row["entry_timestamp"]) >= start
     ]
     incomplete = [
@@ -55,6 +63,7 @@ def build_prospective_edge_report(
         "cohort_trade_count": len(cohort),
         "attributable_trade_count": len(complete),
         "incomplete_attribution_count": len(incomplete),
+        "excluded_technical_demo_count": excluded_demo_count,
         "required_attribution_fields": list(REQUIRED_ATTRIBUTION_FIELDS),
         "mode": "SHADOW_READ_ONLY",
     }

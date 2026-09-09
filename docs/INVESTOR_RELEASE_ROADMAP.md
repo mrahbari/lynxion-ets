@@ -2,6 +2,9 @@
 
 **Status:** ACTIVE — VST DEMO VERIFIED; NO-TRADE ECONOMIC DEFAULT; PROFITABILITY NOT PROVEN
 
+The final sequencing and research budget are frozen in
+`docs/INVESTOR_DELIVERY_EDGE_ACCELERATION_PLAN.md`.
+
 ## Release objective
 
 Deliver a technically reviewable VST/shadow release that demonstrates deterministic
@@ -19,6 +22,7 @@ remain prospective research and do not block the initial release.
   cooldowns, duplicate prevention, or fail-closed behavior.
 - No strategy, exit, symbol, or threshold change based only on intuition or post-result slicing.
 - Historical improvement is not presented as prospective or out-of-sample proof.
+- Investor technical-demo activity is explicitly tagged and excluded from every edge metric.
 - If no strategy clears the release evidence floor, the investor build defaults to no-trade
   shadow/VST demonstration rather than knowingly admitting negative-expectancy flow.
 
@@ -100,6 +104,9 @@ Acceptance: reviewers see less demonstrably unused code without behavior drift o
 6. Perform evidence-based dead-code inventory and only then optional cleanup.
 7. Run focused regression, full suite, deterministic demo, and independent technical review.
 8. Freeze the investor release and publish explicit limitations and the continuing R&D plan.
+
+After release freeze, documentation polishing stops and priority returns to the bounded cycle of
+at most five independent, preregistered causal hypotheses defined in the acceleration plan.
 
 ## Release verdicts
 

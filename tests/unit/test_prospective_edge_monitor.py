@@ -41,3 +41,13 @@ def test_excludes_rows_before_the_explicit_cohort_boundary():
     )
     assert report["cohort_trade_count"] == 0
     assert report["verdict"] == "INSUFFICIENT_DATA"
+
+
+def test_excludes_investor_technical_demo_from_prospective_edge():
+    report = build_prospective_edge_report(
+        [_row("100.0", strategy="INVESTOR_TECHNICAL_DEMO")],
+        "2026-08-13T00:00:00+00:00",
+    )
+    assert report["excluded_technical_demo_count"] == 1
+    assert report["cohort_trade_count"] == 0
+    assert report["verdict"] == "INSUFFICIENT_DATA"

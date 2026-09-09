@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_DOWN
@@ -17,6 +18,8 @@ if str(PROJECT_ROOT) not in sys.path:
 
 MAX_NOTIONAL = Decimal("20")
 SYMBOL = "DOGEUSDT"
+DEMO_PURPOSE = "INVESTOR_TECHNICAL_DEMO"
+DEMO_REGISTRY = PROJECT_ROOT / "data" / "research" / "investor_release" / "demo_order_registry.jsonl"
 
 
 def normalize_symbol(value: Any) -> str:
@@ -49,6 +52,18 @@ def sized_quantity(price: Decimal, quantity_precision: int) -> Decimal:
     if quantity <= 0 or quantity * price > MAX_NOTIONAL:
         raise ValueError("unable to create a positive quantity within the notional cap")
     return quantity
+
+
+def record_demo_identity(client_order_id: str, order_id: str | None = None) -> None:
+    """Durably identify demo activity before send so it cannot enter edge evidence."""
+    DEMO_REGISTRY.parent.mkdir(parents=True, exist_ok=True)
+    record = {"purpose": DEMO_PURPOSE, "client_order_id": client_order_id}
+    if order_id is not None:
+        record["order_id"] = str(order_id)
+    with DEMO_REGISTRY.open("a", encoding="utf-8") as target:
+        target.write(json.dumps(record, sort_keys=True) + "\n")
+        target.flush()
+        os.fsync(target.fileno())
 
 
 def main() -> None:
@@ -88,15 +103,19 @@ def main() -> None:
     leverage = Decimal(str(settings.risk.max_leverage))
     stop_loss = price * Decimal("0.97")
     take_profit = price * Decimal("1.06")
+    client_order_id = "INVESTORTECHDEMO" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     order = Order(
         symbol=Symbol(SYMBOL), side=OrderSide.BUY, position_side=PositionSide.LONG,
         quantity=quantity, price=Money(price, "USDT"), order_type="MARKET",
         stop_loss_price=Money(stop_loss, "USDT"),
         take_profit_price=Money(take_profit, "USDT"),
-        requested_leverage=leverage, strategy_name="investor_vst_demo",
+        requested_leverage=leverage, strategy_name=DEMO_PURPOSE,
+        client_order_id=client_order_id,
         timestamp=datetime.now(timezone.utc),
     )
+    record_demo_identity(client_order_id)
     order_id = adapter.place_order(order)
+    record_demo_identity(client_order_id, order_id)
 
     post_positions = adapter.get_all_positions()
     post_orders = adapter.get_pending_orders(Symbol(SYMBOL))
