@@ -1454,6 +1454,15 @@ unless new evidence shows that it blocks valid edge measurement.
 - Focused suite: 18 passed. Full suite: 1,056 passed with one optional layering skip.
 - Status: `KEEP — EXECUTION LIVENESS REPAIRED; FRESH RUNTIME ACTIVATION NEXT`.
 
+## 2026-09-09 — TASK-0234 investor release evidence freeze
+
+- Added the finite claim-to-evidence index with the frozen `PROVEN TECHNICAL CAPABILITY`,
+  `PROSPECTIVE RESEARCH IN PROGRESS`, and `NOT YET PROVEN ECONOMICALLY` classifications.
+- Corrected stale reviewer-facing architecture, VST cap, leverage, task, commit and suite claims.
+- Reproduced the deterministic demo: 87 PAPER decisions, 174 valid records and zero exchange sends.
+- Status: `INVESTOR_REVIEW_READY — TECHNICAL VST/SHADOW ONLY`; profitability, break-even,
+  pilot readiness, production readiness and real-money approval remain unproven or out of scope.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and

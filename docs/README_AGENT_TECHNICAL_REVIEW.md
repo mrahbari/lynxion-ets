@@ -4,7 +4,7 @@
 
 **Repository branch at snapshot:** `task-00-ground-truth-audit`
 
-**Latest completed unit:** `034bcbf research: freeze investor economic baseline`
+**Evidence code boundary:** `1f07520 fix: restore execution stablecoin guard config`
 
 Investor-facing companion: [README_INVESTOR_RELEASE.md](README_INVESTOR_RELEASE.md)
 
@@ -70,6 +70,11 @@ The following claims are intentionally distinct:
 | TASK-0226 fail-closed demo launcher | `a0bc14c` | Dedicated broker-free investor command; P0-IR1/2 closed |
 | TASK-0227 controlled VST proof | `63b1229` | One capped isolated DOGEUSDT VST position with SL/TP verified |
 | TASK-0228 economic baseline | `034bcbf` | Hash-bound negative aggregate; no-trade default retained |
+| TASK-0229 reviewer READMEs | `ee56979` | Investor and technical review narratives |
+| TASK-0230 demo/research separation | `86e6f0d` | Technical-demo identities excluded from edge metrics |
+| TASK-0231 current VST activation | `7704c0e` | Commit-bound empty forward cohort and protected VST runtime |
+| TASK-0232 10x VST launcher | `95ea6e0`, `cd338f2` | Launcher-scoped 10x plus exact ROE-boundary regression |
+| TASK-0233 execution liveness | `1f07520` | Missing stablecoin-guard configuration restored |
 
 ## Safety/execution evidence to inspect
 
@@ -83,10 +88,11 @@ The following claims are intentionally distinct:
 - `tests/unit/test_task0185_bingx_retry_admission.py`: stop-mutation admission evidence.
 - `docs/INVESTOR_RELEASE_GAP_ASSESSMENT.md`: dated classifications and known gaps.
 
-The VST proof used current configured 5x leverage rather than silently changing leverage to the
-historical 10x assumption. The launcher requires BingX testnet, placement enabled, paper false,
-and exactly BingX in `enabled_brokers`. It caps requested notional at 20 USDT, below the 21 USDT
-hard per-order cap. The normal broker path still evaluates blacklist/cooldown and risk admission.
+The dated TASK-0227 VST proof used the then-current configured 5x leverage. TASK-0232 later scoped
+10x to new entries launched specifically through `./lynxion`; it did not mutate existing positions
+or global loader defaults. The launcher requires BingX testnet and pins both leverage ceilings;
+the broker boundary must establish isolated 10x and read it back before admitting a new entry.
+The 21 USDT hard order-notional cap and 1,000 USDT portfolio-notional cap remain unchanged.
 
 VST evidence at execution time:
 
@@ -216,3 +222,9 @@ fail-closed risk behavior, and has converted negative economics into a no-trade 
 decision. It is not yet valid to conclude that Lynxion has durable edge or is ready for real
 capital. The next correct milestone is an auditable investor technical package, followed by clean
 prospective/OOS economic evidence—not broader optimization of the already-opened journal.
+
+## Frozen release verdict
+
+`INVESTOR_REVIEW_READY — TECHNICAL VST/SHADOW ONLY` at evidence code boundary `1f07520`.
+The independent evidence index is `docs/INVESTOR_RELEASE_EVIDENCE_INDEX.md`. This verdict does
+not mean profitable, break-even, pilot-ready, production-ready, or approved for real funds.

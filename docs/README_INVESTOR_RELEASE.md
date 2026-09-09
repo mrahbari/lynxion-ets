@@ -120,8 +120,8 @@ so they are research inputs rather than investable claims.
 
 ### Regression status
 
-After the controlled VST launcher was added, the full repository suite completed with
-**1,049 passed and 1 skipped**. The skipped test is an optional import-layering gate whose local
+After the current 10x VST launcher and execution-liveness repair were added, the full repository
+suite completed with **1,056 passed and 1 skipped**. The skipped test is an optional import-layering gate whose local
 dependency is not installed; it is recorded as technical-review work rather than hidden.
 
 ## What the initial investor version contains
@@ -133,6 +133,8 @@ The first deliverable targets technical credibility and controlled operation:
 - central risk admission with per-order and portfolio exposure limits;
 - duplicate-symbol and cooldown gates;
 - isolated-margin and configured-leverage verification at the BingX entry boundary;
+- a launcher-scoped 10x setting for new VST entries, with unchanged 21 USDT order and 1,000 USDT
+  portfolio-notional caps;
 - mandatory exchange-side SL/TP with automatic unwind on protection failure and a kill switch
   if the unwind also fails;
 - trade/evidence journaling and reproducible research artifacts;
@@ -144,11 +146,11 @@ initial version.
 
 ## Current stage
 
-The execution demonstration and the baseline-economics decision are complete. We are now in the
-**investor evidence packaging and technical-review stage**. The immediate work is to bind the
-release to exact commits, tests, risk claims, known limitations, reproducible commands, and
-reviewer entry points. In parallel, prospective research continues without changing frozen
-candidate rules after outcomes are visible.
+The execution demonstration, baseline-economics decision, evidence index, and technical-review
+package are complete. The initial release is now frozen as **INVESTOR_REVIEW_READY for a bounded
+technical VST/shadow demonstration only**. This is not `PILOT_REVIEW_READY`, does not admit a
+strategy, and does not establish profitability. Prospective research continues without changing
+frozen candidate rules after outcomes are visible.
 
 The current economic policy is:
 
