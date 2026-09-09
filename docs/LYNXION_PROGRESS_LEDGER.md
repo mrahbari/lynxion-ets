@@ -1391,6 +1391,17 @@ unless new evidence shows that it blocks valid edge measurement.
 - Status: `NO_TRADE_DEFAULT`; no strategy clears the release evidence floor. The safe VST demo
   remains valid, but profitability remains unproven.
 
+## 2026-09-09 — TASK-0229 investor and agent review READMEs
+
+- Added an investor-facing narrative covering the system's prior condition, today's bounded
+  initial-release decision, completed evidence, current stage, limitations, and 30/90/180-day
+  targets.
+- Added a technical/agent brief with claim classifications, task/commit provenance, frozen
+  hashes, reproduction instructions, validation gates, review entry points, and independent
+  audit questions.
+- Status: `KEEP — HANDOFF NARRATIVE AND REVIEW CONTRACT COMPLETE`; both documents preserve the
+  no-trade default and distinguish VST functionality from unproven profitability.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and
