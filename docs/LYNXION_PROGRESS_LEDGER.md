@@ -1437,8 +1437,11 @@ unless new evidence shows that it blocks valid edge measurement.
   mutated; new entries must establish isolated 10x and pass authoritative exchange readback.
 - This is not behavior-neutral: identical price movement produces twice the ROE of 5x, so the
   existing 6% breakeven and 10% trailing thresholds activate at smaller price moves.
-- Full suite: 1,053 passed with one optional layering skip.
-- Status: `KEEP — COMMITTED; FRESH 10X VST ACTIVATION NEXT`.
+- A 10x economic-contract regression found and fixed a binary-float boundary defect that could
+  defer exact 6%/10% ROE activation by one manager cycle. Defaults now verifiably lock +0.35%
+  price at breakeven and about +4.95% ROE at the first trailing boundary.
+- Final full suite: 1,054 passed with one optional layering skip.
+- Status: `KEEP — 10X EXIT CONTRACT VERIFIED; EXCHANGE READBACK ON FIRST NEW ENTRY PENDING`.
 
 ## Operator decision required
 

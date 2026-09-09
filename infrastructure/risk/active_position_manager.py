@@ -2,7 +2,7 @@
 
 Provides real-time dynamic position management across all active positions:
 1. Breakeven Protection: When ROE reaches the configured trigger using authoritative leverage,
-   moves Stop Loss to entry_price +/- 0.1% fee buffer, guaranteeing the trade cannot turn negative.
+   moves Stop Loss to entry_price +/- the configured fee buffer (0.35% by default).
 2. Dynamic Trailing Stop: When ROE reaches the configured trigger using authoritative leverage,
    continuously trails the Stop Loss 0.5% behind the peak high-water mark price, locking in gains.
 3. Clean Full-Position Exits: Eliminates flawed partial closing friction, ensuring high-expectancy
@@ -29,6 +29,11 @@ class ActivePositionManager:
 
     _instance: Optional[ActivePositionManager] = None
     _lock = threading.RLock()
+
+    @staticmethod
+    def _roe_threshold_reached(roe_pct: float, threshold: float) -> bool:
+        """Treat decimal boundary values as reached despite binary-float rounding."""
+        return roe_pct >= threshold or math.isclose(roe_pct, threshold, abs_tol=1e-9)
 
     def __init__(
         self,
@@ -524,8 +529,8 @@ class ActivePositionManager:
                             except Exception as ex:
                                 logger.error(f"Error checking/attaching initial SL for {clean_sym}: {ex}")
 
-                    # --- STAGE 1: BREAKEVEN STOP ACTIVATION (+8.0% ROE) ---
-                    if roe_pct >= self.be_trigger_roe and not state.get("breakeven_active", False):
+                    # --- STAGE 1: BREAKEVEN STOP ACTIVATION (+6.0% ROE by default) ---
+                    if self._roe_threshold_reached(roe_pct, self.be_trigger_roe) and not state.get("breakeven_active", False):
                         if is_long:
                             be_sl = entry_price * (1.0 + self.fee_buffer_pct)
                             if be_sl >= curr_price:
@@ -563,7 +568,9 @@ class ActivePositionManager:
                     elapsed_hours = (time.time() - state.get("first_seen", time.time())) / 3600.0
 
                     # 1. Stale in-profit trade (>= 3.0h open & ROE >= +3.5% fee coverage) -> Force Breakeven Lock
-                    if elapsed_hours >= 3.0 and roe_pct >= (self.fee_buffer_pct * position_leverage * 100.0) and not state.get("breakeven_active", False):
+                    if elapsed_hours >= 3.0 and self._roe_threshold_reached(
+                        roe_pct, self.fee_buffer_pct * position_leverage * 100.0
+                    ) and not state.get("breakeven_active", False):
                         if is_long:
                             be_sl = entry_price * (1.0 + self.fee_buffer_pct)
                             if be_sl >= curr_price:
@@ -655,7 +662,7 @@ class ActivePositionManager:
 
                     # --- STAGE 2: DYNAMIC TRAILING STOP RATCHET (+10.0% ROE) ---
                     min_locked_roe = self.fee_buffer_pct * position_leverage * 100.0
-                    if roe_pct >= self.trail_trigger_roe:
+                    if self._roe_threshold_reached(roe_pct, self.trail_trigger_roe):
                         if is_long:
                             candidate_sl = min(peak_p * (1.0 - self.trail_distance_pct), curr_price * 0.997)
                             locked_roe = ((candidate_sl - entry_price) / entry_price) * position_leverage * 100.0

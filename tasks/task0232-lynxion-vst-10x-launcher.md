@@ -23,11 +23,16 @@ existing conflicting-ceilings rejection. Existing positions retain their exchang
 ## Evidence
 
 - Added a launcher regression asserting both ceilings are present before the Python entry point.
+- Added an economic-contract regression proving the default 10x path activates breakeven at 6% ROE,
+  sets the stop at +0.35% price, and activates trailing at 10% ROE with about 4.95% ROE locked.
+- The regression exposed binary-float boundary drift that could defer an exact-threshold activation
+  by one management cycle. Threshold comparisons now accept numerically equal boundary values.
 - Made the snapshot-unavailable risk test independent of local leverage configuration.
 - Focused suite: 42 passed.
-- Full suite: 1,053 passed, one optional import-layering test skipped.
+- Final focused exit/leverage suite: 31 passed.
+- Final full suite: 1,054 passed, one optional import-layering test skipped.
 
 ## Verdict
 
-`KEEP — 10X SCOPED TO NEW ./lynxion VST ENTRIES`. Runtime activation requires a fresh commit-bound
-forward cohort; the first new position must provide authoritative exchange readback evidence.
+`KEEP — 10X SCOPED TO NEW ./lynxion VST ENTRIES; EXIT CONTRACT VERIFIED`. The first new position
+must still provide authoritative exchange readback evidence.
