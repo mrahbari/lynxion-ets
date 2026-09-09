@@ -1,7 +1,9 @@
 # Lynxion — Agent and Technical Reviewer Brief
 
-**Snapshot date:** 2026-09-09  
-**Repository branch at snapshot:** `task-00-ground-truth-audit`  
+**Snapshot date:** 2026-09-09
+
+**Repository branch at snapshot:** `task-00-ground-truth-audit`
+
 **Latest completed unit:** `034bcbf research: freeze investor economic baseline`
 
 Investor-facing companion: [README_INVESTOR_RELEASE.md](README_INVESTOR_RELEASE.md)

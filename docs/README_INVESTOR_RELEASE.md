@@ -1,6 +1,7 @@
 # Lynxion Investor Release — Status, Decisions, and Roadmap
 
-**Evidence date:** 2026-09-09  
+**Evidence date:** 2026-09-09
+
 **Current release status:** `VST DEMO VERIFIED — NO-TRADE ECONOMIC DEFAULT — PROFITABILITY NOT PROVEN`
 
 Technical/agent review companion: [README_AGENT_TECHNICAL_REVIEW.md](README_AGENT_TECHNICAL_REVIEW.md)
