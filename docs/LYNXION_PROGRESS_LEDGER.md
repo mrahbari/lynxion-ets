@@ -1443,6 +1443,17 @@ unless new evidence shows that it blocks valid edge measurement.
 - Final full suite: 1,054 passed with one optional layering skip.
 - Status: `KEEP — 10X EXIT CONTRACT VERIFIED; EXCHANGE READBACK ON FIRST NEW ENTRY PENDING`.
 
+## 2026-09-09 — TASK-0233 execution stablecoin guard runtime repair
+
+- Runtime evidence exposed a fail-closed `NameError` on every intent reaching the execution-side
+  stablecoin guard. The two configuration locals had been lost during an earlier mixin extraction.
+- Restored the values from injected settings and normalized current list plus legacy CSV schemas;
+  stablecoin rejection policy, heartbeat safety, sizing, leverage, and broker routing are unchanged.
+- Before stopping the unhealthy runner, direct BingX VST readback confirmed both open positions
+  retained exchange-side SL and TP protection.
+- Focused suite: 18 passed. Full suite: 1,056 passed with one optional layering skip.
+- Status: `KEEP — EXECUTION LIVENESS REPAIRED; FRESH RUNTIME ACTIVATION NEXT`.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and

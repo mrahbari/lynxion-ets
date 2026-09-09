@@ -12,6 +12,24 @@ from domain.value_objects import Symbol
 class _AutoDetectionExecutionMixin:
     """Order construction + placement from an execution intent (trading execution)."""
 
+    def _stablecoin_filter_config(self):
+        """Read the execution-side stablecoin guard from injected settings."""
+        data_config = getattr(self._settings, "data", None)
+        enabled = getattr(data_config, "filter_out_stablecoin_pairs", True)
+        raw_stablecoins = getattr(
+            data_config,
+            "allowed_stablecoins",
+            ["USDT", "BUSD", "USDC", "DAI", "PAX", "TUSD", "USDD", "FDUSD"],
+        )
+        if isinstance(raw_stablecoins, str):
+            raw_stablecoins = raw_stablecoins.split(",")
+        allowed_stablecoins = {
+            str(stablecoin).strip().upper()
+            for stablecoin in (raw_stablecoins or [])
+            if str(stablecoin).strip()
+        }
+        return bool(enabled), allowed_stablecoins
+
     def _execute_trade_from_intent(self, execution_intent):
         """Execute trade based on execution intent from strategy layer."""
         try:
@@ -59,6 +77,7 @@ class _AutoDetectionExecutionMixin:
                     # Continue to execution where the broker service will reject it
 
             symbol_str = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
+            filter_stablecoin_pairs, allowed_stablecoins = self._stablecoin_filter_config()
 
             # Hard Symbol Cooldown & Health Gate Admission Check
             try:
