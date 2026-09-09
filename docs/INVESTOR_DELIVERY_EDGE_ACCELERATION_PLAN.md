@@ -1,7 +1,9 @@
 # Lynxion Investor Delivery and Edge Acceleration Plan
 
-**Frozen:** 2026-09-09  
-**Status:** ACTIVE  
+**Frozen:** 2026-09-09
+
+**Status:** ACTIVE
+
 **Governing principle:** Investor urgency changes sequencing, not scientific truth.
 
 ## Two-track operating model
@@ -105,4 +107,3 @@ Track A stops at release freeze. Track B stops or changes direction only at a ge
 gate: qualifying edge, bounded-cycle rejection, insufficient information, invalid data integrity,
 or an approval boundary involving real funds, secrets, paid data, security, legal/compliance,
 destructive action, or materially different architecture.
-

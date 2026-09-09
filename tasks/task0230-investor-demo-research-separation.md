@@ -33,4 +33,3 @@ prospective monitor also lacked an explicit technical-demo exclusion.
 ## Verdict
 
 `KEEP — DEMO/RESEARCH SEPARATION ENFORCED`.
-
