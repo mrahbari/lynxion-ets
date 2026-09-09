@@ -30,7 +30,11 @@ class SymbolCooldownGate:
     _instance: Optional[SymbolCooldownGate] = None
     _lock = threading.RLock()
 
-    def __init__(self):
+    def __init__(self, journal_path: Optional[str] = None, trade_journal_path: Optional[str] = None):
+        self._journal_path = journal_path or COOLDOWN_JOURNAL_PATH
+        self._trade_journal_path = trade_journal_path or os.path.join(
+            os.path.dirname(__file__), "..", "..", "data", "trade_journal.csv"
+        )
         self._sl_cooldowns: Dict[str, float] = {}
         self._symbol_loss_history: Dict[str, list[float]] = {}
         self._load_cooldown_journal()
@@ -50,9 +54,9 @@ class SymbolCooldownGate:
     def _load_cooldown_journal(self) -> None:
         """Load persistent Stop Loss cooldowns and loss history from disk."""
         try:
-            os.makedirs(os.path.dirname(COOLDOWN_JOURNAL_PATH), exist_ok=True)
-            if os.path.exists(COOLDOWN_JOURNAL_PATH) and os.path.getsize(COOLDOWN_JOURNAL_PATH) > 0:
-                with open(COOLDOWN_JOURNAL_PATH, "r", encoding="utf-8") as f:
+            os.makedirs(os.path.dirname(self._journal_path), exist_ok=True)
+            if os.path.exists(self._journal_path) and os.path.getsize(self._journal_path) > 0:
+                with open(self._journal_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     if isinstance(data, dict):
                         if "cooldowns" in data:
@@ -64,7 +68,7 @@ class SymbolCooldownGate:
                                 self._sl_cooldowns[sym] = float(ts) + 3600.0
 
             # Reconcile recent trade losses from trade_journal.csv on startup
-            trade_journal_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "trade_journal.csv")
+            trade_journal_path = self._trade_journal_path
             if os.path.exists(trade_journal_path) and os.path.getsize(trade_journal_path) > 0:
                 try:
                     import pandas as pd
@@ -106,17 +110,17 @@ class SymbolCooldownGate:
     def _save_cooldown_journal(self) -> None:
         """Save persistent Stop Loss cooldowns and loss history atomically."""
         try:
-            os.makedirs(os.path.dirname(COOLDOWN_JOURNAL_PATH), exist_ok=True)
+            os.makedirs(os.path.dirname(self._journal_path), exist_ok=True)
             payload = {
                 "cooldowns": self._sl_cooldowns,
                 "loss_history": self._symbol_loss_history
             }
-            tmp_path = f"{COOLDOWN_JOURNAL_PATH}.tmp.{os.getpid()}"
+            tmp_path = f"{self._journal_path}.tmp.{os.getpid()}"
             with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump(payload, f, indent=2)
                 f.flush()
                 os.fsync(f.fileno())
-            os.replace(tmp_path, COOLDOWN_JOURNAL_PATH)
+            os.replace(tmp_path, self._journal_path)
         except Exception as e:
             logger.error(f"⚠️ SymbolCooldownGate: Failed atomic save of journal: {e}")
 

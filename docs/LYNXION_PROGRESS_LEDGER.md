@@ -1346,6 +1346,17 @@ unless new evidence shows that it blocks valid edge measurement.
   a dedicated launcher that structurally cannot enter production/authenticated paths.
 - Status: `NO_GO — TWO DEMO-SCOPE P0 BLOCKERS; PROFITABILITY UNPROVEN`.
 
+## 2026-09-09 — TASK-0225 investor demo state isolation
+
+- Confirmed the old paper burst was coupled to the real cooldown and trade journals and
+  used incomplete, over-cap fixtures; this made all 87 decisions depend on runtime state.
+- Injected task-local cooldown inputs and complete 20 USDT risk-admissible demo orders
+  while preserving every production default.
+- Two subprocess runs each produced 87 PAPER decisions, 174 valid ledger records, zero
+  exchange sends, and identical stable summaries. Full suite: 1,041 passed, one optional
+  layering skip.
+- Status: `KEEP — P0-IR1 CLOSED`; P0-IR2 dedicated fail-closed launcher is next.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and

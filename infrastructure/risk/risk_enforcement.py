@@ -31,7 +31,7 @@ VST_MAX_PORTFOLIO_EXPOSURE = 1_000.0
 VST_MAX_ORDER_NOTIONAL = 21.0
 
 
-def build_vst_risk_enforcement():
+def build_vst_risk_enforcement(cooldown_gate=None):
     """Build the fail-closed risk enforcer used by the live execution guard."""
     from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager
 
@@ -41,18 +41,20 @@ def build_vst_risk_enforcement():
             max_position_exposure=VST_MAX_ORDER_NOTIONAL,
         ),
         strict_position_limit=True,
+        cooldown_gate=cooldown_gate,
     )
 
 
 class RiskEnforcement:
     """Order-path adapter over EnterpriseRiskManager (enforce + exposure feedback + state)."""
 
-    def __init__(self, risk_manager, strict_position_limit: bool = False):
+    def __init__(self, risk_manager, strict_position_limit: bool = False, cooldown_gate=None):
         self._rm = risk_manager
         self._lock = threading.Lock()
         self.checks = 0
         self.denials = 0
         self._strict_position_limit = strict_position_limit
+        self._cooldown_gate = cooldown_gate
         self._sl_cooldowns: Dict[str, float] = self._load_cooldown_journal()
 
     def _load_cooldown_journal(self) -> Dict[str, float]:
@@ -166,8 +168,12 @@ class RiskEnforcement:
 
                 # 60-Minute Stop Loss Cooldown Hard Gate (Unified SymbolCooldownGate)
                 # Evaluated first for EVERY position-entry attempt (independent of order.price availability)
-                from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
-                cooldown_allowed, cooldown_reason = symbol_cooldown_gate.is_symbol_allowed(symbol, cooldown_minutes=60)
+                if self._cooldown_gate is None:
+                    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+                    self._cooldown_gate = symbol_cooldown_gate
+                cooldown_allowed, cooldown_reason = self._cooldown_gate.is_symbol_allowed(
+                    symbol, cooldown_minutes=60
+                )
                 if not cooldown_allowed:
                     self.denials += 1
                     from shared.logger import logger

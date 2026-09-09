@@ -36,7 +36,7 @@ from shared.execution_truth_ledger import ExecutionTruthLedger
 FEE_RATE = 0.001          # 0.10%
 SLIPPAGE_FACTOR = 0.0005  # 0.05%
 INITIAL_CAPITAL = 10000.0
-RISK_PER_TRADE = 0.02     # 2% notional sizing (orchestrator default risk_config)
+RISK_PER_TRADE = 0.002    # 0.2% keeps each demo order below the $21 VST hard cap
 
 # Live auto-detect roster (infrastructure/strategies/strategy_manager.py)
 STRATEGIES = ["trend_following", "mean_reversion", "volatility_breakout"]
@@ -50,11 +50,17 @@ WINDOW_HOURS = 72
 
 def main():
     rng = random.Random(20260612)
-    ledger_path = os.path.join(tempfile.gettempdir(), "phase10_sim_ledger.jsonl")
-    if os.path.exists(ledger_path):
-        os.remove(ledger_path)
+    artifact_dir = tempfile.mkdtemp(prefix="lynxion-investor-demo-")
+    ledger_path = os.path.join(artifact_dir, "execution_truth_ledger.jsonl")
     ledger = ExecutionTruthLedger(path=ledger_path)
     guard = LiveExecutionGuard()
+    from infrastructure.risk.risk_enforcement import build_vst_risk_enforcement
+    from infrastructure.risk.symbol_cooldown_gate import SymbolCooldownGate
+    cooldown_gate = SymbolCooldownGate(
+        journal_path=os.path.join(artifact_dir, "cooldown.json"),
+        trade_journal_path=os.path.join(artifact_dir, "empty_trade_journal.csv"),
+    )
+    guard.set_risk_enforcer(build_vst_risk_enforcement(cooldown_gate=cooldown_gate).enforce)
 
     # Paper-mode settings (paper_trading=True -> every order resolves to PAPER).
     bcfg = SimpleNamespace(paper_trading=True, testnet=True, bingx_testnet=True,
@@ -68,8 +74,14 @@ def main():
     latencies = []
     real_sends = 0
 
-    def make_order(symbol):
-        return SimpleNamespace(symbol=SimpleNamespace(value=symbol), side=SimpleNamespace(name="BUY"))
+    def make_order(symbol, price, quantity):
+        return SimpleNamespace(
+            symbol=SimpleNamespace(value=symbol),
+            side=SimpleNamespace(name="BUY"),
+            price=SimpleNamespace(amount=price),
+            quantity=quantity,
+            stop_loss_price=price * 0.98,
+        )
 
     t0 = time.perf_counter()
     for strat in STRATEGIES:
@@ -79,7 +91,7 @@ def main():
             price = SYMBOLS[symbol] * (1 + rng.uniform(-0.01, 0.01))
             notional = INITIAL_CAPITAL * RISK_PER_TRADE
             qty = notional / price
-            order = make_order(symbol)
+            order = make_order(symbol, price, qty)
 
             def send_fn():
                 # Should never run in paper mode; counts any accidental real send.
