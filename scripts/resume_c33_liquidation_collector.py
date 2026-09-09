@@ -7,6 +7,7 @@ import argparse
 import asyncio
 import json
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Callable
@@ -64,8 +65,13 @@ async def supervise(
         started = monotonic_fn()
         try:
             await collect_fn(output, activation_boundary)  # type: ignore[misc]
-        except (OSError, asyncio.TimeoutError, RequestException, ConnectionClosed):
-            pass
+        except (OSError, asyncio.TimeoutError, RequestException, ConnectionClosed) as error:
+            print(json.dumps({
+                "event": "c33_transient_disconnect",
+                "attempt": attempts,
+                "error_type": type(error).__name__,
+                "error": str(error),
+            }, sort_keys=True), file=sys.stderr, flush=True)
         if monotonic_fn() - started >= 300:
             delay = 1
         await sleep_fn(delay)  # type: ignore[misc]

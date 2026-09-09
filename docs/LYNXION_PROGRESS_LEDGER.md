@@ -1303,6 +1303,15 @@ unless new evidence shows that it blocks valid edge measurement.
   threshold, signal, trade, funding, or outcome was opened; the next sparse checkpoint
   is 1,000 and the actual frozen warmup gate remains 8,640 eligible buckets.
 
+## 2026-09-09 — TASK-0221 C-33 reconnect observability
+
+- C-33's ledger remained fresh but eligible collection stalled at 511 buckets while
+  repeated short sessions accumulated; the retry supervisor hid every handled cause.
+- Added stderr-only structured diagnostics for each transient reconnect without
+  changing the collector blob, protocol, retry policy, or append-only evidence.
+- Status: `COLLECTING_DEGRADED — CONTROLLED COLLECTOR RESTART REQUIRED`; this is a
+  collection incident, not an edge verdict.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and

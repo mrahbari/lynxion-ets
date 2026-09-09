@@ -35,7 +35,7 @@ def test_resume_rejects_missing_manifest_commit(tmp_path):
         resolve_pinned_commit(manifest_path, lambda args: "unused")
 
 
-def test_supervisor_retries_transient_disconnect_with_bounded_backoff(tmp_path):
+def test_supervisor_retries_transient_disconnect_with_bounded_backoff(tmp_path, capsys):
     calls = []
     sleeps = []
 
@@ -52,6 +52,13 @@ def test_supervisor_retries_transient_disconnect_with_bounded_backoff(tmp_path):
     ))
     assert len(calls) == 3
     assert sleeps == [1, 2, 4]
+    errors = [json.loads(line) for line in capsys.readouterr().err.splitlines()]
+    assert errors == [{
+        "attempt": attempt,
+        "error": "transient",
+        "error_type": "ConnectionResetError",
+        "event": "c33_transient_disconnect",
+    } for attempt in (1, 2, 3)]
 
 
 def test_supervisor_caps_reconnect_delay(tmp_path):
