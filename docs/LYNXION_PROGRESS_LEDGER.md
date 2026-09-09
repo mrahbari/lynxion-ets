@@ -1428,6 +1428,18 @@ unless new evidence shows that it blocks valid edge measurement.
   frequency.
 - Status: `ACTIVE — BINGX VST ONLY`; resulting activity is not promoted as edge evidence.
 
+## 2026-09-09 — TASK-0232 Lynxion VST 10x launcher
+
+- After explicit operator authorization, scoped 10x leverage to the tracked `./lynxion` VST
+  launcher by pinning both configured leverage ceilings. Global loader defaults and `.env` remain
+  unchanged, preventing unintended impact on other entry points.
+- The 21 USDT order and 1,000 USDT portfolio caps remain unchanged. Existing positions are not
+  mutated; new entries must establish isolated 10x and pass authoritative exchange readback.
+- This is not behavior-neutral: identical price movement produces twice the ROE of 5x, so the
+  existing 6% breakeven and 10% trailing thresholds activate at smaller price moves.
+- Full suite: 1,053 passed with one optional layering skip.
+- Status: `KEEP — COMMITTED; FRESH 10X VST ACTIVATION NEXT`.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and

@@ -82,12 +82,20 @@ def test_bingx_final_admission_blocks_duplicate_from_real_broker_snapshot(monkey
 
 def test_bingx_final_admission_fails_closed_when_position_snapshot_is_unavailable(monkeypatch):
     import logging
+    from types import SimpleNamespace
     from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
 
     broker = object.__new__(_BingXBroker)
     broker.logger = logging.getLogger("test_snapshot_admission")
     monkeypatch.setattr(
         broker, "_make_request", lambda *args, **kwargs: {"code": 100001, "msg": "timestamp invalid"}
+    )
+    monkeypatch.setattr(
+        "bootstrap.settings.loaders.load_settings",
+        lambda: SimpleNamespace(
+            safety=SimpleNamespace(max_open_positions=5),
+            risk=SimpleNamespace(max_leverage=5, max_leverage_limit=5),
+        ),
     )
 
     allowed, reason = broker._assert_entry_admission(_broker_admission_order())
