@@ -1380,6 +1380,17 @@ unless new evidence shows that it blocks valid edge measurement.
 - Status: `KEEP — CONTROLLED VST DEMO VERIFIED`; this is execution evidence, not edge or
   profitability evidence. The cost-adjusted baseline remains next.
 
+## 2026-09-09 — TASK-0228 investor-release cost-adjusted baseline
+
+- Froze a hash-bound, reproducible attribution of 1,257 deduplicated final trade records:
+  -15,495.414855 USDT after recorded fees, -12.32729901 USDT expectancy, PF 0.15008542,
+  and 15,557.062582 USDT max drawdown.
+- The journal mixes incompatible sizing/risk eras and lacks regime for every record plus MFE,
+  MAE, slippage, and funding. Positive `<=25 USDT`, MeanReversion, and OIFootprint slices are
+  post-hoc descriptive leads, not admissible edge evidence.
+- Status: `NO_TRADE_DEFAULT`; no strategy clears the release evidence floor. The safe VST demo
+  remains valid, but profitability remains unproven.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and
