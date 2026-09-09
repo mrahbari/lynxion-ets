@@ -125,6 +125,13 @@ def main():
     total_orders = sum(p["orders"] for p in per_strategy.values())
     total_cost = sum(p["cost"] for p in per_strategy.values())
     summary = {
+        "demo_contract": {
+            "mode": "PAPER",
+            "network_enabled": False,
+            "broker_execution_enabled": False,
+            "profitability_claim": False,
+            "scenario_data": "DETERMINISTIC_ASSUMPTIONS",
+        },
         "window_hours": WINDOW_HOURS,
         "total_orders": total_orders,
         "orders_per_day": round(total_orders / days, 2),
@@ -154,7 +161,12 @@ def main():
         "ledger_path": ledger_path,
     }
     print(json.dumps(summary, indent=2))
-    return 0
+    expected_routes = {"PAPER": total_orders}
+    return 0 if (
+        dict(routes) == expected_routes
+        and real_sends == 0
+        and summary["ledger_verify_ok"] is True
+    ) else 1
 
 
 if __name__ == "__main__":

@@ -1357,6 +1357,16 @@ unless new evidence shows that it blocks valid edge measurement.
   layering skip.
 - Status: `KEEP — P0-IR1 CLOSED`; P0-IR2 dedicated fail-closed launcher is next.
 
+## 2026-09-09 — TASK-0226 fail-closed investor demo launcher
+
+- Added `python scripts/run_investor_demo.py`, an argument-free PAPER-only launcher that
+  removes live opt-in and exposes no production, testnet, broker, network, or tuning path.
+- Its banner and result explicitly disable profitability claims; it exits non-zero unless
+  all 87 decisions are PAPER, the 174-record ledger verifies, and exchange sends equal zero.
+- Full suite: 1,042 passed with one optional layering skip.
+- Status: `KEEP — P0-IR2 CLOSED`; both demo-scope P0 blockers are now closed, while
+  profitability remains unproven. The cost-adjusted no-trade baseline is next.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and
