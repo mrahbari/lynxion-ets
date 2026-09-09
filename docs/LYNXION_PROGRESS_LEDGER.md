@@ -1334,6 +1334,18 @@ unless new evidence shows that it blocks valid edge measurement.
   and gated by reachability evidence plus regressions.
 - Status: `RELEASE ROADMAP FROZEN`; next is a current gap assessment before any fix.
 
+## 2026-09-09 — TASK-0224 investor release gap assessment
+
+- Reproduced a green repository baseline: 1,040 passed and one optional layering test
+  skipped; VST caps, guaranteed-protection failure behavior, trailing mechanics, and
+  disabled-Phemex activation remain locally verified.
+- The current Phase-10 paper harness sent zero exchange orders and verified its ledger,
+  but all 87 decisions were blocked by persisted runtime cooldown state. It is therefore
+  not an isolated deterministic investor demo.
+- Two release-scope P0 blockers are frozen: isolate the demo from runtime state, then add
+  a dedicated launcher that structurally cannot enter production/authenticated paths.
+- Status: `NO_GO — TWO DEMO-SCOPE P0 BLOCKERS; PROFITABILITY UNPROVEN`.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and
