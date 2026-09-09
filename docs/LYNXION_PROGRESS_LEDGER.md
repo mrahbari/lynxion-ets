@@ -1416,6 +1416,18 @@ unless new evidence shows that it blocks valid edge measurement.
 - Status: `KEEP — DEMO/RESEARCH SEPARATION ENFORCED`; no broker, order, runtime, configuration,
   historical record, or prospective cohort was changed.
 
+## 2026-09-09 — TASK-0231 current VST runtime activation
+
+- At operator request, started the current source through `./lynxion` after confirming no duplicate
+  runner and complete exchange-side protection on the existing BingX VST position.
+- The old forward-exit root correctly rejected commit drift. A separate empty cohort was created
+  at boundary `2026-09-09T16:17:28.531614+00:00`, bound to commit `88f88e7`, with historical import
+  disabled; runtime preflight confirmed TESTNET and `live_trading=false`.
+- Post-start protection remained complete. XMR stayed blacklisted and CCUSDT/HYPEUSDT were
+  rejected for excessive missing data. These exclusions preserve safety but may reduce new-trade
+  frequency.
+- Status: `ACTIVE — BINGX VST ONLY`; resulting activity is not promoted as edge evidence.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and
