@@ -1324,6 +1324,16 @@ unless new evidence shows that it blocks valid edge measurement.
   profit factor 0.0, and `COLLECTING`; every record remains strictly after epoch
   1788082349.
 
+## 2026-09-09 — TASK-0223 investor release track
+
+- Froze a separate initial investor-release path so delivery does not wait for C-33's
+  long-horizon gates or misrepresent incomplete research as proven profitability.
+- The release prioritizes verified avoidable-loss defects and uses a no-trade VST/shadow
+  default when no strategy clears its evidence floor; it does not promise break-even.
+- Optional cleanup is limited to demonstrably dead code, isolated from behavior changes,
+  and gated by reachability evidence plus regressions.
+- Status: `RELEASE ROADMAP FROZEN`; next is a current gap assessment before any fix.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and
