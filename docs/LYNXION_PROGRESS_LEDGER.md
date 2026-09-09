@@ -1312,6 +1312,18 @@ unless new evidence shows that it blocks valid edge measurement.
 - Status: `COLLECTING_DEGRADED — CONTROLLED COLLECTOR RESTART REQUIRED`; this is a
   collection incident, not an edge verdict.
 
+## 2026-09-09 — TASK-0222 C-33 diagnostic reload recovery
+
+- Cleanly reloaded only the authorized public C-33 supervisor with TASK-0221
+  diagnostics; exactly one new session remained active and fresh through multiple
+  complete intervals, advancing the ledger from 512 to 517 eligible buckets.
+- No reconnect diagnostic occurred in the verification window; C-33 returned to
+  `COLLECTING`, with the next frozen checkpoint at 1,000. This is recovery evidence,
+  not edge evidence.
+- The due C-11 update found no new candidate or outcome: N=1, expectancy -0.03663%,
+  profit factor 0.0, and `COLLECTING`; every record remains strictly after epoch
+  1788082349.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and
