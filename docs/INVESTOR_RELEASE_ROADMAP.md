@@ -83,6 +83,7 @@ Acceptance: reviewers see less demonstrably unused code without behavior drift o
 
 - one-command VST/shadow startup with an explicit environment banner;
 - deterministic demo scenario with no broker execution;
+- an operator-authorized, capped, one-order VST proof visible in exchange history;
 - concise architecture and data-flow diagram;
 - current risk/safety evidence and known limitations;
 - reproducible performance report with honest evidence labels;

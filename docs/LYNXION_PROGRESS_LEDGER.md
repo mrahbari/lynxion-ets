@@ -1367,6 +1367,19 @@ unless new evidence shows that it blocks valid edge measurement.
 - Status: `KEEP — P0-IR2 CLOSED`; both demo-scope P0 blockers are now closed, while
   profitability remains unproven. The cost-adjusted no-trade baseline is next.
 
+## 2026-09-09 — TASK-0227 controlled investor-visible VST order
+
+- Following explicit operator authorization, added a fail-closed, single-order BingX VST
+  launcher with an explicit opt-in, 20 USDT cap, BingX-only routing, duplicate/pre-existing
+  protection gates, and post-execution exchange verification.
+- ADAUSDT was rejected by the existing cooldown gate and was not bypassed. One DOGEUSDT
+  LONG (219 units, about 19.92 USDT, configured 5x, isolated) then executed through the
+  normal broker risk/protection path on VST.
+- Independent exchange readback found STOP_MARKET and TAKE_PROFIT_MARKET protection for
+  DOGEUSDT and no missing SL/TP across all three open VST positions.
+- Status: `KEEP — CONTROLLED VST DEMO VERIFIED`; this is execution evidence, not edge or
+  profitability evidence. The cost-adjusted baseline remains next.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and
