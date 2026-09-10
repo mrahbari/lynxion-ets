@@ -1463,6 +1463,16 @@ unless new evidence shows that it blocks valid edge measurement.
 - Status: `INVESTOR_REVIEW_READY — TECHNICAL VST/SHADOW ONLY`; profitability, break-even,
   pilot readiness, production readiness and real-money approval remain unproven or out of scope.
 
+## 2026-09-10 — TASK-0235 investor baseline input freeze
+
+- Found that the economic manifest pinned the original journal hash while its reproduction command
+  still read the mutable runtime journal; later append-only trades had therefore broken reproduction.
+- Recovered exactly the original 1,913 rows by requiring their byte prefix to match the frozen
+  SHA-256, stored an immutable snapshot, and redirected the manifest reproduction command to it.
+- Reproduction retained all economic results: N=1,257, -15,495.414855 USDT cost-adjusted PnL,
+  -12.32729901 USDT expectancy, PF 0.15008542 and 15,557.062582 USDT max drawdown.
+- Status: `KEEP — BASELINE INPUT REPRODUCIBILITY RESTORED`; no row, metric or verdict changed.
+
 ## Operator decision required
 
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and

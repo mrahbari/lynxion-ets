@@ -1593,7 +1593,7 @@
     "source_rows": 1913,
     "unique_trade_ids": 1257
   },
-  "journal_path": "data/trade_journal.csv",
+  "journal_path": "data/research/investor_release/trade_journal_baseline_v1.csv",
   "overall": {
     "average_entry_notional_usdt": 985.21282896,
     "average_loss_usdt": -23.13671587,

@@ -110,6 +110,7 @@ Reproduction command:
 
 ```bash
 python scripts/performance_attribution.py \
+  --journal data/research/investor_release/trade_journal_baseline_v1.csv \
   --output data/research/investor_release/cost_adjusted_baseline_v1.json
 ```
 
@@ -120,7 +121,7 @@ trade_journal.csv SHA-256:
 96765d50515cf8a48e3b2c556401649357ec946231388084e2957087153126c9
 
 cost_adjusted_baseline_v1.json SHA-256:
-ab26707481a250fbded6ac40112aca012a2b5439fce9957433679b746ac82adb
+b3822a9bf1193f9b76274e3b4be53924971e85ff201a825a2ed7542436ef9e06
 ```
 
 Canonical results:
