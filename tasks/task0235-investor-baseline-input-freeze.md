@@ -28,6 +28,7 @@ runtime, broker, risk, candidate, or economic verdict changes.
 
 - The recovered 1,913-row snapshot matches the original frozen input SHA-256
   `96765d50515cf8a48e3b2c556401649357ec946231388084e2957087153126c9`.
+- The snapshot is marked `-text` so Git preserves its original CRLF bytes and hash across checkout.
 - Reproduction retained N=1,257, cost-adjusted PnL -15,495.414855 USDT, expectancy
   -12.32729901 USDT, PF 0.15008542 and max drawdown 15,557.062582 USDT.
 - The new artifact SHA-256 is
