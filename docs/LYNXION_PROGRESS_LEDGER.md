@@ -1475,6 +1475,17 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-10 — TASK-0239 small-notional/MeanReversion decomposition preregistration
+
+- Froze a one-pass causal-confounding audit for the positive post-hoc `<=25 USDT` and
+  `MeanReversion` slices before opening their joint, stratified, concentration, or bootstrap
+  outcomes.
+- The contract tests overlap, within-strategy and within-week stability, scale-normalized return,
+  fee burden, symbol concentration, and 10,000-resample uncertainty with a fixed seed.
+- Position size is explicitly treated as a possible risk-era alias rather than an entry signal;
+  no result can bypass prospective/OOS promotion gates.
+- Status: `PREREGISTERED — IMPLEMENT ONCE, THEN FREEZE THE DESCRIPTIVE VERDICT`.
+
 ## 2026-09-10 — TASK-0238 entry versus exit classification
 
 - Partitioned all 98 exact-linked diagnostics using only TASK-0180's frozen thresholds: 29 retained
