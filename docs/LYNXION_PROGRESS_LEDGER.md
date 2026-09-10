@@ -1475,6 +1475,16 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-10 — TASK-0238 entry versus exit classification
+
+- Partitioned all 98 exact-linked diagnostics using only TASK-0180's frozen thresholds: 29 retained
+  +10% opportunities (+13.769234), 27 gave such opportunities back below +5% (-0.212963), and 42
+  never showed +10% opportunity (-7.555204).
+- The bounded evidence rejects an exit-only explanation: both entry/universe/regime admission and
+  exit giveback require causal testing. Predictability at entry and executable OOS exit improvement
+  remain unknown.
+- Status: `KEEP — MIXED ENTRY-OPPORTUNITY AND EXIT-GIVEBACK FAILURE; NO POLICY ADMITTED`.
+
 ## 2026-09-10 — TASK-0237 excursion linkage coverage
 
 - Added an ambiguity-rejecting identity contract across canonical symbol/side, exact entry time,
