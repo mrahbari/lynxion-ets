@@ -1,0 +1,509 @@
+{
+  "ambiguous": 0,
+  "coverage": 1.0,
+  "diagnostic_sample_size": 98,
+  "journal_final_records": 1257,
+  "linked_trades": [
+    {
+      "entry_timestamp": "2026-09-04T22:54:53+00:00",
+      "symbol": "TRXUSDT",
+      "trade_id": "2096009131023405056"
+    },
+    {
+      "entry_timestamp": "2026-09-06T14:51:57+00:00",
+      "symbol": "BCHUSDT",
+      "trade_id": "2096612372991971330"
+    },
+    {
+      "entry_timestamp": "2026-09-06T17:12:33+00:00",
+      "symbol": "SUSHIUSDT",
+      "trade_id": "2096647756161486850"
+    },
+    {
+      "entry_timestamp": "2026-09-06T10:08:04+00:00",
+      "symbol": "LINKUSDT",
+      "trade_id": "2096540930405306370"
+    },
+    {
+      "entry_timestamp": "2026-09-06T16:08:45+00:00",
+      "symbol": "UNIUSDT",
+      "trade_id": "2096631699958927362"
+    },
+    {
+      "entry_timestamp": "2026-09-06T04:06:47+00:00",
+      "symbol": "AVAXUSDT",
+      "trade_id": "2096450011417022464"
+    },
+    {
+      "entry_timestamp": "2026-09-06T04:47:57+00:00",
+      "symbol": "ADAUSDT",
+      "trade_id": "2096460370383212546"
+    },
+    {
+      "entry_timestamp": "2026-09-06T07:20:52+00:00",
+      "symbol": "TAOUSDT",
+      "trade_id": "2096498852912697346"
+    },
+    {
+      "entry_timestamp": "2026-09-06T07:58:52+00:00",
+      "symbol": "NEARUSDT",
+      "trade_id": "2096508416055840770"
+    },
+    {
+      "entry_timestamp": "2026-09-05T18:22:48+00:00",
+      "symbol": "BNBUSDT",
+      "trade_id": "2096303045542416388"
+    },
+    {
+      "entry_timestamp": "2026-09-06T02:22:59+00:00",
+      "symbol": "NEARUSDT",
+      "trade_id": "2096423888687730690"
+    },
+    {
+      "entry_timestamp": "2026-09-05T23:45:23+00:00",
+      "symbol": "TAOUSDT",
+      "trade_id": "2096384227701428226"
+    },
+    {
+      "entry_timestamp": "2026-09-05T06:43:25+00:00",
+      "symbol": "XLMUSDT",
+      "trade_id": "2096127041263898626"
+    },
+    {
+      "entry_timestamp": "2026-09-05T18:48:09+00:00",
+      "symbol": "SOLUSDT",
+      "trade_id": "2096309427201118208"
+    },
+    {
+      "entry_timestamp": "2026-09-05T22:14:23+00:00",
+      "symbol": "ADAUSDT",
+      "trade_id": "2096361326394740738"
+    },
+    {
+      "entry_timestamp": "2026-09-06T01:05:11+00:00",
+      "symbol": "UNIUSDT",
+      "trade_id": "2096404309584384002"
+    },
+    {
+      "entry_timestamp": "2026-09-05T20:58:23+00:00",
+      "symbol": "ZECUSDT",
+      "trade_id": "2096342200418832386"
+    },
+    {
+      "entry_timestamp": "2026-09-05T22:24:59+00:00",
+      "symbol": "PROMUSDT",
+      "trade_id": "2096363993867227138"
+    },
+    {
+      "entry_timestamp": "2026-09-05T19:26:47+00:00",
+      "symbol": "DOGEUSDT",
+      "trade_id": "2096319148284973058"
+    },
+    {
+      "entry_timestamp": "2026-09-05T03:33:29+00:00",
+      "symbol": "BTCUSDT",
+      "trade_id": "2096079243189424130"
+    },
+    {
+      "entry_timestamp": "2026-09-05T14:32:40+00:00",
+      "symbol": "DOTUSDT",
+      "trade_id": "2096245134120194050"
+    },
+    {
+      "entry_timestamp": "2026-09-05T19:39:35+00:00",
+      "symbol": "UNIUSDT",
+      "trade_id": "2096322369325895682"
+    },
+    {
+      "entry_timestamp": "2026-09-05T11:36:04+00:00",
+      "symbol": "BCHUSDT",
+      "trade_id": "2096200690880745474"
+    },
+    {
+      "entry_timestamp": "2026-09-05T16:37:12+00:00",
+      "symbol": "BNBUSDT",
+      "trade_id": "2096276470553907202"
+    },
+    {
+      "entry_timestamp": "2026-09-05T14:54:28+00:00",
+      "symbol": "ZECUSDT",
+      "trade_id": "2096250619883950082"
+    },
+    {
+      "entry_timestamp": "2026-09-05T11:11:04+00:00",
+      "symbol": "AVAXUSDT",
+      "trade_id": "2096194399357636610"
+    },
+    {
+      "entry_timestamp": "2026-09-05T03:14:29+00:00",
+      "symbol": "ADAUSDT",
+      "trade_id": "2096074461414428674"
+    },
+    {
+      "entry_timestamp": "2026-09-05T08:23:16+00:00",
+      "symbol": "BNBUSDT",
+      "trade_id": "2096152170987524096"
+    },
+    {
+      "entry_timestamp": "2026-09-05T02:36:41+00:00",
+      "symbol": "DOGEUSDT",
+      "trade_id": "2096064948934283266"
+    },
+    {
+      "entry_timestamp": "2026-09-05T04:16:17+00:00",
+      "symbol": "NEARUSDT",
+      "trade_id": "2096090014308896770"
+    },
+    {
+      "entry_timestamp": "2026-09-05T04:37:41+00:00",
+      "symbol": "PROMUSDT",
+      "trade_id": "2096095399287721986"
+    },
+    {
+      "entry_timestamp": "2026-09-05T04:55:05+00:00",
+      "symbol": "XRPUSDT",
+      "trade_id": "2096099778506002434"
+    },
+    {
+      "entry_timestamp": "2026-09-05T01:35:05+00:00",
+      "symbol": "UNIUSDT",
+      "trade_id": "2096049446627315714"
+    },
+    {
+      "entry_timestamp": "2026-09-05T02:22:53+00:00",
+      "symbol": "ETHUSDT",
+      "trade_id": "2096061475966685186"
+    },
+    {
+      "entry_timestamp": "2026-09-05T02:07:29+00:00",
+      "symbol": "ZECUSDT",
+      "trade_id": "2096057600324931586"
+    },
+    {
+      "entry_timestamp": "2026-09-05T00:48:41+00:00",
+      "symbol": "BNBUSDT",
+      "trade_id": "2096037770133770242"
+    },
+    {
+      "entry_timestamp": "2026-09-05T01:15:17+00:00",
+      "symbol": "ARBUSDT",
+      "trade_id": "2096044464175845378"
+    },
+    {
+      "entry_timestamp": "2026-09-05T01:06:17+00:00",
+      "symbol": "LTCUSDT",
+      "trade_id": "2096042198882586626"
+    },
+    {
+      "entry_timestamp": "2026-09-04T22:46:17+00:00",
+      "symbol": "XLMUSDT",
+      "trade_id": "2096006967299411970"
+    },
+    {
+      "entry_timestamp": "2026-09-02T01:20:53+00:00",
+      "symbol": "LTCUSDT",
+      "trade_id": "2094958708720144386"
+    },
+    {
+      "entry_timestamp": "2026-09-02T02:19:05+00:00",
+      "symbol": "XAUTUSDT",
+      "trade_id": "2094973355531702274"
+    },
+    {
+      "entry_timestamp": "2026-09-01T18:52:43+00:00",
+      "symbol": "BTCUSDT",
+      "trade_id": "2094861025137397762"
+    },
+    {
+      "entry_timestamp": "2026-09-02T03:54:17+00:00",
+      "symbol": "BCHUSDT",
+      "trade_id": "2094997313823969282"
+    },
+    {
+      "entry_timestamp": "2026-09-02T03:42:41+00:00",
+      "symbol": "ADAUSDT",
+      "trade_id": "2094994394626134018"
+    },
+    {
+      "entry_timestamp": "2026-09-02T01:06:29+00:00",
+      "symbol": "SOLUSDT",
+      "trade_id": "2094955085067980802"
+    },
+    {
+      "entry_timestamp": "2026-09-02T02:48:53+00:00",
+      "symbol": "DOGEUSDT",
+      "trade_id": "2094980854754316290"
+    },
+    {
+      "entry_timestamp": "2026-09-02T01:29:17+00:00",
+      "symbol": "ETHUSDT",
+      "trade_id": "2094960823744073730"
+    },
+    {
+      "entry_timestamp": "2026-09-02T02:06:29+00:00",
+      "symbol": "OPUSDT",
+      "trade_id": "2094970184495271938"
+    },
+    {
+      "entry_timestamp": "2026-09-02T00:47:41+00:00",
+      "symbol": "AVAXUSDT",
+      "trade_id": "2094950354077618176"
+    },
+    {
+      "entry_timestamp": "2026-09-01T21:31:05+00:00",
+      "symbol": "XRPUSDT",
+      "trade_id": "2094900878013108226"
+    },
+    {
+      "entry_timestamp": "2026-09-02T03:24:41+00:00",
+      "symbol": "WLDUSDT",
+      "trade_id": "2094989864601653248"
+    },
+    {
+      "entry_timestamp": "2026-09-01T23:29:05+00:00",
+      "symbol": "CRVUSDT",
+      "trade_id": "2094930574243270658"
+    },
+    {
+      "entry_timestamp": "2026-09-01T18:12:30+00:00",
+      "symbol": "ZECUSDT",
+      "trade_id": "2094850905544331266"
+    },
+    {
+      "entry_timestamp": "2026-09-01T21:42:29+00:00",
+      "symbol": "FILUSDT",
+      "trade_id": "2094903746820575234"
+    },
+    {
+      "entry_timestamp": "2026-09-01T19:39:29+00:00",
+      "symbol": "NEARUSDT",
+      "trade_id": "2094872793666555906"
+    },
+    {
+      "entry_timestamp": "2026-09-01T18:24:42+00:00",
+      "symbol": "DOTUSDT",
+      "trade_id": "2094853975355428866"
+    },
+    {
+      "entry_timestamp": "2026-09-01T17:46:02+00:00",
+      "symbol": "AVAXUSDT",
+      "trade_id": "2094844243353800706"
+    },
+    {
+      "entry_timestamp": "2026-09-01T14:47:26+00:00",
+      "symbol": "BNBUSDT",
+      "trade_id": "2094799297389268994"
+    },
+    {
+      "entry_timestamp": "2026-09-01T17:02:38+00:00",
+      "symbol": "UNIUSDT",
+      "trade_id": "2094833321830780930"
+    },
+    {
+      "entry_timestamp": "2026-09-01T09:49:50+00:00",
+      "symbol": "XRPUSDT",
+      "trade_id": "2094724403808964610"
+    },
+    {
+      "entry_timestamp": "2026-09-01T13:12:14+00:00",
+      "symbol": "ETHUSDT",
+      "trade_id": "2094775339675815938"
+    },
+    {
+      "entry_timestamp": "2026-09-01T13:22:26+00:00",
+      "symbol": "ZECUSDT",
+      "trade_id": "2094777906560503810"
+    },
+    {
+      "entry_timestamp": "2026-09-01T14:37:02+00:00",
+      "symbol": "NEARUSDT",
+      "trade_id": "2094796679942246402"
+    },
+    {
+      "entry_timestamp": "2026-09-01T08:18:38+00:00",
+      "symbol": "NEARUSDT",
+      "trade_id": "2094701452501979138"
+    },
+    {
+      "entry_timestamp": "2026-09-01T09:41:14+00:00",
+      "symbol": "UNIUSDT",
+      "trade_id": "2094722239409688578"
+    },
+    {
+      "entry_timestamp": "2026-09-01T10:57:38+00:00",
+      "symbol": "ENAUSDT",
+      "trade_id": "2094741466699010050"
+    },
+    {
+      "entry_timestamp": "2026-09-01T08:02:26+00:00",
+      "symbol": "ZECUSDT",
+      "trade_id": "2094697375621713922"
+    },
+    {
+      "entry_timestamp": "2026-09-01T08:46:50+00:00",
+      "symbol": "PROMUSDT",
+      "trade_id": "2094708549679583234"
+    },
+    {
+      "entry_timestamp": "2026-09-01T07:16:14+00:00",
+      "symbol": "UNIUSDT",
+      "trade_id": "2094685749069746178"
+    },
+    {
+      "entry_timestamp": "2026-08-31T02:17:10+00:00",
+      "symbol": "BNBUSDT",
+      "trade_id": "2094248098227294208"
+    },
+    {
+      "entry_timestamp": "2026-08-31T17:01:53+00:00",
+      "symbol": "HYPEUSDT",
+      "trade_id": "2094470742381957122"
+    },
+    {
+      "entry_timestamp": "2026-09-01T00:59:30+00:00",
+      "symbol": "AVAXUSDT",
+      "trade_id": "2094590939851919362"
+    },
+    {
+      "entry_timestamp": "2026-09-01T01:21:06+00:00",
+      "symbol": "ETHUSDT",
+      "trade_id": "2094596375367913474"
+    },
+    {
+      "entry_timestamp": "2026-09-01T00:43:54+00:00",
+      "symbol": "XRPUSDT",
+      "trade_id": "2094587013840769026"
+    },
+    {
+      "entry_timestamp": "2026-09-01T05:12:02+00:00",
+      "symbol": "PROMUSDT",
+      "trade_id": "2094654493422522370"
+    },
+    {
+      "entry_timestamp": "2026-09-01T04:45:26+00:00",
+      "symbol": "PROMUSDT",
+      "trade_id": "2094647799464333314"
+    },
+    {
+      "entry_timestamp": "2026-09-01T04:27:26+00:00",
+      "symbol": "NEARUSDT",
+      "trade_id": "2094643269456629762"
+    },
+    {
+      "entry_timestamp": "2026-08-31T18:53:28+00:00",
+      "symbol": "ETHUSDT",
+      "trade_id": "2094498826539765762"
+    },
+    {
+      "entry_timestamp": "2026-08-31T20:09:42+00:00",
+      "symbol": "PROMUSDT",
+      "trade_id": "2094518010493538306"
+    },
+    {
+      "entry_timestamp": "2026-08-31T01:19:10+00:00",
+      "symbol": "AVAXUSDT",
+      "trade_id": "2094233501927739394"
+    },
+    {
+      "entry_timestamp": "2026-08-31T05:50:58+00:00",
+      "symbol": "NEARUSDT",
+      "trade_id": "2094301902754811906"
+    },
+    {
+      "entry_timestamp": "2026-08-31T16:34:52+00:00",
+      "symbol": "CCUSDT",
+      "trade_id": "2094463947177463810"
+    },
+    {
+      "entry_timestamp": "2026-08-31T05:23:58+00:00",
+      "symbol": "BTCUSDT",
+      "trade_id": "2094295107793588226"
+    },
+    {
+      "entry_timestamp": "2026-08-31T02:50:46+00:00",
+      "symbol": "XRPUSDT",
+      "trade_id": "2094256553159823362"
+    },
+    {
+      "entry_timestamp": "2026-08-31T03:15:46+00:00",
+      "symbol": "DOTUSDT",
+      "trade_id": "2094262844708098050"
+    },
+    {
+      "entry_timestamp": "2026-08-31T16:48:17+00:00",
+      "symbol": "ZECUSDT",
+      "trade_id": "2094467320798777346"
+    },
+    {
+      "entry_timestamp": "2026-08-31T07:53:10+00:00",
+      "symbol": "HYPEUSDT",
+      "trade_id": "2094332654905200642"
+    },
+    {
+      "entry_timestamp": "2026-08-31T05:01:34+00:00",
+      "symbol": "UNIUSDT",
+      "trade_id": "2094289471341072386"
+    },
+    {
+      "entry_timestamp": "2026-08-31T03:56:46+00:00",
+      "symbol": "NEARUSDT",
+      "trade_id": "2094273163069231106"
+    },
+    {
+      "entry_timestamp": "2026-08-31T01:51:10+00:00",
+      "symbol": "DOTUSDT",
+      "trade_id": "2094241555045945346"
+    },
+    {
+      "entry_timestamp": "2026-08-31T02:38:58+00:00",
+      "symbol": "UNIUSDT",
+      "trade_id": "2094253583835860994"
+    },
+    {
+      "entry_timestamp": "2026-08-31T01:06:34+00:00",
+      "symbol": "XRPUSDT",
+      "trade_id": "2094230331499483138"
+    },
+    {
+      "entry_timestamp": "2026-08-30T23:42:34+00:00",
+      "symbol": "PROMUSDT",
+      "trade_id": "2094209191108415490"
+    },
+    {
+      "entry_timestamp": "2026-08-30T21:02:34+00:00",
+      "symbol": "XRPUSDT",
+      "trade_id": "2094168925949399042"
+    },
+    {
+      "entry_timestamp": "2026-08-30T22:02:58+00:00",
+      "symbol": "ENSOUSDT",
+      "trade_id": "2094184126576857090"
+    },
+    {
+      "entry_timestamp": "2026-08-30T21:48:10+00:00",
+      "symbol": "DOTUSDT",
+      "trade_id": "2094180401833578498"
+    },
+    {
+      "entry_timestamp": "2026-08-30T20:48:46+00:00",
+      "symbol": "UNIUSDT",
+      "trade_id": "2094165452893720578"
+    },
+    {
+      "entry_timestamp": "2026-08-30T20:32:34+00:00",
+      "symbol": "PROMUSDT",
+      "trade_id": "2094161376290279426"
+    }
+  ],
+  "match_contract": [
+    "canonical_symbol",
+    "canonical_side",
+    "exact_entry_timestamp",
+    "exact_decimal_entry_price",
+    "exact_decimal_quantity"
+  ],
+  "missing_excursion": 0,
+  "unique_links": 98,
+  "unmatched": 0,
+  "version": 1
+}

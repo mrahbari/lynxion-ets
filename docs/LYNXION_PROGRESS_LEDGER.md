@@ -1475,6 +1475,16 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-10 — TASK-0237 excursion linkage coverage
+
+- Added an ambiguity-rejecting identity contract across canonical symbol/side, exact entry time,
+  exact decimal entry price, and exact decimal quantity.
+- All 98 existing BingX excursion diagnostics link uniquely to the 1,257-trade frozen baseline;
+  unmatched, ambiguous, and missing-excursion counts are all zero. Three regressions pass.
+- This validates identity only for the bounded 98-trade subset; it does not turn candle extremes
+  into executable outcomes, expand historical coverage, or prove entry/exit edge.
+- Status: `KEEP — 98/98 DIAGNOSTIC LINKS VERIFIED; EDGE AND EXIT POLICY REMAIN UNPROVEN`.
+
 ## 2026-09-10 — TASK-0236 MFE/MAE provenance and coverage audit
 
 - The 1,257-trade immutable investor baseline has zero direct MFE/MAE coverage; neither field is
