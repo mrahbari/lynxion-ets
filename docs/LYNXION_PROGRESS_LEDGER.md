@@ -1475,6 +1475,17 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-10 — TASK-0236 MFE/MAE provenance and coverage audit
+
+- The 1,257-trade immutable investor baseline has zero direct MFE/MAE coverage; neither field is
+  present in its schema or persisted by the current journal/attribution path.
+- Separate BingX diagnostics estimate candle-extreme MFE/MAE for 98 recent positions, but omit
+  authoritative historical leverage, lack baseline trade IDs, and cannot be generalized to the
+  frozen baseline or treated as executable outcomes.
+- Entry edge versus exit failure therefore remains `UNKNOWN`; the next bounded unit is an
+  ambiguity-rejecting linkage/coverage assessment before any exit hypothesis is selected.
+- Status: `KEEP — PROVENANCE GAP IDENTIFIED; NO EDGE OR EXIT-POLICY CLAIM ADMITTED`.
+
 **NO for TASK-0216.** The bounded C-33 public collector resume was authorized and
 verified in TASK-0217; trading runtime and broker/execution authority remain excluded.
 
