@@ -1475,6 +1475,16 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-10 — TASK-0240 small-notional/MeanReversion decomposition outcome
+
+- Executed TASK-0239 once: both small-notional 2x2 bootstrap intervals include zero and only two
+  MeanReversion records exist outside the small-notional band, so neither lead establishes an
+  independent causal edge.
+- Small-notional direction is consistent across four eligible weeks and two eligible strategies,
+  but one symbol supplies 85.91% of its positive PnL and the top three supply 89.80%.
+- Three focused regressions pass; the frozen artifact hash is `3aaa3a1cb080e5aa7b04d74855e912c4fda471a66c01fee0652538f9013ba265`.
+- Status: `REJECT_AS_CAUSAL_EDGE — SIZE_ALIAS, STRATEGY_ALIAS, AND CONCENTRATED`.
+
 ## 2026-09-10 — TASK-0239 small-notional/MeanReversion decomposition preregistration
 
 - Froze a one-pass causal-confounding audit for the positive post-hoc `<=25 USDT` and

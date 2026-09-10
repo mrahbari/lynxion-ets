@@ -1,0 +1,256 @@
+{
+  "aggregate_notional_comparison": {
+    "larger": {
+      "cost_adjusted_pnl_usdt": -15689.219684,
+      "expectancy_usdt": -29.16211837,
+      "fee_to_notional": -0.0004392972,
+      "invalid_notional": 0,
+      "mean_normalized_return": -0.0183404948,
+      "median_normalized_return": -0.023828685,
+      "n": 538,
+      "profit_factor": 0.13306552,
+      "win_rate": 0.21747212
+    },
+    "small": {
+      "cost_adjusted_pnl_usdt": 193.804829,
+      "expectancy_usdt": 0.26954775,
+      "fee_to_notional": -0.0016648245,
+      "invalid_notional": 0,
+      "mean_normalized_return": 0.0773670948,
+      "median_normalized_return": -0.0026428104,
+      "n": 719,
+      "profit_factor": 2.44223004,
+      "win_rate": 0.48956885
+    }
+  },
+  "bootstrap_samples": 10000,
+  "cells": {
+    "small_false__mean_reversion_false": {
+      "bootstrap_mean_normalized_return_95pct": [
+        -0.022047975,
+        -0.0159278626
+      ],
+      "cost_adjusted_pnl_usdt": -15691.201877,
+      "expectancy_usdt": -29.27463037,
+      "fee_to_notional": -0.000439295,
+      "invalid_notional": 0,
+      "mean_normalized_return": -0.018550874,
+      "median_normalized_return": -0.0238784474,
+      "n": 536,
+      "profit_factor": 0.13295599,
+      "win_rate": 0.21455224
+    },
+    "small_false__mean_reversion_true": {
+      "bootstrap_mean_normalized_return_95pct": [
+        0.0212657881,
+        0.0548164782
+      ],
+      "cost_adjusted_pnl_usdt": 1.982193,
+      "expectancy_usdt": 0.9910965,
+      "fee_to_notional": -0.000491918,
+      "invalid_notional": 0,
+      "mean_normalized_return": 0.0380411332,
+      "median_normalized_return": 0.0380411332,
+      "n": 2,
+      "profit_factor": null,
+      "win_rate": 1.0
+    },
+    "small_true__mean_reversion_false": {
+      "bootstrap_mean_normalized_return_95pct": [
+        -0.0041296897,
+        0.2770032081
+      ],
+      "cost_adjusted_pnl_usdt": 191.448262,
+      "expectancy_usdt": 0.31129799,
+      "fee_to_notional": -0.0018950995,
+      "invalid_notional": 0,
+      "mean_normalized_return": 0.0904134547,
+      "median_normalized_return": -0.0042926073,
+      "n": 615,
+      "profit_factor": 2.59838554,
+      "win_rate": 0.46178862
+    },
+    "small_true__mean_reversion_true": {
+      "bootstrap_mean_normalized_return_95pct": [
+        -0.0037842434,
+        0.0041186905
+      ],
+      "cost_adjusted_pnl_usdt": 2.356567,
+      "expectancy_usdt": 0.0226593,
+      "fee_to_notional": -0.0004998046,
+      "invalid_notional": 0,
+      "mean_normalized_return": 0.0002179469,
+      "median_normalized_return": 0.0028034614,
+      "n": 104,
+      "profit_factor": 1.16138039,
+      "win_rate": 0.65384615
+    }
+  },
+  "eligible_strategy_comparisons": {
+    "VWAPReversal": {
+      "larger": {
+        "cost_adjusted_pnl_usdt": -178.321047,
+        "expectancy_usdt": -1.68227403,
+        "fee_to_notional": -0.000488947,
+        "invalid_notional": 0,
+        "mean_normalized_return": -0.0226047356,
+        "median_normalized_return": -0.0264057426,
+        "n": 106,
+        "profit_factor": 0.0,
+        "win_rate": 0.0
+      },
+      "small": {
+        "cost_adjusted_pnl_usdt": 24.36889,
+        "expectancy_usdt": 0.23431625,
+        "fee_to_notional": -0.0005032071,
+        "invalid_notional": 0,
+        "mean_normalized_return": 0.0113079658,
+        "median_normalized_return": 0.0160309586,
+        "n": 104,
+        "profit_factor": 3.12780547,
+        "win_rate": 0.68269231
+      }
+    },
+    "trend_following": {
+      "larger": {
+        "cost_adjusted_pnl_usdt": -15499.271936,
+        "expectancy_usdt": -37.16851783,
+        "fee_to_notional": -0.0004389372,
+        "invalid_notional": 0,
+        "mean_normalized_return": -0.0177071988,
+        "median_normalized_return": -0.0232731948,
+        "n": 417,
+        "profit_factor": 0.13425882,
+        "win_rate": 0.26618705
+      },
+      "small": {
+        "cost_adjusted_pnl_usdt": 185.537248,
+        "expectancy_usdt": 0.585291,
+        "fee_to_notional": -0.0035301195,
+        "invalid_notional": 0,
+        "mean_normalized_return": 0.1748950791,
+        "median_normalized_return": -0.0042958701,
+        "n": 317,
+        "profit_factor": 4.10148222,
+        "win_rate": 0.38801262
+      }
+    }
+  },
+  "eligible_week_comparisons": {
+    "2026-W29": {
+      "larger": {
+        "cost_adjusted_pnl_usdt": -5994.389973,
+        "expectancy_usdt": -105.16473637,
+        "fee_to_notional": -0.0004466114,
+        "invalid_notional": 0,
+        "mean_normalized_return": -0.013224517,
+        "median_normalized_return": -0.0190669005,
+        "n": 57,
+        "profit_factor": 0.23032255,
+        "win_rate": 0.29824561
+      },
+      "small": {
+        "cost_adjusted_pnl_usdt": 203.470078,
+        "expectancy_usdt": 7.2667885,
+        "fee_to_notional": -0.1217751858,
+        "invalid_notional": 0,
+        "mean_normalized_return": 2.0285169109,
+        "median_normalized_return": -0.0037016,
+        "n": 28,
+        "profit_factor": 117.06553448,
+        "win_rate": 0.46428571
+      }
+    },
+    "2026-W31": {
+      "larger": {
+        "cost_adjusted_pnl_usdt": -1126.16804,
+        "expectancy_usdt": -6.86687829,
+        "fee_to_notional": -0.0001884943,
+        "invalid_notional": 0,
+        "mean_normalized_return": -0.0150643449,
+        "median_normalized_return": -0.0238202893,
+        "n": 164,
+        "profit_factor": 0.09841472,
+        "win_rate": 0.28658537
+      },
+      "small": {
+        "cost_adjusted_pnl_usdt": -1.183899,
+        "expectancy_usdt": -0.05919495,
+        "fee_to_notional": -0.00050243,
+        "invalid_notional": 0,
+        "mean_normalized_return": -0.0036841145,
+        "median_normalized_return": 0.0024402076,
+        "n": 20,
+        "profit_factor": 0.62553186,
+        "win_rate": 0.55
+      }
+    },
+    "2026-W32": {
+      "larger": {
+        "cost_adjusted_pnl_usdt": -83.079833,
+        "expectancy_usdt": -1.62901633,
+        "fee_to_notional": -0.0002360485,
+        "invalid_notional": 0,
+        "mean_normalized_return": -0.0303621458,
+        "median_normalized_return": -0.0320368446,
+        "n": 51,
+        "profit_factor": 0.17726348,
+        "win_rate": 0.01960784
+      },
+      "small": {
+        "cost_adjusted_pnl_usdt": -8.717861,
+        "expectancy_usdt": -0.06554783,
+        "fee_to_notional": -0.0004870815,
+        "invalid_notional": 0,
+        "mean_normalized_return": -0.0040479543,
+        "median_normalized_return": -0.0042955534,
+        "n": 133,
+        "profit_factor": 0.7146596,
+        "win_rate": 0.37593985
+      }
+    },
+    "2026-W34": {
+      "larger": {
+        "cost_adjusted_pnl_usdt": -230.156305,
+        "expectancy_usdt": -1.73049853,
+        "fee_to_notional": -0.0004906586,
+        "invalid_notional": 0,
+        "mean_normalized_return": -0.0228293627,
+        "median_normalized_return": -0.030375555,
+        "n": 133,
+        "profit_factor": 0.01087428,
+        "win_rate": 0.03007519
+      },
+      "small": {
+        "cost_adjusted_pnl_usdt": 7.829064,
+        "expectancy_usdt": 0.04605332,
+        "fee_to_notional": -0.0005067112,
+        "invalid_notional": 0,
+        "mean_normalized_return": 0.0018969188,
+        "median_normalized_return": 0.0009994478,
+        "n": 170,
+        "profit_factor": 1.20901801,
+        "win_rate": 0.50588235
+      }
+    }
+  },
+  "eligible_week_count": 4,
+  "final_records": 1257,
+  "mean_reversion_concentration": {
+    "top_one_n_share": 0.09433962,
+    "top_one_positive_pnl_share": 0.23949072,
+    "top_three_n_share": 0.26415094,
+    "top_three_positive_pnl_share": 0.54622821
+  },
+  "missing_trade_ids": 0,
+  "seed": 2309,
+  "small_notional_concentration": {
+    "top_one_n_share": 0.0472879,
+    "top_one_positive_pnl_share": 0.8590659,
+    "top_three_n_share": 0.13908206,
+    "top_three_positive_pnl_share": 0.89799967
+  },
+  "source_rows": 1913,
+  "version": 1,
+  "weekly_same_direction_count": 4
+}
