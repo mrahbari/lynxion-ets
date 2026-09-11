@@ -1475,6 +1475,13 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0245 C-35 activation integrity manifest
+
+- Bound C-35's protocol, collector, evaluator, prospective boundary, universe, public-only network
+  contract, and source commit in a fail-closed activation manifest.
+- Three regressions pass; the manifest is `PREPARED_NOT_ACTIVATED` and contains no observation.
+- Status: `KEEP — COMMIT-BOUND PREFLIGHT READY; CONTROLLED FIRST PUBLIC RUN NEXT`.
+
 ## 2026-09-11 — TASK-0244 C-35 public candle collector
 
 - Added an isolated append-only collector for completed public Binance USD-M 15-minute candles,
