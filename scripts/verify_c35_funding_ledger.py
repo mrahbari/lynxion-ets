@@ -48,8 +48,8 @@ def verify(funding: list[dict[str, Any]], coverage: list[dict[str, Any]]) -> dic
         matching = [receipt for receipt in coverage if
                     receipt["symbol"] == symbol and receipt["source_sha256"] == digest and
                     int(receipt["requested_start_ms"]) <= timestamp * 1000 <= int(receipt["requested_end_ms"])]
-        if len(matching) != 1:
-            raise ValueError("funding settlement lacks unique source coverage")
+        if not matching:
+            raise ValueError("funding settlement lacks source coverage")
         float(row["funding_rate"])
         per_symbol[symbol] += 1
     return {

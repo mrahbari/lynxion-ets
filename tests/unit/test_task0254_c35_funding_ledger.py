@@ -44,3 +44,10 @@ def test_rejects_unbound_source_hash():
     funding[0]["source_sha256"] = "f" * 64
     with pytest.raises(ValueError, match="source coverage"):
         verify(funding, _coverage())
+
+
+def test_accepts_repeated_overlapping_query_with_same_source_body():
+    coverage = _coverage()
+    repeated = dict(coverage[0])
+    repeated["requested_end_ms"] += 1000
+    assert verify(_funding(), coverage + [repeated])["integrity"] == "PASS"

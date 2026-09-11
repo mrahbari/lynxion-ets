@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0255 C-35 funding overlap verifier repair
+
+- Hourly refresh exposed a false failure when the same funding response hash was covered by more
+  than one successful overlapping request receipt.
+- Changed the gate from exactly one receipt to at least one same-symbol/same-hash covering receipt;
+  unbound sources still fail. Five regressions and the live ledger pass.
+- Status: `KEEP — REPEATED PUBLIC COVERAGE VALID; SOURCE BINDING PRESERVED`.
+
 ## 2026-09-11 — TASK-0254 C-35 controlled funding activation
 
 - Passed commit-bound preflight and appended six public coverage receipts plus 12 settlements,
