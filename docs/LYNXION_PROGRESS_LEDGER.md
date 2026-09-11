@@ -1475,6 +1475,13 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0257 C-35 decision evidence contract
+
+- Added hash-bound append-only provenance for every future SIGNAL or NO_SIGNAL hourly decision,
+  with strict identity, time, boundary, universe, and selected-field validation.
+- Four tests pass; no live decision, signal, or outcome record was opened in this unit.
+- Status: `KEEP — DECISION PROVENANCE READY; BRIDGE INTEGRATION NEXT`.
+
 ## 2026-09-11 — TASK-0256 C-35 hourly evidence checkpoint
 
 - Verified 17,796 candle rows (408 prospective), 12 unique funding settlements and 12 coverage
