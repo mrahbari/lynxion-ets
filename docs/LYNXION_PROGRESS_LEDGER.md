@@ -1475,6 +1475,13 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0253 C-35 funding activation preflight
+
+- Bound the public funding collector and outcome resolver to the frozen protocol, boundary,
+  universe, unauthenticated network contract, file hashes, and source commit.
+- Three tests and the real preflight pass. No funding query or outcome was opened.
+- Status: `KEEP — FUNDING PREFLIGHT READY; CONTROLLED FIRST QUERY NEXT`.
+
 ## 2026-09-11 — TASK-0252 C-35 public funding collector
 
 - Added append-only public funding rates plus separate successful-query coverage receipts, allowing

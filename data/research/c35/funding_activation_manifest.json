@@ -1,0 +1,22 @@
+{
+  "boundary_epoch": 1789087244,
+  "candidate": "C-35",
+  "collector_path": "scripts/collect_c35_public_funding.py",
+  "collector_sha256": "9413844c920c25c2833e6eb38b51b15f8e094f0e836d667f79a23ab0b2175180",
+  "first_funding_query_opened": false,
+  "network_contract": "PUBLIC_UNAUTHENTICATED_BINANCE_USDM_FUNDING_ONLY",
+  "prepared_against_commit": "e41d9b4fd6481f94ed56fe69f5b8fa7b634d5374",
+  "protocol_path": "tasks/research/edge-candidate-register-v34.md",
+  "protocol_sha256": "d31997061083cdc8a2c30675b098c82854612bec4d9bd2a4013f07ac693177e0",
+  "resolver_path": "scripts/resolve_c35_outcome.py",
+  "resolver_sha256": "ffe8066c5c2fcf246965fbeddd338e5d37518d6774cc27976b7cfed530a75df2",
+  "status": "PREPARED_NOT_ACTIVATED",
+  "universe": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "XRPUSDT",
+    "ADAUSDT"
+  ]
+}
