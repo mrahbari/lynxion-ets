@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0248 C-35 append-only signal state
+
+- Added the virtual-signal state boundary with strict identity/timing/schedule/input-hash checks,
+  deduplication, one-unresolved-position enforcement, and validated append-only event ordering.
+- Four focused regressions pass; no signal ledger or outcome was created and no execution-capable
+  dependency exists.
+- Status: `KEEP — SIGNAL STATE READY; FIRST SIGNAL STILL UNOPENED`.
+
 ## 2026-09-11 — TASK-0247 C-35 candle-ledger verifier
 
 - Added a fail-closed integrity gate for universe, timing, duplicates, gaps, boundary roles, source
