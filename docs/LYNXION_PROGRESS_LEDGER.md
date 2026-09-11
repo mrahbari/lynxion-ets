@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0244 C-35 public candle collector
+
+- Added an isolated append-only collector for completed public Binance USD-M 15-minute candles,
+  with source hashes, strict warmup/prospective tags, deduplication, and fail-closed parsing.
+- Four regressions pass. The module contains no authentication, broker, account, order, strategy
+  runtime, or production path and was not activated in this task.
+- Status: `KEEP — PUBLIC COLLECTOR READY; FIRST RUN REQUIRES COMMIT-BOUND MANIFEST`.
+
 ## 2026-09-11 — TASK-0243 C-35 causal signal evaluator
 
 - Implemented a pure supplied-candle evaluator enforcing the frozen universe, exact timing,
