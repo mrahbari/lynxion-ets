@@ -15,8 +15,10 @@ break immediately after symbol-specific volatility compression.
 
 - Public unauthenticated Binance USD-M 15-minute klines for BTCUSDT, ETHUSDT, SOLUSDT, BNBUSDT,
   XRPUSDT, and ADAUSDT.
-- Prospective observations only. No candle opening at or before the boundary may enter any feature,
-  signal, or outcome. Historical candles may warm rolling features but cannot count as outcomes.
+- Prospective observations only. Candles opening at or before the boundary may enter the fixed
+  30-day/96-bar/16-bar rolling warmup only; they cannot serve as a decision bar, signal, virtual
+  entry, virtual exit, or counted outcome. Every decision-bar open, entry open, and exit open must
+  be strictly after the boundary.
 - A decision occurs on each exact UTC hour after its just-closed 15-minute candle is final.
 - Missing, duplicate, non-monotonic, or non-contiguous candles invalidate that symbol/decision.
 

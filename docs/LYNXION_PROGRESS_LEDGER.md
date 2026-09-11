@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0242 C-35 causal-boundary clarification
+
+- Found a pre-observation contradiction: the register both prohibited pre-boundary feature input
+  and allowed historical rolling warmup.
+- Clarified before any signal/outcome that old candles may serve only the fixed warmup; decision,
+  entry, exit, and counted outcomes must all open strictly after epoch `1789087244`.
+- No parameter or gate changed. Status: `KEEP — CAUSAL BOUNDARY UNAMBIGUOUS`.
+
 ## 2026-09-11 — TASK-0241 C-35 compression-release preregistration
 
 - Admitted one new primary candidate rather than five correlated variants: volatility-compression
