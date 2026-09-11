@@ -1475,6 +1475,13 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0256 C-35 hourly evidence checkpoint
+
+- Verified 17,796 candle rows (408 prospective), 12 unique funding settlements and 12 coverage
+  receipts with zero integrity defect.
+- Seventeen causal hourly decisions produced no qualifying signal; no signal/outcome ledger exists.
+- Status: `COLLECTING — 17 VALID DECISIONS, ZERO SIGNALS, ZERO OUTCOMES`.
+
 ## 2026-09-11 — TASK-0255 C-35 funding overlap verifier repair
 
 - Hourly refresh exposed a false failure when the same funding response hash was covered by more
