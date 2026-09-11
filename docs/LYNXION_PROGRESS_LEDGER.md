@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0247 C-35 candle-ledger verifier
+
+- Added a fail-closed integrity gate for universe, timing, duplicates, gaps, boundary roles, source
+  hashes, numeric validity, and OHLC ordering; four focused regressions pass.
+- The 17,514-row activated panel passes with equal 2,919-row symbol histories, 17,388 warmup and
+  126 prospective records, and zero defects. No signal/outcome was opened.
+- Status: `KEEP — CANDLE EVIDENCE VERIFIED; SIGNAL STATE STILL UNOPENED`.
+
 ## 2026-09-11 — TASK-0246 C-35 controlled public activation
 
 - Passed commit-bound preflight, then collected the initial public candle panel. A transient reset
