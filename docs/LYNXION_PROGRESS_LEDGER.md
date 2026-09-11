@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0243 C-35 causal signal evaluator
+
+- Implemented a pure supplied-candle evaluator enforcing the frozen universe, exact timing,
+  causal windows, strict prospective boundary, compression/breakout/volume rules, and ranking.
+- Froze true-range and percentile interpolation mechanics before observation. Four regressions pass.
+- No network, authentication, broker, order, position outcome, or runtime path exists in this unit.
+- Status: `KEEP — SIGNAL CORE READY; COLLECTION AND OUTCOME LOGIC NOT YET ACTIVE`.
+
 ## 2026-09-11 — TASK-0242 C-35 causal-boundary clarification
 
 - Found a pre-observation contradiction: the register both prohibited pre-boundary feature input

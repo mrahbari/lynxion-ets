@@ -27,6 +27,9 @@ break immediately after symbol-specific volatility compression.
 All calculations use completed candles only.
 
 - Normalized true range is true range divided by close.
+- True range is the maximum of high-low, absolute high-minus-previous-close, and absolute
+  low-minus-previous-close. The 20th percentile uses sorted values with linear interpolation at
+  zero-based rank `(N - 1) * 0.20`; no library-default percentile variant may be substituted.
 - Compression requires the median normalized true range of the 16 bars immediately preceding the
   decision bar to be strictly below the 20th percentile of the preceding 2,880 completed bars
   (30 days), excluding those 16 bars and the decision bar.
