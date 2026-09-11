@@ -1475,6 +1475,16 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0241 C-35 compression-release preregistration
+
+- Admitted one new primary candidate rather than five correlated variants: volatility-compression
+  followed by a range/volume-confirmed directional break.
+- Froze public source, six-symbol universe, point-in-time features, execution timing, funding/costs,
+  eight-week/240-position minimum, folds, bootstrap, side/symbol, concentration, drawdown, and
+  stress-cost gates before any prospective outcome.
+- Boundary: `2026-09-11T00:40:44Z` (`1789087244`); history may warm features but cannot count.
+- Status: `KEEP — C-35 PREREGISTERED; OUTCOMES UNOPENED`.
+
 ## 2026-09-10 — TASK-0240 small-notional/MeanReversion decomposition outcome
 
 - Executed TASK-0239 once: both small-notional 2x2 bootstrap intervals include zero and only two
