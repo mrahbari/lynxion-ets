@@ -1,0 +1,20 @@
+{
+  "activated_at": "2026-09-11T06:54:22Z",
+  "activation_commit": "0e22d1706b249944035fed2892f4a635aed49d73",
+  "boundary_epoch": 1789087244,
+  "candidate": "C-35",
+  "candle_ledger_sha256": "84412dec9d5cf61bbad5bb0e81bc1fc37a6f43f6446021be5b50dc64056955ba",
+  "duplicate_keys": 0,
+  "first_open_time": 1786479300,
+  "gaps_per_symbol": 0,
+  "integrity_preflight": "PASS",
+  "last_open_time": 1789105500,
+  "network_contract": "PUBLIC_UNAUTHENTICATED_BINANCE_USDM_KLINES_ONLY",
+  "prospective_candles": 126,
+  "records_per_symbol": 2919,
+  "status": "COLLECTING_CANDLES_ONLY",
+  "total_records": 17514,
+  "universe_size": 6,
+  "warmup_candles": 17388,
+  "wrong_boundary_roles": 0
+}

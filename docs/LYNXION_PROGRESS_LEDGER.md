@@ -1475,6 +1475,15 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0246 C-35 controlled public activation
+
+- Passed commit-bound preflight, then collected the initial public candle panel. A transient reset
+  interrupted the first attempt; append-only deduplication recovered on retry without deletion.
+- Final ledger has 17,514 rows (2,919 per symbol), zero gaps/duplicates/role errors, 17,388 warmup
+  rows and 126 prospective rows; SHA-256 `84412dec9d5cf61bbad5bb0e81bc1fc37a6f43f6446021be5b50dc64056955ba`.
+- No signal or outcome was evaluated and no authenticated/broker/order/runtime path was used.
+- Status: `COLLECTING_CANDLES_ONLY — COMPLETE INITIAL PANEL; SIGNALS UNOPENED`.
+
 ## 2026-09-11 — TASK-0245 C-35 activation integrity manifest
 
 - Bound C-35's protocol, collector, evaluator, prospective boundary, universe, public-only network
