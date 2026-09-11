@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0254 C-35 controlled funding activation
+
+- Passed commit-bound preflight and appended six public coverage receipts plus 12 settlements,
+  exactly two per frozen symbol and all strictly post-boundary.
+- Added a verifier binding every settlement uniquely to its request range and response hash; four
+  tests pass. No signal/outcome or execution path was opened.
+- Status: `KEEP — PUBLIC FUNDING ACTIVE AND VERIFIED; OUTCOMES UNOPENED`.
+
 ## 2026-09-11 — TASK-0253 C-35 funding activation preflight
 
 - Bound the public funding collector and outcome resolver to the frozen protocol, boundary,

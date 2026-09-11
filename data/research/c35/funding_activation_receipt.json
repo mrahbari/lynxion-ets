@@ -1,0 +1,13 @@
+{
+  "activated_at": "2026-09-11T16:46:28Z",
+  "activation_commit": "b51738daa74a70909c22cde71018e0a7b480cd03",
+  "boundary_epoch": 1789087244,
+  "candidate": "C-35",
+  "coverage_receipts": 6,
+  "coverage_sha256": "c794c61ef281f54aacc3f0fb6ffd61bdd8e70d450186661e6ec6f920e3819a3b",
+  "funding_records": 12,
+  "funding_sha256": "82f9003a091256d7091072488ee1dd4ed7ad25bf23a67e1106aa1eb230558194",
+  "integrity_preflight": "PASS",
+  "records_per_symbol": 2,
+  "status": "PUBLIC_FUNDING_ACTIVE"
+}
