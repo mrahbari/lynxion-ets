@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0260 C-35 outcome orchestration
+
+- Connected verified candle/funding/coverage/signal evidence to exact terminal resolution, with
+  exit maturity, coverage, idempotency, and explicit-write gates.
+- Runtime output exposes only counts and `aggregate_economics=SEALED`. Four tests pass; no live
+  signal or outcome exists.
+- Status: `KEEP — OUTCOME ORCHESTRATION READY; AGGREGATES SEALED`.
+
 ## 2026-09-11 — TASK-0259 C-35 decision provenance activation
 
 - Activated the hash-bound decision ledger after candle/funding integrity passed. All 17 existing
