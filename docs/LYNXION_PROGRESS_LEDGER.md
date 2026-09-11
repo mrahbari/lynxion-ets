@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0252 C-35 public funding collector
+
+- Added append-only public funding rates plus separate successful-query coverage receipts, allowing
+  a resolver to distinguish no settlement from missing evidence.
+- Four tests pass for populated/empty responses, idempotency, and request-boundary rejection. No
+  network, signal, outcome, broker, order, or production path was activated.
+- Status: `KEEP — PUBLIC FUNDING COVERAGE READY; CONTROLLED ACTIVATION NEXT`.
+
 ## 2026-09-11 — TASK-0251 C-35 outcome resolver core
 
 - Implemented exact nine-open virtual resolution, strict funding settlement boundaries/signs,
