@@ -1475,6 +1475,13 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0250 C-35 first controlled evaluation
+
+- Repaired a direct-CLI import defect exposed by the first run and added a subprocess regression.
+- Refreshed and verified 17,676 candle rows (2,946/symbol; 288 prospective) with zero integrity
+  defects. Twelve hourly decisions were valid; none qualified, so no signal/outcome was written.
+- Eight focused tests pass. Status: `COLLECTING — 12 VALID DECISIONS, ZERO SIGNALS`.
+
 ## 2026-09-11 — TASK-0249 C-35 signal-evaluation bridge
 
 - Connected the verified candle panel to the pure evaluator using common exact-hour decisions,

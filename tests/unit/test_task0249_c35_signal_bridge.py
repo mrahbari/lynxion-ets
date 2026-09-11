@@ -1,3 +1,6 @@
+import subprocess
+import sys
+
 from scripts.evaluate_c35_compression_release import UNIVERSE
 from scripts.update_c35_signals import _decision_times, _input_hash, find_first_signal
 
@@ -37,3 +40,13 @@ def test_returns_first_ranked_signal_only():
     assert signal["decision_time"] == 1789092000
     assert len(digest) == 64
     assert calls == [1789088400, 1789092000]
+
+
+def test_direct_cli_import_path_is_valid():
+    result = subprocess.run(
+        [sys.executable, "scripts/update_c35_signals.py", "--help"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr

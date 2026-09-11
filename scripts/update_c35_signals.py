@@ -10,9 +10,14 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Callable
 
-from scripts.evaluate_c35_compression_release import BOUNDARY_EPOCH, UNIVERSE, evaluate_decision
-from scripts.record_c35_signal import append_signal
-from scripts.verify_c35_candle_ledger import verify_path
+try:
+    from scripts.evaluate_c35_compression_release import BOUNDARY_EPOCH, UNIVERSE, evaluate_decision
+    from scripts.record_c35_signal import append_signal
+    from scripts.verify_c35_candle_ledger import verify_path
+except ModuleNotFoundError:  # Direct `python scripts/...` execution.
+    from evaluate_c35_compression_release import BOUNDARY_EPOCH, UNIVERSE, evaluate_decision
+    from record_c35_signal import append_signal
+    from verify_c35_candle_ledger import verify_path
 
 
 def _load_panel(path: Path) -> dict[str, list[dict[str, Any]]]:

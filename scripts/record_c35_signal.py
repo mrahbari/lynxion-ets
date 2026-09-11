@@ -8,7 +8,10 @@ import os
 from pathlib import Path
 from typing import Any
 
-from scripts.evaluate_c35_compression_release import BOUNDARY_EPOCH, INTERVAL_SECONDS, UNIVERSE
+try:
+    from scripts.evaluate_c35_compression_release import BOUNDARY_EPOCH, INTERVAL_SECONDS, UNIVERSE
+except ModuleNotFoundError:  # Direct `python scripts/...` execution.
+    from evaluate_c35_compression_release import BOUNDARY_EPOCH, INTERVAL_SECONDS, UNIVERSE
 
 
 def _read_state(path: Path) -> tuple[set[str], set[str]]:
