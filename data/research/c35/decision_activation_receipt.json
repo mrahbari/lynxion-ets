@@ -1,0 +1,13 @@
+{
+  "activated_at": "2026-09-11T21:19:06Z",
+  "activation_commit": "e835bc5607b53613a57112d12289eeb151d5bbc9",
+  "candidate": "C-35",
+  "decision_ledger_sha256": "40ace8be671a0398cfcd574e6ba3ca92ede9df8a47ca6845342e3f379a111609",
+  "first_decision_time": 1789088400,
+  "input_hashes": 17,
+  "last_decision_time": 1789146000,
+  "no_signal_decisions": 17,
+  "signal_decisions": 0,
+  "status": "DECISION_PROVENANCE_ACTIVE",
+  "total_decisions": 17
+}
