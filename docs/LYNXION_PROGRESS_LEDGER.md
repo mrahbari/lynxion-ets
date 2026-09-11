@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0249 C-35 signal-evaluation bridge
+
+- Connected the verified candle panel to the pure evaluator using common exact-hour decisions,
+  chronological first-signal selection, and a hash of the complete causal ranking input.
+- The command defaults to dry-run; signal append requires explicit opt-in and the TASK-0248 state
+  gate. Three focused regressions pass; no live signal or outcome was opened.
+- Status: `KEEP — BRIDGE READY; CONTROLLED FIRST EVALUATION NEXT`.
+
 ## 2026-09-11 — TASK-0248 C-35 append-only signal state
 
 - Added the virtual-signal state boundary with strict identity/timing/schedule/input-hash checks,
