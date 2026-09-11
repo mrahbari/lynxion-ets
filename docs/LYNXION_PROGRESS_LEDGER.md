@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0258 C-35 decision provenance integration
+
+- Integrated hash-bound NO_SIGNAL/SIGNAL decision records into the causal bridge with chronological
+  processing, recorded-time skipping, first-signal stopping, and explicit write flags.
+- SIGNAL state is appended before its decision evidence to remain retry-safe. Five tests pass; no
+  live decision, signal, or outcome was opened.
+- Status: `KEEP — DECISION PROVENANCE INTEGRATED; CONTROLLED ACTIVATION NEXT`.
+
 ## 2026-09-11 — TASK-0257 C-35 decision evidence contract
 
 - Added hash-bound append-only provenance for every future SIGNAL or NO_SIGNAL hourly decision,

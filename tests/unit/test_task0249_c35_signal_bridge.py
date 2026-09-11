@@ -2,7 +2,12 @@ import subprocess
 import sys
 
 from scripts.evaluate_c35_compression_release import UNIVERSE
-from scripts.update_c35_signals import _decision_times, _input_hash, find_first_signal
+from scripts.update_c35_signals import (
+    _decision_times,
+    _input_hash,
+    evaluate_unrecorded,
+    find_first_signal,
+)
 
 
 def _panel():
@@ -50,3 +55,14 @@ def test_direct_cli_import_path_is_valid():
         text=True,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_unrecorded_evaluation_skips_history_and_stops_at_signal():
+    calls = []
+    def evaluator(panel, decision_time, boundary):
+        calls.append(decision_time)
+        return {"candidate": "C-35"} if decision_time == 1789092000 else None
+    results = evaluate_unrecorded(_panel(), {1789088400}, evaluator=evaluator)
+    assert [item[0] for item in results] == [1789092000]
+    assert results[0][1] == {"candidate": "C-35"}
+    assert calls == [1789092000]
