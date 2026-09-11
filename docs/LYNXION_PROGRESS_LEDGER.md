@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-11 — TASK-0251 C-35 outcome resolver core
+
+- Implemented exact nine-open virtual resolution, strict funding settlement boundaries/signs,
+  frozen 0.20/0.30/0.50% friction, evidence hashing, and append-only SIGNAL→OUTCOME ordering.
+- Four focused tests pass for both sides, missing evidence, and terminal idempotency. No live signal,
+  outcome, broker, order, leverage, or sizing path was opened.
+- Status: `KEEP — OUTCOME CORE READY; PUBLIC FUNDING COVERAGE NEXT`.
+
 ## 2026-09-11 — TASK-0250 C-35 first controlled evaluation
 
 - Repaired a direct-CLI import defect exposed by the first run and added a subprocess regression.

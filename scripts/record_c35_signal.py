@@ -72,3 +72,19 @@ def append_signal(path: Path, signal: dict[str, Any], *, input_sha256: str) -> b
         target.flush()
         os.fsync(target.fileno())
     return True
+
+
+def append_outcome(path: Path, outcome: dict[str, Any]) -> bool:
+    key = str(outcome.get("signal_key") or "")
+    signals, outcomes = _read_state(path)
+    if key not in signals:
+        raise ValueError("outcome has no preceding signal")
+    if key in outcomes:
+        return False
+    if outcome.get("candidate") != "C-35" or outcome.get("kind") != "OUTCOME":
+        raise ValueError("invalid C-35 outcome identity")
+    with path.open("a", encoding="utf-8") as target:
+        target.write(json.dumps(outcome, sort_keys=True, separators=(",", ":")) + "\n")
+        target.flush()
+        os.fsync(target.fileno())
+    return True
