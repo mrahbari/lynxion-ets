@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0262 C-35 signal-ledger integrity
+
+- Added a fail-closed pre-resolution gate for frozen signal identity/timing/provenance and matching
+  complete finite outcome evidence.
+- Outcome orchestration now refuses malformed, orphaned, duplicated, mismatched, or unproven
+  ledger state before attempting resolution. Four focused tests pass; the live ledger is empty.
+- Status: `KEEP — SIGNAL/OUTCOME INTEGRITY ENFORCED BEFORE RESOLUTION`.
+
 ## 2026-09-12 — TASK-0261 C-35 aggregate unseal gate
 
 - Added a fail-closed checkpoint for 240 completed positions, eight represented UTC weeks, 80

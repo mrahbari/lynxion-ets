@@ -14,11 +14,13 @@ try:
     from scripts.resolve_c35_outcome import resolve_outcome
     from scripts.verify_c35_candle_ledger import verify_path as verify_candles
     from scripts.verify_c35_funding_ledger import verify as verify_funding
+    from scripts.verify_c35_signal_ledger import verify as verify_signals
 except ModuleNotFoundError:  # Direct `python scripts/...` execution.
     from record_c35_signal import _read_state, append_outcome
     from resolve_c35_outcome import resolve_outcome
     from verify_c35_candle_ledger import verify_path as verify_candles
     from verify_c35_funding_ledger import verify as verify_funding
+    from verify_c35_signal_ledger import verify as verify_signals
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -83,6 +85,7 @@ def main() -> None:
     verify_funding(funding, coverage)
     signal_path = root / "signals.jsonl"
     events = _jsonl(signal_path)
+    verify_signals(events)
     signals, resolved = _read_state(signal_path)
     outcomes = find_resolvable(events, _jsonl(candle_path), funding, coverage)
     appended = 0
