@@ -1,0 +1,10 @@
+{
+  "state": "NEW",
+  "commit": "5234323590f738896faa6d752553f79001e021b8",
+  "historical_import_allowed": false,
+  "event_count": 0,
+  "run_id": "exit-shadow-20260912T154159Z",
+  "activation_boundary_utc": "2026-09-12T15:41:59Z",
+  "events_path": "data/research/exit_shadow/cohort-20260912T154159Z/events.jsonl",
+  "events_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

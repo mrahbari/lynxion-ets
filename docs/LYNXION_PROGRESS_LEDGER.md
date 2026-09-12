@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0276 exit-shadow new empty cohort
+
+- Created a new zero-event cohort for the preregistered +12% activation/+5% net-floor comparison,
+  bound to commit `5234323` and boundary `2026-09-12T15:41:59Z`.
+- Historical import is forbidden and the empty ledger hash is verified; this authorizes neither
+  runtime nor broker access.
+- Status: `KEEP — EMPTY COHORT READY; FEE AND FRESH STOP-SAFETY EVIDENCE REMAIN`.
+
 ## 2026-09-12 — TASK-0275 exit-shadow static readiness refresh
 
 - Rechecked the nearest preregistered exit-improvement path (+12% activation, +5% net floor): all
