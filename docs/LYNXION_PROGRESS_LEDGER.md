@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0270 C-35 aggregate activation preflight
+
+- Hash-bound the protocol, aggregate math, evaluator, and source-bound unseal gate against commit
+  `af04921` before any live outcome exists.
+- Bootstrap seed/sample count and minimum position/side/week gates are frozen; code or contract
+  drift now fails closed while economics remain sealed.
+- Status: `KEEP — AGGREGATE EVALUATION PREPARED AND HASH-BOUND`.
+
 ## 2026-09-12 — TASK-0269 C-35 frozen aggregate evaluator
 
 - Connected the preregistered math to all frozen expectancy, PF, bootstrap, side, symbol,
