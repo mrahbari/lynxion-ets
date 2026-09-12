@@ -1833,3 +1833,12 @@ free Binance archive reopens historical OI acquisition without a paid-service or
 - The event ledger is empty, historical import is disabled, and no runtime or broker was accessed.
 - This supersedes the earlier pre-fee cohort for future activation review without deleting it.
 - Status: `KEEP — POST-FEE EMPTY COHORT READY; FRESH VST SAFETY EVIDENCE REMAINS`.
+
+## 2026-09-12 — TASK-0279 C-35 hourly checkpoint at 41 decisions
+
+- The frozen public-only pipeline passed all eleven stages with 18,366 candles, 30 funding records,
+  and 120 funding-coverage receipts; ledger integrity reports no gaps, duplicates, or boundary error.
+- Two new decisions increased the prospective total from 39 to 41. No signal or outcome exists.
+- Aggregate economics remain sealed and the verdict remains `COLLECTING`; the first frozen
+  signal-rate interpretation checkpoint is still 168 decisions.
+- Status: `COLLECTING — NO EDGE EVIDENCE OR GATE TRANSITION`.
