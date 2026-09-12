@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0275 exit-shadow static readiness refresh
+
+- Rechecked the nearest preregistered exit-improvement path (+12% activation, +5% net floor): all
+  24 frozen artifacts still reproduce exactly.
+- Activation remains blocked on a new empty commit-bound cohort, authoritative pre-activation BingX
+  fee snapshot, and fresh single-runner read-only proof of zero missing stops.
+- Status: `BLOCKED_FOR_ACTIVATION_INPUTS — NO RUNTIME OR BROKER ACTION TAKEN`.
+
 ## 2026-09-12 — TASK-0274 C-35 throughput pipeline integration
 
 - Added the verified non-economic signal-rate monitor as the final stage of the fail-closed hourly
