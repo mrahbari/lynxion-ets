@@ -1816,3 +1816,12 @@ verified commits, and controlled VST/paper runtime reloads after pre/post protec
 Real funds, secrets, destructive/data-loss operations, security-boundary changes, paid services,
 legal/compliance decisions, and irreversible choices remain separately approval-gated. The official
 free Binance archive reopens historical OI acquisition without a paid-service or execution decision.
+## 2026-09-12 — TASK-0277 BingX public perpetual fee snapshot
+
+- Froze the official public BingX perpetual base fee schedule retrieved at
+  `2026-09-12T16:44:38Z`: taker 0.05%, maker 0.02%; no VIP/account discount is assumed.
+- Bound the complete provenance and conservative scope with canonical SHA-256
+  `497741fb9676c855b4f4080d7a3b5a0652a9ec308619f085a92a50b818317d5a`.
+- The prior 15:41 cohort remains unusable with this later snapshot; the replacement cohort boundary
+  must be later than capture, with no historical import. No runtime or broker account was accessed.
+- Status: `KEEP — PUBLIC BASE FEE EVIDENCE FROZEN; REPLACEMENT EMPTY COHORT NEXT`.

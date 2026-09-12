@@ -1,0 +1,16 @@
+{
+  "activation_not_before_utc": "2026-09-12T16:44:39Z",
+  "expected_snapshot_sha256": "497741fb9676c855b4f4080d7a3b5a0652a9ec308619f085a92a50b818317d5a",
+  "snapshot": {
+    "account_tier": "STANDARD_PUBLIC_BASE",
+    "captured_at_utc": "2026-09-12T16:44:38Z",
+    "effective_at_utc": "2026-09-12T16:44:38Z",
+    "exchange": "BINGX",
+    "maker_fee_rate": "0.0002",
+    "market": "PERPETUAL",
+    "source": "https://bingx.com/en/support/articles/360046487573-perpetual%2520futures%2520%257c%2520fee%2520schedule",
+    "source_article_timestamp": "2020-04-08 22:22",
+    "source_scope": "PUBLIC_STANDARD_BASE_RATE; ACCOUNT_OR_VIP_DISCOUNTS_NOT_ASSUMED",
+    "taker_fee_rate": "0.0005"
+  }
+}
