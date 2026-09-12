@@ -1,6 +1,7 @@
 import pytest
 
-from scripts.check_c35_unseal_gate import check, check_verified
+from scripts.check_c35_unseal_gate import check, check_source_bound, check_verified
+from scripts.resolve_c35_outcome import resolve_outcome
 
 
 def _events(total=240, long_count=120, weeks=8, symbols=6):
@@ -52,3 +53,25 @@ def test_rejects_orphan_or_duplicate_outcomes():
 def test_verified_gate_rejects_coverage_shaped_but_unproven_events():
     with pytest.raises(ValueError, match="signal identity"):
         check_verified(_events())
+
+
+def test_source_bound_gate_rejects_finite_economic_tampering():
+    signal = {
+        "kind": "SIGNAL", "candidate": "C-35", "signal_key": "BTCUSDT:1789117200",
+        "symbol": "BTCUSDT", "side": "LONG", "decision_time": 1789117200,
+        "decision_bar_open": 1789116300, "entry_open_time": 1789117200,
+        "exit_open_time": 1789124400, "input_sha256": "a" * 64,
+    }
+    candles = [{
+        "symbol": "BTCUSDT", "open_time": 1789117200 + index * 900, "open": "100",
+    } for index in range(9)]
+    coverage = [{
+        "symbol": "BTCUSDT", "status": "COMPLETE_PUBLIC_RESPONSE",
+        "requested_start_ms": 1789117201000, "requested_end_ms": 1789124400000,
+    }]
+    outcome = resolve_outcome(signal, candles, [], funding_coverage_complete=True)
+    with pytest.raises(ValueError, match="differs from source evidence"):
+        check_source_bound(
+            [signal, {**outcome, "net_return_primary_0_30pct": 1.0}],
+            candles, [], coverage,
+        )

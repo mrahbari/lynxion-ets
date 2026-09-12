@@ -12,8 +12,10 @@ from typing import Any
 
 try:
     from scripts.verify_c35_signal_ledger import verify as verify_signal_ledger
+    from scripts.update_c35_outcomes import verify_outcome_bindings
 except ModuleNotFoundError:  # Direct `python scripts/...` execution.
     from verify_c35_signal_ledger import verify as verify_signal_ledger
+    from update_c35_outcomes import verify_outcome_bindings
 
 
 MIN_POSITIONS = 240
@@ -76,14 +78,35 @@ def check_verified(events: list[dict[str, Any]]) -> dict[str, Any]:
     return check(events)
 
 
+def check_source_bound(
+    events: list[dict[str, Any]],
+    candles: list[dict[str, Any]],
+    funding: list[dict[str, Any]],
+    coverage: list[dict[str, Any]],
+) -> dict[str, Any]:
+    verify_signal_ledger(events)
+    verify_outcome_bindings(events, candles, funding, coverage)
+    return check(events)
+
+
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--signals", type=Path, default=Path("data/research/c35/signals.jsonl"))
+    parser.add_argument("--root", type=Path, default=Path("data/research/c35"))
     args = parser.parse_args()
-    events = []
-    if args.signals.exists():
-        events = [json.loads(line) for line in args.signals.read_text(encoding="utf-8").splitlines()]
-    print(json.dumps(check_verified(events), sort_keys=True))
+    result = check_source_bound(
+        _read_jsonl(args.signals),
+        _read_jsonl(args.root / "candles.jsonl"),
+        _read_jsonl(args.root / "funding.jsonl"),
+        _read_jsonl(args.root / "funding_coverage.jsonl"),
+    )
+    print(json.dumps(result, sort_keys=True))
 
 
 if __name__ == "__main__":

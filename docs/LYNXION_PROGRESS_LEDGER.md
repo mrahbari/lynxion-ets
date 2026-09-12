@@ -1475,6 +1475,13 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0267 C-35 unseal-to-source binding
+
+- Closed the final gap between event-schema integrity and source truth at the aggregate boundary.
+- The live unseal command now reloads candles, funding, coverage, and outcomes, recomputes every
+  completed result, and only then counts minimum gates.
+- Status: `KEEP — UNSEALING REQUIRES EXACT SOURCE TRUTH; AGGREGATES SEALED`.
+
 ## 2026-09-12 — TASK-0266 C-35 outcome-to-source binding
 
 - Closed a post-resolution integrity gap: finite outcome economics alone were insufficient to
