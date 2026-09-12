@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0266 C-35 outcome-to-source binding
+
+- Closed a post-resolution integrity gap: finite outcome economics alone were insufficient to
+  prove they still matched the public candle/funding evidence.
+- Every stored outcome is now recomputed through the frozen resolver and compared in full before
+  any new resolution; missing coverage or altered economics fails closed.
+- Status: `KEEP — OUTCOMES REMAIN EXACTLY SOURCE-BOUND; LIVE LEDGER EMPTY`.
+
 ## 2026-09-12 — TASK-0265 C-35 unseal integrity chain
 
 - Chained the minimum aggregate-coverage checkpoint to the full signal/outcome provenance gate.

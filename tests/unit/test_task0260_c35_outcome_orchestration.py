@@ -1,4 +1,6 @@
-from scripts.update_c35_outcomes import _funding_covered, find_resolvable
+import pytest
+
+from scripts.update_c35_outcomes import _funding_covered, find_resolvable, verify_outcome_bindings
 
 
 def _signal(exit_time=1789124400):
@@ -42,3 +44,21 @@ def test_waits_for_exit_candle_or_funding_coverage():
 def test_skips_already_completed_signal():
     events = [_signal(), {"kind": "OUTCOME", "signal_key": "BTCUSDT:1789117200"}]
     assert find_resolvable(events, _candles(), [], _coverage()) == []
+
+
+def test_completed_outcome_is_recomputed_from_source_evidence():
+    signal = _signal()
+    outcome = find_resolvable([signal], _candles(), [], _coverage())[0]
+    assert verify_outcome_bindings([signal, outcome], _candles(), [], _coverage())["integrity"] == "PASS"
+    with pytest.raises(ValueError, match="differs from source evidence"):
+        verify_outcome_bindings(
+            [signal, {**outcome, "net_return_primary_0_30pct": 99.0}],
+            _candles(), [], _coverage(),
+        )
+
+
+def test_completed_outcome_requires_persisting_funding_coverage():
+    signal = _signal()
+    outcome = find_resolvable([signal], _candles(), [], _coverage())[0]
+    with pytest.raises(ValueError, match="lost complete funding coverage"):
+        verify_outcome_bindings([signal, outcome], _candles(), [], [])

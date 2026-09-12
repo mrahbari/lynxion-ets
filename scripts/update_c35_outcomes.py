@@ -72,6 +72,40 @@ def find_resolvable(
     return outcomes
 
 
+def verify_outcome_bindings(
+    signal_events: list[dict[str, Any]],
+    candles: list[dict[str, Any]],
+    funding: list[dict[str, Any]],
+    coverage: list[dict[str, Any]],
+) -> dict[str, Any]:
+    signals = {row["signal_key"]: row for row in signal_events if row.get("kind") == "SIGNAL"}
+    completed = 0
+    candles_by_symbol: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    funding_by_symbol: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in candles:
+        candles_by_symbol[row["symbol"]].append(row)
+    for row in funding:
+        funding_by_symbol[row["symbol"]].append(row)
+    for row in signal_events:
+        if row.get("kind") != "OUTCOME":
+            continue
+        signal = signals[row["signal_key"]]
+        symbol = signal["symbol"]
+        entry, exit_ = int(signal["entry_open_time"]), int(signal["exit_open_time"])
+        if not _funding_covered(coverage, symbol, entry, exit_):
+            raise ValueError(f"C-35 outcome {row['signal_key']} lost complete funding coverage")
+        expected = resolve_outcome(
+            signal,
+            candles_by_symbol[symbol],
+            funding_by_symbol[symbol],
+            funding_coverage_complete=True,
+        )
+        if row != expected:
+            raise ValueError(f"C-35 outcome {row['signal_key']} differs from source evidence")
+        completed += 1
+    return {"candidate": "C-35", "outcome_bindings": completed, "integrity": "PASS"}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default="data/research/c35")
@@ -86,8 +120,10 @@ def main() -> None:
     signal_path = root / "signals.jsonl"
     events = _jsonl(signal_path)
     verify_signals(events)
+    candles = _jsonl(candle_path)
+    verify_outcome_bindings(events, candles, funding, coverage)
     signals, resolved = _read_state(signal_path)
-    outcomes = find_resolvable(events, _jsonl(candle_path), funding, coverage)
+    outcomes = find_resolvable(events, candles, funding, coverage)
     appended = 0
     if args.commit_outcomes:
         for outcome in outcomes:
