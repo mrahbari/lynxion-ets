@@ -1475,6 +1475,13 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0265 C-35 unseal integrity chain
+
+- Chained the minimum aggregate-coverage checkpoint to the full signal/outcome provenance gate.
+- Coverage-shaped records can no longer count toward unsealing unless identity, schedule, hashes,
+  fills, finite economics, and signal/outcome linkage first pass.
+- Status: `KEEP — UNSEALING REQUIRES FULL EVENT INTEGRITY; AGGREGATES SEALED`.
+
 ## 2026-09-12 — TASK-0264 C-35 decision-to-candle binding
 
 - Closed the remaining provenance gap between syntactically valid decision hashes and the actual

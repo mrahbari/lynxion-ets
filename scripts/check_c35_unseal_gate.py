@@ -10,6 +10,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.verify_c35_signal_ledger import verify as verify_signal_ledger
+except ModuleNotFoundError:  # Direct `python scripts/...` execution.
+    from verify_c35_signal_ledger import verify as verify_signal_ledger
+
 
 MIN_POSITIONS = 240
 MIN_SIDE_POSITIONS = 80
@@ -66,6 +71,11 @@ def check(events: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def check_verified(events: list[dict[str, Any]]) -> dict[str, Any]:
+    verify_signal_ledger(events)
+    return check(events)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--signals", type=Path, default=Path("data/research/c35/signals.jsonl"))
@@ -73,7 +83,7 @@ def main() -> None:
     events = []
     if args.signals.exists():
         events = [json.loads(line) for line in args.signals.read_text(encoding="utf-8").splitlines()]
-    print(json.dumps(check(events), sort_keys=True))
+    print(json.dumps(check_verified(events), sort_keys=True))
 
 
 if __name__ == "__main__":

@@ -1,4 +1,6 @@
-from scripts.check_c35_unseal_gate import check
+import pytest
+
+from scripts.check_c35_unseal_gate import check, check_verified
 
 
 def _events(total=240, long_count=120, weeks=8, symbols=6):
@@ -45,3 +47,8 @@ def test_rejects_orphan_or_duplicate_outcomes():
         assert "orphan" in str(exc)
     else:
         raise AssertionError("orphan outcome accepted")
+
+
+def test_verified_gate_rejects_coverage_shaped_but_unproven_events():
+    with pytest.raises(ValueError, match="signal identity"):
+        check_verified(_events())
