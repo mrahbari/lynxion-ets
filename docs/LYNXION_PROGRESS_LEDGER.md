@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0273 C-35 signal-throughput checkpoint
+
+- Added a non-economic feasibility monitor over verified decision/signal counts; it cannot change,
+  reject, or promote the candidate and does not infer edge from frequency.
+- The first rate interpretation is frozen at 168 valid decisions. At 35 decisions and zero signals,
+  no honest projection to 240 outcomes exists yet.
+- Status: `KEEP — SIGNAL PACE MONITORED; ECONOMICS SEALED`.
+
 ## 2026-09-12 — TASK-0272 C-35 hourly public orchestrator
 
 - Added one public-only fail-closed entrypoint that sequences all three activation preflights,
