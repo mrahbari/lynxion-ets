@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0269 C-35 frozen aggregate evaluator
+
+- Connected the preregistered math to all frozen expectancy, PF, bootstrap, side, symbol,
+  concentration, drawdown, stress-cost, and chronological-fold verdict gates.
+- Source-bound minimum coverage still returns counts only; a full pass can authorize only separate
+  VST review. The live zero-outcome cohort remains sealed.
+- Status: `KEEP — AGGREGATE EVALUATOR READY; LIVE ECONOMICS SEALED`.
+
 ## 2026-09-12 — TASK-0268 C-35 aggregate-math preregistration
 
 - Froze deterministic mean, PF, compounded drawdown, UTC-day clustered bootstrap with seed 350035,
