@@ -1475,6 +1475,13 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0268 C-35 aggregate-math preregistration
+
+- Froze deterministic mean, PF, compounded drawdown, UTC-day clustered bootstrap with seed 350035,
+  and four contiguous UTC-week fold primitives before any C-35 outcome exists.
+- The module is not connected to the live aggregate gate yet and no economics were opened.
+- Status: `KEEP — AGGREGATE MATH PREREGISTERED BEFORE OUTCOMES`.
+
 ## 2026-09-12 — TASK-0267 C-35 unseal-to-source binding
 
 - Closed the final gap between event-schema integrity and source truth at the aggregate boundary.
