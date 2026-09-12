@@ -23,6 +23,7 @@ COMMANDS = (
     ("scripts/update_c35_signals.py", "--commit-decisions", "--commit-signal"),
     ("scripts/update_c35_outcomes.py", "--commit-outcomes"),
     ("scripts/evaluate_c35_aggregate.py",),
+    ("scripts/check_c35_signal_throughput.py",),
 )
 
 

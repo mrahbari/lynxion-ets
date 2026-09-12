@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0274 C-35 throughput pipeline integration
+
+- Added the verified non-economic signal-rate monitor as the final stage of the fail-closed hourly
+  public pipeline; exact ordering now covers eleven stages.
+- It remains unable to change the candidate or open economics and waits for 168 decisions before
+  its first interpretive checkpoint.
+- Status: `KEEP — THROUGHPUT MONITOR AUTOMATIC; EDGE STILL UNPROVEN`.
+
 ## 2026-09-12 — TASK-0273 C-35 signal-throughput checkpoint
 
 - Added a non-economic feasibility monitor over verified decision/signal counts; it cannot change,
