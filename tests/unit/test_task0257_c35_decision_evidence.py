@@ -47,3 +47,29 @@ def test_rejects_signal_time_mismatch_and_pre_boundary(tmp_path):
             tmp_path / "decisions.jsonl", decision_time=1789084800,
             input_sha256="a" * 64, signal=None,
         )
+
+
+def test_read_rejects_tampered_hash_or_verdict_payload(tmp_path):
+    path = tmp_path / "decisions.jsonl"
+    append_decision(path, decision_time=1789117200, input_sha256="a" * 64, signal=None)
+    row = json.loads(path.read_text())
+    row["input_sha256"] = "bad"
+    path.write_text(json.dumps(row) + "\n")
+    with pytest.raises(ValueError, match="provenance"):
+        read_decisions(path)
+
+    row["input_sha256"] = "a" * 64
+    row["selected"] = _signal()["symbol"]
+    path.write_text(json.dumps(row) + "\n")
+    with pytest.raises(ValueError, match="no-signal"):
+        read_decisions(path)
+
+
+def test_read_rejects_selected_signal_schedule_tampering(tmp_path):
+    path = tmp_path / "decisions.jsonl"
+    append_decision(path, decision_time=1789117200, input_sha256="a" * 64, signal=_signal())
+    row = json.loads(path.read_text())
+    row["selected"]["exit_open_time"] -= 900
+    path.write_text(json.dumps(row) + "\n")
+    with pytest.raises(ValueError, match="selected signal"):
+        read_decisions(path)

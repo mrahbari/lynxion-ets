@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0263 C-35 decision-ledger integrity
+
+- Closed a provenance gap where a syntactically readable but tampered decision could suppress a
+  future exact-hour evaluation.
+- Decision reads now validate boundary/timing, input hash, verdict/payload consistency, frozen
+  selected fields, finite metrics, universe/side, and the exact two-hour schedule.
+- Status: `KEEP — DECISION LEDGER FAILS CLOSED; NO STRATEGY POLICY CHANGED`.
+
 ## 2026-09-12 — TASK-0262 C-35 signal-ledger integrity
 
 - Added a fail-closed pre-resolution gate for frozen signal identity/timing/provenance and matching
