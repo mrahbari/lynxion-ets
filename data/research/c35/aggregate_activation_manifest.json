@@ -8,7 +8,7 @@
   "math_path": "scripts/c35_aggregate_math.py",
   "math_sha256": "61c08425343429a54398d8e9e50d35b7ad332837133a5126bd0be55a6ac429ba",
   "evaluator_path": "scripts/evaluate_c35_aggregate.py",
-  "evaluator_sha256": "73037448931bca9679dc7c1d791f9f3131255ca0786fd2ed143f34ee1e6861b4",
+  "evaluator_sha256": "f1b541747cc31ab8640b0787350725a4917bb618c51253a302956cd76b7d9f23",
   "unseal_gate_path": "scripts/check_c35_unseal_gate.py",
   "unseal_gate_sha256": "b02ebe26953c26d576ed721c99010bf0850731e30e72e5442d8c8d076fcfc920",
   "bootstrap_seed": 350035,

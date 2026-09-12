@@ -1,3 +1,6 @@
+import subprocess
+import sys
+
 from scripts.evaluate_c35_aggregate import evaluate, evaluate_verified_outcomes
 
 
@@ -40,3 +43,12 @@ def test_any_completed_economic_failure_rejects():
     result = evaluate_verified_outcomes(rows, bootstrap_samples=100)
     assert result["verdict"] == "REJECT"
     assert not result["gates"]["both_sides_positive"]
+
+
+def test_live_cli_enforces_activation_and_remains_sealed():
+    result = subprocess.run(
+        [sys.executable, "scripts/evaluate_c35_aggregate.py"],
+        check=False, capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert '"aggregate_economics": "SEALED"' in result.stdout

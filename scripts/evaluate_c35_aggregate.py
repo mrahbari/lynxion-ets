@@ -19,6 +19,7 @@ try:
         profit_factor,
     )
     from scripts.check_c35_unseal_gate import check_source_bound
+    from scripts.verify_c35_aggregate_activation import verify as verify_activation
 except ModuleNotFoundError:  # Direct `python scripts/...` execution.
     from c35_aggregate_math import (
         chronological_week_folds,
@@ -28,6 +29,7 @@ except ModuleNotFoundError:  # Direct `python scripts/...` execution.
         profit_factor,
     )
     from check_c35_unseal_gate import check_source_bound
+    from verify_c35_aggregate_activation import verify as verify_activation
 
 
 PRIMARY = "net_return_primary_0_30pct"
@@ -113,6 +115,13 @@ def main() -> None:
     parser.add_argument("--root", type=Path, default=Path("data/research/c35"))
     args = parser.parse_args()
     root = args.root
+    repository_root = Path(__file__).resolve().parents[1]
+    manifest = json.loads(
+        (repository_root / "data/research/c35/aggregate_activation_manifest.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    verify_activation(manifest, repository_root)
     result = evaluate(
         _read(root / "signals.jsonl"), _read(root / "candles.jsonl"),
         _read(root / "funding.jsonl"), _read(root / "funding_coverage.jsonl"),

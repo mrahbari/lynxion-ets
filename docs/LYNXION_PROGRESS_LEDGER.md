@@ -1475,6 +1475,13 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0271 C-35 evaluator preflight wiring
+
+- Closed a direct-execution gap: the aggregate evaluator CLI now verifies its hash-bound activation
+  manifest before reading or opening economics.
+- The evaluator hash was refreshed before any live outcome; direct CLI regression returns sealed.
+- Status: `KEEP — AGGREGATE CLI FAILS CLOSED ON CONTRACT OR CODE DRIFT`.
+
 ## 2026-09-12 — TASK-0270 C-35 aggregate activation preflight
 
 - Hash-bound the protocol, aggregate math, evaluator, and source-bound unseal gate against commit
