@@ -52,7 +52,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--manifest", type=Path,
-        default=Path("data/research/exit_shadow/cohort-20260912T154159Z/manifest.json"),
+        default=Path("data/research/exit_shadow/cohort-20260912T164632Z/manifest.json"),
     )
     args = parser.parse_args()
     manifest = json.loads((ROOT / args.manifest).read_text(encoding="utf-8"))

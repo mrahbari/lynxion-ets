@@ -1825,3 +1825,11 @@ free Binance archive reopens historical OI acquisition without a paid-service or
 - The prior 15:41 cohort remains unusable with this later snapshot; the replacement cohort boundary
   must be later than capture, with no historical import. No runtime or broker account was accessed.
 - Status: `KEEP — PUBLIC BASE FEE EVIDENCE FROZEN; REPLACEMENT EMPTY COHORT NEXT`.
+
+## 2026-09-12 — TASK-0278 post-fee replacement exit cohort
+
+- Created a new empty exit-shadow cohort at `2026-09-12T16:46:32Z`, strictly after the official
+  BingX fee snapshot and bound to commit `734feb5`.
+- The event ledger is empty, historical import is disabled, and no runtime or broker was accessed.
+- This supersedes the earlier pre-fee cohort for future activation review without deleting it.
+- Status: `KEEP — POST-FEE EMPTY COHORT READY; FRESH VST SAFETY EVIDENCE REMAINS`.
