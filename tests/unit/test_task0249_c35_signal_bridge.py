@@ -1,12 +1,15 @@
 import subprocess
 import sys
 
+import pytest
+
 from scripts.evaluate_c35_compression_release import UNIVERSE
 from scripts.update_c35_signals import (
     _decision_times,
     _input_hash,
     evaluate_unrecorded,
     find_first_signal,
+    verify_decision_bindings,
 )
 
 
@@ -66,3 +69,25 @@ def test_unrecorded_evaluation_skips_history_and_stops_at_signal():
     assert [item[0] for item in results] == [1789092000]
     assert results[0][1] == {"candidate": "C-35"}
     assert calls == [1789092000]
+
+
+def test_decision_binding_accepts_exact_causal_panel():
+    panel = _panel()
+    decision_time = _decision_times(panel)[0]
+    result = verify_decision_bindings(panel, {
+        decision_time: {"input_sha256": _input_hash(panel, decision_time)},
+    })
+    assert result["integrity"] == "PASS"
+
+
+def test_decision_binding_rejects_candle_or_hash_drift():
+    panel = _panel()
+    decision_time = _decision_times(panel)[-1]
+    with pytest.raises(ValueError, match="hash mismatch"):
+        verify_decision_bindings(panel, {decision_time: {"input_sha256": "a" * 64}})
+
+    incomplete = {symbol: rows[:-1] for symbol, rows in panel.items()}
+    with pytest.raises(ValueError, match="no longer has complete"):
+        verify_decision_bindings(incomplete, {
+            decision_time: {"input_sha256": _input_hash(panel, decision_time)},
+        })

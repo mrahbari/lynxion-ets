@@ -52,6 +52,19 @@ def _input_hash(panel: dict[str, list[dict[str, Any]]], decision_time: int) -> s
     return hashlib.sha256(encoded).hexdigest()
 
 
+def verify_decision_bindings(
+    panel: dict[str, list[dict[str, Any]]],
+    decisions: dict[int, dict[str, Any]],
+) -> dict[str, Any]:
+    available = set(_decision_times(panel))
+    for decision_time, row in decisions.items():
+        if decision_time not in available:
+            raise ValueError(f"C-35 decision {decision_time} no longer has complete candle inputs")
+        if _input_hash(panel, decision_time) != row["input_sha256"]:
+            raise ValueError(f"C-35 decision {decision_time} candle hash mismatch")
+    return {"candidate": "C-35", "decision_bindings": len(decisions), "integrity": "PASS"}
+
+
 def find_first_signal(
     panel: dict[str, list[dict[str, Any]]],
     *,
@@ -94,6 +107,7 @@ def main() -> None:
     panel = _load_panel(candle_path)
     decision_path = Path(args.decisions)
     recorded = read_decisions(decision_path)
+    verify_decision_bindings(panel, recorded)
     evaluated = evaluate_unrecorded(panel, set(recorded))
     signal = next((item[1] for item in evaluated if item[1] is not None), None)
     input_hash = next((item[2] for item in evaluated if item[1] is not None), None)

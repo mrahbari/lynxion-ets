@@ -1475,6 +1475,13 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0264 C-35 decision-to-candle binding
+
+- Closed the remaining provenance gap between syntactically valid decision hashes and the actual
+  causal candle panel: all old decisions are now re-hashed before they suppress evaluation.
+- Missing historical inputs or any candle drift fails closed before new decisions/signals append.
+- Status: `KEEP — LIVE DECISIONS BIND TO VERIFIED CAUSAL INPUTS`.
+
 ## 2026-09-12 — TASK-0263 C-35 decision-ledger integrity
 
 - Closed a provenance gap where a syntactically readable but tampered decision could suppress a
