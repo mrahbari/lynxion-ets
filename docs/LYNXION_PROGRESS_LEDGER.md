@@ -1475,6 +1475,14 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0261 C-35 aggregate unseal gate
+
+- Added a fail-closed checkpoint for 240 completed positions, eight represented UTC weeks, 80
+  positions per side, and 30 positions in at least four symbols.
+- The checkpoint cannot read or expose economic fields; it authorizes only the frozen aggregate
+  evaluator after every minimum coverage dimension passes.
+- Status: `KEEP — MINIMUM COVERAGE GATE READY; LIVE AGGREGATES SEALED`.
+
 ## 2026-09-11 — TASK-0260 C-35 outcome orchestration
 
 - Connected verified candle/funding/coverage/signal evidence to exact terminal resolution, with
