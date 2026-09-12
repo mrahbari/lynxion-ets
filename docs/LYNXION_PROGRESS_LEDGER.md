@@ -1475,6 +1475,15 @@ unless new evidence shows that it blocks valid edge measurement.
 
 ## Operator decision required
 
+## 2026-09-12 — TASK-0272 C-35 hourly public orchestrator
+
+- Added one public-only fail-closed entrypoint that sequences all three activation preflights,
+  collection, ledger verification, decision/signal append, outcome resolution, and sealed verdict.
+- It stops on the first failed/non-JSON stage and contains no broker, authentication, order,
+  trading-runtime, or production capability.
+- Its first combined live run passed all ten stages; `--help` is separately proven non-executing.
+- Status: `KEEP — HOURLY C-35 PIPELINE ORDER FROZEN AND TESTED`.
+
 ## 2026-09-12 — TASK-0271 C-35 evaluator preflight wiring
 
 - Closed a direct-execution gap: the aggregate evaluator CLI now verifies its hash-bound activation
