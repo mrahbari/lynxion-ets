@@ -1843,6 +1843,13 @@ free Binance archive reopens historical OI acquisition without a paid-service or
   signal-rate interpretation checkpoint is still 168 decisions.
 - Status: `COLLECTING — NO EDGE EVIDENCE OR GATE TRANSITION`.
 
+## 2026-09-13 — TASK-0291 C-35 hourly checkpoint at 54 decisions
+
+- C-35 passed all eleven public-only stages with 18,678 candles, 1,290 prospective records, and 54
+  decisions; no gap, duplicate, boundary error, signal, or outcome exists.
+- Funding integrity passes with 36 records and 186 coverage receipts; economics remain sealed.
+- Status: `COLLECTING — NO EDGE EVIDENCE OR GATE TRANSITION`.
+
 ## 2026-09-13 — TASK-0289 exit-shadow readiness evidence integration
 
 - Fixed a stale readiness defect: the static checker permanently reported the empty-cohort and fee
