@@ -1873,6 +1873,14 @@ free Binance archive reopens historical OI acquisition without a paid-service or
   establish positive expectancy or durable edge.
 - Status: `COLLECTING — FIRST OUTCOME POSITIVE; SECOND SIGNAL PENDING; NO EDGE CLAIM`.
 
+## 2026-09-13 — TASK-0295 C-35 second positive prospective outcome
+
+- The second prospective `ADAUSDT SHORT` completed at its frozen exit with gross return `+0.585938%`,
+  primary net return `+0.285938%`, and stress-cost net return `+0.0859375%`.
+- The first two C-35 outcomes are individually positive after primary costs, which is encouraging,
+  but N=2 across only SHORT/two symbols/one week is far below every frozen edge gate.
+- Status: `COLLECTING — TWO POSITIVE OUTCOMES; FAR BELOW EVERY EDGE GATE`.
+
 ## 2026-09-13 — TASK-0291 C-35 hourly checkpoint at 54 decisions
 
 - C-35 passed all eleven public-only stages with 18,678 candles, 1,290 prospective records, and 54
