@@ -1881,6 +1881,13 @@ free Binance archive reopens historical OI acquisition without a paid-service or
   but N=2 across only SHORT/two symbols/one week is far below every frozen edge gate.
 - Status: `COLLECTING — TWO POSITIVE OUTCOMES; FAR BELOW EVERY EDGE GATE`.
 
+## 2026-09-13 — TASK-0297 C-35 hourly checkpoint at 60 decisions
+
+- C-35 passed all eleven public-only stages with 18,822 candles, 1,434 prospective records, and 60
+  decisions; no gap, duplicate, boundary error, new signal, or new outcome exists.
+- The two positive completed outcomes remain unchanged and aggregate economics remain sealed.
+- Status: `COLLECTING — NO NEW SIGNAL, OUTCOME, OR GATE TRANSITION`.
+
 ## 2026-09-13 — TASK-0296 C-35 hourly checkpoint at 59 decisions
 
 - C-35 passed all eleven public-only stages with 18,798 candles, 1,410 prospective records, and 59
