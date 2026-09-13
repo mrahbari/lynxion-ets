@@ -1888,6 +1888,14 @@ free Binance archive reopens historical OI acquisition without a paid-service or
 - The two positive completed outcomes remain unchanged and aggregate economics remain sealed.
 - Status: `COLLECTING — NO NEW SIGNAL, OUTCOME, OR GATE TRANSITION`.
 
+## 2026-09-13 — TASK-0300 C-35 checkpoint 63 and C-11 refresh
+
+- C-35 passed all eleven public-only stages with 18,894 candles, 1,506 prospective records, and 63
+  decisions; its two positive outcomes remain with no new signal or outcome.
+- The due C-11 refresh retained exactly two records, both strictly after epoch `1788082349`; no new
+  candidate or outcome appeared and its verdict remains `COLLECTING`.
+- Status: `COLLECTING — NO NEW SIGNAL, OUTCOME, OR GATE TRANSITION`.
+
 ## 2026-09-13 — TASK-0299 C-35 hourly checkpoint at 62 decisions
 
 - C-35 passed all eleven public-only stages with 18,870 candles, 1,482 prospective records, and 62
