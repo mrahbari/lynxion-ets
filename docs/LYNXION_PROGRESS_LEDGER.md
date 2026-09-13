@@ -1853,6 +1853,14 @@ free Binance archive reopens historical OI acquisition without a paid-service or
   falsely re-report the 100/500 milestones. A focused regression binds the latest verified snapshot.
 - Status: `KEEP — C-33 STALE CHECKPOINT DEFAULT FIXED; NO EDGE EVIDENCE`.
 
+## 2026-09-13 — TASK-0288 C-35 hourly checkpoint at 52 decisions
+
+- C-35 passed all eleven public-only stages with 18,630 candles, 1,242 prospective records, and 52
+  decisions; no gap, duplicate, boundary error, signal, or outcome exists.
+- The corrected C-33 default consistently reports 740 eligible buckets, no due checkpoint, and the
+  next frozen milestone at 1,000.
+- Status: `COLLECTING — NO EDGE EVIDENCE OR GATE TRANSITION`.
+
 ## 2026-09-13 — TASK-0286 C-35 hourly checkpoint at 50 decisions
 
 - The frozen public-only pipeline passed all eleven stages with 18,576 candles, 1,188 prospective
