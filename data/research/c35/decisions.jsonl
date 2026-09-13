@@ -56,3 +56,4 @@
 {"candidate":"C-35","decision_time":1789286400,"input_sha256":"4f3fa4262ecfd944b57213639b73523e5c4cc6125540227aae6b2cc506b56aeb","kind":"DECISION","selected":{"compression_median":0.002897151810195238,"compression_threshold":0.0033553831163192637,"decision_normalized_true_range":0.005337214944201795,"entry_open_time":1789286400,"exit_open_time":1789293600,"side":"SHORT","symbol":"ADAUSDT"},"verdict":"SIGNAL"}
 {"candidate":"C-35","decision_time":1789290000,"input_sha256":"651137424c2d4fc8414692308306e4a34c51bbd4415e79f1043366a8695b9a93","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
 {"candidate":"C-35","decision_time":1789293600,"input_sha256":"d6142f9f8c3ae59c64cd28ccb0a1f2368b6b6c9eb393cd108eb361148597d5f0","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
+{"candidate":"C-35","decision_time":1789297200,"input_sha256":"ebbb2e28f1f87bc165c716727dfa0688c21dabaabdd4acf985182d452266187e","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
