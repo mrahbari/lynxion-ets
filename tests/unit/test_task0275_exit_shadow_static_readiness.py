@@ -8,7 +8,9 @@ def test_live_manifest_is_reproducible_and_static_gate_is_non_authorizing():
     result = check(ROOT, expected)
     assert result["artifact_manifest"] == "PASS"
     assert result["status"] == "BLOCKED"
-    assert len(result["blockers"]) == 3
+    assert result["blockers"] == [
+        "FRESH_SINGLE_RUNNER_READ_ONLY_STOP_VISIBILITY_EVIDENCE_REQUIRED"
+    ]
     assert not result["authorizes_runtime"]
     assert not result["authorizes_broker_access"]
     assert not result["authorizes_policy_change"]

@@ -9,11 +9,19 @@ from typing import Any
 
 try:
     from scripts.build_exit_shadow_artifact_manifest import build_manifest
+    from scripts.verify_exit_shadow_empty_cohort import verify as verify_cohort
+    from scripts.verify_exit_shadow_fee_snapshot import verify as verify_fee
 except ModuleNotFoundError:  # Direct `python scripts/...` execution.
     from build_exit_shadow_artifact_manifest import build_manifest
+    from verify_exit_shadow_empty_cohort import verify as verify_cohort
+    from verify_exit_shadow_fee_snapshot import verify as verify_fee
 
 
 ROOT = Path(__file__).resolve().parents[1]
+COHORT_MANIFEST = Path("data/research/exit_shadow/cohort-20260912T164632Z/manifest.json")
+FEE_SNAPSHOT = Path(
+    "data/research/exit_shadow/bingx_perpetual_fee_snapshot-20260912T164438Z.json"
+)
 
 
 def check(root: Path, expected: dict[str, Any]) -> dict[str, Any]:
@@ -22,11 +30,17 @@ def check(root: Path, expected: dict[str, Any]) -> dict[str, Any]:
     blockers = []
     if not artifact_ok:
         blockers.append("ARTIFACT_MANIFEST_DRIFT")
-    blockers.extend((
-        "NEW_EMPTY_COMMIT_BOUND_COHORT_REQUIRED",
-        "AUTHORITATIVE_PRE_ACTIVATION_BINGX_FEE_SNAPSHOT_REQUIRED",
-        "FRESH_SINGLE_RUNNER_READ_ONLY_STOP_VISIBILITY_EVIDENCE_REQUIRED",
-    ))
+    try:
+        cohort = json.loads((root / COHORT_MANIFEST).read_text(encoding="utf-8"))
+        verify_cohort(cohort, root)
+    except (FileNotFoundError, ValueError, json.JSONDecodeError):
+        blockers.append("NEW_EMPTY_COMMIT_BOUND_COHORT_REQUIRED")
+    try:
+        fee = json.loads((root / FEE_SNAPSHOT).read_text(encoding="utf-8"))
+        verify_fee(fee)
+    except (FileNotFoundError, ValueError, json.JSONDecodeError):
+        blockers.append("AUTHORITATIVE_PRE_ACTIVATION_BINGX_FEE_SNAPSHOT_REQUIRED")
+    blockers.append("FRESH_SINGLE_RUNNER_READ_ONLY_STOP_VISIBILITY_EVIDENCE_REQUIRED")
     return {
         "candidate": "EXIT-SHADOW-PLUS12-LOCK5",
         "status": "BLOCKED" if blockers else "READY_FOR_CONTROLLED_RUNTIME_REVIEW",
