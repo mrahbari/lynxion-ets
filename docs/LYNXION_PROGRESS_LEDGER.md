@@ -1863,6 +1863,16 @@ free Binance archive reopens historical OI acquisition without a paid-service or
   identifying the pending `XRPUSDT:1789282800` portfolio slot.
 - Status: `KEEP — FIRST-SIGNAL PIPELINE DEADLOCK FIXED; CAUSAL OUTCOME REFRESH NEXT`.
 
+## 2026-09-13 — TASK-0294 C-35 first outcome and second signal
+
+- The first prospective `XRPUSDT SHORT` completed at its frozen exit with gross return `+0.935134%`
+  and primary cost-adjusted net return `+0.636795%` after the frozen 0.30% round-trip cost.
+- Once resolved, the portfolio slot admitted the second prospective signal: `ADAUSDT SHORT`, with
+  frozen exit epoch `1789293600`.
+- This is encouraging individual evidence only. Aggregate economics remain sealed and N=1 cannot
+  establish positive expectancy or durable edge.
+- Status: `COLLECTING — FIRST OUTCOME POSITIVE; SECOND SIGNAL PENDING; NO EDGE CLAIM`.
+
 ## 2026-09-13 — TASK-0291 C-35 hourly checkpoint at 54 decisions
 
 - C-35 passed all eleven public-only stages with 18,678 candles, 1,290 prospective records, and 54
