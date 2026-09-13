@@ -68,3 +68,4 @@
 {"candidate":"C-35","decision_time":1789329600,"input_sha256":"770dd8e20c39b87130a8128f8e3cec096594c92d7d16de0123a751c943f4bf12","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
 {"candidate":"C-35","decision_time":1789333200,"input_sha256":"0423b7a3ce3a85867beabdd8e4da7c54ebd007d4b7ba104e422f0660a93da9b7","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
 {"candidate":"C-35","decision_time":1789336800,"input_sha256":"e75eef059a5003b292c0708b35b9ed91db6df27281ebce1cccd1aa27fd1b05e7","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
+{"candidate":"C-35","decision_time":1789340400,"input_sha256":"01eb5d90cef19a5975523748f54a9468cfe531000ec20995786b6f7fb95174c1","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
