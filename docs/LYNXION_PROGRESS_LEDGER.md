@@ -1851,6 +1851,18 @@ free Binance archive reopens historical OI acquisition without a paid-service or
   economics remain sealed; one signal is not evidence of profitable edge.
 - Status: `COLLECTING — FIRST PROSPECTIVE SIGNAL; OUTCOME PENDING`.
 
+## 2026-09-13 — TASK-0293 C-35 unresolved-signal orchestration fix
+
+- The first prospective signal exposed a real deadlock: signal evaluation ran before outcome
+  resolution, so the one-position guard blocked the pipeline before the mature outcome stage.
+- Reordered the frozen orchestration to resolve verified mature outcomes before considering a new
+  signal. Signal rules, portfolio guard, costs, timing, and gates are unchanged.
+- An immature unresolved signal now yields an explicit successful blocked state instead of a
+  pipeline abort; new decisions remain unopened until that portfolio slot is resolved.
+- Twenty-two focused tests pass and the real pipeline completes all eleven stages while explicitly
+  identifying the pending `XRPUSDT:1789282800` portfolio slot.
+- Status: `KEEP — FIRST-SIGNAL PIPELINE DEADLOCK FIXED; CAUSAL OUTCOME REFRESH NEXT`.
+
 ## 2026-09-13 — TASK-0291 C-35 hourly checkpoint at 54 decisions
 
 - C-35 passed all eleven public-only stages with 18,678 candles, 1,290 prospective records, and 54

@@ -15,6 +15,9 @@ def test_pipeline_runs_every_stage_in_frozen_fail_closed_order():
     result = run_pipeline(runner)
     assert result["pipeline"] == "PASS"
     assert calls == [list(parts) for parts in COMMANDS]
+    outcome_index = next(i for i, call in enumerate(calls) if call[0] == "scripts/update_c35_outcomes.py")
+    signal_index = next(i for i, call in enumerate(calls) if call[0] == "scripts/update_c35_signals.py")
+    assert outcome_index < signal_index
 
 
 def test_pipeline_stops_at_first_failed_precondition():

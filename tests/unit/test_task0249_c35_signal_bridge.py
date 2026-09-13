@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import json
 
 import pytest
 
@@ -9,6 +10,7 @@ from scripts.update_c35_signals import (
     _input_hash,
     evaluate_unrecorded,
     find_first_signal,
+    unresolved_signal_keys,
     verify_decision_bindings,
 )
 
@@ -91,3 +93,16 @@ def test_decision_binding_rejects_candle_or_hash_drift():
         verify_decision_bindings(incomplete, {
             decision_time: {"input_sha256": _input_hash(panel, decision_time)},
         })
+
+
+def test_unresolved_signal_blocks_new_evaluation_without_error(tmp_path):
+    path = tmp_path / "signals.jsonl"
+    path.write_text(json.dumps({
+        "kind": "SIGNAL", "signal_key": "XRPUSDT:1789282800",
+    }) + "\n")
+    assert unresolved_signal_keys(path) == {"XRPUSDT:1789282800"}
+    with path.open("a") as target:
+        target.write(json.dumps({
+            "kind": "OUTCOME", "signal_key": "XRPUSDT:1789282800",
+        }) + "\n")
+    assert unresolved_signal_keys(path) == set()

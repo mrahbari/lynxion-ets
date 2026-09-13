@@ -13,12 +13,12 @@ from typing import Any, Callable
 try:
     from scripts.evaluate_c35_compression_release import BOUNDARY_EPOCH, UNIVERSE, evaluate_decision
     from scripts.record_c35_decision import append_decision, read_decisions
-    from scripts.record_c35_signal import append_signal
+    from scripts.record_c35_signal import _read_state, append_signal
     from scripts.verify_c35_candle_ledger import verify_path
 except ModuleNotFoundError:  # Direct `python scripts/...` execution.
     from evaluate_c35_compression_release import BOUNDARY_EPOCH, UNIVERSE, evaluate_decision
     from record_c35_decision import append_decision, read_decisions
-    from record_c35_signal import append_signal
+    from record_c35_signal import _read_state, append_signal
     from verify_c35_candle_ledger import verify_path
 
 
@@ -94,6 +94,11 @@ def evaluate_unrecorded(
     return results
 
 
+def unresolved_signal_keys(path: Path) -> set[str]:
+    signals, outcomes = _read_state(path)
+    return signals - outcomes
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candles", default="data/research/c35/candles.jsonl")
@@ -108,6 +113,21 @@ def main() -> None:
     decision_path = Path(args.decisions)
     recorded = read_decisions(decision_path)
     verify_decision_bindings(panel, recorded)
+    unresolved = unresolved_signal_keys(Path(args.signals))
+    if unresolved:
+        print(json.dumps({
+            "integrity": integrity["integrity"],
+            "decision_count": len(_decision_times(panel)),
+            "previously_recorded_decisions": len(recorded),
+            "newly_evaluated_decisions": 0,
+            "decisions_appended": 0,
+            "signal_found": False,
+            "signal_appended": False,
+            "signal": None,
+            "input_sha256": None,
+            "blocked_by_unresolved_signal": sorted(unresolved),
+        }, sort_keys=True))
+        return
     evaluated = evaluate_unrecorded(panel, set(recorded))
     signal = next((item[1] for item in evaluated if item[1] is not None), None)
     input_hash = next((item[2] for item in evaluated if item[1] is not None), None)

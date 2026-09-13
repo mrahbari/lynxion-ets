@@ -20,8 +20,8 @@ COMMANDS = (
     ("scripts/collect_c35_public_funding.py",),
     ("scripts/verify_c35_candle_ledger.py", "--ledger", "data/research/c35/candles.jsonl"),
     ("scripts/verify_c35_funding_ledger.py",),
-    ("scripts/update_c35_signals.py", "--commit-decisions", "--commit-signal"),
     ("scripts/update_c35_outcomes.py", "--commit-outcomes"),
+    ("scripts/update_c35_signals.py", "--commit-decisions", "--commit-signal"),
     ("scripts/evaluate_c35_aggregate.py",),
     ("scripts/check_c35_signal_throughput.py",),
 )
