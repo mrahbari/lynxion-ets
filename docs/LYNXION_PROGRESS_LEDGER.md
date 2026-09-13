@@ -1852,6 +1852,13 @@ free Binance archive reopens historical OI acquisition without a paid-service or
 - No broker, runtime, outcome, or policy path was activated.
 - Status: `KEEP — STALE READINESS BLOCKERS FIXED; VST SAFETY EVIDENCE STILL REQUIRED`.
 
+## 2026-09-13 — TASK-0290 C-35 hourly checkpoint at 53 decisions
+
+- C-35 passed all eleven public-only stages with 18,654 candles, 1,266 prospective records, and 53
+  decisions; no gap, duplicate, boundary error, signal, or outcome exists.
+- Aggregate economics remain sealed and the verdict remains `COLLECTING`.
+- Status: `COLLECTING — NO EDGE EVIDENCE OR GATE TRANSITION`.
+
 ## 2026-09-13 — TASK-0287 C-35 checkpoint 51 and C-33 liveness
 
 - C-35 passed all eleven public-only stages with 18,606 candles, 1,218 prospective records, and 51
