@@ -52,3 +52,4 @@
 {"candidate":"C-35","decision_time":1789272000,"input_sha256":"90fd37f5eb3d1242c9f2aa6dd5a4ea5d649e559e86e7bf9e8517f8ad67678328","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
 {"candidate":"C-35","decision_time":1789275600,"input_sha256":"c7fb00068da4ac13ccae728d5be0ffba18577ae40dab8dbf11a8029d9d3f4e43","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
 {"candidate":"C-35","decision_time":1789279200,"input_sha256":"2913102bbc5451250957409fec99eb89a702cbec04161c89eaa34cac5a380984","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
+{"candidate":"C-35","decision_time":1789282800,"input_sha256":"e7ba1c7ff3bc15d77b8a27a05445a0723eea5638e3ff70260b5f4be6431bf5d8","kind":"DECISION","selected":{"compression_median":0.0011350430422993334,"compression_threshold":0.00200345041159243,"decision_normalized_true_range":0.0046323529411764494,"entry_open_time":1789282800,"exit_open_time":1789290000,"side":"SHORT","symbol":"XRPUSDT"},"verdict":"SIGNAL"}

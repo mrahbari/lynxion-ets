@@ -1843,6 +1843,14 @@ free Binance archive reopens historical OI acquisition without a paid-service or
   signal-rate interpretation checkpoint is still 168 decisions.
 - Status: `COLLECTING — NO EDGE EVIDENCE OR GATE TRANSITION`.
 
+## 2026-09-13 — TASK-0292 C-35 first prospective signal
+
+- The 55th frozen decision emitted C-35's first prospective signal: `XRPUSDT SHORT` with entry epoch
+  `1789282800` and frozen exit-open epoch `1789290000`.
+- The signal is bound to its exact candle input hash. No outcome is available yet and aggregate
+  economics remain sealed; one signal is not evidence of profitable edge.
+- Status: `COLLECTING — FIRST PROSPECTIVE SIGNAL; OUTCOME PENDING`.
+
 ## 2026-09-13 — TASK-0291 C-35 hourly checkpoint at 54 decisions
 
 - C-35 passed all eleven public-only stages with 18,678 candles, 1,290 prospective records, and 54
