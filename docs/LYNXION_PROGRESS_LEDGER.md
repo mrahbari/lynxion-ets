@@ -20,6 +20,11 @@ proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy
 
 ## Latest verified findings
 
+- TASK-0327 adds `docs/LYNXION_SINGLE_FILE_AI_HANDOFF.md`, a standalone attachment that embeds the
+  project mission, evidence hierarchy, technical/economic verdict separation, current research
+  snapshot, architecture, risk and approval boundaries, edge methodology, roadmap, reviewer
+  checklist, and continuation prompt. It changes no source, configuration, data, or trading policy.
+
 - TASK-0326 removes four explicitly superseded documents whose old Alpha/edge labels, runtime
   assertions, and production recommendations could mislead an AI or reviewer. Current handoff,
   roadmap, audit history, decision records, and frozen research protocols remain intact; no source,

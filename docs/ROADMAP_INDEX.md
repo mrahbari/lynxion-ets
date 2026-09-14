@@ -10,6 +10,8 @@ This file is the canonical navigation page for Lynxion planning. It resolves the
 roadmaps without deleting their historical analysis.
 
 For a complete handoff to another AI or technical reviewer, start with `docs/AI_START_HERE.md`.
+When only one attachment can be provided, use `docs/LYNXION_SINGLE_FILE_AI_HANDOFF.md`; it embeds
+the complete orientation, current evidence, roadmap, validation rules, and continuation prompt.
 
 ## Authority order
 
