@@ -9,6 +9,8 @@
 This file is the canonical navigation page for Lynxion planning. It resolves the roles of older
 roadmaps without deleting their historical analysis.
 
+For a complete handoff to another AI or technical reviewer, start with `docs/AI_START_HERE.md`.
+
 ## Authority order
 
 1. `tasks/00-right-path.md` — governing mission, execution rules, scientific gates, and stop
@@ -53,6 +55,8 @@ candidate. If an older roadmap conflicts with `tasks/00-right-path.md`, the latt
   `tasks/comprehensive_strategy_logic_audit_and_long_term_roadmap.md` are retained as legacy
   hypothesis inventories. Their Alpha/edge labels, performance tables, targets, and suggested
   production changes are not current validated conclusions and are not execution authority.
+- `docs/LYNXION_PROJECT_CONTEXT.md` and `docs/LYNXION_PROJECT_CONTEXT-OLd.md` are dated snapshots
+  with runtime-sensitive and economic claims; `docs/AI_START_HERE.md` supersedes them for handoff.
 - `docs/INVESTOR_RELEASE_GAP_ASSESSMENT.md` is a dated 2026-09-09 snapshot. Its two demo-scope P0
   blockers were subsequently closed by TASK-0225 and TASK-0226; TASK-0234 froze the technical-only
   investor verdict.

@@ -20,6 +20,11 @@ proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy
 
 ## Latest verified findings
 
+- TASK-0325 adds `docs/AI_START_HERE.md` as the current complete handoff for another AI. It binds
+  project orientation, roadmap authority, technical-versus-economic verdicts, scientific gates,
+  safety boundaries, current C-11/C-33/C-35 state, known unknowns, and a continuation prompt. The
+  older project-context document is now explicitly legacy because its mutable claims are stale.
+
 - TASK-0324 reconciles the canonical roadmap and current project context at checkpoint `357077a`.
   C-35 has 88 decisions and two individually positive cost-adjusted outcomes but insufficient
   sample/side/symbol/time breadth; C-11 has two completed outcomes and one pending candidate; C-33
