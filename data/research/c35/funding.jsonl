@@ -58,3 +58,9 @@
 {"candidate":"C-35","funding_rate":"0.00003639","funding_time":1789372800,"source_sha256":"7ff89a20203cb1cf4fb6e4f15ba352e86aaf3bd37990a59851c6020eb326c437","symbol":"BNBUSDT"}
 {"candidate":"C-35","funding_rate":"0.00010000","funding_time":1789372800,"source_sha256":"c4bb6d22c78bf3096a799f1da96c91221cc37d3450669bbb3a270038dbffe612","symbol":"XRPUSDT"}
 {"candidate":"C-35","funding_rate":"0.00010000","funding_time":1789372800,"source_sha256":"50cf1e6e3ad95eda6ee1801f1ef45eaee2c9e80ae08452556c8eddf81144b843","symbol":"ADAUSDT"}
+{"candidate":"C-35","funding_rate":"0.00004220","funding_time":1789401600,"source_sha256":"9762a8e47e0307dec8f7b8ec0a0bb78a803d37ca3ba524dcfe234152eff85c62","symbol":"BTCUSDT"}
+{"candidate":"C-35","funding_rate":"0.00003649","funding_time":1789401600,"source_sha256":"75700ffd1351101c18157682ad088cfbe1edb2cfee9c87215faf072384c881c7","symbol":"ETHUSDT"}
+{"candidate":"C-35","funding_rate":"0.00010000","funding_time":1789401600,"source_sha256":"33632c03d2f7ecf4ab9fe0f99881e12ddc2402f8c7bcbca033e59b3f7ebf9267","symbol":"SOLUSDT"}
+{"candidate":"C-35","funding_rate":"0.00003327","funding_time":1789401600,"source_sha256":"e8827b11e71e1579931e0f4c67a4683be91cbcd621e9aff5684194aee93b6c49","symbol":"BNBUSDT"}
+{"candidate":"C-35","funding_rate":"0.00007511","funding_time":1789401600,"source_sha256":"a2be705aacd00f4f3a4b5db86401372f0d7d1f21d9d89dba5537c550f85ea557","symbol":"XRPUSDT"}
+{"candidate":"C-35","funding_rate":"0.00004231","funding_time":1789401600,"source_sha256":"d1bc9cad10c6b5cc47474ac83a0c9ccba2c417dca2e3f347c32132f47f1b9863","symbol":"ADAUSDT"}
