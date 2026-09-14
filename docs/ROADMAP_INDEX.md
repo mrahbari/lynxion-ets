@@ -44,7 +44,7 @@ candidate. If an older roadmap conflicts with `tasks/00-right-path.md`, the latt
 
 - Continue the bounded, preregistered search for positive net expectancy after fees, funding, and
   slippage, with chronological OOS/WFO, uncertainty, drawdown, concentration, and prospective gates.
-- C-35 is `COLLECTING`: 89 decisions, two completed positive cost-adjusted outcomes, both SHORT and
+- C-35 is `COLLECTING`: 90 decisions, two completed positive cost-adjusted outcomes, both SHORT and
   across two symbols. The sample is insufficient; aggregate economics remain sealed until every
   frozen gate in `tasks/research/edge-candidate-register-v34.md` passes.
 - C-11 is `COLLECTING`: two completed outcomes and one pending ETHUSDT candidate; only funding

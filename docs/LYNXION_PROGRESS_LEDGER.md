@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0332 restores C-33 public collection liveness without backfill and verifies the first new
-eligible bucket. Continue C-35 hourly to its 168-decision rate checkpoint, retain C-11 as low-cost
-background collection, and make no new funding/L2 build.
+TASK-0333 advances the frozen C-35 hourly cohort after C-33 liveness restoration. Continue C-35 to
+its 168-decision rate checkpoint, retain C-11 as low-cost background collection, maintain C-33,
+and make no new funding/L2 build.
 
 ## Status
 
@@ -19,6 +19,10 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0333 advances C-35 to 90 decisions with 19,536 candles, 2,148 prospective records, 66
+  funding records, and 408 coverage receipts. Candle, funding, and signal integrity pass; no new
+  signal or outcome appeared. All aggregate minimum gates remain false and economics stay sealed.
 
 - TASK-0332 closes the exact stale C-33 session only after a read-only process check, labels the
   outage `INELIGIBLE_NO_BACKFILL`, and resumes one public-only session. The incomplete connection
