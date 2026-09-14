@@ -1888,6 +1888,14 @@ free Binance archive reopens historical OI acquisition without a paid-service or
 - The two positive completed outcomes remain unchanged and aggregate economics remain sealed.
 - Status: `COLLECTING — NO NEW SIGNAL, OUTCOME, OR GATE TRANSITION`.
 
+## 2026-09-14 — TASK-0312 C-35 hourly checkpoint at 77 decisions
+
+- The frozen public-only pipeline passed all eleven stages with 19,218 candles, 1,830 prospective
+  records, 54 funding records, and 330 coverage receipts; integrity remains clean.
+- The decision ledger reached 77. No new signal or outcome appeared; the two completed outcomes
+  remain unchanged and aggregate economics remain sealed.
+- Status: `COLLECTING — NO EDGE EVIDENCE OR GATE TRANSITION`.
+
 ## 2026-09-14 — TASK-0311 C-35 hourly checkpoint at 75 decisions
 
 - C-35 passed all eleven public-only stages with 19,170 candles, 1,782 prospective records, and 75
