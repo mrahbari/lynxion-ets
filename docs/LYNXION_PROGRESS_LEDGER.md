@@ -20,6 +20,11 @@ proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy
 
 ## Latest verified findings
 
+- TASK-0326 removes four explicitly superseded documents whose old Alpha/edge labels, runtime
+  assertions, and production recommendations could mislead an AI or reviewer. Current handoff,
+  roadmap, audit history, decision records, and frozen research protocols remain intact; no source,
+  configuration, evidence data, or trading policy changed.
+
 - TASK-0325 adds `docs/AI_START_HERE.md` as the current complete handoff for another AI. It binds
   project orientation, roadmap authority, technical-versus-economic verdicts, scientific gates,
   safety boundaries, current C-11/C-33/C-35 state, known unknowns, and a continuation prompt. The

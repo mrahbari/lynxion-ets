@@ -200,18 +200,12 @@ excluded from edge metrics.
 
 ## 9. Historical evidence warning
 
-The following files are useful only as historical hypothesis inventories and are explicitly
-superseded for current decisions:
-
-- `tasks/comprehensive_strategy_and_platform_roadmap.md`
-- `tasks/comprehensive_strategy_logic_audit_and_long_term_roadmap.md`
-- `docs/LYNXION_PROJECT_CONTEXT.md`
-- `docs/LYNXION_PROJECT_CONTEXT-OLd.md`
-
-Do not repeat their Alpha/edge labels, exact runtime counts, exchange-state assertions, or strategy
-recommendations without reproducing them from current evidence. The dated
-`docs/INVESTOR_RELEASE_GAP_ASSESSMENT.md` is also superseded as current release status, though it
-remains a valid record of the pre-fix gap state.
+Superseded comprehensive strategy roadmaps and old project-context snapshots were removed in
+TASK-0326 because their Alpha/edge labels, exact runtime counts, exchange-state assertions, and
+strategy recommendations were no longer admissible current evidence. Tracked versions remain in
+Git history for forensic use. Do not revive their conclusions without reproducing them from current
+source and evidence. The dated `docs/INVESTOR_RELEASE_GAP_ASSESSMENT.md` remains only as a valid
+record of the pre-fix gap state, not as the current release verdict.
 
 ## 10. Recommended first-pass commands
 

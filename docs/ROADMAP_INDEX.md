@@ -49,14 +49,11 @@ candidate. If an older roadmap conflicts with `tasks/00-right-path.md`, the latt
   checkpoint is 1,000.
 - Keep `NO_TRADE_DEFAULT` for economic admission until a candidate clears every frozen gate.
 
-## Historical documents
+## Historical-document policy
 
-- `tasks/comprehensive_strategy_and_platform_roadmap.md` and
-  `tasks/comprehensive_strategy_logic_audit_and_long_term_roadmap.md` are retained as legacy
-  hypothesis inventories. Their Alpha/edge labels, performance tables, targets, and suggested
-  production changes are not current validated conclusions and are not execution authority.
-- `docs/LYNXION_PROJECT_CONTEXT.md` and `docs/LYNXION_PROJECT_CONTEXT-OLd.md` are dated snapshots
-  with runtime-sensitive and economic claims; `docs/AI_START_HERE.md` supersedes them for handoff.
+- Superseded strategy roadmaps and old project-context snapshots were removed in TASK-0326 because
+  their Alpha/edge labels and mutable runtime assertions could mislead reviewers. Git history
+  retains the tracked versions if forensic recovery is ever required.
 - `docs/INVESTOR_RELEASE_GAP_ASSESSMENT.md` is a dated 2026-09-09 snapshot. Its two demo-scope P0
   blockers were subsequently closed by TASK-0225 and TASK-0226; TASK-0234 froze the technical-only
   investor verdict.
