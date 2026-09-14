@@ -20,6 +20,10 @@ proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy
 
 ## Latest verified findings
 
+- TASK-0329 advances C-35 to 89 decisions with 19,512 candles, 2,124 prospective records, 66
+  funding records, and 402 coverage receipts. All integrity checks pass; no new signal or outcome
+  appeared and aggregate economics remain sealed. C-33 remains at 740 eligible buckets.
+
 - TASK-0328 enforces the operator's directory convention: task directives/records remain in
   `tasks/`, durable documentation remains in `docs/`, and `docs/README.md` now indexes the current
   handoff, roadmap, investor, architecture, and audit material. One misplaced stale strategy
