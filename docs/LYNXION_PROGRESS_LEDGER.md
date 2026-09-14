@@ -20,6 +20,11 @@ proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy
 
 ## Latest verified findings
 
+- TASK-0328 enforces the operator's directory convention: task directives/records remain in
+  `tasks/`, durable documentation remains in `docs/`, and `docs/README.md` now indexes the current
+  handoff, roadmap, investor, architecture, and audit material. One misplaced stale strategy
+  recommendation document was removed; no source, data, configuration, or policy changed.
+
 - TASK-0327 adds `docs/LYNXION_SINGLE_FILE_AI_HANDOFF.md`, a standalone attachment that embeds the
   project mission, evidence hierarchy, technical/economic verdict separation, current research
   snapshot, architecture, risk and approval boundaries, edge methodology, roadmap, reviewer
