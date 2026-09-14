@@ -12,6 +12,7 @@ import json
 import traceback
 import uuid
 import threading
+import math
 
 from domain.entities import Order, Fill, Position, Balance, OrderSide, PositionSide
 from domain.ports.broker_ports import BrokerPort
@@ -653,8 +654,12 @@ class _BingXBroker:
                 return False, "broker position snapshot unavailable or malformed"
 
             open_positions = []
+            open_position_exposures = []
             for position in response['data']:
-                quantity = abs(float(position.get('positionAmt', 0) or 0))
+                signed_quantity = float(position.get('positionAmt', 0) or 0)
+                if not math.isfinite(signed_quantity):
+                    return False, "broker position snapshot contains non-finite quantity"
+                quantity = abs(signed_quantity)
                 if quantity > 0:
                     position_leverage = self._parse_leverage(position.get('leverage'))
                     if position_leverage > configured_leverage:
@@ -662,7 +667,24 @@ class _BingXBroker:
                             f"existing position leverage {position_leverage} exceeds configured "
                             f"ceiling {configured_leverage}"
                         )
+                    raw_mark_price = position.get('markPrice')
+                    raw_average_price = position.get('avgPrice')
+                    if raw_mark_price not in (None, ''):
+                        mark_price = float(raw_mark_price)
+                        if not math.isfinite(mark_price):
+                            return False, "broker position snapshot contains non-finite mark price"
+                    else:
+                        mark_price = 0.0
+                    if mark_price <= 0:
+                        average_price = float(raw_average_price or 0)
+                        if not math.isfinite(average_price) or average_price <= 0:
+                            return False, "broker position snapshot lacks a positive finite reference price"
+                        mark_price = average_price
+                    position_exposure = quantity * mark_price
+                    if not math.isfinite(position_exposure):
+                        return False, "broker position snapshot contains non-finite exposure"
                     open_positions.append(position)
+                    open_position_exposures.append(position_exposure)
 
             max_open_positions = int(getattr(settings.safety, 'max_open_positions', 5))
             if len(open_positions) >= max_open_positions:
@@ -677,11 +699,7 @@ class _BingXBroker:
                 if symbol_validator.normalize_symbol(position.get('symbol')) == requested_symbol:
                     return False, f"duplicate position blocked: {requested_symbol} is already open"
 
-            current_exposure = sum(
-                abs(float(position.get('positionAmt', 0) or 0))
-                * float(position.get('markPrice', 0) or position.get('avgPrice', 0) or 0)
-                for position in open_positions
-            )
+            current_exposure = sum(open_position_exposures)
             order_price = float(getattr(getattr(order, 'price', None), 'amount', 0) or 0)
             order_notional = abs(float(getattr(order, 'quantity', 0) or 0)) * order_price
             max_portfolio_exposure = 1_000.0

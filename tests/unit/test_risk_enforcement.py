@@ -103,6 +103,54 @@ def test_bingx_final_admission_fails_closed_when_position_snapshot_is_unavailabl
     assert allowed is False
     assert "snapshot unavailable" in reason
 
+
+@pytest.mark.parametrize(
+    ("position", "expected_reason"),
+    [
+        (
+            {"symbol": "BTC-USDT", "positionAmt": "nan", "avgPrice": "100", "markPrice": "100", "leverage": "5"},
+            "non-finite quantity",
+        ),
+        (
+            {"symbol": "BTC-USDT", "positionAmt": "1", "avgPrice": "100", "markPrice": "nan", "leverage": "5"},
+            "non-finite mark price",
+        ),
+        (
+            {"symbol": "BTC-USDT", "positionAmt": "1", "avgPrice": "0", "markPrice": "0", "leverage": "5"},
+            "positive finite reference price",
+        ),
+    ],
+)
+def test_bingx_final_admission_rejects_non_finite_or_unpriced_open_positions(
+    monkeypatch, position, expected_reason
+):
+    import logging
+    from types import SimpleNamespace
+    from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
+
+    broker = object.__new__(_BingXBroker)
+    broker.logger = logging.getLogger("test_malformed_exposure_admission")
+    calls = []
+
+    def request(method, endpoint, **kwargs):
+        calls.append((method, endpoint))
+        return {"code": 0, "data": [position]}
+
+    monkeypatch.setattr(broker, "_make_request", request)
+    monkeypatch.setattr(
+        "bootstrap.settings.loaders.load_settings",
+        lambda: SimpleNamespace(
+            safety=SimpleNamespace(max_open_positions=5),
+            risk=SimpleNamespace(max_leverage=5, max_leverage_limit=5),
+        ),
+    )
+
+    allowed, reason = broker._assert_entry_admission(_broker_admission_order())
+
+    assert allowed is False
+    assert expected_reason in reason
+    assert not any(method == "POST" for method, _ in calls)
+
 from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager, Position, PositionDirection
 from domain.entities import Order, OrderSide
 from domain.value_objects import Money, Symbol

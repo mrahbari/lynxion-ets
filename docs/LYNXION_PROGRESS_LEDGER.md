@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0333 advances the frozen C-35 hourly cohort after C-33 liveness restoration. Continue C-35 to
-its 168-decision rate checkpoint, retain C-11 as low-cost background collection, maintain C-33,
-and make no new funding/L2 build.
+TASK-0334 closes a verified BingX broker-snapshot exposure fail-open while the frozen research
+cohorts continue unchanged. Continue the bounded correctness/risk/execution-defect track alongside
+C-35, C-33, and low-cost C-11; make no new funding/L2 build.
 
 ## Status
 
@@ -19,6 +19,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0334 fixes a broker-boundary integrity hole: non-finite position quantity, mark price, or
+  calculated exposure could evade Python's numeric comparisons and understate current BingX
+  portfolio exposure. Final admission now rejects non-finite quantities, requires a positive
+  finite mark/average reference price for every open position, and sums only validated exposures.
+  Three regressions reject before any POST; 39 focused tests and the full 1,165-test suite pass
+  with one optional import-linter skip. No runtime was reloaded and no policy threshold changed.
 
 - TASK-0333 advances C-35 to 90 decisions with 19,536 candles, 2,148 prospective records, 66
   funding records, and 408 coverage receipts. Candle, funding, and signal integrity pass; no new

@@ -35,6 +35,8 @@ candidate. If an older roadmap conflicts with `tasks/00-right-path.md`, the latt
 - Preserve the deterministic broker-free demo, bounded BingX VST evidence, fail-closed risk and
   protection controls, evidence index, architecture map, and explicit limitations.
 - Complete only evidence-supported correctness fixes that prevent configured behavior from working.
+- Continue the bounded broker-boundary audit after TASK-0334 closed non-finite BingX position
+  exposure admission; each further correction requires a reproduced fail-open or correctness defect.
 - The +12% activation/+5% net-floor exit shadow remains blocked from activation until fresh
   single-runner, read-only proof shows zero missing stops and the applicable runtime/authenticated
   approval exists.
