@@ -40,7 +40,18 @@
       "status": "COMPLETE",
       "symbol": "ETHUSDT",
       "threshold": -1.1154e-05
+    },
+    {
+      "expected_entry_timestamp": 1789316100,
+      "expected_exit_timestamp": 1789402500,
+      "funding_rate": -4.585e-05,
+      "funding_timestamp": 1789315200,
+      "key": "ETHUSDT:1789315200",
+      "severity_ratio": 3.964891041162228,
+      "status": "PENDING",
+      "symbol": "ETHUSDT",
+      "threshold": -1.1564e-05
     }
   ],
-  "updated_at": "2026-09-13T15:37:01+00:00"
+  "updated_at": "2026-09-14T07:09:33+00:00"
 }

@@ -1888,6 +1888,16 @@ free Binance archive reopens historical OI acquisition without a paid-service or
 - The two positive completed outcomes remain unchanged and aggregate economics remain sealed.
 - Status: `COLLECTING — NO NEW SIGNAL, OUTCOME, OR GATE TRANSITION`.
 
+## 2026-09-14 — TASK-0314 C-35 checkpoint 79 and C-11 prospective candidate
+
+- C-35 passed all eleven public-only stages with 19,266 candles, 1,878 prospective records, 54
+  funding records, 342 coverage receipts, and 79 decisions. No new C-35 signal or outcome appeared.
+- The due C-11 refresh admitted one new `PENDING` ETHUSDT candidate at funding epoch `1789315200`,
+  strictly after the frozen boundary `1788082349`; its frozen exit epoch is `1789402500`.
+- C-11 now has two completed outcomes and one pending candidate. Its aggregate verdict remains
+  `COLLECTING`; no outcome was opened early and no historical observation was imported.
+- Status: `NEW C-11 CANDIDATE — BOTH COHORTS REMAIN COLLECTING`.
+
 ## 2026-09-14 — TASK-0313 C-35 hourly checkpoint at 78 decisions
 
 - The frozen public-only pipeline passed all eleven stages with 19,242 candles, 1,854 prospective
