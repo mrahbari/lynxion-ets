@@ -18,6 +18,7 @@ from typing import Any, Dict, Tuple
 
 
 import json
+import math
 import os
 import threading
 from datetime import datetime
@@ -182,13 +183,17 @@ class RiskEnforcement:
 
                 entry = self._price(order)
                 size = float(getattr(order, "quantity", 0) or 0)
-                if size <= 0 or entry <= 0:
+                if (
+                    not math.isfinite(size)
+                    or not math.isfinite(entry)
+                    or size <= 0
+                    or entry <= 0
+                ):
                     self.denials += 1
-                    return False, "risk engine: non-positive size/price"
+                    return False, "risk engine: size/price must be positive and finite"
 
                 # Mandatory Stop-Loss Validation
                 sl_price = self._extract_sl_price(order)
-                import math
                 if sl_price is None or sl_price <= 0 or not math.isfinite(sl_price):
                     self.denials += 1
                     from shared.logger import logger
@@ -255,7 +260,6 @@ class RiskEnforcement:
                         if size * entry <= max_exposure * 1.05:
                             target_exposure = max_exposure * 0.999
                             capped_size = target_exposure / entry
-                            import math
                             capped_size = math.floor(capped_size * 10000) / 10000.0
                             from decimal import Decimal
                             if hasattr(order, 'quantity'):

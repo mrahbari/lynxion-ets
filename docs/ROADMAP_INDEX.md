@@ -37,6 +37,8 @@ candidate. If an older roadmap conflicts with `tasks/00-right-path.md`, the latt
 - Complete only evidence-supported correctness fixes that prevent configured behavior from working.
 - Continue the bounded broker-boundary audit after TASK-0334 closed non-finite BingX position
   exposure admission; each further correction requires a reproduced fail-open or correctness defect.
+- TASK-0335 also closes non-finite order size/price at the shared order-path risk gate; repository
+  completion is not evidence that an already-running process has loaded either correction.
 - The +12% activation/+5% net-floor exit shadow remains blocked from activation until fresh
   single-runner, read-only proof shows zero missing stops and the applicable runtime/authenticated
   approval exists.

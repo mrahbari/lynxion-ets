@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0334 closes a verified BingX broker-snapshot exposure fail-open while the frozen research
-cohorts continue unchanged. Continue the bounded correctness/risk/execution-defect track alongside
-C-35, C-33, and low-cost C-11; make no new funding/L2 build.
+TASK-0335 closes the matching non-finite order-input fail-open after TASK-0334 hardened BingX
+position snapshots. Continue the bounded correctness/risk/execution-defect track alongside C-35,
+C-33, and low-cost C-11; make no new funding/L2 build.
 
 ## Status
 
@@ -19,6 +19,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0335 closes a second numeric admission hole: `NaN`/infinite order quantity or entry price
+  could evade non-positive and maximum-notional comparisons. The authoritative order-path gate now
+  requires positive finite size and price before stop, sizing, portfolio, or broker admission.
+  Four regressions pass, the focused risk/leverage suite has 43 passes, and the full suite has
+  1,169 passes with one optional import-linter skip. Policy thresholds and runtime remain unchanged.
 
 - TASK-0334 fixes a broker-boundary integrity hole: non-finite position quantity, mark price, or
   calculated exposure could evade Python's numeric comparisons and understate current BingX

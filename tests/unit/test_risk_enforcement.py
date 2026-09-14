@@ -173,6 +173,25 @@ def _order(qty, price, side=OrderSide.BUY, sl_price=None, include_sl=True):
                  stop_loss_price=stop_loss)
 
 
+@pytest.mark.parametrize(
+    ("quantity", "price"),
+    [
+        ("NaN", "100"),
+        ("Infinity", "100"),
+        ("1", "NaN"),
+        ("1", "Infinity"),
+    ],
+)
+def test_order_path_risk_gate_rejects_non_finite_size_or_price(quantity, price):
+    order = _order(quantity, price, sl_price="98")
+    enforcement = build_vst_risk_enforcement()
+
+    allowed, reason = enforcement.enforce(order)
+
+    assert allowed is False
+    assert "positive and finite" in reason
+
+
 @pytest.fixture(autouse=True)
 def _reset_breakers():
     from shared.circuit_breaker import circuit_breaker_manager
