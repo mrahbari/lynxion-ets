@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0335 closes the matching non-finite order-input fail-open after TASK-0334 hardened BingX
-position snapshots. Continue the bounded correctness/risk/execution-defect track alongside C-35,
-C-33, and low-cost C-11; make no new funding/L2 build.
+TASK-0336 advances C-35 to 91 decisions after the two bounded numeric-admission fixes. Continue the
+correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make no new
+funding/L2 build.
 
 ## Status
 
@@ -19,6 +19,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0336 passes all eleven frozen public C-35 stages with 19,560 candles, 2,172 prospective
+  records, 66 funding records, and 414 coverage receipts. One no-signal decision advances the
+  cohort to 91; aggregate economics remain sealed and every minimum gate is false. C-33 remains
+  live with one active session and has advanced to 756 eligible buckets.
 
 - TASK-0335 closes a second numeric admission hole: `NaN`/infinite order quantity or entry price
   could evade non-positive and maximum-notional comparisons. The authoritative order-path gate now
