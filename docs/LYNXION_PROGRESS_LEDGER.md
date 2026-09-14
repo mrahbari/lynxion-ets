@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0324 reconciles roadmap authority and project context. Continue C-35 hourly prospective
-collection, C-11 on its eight-hour cadence, and C-33 toward its next frozen checkpoint while
-preserving the technical-only investor release and `NO_TRADE_DEFAULT` economic admission.
+TASK-0330 completes the decision-before-build acceleration gate. TASK-0331 must minimally restore
+the stale C-33 public collector without backfill or multiple active sessions. Continue C-35 hourly
+to its 168-decision rate checkpoint and retain C-11 as low-cost background collection.
 
 ## Status
 
@@ -19,6 +19,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0330 adopts the edge-acceleration-without-platform-expansion directive and completes its
+  ranked decision artifact. Existing evidence rejects new funding/carry and broad L2 builds; C-11
+  is too slow to remain a primary path; C-35 continues to decision 168; C-33 is highest priority
+  because its ledger is 4.54 days stale with one unclosed session at 740 eligible buckets.
 
 - TASK-0329 advances C-35 to 89 decisions with 19,512 candles, 2,124 prospective records, 66
   funding records, and 402 coverage receipts. All integrity checks pass; no new signal or outcome

@@ -87,6 +87,9 @@ either prospective cohort.
 
 ## 4. Why the current method can discover edge
 
+The active acceleration constraint is `docs/EDGE_ACCELERATION_WITHOUT_PLATFORM_EXPANSION.md`.
+Its current ranked decision artifact is `docs/EDGE_ACCELERATION_DECISION_2026-09-14.md`.
+
 The research loop is deliberately adversarial:
 
 ```text

@@ -20,8 +20,10 @@ the complete orientation, current evidence, roadmap, validation rules, and conti
 2. `docs/INVESTOR_RELEASE_ROADMAP.md` — short-term delivery scope and release track.
 3. `docs/INVESTOR_DELIVERY_EDGE_ACCELERATION_PLAN.md` — long-term economic-validation track and
    bounded hypothesis process.
-4. `docs/LYNXION_PROGRESS_LEDGER.md` — append-only execution history and current operational state.
-5. Candidate preregistrations under `tasks/research/` — frozen rules for each experiment.
+4. `docs/EDGE_ACCELERATION_WITHOUT_PLATFORM_EXPANSION.md` — active engineering/hypothesis budget
+   and decision-before-build discipline.
+5. `docs/LYNXION_PROGRESS_LEDGER.md` — append-only execution history and current operational state.
+6. Candidate preregistrations under `tasks/research/` — frozen rules for each experiment.
 
 If a summary conflicts with a frozen candidate preregistration, the preregistration governs that
 candidate. If an older roadmap conflicts with `tasks/00-right-path.md`, the latter governs.
@@ -50,6 +52,9 @@ candidate. If an older roadmap conflicts with `tasks/00-right-path.md`, the latt
 - C-33 is `COLLECTING`: 740 eligible buckets at the latest verified checkpoint; the next frozen
   checkpoint is 1,000.
 - Keep `NO_TRADE_DEFAULT` for economic admission until a candidate clears every frozen gate.
+- Apply the ranked decision in `docs/EDGE_ACCELERATION_DECISION_2026-09-14.md`: repair C-33
+  liveness minimally, continue C-35 to its 168-decision rate checkpoint, keep C-11 as low-cost
+  background research, and reject new carry/basis or broad L2 construction.
 
 ## Historical-document policy
 

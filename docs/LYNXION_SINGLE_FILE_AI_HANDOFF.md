@@ -144,6 +144,12 @@ proof and adopted preregistered, cost-adjusted, prospective validation.
 
 ## 5. Edge discovery method
 
+The 2026-09-14 acceleration directive adds a strict decision-before-build and engineering-budget
+gate: at most three independent new mechanisms, zero allowed, while carry/basis and broad L2 builds
+are currently rejected by existing evidence. C-33 liveness repair is the highest-ranked minimal
+task; C-35 continues to its 168-decision rate checkpoint and C-11 is background-only because its
+observed completion rate projects roughly two years to the frozen minimum.
+
 The required research loop is:
 
 ```text
