@@ -48,13 +48,13 @@ candidate. If an older roadmap conflicts with `tasks/00-right-path.md`, the latt
 
 - Continue the bounded, preregistered search for positive net expectancy after fees, funding, and
   slippage, with chronological OOS/WFO, uncertainty, drawdown, concentration, and prospective gates.
-- C-35 is `COLLECTING`: 93 decisions, two completed positive cost-adjusted outcomes, both SHORT and
+- C-35 is `COLLECTING`: 94 decisions, two completed positive cost-adjusted outcomes, both SHORT and
   across two symbols. The sample is insufficient; aggregate economics remain sealed until every
   frozen gate in `tasks/research/edge-candidate-register-v34.md` passes.
 - C-11 is `COLLECTING`: two completed outcomes and one pending ETHUSDT candidate; only funding
   settlements strictly after epoch `1788082349` are eligible.
 - C-33 is `COLLECTING`: controlled recovery excluded the stale interval without backfill and the
-  resumed single public session has advanced the cohort from 740 to 779 eligible buckets. The next
+  resumed single public session has advanced the cohort from 740 to 791 eligible buckets. The next
   frozen checkpoint is 1,000.
 - Keep `NO_TRADE_DEFAULT` for economic admission until a candidate clears every frozen gate.
 - Apply the ranked decision in `docs/EDGE_ACCELERATION_DECISION_2026-09-14.md`: C-33 liveness is
