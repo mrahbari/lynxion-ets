@@ -2,7 +2,7 @@
 
 **Updated:** 2026-09-14
 
-**Repository checkpoint:** `357077a`
+**Repository checkpoint:** `f505114`
 
 **Economic verdict:** `COLLECTING — PROFITABILITY NOT PROVEN`
 
@@ -44,17 +44,19 @@ candidate. If an older roadmap conflicts with `tasks/00-right-path.md`, the latt
 
 - Continue the bounded, preregistered search for positive net expectancy after fees, funding, and
   slippage, with chronological OOS/WFO, uncertainty, drawdown, concentration, and prospective gates.
-- C-35 is `COLLECTING`: 88 decisions, two completed positive cost-adjusted outcomes, both SHORT and
+- C-35 is `COLLECTING`: 89 decisions, two completed positive cost-adjusted outcomes, both SHORT and
   across two symbols. The sample is insufficient; aggregate economics remain sealed until every
   frozen gate in `tasks/research/edge-candidate-register-v34.md` passes.
 - C-11 is `COLLECTING`: two completed outcomes and one pending ETHUSDT candidate; only funding
   settlements strictly after epoch `1788082349` are eligible.
-- C-33 is `COLLECTING`: 740 eligible buckets at the latest verified checkpoint; the next frozen
-  checkpoint is 1,000.
+- C-33 is `COLLECTING`: controlled recovery excluded the stale interval without backfill and the
+  resumed single public session advanced the cohort from 740 to 741 eligible buckets. The next
+  frozen checkpoint is 1,000.
 - Keep `NO_TRADE_DEFAULT` for economic admission until a candidate clears every frozen gate.
-- Apply the ranked decision in `docs/EDGE_ACCELERATION_DECISION_2026-09-14.md`: repair C-33
-  liveness minimally, continue C-35 to its 168-decision rate checkpoint, keep C-11 as low-cost
-  background research, and reject new carry/basis or broad L2 construction.
+- Apply the ranked decision in `docs/EDGE_ACCELERATION_DECISION_2026-09-14.md`: C-33 liveness is
+  restored minimally; continue it without backfill, continue C-35 to its 168-decision rate
+  checkpoint, keep C-11 as low-cost background research, and reject new carry/basis or broad L2
+  construction.
 
 ## Historical-document policy
 

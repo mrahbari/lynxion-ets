@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0330 completes the decision-before-build acceleration gate. TASK-0331 must minimally restore
-the stale C-33 public collector without backfill or multiple active sessions. Continue C-35 hourly
-to its 168-decision rate checkpoint and retain C-11 as low-cost background collection.
+TASK-0332 restores C-33 public collection liveness without backfill and verifies the first new
+eligible bucket. Continue C-35 hourly to its 168-decision rate checkpoint, retain C-11 as low-cost
+background collection, and make no new funding/L2 build.
 
 ## Status
 
@@ -19,6 +19,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0332 closes the exact stale C-33 session only after a read-only process check, labels the
+  outage `INELIGIBLE_NO_BACKFILL`, and resumes one public-only session. The incomplete connection
+  bucket is correctly excluded; the next complete interval increases eligible buckets from 740 to
+  741. Audit reports one active session, 23 sessions total, fresh records, and `COLLECTING`.
+  Eleven focused resume/audit tests pass. This restores evidence collection but is not edge proof.
 
 - TASK-0331 adds a minimal fail-closed recovery mode for C-33's stale unclosed session. It requires
   the exact session ID, confirmed absence of a process, sole-active-session state, and at least 15

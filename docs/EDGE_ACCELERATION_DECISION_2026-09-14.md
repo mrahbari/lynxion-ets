@@ -33,6 +33,12 @@ session could create an invalid two-active-session state. The immediate minimal 
 dead collector, close the stale session explicitly without backfill, start exactly one pinned-source
 session, and verify a complete eligible interval.
 
+Post-decision execution note: TASK-0332 closed only the exact stale session after confirming no
+collector process, marked the outage ineligible without backfill, resumed one public-only session,
+and verified the first new complete bucket. C-33 advanced from 740 to 741 eligible buckets with one
+active session and remains `COLLECTING`; this satisfies the ranked minimal liveness test, not an
+economic gate.
+
 ## Ranked direction table
 
 | Rank | Direction | Economic mechanism | Existing data enough? | Expected research value | Engineering cost | Time to answer | Decision |

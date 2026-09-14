@@ -146,8 +146,9 @@ proof and adopted preregistered, cost-adjusted, prospective validation.
 
 The 2026-09-14 acceleration directive adds a strict decision-before-build and engineering-budget
 gate: at most three independent new mechanisms, zero allowed, while carry/basis and broad L2 builds
-are currently rejected by existing evidence. C-33 liveness repair is the highest-ranked minimal
-task; C-35 continues to its 168-decision rate checkpoint and C-11 is background-only because its
+are currently rejected by existing evidence. C-33 liveness was restored by exact stale-session
+closure without backfill and a verified new eligible bucket; C-35 continues to its 168-decision
+rate checkpoint and C-11 is background-only because its
 observed completion rate projects roughly two years to the frozen minimum.
 
 The required research loop is:
@@ -268,10 +269,12 @@ positive. N=2 is not statistically meaningful. The governing protocol is
 ### C-33 — Liquidation exhaustion
 
 - Status: `COLLECTING`
-- Latest verified eligible buckets: 740
+- Latest verified eligible buckets: 741
 - Next frozen checkpoint: 1,000
 - Public append-only prospective collection only
 - Interrupted or liveness-incomplete buckets remain ineligible
+- Controlled recovery closed the exact stale session, excluded the outage without backfill, and
+  verified one active resumed session before admitting the first new complete bucket
 
 The Binance forced-liquidation feed is treated as censored latest-event snapshots, not complete
 liquidation volume. Do not reinterpret it as a complete tape.
