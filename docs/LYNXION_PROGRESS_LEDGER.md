@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0336 advances C-35 to 91 decisions after the two bounded numeric-admission fixes. Continue the
+TASK-0337 advances C-35 to 92 decisions after the two bounded numeric-admission fixes. Continue the
 correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make no new
 funding/L2 build.
 
@@ -19,6 +19,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0337 passes all eleven frozen public C-35 stages with 19,584 candles, 2,196 prospective
+  records, 66 funding records, and 420 coverage receipts. One no-signal decision advances the
+  cohort to 92; aggregate economics remain sealed and every minimum gate is false. C-33 is healthy
+  at 767 eligible buckets with one active session. C-11 was correctly skipped because its eight-hour
+  cadence was not due.
 
 - TASK-0336 passes all eleven frozen public C-35 stages with 19,560 candles, 2,172 prospective
   records, 66 funding records, and 414 coverage receipts. One no-signal decision advances the
