@@ -7,16 +7,26 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-Keep TASK-0156 collecting separately. TASK-0165 activated one approved C-33 public-data collector;
-TASK-0166 must add a deterministic liveness/bucket auditor while collection continues.
+TASK-0324 reconciles roadmap authority and project context. Continue C-35 hourly prospective
+collection, C-11 on its eight-hour cadence, and C-33 toward its next frozen checkpoint while
+preserving the technical-only investor release and `NO_TRADE_DEFAULT` economic admission.
 
 ## Status
 
-TASK 000 operational closure and TASK 001/002 attribution are complete. Controlled edge
-research remains in progress; C-01 through C-31 historical candidates have not cleared their
-frozen promotion gates and production strategy logic is unchanged.
+TASK 000 operational closure and TASK 001/002 attribution are complete. Controlled edge research
+remains in progress. The investor package is `INVESTOR_REVIEW_READY — TECHNICAL VST/SHADOW ONLY`
+at evidence boundary `1f07520`; profitability, pilot readiness, and production admission are not
+proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0324 reconciles the canonical roadmap and current project context at checkpoint `357077a`.
+  C-35 has 88 decisions and two individually positive cost-adjusted outcomes but insufficient
+  sample/side/symbol/time breadth; C-11 has two completed outcomes and one pending candidate; C-33
+  remains at 740 eligible buckets. All remain `COLLECTING` and `NO_TRADE_DEFAULT` remains binding.
+- The technical investor release was frozen by TASK-0234 as `INVESTOR_REVIEW_READY — TECHNICAL
+  VST/SHADOW ONLY` at evidence boundary `1f07520`. Profitability and pilot readiness remain
+  explicitly unproven; `docs/ROADMAP_INDEX.md` is the current roadmap navigation page.
 
 - TASK-0165 is ACTIVE/COLLECTING with explicit operator authorization. Exactly one standalone
   public-data process was verified (PID 86852) on source commit `1c46d42`, with activation boundary

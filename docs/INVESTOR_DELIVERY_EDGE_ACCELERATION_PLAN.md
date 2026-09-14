@@ -6,6 +6,19 @@
 
 **Governing principle:** Investor urgency changes sequencing, not scientific truth.
 
+**Current navigation:** `docs/ROADMAP_INDEX.md`
+
+## Current execution snapshot — 2026-09-14
+
+- Track A is frozen at TASK-0234 as `INVESTOR_REVIEW_READY — TECHNICAL VST/SHADOW ONLY` on evidence
+  boundary `1f07520`; economic and pilot claims remain excluded.
+- Track B remains active. C-35 has 88 prospective decisions and two positive completed outcomes,
+  but lacks the frozen sample, side, symbol, and temporal breadth required to unseal aggregate
+  economics. C-11 has two completed outcomes and one pending candidate. C-33 has 740 eligible
+  buckets at its latest verified checkpoint.
+- `NO_TRADE_DEFAULT` remains the only admissible economic-release decision until all frozen gates
+  pass. These counts are a dated snapshot; the progress ledger is authoritative for later changes.
+
 ## Two-track operating model
 
 ### Track A — Investor technical delivery

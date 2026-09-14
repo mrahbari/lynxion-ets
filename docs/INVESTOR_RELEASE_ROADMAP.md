@@ -1,6 +1,10 @@
 # Lynxion Investor Release Roadmap
 
-**Status:** ACTIVE — VST DEMO VERIFIED; NO-TRADE ECONOMIC DEFAULT; PROFITABILITY NOT PROVEN
+**Status:** INVESTOR_REVIEW_READY — TECHNICAL VST/SHADOW ONLY; PROFITABILITY NOT PROVEN
+
+**Current navigation:** `docs/ROADMAP_INDEX.md`
+
+**Frozen evidence boundary:** `1f07520` (TASK-0234)
 
 The final sequencing and research budget are frozen in
 `docs/INVESTOR_DELIVERY_EDGE_ACCELERATION_PLAN.md`.
@@ -104,6 +108,10 @@ Acceptance: reviewers see less demonstrably unused code without behavior drift o
 6. Perform evidence-based dead-code inventory and only then optional cleanup.
 7. Run focused regression, full suite, deterministic demo, and independent technical review.
 8. Freeze the investor release and publish explicit limitations and the continuing R&D plan.
+
+Steps 1–8 are complete for the bounded technical VST/shadow release through TASK-0234. Subsequent
+branch work continues economic research and correctness evidence; it does not silently expand the
+frozen release claim or establish pilot/profitability readiness.
 
 After release freeze, documentation polishing stops and priority returns to the bounded cycle of
 at most five independent, preregistered causal hypotheses defined in the acceleration plan.

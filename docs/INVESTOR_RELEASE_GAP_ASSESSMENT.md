@@ -6,6 +6,11 @@
 
 **Verdict:** `NO_GO — TWO DEMO-SCOPE P0 BLOCKERS; PROFITABILITY UNPROVEN`
 
+> **DATED SNAPSHOT — SUPERSEDED FOR CURRENT RELEASE STATUS:** This assessment accurately records the
+> 2026-09-09 pre-fix state. TASK-0225 subsequently closed P0-IR1, TASK-0226 closed P0-IR2, and
+> TASK-0234 froze `INVESTOR_REVIEW_READY — TECHNICAL VST/SHADOW ONLY` at evidence boundary
+> `1f07520`. Profitability and pilot readiness remain unproven. See `docs/ROADMAP_INDEX.md`.
+
 ## Scope and evidence classes
 
 This is a repository and local non-network assessment for the bounded VST/shadow
