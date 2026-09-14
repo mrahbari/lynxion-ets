@@ -16,13 +16,88 @@ from requests import RequestException
 from websockets.exceptions import ConnectionClosed
 
 try:
-    from scripts.collect_c33_liquidation_events import InvalidC33Event, activate, collect
+    from scripts.collect_c33_liquidation_events import (
+        InvalidC33Event,
+        activate,
+        append_record,
+        collect,
+        lifecycle_record,
+    )
 except ModuleNotFoundError:  # Direct ``python scripts/...`` execution.
-    from collect_c33_liquidation_events import InvalidC33Event, activate, collect
+    from collect_c33_liquidation_events import (
+        InvalidC33Event,
+        activate,
+        append_record,
+        collect,
+        lifecycle_record,
+    )
 
 
 COLLECTOR_PATH = "scripts/collect_c33_liquidation_events.py"
 MAX_RECONNECT_DELAY_SECONDS = 60
+MINIMUM_STALE_SESSION_MS = 15 * 60 * 1000
+
+
+def recover_stale_session(
+    output: Path,
+    activation_boundary: int,
+    expected_session_id: str,
+    *,
+    now_ms: int | None = None,
+    monotonic_ns: int | None = None,
+) -> dict[str, object]:
+    """Close one externally-proven-dead session without making the missing interval eligible."""
+
+    now_ms = int(time.time() * 1000) if now_ms is None else int(now_ms)
+    monotonic_ns = time.monotonic_ns() if monotonic_ns is None else int(monotonic_ns)
+    if not expected_session_id or not output.exists():
+        raise InvalidC33Event("stale-session recovery input is invalid")
+    states: dict[str, set[str]] = {}
+    latest_ms = 0
+    timestamp_fields = {
+        "session": "timestamp_ms",
+        "heartbeat": "server_time_ms",
+        "kline_close": "open_time_ms",
+        "liquidation": "trade_time_ms",
+    }
+    for line in output.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as error:
+            raise InvalidC33Event("ledger contains malformed JSON") from error
+        record_type = row.get("record_type")
+        field = timestamp_fields.get(str(record_type))
+        timestamp = row.get(field) if field else None
+        if not isinstance(timestamp, int):
+            raise InvalidC33Event("ledger timestamp is invalid")
+        latest_ms = max(latest_ms, timestamp)
+        if record_type == "session":
+            session_id, state = row.get("session_id"), row.get("state")
+            if not isinstance(session_id, str) or state not in ("STARTED", "ENDED"):
+                raise InvalidC33Event("ledger session lifecycle is invalid")
+            states.setdefault(session_id, set()).add(state)
+    active = sorted(
+        session_id
+        for session_id, values in states.items()
+        if "STARTED" in values and "ENDED" not in values
+    )
+    if active != [expected_session_id]:
+        raise InvalidC33Event("expected session is not the sole active ledger session")
+    if now_ms - latest_ms < MINIMUM_STALE_SESSION_MS:
+        raise InvalidC33Event("active ledger session is not stale")
+    record = lifecycle_record(expected_session_id, "ENDED", now_ms, monotonic_ns)
+    if not append_record(output, record, activation_boundary):
+        raise InvalidC33Event("stale-session closure was not appended")
+    return {
+        "candidate": "C-33",
+        "status": "STALE_SESSION_CLOSED",
+        "session_id": expected_session_id,
+        "previous_latest_ms": latest_ms,
+        "closed_at_ms": now_ms,
+        "missing_interval_policy": "INELIGIBLE_NO_BACKFILL",
+    }
 
 
 def resolve_pinned_commit(
@@ -85,7 +160,21 @@ def main() -> None:
         "--activation-manifest", type=Path, default=Path("data/research/c33/activation_manifest.json")
     )
     parser.add_argument("--enable-network", action="store_true")
+    parser.add_argument("--recover-stale-session-id")
+    parser.add_argument("--confirm-no-process", action="store_true")
+    parser.add_argument("--recover-only", action="store_true")
     args = parser.parse_args()
+    if args.recover_only:
+        if not args.recover_stale_session_id or not args.confirm_no_process:
+            raise SystemExit("stale recovery requires exact session id and confirmed no process")
+        manifest = json.loads(args.activation_manifest.read_text(encoding="utf-8"))
+        result = recover_stale_session(
+            args.output,
+            int(manifest["activation_boundary"]),
+            args.recover_stale_session_id,
+        )
+        print(json.dumps(result, sort_keys=True))
+        return
     if not args.enable_network:
         raise SystemExit("network collection is fail-closed; pass --enable-network explicitly")
     pinned = resolve_pinned_commit(args.activation_manifest)

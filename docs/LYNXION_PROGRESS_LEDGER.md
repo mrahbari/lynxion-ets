@@ -20,6 +20,11 @@ proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy
 
 ## Latest verified findings
 
+- TASK-0331 adds a minimal fail-closed recovery mode for C-33's stale unclosed session. It requires
+  the exact session ID, confirmed absence of a process, sole-active-session state, and at least 15
+  minutes staleness; it appends one `ENDED` record and prohibits backfill. Twenty-three focused
+  resume/audit tests pass. Controlled public resume remains the next bounded unit.
+
 - TASK-0330 adopts the edge-acceleration-without-platform-expansion directive and completes its
   ranked decision artifact. Existing evidence rejects new funding/carry and broad L2 builds; C-11
   is too slow to remain a primary path; C-35 continues to decision 168; C-33 is highest priority
