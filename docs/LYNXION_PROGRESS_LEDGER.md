@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0340 records C-11's third completed prospective outcome and advances C-35 to 95 decisions.
+TASK-0341 advances C-35 to 96 decisions and records the next complete six-symbol funding settlement.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -19,6 +19,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0341 passes all eleven C-35 stages with 19,686 candles, 2,298 prospective records, 72 funding
+  records, and 444 coverage receipts. Six new funding records are complete across all symbols; one
+  no-signal decision advances the cohort to 96. Economics remain sealed and every minimum gate is
+  false. C-33 is healthy at 816 eligible buckets with one active session. Plain Persian: data is
+  healthy, but no new signal, completed outcome, or profitability proof appeared.
 
 - TASK-0340 records C-11's third completed outcome: ETHUSDT net `-0.0257588%` after frozen costs and
   funding. All three funding timestamps are strictly after boundary `1788082349`; no history was
