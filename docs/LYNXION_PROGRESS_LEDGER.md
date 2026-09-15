@@ -7,7 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0358 refreshes the +12%/+5% exit-shadow activation gate and advances C-35 to 115 decisions.
+TASK-0359 completes the authorized read-only exit-shadow runtime preflight and blocks activation on
+zero active runners plus one unexpected pending TRX-USDT SHORT entry order in BingX VST.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -19,6 +20,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0359 read-only preflight finds zero Lynxion runners and zero open BingX VST positions, so the
+  exact-one-runner gate fails despite no position missing SL/TP. It also finds one pending
+  non-protective TRX-USDT SELL/LIMIT SHORT order for quantity 139 at 0.35925. No order was changed;
+  activation is blocked pending an explicit external-state decision. Plain Persian: runner خاموش
+  است و یک سفارش ورودی pending باقی مانده؛ بدون اجازه صریح لغو نشد.
 
 - TASK-0358 confirms the frozen +12%/+5% exit-shadow artifact manifest, empty cohort, and public
   fee prerequisites pass; its only remaining activation blocker is fresh single-runner read-only

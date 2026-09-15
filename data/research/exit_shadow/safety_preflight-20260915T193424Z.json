@@ -1,0 +1,23 @@
+{
+  "checked_at_utc": "2026-09-15T19:34:24Z",
+  "commit": "f92e7825407a2e9104aec3459f5e9567c5bb0d34",
+  "mode": "BINGX_VST_READ_ONLY",
+  "runner_count": 0,
+  "open_position_count": 0,
+  "pending_order_count": 1,
+  "positions_missing_stop_loss": [],
+  "positions_missing_take_profit": [],
+  "unexpected_pending_orders": [
+    {
+      "order_type": "LIMIT",
+      "position_side": "SHORT",
+      "price": "0.35925",
+      "quantity": "139",
+      "side": "SELL",
+      "status": "PENDING",
+      "symbol": "TRX-USDT"
+    }
+  ],
+  "protection_check_read_only": true,
+  "verdict": "BLOCKED_ZERO_RUNNERS_AND_UNEXPECTED_PENDING_ENTRY"
+}
