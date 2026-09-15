@@ -76,9 +76,9 @@ Current dated snapshot:
 
 | Candidate | State | Current evidence | Correct interpretation |
 |---|---|---|---|
-| C-35 compression release | `COLLECTING` | 102 decisions; two completed positive cost-adjusted outcomes; both SHORT, two symbols, one UTC week | Statistically insufficient; next frozen rate checkpoint is 168 and economics remain sealed |
+| C-35 compression release | `COLLECTING` | 103 decisions; two completed positive cost-adjusted outcomes; both SHORT, two symbols, one UTC week | Statistically insufficient; next frozen rate checkpoint is 168 and economics remain sealed |
 | C-11 severe funding | `COLLECTING` | Three completed outcomes; positive N=3 mean dominated by one large ETH result | Insufficient and concentrated sample; only settlements strictly after epoch `1788082349` count |
-| C-33 liquidation exhaustion | `COLLECTING` | Liveness restored; 889 eligible buckets with one active public session | Below next frozen 1,000-bucket checkpoint; no edge verdict |
+| C-33 liquidation exhaustion | `COLLECTING` | Liveness restored; 901 eligible buckets with one active public session | Below next frozen 1,000-bucket checkpoint; no edge verdict |
 | +12%/+5% exit shadow | `NOT ACTIVATED` | Repository prerequisites and public BingX fee snapshot prepared | Still requires fresh read-only single-runner proof of zero missing stops and applicable runtime/authenticated approval |
 
 The C-35 governing preregistration is `tasks/research/edge-candidate-register-v34.md`. C-11 is
