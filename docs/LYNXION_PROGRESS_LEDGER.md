@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0349 advances C-35 to 104 decisions while C-33 remains live at 913 eligible buckets.
+TASK-0350 advances C-35 to 105 decisions while C-33 remains live at 925 eligible buckets.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -19,6 +19,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0350 passes all eleven C-35 stages with 19,902 candles, 2,514 prospective records, 78 funding
+  records, and 498 coverage receipts. One no-signal decision advances the cohort to 105; economics
+  remain sealed. C-33 is healthy at 925 eligible buckets with one active session and is approaching
+  its frozen 1,000-bucket checkpoint. Plain Persian: no new edge evidence appeared.
 
 - TASK-0349 passes all eleven C-35 stages with 19,878 candles, 2,490 prospective records, 78 funding
   records, and 492 coverage receipts. Six new funding settlements are complete across all symbols;
