@@ -12,10 +12,10 @@
 
 - Track A is frozen at TASK-0234 as `INVESTOR_REVIEW_READY — TECHNICAL VST/SHADOW ONLY` on evidence
   boundary `1f07520`; economic and pilot claims remain excluded.
-- Track B remains active. C-35 has 98 prospective decisions and two positive completed outcomes,
+- Track B remains active. C-35 has 99 prospective decisions and two positive completed outcomes,
   but lacks the frozen sample, side, symbol, and temporal breadth required to unseal aggregate
   economics. C-11 has three completed outcomes, but its positive N=3 mean is concentrated in one
-  large result and is not edge evidence. C-33 liveness was restored without backfill and has 840
+  large result and is not edge evidence. C-33 liveness was restored without backfill and has 852
   eligible buckets at its latest verified checkpoint.
 - `NO_TRADE_DEFAULT` remains the only admissible economic-release decision until all frozen gates
   pass. These counts are a dated snapshot; the progress ledger is authoritative for later changes.
