@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0356 freezes C-33's crossed 1,000-bucket checkpoint at 1,003 eligible buckets and advances
-C-35 to 113 decisions.
+TASK-0357 advances C-35 to 114 decisions and verifies background C-33 collection at 1,015 eligible
+buckets.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -20,6 +20,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0357 passes C-35 integrity with 20,106 candles, 2,718 prospective records, 84 funding
+  records, and 540 receipts. One no-signal decision advances it to 114; only two completed SHORT
+  outcomes exist, economics remain sealed, and observed throughput projects about 570 days to 240
+  raw signals. C-33 remains healthy in the background at 1,015 buckets. Plain Persian: جمع‌آوری
+  سالم است ولی نرخ سیگنال بسیار پایین و edge هنوز اثبات‌نشده است.
 
 - TASK-0356 records C-33 crossing its operational 1,000-bucket checkpoint at 1,003 eligible buckets
   and freezes a verified 6,018-row snapshot. C-33 remains background `COLLECTING` and is not a
