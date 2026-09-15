@@ -4,7 +4,7 @@ from scripts.check_c33_checkpoint import DEFAULT_PREVIOUS_SNAPSHOT, checkpoint_s
 
 
 def test_default_uses_latest_verified_sparse_checkpoint():
-    assert DEFAULT_PREVIOUS_SNAPSHOT.name == "warmup_snapshot_task0220.json"
+    assert DEFAULT_PREVIOUS_SNAPSHOT.name == "warmup_snapshot_task0356.json"
 
 
 def test_no_checkpoint_before_next_sparse_milestone():

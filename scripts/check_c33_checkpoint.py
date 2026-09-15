@@ -17,7 +17,7 @@ except ModuleNotFoundError:  # Direct ``python scripts/...`` execution.
 
 
 MILESTONES = (25, 100, 500, 1_000, 2_000, 4_000, 8_000, 8_640)
-DEFAULT_PREVIOUS_SNAPSHOT = Path("data/research/c33/warmup_snapshot_task0220.json")
+DEFAULT_PREVIOUS_SNAPSHOT = Path("data/research/c33/warmup_snapshot_task0356.json")
 
 
 def checkpoint_status(previous_count: int, current_count: int) -> dict[str, Any]:
