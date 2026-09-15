@@ -7,8 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0357 advances C-35 to 114 decisions and verifies background C-33 collection at 1,015 eligible
-buckets.
+TASK-0358 refreshes the +12%/+5% exit-shadow activation gate and advances C-35 to 115 decisions.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -20,6 +19,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0358 confirms the frozen +12%/+5% exit-shadow artifact manifest, empty cohort, and public
+  fee prerequisites pass; its only remaining activation blocker is fresh single-runner read-only
+  evidence of zero missing stops, which was not accessed without separate runtime/authenticated
+  authority. C-35 passes integrity at 20,130 candles, 2,742 prospective records, 84 funding records,
+  and 546 receipts; one no-signal decision advances it to 115 with economics sealed. C-33 remains
+  healthy in the background at 1,025 buckets. Plain Persian: آزمایش خروج تقریباً آماده است ولی
+  برای فعال‌شدن یک بررسی فقط‌خواندنی runner لازم دارد؛ edge جدیدی ثبت نشده است.
 
 - TASK-0357 passes C-35 integrity with 20,106 candles, 2,718 prospective records, 84 funding
   records, and 540 receipts. One no-signal decision advances it to 114; only two completed SHORT
