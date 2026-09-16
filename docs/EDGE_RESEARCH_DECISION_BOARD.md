@@ -20,11 +20,17 @@
 | C-11 | `COLLECTING` | Low-cost eight-hour funding monitor; too slow as primary path |
 | C-33 | `COLLECTING` | Low-cost background collection after the verified 1,000-bucket checkpoint |
 
+## Bounded-cycle portfolio verdict
+
+`PROMISING_INSUFFICIENT_FORWARD_EVIDENCE` — C-11 is the only surviving directional hypothesis, but
+its four completed outcomes are far below the frozen 100-total/30-per-symbol gate and are
+ETH-concentrated. No edge is identified or promotable. The current public historical information
+set is exhausted for candidate generation without a genuinely distinct mechanism and unopened
+information boundary.
+
 ## Current single next action
 
-The bounded five-family cycle is complete. Issue the mission's portfolio-level evidence verdict:
-identify the strongest surviving hypothesis, strongest falsification, exact current information
-bottleneck, engineering spent versus information gained, and whether the state is EDGE_IDENTIFIED,
-PROMISING/INSUFFICIENT_FORWARD_EVIDENCE, CURRENT_INFORMATION_SET_INSUFFICIENT,
-CURRENT_STRATEGY_FAMILY_INSUFFICIENT, ECONOMIC_HURDLE_TOO_HIGH, or NO_JUSTIFIED_NEXT_STEP. Do not
-admit another family before this decision.
+Continue C-11, C-35, and C-33 under their frozen gates. In parallel, resume the highest-priority
+verified correctness/risk/execution-defect unit that does not mutate broker/account state or alter
+production policy. Do not admit another edge family until a frozen gate transition or a genuinely
+distinct mechanism plus new point-in-time information/unopened boundary exists.

@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0373 closes the existing-data order-flow toxicity question and advances C-35 to 133 decisions.
+TASK-0374 issues the bounded-cycle portfolio verdict and advances C-35 to 134 decisions.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -19,6 +19,15 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0374 issues the exact portfolio verdict `PROMISING_INSUFFICIENT_FORWARD_EVIDENCE`. No edge
+  is identified. C-11 is the only surviving directional mechanism at N=4, +0.2524% descriptive
+  expectancy and PF 1.2693, far below its 100-total/30-per-symbol gate and concentrated 3/4 in ETH.
+  The strongest falsification is the large, wholly negative A1 reversal-plus-flow result. The
+  bottleneck is differentiated point-in-time information plus costs, not architecture. C-35 passes
+  integrity at 20,598 candles and 134 no-signal decisions; C-33 is healthy at 1,056 eligible buckets
+  with one active session. Plain Persian: یک سرنخ ضعیف زنده است، ولی edge ثابت نشده؛ خانواده جدید
+  نمی‌سازیم و فقط cohortهای فریز‌شده و اصلاحات قطعی ادامه دارند.
 
 - TASK-0373 rejects a new existing-data order-flow toxicity test. Phase 17 already tested
   incremental value and liquidity-state gating; C-21/22/27/34 failed distinct flow mechanisms; and
