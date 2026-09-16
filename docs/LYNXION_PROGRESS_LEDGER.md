@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0370 closes the funding-state feasibility review without a new candidate, keeps severe-tail
-rebound in frozen C-11 only, and advances C-35 to 130 decisions.
+TASK-0371 closes the time-series momentum feasibility review without a new variant and advances C-35
+to 131 decisions.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -20,6 +20,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0371 rejects a new volatility-normalized momentum variant: C-14 already tested canonical
+  low-turnover own-series trend and was negative/temporally unstable; disjoint C-15 tested the
+  LONG-only clue but failed confidence, fold, symbol, and concentration gates. Volatility scaling is
+  sizing, not new directional information on opened outcomes. C-35 passes integrity at 20,526
+  candles, 3,138 prospective records, 96 funding records, and 600 receipts; one no-signal decision
+  advances it to 131. Plain Persian: momentum variant جدید فقط بازتنظیم نتیجه بازشده بود و ساخته
+  نمی‌شود؛ edge تازه‌ای نداریم.
 
 - TASK-0370 concludes no distinct funding-state test is justified: broad funding states were
   previously unstable, C-12's positive +0.5403% result failed its frozen confidence interval, flow
