@@ -7,7 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0374 issues the bounded-cycle portfolio verdict and advances C-35 to 134 decisions.
+TASK-0375 reconciles the closed repository leverage defect against stale risk wording and advances
+C-35 to 135 decisions.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -19,6 +20,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0375 verifies that TASK-0132's historical leverage fail-open path is closed in the current
+  repository by TASK-0135. The focused leverage/admission/risk suite passes 46 tests. Documentation
+  now distinguishes the closed local defect from still-unverified deployment/account state; no
+  runtime or authenticated broker call occurred. C-35 passes integrity at 20,628 candles and 135
+  no-signal decisions; C-33 is healthy at 1,069 buckets with one active session. Plain Persian:
+  حفره اهرم در کد فعلی بسته است؛ فقط اثبات اجرای نسخه جدید روی حساب پشت گیت مجوز باقی مانده است.
 
 - TASK-0374 issues the exact portfolio verdict `PROMISING_INSUFFICIENT_FORWARD_EVIDENCE`. No edge
   is identified. C-11 is the only surviving directional mechanism at N=4, +0.2524% descriptive
@@ -971,8 +979,9 @@ proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy
   follow-up: correlate manager evaluation timestamps, submitted/replaced stop prices, exchange order
   visibility, mark-price trigger semantics, fills/slippage, and restart hydration for each position.
   Preregister any +10/+12 trigger and +4/+5 lock comparison on a separate forward/OOS sample.
-- Exchange leverage currently reports 10x on open VST positions despite a loaded 5x local risk cap;
-  the authoritative leverage-set/admission path has not yet been proven fail-closed.
+- TASK-0132's leverage fail-open defect is closed in the repository by TASK-0135 and reconfirmed by
+  TASK-0375's 46 focused tests. Controlled deployment and authoritative VST account readback remain
+  approval-gated and unverified; repository tests do not prove the running process loaded the fix.
 
 - The current historical files do not provide point-in-time funding or bid/ask observations;
   frozen cost assumptions must remain explicit.

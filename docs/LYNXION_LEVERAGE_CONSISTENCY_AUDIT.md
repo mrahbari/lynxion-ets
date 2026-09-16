@@ -1,8 +1,14 @@
 # Lynxion Leverage Consistency Audit
 
+> **DATED AUDIT — REPOSITORY DEFECT SUBSEQUENTLY CLOSED:** This document accurately records the
+> pre-fix TASK-0132 boundary. TASK-0135 later implemented the fail-closed leverage contract in the
+> repository. TASK-0375 re-ran the focused leverage/admission/risk suite with `46 passed`. Controlled
+> deployment and authenticated exchange-state verification remain separate approval-gated evidence;
+> no current-runtime activation is claimed here.
+
 ## Verdict
 
-**FAIL-OPEN — P0 RISK-CORRECTNESS DEFECT.** The configured leverage ceiling is not carried to the
+**HISTORICAL FAIL-OPEN — P0 RISK-CORRECTNESS DEFECT.** At this audit boundary, the configured leverage ceiling was not carried to the
 authoritative BingX entry boundary, and an exchange position reporting leverage above the configured
 ceiling does not block another otherwise admissible entry.
 
