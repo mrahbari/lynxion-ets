@@ -7,8 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0372 deprioritizes a new liquidation/OI test, records a new C-11 completed outcome, and advances
-C-35 to 132 decisions.
+TASK-0373 closes the existing-data order-flow toxicity question and advances C-35 to 133 decisions.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -20,6 +19,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0373 rejects a new existing-data order-flow toxicity test. Phase 17 already tested
+  incremental value and liquidity-state gating; C-21/22/27/34 failed distinct flow mechanisms; and
+  TASK-0369 found only +0.0039 percentage-point change when flow conditioned mean reversion. A new
+  threshold would be post-hoc filtering, while true VPIN/L2 needs a different unjustified data
+  build. C-35 passes integrity at 20,574 candles and 133 no-signal decisions. C-33 remains healthy
+  with one active session and 1,044 eligible buckets. Plain Persian: flow فعلی نه سیگنال را نجات داد
+  و نه فیلتر معتبر ساخت؛ چرخه پنج‌خانواده‌ای تمام شد و گام بعد verdict کل سبد تحقیق است.
 
 - TASK-0372 finds no faster valid liquidation/OI test: historical OI ends before C-33 begins,
   C-16 continuation and C-17 exhaustion both failed, and a new combined collector would not shorten

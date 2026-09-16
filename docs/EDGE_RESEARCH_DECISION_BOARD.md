@@ -10,7 +10,7 @@
 | 2 | Funding as a state modifier | OPERATOR + CODEX | TASK-0370: broad states failed/unstable; C-12 positive but CI crossed zero; flow non-incremental; severe-tail rebound already frozen as C-11 | One narrow plausible crowding mechanism, already under the correct forward test | Yes | Existing C-11 gate governs | No new engineering justified | Do not recycle percentiles/horizons; keep C-11 sealed | COLLECTING |
 | 3 | Volatility-normalized time-series momentum | OPERATOR + CODEX | TASK-0371: C-14 canonical own-series trend was negative/unstable; independent C-15 LONG clue failed confidence/fold/symbol/concentration gates | Closed; volatility scaling changes sizing rather than creating directional information | Existing data sufficient for rejection | Failed existing primary/stress robustness | No new engineering justified | Do not recycle lookback, side, volatility threshold, or sizing | REJECT |
 | 4 | Liquidation/OI cascade versus exhaustion | OPERATOR + C-33 | TASK-0372: historical OI has no overlap with C-33; C-16 continuation and C-17 exhaustion both failed; C-33 has 1,034/8,640 warmup buckets | High causal clarity but unusably low near-term information rate | No causal combined OI/liquidation panel; censored C-33 continues forward only | Existing tests failed costs; C-33 frozen gate governs | No new engineering justified | Do not backfill, proxy, retune, or create another slow collector | TOO_SLOW / DEPRIORITIZE |
-| 5 | Order-flow toxicity as filter/state classifier | OPERATOR + CODEX + LYNXION_DATA | Phase-17 and C-21/C-22 rejected standalone directional flow; prior flow was weak/redundant | Low-medium only as incremental NO_TRADE/risk state | Existing taker-flow panel is ready; raw L2 is not justified | Must add OOS value beyond price/volume baseline | Low for panel test; high and prohibited for raw-L2 build | Reject if no incremental OOS information beyond baseline | PARK |
+| 5 | Order-flow toxicity as filter/state classifier | OPERATOR + CODEX + LYNXION_DATA | TASK-0373: Phase-17 directly found no incremental value or liquidity-gate rescue; C-21/22/27/34 failed; TASK-0369 conditioning was non-incremental | Existing representation is weak and OHLCV-redundant; true VPIN/L2 is a different unavailable information set | Existing panel sufficient for rejection; raw L2 is unjustified | Failed direction, state gating, disjoint universe, concentration, cross-venue, and reversal conditioning | No new engineering justified | Do not retune thresholds or post-hoc filter a negative baseline | REJECT |
 
 ## Background frozen cohorts
 
@@ -22,7 +22,9 @@
 
 ## Current single next action
 
-Review whether existing order-flow toxicity evidence leaves one causally distinct, low-cost
-incremental NO_TRADE/state-classification question beyond Phase-17 and rejected C-21/C-22. Use the
-existing taker-flow panel only. Do not build raw L2 capture, retune standalone flow, or open another
-candidate unless a specific incremental question survives the feasibility gate.
+The bounded five-family cycle is complete. Issue the mission's portfolio-level evidence verdict:
+identify the strongest surviving hypothesis, strongest falsification, exact current information
+bottleneck, engineering spent versus information gained, and whether the state is EDGE_IDENTIFIED,
+PROMISING/INSUFFICIENT_FORWARD_EVIDENCE, CURRENT_INFORMATION_SET_INSUFFICIENT,
+CURRENT_STRATEGY_FAMILY_INSUFFICIENT, ECONOMIC_HURDLE_TOO_HIGH, or NO_JUSTIFIED_NEXT_STEP. Do not
+admit another family before this decision.
