@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0371 closes the time-series momentum feasibility review without a new variant and advances C-35
-to 131 decisions.
+TASK-0372 deprioritizes a new liquidation/OI test, records a new C-11 completed outcome, and advances
+C-35 to 132 decisions.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -20,6 +20,16 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0372 finds no faster valid liquidation/OI test: historical OI ends before C-33 begins,
+  C-16 continuation and C-17 exhaustion both failed, and a new combined collector would not shorten
+  the answer. C-33 remains background-only at 1,034/8,640 eligible warmup buckets; its stopped
+  public collector was safely resumed and now has exactly one active session, without backfill.
+  C-11 gained one completed outcome and now has N=4, +0.2524% descriptive
+  expectancy and PF 1.2693, but remains `COLLECTING`; all timestamps are strictly after its frozen
+  boundary. C-35 passes integrity at 20,550 candles and 132 no-signal decisions. Plain Persian:
+  نتیجه C-11 فعلاً امیدوارکننده ولی بسیار کم‌نمونه است؛ edge ثابت نشده و collector عمومی C-33
+  دوباره سالم فعال است.
 
 - TASK-0371 rejects a new volatility-normalized momentum variant: C-14 already tested canonical
   low-turnover own-series trend and was negative/temporally unstable; disjoint C-15 tested the
