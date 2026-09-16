@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0369 fast-falsifies the A1 mean-reversion-plus-aggressive-flow specification and advances the
-board to a bounded funding-state feasibility question.
+TASK-0370 closes the funding-state feasibility review without a new candidate, keeps severe-tail
+rebound in frozen C-11 only, and advances C-35 to 130 decisions.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -20,6 +20,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0370 concludes no distinct funding-state test is justified: broad funding states were
+  previously unstable, C-12's positive +0.5403% result failed its frozen confidence interval, flow
+  conditioning was non-incremental, and the only surviving severe-tail crowding mechanism is already
+  prospectively frozen as C-11. C-35 passes integrity at 20,502 candles, 3,114 prospective records,
+  96 funding records, and 594 receipts; two no-signal decisions advance it to 130 with economics
+  sealed. Plain Persian: funding variant جدید نمی‌سازیم؛ C-11 ادامه دارد و مسیر اصلی به momentum
+  مستقل می‌رود.
 
 - TASK-0369 exploratory A1 results reject aggressive flow as a rescue for this 15-minute reversal:
   baseline N=46,537 has -0.292016% net expectancy; the p75 flow subset N=16,585 improves by only
