@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0375 reconciles the closed repository leverage defect against stale risk wording and advances
-C-35 to 135 decisions.
+TASK-0376 makes exit-shadow readiness surface recorded runner/order blockers while preserving the
+fresh external-evidence gate; C-35 remains at 135 decisions after a healthy coverage refresh.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -20,6 +20,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0376 fixes incomplete exit-shadow readiness reporting: the checker now surfaces TASK-0359's
+  recorded zero-runner state and unexpected pending TRX-USDT entry, while still requiring a fresh
+  read-only preflight because recorded external state is dated. It cannot authorize runtime, broker
+  access, policy change, or activation. Nine focused tests pass. C-35 passes integrity at 20,628
+  candles and remains at 135 decisions because no new completed hour was eligible; C-33 is healthy
+  at 1,081 buckets with one active session. Plain Persian: blockerهای شناخته‌شده دیگر پنهان
+  نیستند، ولی وضعیت حساب حدس زده نمی‌شود و فعال‌سازی همچنان بسته است.
 
 - TASK-0375 verifies that TASK-0132's historical leverage fail-open path is closed in the current
   repository by TASK-0135. The focused leverage/admission/risk suite passes 46 tests. Documentation

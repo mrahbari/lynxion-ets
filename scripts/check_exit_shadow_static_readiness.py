@@ -22,6 +22,33 @@ COHORT_MANIFEST = Path("data/research/exit_shadow/cohort-20260912T164632Z/manife
 FEE_SNAPSHOT = Path(
     "data/research/exit_shadow/bingx_perpetual_fee_snapshot-20260912T164438Z.json"
 )
+SAFETY_PREFLIGHT = Path(
+    "data/research/exit_shadow/safety_preflight-20260915T193424Z.json"
+)
+
+
+def recorded_preflight_blockers(root: Path) -> list[str]:
+    """Surface known external blockers without treating dated evidence as current."""
+
+    try:
+        preflight = json.loads((root / SAFETY_PREFLIGHT).read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+    if not isinstance(preflight, dict):
+        return []
+    blockers = []
+    runner_count = preflight.get("runner_count")
+    if not isinstance(runner_count, int) or isinstance(runner_count, bool) or runner_count != 1:
+        blockers.append("RECORDED_RUNNER_COUNT_NOT_ONE")
+    pending = preflight.get("unexpected_pending_orders")
+    if isinstance(pending, list) and pending:
+        blockers.append("RECORDED_UNEXPECTED_PENDING_ENTRY_REQUIRES_OPERATOR_DECISION")
+    missing_sl = preflight.get("positions_missing_stop_loss")
+    missing_tp = preflight.get("positions_missing_take_profit")
+    if ((isinstance(missing_sl, list) and missing_sl)
+            or (isinstance(missing_tp, list) and missing_tp)):
+        blockers.append("RECORDED_UNPROTECTED_POSITION_REQUIRES_OPERATOR_REVIEW")
+    return blockers
 
 
 def check(root: Path, expected: dict[str, Any]) -> dict[str, Any]:
@@ -40,6 +67,7 @@ def check(root: Path, expected: dict[str, Any]) -> dict[str, Any]:
         verify_fee(fee)
     except (FileNotFoundError, ValueError, json.JSONDecodeError):
         blockers.append("AUTHORITATIVE_PRE_ACTIVATION_BINGX_FEE_SNAPSHOT_REQUIRED")
+    blockers.extend(recorded_preflight_blockers(root))
     blockers.append("FRESH_SINGLE_RUNNER_READ_ONLY_STOP_VISIBILITY_EVIDENCE_REQUIRED")
     return {
         "candidate": "EXIT-SHADOW-PLUS12-LOCK5",
