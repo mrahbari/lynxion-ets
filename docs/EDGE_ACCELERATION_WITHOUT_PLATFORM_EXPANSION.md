@@ -111,9 +111,10 @@ the background, but investor delivery and the bounded research cycle do not wait
 
 ## 7. Hypothesis budget
 
-The next cycle permits **up to three**, not exactly three, new economically independent mechanisms.
-Zero is acceptable if feasibility gates fail. Parameter variants do not count as independent.
-Funding/basis and L2 count only if their feasibility verdicts justify a minimal test.
+The active autonomous edge-discovery cycle permits **up to five**, not exactly five, primary
+economically independent mechanism families under `docs/AUTONOMOUS_EDGE_DISCOVERY_MISSION.md`.
+Zero is acceptable if feasibility gates fail. Parameter variants and conditioning modifiers do not
+count as independent families. A stronger sixth lead must replace or park a weaker active family.
 
 Do not generate sequential candidates merely to show activity. At the end of the bounded cycle,
 force a portfolio-level decision: promote, reject, collect a specifically missing minimal input, or

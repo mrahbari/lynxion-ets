@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0366 refreshes C-35 coverage while preserving 128 completed decisions; the exit-shadow
-activation blocker from TASK-0359 remains open.
+TASK-0367 adopts the autonomous edge-discovery mission, creates the five-family decision board, and
+passes the existing-data gate for the A1 mean-reversion-plus-aggressive-flow minimal test.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -20,6 +20,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0367 verifies the A1 test needs no new data infrastructure: the existing normalized futures
+  taker-flow panel has six symbols, 128,352 unique 15-minute rows per symbol, 2023-01-01 through
+  2026-08-29 coverage, and zero manifest integrity violations. Prior Phase-17 evidence makes the
+  correct question incremental value over the identical mean-reversion baseline, not standalone
+  flow profitability. Plain Persian: داده لازم آماده است و آزمون کم‌هزینه از همین حالا شروع می‌شود؛
+  اگر flow ارزش افزوده OOS نداشته باشد سریع رد می‌شود.
 
 - TASK-0366 advances C-35 public coverage to 20,478 candles, 3,090 prospective records, 96 funding
   records, and 588 receipts with zero gaps, duplicates, or boundary errors. No new completed hour

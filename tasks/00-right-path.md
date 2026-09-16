@@ -1,5 +1,8 @@
 # LYNXION — AUTONOMOUS SUPERVISOR DIRECTIVE
 
+Active edge-discovery supplement: `docs/AUTONOMOUS_EDGE_DISCOVERY_MISSION.md`.
+Persistent ranked board: `docs/EDGE_RESEARCH_DECISION_BOARD.md`.
+
 This directive supplements the existing Lynxion Engineering Takeover prompt.
 
 Do NOT restart the project, discard completed work, or repeat TASK 000 unnecessarily.

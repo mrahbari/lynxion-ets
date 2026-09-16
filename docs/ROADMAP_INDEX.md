@@ -22,8 +22,11 @@ the complete orientation, current evidence, roadmap, validation rules, and conti
    bounded hypothesis process.
 4. `docs/EDGE_ACCELERATION_WITHOUT_PLATFORM_EXPANSION.md` — active engineering/hypothesis budget
    and decision-before-build discipline.
-5. `docs/LYNXION_PROGRESS_LEDGER.md` — append-only execution history and current operational state.
-6. Candidate preregistrations under `tasks/research/` — frozen rules for each experiment.
+5. `docs/AUTONOMOUS_EDGE_DISCOVERY_MISSION.md` — active research autonomy, hypothesis, falsification,
+   and promotion boundaries.
+6. `docs/EDGE_RESEARCH_DECISION_BOARD.md` — ranked five-family portfolio and single next action.
+7. `docs/LYNXION_PROGRESS_LEDGER.md` — append-only execution history and current operational state.
+8. Candidate preregistrations under `tasks/research/` — frozen rules for each experiment.
 
 If a summary conflicts with a frozen candidate preregistration, the preregistration governs that
 candidate. If an older roadmap conflicts with `tasks/00-right-path.md`, the latter governs.
