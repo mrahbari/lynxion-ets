@@ -7,8 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0376 makes exit-shadow readiness surface recorded runner/order blockers while preserving the
-fresh external-evidence gate; C-35 remains at 135 decisions after a healthy coverage refresh.
+TASK-0377 closes an external historical-data coverage bypass and advances C-35 to 137 decisions.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -20,6 +19,15 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0377 fixes a verified data-integrity bypass: single-page 500/1,000-candle API responses could
+  previously be accepted and cached for much larger requested periods. External and cached history
+  now require unique in-window coverage within the frozen 5% missing threshold plus a fresh latest
+  candle; short, stale, duplicate-inflated, or malformed data fail closed. Sixteen focused tests
+  pass. C-35 passes integrity at 20,676 candles, 3,288 prospective records, 102 funding records, 630
+  receipts, and 137 no-signal decisions; C-33 is healthy at 1,094 buckets with one active session.
+  Plain Persian: پاسخ کوتاه API دیگر نمی‌تواند خودش را تاریخچه کامل جا بزند و سیگنال روی داده
+  ناقص تولید کند.
 
 - TASK-0376 fixes incomplete exit-shadow readiness reporting: the checker now surfaces TASK-0359's
   recorded zero-runner state and unexpected pending TRX-USDT entry, while still requiring a fresh

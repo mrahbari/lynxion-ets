@@ -133,6 +133,38 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         except Exception as e:
             self.logger.warning(f"⚠️ Could not initialize Phemex broker for historical data: {e}")
 
+    @staticmethod
+    def _has_acceptable_coverage(data: List[Dict[str, Any]], period: str, timeframe: str,
+                                 now_s: float, max_missing_ratio: float = 0.05) -> bool:
+        """Reject short, duplicate-inflated, or stale responses before strategy use/cache."""
+
+        units = {'m': 60, 'h': 3600, 'd': 86400}
+        try:
+            period_seconds = int(period[:-1]) * units[period[-1]]
+            interval_seconds = int(timeframe[:-1]) * units[timeframe[-1]]
+        except (KeyError, TypeError, ValueError, IndexError):
+            return False
+        if period_seconds <= 0 or interval_seconds <= 0:
+            return False
+        expected = max(1, period_seconds // interval_seconds)
+        timestamps = set()
+        for row in data:
+            try:
+                timestamp = float(row['timestamp'])
+            except (KeyError, TypeError, ValueError):
+                return False
+            if timestamp > 10_000_000_000:  # tolerate millisecond sources
+                timestamp /= 1000
+            timestamps.add(int(timestamp))
+        minimum = int(now_s) - period_seconds - interval_seconds
+        maximum = int(now_s) + interval_seconds
+        in_window = sorted(ts for ts in timestamps if minimum <= ts <= maximum)
+        if not in_window:
+            return False
+        missing_ratio = max(0.0, 1 - len(in_window) / expected)
+        latest_is_fresh = in_window[-1] >= int(now_s) - (2 * interval_seconds)
+        return missing_ratio <= max_missing_ratio and latest_is_fresh
+
         # Initialize MultiBrokerExecutionService as an option
         try:
             self.brokers['multi'] = MultiBrokerExecutionService(settings=self._settings)
@@ -171,7 +203,9 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
                 # Try to get data from local CSV cache as a fallback
                 cached_data = self._get_cached_data_fallback(symbol_str, period, timeframe)
-                if cached_data:
+                if cached_data and self._has_acceptable_coverage(
+                    cached_data, period, timeframe, current_time
+                ):
                     self.logger.info(f"✅ Retrieved cached data for {symbol_str} from local storage")
                     return cached_data
 
@@ -205,13 +239,20 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
                 # Try to get historical data from the current source
                 data = self._fetch_from_source(source, symbol_str, period, timeframe)
 
-                if data and len(data) > 0:
+                if data and self._has_acceptable_coverage(
+                    data, period, timeframe, current_time_sec
+                ):
                     self.logger.info(f"✅ Successfully fetched {len(data)} historical data points for {symbol_str} from {source}")
 
                     # Cache the data locally for future use
                     self._cache_data_locally(symbol_str, data)
 
                     return data
+                elif data:
+                    self.logger.warning(
+                        f"Rejected incomplete or stale {source} data for {symbol_str}: "
+                        f"{len(data)} rows do not satisfy {period}/{timeframe} coverage"
+                    )
                 else:
                     self.logger.debug(f"No data returned from {source} for {symbol_str}, trying next fallback source...")
 
@@ -230,9 +271,16 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
         # If all sources failed, try to get data from local CSV cache as a fallback
         cached_data = self._get_cached_data_fallback(symbol_str, period, timeframe)
-        if cached_data:
+        if cached_data and self._has_acceptable_coverage(
+            cached_data, period, timeframe, current_time_sec
+        ):
             self.logger.info(f"✅ Retrieved cached data for {symbol_str} from local storage as fallback")
             return cached_data
+        if cached_data:
+            self.logger.warning(
+                f"Rejected incomplete or stale cached data for {symbol_str}: "
+                f"{len(cached_data)} rows do not satisfy {period}/{timeframe} coverage"
+            )
 
         # If all sources and fallback failed, add to failed symbols cache and return empty list
         # This allows the system to continue operating even if historical data is unavailable
