@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0365 advances C-35 to 128 decisions; the exit-shadow
+TASK-0366 refreshes C-35 coverage while preserving 128 completed decisions; the exit-shadow
 activation blocker from TASK-0359 remains open.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
@@ -20,6 +20,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0366 advances C-35 public coverage to 20,478 candles, 3,090 prospective records, 96 funding
+  records, and 588 receipts with zero gaps, duplicates, or boundary errors. No new completed hour
+  is eligible, so decisions remain 128 and economics stay sealed. Plain Persian: داده جلو رفت ولی
+  کندل ناقص درست کنار گذاشته شد و edge جدیدی نداریم.
 
 - TASK-0365 passes C-35 integrity with 20,454 candles, 3,066 prospective records, 96 funding
   records, 582 receipts, zero gaps, and zero duplicate keys. Two no-signal decisions advance it to
