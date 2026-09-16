@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0359 completes the authorized read-only exit-shadow runtime preflight and blocks activation on
-zero active runners plus one unexpected pending TRX-USDT SHORT entry order in BingX VST.
+TASK-0360 recovers C-35 after a transient public-network reset and advances it to 118 decisions
+without gaps; the exit-shadow activation blocker from TASK-0359 remains open.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -20,6 +20,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0360 records a transient public candle-API connection reset followed by a successful bounded
+  retry. C-35 passes integrity with 20,202 candles, 2,814 prospective records, 84 funding records,
+  552 receipts, zero gaps, and zero duplicate keys. Three caught-up no-signal decisions advance it
+  from 115 to 118; economics remain sealed. Plain Persian: قطعی موقت شبکه جبران شد، اما سیگنال و
+  edge جدیدی به‌دست نیامد.
 
 - TASK-0359 read-only preflight finds zero Lynxion runners and zero open BingX VST positions, so the
   exact-one-runner gate fails despite no position missing SL/TP. It also finds one pending
