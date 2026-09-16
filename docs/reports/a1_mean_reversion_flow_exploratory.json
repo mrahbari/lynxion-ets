@@ -1,0 +1,506 @@
+{
+  "baseline": {
+    "by_side": {
+      "LONG": {
+        "day_clusters": 1276,
+        "expectancy": -0.002699045130423808,
+        "n": 23485,
+        "profit_factor": 0.4569610578787124,
+        "win_rate": 0.3509899936129444
+      },
+      "SHORT": {
+        "day_clusters": 1287,
+        "expectancy": -0.0031454363415989494,
+        "n": 23052,
+        "profit_factor": 0.39573288491630665,
+        "win_rate": 0.32313899010931807
+      }
+    },
+    "by_symbol": {
+      "ADAUSDT": {
+        "day_clusters": 1232,
+        "expectancy": -0.003028196188093381,
+        "n": 7891,
+        "profit_factor": 0.4885568533241433,
+        "win_rate": 0.3762514256748194
+      },
+      "BNBUSDT": {
+        "day_clusters": 1219,
+        "expectancy": -0.0029735978840112988,
+        "n": 7643,
+        "profit_factor": 0.336847369093104,
+        "win_rate": 0.29752714902525185
+      },
+      "BTCUSDT": {
+        "day_clusters": 1207,
+        "expectancy": -0.0029571638607948755,
+        "n": 7636,
+        "profit_factor": 0.28364937128761897,
+        "win_rate": 0.27317967522262965
+      },
+      "ETHUSDT": {
+        "day_clusters": 1247,
+        "expectancy": -0.0028796838353121025,
+        "n": 7851,
+        "profit_factor": 0.3811695718158882,
+        "win_rate": 0.33282384409629345
+      },
+      "SOLUSDT": {
+        "day_clusters": 1229,
+        "expectancy": -0.0028712214475524874,
+        "n": 7819,
+        "profit_factor": 0.5121752724804502,
+        "win_rate": 0.37958818263205013
+      },
+      "XRPUSDT": {
+        "day_clusters": 1209,
+        "expectancy": -0.002810651832703781,
+        "n": 7697,
+        "profit_factor": 0.4805946722183608,
+        "win_rate": 0.3614395218916461
+      }
+    },
+    "clustered_bootstrap_95": [
+      -0.0030671534057653493,
+      -0.0027761608080319497
+    ],
+    "folds": [
+      {
+        "day_clusters": 324,
+        "expectancy": -0.002906894228567168,
+        "fold": 1,
+        "n": 11634,
+        "profit_factor": 0.3694556114062595,
+        "win_rate": 0.31356369262506445
+      },
+      {
+        "day_clusters": 326,
+        "expectancy": -0.002973028745739138,
+        "fold": 2,
+        "n": 11634,
+        "profit_factor": 0.44034871783191853,
+        "win_rate": 0.3539625236376139
+      },
+      {
+        "day_clusters": 331,
+        "expectancy": -0.002882979215073066,
+        "fold": 3,
+        "n": 11634,
+        "profit_factor": 0.47762254035499696,
+        "win_rate": 0.3550799381124291
+      },
+      {
+        "day_clusters": 323,
+        "expectancy": -0.0029177541352215304,
+        "fold": 4,
+        "n": 11635,
+        "profit_factor": 0.4052112208819776,
+        "win_rate": 0.32617103566824235
+      }
+    ],
+    "funding_mean": 4.3654339557771247e-07,
+    "max_positive_pnl_symbol_concentration": 0.23377802507681547,
+    "metrics": {
+      "day_clusters": 1301,
+      "expectancy": -0.0029201640293646373,
+      "n": 46537,
+      "profit_factor": 0.4259243727503463,
+      "win_rate": 0.3371940606399209
+    },
+    "stress_metrics": {
+      "day_clusters": 1301,
+      "expectancy": -0.004920164029364638,
+      "n": 46537,
+      "profit_factor": 0.24509171122335185,
+      "win_rate": 0.23680082514988074
+    }
+  },
+  "configuration": {
+    "bootstrap_samples": 2000,
+    "bootstrap_seed": 360368,
+    "flow_percentiles": [
+      0.7,
+      0.75,
+      0.8
+    ],
+    "hold_bars": 4,
+    "lookback_bars": 2880,
+    "primary_cost": 0.003,
+    "return_percentile": 0.9,
+    "stress_cost": 0.005,
+    "symbols": [
+      "ADAUSDT",
+      "BNBUSDT",
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "XRPUSDT"
+    ]
+  },
+  "flow_conditions": {
+    "p70": {
+      "by_side": {
+        "LONG": {
+          "day_clusters": 1224,
+          "expectancy": -0.0027643282429579323,
+          "n": 10810,
+          "profit_factor": 0.41096906179263176,
+          "win_rate": 0.33367252543940795
+        },
+        "SHORT": {
+          "day_clusters": 1233,
+          "expectancy": -0.0030358509079818864,
+          "n": 8718,
+          "profit_factor": 0.3361078296917511,
+          "win_rate": 0.30018352833218626
+        }
+      },
+      "by_symbol": {
+        "ADAUSDT": {
+          "day_clusters": 1071,
+          "expectancy": -0.0024926622508545746,
+          "n": 2922,
+          "profit_factor": 0.4971902570276436,
+          "win_rate": 0.3661875427789186
+        },
+        "BNBUSDT": {
+          "day_clusters": 1073,
+          "expectancy": -0.002939298982725133,
+          "n": 3050,
+          "profit_factor": 0.277769545019903,
+          "win_rate": 0.27278688524590167
+        },
+        "BTCUSDT": {
+          "day_clusters": 1114,
+          "expectancy": -0.003027006436592596,
+          "n": 3453,
+          "profit_factor": 0.23397745645033066,
+          "win_rate": 0.2467419635099913
+        },
+        "ETHUSDT": {
+          "day_clusters": 1151,
+          "expectancy": -0.0029186972520643356,
+          "n": 3577,
+          "profit_factor": 0.3310841317013866,
+          "win_rate": 0.3203802068772715
+        },
+        "SOLUSDT": {
+          "day_clusters": 1114,
+          "expectancy": -0.003080211506580253,
+          "n": 3701,
+          "profit_factor": 0.4545680091369292,
+          "win_rate": 0.3669278573358552
+        },
+        "XRPUSDT": {
+          "day_clusters": 1033,
+          "expectancy": -0.0027639714852427354,
+          "n": 2825,
+          "profit_factor": 0.42356262142019735,
+          "win_rate": 0.34194690265486727
+        }
+      },
+      "clustered_bootstrap_95": [
+        -0.0030577042187246756,
+        -0.0027155924566462817
+      ],
+      "folds": [
+        {
+          "day_clusters": 324,
+          "expectancy": -0.0027975112284284284,
+          "fold": 1,
+          "n": 5021,
+          "profit_factor": 0.3437466267909331,
+          "win_rate": 0.3027285401314479
+        },
+        {
+          "day_clusters": 311,
+          "expectancy": -0.003190294934195821,
+          "fold": 2,
+          "n": 4805,
+          "profit_factor": 0.359922407078576,
+          "win_rate": 0.32882414151925077
+        },
+        {
+          "day_clusters": 313,
+          "expectancy": -0.0027123576934474417,
+          "fold": 3,
+          "n": 4675,
+          "profit_factor": 0.44827698891568973,
+          "win_rate": 0.3255614973262032
+        },
+        {
+          "day_clusters": 322,
+          "expectancy": -0.0028432451300068576,
+          "fold": 4,
+          "n": 5027,
+          "profit_factor": 0.35793916060529934,
+          "win_rate": 0.31867913268350906
+        }
+      ],
+      "funding_mean": -5.84184760344121e-07,
+      "incremental_expectancy_vs_baseline": 3.461832462470834e-05,
+      "max_positive_pnl_symbol_concentration": 0.2774084303071103,
+      "metrics": {
+        "day_clusters": 1268,
+        "expectancy": -0.002885545704739929,
+        "n": 19528,
+        "profit_factor": 0.37802766007204075,
+        "win_rate": 0.31872183531339615
+      },
+      "stress_metrics": {
+        "day_clusters": 1268,
+        "expectancy": -0.004885545704739929,
+        "n": 19528,
+        "profit_factor": 0.20119435471714983,
+        "win_rate": 0.21123514952888162
+      }
+    },
+    "p75": {
+      "by_side": {
+        "LONG": {
+          "day_clusters": 1214,
+          "expectancy": -0.002788706856815694,
+          "n": 9209,
+          "profit_factor": 0.4025014755122526,
+          "win_rate": 0.32978607883592137
+        },
+        "SHORT": {
+          "day_clusters": 1220,
+          "expectancy": -0.002996181597353201,
+          "n": 7376,
+          "profit_factor": 0.3318560191822334,
+          "win_rate": 0.2993492407809111
+        }
+      },
+      "by_symbol": {
+        "ADAUSDT": {
+          "day_clusters": 1025,
+          "expectancy": -0.002405739154417429,
+          "n": 2487,
+          "profit_factor": 0.5056663816233117,
+          "win_rate": 0.36268596702854844
+        },
+        "BNBUSDT": {
+          "day_clusters": 1035,
+          "expectancy": -0.003011531675575636,
+          "n": 2631,
+          "profit_factor": 0.25853876387570496,
+          "win_rate": 0.26833903458760927
+        },
+        "BTCUSDT": {
+          "day_clusters": 1072,
+          "expectancy": -0.0029872901153957764,
+          "n": 2910,
+          "profit_factor": 0.23463005265057468,
+          "win_rate": 0.2443298969072165
+        },
+        "ETHUSDT": {
+          "day_clusters": 1122,
+          "expectancy": -0.002910052101097285,
+          "n": 3023,
+          "profit_factor": 0.329231370081995,
+          "win_rate": 0.32120410188554416
+        },
+        "SOLUSDT": {
+          "day_clusters": 1082,
+          "expectancy": -0.0030693413886928697,
+          "n": 3166,
+          "profit_factor": 0.44525653157265155,
+          "win_rate": 0.36860391661402403
+        },
+        "XRPUSDT": {
+          "day_clusters": 978,
+          "expectancy": -0.0028154506828534055,
+          "n": 2368,
+          "profit_factor": 0.40886064412938566,
+          "win_rate": 0.3327702702702703
+        }
+      },
+      "clustered_bootstrap_95": [
+        -0.003060007076319944,
+        -0.002696052835754171
+      ],
+      "folds": [
+        {
+          "day_clusters": 324,
+          "expectancy": -0.002812489854111791,
+          "fold": 1,
+          "n": 4255,
+          "profit_factor": 0.33585521781528394,
+          "win_rate": 0.3017626321974148
+        },
+        {
+          "day_clusters": 310,
+          "expectancy": -0.0031628482655211764,
+          "fold": 2,
+          "n": 4042,
+          "profit_factor": 0.35350282324029725,
+          "win_rate": 0.32409698169223156
+        },
+        {
+          "day_clusters": 312,
+          "expectancy": -0.0027196013346648495,
+          "fold": 3,
+          "n": 4019,
+          "profit_factor": 0.441985844464199,
+          "win_rate": 0.32470763871609853
+        },
+        {
+          "day_clusters": 322,
+          "expectancy": -0.0028342895582086293,
+          "fold": 4,
+          "n": 4269,
+          "profit_factor": 0.352156434204642,
+          "win_rate": 0.31529632232372923
+        }
+      ],
+      "funding_mean": -6.960651190835093e-07,
+      "incremental_expectancy_vs_baseline": 3.918501781848514e-05,
+      "max_positive_pnl_symbol_concentration": 0.27583334743020915,
+      "metrics": {
+        "day_clusters": 1266,
+        "expectancy": -0.002880979011546152,
+        "n": 16585,
+        "profit_factor": 0.37177871084592246,
+        "win_rate": 0.3162496231534519
+      },
+      "stress_metrics": {
+        "day_clusters": 1266,
+        "expectancy": -0.004880979011546153,
+        "n": 16585,
+        "profit_factor": 0.1956515836044358,
+        "win_rate": 0.2082001808863431
+      }
+    },
+    "p80": {
+      "by_side": {
+        "LONG": {
+          "day_clusters": 1198,
+          "expectancy": -0.002714201379185266,
+          "n": 7562,
+          "profit_factor": 0.4062582290599157,
+          "win_rate": 0.3298069293837609
+        },
+        "SHORT": {
+          "day_clusters": 1205,
+          "expectancy": -0.0030669638264628363,
+          "n": 5962,
+          "profit_factor": 0.31070901831303227,
+          "win_rate": 0.29369339147936935
+        }
+      },
+      "by_symbol": {
+        "ADAUSDT": {
+          "day_clusters": 957,
+          "expectancy": -0.0024271076473392325,
+          "n": 2050,
+          "profit_factor": 0.4965115617862847,
+          "win_rate": 0.36
+        },
+        "BNBUSDT": {
+          "day_clusters": 978,
+          "expectancy": -0.002954840586391127,
+          "n": 2158,
+          "profit_factor": 0.2542111732768833,
+          "win_rate": 0.267840593141798
+        },
+        "BTCUSDT": {
+          "day_clusters": 1019,
+          "expectancy": -0.0030351666128281703,
+          "n": 2334,
+          "profit_factor": 0.2160334262540313,
+          "win_rate": 0.2403598971722365
+        },
+        "ETHUSDT": {
+          "day_clusters": 1052,
+          "expectancy": -0.0029621984471423185,
+          "n": 2450,
+          "profit_factor": 0.31766790234569436,
+          "win_rate": 0.3159183673469388
+        },
+        "SOLUSDT": {
+          "day_clusters": 1030,
+          "expectancy": -0.0029770205216186276,
+          "n": 2611,
+          "profit_factor": 0.4453851788940896,
+          "win_rate": 0.3688242052853313
+        },
+        "XRPUSDT": {
+          "day_clusters": 915,
+          "expectancy": -0.0027815964854279373,
+          "n": 1921,
+          "profit_factor": 0.40472310861523497,
+          "win_rate": 0.32847475273295157
+        }
+      },
+      "clustered_bootstrap_95": [
+        -0.003060315938427917,
+        -0.0026843374425516812
+      ],
+      "folds": [
+        {
+          "day_clusters": 323,
+          "expectancy": -0.0027083769106092076,
+          "fold": 1,
+          "n": 3400,
+          "profit_factor": 0.34429099098411114,
+          "win_rate": 0.29911764705882354
+        },
+        {
+          "day_clusters": 310,
+          "expectancy": -0.003229707060016988,
+          "fold": 2,
+          "n": 3318,
+          "profit_factor": 0.3395169235150294,
+          "win_rate": 0.31977094635322484
+        },
+        {
+          "day_clusters": 312,
+          "expectancy": -0.0027063286572869246,
+          "fold": 3,
+          "n": 3323,
+          "profit_factor": 0.4378639008494301,
+          "win_rate": 0.3244056575383689
+        },
+        {
+          "day_clusters": 322,
+          "expectancy": -0.0028401520279639075,
+          "fold": 4,
+          "n": 3483,
+          "profit_factor": 0.33294445294565234,
+          "win_rate": 0.31266149870801035
+        }
+      ],
+      "funding_mean": -6.614026915113869e-07,
+      "incremental_expectancy_vs_baseline": 5.044877036061409e-05,
+      "max_positive_pnl_symbol_concentration": 0.280090558096578,
+      "metrics": {
+        "day_clusters": 1265,
+        "expectancy": -0.002869715259004023,
+        "n": 13524,
+        "profit_factor": 0.36477130135699865,
+        "win_rate": 0.31388642413487133
+      },
+      "stress_metrics": {
+        "day_clusters": 1265,
+        "expectancy": -0.004869715259004024,
+        "n": 13524,
+        "profit_factor": 0.18920720991068035,
+        "win_rate": 0.20526471458148476
+      }
+    }
+  },
+  "label": "EXPLORATORY_NOT_CONFIRMATORY",
+  "primary_gates": {
+    "bootstrap_lower_above_zero": false,
+    "concentration_at_most_35pct": true,
+    "four_positive_symbols": false,
+    "improves_baseline": true,
+    "positive_primary_expectancy": false,
+    "positive_stress_expectancy": false,
+    "three_positive_improved_folds": false
+  },
+  "protocol": "TASK-0368",
+  "study": "A1_15M_MEAN_REVERSION_PLUS_AGGRESSIVE_FLOW",
+  "verdict": "REJECT_OR_PARK"
+}

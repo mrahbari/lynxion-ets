@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0367 adopts the autonomous edge-discovery mission, creates the five-family decision board, and
-passes the existing-data gate for the A1 mean-reversion-plus-aggressive-flow minimal test.
+TASK-0369 fast-falsifies the A1 mean-reversion-plus-aggressive-flow specification and advances the
+board to a bounded funding-state feasibility question.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -20,6 +20,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0369 exploratory A1 results reject aggressive flow as a rescue for this 15-minute reversal:
+  baseline N=46,537 has -0.292016% net expectancy; the p75 flow subset N=16,585 improves by only
+  +0.003919 percentage points and remains -0.288098% with PF 0.3718. Its 0.50% stress expectancy is
+  -0.488098%, bootstrap interval [-0.306001%, -0.269605%], and every fold, symbol, and side is
+  negative; p70/p80 are also negative. Plain Persian: ایده سریع و معتبر رد شد؛ flow در این تعریف
+  هزینه را جبران نمی‌کند و زیرساخت جدیدی برایش ساخته نمی‌شود.
 
 - TASK-0367 verifies the A1 test needs no new data infrastructure: the existing normalized futures
   taker-flow panel has six symbols, 128,352 unique 15-minute rows per symbol, 2023-01-01 through
