@@ -116,3 +116,9 @@
 {"candidate":"C-35","decision_time":1789502400,"input_sha256":"e0aab7a22d23a3ffbfaa658276d9d80b963bdc3edcf44c8b7c7d4e0023e110ae","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
 {"candidate":"C-35","decision_time":1789506000,"input_sha256":"88a7d46c51b60f1266e4ce283f28565b7af79f6300979c22e9ca3d3156bb18aa","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
 {"candidate":"C-35","decision_time":1789509600,"input_sha256":"ee9148d39476360fb293fd44591667e3abfa02a940bd15059fcc1bcaa86aa242","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
+{"candidate":"C-35","decision_time":1789513200,"input_sha256":"9f93ec77100134a57e0b484d38966ff9203856e577d2a63a95bc547c72269fda","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
+{"candidate":"C-35","decision_time":1789516800,"input_sha256":"c3cb673e1c3e7f3a4a79b7dd0c4dfe505e5396cfb89de38f35a3d8dacf8d51c5","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
+{"candidate":"C-35","decision_time":1789520400,"input_sha256":"f0c7deb086f3a7ea7b7b70d9621189c859bb6317a4a99c5106c7e70702e614cd","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
+{"candidate":"C-35","decision_time":1789524000,"input_sha256":"5f1ae284b8daf03dd724b45e8fa145737852bccc4bd5e073895af8dea337f5fb","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
+{"candidate":"C-35","decision_time":1789527600,"input_sha256":"3742205595d9bde17cbbc5b89df617fb77812120401220e546f9aba62a974d3b","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
+{"candidate":"C-35","decision_time":1789531200,"input_sha256":"e3f2dfba5fb901a87822c8096d3395f29637f1f2a6de332c29a926f0a24d79f1","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}

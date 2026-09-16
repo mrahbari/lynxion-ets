@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0360 recovers C-35 after a transient public-network reset and advances it to 118 decisions
-without gaps; the exit-shadow activation blocker from TASK-0359 remains open.
+TASK-0361 advances C-35 to 124 decisions and completes the due C-11 boundary-safe update; the
+exit-shadow activation blocker from TASK-0359 remains open.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -20,6 +20,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0361 passes C-35 integrity with 20,358 candles, 2,970 prospective records, 90 funding
+  records, 558 receipts, zero gaps, and zero duplicate keys. Six no-signal decisions advance it
+  from 118 to 124 while economics stay sealed. The due C-11 update keeps three complete outcomes
+  plus one pending ETHUSDT candidate, and every record remains strictly after boundary `1788082349`.
+  Plain Persian: داده‌ها سالم به‌روز شدند، اما سیگنال یا edge تازه‌ای نداریم.
 
 - TASK-0360 records a transient public candle-API connection reset followed by a successful bounded
   retry. C-35 passes integrity with 20,202 candles, 2,814 prospective records, 84 funding records,
