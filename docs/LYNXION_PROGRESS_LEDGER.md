@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0377 closes an external historical-data coverage bypass and advances C-35 to 137 decisions.
+TASK-0378 verifies an undeclared Spot/perpetual history mismatch and advances C-35 to 138 decisions.
 Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
 no new funding/L2 build.
 
@@ -19,6 +19,15 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0378 verifies that dynamic historical-data requests, registry/cache identity, and returned
+  candles do not declare Spot versus perpetual market type. Binance and MEXC paths use Spot
+  `/api/v3/klines` namespaces while the reviewed execution path is perpetual, so complete data can
+  still be semantically wrong. No endpoint was silently switched; official mapping plus an explicit
+  fail-closed market-type contract is required next. C-35 passes integrity at 20,700 candles and 138
+  no-signal decisions. C-33 stopped at 1,096 eligible buckets and was safely resumed with one active
+  public session and no backfill. Plain Persian: بعد از بستن gap داده، حالا باید ثابت کنیم کندل
+  متعلق به همان بازار perpetual است، نه Spot ضمنی.
 
 - TASK-0377 fixes a verified data-integrity bypass: single-page 500/1,000-candle API responses could
   previously be accepted and cached for much larger requested periods. External and cached history
