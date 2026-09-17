@@ -1,0 +1,43 @@
+{
+  "forward_exit_ledger": {
+    "event_types": {
+      "MANAGER_EVALUATED": 647,
+      "POSITION_HYDRATED": 26,
+      "POSITION_OBSERVED": 647,
+      "STATE_COMMITTED": 24,
+      "STOP_REPLACE_REQUESTED": 120,
+      "STOP_REPLACE_RESPONDED": 120,
+      "STOP_VISIBILITY_FAILED": 82,
+      "STOP_VISIBILITY_VERIFIED": 24
+    },
+    "events": 1690,
+    "exit_fill_events": 0,
+    "files": 1,
+    "mark_price_observations": 647,
+    "position_keys": 18,
+    "position_observations": 647
+  },
+  "journal": {
+    "has_realized_exit": true,
+    "path_market_identity": "UNKNOWN",
+    "rows": 1913,
+    "symbols": 76,
+    "symbols_with_local_1m_file": 74
+  },
+  "lead": "A_EDGE_RETENTION_PROFIT_GIVEBACK",
+  "next": "collect one unopened cohort joining authoritative mark observations to realized exit fills",
+  "readiness_gates": {
+    "authoritative_mark_path_present": true,
+    "closed_trade_candle_market_identity_declared": false,
+    "closed_trade_outcomes_present": true,
+    "forward_exit_fill_events_present": false,
+    "single_dataset_joins_path_to_realized_exit": false
+  },
+  "recent_bingx_diagnostic": {
+    "confirmatory_use": false,
+    "historical_leverage": "INFERRED_OR_MISSING",
+    "path_source": "PUBLIC_1M_CANDLES",
+    "rows": 98
+  },
+  "verdict": "INSUFFICIENT_PROVENANCE"
+}

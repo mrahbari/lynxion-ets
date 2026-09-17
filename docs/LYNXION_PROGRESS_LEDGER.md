@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0382 adopts the bounded new-lead tournament and selects Lead A profit-giveback state as the
-single active descriptive diagnostic. Frozen cohorts and production policy remain unchanged.
+TASK-0383 completes Lead A's provenance gate with `INSUFFICIENT_PROVENANCE`. Next, prepare an empty
+unopened joined exit cohort without runtime activation and inventory Lead B raw 10-second readiness.
 
 ## Status
 
@@ -18,6 +18,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0383 stops Lead A before invalid economic analysis. The 1,913-row closed journal has realized
+  exits but its local 1m paths do not declare venue/Spot/perpetual identity. The canonical forward
+  exit ledger has 1,690 events, 647 MARK observations across 18 position keys, but zero integrated
+  exit-fill events. No single unopened dataset currently joins authoritative path to realized exit.
+  Two focused tests pass. C-35 passes at 21,012 candles and 151 no-signal decisions; C-33 is healthy
+  at 1,141 buckets with one active session. Plain Persian: سرنخ پس‌دادن سود رد نشده، ولی داده فعلی
+  برای ادعای edge معتبر نیست؛ ابتدا باید مسیر mark و خروج واقعی در یک cohort جدید کنار هم ثبت شوند.
 
 - TASK-0382 ranks eight new leads by mechanism, data readiness, information gain, cost, engineering,
   timing, and contamination risk. Lead A edge-retention/giveback is the only active minimal

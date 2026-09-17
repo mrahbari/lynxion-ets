@@ -30,7 +30,7 @@ information boundary.
 
 ## Current single next action
 
-Run the Lead-A descriptive provenance/path diagnostic frozen in
-`docs/NEW_EDGE_LEAD_TOURNAMENT.md`. Continue C-11, C-35, and C-33 under their frozen gates. Do not
-optimize exit thresholds, open a candidate, or inspect a second lead's outcomes until Lead A is
-rejected or earns an unopened preregistration.
+Lead A returned `INSUFFICIENT_PROVENANCE`: prepare an empty unopened observational exit cohort that
+joins authoritative mark observations to realized exit fills, without changing exit policy or
+activating runtime. In parallel, run only Lead B's raw-data readiness inventory; do not inspect
+predictive outcomes yet. Continue C-11, C-35, and C-33 unchanged.
