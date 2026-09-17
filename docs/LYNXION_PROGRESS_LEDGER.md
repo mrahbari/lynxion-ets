@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0379 freezes the verified official Spot/perpetual endpoint mapping and advances the three
-background cohorts. Next, implement the minimum explicit fail-closed market-type request/cache
-contract without changing production policy or guessing the unresolved BingX series.
+TASK-0380 adds the isolated fail-closed historical market request/cache contract and verified
+Binance mapping. Next, integrate it into the configurable provider with focused routing tests,
+without activating unresolved BingX or changing production policy.
 
 ## Status
 
@@ -19,6 +19,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0380 adds an explicit `SPOT`/`PERPETUAL` historical request identity whose cache key cannot
+  mix the two markets. Only verified Binance Spot and USD-M endpoints are admitted; implicit strings,
+  BingX perpetual, and other unresolved combinations fail closed. Three focused tests pass. The
+  contract is not connected to runtime yet, so production behavior is unchanged. C-35 passes at
+  20,964 candles and 149 no-signal decisions; C-33 is healthy at 1,117 buckets with one public
+  session. Plain Persian: نوع بازار و cache از هم جدا شدند، ولی تا کامل‌شدن تست routing هنوز مسیر
+  production عوض نشده است.
 
 - TASK-0379 verifies distinct official historical contracts for Binance, MEXC, and Phemex. The
   repository's legacy BingX path still does not prove its exact perpetual price-series identity, so
