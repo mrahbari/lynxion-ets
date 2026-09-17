@@ -18,6 +18,7 @@ os.environ.pop("LIVE_TRADING", None)
 from bootstrap.settings.loaders import load_settings
 from domain.value_objects import Symbol
 from infrastructure.data.configurable_historical_data_provider import ConfigurableHistoricalDataProvider
+from infrastructure.data.historical_market_contract import MarketType
 
 NEW = ["BNB", "XRP", "DOGE", "ADA", "LINK", "TON", "TRX", "SUI", "AVAX", "HYPE"]
 TFS = ["1h", "15m", "5m"]
@@ -30,7 +31,9 @@ def main():
     for sym in NEW:
         for tf in TFS:
             try:
-                d = p.get_historical_data(Symbol(f"{sym}USDT"), "365d", tf)
+                d = p.get_historical_data(
+                    Symbol(f"{sym}USDT"), "365d", tf, market_type=MarketType.SPOT
+                )
             except Exception as e:
                 print(f"{sym} {tf}: ERROR {e}", file=sys.stderr)
                 continue

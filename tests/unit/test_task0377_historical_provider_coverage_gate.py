@@ -2,6 +2,7 @@ from infrastructure.data.configurable_historical_data_provider import (
     ConfigurableHistoricalDataProvider,
 )
 from domain.value_objects import Symbol
+from infrastructure.data.historical_market_contract import MarketType
 
 
 NOW = 1_800_000_000
@@ -69,9 +70,9 @@ def test_incomplete_primary_is_not_cached_and_complete_fallback_is_used(monkeypa
     )
     monkeypatch.setattr('time.time', lambda: NOW)
 
-    result = provider.get_historical_data(Symbol('BTCUSDT'), '1d', '1m')
+    result = provider.get_historical_data(
+        Symbol('BTCUSDT'), '1d', '1m', market_type=MarketType.PERPETUAL
+    )
 
     assert len(result) == 1438
-    assert len(cached) == 1
-    assert cached[0][0] == 'BTCUSDT'
-    assert len(cached[0][1]) == 1438
+    assert cached == []

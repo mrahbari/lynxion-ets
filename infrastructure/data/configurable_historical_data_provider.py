@@ -16,6 +16,11 @@ from infrastructure.brokers.broker_adapters import (
     BingXBrokerAdapter, BinanceBrokerAdapter, MEXCBrokerAdapter, PhemexBrokerAdapter
 )
 from infrastructure.brokers.multi_broker_service import MultiBrokerExecutionService
+from infrastructure.data.historical_market_contract import (
+    HistoricalMarketRequest,
+    MarketType,
+    verified_candle_endpoint,
+)
 
 
 class ConfigurableHistoricalDataProvider(DataProviderPort):
@@ -172,7 +177,8 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         except Exception as e:
             self.logger.warning(f"⚠️ Could not initialize MultiBroker service for historical data: {e}")
 
-    def get_historical_data(self, symbol: Symbol, period: str, timeframe: str = '1m') -> List[Dict[str, Any]]:
+    def get_historical_data(self, symbol: Symbol, period: str, timeframe: str = '1m', *,
+                            market_type: MarketType) -> List[Dict[str, Any]]:
         """
         Get historical data using the preferred data source with fallback options.
 
@@ -184,6 +190,8 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         Returns:
             List of historical data points
         """
+        if not isinstance(market_type, MarketType):
+            raise TypeError("market_type must be an explicit MarketType")
         symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
 
         # First, check if the symbol is in the approved symbols list
@@ -196,19 +204,13 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         # Check if this symbol has recently failed to fetch data
         import time
         current_time = time.time()
-        if symbol_str in self.failed_symbols_cache:
-            last_failure = self.failed_symbols_cache[symbol_str]
+        failed_key = (market_type.value, symbol_str)
+        if failed_key in self.failed_symbols_cache:
+            last_failure = self.failed_symbols_cache[failed_key]
             if current_time - last_failure < self.failed_symbols_cache_duration:
                 self.logger.debug(f"Skipping data fetch for {symbol_str} - recently failed (less than {self.failed_symbols_cache_duration}s ago)")
 
                 # Try to get data from local CSV cache as a fallback
-                cached_data = self._get_cached_data_fallback(symbol_str, period, timeframe)
-                if cached_data and self._has_acceptable_coverage(
-                    cached_data, period, timeframe, current_time
-                ):
-                    self.logger.info(f"✅ Retrieved cached data for {symbol_str} from local storage")
-                    return cached_data
-
                 return []  # Return empty list to avoid repeated attempts
 
         # Create ordered list of data sources to try
@@ -219,7 +221,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
         current_time_sec = time.time()
         for source in data_sources:
-            key = (source.lower(), symbol_str)
+            key = (source.lower(), market_type.value, symbol_str)
             if key in self.unsupported_exchange_symbols:
                 last_failed_ts = self.unsupported_exchange_symbols[key]
                 if current_time_sec - last_failed_ts < self.unsupported_exchange_ttl:
@@ -237,15 +239,12 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
                     self.usage_stats[source]['requests'] += 1
 
                 # Try to get historical data from the current source
-                data = self._fetch_from_source(source, symbol_str, period, timeframe)
+                data = self._fetch_from_source(source, symbol_str, period, timeframe, market_type)
 
                 if data and self._has_acceptable_coverage(
                     data, period, timeframe, current_time_sec
                 ):
                     self.logger.info(f"✅ Successfully fetched {len(data)} historical data points for {symbol_str} from {source}")
-
-                    # Cache the data locally for future use
-                    self._cache_data_locally(symbol_str, data)
 
                     return data
                 elif data:
@@ -407,7 +406,8 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         except Exception as e:
             self.logger.warning(f"Could not cache data for {symbol}: {e}")
 
-    def _fetch_from_source(self, source: str, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
+    def _fetch_from_source(self, source: str, symbol: str, period: str, timeframe: str,
+                           market_type: MarketType) -> List[Dict[str, Any]]:
         """
         Fetch historical data from a specific source.
         
@@ -428,24 +428,11 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
         # Different brokers may have different methods for fetching historical data
         # For now, we'll use direct API calls for most reliable historical data
+        request = HistoricalMarketRequest(source, market_type, symbol, timeframe)
+        endpoint = verified_candle_endpoint(request)
         if source == 'binance':
-            return self._fetch_binance_historical(symbol, period, timeframe)
-        elif source == 'bingx':
-            return self._fetch_bingx_historical(symbol, period, timeframe)
-        elif source == 'mexc':
-            return self._fetch_mexc_historical(symbol, period, timeframe)
-        elif source == 'phemex':
-            return self._fetch_phemex_historical(symbol, period, timeframe)
-        elif source == 'multi':
-            # Use the multi broker service's method if available
-            if hasattr(broker, 'get_historical_data'):
-                return broker.get_historical_data(Symbol(symbol), period, timeframe)
-            else:
-                # Fall back to direct API calls
-                return self._fetch_binance_historical(symbol, period, timeframe)
-        else:
-            # Default to direct API call
-            return self._fetch_binance_historical(symbol, period, timeframe)
+            return self._fetch_binance_historical(symbol, period, timeframe, endpoint)
+        raise ValueError(f"unsupported historical market mapping: {source}/{market_type.value}")
 
     def _handle_http_error(self, e: Exception, symbol: str, source: str) -> Exception:
         """Helper to decode requests HTTPError and return a detailed, user-friendly exception."""
@@ -460,6 +447,8 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
                     # Custom mapping for known code errors (e.g. Binance -1121)
                     if code == -1121 or 'invalid symbol' in msg.lower() or 'invalid_symbol' in msg.lower():
                         if hasattr(self, 'unsupported_exchange_symbols'):
+                            # Preserve compatibility for callers that do not provide market identity
+                            # to this error helper; request routing already keys admission by market.
                             self.unsupported_exchange_symbols[(source.lower(), symbol)] = time.time()
                         detailed_msg = f"Invalid symbol '{symbol}' on {source} (code {code}: {msg})"
                     else:
@@ -469,7 +458,8 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
                 pass
         return e
 
-    def _fetch_binance_historical(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
+    def _fetch_binance_historical(self, symbol: str, period: str, timeframe: str,
+                                  endpoint: str) -> List[Dict[str, Any]]:
         """Fetch historical data from Binance API directly."""
         try:
             # Convert period to milliseconds
@@ -477,7 +467,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             end_time = int(datetime.now().timestamp() * 1000)
 
             # Binance API endpoint for klines
-            url = f"https://api.binance.com/api/v3/klines"
+            url = endpoint
             params = {
                 'symbol': symbol,
                 'interval': timeframe,

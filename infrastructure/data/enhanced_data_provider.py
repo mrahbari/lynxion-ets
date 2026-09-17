@@ -18,6 +18,7 @@ from shared.logger import EnhancedLogger
 from infrastructure.brokers.multi_broker_service import MultiBrokerExecutionService
 from infrastructure.data.improved_data_cache import improved_data_cache as data_cache
 from infrastructure.data.configurable_historical_data_provider import ConfigurableHistoricalDataProvider
+from infrastructure.data.historical_market_contract import MarketType
 from infrastructure.data._edp_pricing import _EdpPricingMixin
 from infrastructure.data._edp_availability import _EdpAvailabilityMixin
 
@@ -145,67 +146,38 @@ class EnhancedDataProviderAdapter(DataProviderPort, _EdpPricingMixin, _EdpAvaila
         try:
             # First, try to get real historical data from external source
             # This should be the primary source for available symbols
-            real_historical = self._get_real_historical_from_external_source(symbol.value, period, timeframe)
+            real_historical = self._get_real_historical_from_external_source(
+                symbol.value, period, timeframe, MarketType.PERPETUAL
+            )
             if real_historical and len(real_historical) > 0:
                 self.logger.info(f"Successfully fetched {len(real_historical)} real historical data points for {symbol.value} from external source")
                 return real_historical
 
-            # If real data is not available, try to get from local data
-            try:
-                historical_data = self.csv_provider.get_historical_data(symbol, period, timeframe)
-
-                # If we have data, return it
-                if historical_data and len(historical_data) > 0:
-                    self.logger.info(f"Using {len(historical_data)} historical data points from local storage for {symbol.value}")
-                    return historical_data
-            except FileNotFoundError:
-                # Symbol data doesn't exist locally, we'll try to download
-                pass
-
-            # If no data found locally and download is enabled, try to download
-            if self.download_enabled:
-                self.logger.info(f"No historical data found for {symbol.value}, attempting to download...")
-
-                with self.download_lock:
-                    # Attempt to download the missing data
-                    success = self._download_symbol_data_sync(symbol.value, timeframe, period)
-
-                    if success:
-                        # Try again to get the data after download
-                        try:
-                            downloaded_data = self.csv_provider.get_historical_data(symbol, period, timeframe)
-                            if downloaded_data and len(downloaded_data) > 0:
-                                self.logger.info(f"Successfully downloaded {len(downloaded_data)} data points for {symbol.value}")
-                                return downloaded_data
-                        except FileNotFoundError:
-                            pass  # Data still not available after download attempt
-
-            # If all else fails, try to get real data one more time before falling back to minimal data
-            # This is important to avoid using mock data which doesn't generate real signals
-            real_historical = self._get_real_historical_from_external_source(symbol.value, period, timeframe)
-            if real_historical and len(real_historical) > 0:
-                self.logger.info(f"Using {len(real_historical)} real historical data points as final fallback for {symbol.value}")
-                return real_historical
-
-            # In production, never trade on synthetic minimal data if real data is missing/corrupted
-            self.logger.warning(f"No valid historical data available for {symbol.value}; returning empty data to prevent corrupted signals.")
+            self.logger.warning(
+                f"No verified perpetual historical data available for {symbol.value}; "
+                "refusing local or cross-market fallback."
+            )
             return []
 
         except Exception as e:
             self.logger.error(f"Error getting historical data for {symbol.value}: {e}")
             # Try to get real historical data as fallback before failing
-            real_historical = self._get_real_historical_from_external_source(symbol.value, period, timeframe)
+            real_historical = self._get_real_historical_from_external_source(
+                symbol.value, period, timeframe, MarketType.PERPETUAL
+            )
             if real_historical and len(real_historical) > 0:
                 self.logger.info(f"Using {len(real_historical)} real historical data points as fallback for {symbol.value}")
                 return real_historical
             self.logger.warning(f"Data quality or provider failure for {symbol.value}: {e}. Aborting data fetch.")
             return []
 
-    def _get_real_historical_from_external_source(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
+    def _get_real_historical_from_external_source(self, symbol: str, period: str, timeframe: str,
+                                                  market_type: MarketType) -> List[Dict[str, Any]]:
         """Fetch real historical data from external sources like exchanges with caching."""
         # Try to get data from cache first
         broker_name = self._get_broker_name()
-        cached_data = data_cache.get(broker_name, symbol, timeframe)
+        cache_symbol = f"{market_type.value}:{symbol}"
+        cached_data = data_cache.get(broker_name, cache_symbol, timeframe)
         if cached_data:
             self.logger.debug(f"Using cached data for {symbol} {timeframe} from {broker_name}")
             return cached_data
@@ -223,18 +195,22 @@ class EnhancedDataProviderAdapter(DataProviderPort, _EdpPricingMixin, _EdpAvaila
             historical_data = self.historical_data_provider.get_historical_data(
                 symbol=symbol_obj,
                 period=period,
-                timeframe=timeframe
+                timeframe=timeframe,
+                market_type=market_type,
             )
 
             if historical_data and len(historical_data) > 0:
                 self.logger.info(f"Fetched {len(historical_data)} historical data points from configurable source for {symbol}")
 
                 # Cache the data to prevent duplicate requests
-                data_cache.set(broker_name, symbol, timeframe, historical_data, ttl=60)  # Cache for 60 seconds
+                data_cache.set(broker_name, cache_symbol, timeframe, historical_data, ttl=60)
                 return historical_data
         except Exception as e:
             self.logger.debug(f"Could not fetch real historical data for {symbol} from configurable source: {e}")
-            # Fallback to the original method if configurable provider fails
+            # A perpetual request must never fall back to the legacy Binance Spot client.
+            if market_type is MarketType.PERPETUAL:
+                return []
+            # Spot-only compatibility path.
             try:
                 from .binance_client import BinanceClient
                 client = BinanceClient()

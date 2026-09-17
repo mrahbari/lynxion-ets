@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0380 adds the isolated fail-closed historical market request/cache contract and verified
-Binance mapping. Next, integrate it into the configurable provider with focused routing tests,
-without activating unresolved BingX or changing production policy.
+TASK-0381 integrates the fail-closed market contract into historical request routing. Next, run the
+broader provider/strategy regression surface and resolve compatibility failures without enabling
+unverified source mappings or changing production policy.
 
 ## Status
 
@@ -19,6 +19,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0381 connects explicit market identity to the configurable and enhanced history paths.
+  Perpetual requests route only through verified Binance USD-M; their cache identity is isolated,
+  and missing/unverified data cannot fall back to Spot, legacy local CSV, or downloader paths.
+  Eleven focused tests pass; runtime and broker state were not touched. C-35 passes at 20,988
+  candles and 150 no-signal decisions; C-33 is healthy at 1,129 buckets with one active public
+  session. Plain Persian: اگر داده perpetual تأییدشده نباشد، سیستم سیگنال نمی‌دهد و دیگر Spot را
+  به‌جای آن جا نمی‌زند.
 
 - TASK-0380 adds an explicit `SPOT`/`PERPETUAL` historical request identity whose cache key cannot
   mix the two markets. Only verified Binance Spot and USD-M endpoints are admitted; implicit strings,
