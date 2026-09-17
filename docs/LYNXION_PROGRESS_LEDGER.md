@@ -7,9 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0381 integrates the fail-closed market contract into historical request routing. Next, run the
-broader provider/strategy regression surface and resolve compatibility failures without enabling
-unverified source mappings or changing production policy.
+TASK-0382 adopts the bounded new-lead tournament and selects Lead A profit-giveback state as the
+single active descriptive diagnostic. Frozen cohorts and production policy remain unchanged.
 
 ## Status
 
@@ -19,6 +18,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0382 ranks eight new leads by mechanism, data readiness, information gain, cost, engineering,
+  timing, and contamination risk. Lead A edge-retention/giveback is the only active minimal
+  diagnostic because the recent 50-trade BingX audit contains a real descriptive clue and existing
+  data can test provenance/path breadth without new infrastructure. Quarter-hour flow is next only
+  after raw 10-second readiness; all other leads are parked/rejected to control sprawl. Plain
+  Persian: سرنخ‌های اپراتور حذف نشدند؛ بهترین مورد با یک تست کوچک شروع می‌شود و هیچ exit یا
+  strategy production هنوز تغییر نمی‌کند.
 
 - TASK-0381 connects explicit market identity to the configurable and enhanced history paths.
   Perpetual requests route only through verified Binance USD-M; their cache identity is isolated,

@@ -1,6 +1,6 @@
 # Lynxion Edge Research Decision Board
 
-**Updated:** 2026-09-16
+**Updated:** 2026-09-17
 
 **Primary-family capacity:** 5 maximum
 
@@ -30,7 +30,7 @@ information boundary.
 
 ## Current single next action
 
-Continue C-11, C-35, and C-33 under their frozen gates. In parallel, resume the highest-priority
-verified correctness/risk/execution-defect unit that does not mutate broker/account state or alter
-production policy. Do not admit another edge family until a frozen gate transition or a genuinely
-distinct mechanism plus new point-in-time information/unopened boundary exists.
+Run the Lead-A descriptive provenance/path diagnostic frozen in
+`docs/NEW_EDGE_LEAD_TOURNAMENT.md`. Continue C-11, C-35, and C-33 under their frozen gates. Do not
+optimize exit thresholds, open a candidate, or inspect a second lead's outcomes until Lead A is
+rejected or earns an unopened preregistration.

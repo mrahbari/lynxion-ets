@@ -62,3 +62,10 @@ INTEGRITY -> COST/STRESS -> OOS -> PROSPECTIVE -> KEEP/REJECT -> NEXT QUESTION`
 
 C-35, C-11, and C-33 continue unchanged in the background. They do not block faster independent
 research. Production implementation begins only after economic promotion.
+
+## 2026-09-17 lead-tournament supplement
+
+New operator/Codex leads are governed by `docs/NEW_EDGE_LEAD_TOURNAMENT.md`. At most one new lead is
+active initially; a second is allowed only when it has an independent data boundary and negligible
+shared engineering. Lead A edge-retention/giveback is the selected descriptive diagnostic. This
+does not authorize trailing/exit optimization or production changes.
