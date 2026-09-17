@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0384 verifies Lead B raw temporal readiness. Next, preregister a minimal replication over the
-already-retained archives while preparing Lead A's empty joined exit cohort without activation.
+TASK-0385 freezes Lead B's 24-day quarter-hour replication before outcomes. Next, execute the one
+disposable script under the frozen integrity and falsification gates.
 
 ## Status
 
@@ -18,6 +18,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0385 preregisters Lead B without opening outcomes. The earliest complete raw day of each
+  month in 2024–2025 is selected mechanically: 24 dates in four chronological six-day folds.
+  Ten-second opening/control windows, 4h/8h/12h outcomes, day clustering, integrity floor, rejection
+  rules, and the limited next gate are frozen. One focused test passes. C-35 passes at 21,066
+  candles and 154 no-signal decisions; C-33 is healthy at 1,166 buckets with one active session.
+  Plain Persian: حالا نتیجه هرچه باشد نمی‌توانیم تاریخ، افق یا threshold را برای زیباترشدن خروجی
+  تغییر دهیم.
 
 - TASK-0384 verifies that, although normalized BTC aggTrade outputs are 15-minute aggregates, all
   972 raw daily ZIP archives remain available with millisecond `transact_time`. The first-10-second

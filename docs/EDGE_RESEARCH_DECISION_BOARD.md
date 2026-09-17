@@ -30,7 +30,7 @@ information boundary.
 
 ## Current single next action
 
-Lead A returned `INSUFFICIENT_PROVENANCE`; prepare its empty unopened joined exit cohort without
-runtime activation. Lead B is ready for a minimal replication because all 972 raw BTC aggTrade
-archives with millisecond timestamps are already retained. Freeze its diagnostic before inspecting
-future returns; do not download or build infrastructure. Continue C-11, C-35, and C-33 unchanged.
+Run the frozen Lead-B minimal replication in
+`docs/LEAD_B_QUARTER_HOUR_REPLICATION_PREREGISTRATION.md`; reject immediately if integrity or
+replication gates fail. Lead A remains `INSUFFICIENT_PROVENANCE` pending an empty joined exit cohort.
+Do not download/build infrastructure or change frozen C-11/C-33/C-35.
