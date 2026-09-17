@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0378 verifies an undeclared Spot/perpetual history mismatch and advances C-35 to 138 decisions.
-Continue the correctness/risk/execution-defect track alongside C-35, C-33, and low-cost C-11; make
-no new funding/L2 build.
+TASK-0379 freezes the verified official Spot/perpetual endpoint mapping and advances the three
+background cohorts. Next, implement the minimum explicit fail-closed market-type request/cache
+contract without changing production policy or guessing the unresolved BingX series.
 
 ## Status
 
@@ -19,6 +19,15 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0379 verifies distinct official historical contracts for Binance, MEXC, and Phemex. The
+  repository's legacy BingX path still does not prove its exact perpetual price-series identity, so
+  it remains unresolved rather than guessed. The frozen correction boundary requires explicit
+  market type in requests and caches and forbids perpetual-to-Spot fallback. C-11 remains N=4 plus
+  one pending event, all strictly after epoch `1788082349`; C-35 passes integrity at 20,940 candles,
+  3,552 prospective records, 108 funding records, 642 receipts, and 148 no-signal decisions; C-33
+  is healthy at 1,105 buckets with one active public session. Plain Persian: مسیر بازار دیگر نباید
+  ضمنی باشد؛ تا وقتی قرارداد دقیق BingX ثابت نشده، داده Spot جای perpetual را نمی‌گیرد.
 
 - TASK-0378 verifies that dynamic historical-data requests, registry/cache identity, and returned
   candles do not declare Spot versus perpetual market type. Binance and MEXC paths use Spot
