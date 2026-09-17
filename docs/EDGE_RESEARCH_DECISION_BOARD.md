@@ -30,7 +30,7 @@ information boundary.
 
 ## Current single next action
 
-Lead A returned `INSUFFICIENT_PROVENANCE`: prepare an empty unopened observational exit cohort that
-joins authoritative mark observations to realized exit fills, without changing exit policy or
-activating runtime. In parallel, run only Lead B's raw-data readiness inventory; do not inspect
-predictive outcomes yet. Continue C-11, C-35, and C-33 unchanged.
+Lead A returned `INSUFFICIENT_PROVENANCE`; prepare its empty unopened joined exit cohort without
+runtime activation. Lead B is ready for a minimal replication because all 972 raw BTC aggTrade
+archives with millisecond timestamps are already retained. Freeze its diagnostic before inspecting
+future returns; do not download or build infrastructure. Continue C-11, C-35, and C-33 unchanged.

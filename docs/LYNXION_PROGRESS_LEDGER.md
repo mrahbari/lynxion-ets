@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0383 completes Lead A's provenance gate with `INSUFFICIENT_PROVENANCE`. Next, prepare an empty
-unopened joined exit cohort without runtime activation and inventory Lead B raw 10-second readiness.
+TASK-0384 verifies Lead B raw temporal readiness. Next, preregister a minimal replication over the
+already-retained archives while preparing Lead A's empty joined exit cohort without activation.
 
 ## Status
 
@@ -18,6 +18,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0384 verifies that, although normalized BTC aggTrade outputs are 15-minute aggregates, all
+  972 raw daily ZIP archives remain available with millisecond `transact_time`. The first-10-second
+  quarter-hour input and 4–12h outcomes are therefore reconstructable without downloading or new
+  infrastructure. Two focused tests pass and no predictive outcome was inspected. C-35 passes at
+  21,036 candles and 152 no-signal decisions; C-33 is healthy at 1,154 buckets with one active
+  session. Plain Persian: یک اتفاق مثبت واقعی است؛ داده خام ثانیه‌ای از قبل موجود است و Lead B
+  می‌تواند بعد از preregistration با کمترین هزینه replication شود.
 
 - TASK-0383 stops Lead A before invalid economic analysis. The 1,913-row closed journal has realized
   exits but its local 1m paths do not declare venue/Spot/perpetual identity. The canonical forward

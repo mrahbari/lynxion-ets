@@ -1,0 +1,44 @@
+{
+  "first_10_seconds_resolvable": true,
+  "four_to_twelve_hour_outcomes_resolvable": true,
+  "lead": "B_QUARTER_HOUR_CLOCK_PHASE_ORDER_FLOW",
+  "manifest_days": 972,
+  "manifest_normalized_rows": 93312,
+  "manifest_raw_rows_processed": 1467689495,
+  "next": "run clock-phase replication",
+  "raw_archives_retained": 972,
+  "raw_columns": [
+    "agg_trade_id",
+    "price",
+    "quantity",
+    "first_trade_id",
+    "last_trade_id",
+    "transact_time",
+    "is_buyer_maker"
+  ],
+  "retained_columns": [
+    "timestamp",
+    "trade_count",
+    "quote_volume",
+    "buyer_quote_volume",
+    "seller_quote_volume",
+    "signed_imbalance",
+    "max_quote_size",
+    "mean_quote_size",
+    "std_quote_size",
+    "top_1pct_quote_share"
+  ],
+  "retained_daily_files": 972,
+  "retained_resolution_seconds": 900,
+  "sample_raw_timestamp_deltas_ms": [
+    3101,
+    3
+  ],
+  "sample_timestamp_deltas_seconds": [
+    900,
+    900
+  ],
+  "symbol": "BTCUSDT",
+  "venue": "BINANCE_USDT_PERPETUAL",
+  "verdict": "READY_FOR_REPLICATION_DIAGNOSTIC"
+}
