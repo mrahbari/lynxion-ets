@@ -22,16 +22,15 @@
 
 ## Bounded-cycle portfolio verdict
 
-`PROMISING_INSUFFICIENT_FORWARD_EVIDENCE` — C-11 is the only surviving directional hypothesis, but
-its four completed outcomes are far below the frozen 100-total/30-per-symbol gate and are
-ETH-concentrated. No edge is identified or promotable. The current public historical information
-set is exhausted for candidate generation without a genuinely distinct mechanism and unopened
-information boundary.
+`CURRENT_INFORMATION_SET_INSUFFICIENT` — C-11 is the only surviving directional hypothesis, but its
+five completed outcomes are far below the frozen 100-total/30-per-symbol gate and are
+ETH-concentrated. Lead B failed costs, Funding Settlement failed its materiality gate, C-35 is too
+slow, and Lead A lacks provenance. No edge is identified or promotable, and no sixth historical
+family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0393 rejects further Funding Settlement build-out. Activity increases are broad and real, but
-the preregistered adverse execution proxies are too small or improve: absolute return only +3.33%,
-absolute imbalance -3.75%, and ±1% depth +2.87%. Verdict is
-`LOW_INFORMATION_VALUE — DO_NOT_BUILD`. Keep the Rescue Ladder snapshot unchanged and return to the
-bounded portfolio decision instead of retuning this opened result.
+TASK-0394 freezes the updated portfolio verdict `CURRENT_INFORMATION_SET_INSUFFICIENT`. Rescue
+Ladder remains unchanged; rejected clock/flow variants are closed; C-11 continues prospectively;
+C-35 remains background-only. Diagnose C-33 freshness without backfill, then continue verified
+correctness work while waiting for a valid evidence trigger rather than manufacturing a candidate.

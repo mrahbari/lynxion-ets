@@ -7,8 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0393 completes Funding Settlement with verdict `LOW_INFORMATION_VALUE — DO_NOT_BUILD`. Next,
-place it beside the unchanged Rescue Ladder snapshot and update the bounded portfolio decision.
+TASK-0394 places Funding Settlement beside the unchanged Rescue Ladder snapshot and freezes the
+portfolio verdict `CURRENT_INFORMATION_SET_INSUFFICIENT`. Next, diagnose C-33 freshness without
+backfill while justified background cohorts and correctness work continue.
 
 ## Status
 
@@ -18,6 +19,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0394 synthesizes the fixed Rescue Ladder snapshot with Lead B, Funding Settlement, C-35,
+  Lead A, C-11, and C-33 evidence. The portfolio verdict becomes
+  `CURRENT_INFORMATION_SET_INSUFFICIENT`: no edge is identified, no sixth historical family is
+  justified, and no rejected result may be rescued by retuning. C-11 remains the sole directional
+  forward hypothesis at N=5; C-35 is background-only; C-33 needs a no-backfill freshness diagnosis.
+  Plain Persian: نتیجه منفی Funding چیزی را در Rescue Ladder تغییر نمی‌دهد؛ با داده فعلی ایده تازه
+  نمی‌سازیم و منتظر evidence معتبر یا اطلاعات واقعاً جدید می‌مانیم.
 
 - TASK-0393 evaluates Funding Settlement on 24,048 symbol-events and 4,008 independent settlement
   clusters with 99.975% completeness. Volume and trade count increase consistently across 4/4 folds
