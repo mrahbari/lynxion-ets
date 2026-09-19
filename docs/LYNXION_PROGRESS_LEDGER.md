@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0400 closes final BingX side/order-type admission for direct low-level entry callers. Next,
-inspect symbol/position-side identity before considering another bounded patch.
+TASK-0401 closes final BingX symbol/position-side identity admission for direct low-level callers.
+Next, inspect remaining request metadata before considering another bounded patch.
 
 ## Status
 
@@ -18,6 +18,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0401 extends the final low-level BingX fail-closed boundary to identity fields: the symbol
+  must belong to the existing approved set and an explicit position side must be LONG, SHORT, or
+  BOTH. Fourteen focused tests pass. This does not change the configured symbol policy. Plain
+  Persian: نماد ناشناخته یا جهت پوزیشن خراب دیگر به درخواست صرافی تبدیل نمی‌شود.
 
 - TASK-0400 makes the final low-level BingX entry contract fail closed: only BUY/SELL and
   MARKET/LIMIT may reach the authenticated request; unknown strings previously serialized locally

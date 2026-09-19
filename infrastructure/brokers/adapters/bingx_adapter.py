@@ -734,6 +734,16 @@ class _BingXBroker:
             try:
                 from infrastructure.services.symbol_validator import symbol_validator
                 clean_symbol = symbol_validator.normalize_symbol(order.symbol)
+                approved = {
+                    symbol_validator.normalize_symbol(symbol)
+                    for symbol in symbol_validator.get_approved_symbols()
+                }
+                if not clean_symbol or clean_symbol not in approved:
+                    return {
+                        "success": False,
+                        "order_id": None,
+                        "error": f"symbol is not approved: {clean_symbol or 'missing'}",
+                    }
                 blacklisted = symbol_validator.get_blacklisted_symbols()
                 if clean_symbol in blacklisted:
                     reason = f"PERMANENT_BLACKLIST: {clean_symbol} is blacklisted from trading in configuration"
@@ -797,6 +807,19 @@ class _BingXBroker:
                     "order_id": None,
                     "error": "entry order type must be MARKET or LIMIT",
                 }
+            raw_position_side = getattr(order, "position_side", None)
+            if raw_position_side is not None:
+                position_side_value = (
+                    raw_position_side.value
+                    if hasattr(raw_position_side, "value")
+                    else str(raw_position_side)
+                ).upper()
+                if position_side_value not in {"LONG", "SHORT", "BOTH"}:
+                    return {
+                        "success": False,
+                        "order_id": None,
+                        "error": "position side must be LONG, SHORT, or BOTH",
+                    }
 
             # Handle the symbol formatting here
             # Ensure symbol is properly formatted for BingX REST API (must include hyphen, e.g. XMR-USDT)

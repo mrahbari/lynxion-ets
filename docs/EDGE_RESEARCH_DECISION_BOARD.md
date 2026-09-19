@@ -30,7 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0400 closes the matching final BingX entry-contract gate for direct callers: side must be
-BUY/SELL and entry type MARKET/LIMIT before any broker request. Protective conditional orders use a
-separate function. This is correctness, not edge evidence. Inspect symbol/position-side identity
-before considering another bounded patch.
+TASK-0401 closes final BingX symbol/position identity admission for direct callers using the
+existing approved-symbol policy and LONG/SHORT/BOTH contract. This is correctness, not edge
+evidence. Inspect remaining request metadata before considering another bounded patch.

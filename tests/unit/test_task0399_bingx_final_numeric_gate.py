@@ -56,8 +56,10 @@ def test_low_level_exchange_boundary_rejects_nonfinite_values(field, value):
 @pytest.mark.parametrize(
     ("overrides", "message"),
     [
+        ({"symbol": Symbol("NOTREALUSDT")}, "symbol is not approved: NOTREALUSDT"),
         ({"side": "HOLD"}, "side must be BUY or SELL"),
         ({"order_type": "ICEBERG"}, "entry order type must be MARKET or LIMIT"),
+        ({"position_side": "UP"}, "position side must be LONG, SHORT, or BOTH"),
     ],
 )
 def test_low_level_exchange_boundary_rejects_unknown_entry_contract(overrides, message):
