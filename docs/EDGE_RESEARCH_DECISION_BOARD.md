@@ -30,8 +30,8 @@ information boundary.
 
 ## Current single next action
 
-TASK-0390 applies C-35's frozen throughput gate: 202 decision hours produced only two signals,
-projecting 1,010 days to 240 outcomes. C-35 is `TOO_SLOW — DEPRIORITIZE AS PRIMARY` but continues
-unchanged with sealed economics in the background. Start the Funding Settlement market-quality
-data-readiness diagnostic without touching the frozen Rescue Ladder snapshot. Lead A remains
-`INSUFFICIENT_PROVENANCE`; diagnose C-33 freshness separately without backfill.
+TASK-0391 confirms that Funding Settlement has sufficient existing point-in-time data for one
+minimal diagnostic: actual (including variable) funding timestamps, six-symbol 15m flow/OHLCV, and
+depth snapshots from 2023 through August 2026. Spread and receive timestamps are absent, so the next
+step is a preregistered descriptive pre/post market-quality test with matched clock controls, not a
+directional or executable-edge claim. Do not build a collector or touch the Rescue Ladder snapshot.

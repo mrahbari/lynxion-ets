@@ -1,0 +1,268 @@
+{
+  "actual_funding_timestamps_available": true,
+  "common_flow_end": "2026-08-29T23:45:00+00:00",
+  "common_flow_start": "2023-01-01T00:00:00+00:00",
+  "depth_snapshot_available": true,
+  "directional_edge_claimed": false,
+  "flow_15m_available": true,
+  "lead": "FUNDING_SETTLEMENT_MARKET_QUALITY_CLOCK",
+  "receive_timestamp_available": false,
+  "spread_available": false,
+  "symbols": {
+    "ADAUSDT": {
+      "depth": {
+        "end": "2026-08-29T23:59:31+00:00",
+        "records": 381549,
+        "start": "2023-01-01T00:09:31+00:00"
+      },
+      "depth_fields": [
+        "depth_m5",
+        "notional_m5",
+        "depth_m4",
+        "notional_m4",
+        "depth_m3",
+        "notional_m3",
+        "depth_m2",
+        "notional_m2",
+        "depth_m1",
+        "notional_m1",
+        "depth_p1",
+        "notional_p1",
+        "depth_p2",
+        "notional_p2",
+        "depth_p3",
+        "notional_p3",
+        "depth_p4",
+        "notional_p4",
+        "depth_p5",
+        "notional_p5"
+      ],
+      "flow": {
+        "end": "2026-08-29T23:45:00+00:00",
+        "records": 128352,
+        "start": "2023-01-01T00:00:00+00:00"
+      },
+      "funding": {
+        "end": "2026-08-29T16:00:00+00:00",
+        "records": 5199,
+        "start": "2021-12-01T00:00:00+00:00"
+      },
+      "funding_gap_hours": {
+        "8.0": 5198
+      }
+    },
+    "BNBUSDT": {
+      "depth": {
+        "end": "2026-08-29T23:59:31+00:00",
+        "records": 381550,
+        "start": "2023-01-01T00:09:31+00:00"
+      },
+      "depth_fields": [
+        "depth_m5",
+        "notional_m5",
+        "depth_m4",
+        "notional_m4",
+        "depth_m3",
+        "notional_m3",
+        "depth_m2",
+        "notional_m2",
+        "depth_m1",
+        "notional_m1",
+        "depth_p1",
+        "notional_p1",
+        "depth_p2",
+        "notional_p2",
+        "depth_p3",
+        "notional_p3",
+        "depth_p4",
+        "notional_p4",
+        "depth_p5",
+        "notional_p5"
+      ],
+      "flow": {
+        "end": "2026-08-29T23:45:00+00:00",
+        "records": 128352,
+        "start": "2023-01-01T00:00:00+00:00"
+      },
+      "funding": {
+        "end": "2026-08-29T16:00:00+00:00",
+        "records": 5199,
+        "start": "2021-12-01T00:00:00+00:00"
+      },
+      "funding_gap_hours": {
+        "8.0": 5198
+      }
+    },
+    "BTCUSDT": {
+      "depth": {
+        "end": "2026-08-29T23:59:31+00:00",
+        "records": 381550,
+        "start": "2023-01-01T00:09:31+00:00"
+      },
+      "depth_fields": [
+        "depth_m5",
+        "notional_m5",
+        "depth_m4",
+        "notional_m4",
+        "depth_m3",
+        "notional_m3",
+        "depth_m2",
+        "notional_m2",
+        "depth_m1",
+        "notional_m1",
+        "depth_p1",
+        "notional_p1",
+        "depth_p2",
+        "notional_p2",
+        "depth_p3",
+        "notional_p3",
+        "depth_p4",
+        "notional_p4",
+        "depth_p5",
+        "notional_p5"
+      ],
+      "flow": {
+        "end": "2026-08-29T23:45:00+00:00",
+        "records": 128352,
+        "start": "2023-01-01T00:00:00+00:00"
+      },
+      "funding": {
+        "end": "2026-08-29T16:00:00+00:00",
+        "records": 5199,
+        "start": "2021-12-01T00:00:00+00:00"
+      },
+      "funding_gap_hours": {
+        "8.0": 5198
+      }
+    },
+    "ETHUSDT": {
+      "depth": {
+        "end": "2026-08-29T23:59:31+00:00",
+        "records": 381838,
+        "start": "2023-01-01T00:09:31+00:00"
+      },
+      "depth_fields": [
+        "depth_m5",
+        "notional_m5",
+        "depth_m4",
+        "notional_m4",
+        "depth_m3",
+        "notional_m3",
+        "depth_m2",
+        "notional_m2",
+        "depth_m1",
+        "notional_m1",
+        "depth_p1",
+        "notional_p1",
+        "depth_p2",
+        "notional_p2",
+        "depth_p3",
+        "notional_p3",
+        "depth_p4",
+        "notional_p4",
+        "depth_p5",
+        "notional_p5"
+      ],
+      "flow": {
+        "end": "2026-08-29T23:45:00+00:00",
+        "records": 128352,
+        "start": "2023-01-01T00:00:00+00:00"
+      },
+      "funding": {
+        "end": "2026-08-29T16:00:00+00:00",
+        "records": 5199,
+        "start": "2021-12-01T00:00:00+00:00"
+      },
+      "funding_gap_hours": {
+        "8.0": 5198
+      }
+    },
+    "SOLUSDT": {
+      "depth": {
+        "end": "2026-08-29T23:59:31+00:00",
+        "records": 380974,
+        "start": "2023-01-01T00:09:31+00:00"
+      },
+      "depth_fields": [
+        "depth_m5",
+        "notional_m5",
+        "depth_m4",
+        "notional_m4",
+        "depth_m3",
+        "notional_m3",
+        "depth_m2",
+        "notional_m2",
+        "depth_m1",
+        "notional_m1",
+        "depth_p1",
+        "notional_p1",
+        "depth_p2",
+        "notional_p2",
+        "depth_p3",
+        "notional_p3",
+        "depth_p4",
+        "notional_p4",
+        "depth_p5",
+        "notional_p5"
+      ],
+      "flow": {
+        "end": "2026-08-29T23:45:00+00:00",
+        "records": 128352,
+        "start": "2023-01-01T00:00:00+00:00"
+      },
+      "funding": {
+        "end": "2026-08-29T16:00:00+00:00",
+        "records": 5274,
+        "start": "2021-12-01T00:00:00+00:00"
+      },
+      "funding_gap_hours": {
+        "2.0": 98,
+        "4.0": 3,
+        "8.0": 5172
+      }
+    },
+    "XRPUSDT": {
+      "depth": {
+        "end": "2026-08-29T23:59:31+00:00",
+        "records": 381261,
+        "start": "2023-01-01T00:09:31+00:00"
+      },
+      "depth_fields": [
+        "depth_m5",
+        "notional_m5",
+        "depth_m4",
+        "notional_m4",
+        "depth_m3",
+        "notional_m3",
+        "depth_m2",
+        "notional_m2",
+        "depth_m1",
+        "notional_m1",
+        "depth_p1",
+        "notional_p1",
+        "depth_p2",
+        "notional_p2",
+        "depth_p3",
+        "notional_p3",
+        "depth_p4",
+        "notional_p4",
+        "depth_p5",
+        "notional_p5"
+      ],
+      "flow": {
+        "end": "2026-08-29T23:45:00+00:00",
+        "records": 128352,
+        "start": "2023-01-01T00:00:00+00:00"
+      },
+      "funding": {
+        "end": "2026-08-29T16:00:00+00:00",
+        "records": 5199,
+        "start": "2021-12-01T00:00:00+00:00"
+      },
+      "funding_gap_hours": {
+        "8.0": 5198
+      }
+    }
+  },
+  "verdict": "MINIMAL_DIAGNOSTIC_JUSTIFIED"
+}

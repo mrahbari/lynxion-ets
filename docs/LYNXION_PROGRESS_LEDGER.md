@@ -7,9 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0390 applies C-35's frozen throughput gate and deprioritizes it as a primary research clock.
-Next, run the Funding Settlement market-quality data-readiness diagnostic while C-35 continues
-unchanged in the background.
+TASK-0391 confirms Funding Settlement can be tested from existing point-in-time funding, flow, and
+depth data. Next, preregister the descriptive pre/post diagnostic before inspecting values.
 
 ## Status
 
@@ -19,6 +18,15 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0391 finds sufficient existing data for a minimal Funding Settlement market-quality
+  diagnostic across six Binance USD-M symbols: actual funding timestamps, 15m flow/OHLCV, and depth
+  snapshots overlap from 2023 through August 2026. SOL's observed schedule includes 2h/4h as well as
+  8h intervals, proving that the test must use actual timestamps. Spread and receive timestamps are
+  absent, so exact execution quality cannot be claimed and no new collector is justified yet. One
+  focused test passes. Verdict: `MINIMAL_DIAGNOSTIC_JUSTIFIED`. Plain Persian: داده برای سنجش تغییر
+  حجم، جریان، نوسان و عمق اطراف funding آماده است؛ هنوز اجازه ساخت قانون معامله یا تغییر Rescue
+  Ladder نداریم.
 
 - TASK-0390 applies C-35's preregistered throughput gate after 202 decision hours. Only two signals
   imply 0.2376 signals/day and a mechanical 1,010-day path to 240 outcomes, far beyond the frozen
