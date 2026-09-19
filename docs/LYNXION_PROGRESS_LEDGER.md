@@ -20,6 +20,13 @@ proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy
 
 ## Latest verified findings
 
+- TASK-0389 records a transient public DNS failure followed by a successful bounded C-35 retry.
+  C-35 integrity passes at 22,206 candles, 4,818 prospective records, 150 funding records, 690
+  receipts, and 200 no-signal decisions. C-33 still reports one nominal active session and 1,167
+  eligible buckets, but its latest record is dated `2026-09-17T17:06:36Z`, so freshness has failed
+  and it must not be called healthy until separately diagnosed. C-11 was not yet due. Plain Persian:
+  C-35 سالم جلو رفت ولی سیگنال تازه‌ای نداد؛ جمع‌آوری C-33 بیش از یک روز است داده جدید ندارد.
+
 - TASK-0388 rejects Lead B on the frozen 2026 economic holdout. Integrity passes on 240 UTC days and
   480 trades with no exclusions. Gross expectancy is only `+0.0182%`; after funding it is
   `+0.0173%`, far below the frozen 0.30% retail cost. Primary net expectancy is `-0.2827%`, PF
