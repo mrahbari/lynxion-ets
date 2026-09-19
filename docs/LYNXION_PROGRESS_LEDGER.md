@@ -7,9 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0395 restores C-33 collector freshness without backfill and confirms fresh records under one
-active pinned session. Next, require a new eligible bucket and continue the highest-priority local
-correctness/risk/execution unit while background cohorts run.
+TASK-0396 verifies that restored C-33 collection is productive after 11 new eligible buckets. Next,
+continue the highest-priority local correctness/risk/execution unit while background cohorts run.
 
 ## Status
 
@@ -19,6 +18,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0396 confirms C-33's restored collector is producing valid evidence, not merely running.
+  Exactly one pinned session remains active; 11 new eligible buckets advance the cohort from 1,167
+  to 1,178, with the missing stale interval still ineligible and no backfill. C-35 remains healthy
+  and background-only at 209 decisions with no new signal. Verdict:
+  `COLLECTOR_PRODUCTIVITY_RESTORED`, which is operational recovery rather than edge evidence. Plain
+  Persian: C-33 دوباره داده معتبر تولید می‌کند، اما هنوز فقط در حال جمع‌آوری است و edge محسوب
+  نمی‌شود.
 
 - TASK-0395 diagnoses C-33's stale state as a dead process behind one open ledger session. Read-only
   process inspection found no collector; the exact stale session was closed with its missing

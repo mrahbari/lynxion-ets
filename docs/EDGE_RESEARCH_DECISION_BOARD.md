@@ -30,8 +30,7 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0395 restores C-33 freshness without backfill: the externally proven dead session was closed
-as an ineligible missing interval, the pinned public collector resumed, and fresh records now show
-exactly one active session. Eligible buckets remain 1,167, so require a new eligible bucket before
-calling it productive. Continue verified correctness work and frozen background collection rather
-than manufacturing a candidate.
+TASK-0396 verifies C-33 productivity after recovery: exactly one pinned session is active and 11 new
+eligible buckets advance the cohort from 1,167 to 1,178 without backfill. C-33 returns to background
+`COLLECTING`; continue verified local correctness work and frozen background collection rather than
+manufacturing a candidate.
