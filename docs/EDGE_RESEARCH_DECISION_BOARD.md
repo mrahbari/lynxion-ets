@@ -30,7 +30,7 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0396 verifies C-33 productivity after recovery: exactly one pinned session is active and 11 new
-eligible buckets advance the cohort from 1,167 to 1,178 without backfill. C-33 returns to background
-`COLLECTING`; continue verified local correctness work and frozen background collection rather than
-manufacturing a candidate.
+TASK-0397 refreshes the local single-runner invariant: zero Lynxion trading runners are active, so
+exit-shadow/runtime activation remains blocked; current TRX order state is unknown without broker
+access. Do not start the runtime under this roadmap heartbeat. Continue a bounded repository-only
+correctness/risk/execution inspection while frozen background collection runs.

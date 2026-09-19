@@ -7,8 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0396 verifies that restored C-33 collection is productive after 11 new eligible buckets. Next,
-continue the highest-priority local correctness/risk/execution unit while background cohorts run.
+TASK-0397 confirms the fresh local runner count is zero, so runtime/exit-shadow activation remains
+blocked. Next, continue a bounded repository-only correctness/risk/execution unit while background
+cohorts run.
 
 ## Status
 
@@ -18,6 +19,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0397 refreshes the single-runner invariant with a read-only local process query and finds
+  zero Lynxion trading runners. The required exact-one-runner gate still fails; current status of the
+  previously recorded pending TRX-USDT entry remains UNKNOWN without broker access. No runtime was
+  started and no external state changed. C-35 remains healthy and background-only at 210 decisions
+  with no new signal. Plain Persian: مانع runtime هنوز واقعی است، ولی برای ادامه تحقیقات و اصلاحات
+  محلی نیازی نیست سیستم را اجرا یا سفارش را دست‌کاری کنیم.
 
 - TASK-0396 confirms C-33's restored collector is producing valid evidence, not merely running.
   Exactly one pinned session remains active; 11 new eligible buckets advance the cohort from 1,167
