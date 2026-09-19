@@ -16,7 +16,7 @@
 
 | Cohort | Scientific state | Operational role |
 |---|---|---|
-| C-35 | `COLLECTING` | Continue unchanged to the 168-decision throughput checkpoint; not the primary discovery clock |
+| C-35 | `TOO_SLOW / COLLECTING` | The frozen rate gate projects 1,010 days to 240 outcomes; continue unchanged in the background only |
 | C-11 | `COLLECTING` | Low-cost eight-hour funding monitor; too slow as primary path |
 | C-33 | `COLLECTING` | Low-cost background collection after the verified 1,000-bucket checkpoint |
 
@@ -30,9 +30,8 @@ information boundary.
 
 ## Current single next action
 
-TASK-0388 rejects Lead B economically. The unopened 2026 holdout passed integrity at 480 trades and
-240 day clusters, but its `+0.0173%` pre-cost expectancy became `-0.2827%` at the frozen 0.30% cost,
-PF `0.6007`, with both folds, both clock phases, and both directions negative. Do not retune or
-subset this opened holdout. Return to the tournament and select the next economically distinct,
-existing-data minimal diagnostic. Lead A remains `INSUFFICIENT_PROVENANCE`; C-11/C-33/C-35 remain
-frozen background cohorts.
+TASK-0390 applies C-35's frozen throughput gate: 202 decision hours produced only two signals,
+projecting 1,010 days to 240 outcomes. C-35 is `TOO_SLOW — DEPRIORITIZE AS PRIMARY` but continues
+unchanged with sealed economics in the background. Start the Funding Settlement market-quality
+data-readiness diagnostic without touching the frozen Rescue Ladder snapshot. Lead A remains
+`INSUFFICIENT_PROVENANCE`; diagnose C-33 freshness separately without backfill.

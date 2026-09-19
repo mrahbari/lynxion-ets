@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0388 rejects Lead B economically on its unopened 2026 holdout. Next, return to the ranked lead
-tournament and choose the highest-information economically distinct existing-data diagnostic; do
-not retune the opened Lead-B result.
+TASK-0390 applies C-35's frozen throughput gate and deprioritizes it as a primary research clock.
+Next, run the Funding Settlement market-quality data-readiness diagnostic while C-35 continues
+unchanged in the background.
 
 ## Status
 
@@ -19,6 +19,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0390 applies C-35's preregistered throughput gate after 202 decision hours. Only two signals
+  imply 0.2376 signals/day and a mechanical 1,010-day path to 240 outcomes, far beyond the frozen
+  90-day practical horizon. C-35 becomes `TOO_SLOW — DEPRIORITIZE AS PRIMARY`; this is not an
+  economic rejection, and its low-cost collector continues unchanged with economics sealed.
+  Integrity passes at 22,230 candles, 4,842 prospective records, 150 funding records, and 696
+  receipts. Plain Persian: C-35 خراب نیست، اما برای نسخه عملی پروژه بیش از حد کند است و دیگر مسیر
+  اصلی را معطل نمی‌کند.
 
 - TASK-0389 records a transient public DNS failure followed by a successful bounded C-35 retry.
   C-35 integrity passes at 22,206 candles, 4,818 prospective records, 150 funding records, 690
