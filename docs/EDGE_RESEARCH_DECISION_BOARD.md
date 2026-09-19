@@ -30,8 +30,7 @@ information boundary.
 
 ## Current single next action
 
-TASK-0391 confirms that Funding Settlement has sufficient existing point-in-time data for one
-minimal diagnostic: actual (including variable) funding timestamps, six-symbol 15m flow/OHLCV, and
-depth snapshots from 2023 through August 2026. Spread and receive timestamps are absent, so the next
-step is a preregistered descriptive pre/post market-quality test with matched clock controls, not a
-directional or executable-edge claim. Do not build a collector or touch the Rescue Ladder snapshot.
+TASK-0392 freezes the Funding Settlement diagnostic before outcomes: actual settlement timestamps,
+45-minute pre/post windows, midpoint controls, six symbols, four year-folds, settlement-time
+clusters, and strict information-value gates. Implement only the disposable evaluator. A positive
+result can justify an unopened `NO_TRADE` test but cannot modify production or the Rescue Ladder.

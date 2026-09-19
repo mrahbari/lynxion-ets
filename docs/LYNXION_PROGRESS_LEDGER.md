@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0391 confirms Funding Settlement can be tested from existing point-in-time funding, flow, and
-depth data. Next, preregister the descriptive pre/post diagnostic before inspecting values.
+TASK-0392 freezes the Funding Settlement pre/post diagnostic before outcomes. Next, implement the
+single disposable evaluator without changing production or the Rescue Ladder.
 
 ## Status
 
@@ -18,6 +18,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0392 preregisters the Funding Settlement diagnostic before outcomes. It uses actual funding
+  timestamps, 45-minute pre/post windows, the midpoint to the next settlement as a matched control,
+  six symbols, four year-folds, and cluster bootstrap by settlement timestamp. Information value
+  requires stable breadth plus a non-trivial adverse volatility/imbalance/depth proxy. Even a pass
+  permits only an unopened NO_TRADE test; Rescue Ladder and production remain unchanged. One static
+  test passes. Plain Persian: قواعد قبل از دیدن نتیجه قفل شد و دیگر نمی‌توان پنجره یا معیار را برای
+  زیباترشدن خروجی تغییر داد.
 
 - TASK-0391 finds sufficient existing data for a minimal Funding Settlement market-quality
   diagnostic across six Binance USD-M symbols: actual funding timestamps, 15m flow/OHLCV, and depth
