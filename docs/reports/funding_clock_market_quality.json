@@ -1,0 +1,140 @@
+{
+  "adverse_proxy_gates": {
+    "absolute_log_return": false,
+    "absolute_taker_imbalance": false,
+    "depth_1pct": false
+  },
+  "candidate": "FUNDING_SETTLEMENT_MARKET_QUALITY_CLOCK",
+  "eligible_records": 24048,
+  "exclusions": {
+    "MISSING_PRIMARY_WINDOW": 6
+  },
+  "execution_edge_claimed": false,
+  "independent_settlement_clusters": 4008,
+  "integrity": "PASS",
+  "metrics": {
+    "absolute_log_return": {
+      "cluster_ci": [
+        1.068034812437022e-05,
+        0.0004585969799089732
+      ],
+      "fold_means": {
+        "2023": 0.0004109882986655852,
+        "2024": 0.00025356465102749235,
+        "2025": 0.000276136094224829,
+        "2026": -0.0001344758754384414
+      },
+      "paired_mean": 0.00023279916717239084,
+      "relative_to_settlement_pre": 0.03334256833518435,
+      "same_sign_folds": 3,
+      "same_sign_symbols": 6,
+      "symbol_means": {
+        "ADAUSDT": 0.0003503196349391004,
+        "BNBUSDT": 0.0001336581015632393,
+        "BTCUSDT": 3.340666943028318e-05,
+        "ETHUSDT": 0.00018908563054633818,
+        "SOLUSDT": 0.0003362062206011044,
+        "XRPUSDT": 0.0003541187459542794
+      }
+    },
+    "absolute_taker_imbalance": {
+      "cluster_ci": [
+        -0.0048506093697607885,
+        -0.0011148173409917107
+      ],
+      "fold_means": {
+        "2023": -0.0008662794943025092,
+        "2024": -0.004419638786207156,
+        "2025": -0.004732570561031992,
+        "2026": -0.0011619705070333062
+      },
+      "paired_mean": -0.0029483934594920842,
+      "relative_to_settlement_pre": -0.03751848363507614,
+      "same_sign_folds": 4,
+      "same_sign_symbols": 6,
+      "symbol_means": {
+        "ADAUSDT": -0.004191731313320822,
+        "BNBUSDT": -0.0026720651360937968,
+        "BTCUSDT": -0.0030496429849647144,
+        "ETHUSDT": -0.0018809786339209554,
+        "SOLUSDT": -0.0030513994874671346,
+        "XRPUSDT": -0.002844543201185082
+      }
+    },
+    "depth_1pct": {
+      "cluster_ci": [
+        1976952.8853191722,
+        2800875.2388861636
+      ],
+      "n": 23410,
+      "paired_mean": 2394755.49418097,
+      "relative_to_settlement_pre": 0.028699657095340027
+    },
+    "depth_imbalance": {
+      "cluster_ci": [
+        -0.003369663443583306,
+        0.0029887450618366306
+      ],
+      "n": 23410,
+      "paired_mean": -0.00022367102301526224,
+      "relative_to_settlement_pre": 0.007410228491265622
+    },
+    "log_quote_volume": {
+      "cluster_ci": [
+        0.05036410396338916,
+        0.09173419880069542
+      ],
+      "fold_means": {
+        "2023": 0.08331332884865553,
+        "2024": 0.05404745961562252,
+        "2025": 0.08804154682914093,
+        "2026": 0.05186930363550907
+      },
+      "paired_mean": 0.07093063272492862,
+      "relative_to_settlement_pre": 0.004040591343759931,
+      "same_sign_folds": 4,
+      "same_sign_symbols": 6,
+      "symbol_means": {
+        "ADAUSDT": 0.09261783374680471,
+        "BNBUSDT": 0.07022509074135769,
+        "BTCUSDT": 0.031061056123733537,
+        "ETHUSDT": 0.06650907003617627,
+        "SOLUSDT": 0.07544283367660455,
+        "XRPUSDT": 0.08972791202489498
+      }
+    },
+    "log_trade_count": {
+      "cluster_ci": [
+        0.05596088116766631,
+        0.08919026936003156
+      ],
+      "fold_means": {
+        "2023": 0.07972037534451104,
+        "2024": 0.07084659038298616,
+        "2025": 0.07994946270401747,
+        "2026": 0.05227317007073192
+      },
+      "paired_mean": 0.07240985297629703,
+      "relative_to_settlement_pre": 0.006807192079474927,
+      "same_sign_folds": 4,
+      "same_sign_symbols": 6,
+      "symbol_means": {
+        "ADAUSDT": 0.09001016418294984,
+        "BNBUSDT": 0.07465072292365367,
+        "BTCUSDT": 0.04331601380370363,
+        "ETHUSDT": 0.07350157662795594,
+        "SOLUSDT": 0.07576072865784318,
+        "XRPUSDT": 0.07721991166167588
+      }
+    }
+  },
+  "primary_completeness": 0.9997505612372163,
+  "primary_metrics_passing": [
+    "log_quote_volume",
+    "log_trade_count",
+    "absolute_log_return"
+  ],
+  "spread_available": false,
+  "total_candidates": 24054,
+  "verdict": "LOW_INFORMATION_VALUE \u2014 DO_NOT_BUILD"
+}

@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0392 freezes the Funding Settlement pre/post diagnostic before outcomes. Next, implement the
-single disposable evaluator without changing production or the Rescue Ladder.
+TASK-0393 completes Funding Settlement with verdict `LOW_INFORMATION_VALUE — DO_NOT_BUILD`. Next,
+place it beside the unchanged Rescue Ladder snapshot and update the bounded portfolio decision.
 
 ## Status
 
@@ -18,6 +18,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0393 evaluates Funding Settlement on 24,048 symbol-events and 4,008 independent settlement
+  clusters with 99.975% completeness. Volume and trade count increase consistently across 4/4 folds
+  and 6/6 symbols, so the clock effect is real. However, absolute return rises only 3.33%, absolute
+  taker imbalance falls 3.75%, and ±1% depth rises 2.87%; every frozen adverse/materiality gate
+  fails. Verdict: `LOW_INFORMATION_VALUE — DO_NOT_BUILD`. Two focused tests pass and Rescue Ladder
+  remains unchanged. Plain Persian: funding فعالیت بازار را زیاد می‌کند، اما کیفیت اجرا آن‌قدر بد
+  نمی‌شود که ساخت قانون جدید یا تغییر سیستم توجیه داشته باشد.
 
 - TASK-0392 preregisters the Funding Settlement diagnostic before outcomes. It uses actual funding
   timestamps, 45-minute pre/post windows, the midpoint to the next settlement as a matched control,

@@ -30,7 +30,8 @@ information boundary.
 
 ## Current single next action
 
-TASK-0392 freezes the Funding Settlement diagnostic before outcomes: actual settlement timestamps,
-45-minute pre/post windows, midpoint controls, six symbols, four year-folds, settlement-time
-clusters, and strict information-value gates. Implement only the disposable evaluator. A positive
-result can justify an unopened `NO_TRADE` test but cannot modify production or the Rescue Ladder.
+TASK-0393 rejects further Funding Settlement build-out. Activity increases are broad and real, but
+the preregistered adverse execution proxies are too small or improve: absolute return only +3.33%,
+absolute imbalance -3.75%, and ±1% depth +2.87%. Verdict is
+`LOW_INFORMATION_VALUE — DO_NOT_BUILD`. Keep the Rescue Ladder snapshot unchanged and return to the
+bounded portfolio decision instead of retuning this opened result.
