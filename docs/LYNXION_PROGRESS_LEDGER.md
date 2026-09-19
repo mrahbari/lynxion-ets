@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0394 places Funding Settlement beside the unchanged Rescue Ladder snapshot and freezes the
-portfolio verdict `CURRENT_INFORMATION_SET_INSUFFICIENT`. Next, diagnose C-33 freshness without
-backfill while justified background cohorts and correctness work continue.
+TASK-0395 restores C-33 collector freshness without backfill and confirms fresh records under one
+active pinned session. Next, require a new eligible bucket and continue the highest-priority local
+correctness/risk/execution unit while background cohorts run.
 
 ## Status
 
@@ -19,6 +19,15 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0395 diagnoses C-33's stale state as a dead process behind one open ledger session. Read-only
+  process inspection found no collector; the exact stale session was closed with its missing
+  interval permanently ineligible, and the pinned public collector resumed without backfill. Fresh
+  records now reach `2026-09-19T16:37:01Z` under exactly one active session; eligible buckets remain
+  1,167 pending a complete new bucket. The due C-11 refresh remains N=5, +0.5722% descriptive
+  expectancy, PF 1.7631, and `COLLECTING`, with all records after boundary `1788082349`. Plain
+  Persian: جمع‌آوری C-33 دوباره زنده است، فاصله ازدست‌رفته وارد تحقیق نشد و C-11 نتیجه تازه‌ای
+  نداشت.
 
 - TASK-0394 synthesizes the fixed Rescue Ladder snapshot with Lead B, Funding Settlement, C-35,
   Lead A, C-11, and C-33 evidence. The portfolio verdict becomes

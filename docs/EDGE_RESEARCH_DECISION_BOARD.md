@@ -30,7 +30,8 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0394 freezes the updated portfolio verdict `CURRENT_INFORMATION_SET_INSUFFICIENT`. Rescue
-Ladder remains unchanged; rejected clock/flow variants are closed; C-11 continues prospectively;
-C-35 remains background-only. Diagnose C-33 freshness without backfill, then continue verified
-correctness work while waiting for a valid evidence trigger rather than manufacturing a candidate.
+TASK-0395 restores C-33 freshness without backfill: the externally proven dead session was closed
+as an ineligible missing interval, the pinned public collector resumed, and fresh records now show
+exactly one active session. Eligible buckets remain 1,167, so require a new eligible bucket before
+calling it productive. Continue verified correctness work and frozen background collection rather
+than manufacturing a candidate.
