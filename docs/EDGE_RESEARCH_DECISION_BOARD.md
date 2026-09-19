@@ -30,7 +30,7 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0397 refreshes the local single-runner invariant: zero Lynxion trading runners are active, so
-exit-shadow/runtime activation remains blocked; current TRX order state is unknown without broker
-access. Do not start the runtime under this roadmap heartbeat. Continue a bounded repository-only
-correctness/risk/execution inspection while frozen background collection runs.
+TASK-0398 closes a local non-finite protection boundary: NaN/infinite requested SL/TP can no longer
+bypass sanitizer comparisons and survive into multi-broker order enhancement; non-finite entry
+fails closed. This is correctness, not edge evidence. Continue final exchange-boundary numeric
+admission review while frozen background collection runs.

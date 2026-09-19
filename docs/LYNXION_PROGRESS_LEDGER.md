@@ -7,9 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0397 confirms the fresh local runner count is zero, so runtime/exit-shadow activation remains
-blocked. Next, continue a bounded repository-only correctness/risk/execution unit while background
-cohorts run.
+TASK-0398 closes non-finite SL/TP sanitization on the integrated multi-broker enhancement path.
+Next, inspect the final exchange-boundary numeric admission without broad refactoring.
 
 ## Status
 
@@ -19,6 +18,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0398 closes a verified NaN/infinity bypass in `sanitize_sltp_levels`. Non-finite requested
+  SL/TP previously survived every ordinary comparison and could flow into multi-broker `Money`
+  protection values. They now invoke the existing side-aware bounded defaults, while non-finite
+  entry fails closed. Integrated regressions cover the production enhancement call path; no policy,
+  broker, runtime, or order changed. C-35 remains background-only at 211 decisions with no new
+  signal. Plain Persian: مقدار خراب دیگر نمی‌تواند به‌عنوان حدضرر یا حدسود معتبر وارد سفارش شود؛
+  این اصلاح ایمنی است و ربطی به اثبات سوددهی ندارد.
 
 - TASK-0397 refreshes the single-runner invariant with a read-only local process query and finds
   zero Lynxion trading runners. The required exact-one-runner gate still fails; current status of the

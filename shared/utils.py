@@ -2,6 +2,7 @@ import time
 import hashlib
 import hmac
 import json
+import math
 from typing import Any, Dict, Optional
 from datetime import datetime, timezone
 
@@ -160,7 +161,7 @@ def sanitize_sltp_levels(
         tuple: (sanitized_stop_loss, sanitized_take_profit)
     """
     entry = float(entry_price) if entry_price else 0.0
-    if entry <= 0:
+    if not math.isfinite(entry) or entry <= 0:
         return 0.0, 0.0
 
     side_str = side.name if hasattr(side, 'name') else (side.value if hasattr(side, 'value') else str(side))
@@ -168,6 +169,12 @@ def sanitize_sltp_levels(
 
     sl = float(stop_loss) if stop_loss is not None else 0.0
     tp = float(take_profit) if take_profit is not None else 0.0
+    # NaN comparisons are false in both directions, so non-finite protection levels would
+    # otherwise bypass every invalid/range branch and survive into the broker request.
+    if not math.isfinite(sl):
+        sl = 0.0
+    if not math.isfinite(tp):
+        tp = 0.0
 
     if is_buy:
         # BUY: Stop loss must be below entry, clamped between min_sl_pct and max_sl_pct
