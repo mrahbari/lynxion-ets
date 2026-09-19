@@ -1,0 +1,25 @@
+{
+  "candidate": "LEAD_B_QUARTER_HOUR_ECONOMIC_HOLDOUT",
+  "created_without_lead_b_2026_outcome_access": true,
+  "decision_times_utc": [
+    "00:00:00",
+    "12:00:00"
+  ],
+  "discovery_end": "2025-12-31",
+  "entry_delay_seconds": 10,
+  "execution_cost_primary": 0.003,
+  "execution_cost_stress": 0.005,
+  "expected_days": 240,
+  "expected_nominal_trades": 480,
+  "funding_sha256": "2fe89ca06907e7953cb49c2db052e74158ea9319f50f0bd9dac08fb2a579c097",
+  "hold_hours": 12,
+  "holdout_end": "2026-08-28",
+  "holdout_start": "2026-01-01",
+  "minimum_eligible_days": 200,
+  "minimum_eligible_trades": 400,
+  "observation_window_seconds": 10,
+  "raw_manifest_sha256": "dfa3a9cff71b7b9afc21c3f6cacb0400bc4c5d4d837abaaa6804f99d75f187df",
+  "status": "FROZEN_BEFORE_OUTCOMES",
+  "symbol": "BTCUSDT",
+  "venue_market": "BINANCE_USDM_PERPETUAL"
+}

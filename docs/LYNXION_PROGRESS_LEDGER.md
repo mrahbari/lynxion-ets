@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0386 completed Lead B's frozen 24-day replication and earned only the next economic
-preregistration gate. Next, freeze a chronological unopened cost-adjusted test before inspecting
-any holdout outcomes.
+TASK-0387 freezes Lead B's chronological 2026 economic holdout before outcomes. Next, implement the
+single disposable evaluator and apply integrity, actual funding, cost, breadth, and robustness gates
+without retuning.
 
 ## Status
 
@@ -19,6 +19,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0387 freezes the next test before inspecting Lead-B 2026 outcomes. The holdout contains 240
+  retained complete UTC days from January 1 through August 28, with two fixed non-overlapping 12h
+  trades per day at 00:00 and 12:00 UTC. Entry occurs only after the 10-second observation; actual
+  funding plus 0.30% primary and 0.50% stress round-trip costs are mandatory. KEEP requires a
+  positive day-clustered confidence interval, PF > 1.10, both chronological folds, both clock
+  phases, side breadth, stress survival, and bounded drawdown. Plain Persian: تست سود واقعی قبل از
+  دیدن نتیجه قفل شد؛ اگر بعد از همه هزینه‌ها پایدار نباشد، سرنخ رد می‌شود و دستکاری نخواهد شد.
 
 - TASK-0386 passes Lead B's replication gate on all 24 frozen UTC days and 2,304 nominal events.
   Quarter-hour opening trade count and quote volume are positive in 4/4 chronological folds. The

@@ -30,9 +30,9 @@ information boundary.
 
 ## Current single next action
 
-TASK-0386 passed Lead B's replication gate: quarter-hour trade count and volume increased in all
-four folds, and the 12h signed-flow coefficient was positive in 4/4 folds with its day-block
-uncertainty interval above zero. This is a replication signal, not economic edge. Freeze one
-chronological unopened economic test with entry after the first 10 seconds and full cost/stress
-accounting before opening outcomes. Lead A remains `INSUFFICIENT_PROVENANCE` pending an empty joined
-exit cohort. Do not download/build infrastructure or change frozen C-11/C-33/C-35.
+TASK-0387 freezes Lead B's 2026 economic holdout before outcomes: two non-overlapping 12h trades per
+day, entry after the 10-second observation, actual funding, 0.30% primary and 0.50% stress costs,
+day clustering, and strict breadth/robustness gates. Implement only the disposable evaluator; a
+failure of any economic gate is `REJECT_ECONOMIC_EDGE`. Lead A remains `INSUFFICIENT_PROVENANCE`
+pending an empty joined exit cohort. Do not download/build infrastructure or change frozen
+C-11/C-33/C-35.
