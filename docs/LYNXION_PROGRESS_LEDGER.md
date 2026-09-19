@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0399 closes final BingX numeric admission for direct low-level callers. Next, inventory the
-next independently verified local fail-open boundary without broad refactoring.
+TASK-0400 closes final BingX side/order-type admission for direct low-level entry callers. Next,
+inspect symbol/position-side identity before considering another bounded patch.
 
 ## Status
 
@@ -18,6 +18,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0400 makes the final low-level BingX entry contract fail closed: only BUY/SELL and
+  MARKET/LIMIT may reach the authenticated request; unknown strings previously serialized locally
+  and relied on the exchange to reject them. Protective conditional orders remain separate. Twelve
+  focused final-gate/protection tests pass; no policy or runtime changed. C-35 remains
+  background-only at 213 decisions with no new signal. Plain Persian: intent با side یا نوع سفارش
+  ناشناخته دیگر از سیستم خارج نمی‌شود و قبل از تماس با صرافی رد می‌شود.
 
 - TASK-0399 adds fail-closed numeric validation immediately before the low-level BingX exchange
   request, covering direct recovery/service callers that may bypass normal entry admission.

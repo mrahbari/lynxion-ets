@@ -51,3 +51,16 @@ def test_low_level_exchange_boundary_rejects_nonfinite_values(field, value):
     assert result["success"] is False
     assert field in result["error"]
     assert "finite" in result["error"]
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"side": "HOLD"}, "side must be BUY or SELL"),
+        ({"order_type": "ICEBERG"}, "entry order type must be MARKET or LIMIT"),
+    ],
+)
+def test_low_level_exchange_boundary_rejects_unknown_entry_contract(overrides, message):
+    result = _broker()._execute_order_after_admission(_order(**overrides))
+
+    assert result == {"success": False, "order_id": None, "error": message}

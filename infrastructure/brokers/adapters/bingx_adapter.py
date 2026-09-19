@@ -778,6 +778,26 @@ class _BingXBroker:
                         "error": f"{field} must be positive and finite",
                     }
 
+            raw_side = getattr(order, "side", None)
+            side_value = raw_side.value if hasattr(raw_side, "value") else str(raw_side or "")
+            side_value = side_value.upper()
+            if side_value not in {"BUY", "SELL"}:
+                return {
+                    "success": False,
+                    "order_id": None,
+                    "error": "side must be BUY or SELL",
+                }
+            raw_order_type = getattr(order, "order_type", None)
+            order_type_value = (
+                raw_order_type.value if hasattr(raw_order_type, "value") else str(raw_order_type or "")
+            ).upper()
+            if order_type_value not in {"MARKET", "LIMIT"}:
+                return {
+                    "success": False,
+                    "order_id": None,
+                    "error": "entry order type must be MARKET or LIMIT",
+                }
+
             # Handle the symbol formatting here
             # Ensure symbol is properly formatted for BingX REST API (must include hyphen, e.g. XMR-USDT)
             if isinstance(order.symbol, str):

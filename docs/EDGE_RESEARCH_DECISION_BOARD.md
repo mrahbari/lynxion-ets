@@ -30,7 +30,7 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0399 adds the matching final BingX exchange-boundary numeric gate for direct low-level callers:
-quantity, price, stop, SL, and TP must be positive finite values before any broker request. This is
-correctness, not edge evidence. Continue only independently verified local fail-open inspections
-while frozen background collection runs.
+TASK-0400 closes the matching final BingX entry-contract gate for direct callers: side must be
+BUY/SELL and entry type MARKET/LIMIT before any broker request. Protective conditional orders use a
+separate function. This is correctness, not edge evidence. Inspect symbol/position-side identity
+before considering another bounded patch.
