@@ -30,9 +30,9 @@ information boundary.
 
 ## Current single next action
 
-TASK-0387 freezes Lead B's 2026 economic holdout before outcomes: two non-overlapping 12h trades per
-day, entry after the 10-second observation, actual funding, 0.30% primary and 0.50% stress costs,
-day clustering, and strict breadth/robustness gates. Implement only the disposable evaluator; a
-failure of any economic gate is `REJECT_ECONOMIC_EDGE`. Lead A remains `INSUFFICIENT_PROVENANCE`
-pending an empty joined exit cohort. Do not download/build infrastructure or change frozen
-C-11/C-33/C-35.
+TASK-0388 rejects Lead B economically. The unopened 2026 holdout passed integrity at 480 trades and
+240 day clusters, but its `+0.0173%` pre-cost expectancy became `-0.2827%` at the frozen 0.30% cost,
+PF `0.6007`, with both folds, both clock phases, and both directions negative. Do not retune or
+subset this opened holdout. Return to the tournament and select the next economically distinct,
+existing-data minimal diagnostic. Lead A remains `INSUFFICIENT_PROVENANCE`; C-11/C-33/C-35 remain
+frozen background cohorts.

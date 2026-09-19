@@ -7,9 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0387 freezes Lead B's chronological 2026 economic holdout before outcomes. Next, implement the
-single disposable evaluator and apply integrity, actual funding, cost, breadth, and robustness gates
-without retuning.
+TASK-0388 rejects Lead B economically on its unopened 2026 holdout. Next, return to the ranked lead
+tournament and choose the highest-information economically distinct existing-data diagnostic; do
+not retune the opened Lead-B result.
 
 ## Status
 
@@ -19,6 +19,15 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0388 rejects Lead B on the frozen 2026 economic holdout. Integrity passes on 240 UTC days and
+  480 trades with no exclusions. Gross expectancy is only `+0.0182%`; after funding it is
+  `+0.0173%`, far below the frozen 0.30% retail cost. Primary net expectancy is `-0.2827%`, PF
+  `0.6007`, with day-block interval `[-0.4473%, -0.1234%]`; both folds, both clock phases, and both
+  directions are negative. Stress expectancy is `-0.4827%` and unlevered drawdown is `-77.99%`.
+  Seven of eight gates fail, so verdict is `REJECT_ECONOMIC_EDGE`. Three focused tests pass. Plain
+  Persian: الگوی آماری وجود داشت ولی بسیار کوچک‌تر از هزینه معامله بود؛ این سرنخ سودده نیست و با
+  دستکاری threshold یا انتخاب بخش برنده دوباره باز نمی‌شود.
 
 - TASK-0387 freezes the next test before inspecting Lead-B 2026 outcomes. The holdout contains 240
   retained complete UTC days from January 1 through August 28, with two fixed non-overlapping 12h

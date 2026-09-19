@@ -1,0 +1,124 @@
+{
+  "candidate": "LEAD_B_QUARTER_HOUR_ECONOMIC_HOLDOUT",
+  "eligible_days": 240,
+  "eligible_trades": 480,
+  "exclusions": {},
+  "gates": {
+    "both_clock_phases_positive": false,
+    "both_folds_positive": false,
+    "drawdown_at_least_minus_0_20": false,
+    "positive_primary_expectancy": false,
+    "primary_ci_above_zero": false,
+    "primary_pf_above_1_10": false,
+    "side_concentration_at_most_0_80": true,
+    "stress_expectancy_non_negative": false
+  },
+  "gross": {
+    "average_loss": -0.010599918674484675,
+    "average_win": 0.011328886327385511,
+    "expectancy": 0.00018174378476816638,
+    "n": 480,
+    "payoff_ratio": 1.0687710609191325,
+    "profit_factor": 1.0337293867906363,
+    "win_rate": 0.49166666666666664
+  },
+  "hash_failures": [],
+  "integrity": "PASS",
+  "mean_funding_return": -8.948729166666665e-06,
+  "pre_cost": {
+    "average_loss": -0.01060776576464861,
+    "average_win": 0.011318798615521104,
+    "expectancy": 0.0001727950556014996,
+    "n": 480,
+    "payoff_ratio": 1.0670294637577764,
+    "profit_factor": 1.0320448911755542,
+    "win_rate": 0.49166666666666664
+  },
+  "primary": {
+    "average_loss": -0.011637845365483795,
+    "average_win": 0.010857406773457385,
+    "day_block_ci": [
+      -0.004473459738096658,
+      -0.0012339854823001188
+    ],
+    "expectancy": -0.0028272049443985006,
+    "n": 480,
+    "payoff_ratio": 0.9329395977075722,
+    "profit_factor": 0.6006597409898067,
+    "win_rate": 0.39166666666666666
+  },
+  "primary_max_drawdown": -0.7799051681105234,
+  "side_gross_profit_concentration": 0.5135335091384438,
+  "splits": {
+    "clock_phase": {
+      "00:00": {
+        "average_loss": -0.00969274784751329,
+        "average_win": 0.011153024429699803,
+        "expectancy": -0.002483584934977096,
+        "n": 240,
+        "payoff_ratio": 1.1506566151477005,
+        "profit_factor": 0.6083089111927334,
+        "win_rate": 0.3458333333333333
+      },
+      "12:00": {
+        "average_loss": -0.01389992173823468,
+        "average_win": 0.010623728054713375,
+        "expectancy": -0.0031708249538199055,
+        "n": 240,
+        "payoff_ratio": 0.7643012856317427,
+        "profit_factor": 0.5944565554913555,
+        "win_rate": 0.4375
+      }
+    },
+    "direction": {
+      "LONG": {
+        "average_loss": -0.011292520397435252,
+        "average_win": 0.010240438712502277,
+        "expectancy": -0.003010613047459278,
+        "n": 260,
+        "payoff_ratio": 0.9068337582837643,
+        "profit_factor": 0.5667710989273528,
+        "win_rate": 0.38461538461538464
+      },
+      "SHORT": {
+        "average_loss": -0.012056421084330518,
+        "average_win": 0.011558506842724551,
+        "expectancy": -0.0026104499135084906,
+        "n": 220,
+        "payoff_ratio": 0.9587013228782216,
+        "profit_factor": 0.6391342152521478,
+        "win_rate": 0.4
+      }
+    },
+    "fold": {
+      "2026_JAN_APR": {
+        "average_loss": -0.013469786635717762,
+        "average_win": 0.012111109809627154,
+        "expectancy": -0.0027044927149684427,
+        "n": 240,
+        "payoff_ratio": 0.8991315257742976,
+        "profit_factor": 0.653325784915137,
+        "win_rate": 0.42083333333333334
+      },
+      "2026_MAY_AUG": {
+        "average_loss": -0.009973532708212414,
+        "average_win": 0.009401958421122363,
+        "expectancy": -0.002949917173828558,
+        "n": 240,
+        "payoff_ratio": 0.9426908895962807,
+        "profit_factor": 0.5360399176135713,
+        "win_rate": 0.3625
+      }
+    }
+  },
+  "stress": {
+    "average_loss": -0.012575448416804826,
+    "average_win": 0.010524904792853786,
+    "expectancy": -0.0048272049443985,
+    "n": 480,
+    "payoff_ratio": 0.8369407152741483,
+    "profit_factor": 0.42240581554588674,
+    "win_rate": 0.33541666666666664
+  },
+  "verdict": "REJECT_ECONOMIC_EDGE"
+}
