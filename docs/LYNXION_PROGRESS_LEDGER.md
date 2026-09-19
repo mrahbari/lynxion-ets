@@ -7,8 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0385 freezes Lead B's 24-day quarter-hour replication before outcomes. Next, execute the one
-disposable script under the frozen integrity and falsification gates.
+TASK-0386 completed Lead B's frozen 24-day replication and earned only the next economic
+preregistration gate. Next, freeze a chronological unopened cost-adjusted test before inspecting
+any holdout outcomes.
 
 ## Status
 
@@ -18,6 +19,17 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0386 passes Lead B's replication gate on all 24 frozen UTC days and 2,304 nominal events.
+  Quarter-hour opening trade count and quote volume are positive in 4/4 chronological folds. The
+  signed-flow coefficient is inconclusive at 4h/8h, while 12h is positive in 4/4 folds with a
+  day-block interval `[+0.0003245, +0.0032095]`. The first implementation exposed and then removed
+  a current-candle lookahead defect; only the corrected prior-candle run is accepted. One focused
+  test passes. Verdict: `PREREGISTER_ECONOMIC_TEST_NEXT`, not an edge claim. C-11 is descriptively
+  positive at N=5 but remains too small and ETH-concentrated. C-35 passes at 22,182 candles and 200
+  no-signal decisions. C-33 remains at 1,167 eligible buckets, with latest record dated September
+  17 and therefore needing a separate freshness check. Plain Persian: یک الگوی واقعی و تکرارشونده
+  پیدا شده، اما تا زمانی که روی داده بازنشده و بعد از همه هزینه‌ها سود خالص ندهد edge محسوب نمی‌شود.
 
 - TASK-0385 preregisters Lead B without opening outcomes. The earliest complete raw day of each
   month in 2024–2025 is selected mechanically: 24 dates in four chronological six-day folds.

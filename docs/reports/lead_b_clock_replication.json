@@ -1,0 +1,221 @@
+{
+  "activity": {
+    "abs_log_path": {
+      "day_block_ci": [
+        -3.680583390166642e-05,
+        0.0003418698405615778
+      ],
+      "fold_means": {
+        "2024_H1": 0.00047072384136011465,
+        "2024_H2": -0.0001572792337749386,
+        "2025_H1": 0.00016952727376497634,
+        "2025_H2": 8.56315001689383e-05
+      },
+      "mean_difference": 0.00014215084537977268,
+      "positive_folds": 3
+    },
+    "quote_volume": {
+      "day_block_ci": [
+        367104.3849554811,
+        772980.800428641
+      ],
+      "fold_means": {
+        "2024_H1": 793444.7625240018,
+        "2024_H2": 455915.1313013022,
+        "2025_H1": 644545.7783262152,
+        "2025_H2": 424318.5719867188
+      },
+      "mean_difference": 579556.0610345594,
+      "positive_folds": 4
+    },
+    "trade_count": {
+      "day_block_ci": [
+        21.926133897569443,
+        47.08782552083332
+      ],
+      "fold_means": {
+        "2024_H1": 50.5390625,
+        "2024_H2": 30.37934027777778,
+        "2025_H1": 46.28125,
+        "2025_H2": 15.26736111111111
+      },
+      "mean_difference": 35.61675347222222,
+      "positive_folds": 4
+    }
+  },
+  "economic_edge_claimed": false,
+  "independent_day_clusters": 24,
+  "integrity": {
+    "days": [
+      {
+        "complete_events": 96,
+        "day": "2024-01-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2024-02-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2024-03-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2024-04-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2024-05-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2024-06-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2024-07-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2024-08-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2024-09-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2024-10-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2024-11-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2024-12-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2025-01-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2025-02-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2025-03-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2025-04-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2025-05-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2025-06-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2025-07-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2025-08-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2025-09-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2025-10-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2025-11-01",
+        "hash_ok": true
+      },
+      {
+        "complete_events": 96,
+        "day": "2025-12-01",
+        "hash_ok": true
+      }
+    ],
+    "passing_days": 24,
+    "required_days": 20
+  },
+  "lead": "LEAD_B_QUARTER_HOUR_REPLICATION",
+  "nominal_events": 2304,
+  "predictive": {
+    "12h": {
+      "day_block_ci": [
+        0.00032451361862139534,
+        0.00320945072280425
+      ],
+      "fold_coefficients": {
+        "2024_H1": 0.0015606551439464823,
+        "2024_H2": 0.0007114193203724504,
+        "2025_H1": 0.0009740932580666049,
+        "2025_H2": 0.0020599693299414826
+      },
+      "imbalance_coefficient": 0.001732315531413398,
+      "same_sign_folds": 4
+    },
+    "4h": {
+      "day_block_ci": [
+        -8.419178386808712e-05,
+        0.0021005406155346668
+      ],
+      "fold_coefficients": {
+        "2024_H1": -0.0006828428315566647,
+        "2024_H2": 0.002272646312600309,
+        "2025_H1": 0.00040538052971646546,
+        "2025_H2": 0.0016773685946558665
+      },
+      "imbalance_coefficient": 0.001036600679179338,
+      "same_sign_folds": 3
+    },
+    "8h": {
+      "day_block_ci": [
+        -7.694913642580251e-05,
+        0.0031543089170543185
+      ],
+      "fold_coefficients": {
+        "2024_H1": 0.0008209149259028605,
+        "2024_H2": 0.0008428939798546613,
+        "2025_H1": 0.0010944703345260962,
+        "2025_H2": 0.0019761423604800253
+      },
+      "imbalance_coefficient": 0.001465889168242339,
+      "same_sign_folds": 4
+    }
+  },
+  "verdict": "PREREGISTER_ECONOMIC_TEST_NEXT"
+}

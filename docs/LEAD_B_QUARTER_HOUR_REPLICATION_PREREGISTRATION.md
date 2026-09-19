@@ -60,7 +60,7 @@ Future return horizons are fixed at 4h, 8h, and 12h from the boundary using the 
 1. Are opening-window trade count, quote volume, and absolute price movement larger than the mean of
    their two matched controls?
 2. Does signed opening imbalance have incremental association with 4h/8h/12h returns after
-   controlling for the contemporaneous 15-minute return and log volume?
+   controlling for the strictly prior 15-minute return and opening-window log volume?
 3. Is the sign of the relationship stable across at least three of four chronological folds?
 
 Use paired event differences, UTC-day clustered uncertainty, and a day-block bootstrap. Report
@@ -88,6 +88,15 @@ nominal events and 24 day clusters; never call quarter-hour observations indepen
 
 Survival does not prove edge. It only permits a new unopened economic test with fees, spread,
 slippage, latency, turnover, stress costs, and `NO_TRADE_DEFAULT`.
+
+## Mandatory lookahead correction
+
+The first implementation mistakenly used the current boundary candle's full 15-minute return as a
+control, which includes prices after the 10-second observation window. That run is retained as
+`lead_b_clock_replication_invalid_lookahead.json` and is invalid for any verdict. Before accepting
+results, the implementation was corrected to use only the completed `[t-15m, t)` candle. This is a
+validation-standard correction, not a parameter change; the dates, windows, horizons, gates, and
+all other frozen choices remain unchanged.
 
 ## Engineering budget
 

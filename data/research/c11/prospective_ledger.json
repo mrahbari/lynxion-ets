@@ -2,9 +2,9 @@
   "boundary": 1788082349,
   "candidate": "C-11",
   "metrics": {
-    "expectancy": 0.0025238790265059274,
-    "n": 4,
-    "profit_factor": 1.269261385605751,
+    "expectancy": 0.005722471597958494,
+    "n": 5,
+    "profit_factor": 1.7631311838710677,
     "verdict": "COLLECTING"
   },
   "protocol": "edge-candidate-register-v10",
@@ -74,16 +74,21 @@
       "threshold": -1.2244000000000002e-05
     },
     {
+      "entry_price": 2386.28,
+      "exit_price": 2437.83,
       "expected_entry_timestamp": 1789546500,
       "expected_exit_timestamp": 1789632900,
       "funding_rate": -4.012e-05,
+      "funding_return": -8.582e-05,
       "funding_timestamp": 1789545600,
       "key": "ETHUSDT:1789545600",
+      "net_return": 0.018516841883768762,
+      "price_return": 0.02160266188376876,
       "severity_ratio": 2.233355600089067,
-      "status": "PENDING",
+      "status": "COMPLETE",
       "symbol": "ETHUSDT",
       "threshold": -1.7964000000000003e-05
     }
   ],
-  "updated_at": "2026-09-17T04:53:27+00:00"
+  "updated_at": "2026-09-19T08:38:51+00:00"
 }

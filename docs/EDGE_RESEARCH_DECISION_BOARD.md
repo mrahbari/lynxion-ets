@@ -1,6 +1,6 @@
 # Lynxion Edge Research Decision Board
 
-**Updated:** 2026-09-17
+**Updated:** 2026-09-19
 
 **Primary-family capacity:** 5 maximum
 
@@ -30,7 +30,9 @@ information boundary.
 
 ## Current single next action
 
-Run the frozen Lead-B minimal replication in
-`docs/LEAD_B_QUARTER_HOUR_REPLICATION_PREREGISTRATION.md`; reject immediately if integrity or
-replication gates fail. Lead A remains `INSUFFICIENT_PROVENANCE` pending an empty joined exit cohort.
-Do not download/build infrastructure or change frozen C-11/C-33/C-35.
+TASK-0386 passed Lead B's replication gate: quarter-hour trade count and volume increased in all
+four folds, and the 12h signed-flow coefficient was positive in 4/4 folds with its day-block
+uncertainty interval above zero. This is a replication signal, not economic edge. Freeze one
+chronological unopened economic test with entry after the first 10 seconds and full cost/stress
+accounting before opening outcomes. Lead A remains `INSUFFICIENT_PROVENANCE` pending an empty joined
+exit cohort. Do not download/build infrastructure or change frozen C-11/C-33/C-35.
