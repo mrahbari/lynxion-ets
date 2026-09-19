@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0398 closes non-finite SL/TP sanitization on the integrated multi-broker enhancement path.
-Next, inspect the final exchange-boundary numeric admission without broad refactoring.
+TASK-0399 closes final BingX numeric admission for direct low-level callers. Next, inventory the
+next independently verified local fail-open boundary without broad refactoring.
 
 ## Status
 
@@ -18,6 +18,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0399 adds fail-closed numeric validation immediately before the low-level BingX exchange
+  request, covering direct recovery/service callers that may bypass normal entry admission.
+  Quantity is mandatory; quantity, price, stop, SL, and TP must be positive and finite when present.
+  Four regressions prove NaN/Infinity is rejected without a broker request. No policy or runtime
+  changed. C-35 remains background-only at 212 decisions with no new signal. Plain Persian: حتی اگر
+  مسیر بالادست دور زده شود، مقدار عددی خراب دیگر نمی‌تواند به درخواست صرافی برسد.
 
 - TASK-0398 closes a verified NaN/infinity bypass in `sanitize_sltp_levels`. Non-finite requested
   SL/TP previously survived every ordinary comparison and could flow into multi-broker `Money`

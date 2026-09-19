@@ -1,0 +1,53 @@
+from decimal import Decimal
+
+import pytest
+
+from domain.entities import Order
+from domain.value_objects import Money, Symbol
+from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
+
+
+class _Logger:
+    def error(self, *_args, **_kwargs):
+        pass
+
+    def warning(self, *_args, **_kwargs):
+        pass
+
+
+def _broker():
+    broker = object.__new__(_BingXBroker)
+    broker.logger = _Logger()
+    broker._contract_precisions = {}
+    broker._make_request = lambda *_args, **_kwargs: pytest.fail("broker request must not run")
+    return broker
+
+
+def _order(**overrides):
+    values = {
+        "symbol": Symbol("BTCUSDT"),
+        "side": "BUY",
+        "quantity": Decimal("0.001"),
+        "price": Money(Decimal("60000"), "USDT"),
+        "stop_loss_price": Money(Decimal("59000"), "USDT"),
+        "take_profit_price": Money(Decimal("62000"), "USDT"),
+    }
+    values.update(overrides)
+    return Order(**values)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("quantity", Decimal("NaN")),
+        ("price", Money(Decimal("Infinity"), "USDT")),
+        ("stop_loss_price", Money(Decimal("NaN"), "USDT")),
+        ("take_profit_price", Money(Decimal("-Infinity"), "USDT")),
+    ],
+)
+def test_low_level_exchange_boundary_rejects_nonfinite_values(field, value):
+    result = _broker()._execute_order_after_admission(_order(**{field: value}))
+
+    assert result["success"] is False
+    assert field in result["error"]
+    assert "finite" in result["error"]

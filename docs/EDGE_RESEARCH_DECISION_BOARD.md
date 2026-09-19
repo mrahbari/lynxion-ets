@@ -30,7 +30,7 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0398 closes a local non-finite protection boundary: NaN/infinite requested SL/TP can no longer
-bypass sanitizer comparisons and survive into multi-broker order enhancement; non-finite entry
-fails closed. This is correctness, not edge evidence. Continue final exchange-boundary numeric
-admission review while frozen background collection runs.
+TASK-0399 adds the matching final BingX exchange-boundary numeric gate for direct low-level callers:
+quantity, price, stop, SL, and TP must be positive finite values before any broker request. This is
+correctness, not edge evidence. Continue only independently verified local fail-open inspections
+while frozen background collection runs.

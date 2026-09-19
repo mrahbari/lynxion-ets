@@ -747,6 +747,37 @@ class _BingXBroker:
                     "error": f"Risk Health Gate unavailable: {gate_err}",
                 }
 
+            # Some recovery/service paths intentionally call this low-level method directly.
+            # Re-check every exchange-boundary numeric so NaN/Infinity cannot bypass upstream
+            # comparisons and be serialized into an authenticated order request.
+            numeric_fields = {
+                "quantity": getattr(order, "quantity", None),
+                "price": getattr(order, "price", None),
+                "stop_price": getattr(order, "stop_price", None),
+                "stop_loss_price": getattr(order, "stop_loss_price", None),
+                "take_profit_price": getattr(order, "take_profit_price", None),
+            }
+            for field, raw_value in numeric_fields.items():
+                if raw_value is None:
+                    if field == "quantity":
+                        return {"success": False, "order_id": None, "error": "quantity is missing"}
+                    continue
+                scalar = getattr(raw_value, "amount", raw_value)
+                try:
+                    numeric = float(scalar)
+                except (TypeError, ValueError, OverflowError):
+                    return {
+                        "success": False,
+                        "order_id": None,
+                        "error": f"{field} is malformed",
+                    }
+                if not math.isfinite(numeric) or numeric <= 0:
+                    return {
+                        "success": False,
+                        "order_id": None,
+                        "error": f"{field} must be positive and finite",
+                    }
+
             # Handle the symbol formatting here
             # Ensure symbol is properly formatted for BingX REST API (must include hyphen, e.g. XMR-USDT)
             if isinstance(order.symbol, str):
