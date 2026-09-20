@@ -15,16 +15,21 @@ elif [[ ${runner_lookup_status} -ne 1 ]]; then
 fi
 
 evidence_root="${LYNXION_FORWARD_EXIT_ROOT_OVERRIDE:-data/observability/forward_exit}"
-activation_manifest="${evidence_root}/activation.json"
 head_commit="$(git rev-parse HEAD)"
 candidate_run_id="task0155-$(date -u +%Y%m%dT%H%M%SZ)"
 candidate_boundary="$(python -c 'from datetime import datetime,timezone; print(datetime.now(timezone.utc).isoformat())')"
-launch_metadata="$(python scripts/resolve_forward_exit_cohort.py \
-  --root "${evidence_root}" \
-  --head "${head_commit}" \
-  --new-run-id "${candidate_run_id}" \
-  --new-boundary-utc "${candidate_boundary}")"
+resolver_args=(
+  --root "${evidence_root}"
+  --head "${head_commit}"
+  --new-run-id "${candidate_run_id}"
+  --new-boundary-utc "${candidate_boundary}"
+)
+if [[ -z "${LYNXION_FORWARD_EXIT_ROOT_OVERRIDE:-}" ]]; then
+  resolver_args+=(--auto-rotate-commit-mismatch)
+fi
+launch_metadata="$(python scripts/resolve_forward_exit_cohort.py "${resolver_args[@]}")"
 
+evidence_root="$(python -c 'import json,sys; print(json.loads(sys.argv[1])["root"])' "${launch_metadata}")"
 cohort_run_id="$(python -c 'import json,sys; print(json.loads(sys.argv[1])["run_id"])' "${launch_metadata}")"
 cohort_boundary="$(python -c 'import json,sys; print(json.loads(sys.argv[1])["activation_boundary_utc"])' "${launch_metadata}")"
 cohort_commit="$(python -c 'import json,sys; print(json.loads(sys.argv[1])["commit"])' "${launch_metadata}")"

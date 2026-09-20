@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0417 records the frozen C-35 230-decision checkpoint. TASK-0416 still requires operator restart
-evidence from a new empty forward-exit cohort before production data liveness is closed.
+TASK-0418 restores the single-command launcher contract: after stopping any old runner, the operator
+can use plain `./lynxion`; commit-mismatched default cohorts rotate automatically without data mixing.
 
 ## Status
 
@@ -18,6 +18,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0418 removes the manual forward-cohort path burden from normal launches. Plain `./lynxion`
+  now continues a same-commit cohort or selects `forward_exit/cohorts/auto-<HEAD>` when the default
+  activation belongs to another commit. Explicit overrides still fail closed on mismatch, malformed
+  manifests/non-empty unactivated roots still fail closed, old evidence is untouched, and the
+  single-runner guard remains first. Ten focused launcher/leverage tests pass. Plain Persian: از این
+  پس اجرای معمول دوباره فقط `./lynxion` است و تغییر commit به‌صورت امن cohort تازه می‌سازد.
 
 - TASK-0417 advances C-35 from 228 to 230 frozen decisions with no new signal or completed outcome.
   Candle and funding integrity pass; economics remain sealed, all minimum gates remain false, and

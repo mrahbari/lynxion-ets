@@ -6,7 +6,7 @@ import subprocess
 
 import pytest
 
-from scripts.resolve_forward_exit_cohort import resolve
+from scripts.resolve_forward_exit_cohort import resolve, resolve_launch
 
 
 BOUNDARY = "2026-09-05T17:00:00+00:00"
@@ -57,6 +57,21 @@ def test_empty_new_root_resolves_actual_head_and_new_metadata_without_writing(tm
     assert list(tmp_path.iterdir()) == before
 
 
+def test_default_launch_rotates_commit_mismatch_to_head_scoped_empty_cohort(tmp_path):
+    root = tmp_path / "forward_exit"
+    _manifest(root, "old-head")
+
+    result = resolve_launch(
+        root, "new-head-1234567890", "run-new", BOUNDARY,
+        auto_rotate_commit_mismatch=True,
+    )
+
+    assert result["state"] == "NEW"
+    assert result["commit"] == "new-head-1234567890"
+    assert result["root"] == str(root / "cohorts" / "auto-new-head-123")
+    assert json.loads((root / "activation.json").read_text())["commit"] == "old-head"
+
+
 def test_wrapper_commit_mismatch_exits_before_runtime_entrypoint(tmp_path):
     project_root = Path(__file__).resolve().parents[2]
     shutil.copy(project_root / "lynxion", tmp_path / "lynxion")
@@ -85,3 +100,40 @@ def test_wrapper_commit_mismatch_exits_before_runtime_entrypoint(tmp_path):
     assert result.returncode != 0
     assert "commit differs from HEAD" in result.stderr
     assert not sentinel.exists()
+
+
+def test_wrapper_default_rotates_mismatch_and_starts_runtime(tmp_path):
+    project_root = Path(__file__).resolve().parents[2]
+    shutil.copy(project_root / "lynxion", tmp_path / "lynxion")
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    shutil.copy(project_root / "scripts" / "resolve_forward_exit_cohort.py", scripts)
+    sentinel = tmp_path / "runtime_environment.json"
+    (tmp_path / "run_trading_system.py").write_text(
+        "import json, os\nfrom pathlib import Path\n"
+        f"Path({str(sentinel)!r}).write_text(json.dumps(dict("
+        "root=os.environ['LYNXION_FORWARD_EXIT_ROOT'], "
+        "commit=os.environ['LYNXION_FORWARD_EXIT_COMMIT'])))\n"
+    )
+    _manifest(tmp_path / "data" / "observability" / "forward_exit", "old-head")
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    (fake_bin / "pgrep").write_text("#!/bin/sh\nexit 1\n")
+    (fake_bin / "git").write_text("#!/bin/sh\necho new-head-1234567890\n")
+    for command in fake_bin.iterdir():
+        command.chmod(0o755)
+    env = dict(os.environ)
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env.pop("LYNXION_FORWARD_EXIT_ROOT_OVERRIDE", None)
+
+    result = subprocess.run(
+        ["zsh", "lynxion"], cwd=tmp_path, env=env, text=True,
+        capture_output=True, timeout=10,
+    )
+
+    assert result.returncode == 0, result.stderr
+    runtime = json.loads(sentinel.read_text())
+    assert runtime == {
+        "root": "data/observability/forward_exit/cohorts/auto-new-head-123",
+        "commit": "new-head-1234567890",
+    }

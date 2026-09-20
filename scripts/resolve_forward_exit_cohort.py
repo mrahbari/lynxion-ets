@@ -15,6 +15,10 @@ REQUIRED = {
 }
 
 
+class ActivationCommitMismatch(ValueError):
+    """Existing cohort belongs to a different immutable source revision."""
+
+
 def _utc(value: Any) -> None:
     if not isinstance(value, str):
         raise ValueError("activation boundary must be an ISO-8601 string")
@@ -41,7 +45,9 @@ def resolve(root: Path | str, head_commit: str, new_run_id: str,
             raise ValueError("activation manifest identity is invalid")
         _utc(manifest["activation_boundary_utc"])
         if manifest["commit"] != head_commit:
-            raise ValueError("activation manifest commit differs from HEAD; use a new empty cohort root")
+            raise ActivationCommitMismatch(
+                "activation manifest commit differs from HEAD; use a new empty cohort root"
+            )
         return {"state": "CONTINUE", **manifest}
 
     if root.exists() and any(root.iterdir()):
@@ -56,14 +62,34 @@ def resolve(root: Path | str, head_commit: str, new_run_id: str,
     }
 
 
+def resolve_launch(root: Path | str, head_commit: str, new_run_id: str,
+                   new_boundary_utc: str, *, auto_rotate_commit_mismatch: bool = False
+                   ) -> dict[str, Any]:
+    """Resolve launch metadata and safely rotate only a default commit-mismatched cohort."""
+
+    root = Path(root)
+    try:
+        metadata = resolve(root, head_commit, new_run_id, new_boundary_utc)
+    except ActivationCommitMismatch:
+        if not auto_rotate_commit_mismatch:
+            raise
+        root = root / "cohorts" / f"auto-{head_commit[:12]}"
+        metadata = resolve(root, head_commit, new_run_id, new_boundary_utc)
+    return {"root": str(root), **metadata}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--head", required=True)
     parser.add_argument("--new-run-id", required=True)
     parser.add_argument("--new-boundary-utc", required=True)
+    parser.add_argument("--auto-rotate-commit-mismatch", action="store_true")
     args = parser.parse_args()
-    print(json.dumps(resolve(args.root, args.head, args.new_run_id, args.new_boundary_utc), sort_keys=True))
+    print(json.dumps(resolve_launch(
+        args.root, args.head, args.new_run_id, args.new_boundary_utc,
+        auto_rotate_commit_mismatch=args.auto_rotate_commit_mismatch,
+    ), sort_keys=True))
 
 
 if __name__ == "__main__":
