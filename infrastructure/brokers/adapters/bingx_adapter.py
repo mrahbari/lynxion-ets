@@ -55,11 +55,16 @@ def extract_bingx_order_id(response: Dict[str, Any]):
     data = response.get("data") if isinstance(response, dict) else None
     if not isinstance(data, dict):
         return None
+    direct = data.get("orderID")
+    if direct is not None:
+        return direct
     direct = data.get("orderId")
     if direct is not None:
         return direct
     nested = data.get("order")
-    return nested.get("orderId") if isinstance(nested, dict) else None
+    if not isinstance(nested, dict):
+        return None
+    return nested.get("orderID", nested.get("orderId"))
 
 
 class BingXBrokerAdapter(BrokerPort):

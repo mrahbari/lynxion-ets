@@ -4,7 +4,7 @@ import pytest
 
 from domain.entities import Order
 from domain.value_objects import Money, Symbol
-from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
+from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker, extract_bingx_order_id
 
 
 class _Logger:
@@ -104,3 +104,12 @@ def test_limit_order_transmits_canonical_post_only_time_in_force():
     assert result["success"] is True
     assert result["order_id"] == "LIMIT1"
     assert sent[0]["timeInForce"] == "PostOnly"
+
+
+def test_order_identity_prefers_precision_safe_string_field():
+    response = {
+        "code": 0,
+        "data": {"orderID": "9223372036854775807", "orderId": 9223372036854775807},
+    }
+
+    assert extract_bingx_order_id(response) == "9223372036854775807"

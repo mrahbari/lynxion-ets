@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0405 restores current BingX order-response identity parsing. Next, define safe handling for a
-nominal success that omits order identity without introducing duplicate-order risk.
+TASK-0406 restores precision-safe BingX order-response identity parsing. Next, define safe handling
+for a nominal success that omits order identity without introducing duplicate-order risk.
 
 ## Status
 
@@ -18,6 +18,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0406 makes all BingX success paths prefer the official string `data.orderID`, avoiding
+  precision loss for large exchange IDs while retaining numeric and legacy fallbacks. Twenty-three
+  focused tests pass; C-35 has no new signal. Plain Persian: شناسه بزرگ سفارش به‌صورت رشته امن
+  خوانده می‌شود تا رقم‌های آن تغییر نکند.
 
 - TASK-0405 makes all three BingX order-success paths read the current official `data.orderId`
   response while retaining the older nested fallback. Previously a currently shaped accepted

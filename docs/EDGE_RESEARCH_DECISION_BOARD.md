@@ -30,6 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0405 reads the current BingX success shape `data.orderId` while retaining the legacy nested
-fallback across all order paths. This is correctness, not edge evidence. Next define safe handling
+TASK-0406 prefers BingX's precision-safe string `data.orderID`, retaining numeric and legacy
+fallbacks across all order paths. This is correctness, not edge evidence. Next define safe handling
 for a nominal success that omits order identity.
