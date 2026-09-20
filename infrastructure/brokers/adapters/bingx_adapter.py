@@ -50,6 +50,18 @@ def ensure_client_order_id(order) -> str:
     return coid
 
 
+def extract_bingx_order_id(response: Dict[str, Any]):
+    """Read current direct and legacy nested BingX order response shapes."""
+    data = response.get("data") if isinstance(response, dict) else None
+    if not isinstance(data, dict):
+        return None
+    direct = data.get("orderId")
+    if direct is not None:
+        return direct
+    nested = data.get("order")
+    return nested.get("orderId") if isinstance(nested, dict) else None
+
+
 class BingXBrokerAdapter(BrokerPort):
     def __init__(self, config: Dict):
         self._broker = _BingXBroker(config)
@@ -1025,8 +1037,7 @@ class _BingXBroker:
                 response = self._make_request('POST', endpoint, data=main_order_data, signed=True)
 
                 if response.get('code') == 0:
-                    order_info = response.get('data', {}).get('order', {})
-                    main_order_id = order_info.get('orderId')
+                    main_order_id = extract_bingx_order_id(response)
 
                     # If main order was successful, now place separate conditional orders for SL/TP
                     conditional_errors = []
@@ -1142,10 +1153,9 @@ class _BingXBroker:
                 response = self._make_request('POST', endpoint, data=order_data, signed=True)
 
                 if response.get('code') == 0:
-                    order_info = response.get('data', {}).get('order', {})
                     return {
                         'success': True,
-                        'order_id': order_info.get('orderId'),
+                        'order_id': extract_bingx_order_id(response),
                         'response': response['data']
                     }
                 else:
@@ -1232,10 +1242,9 @@ class _BingXBroker:
             )
 
             if response.get('code') == 0:
-                order_info = response.get('data', {}).get('order', {})
                 return {
                     'success': True,
-                    'order_id': order_info.get('orderId'),
+                    'order_id': extract_bingx_order_id(response),
                     'response': response['data'],
                     'rate_limit_wait_ms': response.get('_client_rate_limit_wait_ms'),
                 }

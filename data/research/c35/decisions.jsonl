@@ -216,3 +216,4 @@
 {"candidate":"C-35","decision_time":1789862400,"input_sha256":"02456e7384f305617e675b2ccb075d1629840de93f2ed2c54447eec657b8a752","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
 {"candidate":"C-35","decision_time":1789866000,"input_sha256":"4e4758be3dc01d02ed98563d1a4ba25a47f9a7833820a351a0a9b5f1c3cf01ac","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
 {"candidate":"C-35","decision_time":1789869600,"input_sha256":"bb4ba66cba87a3eb4ebb46f9b3ce100eca0700657425d16170abbbe0847bcb2e","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
+{"candidate":"C-35","decision_time":1789873200,"input_sha256":"bb9311d5a3614dfc0efea10b68c8be632a0824ee06c0a8be45d7289d851d71d0","kind":"DECISION","selected":{"compression_median":0.0011356882287656333,"compression_threshold":0.0012965252409424715,"decision_normalized_true_range":0.005432698294110178,"entry_open_time":1789873200,"exit_open_time":1789880400,"side":"SHORT","symbol":"BTCUSDT"},"verdict":"SIGNAL"}

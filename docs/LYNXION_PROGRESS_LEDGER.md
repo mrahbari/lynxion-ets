@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0404 corrects the BingX client-order-id payload field to the official `clientOrderId`. Next,
-continue only bounded official-contract inspection before considering another patch.
+TASK-0405 restores current BingX order-response identity parsing. Next, define safe handling for a
+nominal success that omits order identity without introducing duplicate-order risk.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0405 makes all three BingX order-success paths read the current official `data.orderId`
+  response while retaining the older nested fallback. Previously a currently shaped accepted
+  response could become local `success=True` with no order ID. Twenty-two focused tests pass; C-35
+  reaches 219 decisions with no new signal. Plain Persian: شناسه سفارش موفق با قالب فعلی صرافی دیگر
+  گم نمی‌شود.
 
 - TASK-0404 corrects both BingX main-order payload paths from `clientOrderID` to the official
   `clientOrderId`. The stable identifier existed, but the wrong key casing could prevent the

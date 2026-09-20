@@ -30,6 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0404 corrects the BingX idempotency payload field from `clientOrderID` to the official
-`clientOrderId` in both main-order paths. This is correctness, not edge evidence. Continue only
-bounded official-contract inspection; do not broaden into adapter refactoring.
+TASK-0405 reads the current BingX success shape `data.orderId` while retaining the legacy nested
+fallback across all order paths. This is correctness, not edge evidence. Next define safe handling
+for a nominal success that omits order identity.

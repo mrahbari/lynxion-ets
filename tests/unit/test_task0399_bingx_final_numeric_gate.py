@@ -89,7 +89,7 @@ def test_limit_order_transmits_canonical_post_only_time_in_force():
     sent = []
     broker._make_request = lambda _method, _endpoint, **kwargs: (
         sent.append(kwargs["data"]),
-        {"code": 0, "data": {"order": {"orderId": "LIMIT1"}}},
+        {"code": 0, "data": {"orderId": "LIMIT1"}},
     )[1]
 
     result = broker._execute_order_after_admission(
@@ -102,4 +102,5 @@ def test_limit_order_transmits_canonical_post_only_time_in_force():
     )
 
     assert result["success"] is True
+    assert result["order_id"] == "LIMIT1"
     assert sent[0]["timeInForce"] == "PostOnly"
