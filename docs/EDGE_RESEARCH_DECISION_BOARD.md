@@ -30,6 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0407 binds the generated BingX idempotency key to the original logical order before creating
-formatted copies, so adapter-level retries reuse the same ID. This is correctness, not edge
-evidence. Next define reconciliation for nominal success without order identity.
+TASK-0408 reconciles nominal BingX success without exchange identity through the stable
+`clientOrderId`; status, fill, and cancel now accept that identity without blind resend. This is
+correctness, not edge evidence. Next inspect attached LIMIT protection serialization.

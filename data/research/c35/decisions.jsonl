@@ -219,3 +219,5 @@
 {"candidate":"C-35","decision_time":1789873200,"input_sha256":"bb9311d5a3614dfc0efea10b68c8be632a0824ee06c0a8be45d7289d851d71d0","kind":"DECISION","selected":{"compression_median":0.0011356882287656333,"compression_threshold":0.0012965252409424715,"decision_normalized_true_range":0.005432698294110178,"entry_open_time":1789873200,"exit_open_time":1789880400,"side":"SHORT","symbol":"BTCUSDT"},"verdict":"SIGNAL"}
 {"candidate":"C-35","decision_time":1789876800,"input_sha256":"0cb3c17b3ee0165e2acfb6063101c3b794406d9e0c13cf245f993211f52928ce","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
 {"candidate":"C-35","decision_time":1789880400,"input_sha256":"7c6289c2721dabd5c5c3c6b74a8f51967946e9ebe9a33bca6a78862bc8965b14","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
+{"candidate":"C-35","decision_time":1789884000,"input_sha256":"53cecd0f7dee11e83e1727d1490d5585ede19c84f4323174e60acfd341a1a925","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}
+{"candidate":"C-35","decision_time":1789887600,"input_sha256":"e4ae7d2d17e45d99e3bf9f7d10496901d3577fd89763ee271cd392fc1f2107ec","kind":"DECISION","selected":null,"verdict":"NO_SIGNAL"}

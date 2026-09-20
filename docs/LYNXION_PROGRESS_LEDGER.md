@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0407 closes adapter-level BingX retry identity drift. Next, define reconciliation for a nominal
-success that omits order identity without introducing blind retry risk.
+TASK-0408 closes BingX nominal-success reconciliation without blind retry. Next, inspect attached
+LIMIT protection serialization against the official contract.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0408 uses the stable client order ID when a nominal BingX success omits exchange identity,
+  and status/fill/cancel can reconcile through that ID. This prevents `None` from triggering a blind
+  resend of a potentially accepted order. Twenty-six focused tests pass; C-35 reaches 223 decisions
+  with no new signal. Plain Persian: پاسخ مبهم صرافی با شناسه ضدتکرار پیگیری می‌شود، نه با ارسال
+  دوباره بدون اطلاع.
 
 - TASK-0407 binds a generated BingX client order ID to the original order before creating the
   formatted adapter copy. Repeating `place_order` for the same logical object now reuses one

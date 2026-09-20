@@ -162,7 +162,13 @@ class BingXBrokerAdapter(BrokerPort):
 
         result = self._broker.execute_order(temp_order)
         if result.get('success') and not result.get('protection_failed') and not result.get('conditional_orders_errors'):
-            return result['order_id']
+            exchange_order_id = result.get('order_id')
+            if exchange_order_id is None:
+                self.logger.warning(
+                    "BingX accepted an order without exchange order identity; "
+                    "using stable clientOrderId for reconciliation"
+                )
+            return str(exchange_order_id or client_order_id)
         else:
             error_msg = result.get('error') or f"protective orders failed: {result.get('conditional_orders_errors')}"
             # Make error messages more readable
@@ -1335,10 +1341,8 @@ class _BingXBroker:
         """Cancel an order."""
         try:
             formatted_sym = self._format_symbol_str(symbol)
-            params = {
-                'symbol': formatted_sym,
-                'orderId': order_id
-            }
+            identity_field = 'orderId' if str(order_id).isdigit() else 'clientOrderId'
+            params = {'symbol': formatted_sym, identity_field: order_id}
 
             response = self._make_request('DELETE', '/openApi/swap/v2/trade/order', params=params, signed=True)
             return response.get('code') == 0
@@ -1351,12 +1355,12 @@ class _BingXBroker:
         formatted_sym = self._format_symbol_str(symbol)
         pending_orders = self.get_pending_orders(formatted_sym)
         for order in pending_orders:
-            if str(order.get('orderId')) == str(order_id):
+            if str(order.get('orderId')) == str(order_id) or str(order.get('clientOrderId')) == str(order_id):
                 return order.get('status')
 
         history = self.get_order_history(formatted_sym, limit=100)
         for order in history:
-            if str(order.get('orderId')) == str(order_id):
+            if str(order.get('orderId')) == str(order_id) or str(order.get('clientOrderId')) == str(order_id):
                 return order.get('status')
 
         return "UNKNOWN"
@@ -1365,7 +1369,7 @@ class _BingXBroker:
         """B7: return the order's {status, executed_qty, avg_price} from open orders + history."""
         formatted_sym = self._format_symbol_str(symbol)
         for order in list(self.get_pending_orders(formatted_sym)) + list(self.get_order_history(formatted_sym, limit=100)):
-            if str(order.get('orderId')) == str(order_id):
+            if str(order.get('orderId')) == str(order_id) or str(order.get('clientOrderId')) == str(order_id):
                 return {
                     "status": order.get('status', 'UNKNOWN'),
                     "executed_qty": order.get('executedQty', order.get('cumQty', 0)) or 0,

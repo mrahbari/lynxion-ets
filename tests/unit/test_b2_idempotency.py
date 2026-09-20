@@ -87,3 +87,47 @@ def test_adapter_retry_reuses_id_on_original_logical_order(monkeypatch):
 
     assert order.client_order_id
     assert sent == [order.client_order_id, order.client_order_id]
+
+
+def test_adapter_uses_client_identity_when_success_omits_exchange_id(monkeypatch):
+    adapter = object.__new__(BingXBrokerAdapter)
+    adapter.connected = True
+    adapter.logger = logging.getLogger("test_b2_missing_exchange_id")
+    adapter._format_symbol = lambda symbol: symbol
+    adapter._broker = type(
+        "Broker", (), {"execute_order": lambda _self, _order: {"success": True, "order_id": None}}
+    )()
+    monkeypatch.setattr(
+        "infrastructure.risk.symbol_cooldown_gate.symbol_cooldown_gate.is_symbol_allowed",
+        lambda _symbol: (True, "test"),
+    )
+    order = _order()
+
+    returned_id = adapter.place_order(order)
+
+    assert returned_id == order.client_order_id
+
+
+def test_reconciliation_and_cancel_accept_client_order_identity(monkeypatch):
+    broker = object.__new__(_BingXBroker)
+    broker.logger = logging.getLogger("test_b2_client_reconciliation")
+    broker.get_pending_orders = lambda _symbol: [
+        {
+            "orderId": "987654",
+            "clientOrderId": "xclient123",
+            "status": "NEW",
+            "executedQty": "0.1",
+            "avgPrice": "60000",
+        }
+    ]
+    broker.get_order_history = lambda _symbol, limit=100: []
+    captured = []
+    broker._make_request = lambda _method, _endpoint, **kwargs: (
+        captured.append(kwargs["params"]),
+        {"code": 0},
+    )[1]
+
+    assert broker.get_order_status("xclient123", "BTC-USDT") == "NEW"
+    assert broker.get_order_fill("xclient123", "BTC-USDT")["executed_qty"] == "0.1"
+    assert broker.cancel_order("xclient123", "BTC-USDT") is True
+    assert captured == [{"symbol": "BTC-USDT", "clientOrderId": "xclient123"}]
