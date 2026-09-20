@@ -136,6 +136,10 @@ class BingXBrokerAdapter(BrokerPort):
         from domain.entities import Order as DomainOrder
         from datetime import datetime
 
+        # Bind idempotency to the caller's logical order before creating the formatted copy.
+        # A retry of adapter.place_order(order) must not mint a different exchange identity.
+        client_order_id = ensure_client_order_id(order)
+
         # Create a temporary order with the formatted symbol but preserve all other attributes
         temp_order = DomainOrder(
             symbol=formatted_symbol,
@@ -148,7 +152,7 @@ class BingXBrokerAdapter(BrokerPort):
             position_side=getattr(order, 'position_side', 'BOTH'),
             stop_price=getattr(order, 'stop_price', None),
             time_in_force=getattr(order, 'time_in_force', 'GTC'),
-            client_order_id=getattr(order, 'client_order_id', None),
+            client_order_id=client_order_id,
             parent_signal=getattr(order, 'parent_signal', None),
             risk_adjusted_quantity=getattr(order, 'risk_adjusted_quantity', None),
             stop_loss_price=getattr(order, 'stop_loss_price', None),  # Add stop loss price

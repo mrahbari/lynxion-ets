@@ -9,7 +9,11 @@ import pytest
 
 from domain.entities import Order, OrderSide
 from domain.value_objects import Money, Symbol
-from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker, ensure_client_order_id
+from infrastructure.brokers.adapters.bingx_adapter import (
+    BingXBrokerAdapter,
+    _BingXBroker,
+    ensure_client_order_id,
+)
 
 
 def _order(coid=None):
@@ -57,3 +61,29 @@ def test_retry_of_same_order_reuses_id(monkeypatch):
     b.execute_order(o)
     b.execute_order(o)                        # "retry" of the same logical order
     assert sent[0] == sent[1], "exchange must receive the same idempotency key on retry -> dedup"
+
+
+def test_adapter_retry_reuses_id_on_original_logical_order(monkeypatch):
+    adapter = object.__new__(BingXBrokerAdapter)
+    adapter.connected = True
+    adapter.logger = logging.getLogger("test_b2_adapter")
+    adapter._format_symbol = lambda symbol: symbol
+    sent = []
+
+    class Broker:
+        def execute_order(self, order):
+            sent.append(order.client_order_id)
+            return {"success": True, "order_id": "accepted"}
+
+    adapter._broker = Broker()
+    monkeypatch.setattr(
+        "infrastructure.risk.symbol_cooldown_gate.symbol_cooldown_gate.is_symbol_allowed",
+        lambda _symbol: (True, "test"),
+    )
+    order = _order()
+
+    adapter.place_order(order)
+    adapter.place_order(order)
+
+    assert order.client_order_id
+    assert sent == [order.client_order_id, order.client_order_id]

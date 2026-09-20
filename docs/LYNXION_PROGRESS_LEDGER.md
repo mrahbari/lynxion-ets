@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0406 restores precision-safe BingX order-response identity parsing. Next, define safe handling
-for a nominal success that omits order identity without introducing duplicate-order risk.
+TASK-0407 closes adapter-level BingX retry identity drift. Next, define reconciliation for a nominal
+success that omits order identity without introducing blind retry risk.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0407 binds a generated BingX client order ID to the original order before creating the
+  formatted adapter copy. Repeating `place_order` for the same logical object now reuses one
+  exchange identity instead of minting a new one. Twenty-four focused tests pass; C-35 reaches 221
+  decisions with no new signal. Plain Persian: retry همان سفارش دیگر شناسه تازه نمی‌سازد و احتمال
+  ثبت ناخواسته تکراری کمتر می‌شود.
 
 - TASK-0406 makes all BingX success paths prefer the official string `data.orderID`, avoiding
   precision loss for large exchange IDs while retaining numeric and legacy fallbacks. Twenty-three

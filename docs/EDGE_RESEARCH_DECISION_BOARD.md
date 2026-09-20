@@ -30,6 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0406 prefers BingX's precision-safe string `data.orderID`, retaining numeric and legacy
-fallbacks across all order paths. This is correctness, not edge evidence. Next define safe handling
-for a nominal success that omits order identity.
+TASK-0407 binds the generated BingX idempotency key to the original logical order before creating
+formatted copies, so adapter-level retries reuse the same ID. This is correctness, not edge
+evidence. Next define reconciliation for nominal success without order identity.
