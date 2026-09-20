@@ -178,3 +178,30 @@ def test_conditional_conflict_recovery_uses_client_identity_and_current_response
     assert result["success"] is True
     assert result["order_id"] == "NEWSTOP"
     assert cancelled == [("xoldstop", "BTC-USDT")]
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"quantity": "NaN"}, "conditional quantity and stop price must be positive and finite"),
+        ({"stop_price": "Infinity"}, "conditional quantity and stop price must be positive and finite"),
+        ({"side": "HOLD"}, "conditional side must be BUY or SELL"),
+        ({"order_type": "LIMIT"}, "conditional type must be STOP_MARKET or TAKE_PROFIT_MARKET"),
+        ({"position_side": "UP"}, "conditional position side must be LONG, SHORT, or BOTH"),
+    ],
+)
+def test_conditional_boundary_rejects_malformed_contract(overrides, message):
+    broker = _broker()
+    values = {
+        "symbol": "BTC-USDT",
+        "side": "SELL",
+        "quantity": "0.001",
+        "stop_price": "59000",
+        "order_type": "STOP_MARKET",
+        "position_side": "LONG",
+    }
+    values.update(overrides)
+
+    result = broker._place_conditional_order(**values)
+
+    assert result == {"success": False, "error": message}

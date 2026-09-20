@@ -1254,16 +1254,46 @@ class _BingXBroker:
                                order_type: str, position_side: str) -> Dict[str, Any]:
         """Place a standard position-level conditional order (stop loss or take profit) using Swap V2 endpoint with closePosition=true."""
         try:
+            try:
+                quantity_value = float(quantity)
+                stop_price_value = float(stop_price)
+            except (TypeError, ValueError, OverflowError):
+                return {'success': False, 'error': 'conditional quantity or stop price is malformed'}
+            if (
+                not math.isfinite(quantity_value)
+                or quantity_value <= 0
+                or not math.isfinite(stop_price_value)
+                or stop_price_value <= 0
+            ):
+                return {
+                    'success': False,
+                    'error': 'conditional quantity and stop price must be positive and finite',
+                }
+            side_value = str(side or '').upper()
+            order_type_value = str(order_type or '').upper()
+            position_side_value = str(position_side or '').upper()
+            if side_value not in {'BUY', 'SELL'}:
+                return {'success': False, 'error': 'conditional side must be BUY or SELL'}
+            if order_type_value not in {'STOP_MARKET', 'TAKE_PROFIT_MARKET'}:
+                return {
+                    'success': False,
+                    'error': 'conditional type must be STOP_MARKET or TAKE_PROFIT_MARKET',
+                }
+            if position_side_value not in {'LONG', 'SHORT', 'BOTH'}:
+                return {
+                    'success': False,
+                    'error': 'conditional position side must be LONG, SHORT, or BOTH',
+                }
             formatted_sym = self._format_symbol_str(symbol)
-            formatted_stop_price = self._format_price(formatted_sym, float(stop_price)) if stop_price is not None else stop_price
-            formatted_qty = self._format_quantity(formatted_sym, float(quantity)) if quantity is not None else quantity
+            formatted_stop_price = self._format_price(formatted_sym, stop_price_value)
+            formatted_qty = self._format_quantity(formatted_sym, quantity_value)
             conditional_order_data = {
                 'symbol': formatted_sym,
-                'side': side,
-                'type': order_type,
+                'side': side_value,
+                'type': order_type_value,
                 'quantity': formatted_qty,
                 'stopPrice': formatted_stop_price,
-                'positionSide': position_side,
+                'positionSide': position_side_value,
                 'closePosition': 'true',
                 'workingType': 'MARK_PRICE'
             }

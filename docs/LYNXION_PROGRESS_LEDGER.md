@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0411 closes BingX conditional-conflict identity handling. Next, inspect pre-request conditional
-validation while controlled LIMIT visibility remains approval-gated.
+TASK-0412 closes BingX conditional pre-request numeric/identity validation. Next, inspect protective
+symbol identity without applying entry-only admission.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0412 makes direct BingX protection fail closed before authentication unless quantity/trigger
+  are positive finite values and side/type/position-side identities are valid. It deliberately does
+  not apply entry symbol policy to risk-reducing exits. Thirty-six focused tests pass; C-35 reaches
+  227 decisions with no new signal. Plain Persian: سفارش محافظ خراب دیگر به صرافی نمی‌رسد، ولی خروج
+  نمادی که بعداً از لیست ورود حذف شده مسدود نمی‌شود.
 
 - TASK-0411 prevents conditional conflict recovery from cancelling literal `None`, accepts a stale
   order's client identity, and parses current direct `orderID` on retry success. Retry count and

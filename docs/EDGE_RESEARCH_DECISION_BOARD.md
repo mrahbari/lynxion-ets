@@ -30,6 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0411 closes conditional-conflict identity handling: missing numeric IDs no longer become
-literal `None`, client identity is usable, and retry success accepts current response shapes. This
-is correctness, not edge evidence. Inspect pre-request conditional validation next.
+TASK-0412 adds the final BingX conditional-order gate for numeric and identity fields without
+applying entry admission to risk-reducing exits. This is correctness, not edge evidence. Inspect
+conditional symbol identity next without blocking exits for de-listed entry symbols.
