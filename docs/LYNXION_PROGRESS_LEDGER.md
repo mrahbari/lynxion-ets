@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0420 records the frozen C-35 232-decision checkpoint. C-11 is not yet due for its eight-hour
-refresh; the next runtime action remains operator restart with plain `./lynxion`.
+TASK-0421 records the due C-11 refresh and frozen C-35 234-decision checkpoint. The next runtime
+action remains operator restart with plain `./lynxion`.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0421 refreshes C-11 after more than eight hours with no new candidate or outcome: N remains
+  5, every funding settlement is strictly after epoch `1788082349`, and verdict remains `COLLECTING`.
+  C-35 advances from 232 to 234 decisions with no new signal/outcome; integrity passes, economics
+  remain sealed, and projected time to 240 outcomes is approximately 780 days. Plain Persian: هیچ
+  شواهد edge جدیدی ایجاد نشد؛ هر دو cohort سالم ولی هنوز ناکافی و کند هستند.
 
 - TASK-0420 advances C-35 from 231 to 232 decisions with no new signal or outcome. Candle/funding
   integrity pass, funding reaches 174 records, economics remain sealed, and all minimum gates remain
