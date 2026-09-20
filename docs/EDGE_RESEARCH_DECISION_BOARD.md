@@ -30,6 +30,7 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0414 closes the BingX VST LIMIT visibility gate: a 19.96502-USDT non-marketable DOGE LIMIT was
-accepted with exact attached SL/TP visible, then cancelled with zero residual order/position. This
-is execution correctness, not edge evidence. A controlled VST runner restart is the next gate.
+TASK-0414 proves API acceptance/readback and clean cancellation for a 19.96502-USDT non-marketable
+DOGE LIMIT, but the operator did not see it in the BingX VST UI. UI-account identity and the complete
+runner/journal/Telegram path remain unverified. The operator will start the runner later; no further
+authenticated action is authorized meanwhile. This is execution correctness, not edge evidence.

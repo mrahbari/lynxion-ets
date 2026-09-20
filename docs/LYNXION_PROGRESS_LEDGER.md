@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0414 verifies corrected BingX LIMIT protection on VST and completes cleanup. Next, perform a
-controlled single-runner VST restart and post-start read-only surveillance when authorized.
+TASK-0415 records the frozen C-35 228-decision checkpoint. The operator will start the VST runner
+later; until then no additional authenticated broker action is authorized.
 
 ## Status
 
@@ -19,13 +19,17 @@ proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy
 
 ## Latest verified findings
 
-- TASK-0414 closes the broker-visible LIMIT gate on BingX VST. DOGEUSDT LIMIT `2101644004010496000`
-  was accepted at 19.96502 USDT notional; readback showed exact attached STOP_MARKET 0.05962 and
-  TAKE_PROFIT_MARKET 0.10221. Cancellation succeeded and the final independent audit found zero
-  pending orders and zero positions. The first BTC attempt was safely rejected locally by cooldown
-  and no gate was bypassed. Verdict: `VST_BROKER_VERIFIED — LIMIT_ATTACHED_PROTECTION_VISIBLE —
-  CLEANUP_PASS`. Plain Persian: مسیر LIMIT واقعاً روی حساب تست کار کرد، هر دو محافظ در صرافی دیده
-  شدند و هیچ سفارش یا پوزیشن باقی نماند؛ این اثبات اجراست، نه اثبات سوددهی.
+- TASK-0415 advances C-35 to 228 frozen decisions, three signals, and three completed SHORT outcomes
+  across ADA/BTC/XRP. Integrity passes, aggregate economics remain sealed, every minimum gate still
+  fails, and the projected time to 240 outcomes is 760 days. Verdict remains `COLLECTING`; no edge is
+  identified. Plain Persian: داده‌ها سالم‌اند، اما نمونه مستقل کافی نیست و این مسیر برای تصمیم سریع
+  بسیار کند است؛ فعلاً هیچ ادعای سوددهی نداریم.
+
+- TASK-0414 proves only that the configured BingX VST API accepted/read back DOGEUSDT LIMIT
+  `2101644004010496000` with exact attached protection and cleanup. The operator could not find the
+  order in the visible VST UI, and the harness bypassed runner orchestration and Telegram. Corrected
+  verdict: `API_VST_ACCEPTED — UI_ACCOUNT_UNVERIFIED — END_TO_END_PENDING — CLEANUP_PASS`. Plain
+  Persian: پاسخ API معتبر است، اما ثبت در همان پنل و مسیر کامل پلتفرم هنوز اثبات نشده است.
 
 - TASK-0413 fixes the only full-suite regression introduced by final symbol admission: blacklisted
   symbols are checked before approved-set membership, preserving explicit permanent-blacklist
