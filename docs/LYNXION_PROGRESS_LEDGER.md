@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0423 records the frozen C-35 236-decision checkpoint. The next runtime action remains operator
+TASK-0424 records the frozen C-35 237-decision checkpoint. The next runtime action remains operator
 restart with plain `./lynxion`.
 
 ## Status
@@ -18,6 +18,10 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0424 advances C-35 from 236 to 237 decisions with no new signal or outcome. Integrity passes,
+  economics remain sealed, all minimum gates remain false, and projected time to 240 outcomes is
+  approximately 790 days. Plain Persian: داده سالم است اما edge جدیدی دیده نشد.
 
 - TASK-0423 advances C-35 from 235 to 236 decisions with no new signal or outcome. Integrity passes,
   economics remain sealed, all minimum gates remain false, and projected time to 240 outcomes is
