@@ -7,8 +7,9 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0415 records the frozen C-35 228-decision checkpoint. The operator will start the VST runner
-later; until then no additional authenticated broker action is authorized.
+TASK-0416 fixes the production historical-provider cache initialization defect discovered during the
+operator-started VST run. The running pre-fix process must be stopped and restarted from the new
+commit under a new empty forward-exit cohort before the fix can take effect.
 
 ## Status
 
@@ -18,6 +19,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0416 fixes a production-blocking data defect: `failed_symbols_cache` and its TTL were read
+  before initialization, the exception was converted into empty perpetual history, and every scanned
+  symbol therefore failed closed without analysis. The cache now exists before first use and is keyed
+  consistently by `(market_type, symbol)`. Thirteen focused tests pass; direct public-provider checks
+  return 30/240/288 valid BTCUSDT perpetual candles for 30m/1m, 10d/1h, and 3d/15m respectively.
+  Plain Persian: رانر قبلی امن بود ولی عملاً داده تحلیل نمی‌گرفت؛ کد اصلاح شده و بعد از restart با
+  cohort جدید باید دوباره داده واقعی perpetual را دریافت کند. این اصلاح edge یا سوددهی را ثابت نمی‌کند.
 
 - TASK-0415 advances C-35 to 228 frozen decisions, three signals, and three completed SHORT outcomes
   across ADA/BTC/XRP. Integrity passes, aggregate economics remain sealed, every minimum gate still

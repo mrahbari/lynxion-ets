@@ -65,6 +65,11 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         self.unsupported_exchange_symbols = {}  # (source, symbol) -> float timestamp
         self.unsupported_exchange_ttl = 86400  # 24 hours in seconds
 
+        # Cache failed requests by market identity so a Spot failure can never suppress a
+        # Perpetual request (or vice versa).  These fields are required before the first fetch.
+        self.failed_symbols_cache = {}  # (market_type, symbol) -> float timestamp
+        self.failed_symbols_cache_duration = 300  # 5 minutes
+
         self.logger.info(f"Configurable Historical Data Provider initialized with preferred source: {self.preferred_data_source}")
         self.logger.info(f"Fallback sources: {self.fallback_sources}")
 
@@ -288,7 +293,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         self.logger.warning(f"Returning empty data list for {symbol_str} - system will continue with limited functionality")
 
         # Add to failed symbols cache to prevent repeated attempts
-        self.failed_symbols_cache[symbol_str] = current_time
+        self.failed_symbols_cache[failed_key] = current_time
         return []  # Return empty list instead of raising exception
 
     def _get_cached_data_fallback(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:

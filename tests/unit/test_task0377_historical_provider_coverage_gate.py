@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from infrastructure.data.configurable_historical_data_provider import (
     ConfigurableHistoricalDataProvider,
 )
@@ -11,6 +13,21 @@ NOW = 1_800_000_000
 def rows(count, *, end=NOW - 60, step=60):
     start = end - (count - 1) * step
     return [{'timestamp': start + i * step} for i in range(count)]
+
+
+def test_provider_initializes_market_scoped_failure_cache(monkeypatch):
+    monkeypatch.setattr(ConfigurableHistoricalDataProvider, '_initialize_brokers', lambda self: None)
+    settings = SimpleNamespace(
+        data=SimpleNamespace(
+            preferred_historical_data_source='binance',
+            historical_data_fallback_sources=['binance'],
+        )
+    )
+
+    provider = ConfigurableHistoricalDataProvider(settings, fallback_sources=['binance'])
+
+    assert provider.failed_symbols_cache == {}
+    assert provider.failed_symbols_cache_duration > 0
 
 
 def test_api_page_cannot_masquerade_as_thirty_day_minute_history():
@@ -76,3 +93,34 @@ def test_incomplete_primary_is_not_cached_and_complete_fallback_is_used(monkeypa
 
     assert len(result) == 1438
     assert cached == []
+
+
+def test_failed_request_is_cached_by_market_and_symbol(monkeypatch):
+    provider = ConfigurableHistoricalDataProvider.__new__(ConfigurableHistoricalDataProvider)
+    provider.preferred_data_source = 'binance'
+    provider.fallback_sources = []
+    provider.failed_symbols_cache = {}
+    provider.failed_symbols_cache_duration = 60
+    provider.unsupported_exchange_symbols = {}
+    provider.unsupported_exchange_ttl = 60
+    provider.usage_stats = {'binance': {'requests': 0, 'errors': 0}}
+    provider.logger = type('Logger', (), {
+        'info': lambda *args: None,
+        'debug': lambda *args: None,
+        'warning': lambda *args: None,
+        'error': lambda *args: None,
+    })()
+    provider._fetch_from_source = lambda *_: []
+    provider._get_cached_data_fallback = lambda *_: []
+    monkeypatch.setattr(
+        'application.symbol_management.centralized_symbol_manager.is_symbol_approved',
+        lambda _symbol: True,
+    )
+    monkeypatch.setattr('time.time', lambda: NOW)
+
+    result = provider.get_historical_data(
+        Symbol('BTCUSDT'), '30m', '1m', market_type=MarketType.PERPETUAL
+    )
+
+    assert result == []
+    assert provider.failed_symbols_cache == {('perpetual', 'BTCUSDT'): NOW}
