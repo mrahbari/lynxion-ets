@@ -959,6 +959,8 @@ class _BingXBroker:
             # The error suggests that the API expects different parameter names or format
             has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
             has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
+            formatted_sl_price = None
+            formatted_tp_price = None
 
             if has_stop_loss:
                 # For stop loss, use stopLossPrice parameter (according to API docs)
@@ -979,7 +981,15 @@ class _BingXBroker:
                         self.logger.warning(f"Invalid stop loss price: {sl_float}, skipping...")
                     else:
                         formatted_sl_price = self._format_price(symbol_formatted, sl_float)
-                        order_data['stopLossPrice'] = formatted_sl_price  # Changed from 'stopLoss' to 'stopLossPrice'
+                        if order_type_value.upper() == 'LIMIT':
+                            order_data['stopLoss'] = json.dumps(
+                                {
+                                    'type': 'STOP_MARKET',
+                                    'stopPrice': float(formatted_sl_price),
+                                    'workingType': 'MARK_PRICE',
+                                },
+                                separators=(',', ':'),
+                            )
                         self.logger.debug(f"Added stop loss price: {formatted_sl_price}")
 
             if has_take_profit:
@@ -1001,7 +1011,15 @@ class _BingXBroker:
                         self.logger.warning(f"Invalid take profit price: {tp_float}, skipping...")
                     else:
                         formatted_tp_price = self._format_price(symbol_formatted, tp_float)
-                        order_data['takeProfitPrice'] = formatted_tp_price  # Changed from 'takeProfit' to 'takeProfitPrice'
+                        if order_type_value.upper() == 'LIMIT':
+                            order_data['takeProfit'] = json.dumps(
+                                {
+                                    'type': 'TAKE_PROFIT_MARKET',
+                                    'stopPrice': float(formatted_tp_price),
+                                    'workingType': 'MARK_PRICE',
+                                },
+                                separators=(',', ':'),
+                            )
                         self.logger.debug(f"Added take profit price: {formatted_tp_price}")
 
             # When stop loss or take profit is specified, we may need to set additional parameters
@@ -1075,7 +1093,7 @@ class _BingXBroker:
                             symbol=symbol_formatted,
                             side=sl_side,
                             quantity=self._format_quantity(symbol_formatted, float(order.quantity)),
-                            stop_price=order_data.get('stopLossPrice'),
+                            stop_price=formatted_sl_price,
                             order_type=sl_order_type,
                             position_side=position_side_value
                         )
@@ -1101,7 +1119,7 @@ class _BingXBroker:
                             symbol=symbol_formatted,
                             side=tp_side,
                             quantity=self._format_quantity(symbol_formatted, float(order.quantity)),
-                            stop_price=order_data.get('takeProfitPrice'),
+                            stop_price=formatted_tp_price,
                             order_type=tp_order_type,
                             position_side=position_side_value
                         )

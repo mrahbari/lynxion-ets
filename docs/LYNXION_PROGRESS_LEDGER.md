@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0408 closes BingX nominal-success reconciliation without blind retry. Next, inspect attached
-LIMIT protection serialization against the official contract.
+TASK-0409 closes BingX LIMIT attached-protection serialization. Next, assess the broker-visible
+verification boundary for accepted LIMIT protection without making an authenticated call.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0409 replaces undocumented LIMIT `stopLossPrice`/`takeProfitPrice` fields with the official
+  JSON-string `stopLoss`/`takeProfit` objects and numeric nested prices. MARKET's separate
+  conditional protection path remains unchanged. Twenty-seven focused tests pass; C-35 reaches 224
+  decisions with no new signal. Plain Persian: حدضرر و حدسود سفارش LIMIT حالا با قالب رسمی BingX
+  ارسال می‌شوند، اما مشاهده‌شدن در صرافی هنوز نیازمند verification جداگانه است.
 
 - TASK-0408 uses the stable client order ID when a nominal BingX success omits exchange identity,
   and status/fill/cancel can reconcile through that ID. This prevents `None` from triggering a blind

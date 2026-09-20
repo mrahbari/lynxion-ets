@@ -1,4 +1,5 @@
 from decimal import Decimal
+import json
 
 import pytest
 
@@ -8,6 +9,12 @@ from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker, extract_
 
 
 class _Logger:
+    def debug(self, *_args, **_kwargs):
+        pass
+
+    def info(self, *_args, **_kwargs):
+        pass
+
     def error(self, *_args, **_kwargs):
         pass
 
@@ -101,7 +108,7 @@ def test_limit_order_transmits_canonical_post_only_time_in_force():
         )
     )
 
-    assert result["success"] is True
+    assert result["success"] is True, result
     assert result["order_id"] == "LIMIT1"
     assert sent[0]["timeInForce"] == "PostOnly"
 
@@ -113,3 +120,33 @@ def test_order_identity_prefers_precision_safe_string_field():
     }
 
     assert extract_bingx_order_id(response) == "9223372036854775807"
+
+
+def test_limit_protection_uses_official_nested_json_fields():
+    broker = _broker()
+    sent = []
+    broker._make_request = lambda _method, _endpoint, **kwargs: (
+        sent.append(kwargs["data"]),
+        {"code": 0, "data": {"orderID": "LIMIT2"}},
+    )[1]
+
+    result = broker._execute_order_after_admission(_order(order_type="LIMIT"))
+
+    assert result["success"] is True, result
+    payload = sent[0]
+    assert "stopLossPrice" not in payload
+    assert "takeProfitPrice" not in payload
+    stop_loss = json.loads(payload["stopLoss"])
+    take_profit = json.loads(payload["takeProfit"])
+    assert stop_loss == {
+        "type": "STOP_MARKET",
+        "stopPrice": 59000.0,
+        "workingType": "MARK_PRICE",
+    }
+    assert take_profit == {
+        "type": "TAKE_PROFIT_MARKET",
+        "stopPrice": 62000.0,
+        "workingType": "MARK_PRICE",
+    }
+    assert isinstance(stop_loss["stopPrice"], float)
+    assert isinstance(take_profit["stopPrice"], float)

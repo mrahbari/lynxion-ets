@@ -30,6 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0408 reconciles nominal BingX success without exchange identity through the stable
-`clientOrderId`; status, fill, and cancel now accept that identity without blind resend. This is
-correctness, not edge evidence. Next inspect attached LIMIT protection serialization.
+TASK-0409 serializes BingX LIMIT protection under official nested `stopLoss`/`takeProfit` JSON
+instead of undocumented scalar keys, while preserving MARKET's separate protection path. This is
+correctness, not edge evidence. Next assess the broker-visible verification boundary for LIMIT.
