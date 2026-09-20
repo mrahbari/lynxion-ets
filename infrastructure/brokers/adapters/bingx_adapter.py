@@ -67,6 +67,13 @@ def extract_bingx_order_id(response: Dict[str, Any]):
     return nested.get("orderID", nested.get("orderId"))
 
 
+def extract_bingx_order_reference(order: Dict[str, Any]):
+    """Choose a usable exchange or client identity from an order record."""
+    if not isinstance(order, dict):
+        return None
+    return order.get("orderID") or order.get("orderId") or order.get("clientOrderId")
+
+
 class BingXBrokerAdapter(BrokerPort):
     def __init__(self, config: Dict):
         self._broker = _BingXBroker(config)
@@ -1288,19 +1295,18 @@ class _BingXBroker:
                 prefix = "STOP" if "STOP" in order_type.upper() else "TAKE_PROFIT"
                 for o in open_orders:
                     if prefix in str(o.get("type", "")).upper():
-                        oid = str(o.get("orderId"))
-                        if oid:
-                            self.cancel_order(oid, formatted_sym)
+                        order_reference = extract_bingx_order_reference(o)
+                        if order_reference is not None:
+                            self.cancel_order(str(order_reference), formatted_sym)
                 time.sleep(0.25)
                 retry_resp = self._make_request(
                     'POST', endpoint, params=conditional_order_data, signed=True,
                     request_priority=True, rate_limit_timeout=15.0,
                 )
                 if retry_resp.get('code') == 0:
-                    order_info = retry_resp.get('data', {}).get('order', {})
                     return {
                         'success': True,
-                        'order_id': order_info.get('orderId'),
+                        'order_id': extract_bingx_order_id(retry_resp),
                         'response': retry_resp['data'],
                         'rate_limit_wait_ms': retry_resp.get('_client_rate_limit_wait_ms'),
                     }
@@ -1312,10 +1318,9 @@ class _BingXBroker:
                         request_priority=True, rate_limit_timeout=15.0,
                     )
                     if retry2_resp.get('code') == 0:
-                        order_info = retry2_resp.get('data', {}).get('order', {})
                         return {
                             'success': True,
-                            'order_id': order_info.get('orderId'),
+                            'order_id': extract_bingx_order_id(retry2_resp),
                             'response': retry2_resp['data'],
                             'rate_limit_wait_ms': retry2_resp.get('_client_rate_limit_wait_ms'),
                         }

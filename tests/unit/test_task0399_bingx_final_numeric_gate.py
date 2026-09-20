@@ -150,3 +150,31 @@ def test_limit_protection_uses_official_nested_json_fields():
     }
     assert isinstance(stop_loss["stopPrice"], float)
     assert isinstance(take_profit["stopPrice"], float)
+
+
+def test_conditional_conflict_recovery_uses_client_identity_and_current_response(monkeypatch):
+    broker = _broker()
+    responses = [
+        {"code": 110406, "msg": "position sl already exists"},
+        {"code": 0, "data": {"orderID": "NEWSTOP"}},
+    ]
+    broker._make_request = lambda *_args, **_kwargs: responses.pop(0)
+    broker.get_pending_orders = lambda _symbol: [
+        {"type": "STOP_MARKET", "orderId": None, "clientOrderId": "xoldstop"}
+    ]
+    cancelled = []
+    broker.cancel_order = lambda order_id, symbol: cancelled.append((order_id, symbol)) or True
+    monkeypatch.setattr("infrastructure.brokers.adapters.bingx_adapter.time.sleep", lambda _delay: None)
+
+    result = broker._place_conditional_order(
+        symbol="BTC-USDT",
+        side="SELL",
+        quantity="0.001",
+        stop_price="59000",
+        order_type="STOP_MARKET",
+        position_side="LONG",
+    )
+
+    assert result["success"] is True
+    assert result["order_id"] == "NEWSTOP"
+    assert cancelled == [("xoldstop", "BTC-USDT")]

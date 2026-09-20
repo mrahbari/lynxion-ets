@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0410 freezes the broker-visible BingX LIMIT protection verification gate. Continue bounded
-local contract work while controlled VST order/readback/cancel remains approval-gated.
+TASK-0411 closes BingX conditional-conflict identity handling. Next, inspect pre-request conditional
+validation while controlled LIMIT visibility remains approval-gated.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0411 prevents conditional conflict recovery from cancelling literal `None`, accepts a stale
+  order's client identity, and parses current direct `orderID` on retry success. Retry count and
+  protection policy are unchanged. Thirty-one focused tests pass; C-35 reaches 226 decisions with
+  no new signal. Plain Persian: بازیابی تعارض محافظ دیگر با شناسه خالی اقدام به لغو نمی‌کند و پاسخ
+  جدید صرافی را درست می‌خواند.
 
 - TASK-0410 concludes `LOCAL_CONTRACT_READY — BROKER_VISIBILITY_APPROVAL_GATED`: local request
   serialization is reproducible, but only a controlled VST LIMIT plus readback and cleanup can prove
