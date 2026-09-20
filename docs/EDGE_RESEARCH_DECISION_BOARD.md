@@ -30,6 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0409 serializes BingX LIMIT protection under official nested `stopLoss`/`takeProfit` JSON
-instead of undocumented scalar keys, while preserving MARKET's separate protection path. This is
-correctness, not edge evidence. Next assess the broker-visible verification boundary for LIMIT.
+TASK-0410 records `LOCAL_CONTRACT_READY — BROKER_VISIBILITY_APPROVAL_GATED` for BingX LIMIT
+protection. A controlled VST order/readback/cancel is required to prove exchange visibility; no
+authenticated action occurred. Continue the next bounded local contract inspection meanwhile.

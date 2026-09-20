@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0409 closes BingX LIMIT attached-protection serialization. Next, assess the broker-visible
-verification boundary for accepted LIMIT protection without making an authenticated call.
+TASK-0410 freezes the broker-visible BingX LIMIT protection verification gate. Continue bounded
+local contract work while controlled VST order/readback/cancel remains approval-gated.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0410 concludes `LOCAL_CONTRACT_READY — BROKER_VISIBILITY_APPROVAL_GATED`: local request
+  serialization is reproducible, but only a controlled VST LIMIT plus readback and cleanup can prove
+  the exchange exposes both protections. No authenticated action occurred. The due C-11 update
+  remains N=5/COLLECTING and all events are strictly post-boundary; C-35 has no new signal. Plain
+  Persian: کد محلی درست است، اما تأیید نهایی محافظ LIMIT باید در حساب تست و با مجوز جدا انجام شود.
 
 - TASK-0409 replaces undocumented LIMIT `stopLossPrice`/`takeProfitPrice` fields with the official
   JSON-string `stopLoss`/`takeProfit` objects and numeric nested prices. MARKET's separate
