@@ -807,6 +807,29 @@ class _BingXBroker:
                     "order_id": None,
                     "error": "entry order type must be MARKET or LIMIT",
                 }
+            time_in_force_value = None
+            if order_type_value == "LIMIT":
+                if getattr(order, "price", None) is None:
+                    return {
+                        "success": False,
+                        "order_id": None,
+                        "error": "limit order requires price",
+                    }
+                raw_time_in_force = str(getattr(order, "time_in_force", "GTC") or "").upper()
+                time_in_force_values = {
+                    "GTC": "GTC",
+                    "IOC": "IOC",
+                    "FOK": "FOK",
+                    "POSTONLY": "PostOnly",
+                    "POST_ONLY": "PostOnly",
+                }
+                time_in_force_value = time_in_force_values.get(raw_time_in_force)
+                if time_in_force_value is None:
+                    return {
+                        "success": False,
+                        "order_id": None,
+                        "error": "limit time in force must be GTC, IOC, FOK, or PostOnly",
+                    }
             raw_position_side = getattr(order, "position_side", None)
             if raw_position_side is not None:
                 position_side_value = (
@@ -888,6 +911,8 @@ class _BingXBroker:
                 'positionSide': position_side_value,
                 'clientOrderID': client_order_id,
             }
+            if time_in_force_value is not None:
+                order_data['timeInForce'] = time_in_force_value
 
             if order.price:
                 # Handle both Money object and float/numeric values

@@ -59,6 +59,14 @@ def test_low_level_exchange_boundary_rejects_nonfinite_values(field, value):
         ({"symbol": Symbol("NOTREALUSDT")}, "symbol is not approved: NOTREALUSDT"),
         ({"side": "HOLD"}, "side must be BUY or SELL"),
         ({"order_type": "ICEBERG"}, "entry order type must be MARKET or LIMIT"),
+        (
+            {"order_type": "LIMIT", "price": None},
+            "limit order requires price",
+        ),
+        (
+            {"order_type": "LIMIT", "time_in_force": "DAY"},
+            "limit time in force must be GTC, IOC, FOK, or PostOnly",
+        ),
         ({"position_side": "UP"}, "position side must be LONG, SHORT, or BOTH"),
         (
             {"client_order_id": "invalid-id"},
@@ -74,3 +82,24 @@ def test_low_level_exchange_boundary_rejects_unknown_entry_contract(overrides, m
     result = _broker()._execute_order_after_admission(_order(**overrides))
 
     assert result == {"success": False, "order_id": None, "error": message}
+
+
+def test_limit_order_transmits_canonical_post_only_time_in_force():
+    broker = _broker()
+    sent = []
+    broker._make_request = lambda _method, _endpoint, **kwargs: (
+        sent.append(kwargs["data"]),
+        {"code": 0, "data": {"order": {"orderId": "LIMIT1"}}},
+    )[1]
+
+    result = broker._execute_order_after_admission(
+        _order(
+            order_type="LIMIT",
+            time_in_force="POST_ONLY",
+            stop_loss_price=None,
+            take_profit_price=None,
+        )
+    )
+
+    assert result["success"] is True
+    assert sent[0]["timeInForce"] == "PostOnly"

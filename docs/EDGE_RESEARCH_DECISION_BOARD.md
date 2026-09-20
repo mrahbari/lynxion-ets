@@ -30,6 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0402 closes final BingX client-order-id admission for direct callers: the idempotency key must
-be alphanumeric and at most 40 characters. This is correctness, not edge evidence. Inspect limit
-order time-in-force handling before considering another bounded patch.
+TASK-0403 restores the missing BingX LIMIT contract: price is mandatory and the validated
+time-in-force is transmitted, including POST_ONLY to PostOnly normalization. This is correctness,
+not edge evidence. Inspect the client-order-id request field name against the official contract.
