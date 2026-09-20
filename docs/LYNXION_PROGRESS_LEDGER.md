@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0412 closes BingX conditional pre-request numeric/identity validation. Next, inspect protective
-symbol identity without applying entry-only admission.
+TASK-0413 restores permanent-blacklist precedence and closes the full source regression. Runtime
+and broker-visible verification remain separate gates.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0413 fixes the only full-suite regression introduced by final symbol admission: blacklisted
+  symbols are checked before approved-set membership, preserving explicit permanent-blacklist
+  attribution. The full suite is 1,223 passed and one optional layering test skipped because
+  `import-linter` is unavailable. Plain Persian: XMR همچنان مسدود است و حالا علت درست بلک‌لیست نیز
+  ثبت می‌شود؛ تست کامل کد سبز است، ولی این به‌تنهایی اثبات runtime نیست.
 
 - TASK-0412 makes direct BingX protection fail closed before authentication unless quantity/trigger
   are positive finite values and side/type/position-side identities are valid. It deliberately does

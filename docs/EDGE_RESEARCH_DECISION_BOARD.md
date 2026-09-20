@@ -30,6 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0412 adds the final BingX conditional-order gate for numeric and identity fields without
-applying entry admission to risk-reducing exits. This is correctness, not edge evidence. Inspect
-conditional symbol identity next without blocking exits for de-listed entry symbols.
+TASK-0413 restores permanent-blacklist precedence after the final symbol gate and closes the full
+source regression at 1,223 passing tests. This is correctness, not edge evidence. Runtime and
+broker-visible verification remain separate gates.

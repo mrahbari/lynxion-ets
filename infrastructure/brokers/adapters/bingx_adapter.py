@@ -768,6 +768,11 @@ class _BingXBroker:
             try:
                 from infrastructure.services.symbol_validator import symbol_validator
                 clean_symbol = symbol_validator.normalize_symbol(order.symbol)
+                blacklisted = symbol_validator.get_blacklisted_symbols()
+                if clean_symbol in blacklisted:
+                    reason = f"PERMANENT_BLACKLIST: {clean_symbol} is blacklisted from trading in configuration"
+                    self.logger.warning(f"🛑 [BINGX FINAL GATE] Order REJECTED for {order.symbol}: {reason}")
+                    return {"success": False, "order_id": None, "error": reason}
                 approved = {
                     symbol_validator.normalize_symbol(symbol)
                     for symbol in symbol_validator.get_approved_symbols()
@@ -778,11 +783,6 @@ class _BingXBroker:
                         "order_id": None,
                         "error": f"symbol is not approved: {clean_symbol or 'missing'}",
                     }
-                blacklisted = symbol_validator.get_blacklisted_symbols()
-                if clean_symbol in blacklisted:
-                    reason = f"PERMANENT_BLACKLIST: {clean_symbol} is blacklisted from trading in configuration"
-                    self.logger.warning(f"🛑 [BINGX FINAL GATE] Order REJECTED for {order.symbol}: {reason}")
-                    return {"success": False, "order_id": None, "error": reason}
             except Exception as gate_err:
                 self.logger.error(f"BingX final risk gate unavailable; rejecting order: {gate_err}")
                 return {
