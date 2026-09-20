@@ -1,0 +1,62 @@
+{
+  "cancel_identity": "2101644004010496000",
+  "cancelled": true,
+  "cleanup": "PASS",
+  "client_order_id": "VSTLIMIT20260920120441",
+  "limit_price": "0.06814",
+  "notional": "19.96502",
+  "quantity": "293",
+  "readback": {
+    "clientOrderId": "vstlimit20260920120441",
+    "origQty": "293",
+    "positionSide": "LONG",
+    "price": "0.06814",
+    "side": "BUY",
+    "status": "PENDING",
+    "stopLoss": {
+      "price": 0,
+      "quantity": 293,
+      "stopGuaranteed": "false",
+      "stopPrice": 0.05962,
+      "type": "STOP_MARKET",
+      "workingType": "MARK_PRICE"
+    },
+    "symbol": "DOGE-USDT",
+    "takeProfit": {
+      "price": 0,
+      "quantity": 293,
+      "stopGuaranteed": "false",
+      "stopPrice": 0.10221,
+      "type": "TAKE_PROFIT_MARKET",
+      "workingType": "MARK_PRICE"
+    },
+    "type": "LIMIT"
+  },
+  "readback_code": 0,
+  "readback_stop_loss": {
+    "price": 0,
+    "quantity": 293,
+    "stopGuaranteed": "false",
+    "stopPrice": 0.05962,
+    "type": "STOP_MARKET",
+    "workingType": "MARK_PRICE"
+  },
+  "readback_take_profit": {
+    "price": 0,
+    "quantity": 293,
+    "stopGuaranteed": "false",
+    "stopPrice": 0.10221,
+    "type": "TAKE_PROFIT_MARKET",
+    "workingType": "MARK_PRICE"
+  },
+  "reference_price": "0.08518",
+  "remaining_order_count": 0,
+  "remaining_position_count": 0,
+  "returned_order_id": "2101644004010496000",
+  "status": "READBACK_ACCEPTED",
+  "stop_loss": "0.05962",
+  "symbol": "DOGEUSDT",
+  "take_profit": "0.10221",
+  "timestamp": "2026-09-20T12:04:41.158074+00:00",
+  "venue": "BingX VST"
+}

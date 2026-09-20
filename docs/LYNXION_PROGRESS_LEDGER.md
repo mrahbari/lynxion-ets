@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0413 restores permanent-blacklist precedence and closes the full source regression. Runtime
-and broker-visible verification remain separate gates.
+TASK-0414 verifies corrected BingX LIMIT protection on VST and completes cleanup. Next, perform a
+controlled single-runner VST restart and post-start read-only surveillance when authorized.
 
 ## Status
 
@@ -18,6 +18,14 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0414 closes the broker-visible LIMIT gate on BingX VST. DOGEUSDT LIMIT `2101644004010496000`
+  was accepted at 19.96502 USDT notional; readback showed exact attached STOP_MARKET 0.05962 and
+  TAKE_PROFIT_MARKET 0.10221. Cancellation succeeded and the final independent audit found zero
+  pending orders and zero positions. The first BTC attempt was safely rejected locally by cooldown
+  and no gate was bypassed. Verdict: `VST_BROKER_VERIFIED — LIMIT_ATTACHED_PROTECTION_VISIBLE —
+  CLEANUP_PASS`. Plain Persian: مسیر LIMIT واقعاً روی حساب تست کار کرد، هر دو محافظ در صرافی دیده
+  شدند و هیچ سفارش یا پوزیشن باقی نماند؛ این اثبات اجراست، نه اثبات سوددهی.
 
 - TASK-0413 fixes the only full-suite regression introduced by final symbol admission: blacklisted
   symbols are checked before approved-set membership, preserving explicit permanent-blacklist

@@ -30,6 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0413 restores permanent-blacklist precedence after the final symbol gate and closes the full
-source regression at 1,223 passing tests. This is correctness, not edge evidence. Runtime and
-broker-visible verification remain separate gates.
+TASK-0414 closes the BingX VST LIMIT visibility gate: a 19.96502-USDT non-marketable DOGE LIMIT was
+accepted with exact attached SL/TP visible, then cancelled with zero residual order/position. This
+is execution correctness, not edge evidence. A controlled VST runner restart is the next gate.
