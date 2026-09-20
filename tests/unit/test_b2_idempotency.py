@@ -41,7 +41,7 @@ def test_place_order_transmits_client_order_id(monkeypatch):
     o = _order()
     b.execute_order(o)                        # no SL/TP -> single order_data path
     assert sent, "an order payload must have been sent"
-    assert sent[0].get("clientOrderID") == o.client_order_id
+    assert sent[0].get("clientOrderId") == o.client_order_id
     assert o.client_order_id, "order must now carry the generated idempotency key"
 
 
@@ -52,7 +52,7 @@ def test_retry_of_same_order_reuses_id(monkeypatch):
     sent = []
     monkeypatch.setattr(b, "_make_request",
                         lambda method, endpoint, params=None, data=None, signed=False:
-                        (sent.append(data.get("clientOrderID")), {"code": 0, "data": {"order": {"orderId": "M"}}})[1])
+                        (sent.append(data.get("clientOrderId")), {"code": 0, "data": {"order": {"orderId": "M"}}})[1])
     o = _order()
     b.execute_order(o)
     b.execute_order(o)                        # "retry" of the same logical order

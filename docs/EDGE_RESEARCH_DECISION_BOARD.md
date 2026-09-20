@@ -30,6 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0403 restores the missing BingX LIMIT contract: price is mandatory and the validated
-time-in-force is transmitted, including POST_ONLY to PostOnly normalization. This is correctness,
-not edge evidence. Inspect the client-order-id request field name against the official contract.
+TASK-0404 corrects the BingX idempotency payload field from `clientOrderID` to the official
+`clientOrderId` in both main-order paths. This is correctness, not edge evidence. Continue only
+bounded official-contract inspection; do not broaden into adapter refactoring.

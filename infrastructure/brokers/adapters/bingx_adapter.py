@@ -38,7 +38,7 @@ def ensure_client_order_id(order) -> str:
     """B2: return the order's client_order_id, generating + assigning one once if absent.
 
     Assigning back to the order means a retry of the SAME order object reuses the id, so
-    the exchange can deduplicate (idempotency). BingX clientOrderID: alphanumeric, <=40 chars.
+    the exchange can deduplicate (idempotency). BingX clientOrderId: alphanumeric, <=40 chars.
     """
     coid = getattr(order, "client_order_id", None)
     if not coid:
@@ -909,7 +909,7 @@ class _BingXBroker:
                 'type': order_type_value.upper(),
                 'quantity': self._format_quantity(symbol_formatted, float(order.quantity)),
                 'positionSide': position_side_value,
-                'clientOrderID': client_order_id,
+                'clientOrderId': client_order_id,
             }
             if time_in_force_value is not None:
                 order_data['timeInForce'] = time_in_force_value
@@ -1009,7 +1009,7 @@ class _BingXBroker:
                     'type': order_type_value.upper(),
                     'quantity': self._format_quantity(symbol_formatted, float(order.quantity)),
                     'positionSide': position_side_value,
-                    'clientOrderID': client_order_id,
+                    'clientOrderId': client_order_id,
                 }
 
                 if order.price:

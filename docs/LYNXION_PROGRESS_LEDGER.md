@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0403 closes BingX LIMIT price/time-in-force handling. Next, inspect the client-order-id request
-field name against the current official contract before considering another bounded patch.
+TASK-0404 corrects the BingX client-order-id payload field to the official `clientOrderId`. Next,
+continue only bounded official-contract inspection before considering another patch.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0404 corrects both BingX main-order payload paths from `clientOrderID` to the official
+  `clientOrderId`. The stable identifier existed, but the wrong key casing could prevent the
+  exchange from applying deduplication. Twenty-two focused tests pass; C-35 has no new signal.
+  Plain Persian: شناسه ضدتکرار حالا با نام فیلد رسمی به صرافی ارسال می‌شود؛ این هنوز اثبات اجرای
+  زنده نیست.
 
 - TASK-0403 restores the documented BingX LIMIT request contract: LIMIT now requires price and a
   supported time-in-force, and Lynxion `POST_ONLY` is transmitted as BingX `PostOnly`. The field was
