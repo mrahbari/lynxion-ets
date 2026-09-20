@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0401 closes final BingX symbol/position-side identity admission for direct low-level callers.
-Next, inspect remaining request metadata before considering another bounded patch.
+TASK-0402 closes final BingX client-order-id admission for direct low-level callers. Next, inspect
+limit-order time-in-force handling before considering another bounded patch.
 
 ## Status
 
@@ -18,6 +18,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0402 enforces the documented BingX client-order-id shape at the final request boundary:
+  alphanumeric and at most 40 characters. Invalid caller IDs can no longer disable exchange-side
+  deduplication by provoking a rejected request. Nineteen focused tests pass. The due C-11 update
+  remains N=5 and COLLECTING, with every settlement strictly after its frozen boundary; C-35 reaches
+  216 decisions with no new signal. Plain Persian: شناسه خراب سفارش قبل از تماس با صرافی رد می‌شود
+  و محافظ ثبت تکراری قابل اتکاتر می‌ماند؛ تحقیق funding هنوز نتیجه تازه‌ای ندارد.
 
 - TASK-0401 extends the final low-level BingX fail-closed boundary to identity fields: the symbol
   must belong to the existing approved set and an explicit position side must be LONG, SHORT, or

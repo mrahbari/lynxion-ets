@@ -30,6 +30,6 @@ family is justified without genuinely new information and an unopened boundary.
 
 ## Current single next action
 
-TASK-0401 closes final BingX symbol/position identity admission for direct callers using the
-existing approved-symbol policy and LONG/SHORT/BOTH contract. This is correctness, not edge
-evidence. Inspect remaining request metadata before considering another bounded patch.
+TASK-0402 closes final BingX client-order-id admission for direct callers: the idempotency key must
+be alphanumeric and at most 40 characters. This is correctness, not edge evidence. Inspect limit
+order time-in-force handling before considering another bounded patch.

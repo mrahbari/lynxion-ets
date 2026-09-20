@@ -869,6 +869,16 @@ class _BingXBroker:
 
             # B2 idempotency: ensure a client order id is sent so the exchange can dedupe.
             client_order_id = ensure_client_order_id(order)
+            if (
+                not isinstance(client_order_id, str)
+                or len(client_order_id) > 40
+                or not client_order_id.isalnum()
+            ):
+                return {
+                    "success": False,
+                    "order_id": None,
+                    "error": "client order id must be alphanumeric and at most 40 characters",
+                }
 
             order_data = {
                 'symbol': symbol_formatted,

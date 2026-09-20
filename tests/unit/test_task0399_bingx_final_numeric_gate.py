@@ -60,6 +60,14 @@ def test_low_level_exchange_boundary_rejects_nonfinite_values(field, value):
         ({"side": "HOLD"}, "side must be BUY or SELL"),
         ({"order_type": "ICEBERG"}, "entry order type must be MARKET or LIMIT"),
         ({"position_side": "UP"}, "position side must be LONG, SHORT, or BOTH"),
+        (
+            {"client_order_id": "invalid-id"},
+            "client order id must be alphanumeric and at most 40 characters",
+        ),
+        (
+            {"client_order_id": "x" * 41},
+            "client order id must be alphanumeric and at most 40 characters",
+        ),
     ],
 )
 def test_low_level_exchange_boundary_rejects_unknown_entry_contract(overrides, message):
