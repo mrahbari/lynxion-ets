@@ -7,9 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0416 fixes the production historical-provider cache initialization defect discovered during the
-operator-started VST run. The running pre-fix process must be stopped and restarted from the new
-commit under a new empty forward-exit cohort before the fix can take effect.
+TASK-0417 records the frozen C-35 230-decision checkpoint. TASK-0416 still requires operator restart
+evidence from a new empty forward-exit cohort before production data liveness is closed.
 
 ## Status
 
@@ -19,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0417 advances C-35 from 228 to 230 frozen decisions with no new signal or completed outcome.
+  Candle and funding integrity pass; economics remain sealed, all minimum gates remain false, and
+  the projected time to 240 outcomes is approximately 767 days. Verdict remains `COLLECTING` with no
+  edge claim. Plain Persian: دو ساعت جدید بررسی شد ولی سیگنال تازه‌ای نبود؛ مسیر سالم اما برای تحویل
+  سریع بسیار کند است و فقط در پس‌زمینه ادامه پیدا می‌کند.
 
 - TASK-0416 fixes a production-blocking data defect: `failed_symbols_cache` and its TTL were read
   before initialization, the exception was converted into empty perpetual history, and every scanned
