@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0444 fails Telegram notifications locally on incomplete configuration and safely escapes HTML
-subjects. A separate embedded-credential removal/rotation is approval-gated.
+TASK-0445 records the due C-11 refresh and frozen C-35 256-decision checkpoint. Embedded Telegram
+credential removal/rotation remains a separate approval gate.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0445 refreshes C-11 with no new candidate/outcome: N remains 5 and every settlement is
+  strictly after epoch `1788082349`. C-35 reaches 256 decisions but remains at 3 signals and 3
+  completed outcomes; integrity passes, economics remain sealed, and all minimum gates are false.
+  Its observed throughput projects approximately 853 days to 240 outcomes. Plain Persian: هر دو
+  cohort سالم‌اند اما هیچ شواهد edge یا تغییر گیت تازه‌ای ایجاد نشده است.
 
 - TASK-0444 fixes two local Telegram correctness defects: missing bot/chat configuration now fails
   before an invalid network request, and HTML subjects are escaped. Two network-free regressions
