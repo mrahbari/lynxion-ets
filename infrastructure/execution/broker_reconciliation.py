@@ -213,7 +213,7 @@ class BrokerReconciliationService:
                             is_reduce_only = order.get("reduceOnly") in (True, "true", "TRUE")
 
                             # Match strictly closing orders (STOP_MARKET, TAKE_PROFIT_MARKET, LIQUIDATION, or reduceOnly MARKET/LIMIT)
-                            if order_status in _TERMINAL_ORDER_STATES and (
+                            if order_status == "FILLED" and (
                                 order_type in {"STOP_MARKET", "TAKE_PROFIT_MARKET", "LIQUIDATION"} or is_reduce_only
                             ):
                                 closing_order_id = str(order.get("orderId", "UNKNOWN"))
