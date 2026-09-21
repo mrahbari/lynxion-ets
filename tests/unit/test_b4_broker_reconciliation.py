@@ -195,3 +195,37 @@ def test_idempotent_closed_position_event(tmp_path, monkeypatch):
 
     # Assert called EXACTLY ONCE across multiple cycles
     assert trade_results == [("ADA-USDT", False)]
+
+
+def test_separate_unknown_closures_for_same_symbol_are_not_collapsed(tmp_path, monkeypatch):
+    """Each open->closed transition remains processable when broker history lacks an order ID."""
+    j = _journal(tmp_path)
+    broker = _FakeBroker(positions=[_pos("ADA-USDT", 1.0)])
+    broker.get_order_history = lambda sym, limit=20: []
+    service = BrokerReconciliationService(halt_fn=lambda reason: None)
+
+    trade_results = []
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(
+        strategy_manager,
+        "record_trade_result",
+        lambda sym, is_profitable, position_closed=True: trade_results.append((sym, is_profitable)),
+    )
+    monkeypatch.setattr(
+        "infrastructure.risk.symbol_cooldown_gate.symbol_cooldown_gate.record_stop_loss_exit",
+        lambda symbol: None,
+    )
+
+    service.reconcile(broker, j)
+    broker._positions = []
+    service.reconcile(broker, j)
+    broker._positions = [_pos("ADA-USDT", 1.0)]
+    service.reconcile(broker, j)
+    broker._positions = []
+    service.reconcile(broker, j)
+
+    assert trade_results == [("ADA-USDT", False), ("ADA-USDT", False)]
+    assert service._processed_closed_exits == {
+        "ADA-USDT_UNKNOWN_1",
+        "ADA-USDT_UNKNOWN_2",
+    }

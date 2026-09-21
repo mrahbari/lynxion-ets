@@ -61,6 +61,7 @@ class BrokerReconciliationService:
         # Persistent tracking for active position transitions and closed position idempotency across restarts
         self._previous_active_symbols: set[str] = self._load_active_symbols()
         self._processed_closed_exits: set[str] = set()
+        self._unknown_exit_sequence = 0
 
     def _observe_terminal_order(self, symbol: str, order: Dict[str, Any]) -> None:
         """Observe already-selected terminal evidence without changing reconciliation."""
@@ -226,7 +227,15 @@ class BrokerReconciliationService:
                         self.logger.warning(f"Could not retrieve order history for {sym}: {hist_err}")
 
                 # 2. Derive Idempotency Key (exchange closing_order_id or fallback)
-                exit_key = f"{sym}_{closing_order_id}" if closing_order_id != "UNKNOWN" else f"{sym}_{realized_pnl}"
+                if closing_order_id != "UNKNOWN":
+                    exit_key = f"{sym}_{closing_order_id}"
+                else:
+                    # A closed-position transition is emitted once by the active-symbol state
+                    # machine.  Do not collapse every evidence-poor closure for this symbol into
+                    # the permanent key ``SYMBOL_None``; a later independent closure must still
+                    # be processed.
+                    self._unknown_exit_sequence += 1
+                    exit_key = f"{sym}_UNKNOWN_{self._unknown_exit_sequence}"
                 if exit_key in self._processed_closed_exits:
                     self.logger.debug(f"Position close for {sym} ({exit_key}) already processed — skipping duplicate.")
                     continue
