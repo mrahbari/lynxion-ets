@@ -16,8 +16,8 @@ class MonitoringConfig(BaseModel):
     # Additional monitoring fields from .env
     telegram_bot_name: str = Field(default="@LynxionNotifierBot", description="Telegram bot name")
     telegram_bot_url: str = Field(default="t.me/LynxionNotifierBot", description="Telegram bot URL")
-    telegram_bot_update_url: str = Field(default="https://api.telegram.org/bot8324444752:AAGoubuQSgXp6lhQGCxcOtGT6hLg3kTgWbY/getUpdates", description="Telegram bot update URL")
-    telegram_bot_token: str = Field(default="8324444752:AAGoubuQSgXp6lhQGCxcOtGT6hLg3kTgWbY", description="Telegram bot token")
+    telegram_bot_update_url: str = Field(default="", description="Telegram bot update URL")
+    telegram_bot_token: str = Field(default="", description="Telegram bot token")
     telegram_chat_id: int = Field(default=71819811, description="Telegram chat ID")
     telegram_notifications_enabled: bool = Field(default=True, description="Telegram notifications enabled")
     log_file_path: str = Field(default="./logs/trading_system.log", description="Log file path")

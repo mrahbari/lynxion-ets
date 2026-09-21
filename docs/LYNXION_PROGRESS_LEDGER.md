@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0449 records the frozen C-35 258-decision checkpoint. Embedded Telegram credential
-removal/rotation remains a separate approval gate.
+TASK-0450 removes the approved embedded Telegram credential from the current repository state.
+External revocation/reissue remains required before Telegram notifications can be trusted again.
 
 ## Status
 
@@ -18,6 +18,15 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0450 removes the embedded Telegram credential and token-bearing update URL from current
+  source defaults, configuration profiles/schema, and the tracked settings fixture. Runtime secrets
+  are now environment-only; settings tests redact Telegram fields, and a regression proves there is
+  no source fallback. A tracked-file token-pattern scan is empty, 13 focused tests pass, and diff
+  validation is clean. The old credential must still be revoked/reissued because it may remain in
+  Git history or external/runtime copies. Plain Persian: توکن از نسخه فعلی مخزن حذف شد و بدون
+  تنظیم محیطی، اعلان به‌صورت امن ارسال نمی‌شود؛ برای تکمیل امنیت باید توکن قبلی در BotFather باطل
+  و توکن جدید فقط در محیط اجرا تنظیم شود.
 
 - TASK-0449 advances C-35 from 257 to 258 decisions with no new signal or outcome. Candle/funding
   integrity pass, economics remain sealed, all minimum gates remain false, and observed throughput

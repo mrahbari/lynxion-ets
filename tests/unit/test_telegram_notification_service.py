@@ -3,6 +3,15 @@ from types import SimpleNamespace
 from infrastructure.services.risk_alerts import TelegramNotificationService
 
 
+def test_credentials_have_no_source_default(monkeypatch):
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+
+    service = TelegramNotificationService()
+
+    assert service.config == {"bot_token": "", "chat_id": ""}
+
+
 def test_missing_chat_id_fails_before_network(monkeypatch):
     service = TelegramNotificationService(bot_token="test-token", chat_id="")
     calls = []

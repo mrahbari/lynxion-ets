@@ -62,7 +62,7 @@ class TelegramNotificationService(INotificationService):
 
     def __init__(self, bot_token: str = "", chat_id: str = ""):
         import os
-        token = bot_token or os.getenv("TELEGRAM_BOT_TOKEN", "8324444752:AAGoubuQSgXp6lhQGCxcOtGT6hLg3kTgWbY")
+        token = bot_token or os.getenv("TELEGRAM_BOT_TOKEN", "")
         cid = chat_id or os.getenv("TELEGRAM_CHAT_ID", "")
         self.config = {
             "bot_token": token,

@@ -297,8 +297,8 @@ class _ConfigExtractorsMixin:
         monitoring_data = {
             'telegram_bot_name': self.env_loader.get_env_var('TELEGRAM_BOT_NAME', '@LynxionNotifierBot'),
             'telegram_bot_url': self.env_loader.get_env_var('TELEGRAM_BOT_URL', 't.me/LynxionNotifierBot'),
-            'telegram_bot_update_url': self.env_loader.get_env_var('TELEGRAM_BOT_UPDATE_URL', 'https://api.telegram.org/bot8324444752:AAGoubuQSgXp6lhQGCxcOtGT6hLg3kTgWbY/getUpdates'),
-            'telegram_bot_token': self.env_loader.get_env_var('TELEGRAM_BOT_TOKEN', '8324444752:AAGoubuQSgXp6lhQGCxcOtGT6hLg3kTgWbY'),
+            'telegram_bot_update_url': self.env_loader.get_env_var('TELEGRAM_BOT_UPDATE_URL', ''),
+            'telegram_bot_token': self.env_loader.get_env_var('TELEGRAM_BOT_TOKEN', ''),
             'telegram_chat_id': self.env_loader.get_env_var('TELEGRAM_CHAT_ID', '71819811'),
             'telegram_notifications_enabled': self.env_loader.get_bool_env_var('TELEGRAM_NOTIFICATIONS_ENABLED', True),
             'logging_level': self.env_loader.get_env_var('LOG_LEVEL', 'INFO'),

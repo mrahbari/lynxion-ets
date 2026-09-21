@@ -34,6 +34,10 @@ def _redact_broker_credentials(data: dict) -> dict:
     for key in broker:
         if key in {"api_key", "secret_key", "bingx_passphrase"} or key.endswith(("_api_key", "_secret_key")):
             broker[key] = "<redacted>"
+    monitoring = data.get("monitoring", {})
+    for key in ("telegram_bot_token", "telegram_bot_update_url", "telegram_chat_id"):
+        if key in monitoring:
+            monitoring[key] = "<redacted>"
     return data
 
 
