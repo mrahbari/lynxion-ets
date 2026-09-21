@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0438 closes unknown-exit idempotency collapse in broker reconciliation. The next runtime action
-remains operator restart with plain `./lynxion`.
+TASK-0439 records the frozen C-35 251-decision checkpoint. The next runtime action remains operator
+restart with plain `./lynxion`.
 
 ## Status
 
@@ -18,6 +18,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0439 advances C-35 from 249 to 251 decisions with no new signal or outcome. Candle/funding
+  integrity pass, economics remain sealed, all minimum gates remain false, and observed throughput
+  projects approximately 837 days to 240 outcomes. Plain Persian: دو تصمیم سالم اضافه شد ولی شواهد
+  edge تغییری نکرده و cohort فقط در پس‌زمینه ادامه دارد.
 
 - TASK-0438 fixes a reconciliation identity defect: evidence-poor closes used the permanent fallback
   key `SYMBOL_None`, so a later independent close of the same symbol in the same process was silently
