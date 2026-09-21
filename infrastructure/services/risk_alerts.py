@@ -4,6 +4,7 @@ import smtplib
 from email.mime.text import MIMEText
 import requests
 import json
+import html
 import time
 from typing import Dict, Any, List
 from abc import ABC, abstractmethod
@@ -72,11 +73,15 @@ class TelegramNotificationService(INotificationService):
     def send_notification(self, message: str, subject: str = "Alert", notification_type: str = "info", parse_mode: str = None) -> bool:
         """Send a Telegram notification."""
         try:
+            if not self.config.get("bot_token") or not self.config.get("chat_id"):
+                self.logger.error("Telegram configuration incomplete: bot token and chat ID are required")
+                return False
+
             url = f"https://api.telegram.org/bot{self.config['bot_token']}/sendMessage"
             
             # Formulate text
             if parse_mode == "HTML":
-                text = f"<b>{subject}</b>\n\n{message}"
+                text = f"<b>{html.escape(str(subject))}</b>\n\n{message}"
             else:
                 text = f"{subject}: {message}"
                 

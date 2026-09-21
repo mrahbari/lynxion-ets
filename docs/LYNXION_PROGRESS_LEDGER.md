@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0443 records the frozen C-35 255-decision checkpoint. The next runtime action remains operator
-restart with plain `./lynxion`.
+TASK-0444 fails Telegram notifications locally on incomplete configuration and safely escapes HTML
+subjects. A separate embedded-credential removal/rotation is approval-gated.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0444 fixes two local Telegram correctness defects: missing bot/chat configuration now fails
+  before an invalid network request, and HTML subjects are escaped. Two network-free regressions
+  pass. A credential found in source defaults was neither exposed nor changed; removing it and
+  rotating the credential requires explicit security approval. Plain Persian: خطای مبهم 400 ناشی از
+  تنظیم ناقص زودتر و واضح‌تر متوقف می‌شود؛ پاک‌سازی credential نیازمند تأیید امنیتی شماست.
 
 - TASK-0443 advances C-35 from 252 to 255 decisions with no new signal or outcome. Candle/funding
   integrity pass, economics remain sealed, all minimum gates remain false, and observed throughput
