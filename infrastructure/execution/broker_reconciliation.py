@@ -202,6 +202,12 @@ class BrokerReconciliationService:
                             reverse=True
                         )
                         for order in sorted_history:
+                            order_symbol = _sym(order.get("symbol", ""))
+                            if order_symbol:
+                                normalized_order_symbol = order_symbol.upper().replace("-", "").replace("/", "").replace("_", "")
+                                normalized_closed_symbol = _sym(sym).upper().replace("-", "").replace("/", "").replace("_", "")
+                                if normalized_order_symbol != normalized_closed_symbol:
+                                    continue
                             order_status = str(order.get("status", "")).upper()
                             order_type = str(order.get("type", "")).upper()
                             is_reduce_only = order.get("reduceOnly") in (True, "true", "TRUE")

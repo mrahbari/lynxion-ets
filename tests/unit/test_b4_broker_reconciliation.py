@@ -229,3 +229,48 @@ def test_separate_unknown_closures_for_same_symbol_are_not_collapsed(tmp_path, m
         "ADA-USDT_UNKNOWN_1",
         "ADA-USDT_UNKNOWN_2",
     }
+
+
+def test_closure_history_ignores_terminal_order_from_another_symbol(tmp_path, monkeypatch):
+    """A mixed broker response cannot attribute another symbol's newer exit to this close."""
+    j = _journal(tmp_path)
+    broker = _FakeBroker(positions=[_pos("ADA-USDT", 1.0)])
+    service = BrokerReconciliationService(halt_fn=lambda reason: None)
+    service.reconcile(broker, j)
+
+    broker._positions = []
+    broker.get_order_history = lambda sym, limit=20: [
+        {
+            "symbol": "BTC-USDT",
+            "orderId": "BTC_TP",
+            "type": "TAKE_PROFIT_MARKET",
+            "status": "FILLED",
+            "realizedProfit": "15",
+            "updateTime": 200,
+        },
+        {
+            "symbol": "ADA-USDT",
+            "orderId": "ADA_SL",
+            "type": "STOP_MARKET",
+            "status": "FILLED",
+            "realizedProfit": "-5",
+            "updateTime": 100,
+        },
+    ]
+    trade_results = []
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(
+        strategy_manager,
+        "record_trade_result",
+        lambda sym, is_profitable, position_closed=True: trade_results.append((sym, is_profitable)),
+    )
+    monkeypatch.setattr(
+        "infrastructure.risk.symbol_cooldown_gate.symbol_cooldown_gate.record_stop_loss_exit",
+        lambda symbol: None,
+    )
+
+    service.reconcile(broker, j)
+
+    assert trade_results == [("ADA-USDT", False)]
+    assert "ADA-USDT_ADA_SL" in service._processed_closed_exits
+    assert "ADA-USDT_BTC_TP" not in service._processed_closed_exits
