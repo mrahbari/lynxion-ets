@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0434 closes a verified float-drift rejection at the exact VST $21 order cap. The next runtime
-action remains operator restart with plain `./lynxion`.
+TASK-0435 records the C-35 248-decision liveness checkpoint. The next runtime action remains operator
+restart with plain `./lynxion`.
 
 ## Status
 
@@ -18,6 +18,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0435 adds the latest complete public candles and funding coverage to C-35. Integrity passes,
+  but the decision count remains 248 with 3 signals and 3 completed outcomes; economics stay sealed,
+  every minimum gate is false, and no edge evidence changed. Plain Persian: داده سالم اضافه شد ولی
+  هنوز تصمیم، سیگنال یا نتیجه تازه‌ای وجود ندارد.
 
 - TASK-0434 fixes a reproducible numeric boundary defect: an exact Decimal notional of $21 could
   become `21.000000000000004` after float conversion and be falsely rejected as over the hard cap.
