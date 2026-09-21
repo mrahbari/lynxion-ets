@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0426 records the frozen C-35 239-decision checkpoint. The next runtime action remains operator
-restart with plain `./lynxion`.
+TASK-0427 records the C-35 240-decision throughput checkpoint. The next runtime action remains
+operator restart with plain `./lynxion`.
 
 ## Status
 
@@ -18,6 +18,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0427 reaches 240 C-35 decisions with only three signals and three completed outcomes. The
+  observed signal rate is 0.3/day, projecting about 800 days to the required 240 outcomes. Integrity
+  passes and economics remain sealed, but every promotion minimum remains false. Verdict stays
+  `TOO_SLOW / COLLECTING`, not an edge claim. Plain Persian: ۲۴۰ ساعت تصمیم فقط سه معامله قابل
+  ارزیابی ساخته است؛ این سرعت برای مسیر اصلی تحویل کافی نیست و cohort فقط پس‌زمینه‌ای می‌ماند.
 
 - TASK-0426 advances C-35 from 238 to 239 decisions with no new signal or outcome. Integrity passes,
   economics remain sealed, all minimum gates remain false, and projected time to 240 outcomes is
