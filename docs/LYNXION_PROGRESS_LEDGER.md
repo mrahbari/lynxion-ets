@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0432 closes a verified raw-string symbol crash in the broker execution boundary. The next
-runtime action remains operator restart with plain `./lynxion`.
+TASK-0433 records the due C-11 refresh, C-35 248-decision checkpoint, and C-33 liveness snapshot.
+The next runtime action remains operator restart with plain `./lynxion`.
 
 ## Status
 
@@ -18,6 +18,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0433 refreshes C-11 with no new candidate/outcome: N remains 5 and every settlement is
+  strictly after epoch `1788082349`. C-35 reaches 248 decisions but remains at 3 signals and 3
+  completed outcomes; integrity passes, economics remain sealed, and all minimum gates are false.
+  Its observed throughput projects approximately 827 days to 240 outcomes. C-33 is healthy at 1,280
+  eligible buckets with no checkpoint due before 2,000. Plain Persian: جمع‌آوری سالم ادامه دارد، اما
+  هیچ شواهد edge یا تغییر گیت تازه‌ای ایجاد نشده و هر سه مسیر فقط پس‌زمینه‌ای هستند.
 
 - TASK-0432 fixes a real execution-boundary defect: after a position-query failure, diagnostic code
   assumed `order.symbol` had a `.value` attribute. Raw string symbols therefore raised a second
