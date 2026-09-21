@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0435 records the C-35 248-decision liveness checkpoint. The next runtime action remains operator
-restart with plain `./lynxion`.
+TASK-0436 preserves actionable BingX margin/leverage rejection diagnostics. The next runtime action
+remains operator restart with plain `./lynxion`.
 
 ## Status
 
@@ -18,6 +18,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0436 closes an execution-observability defect found across 29 logged BingX admission
+  failures: the adapter discarded which write failed plus the broker error code/message and emitted
+  one generic reason. It now preserves only the operation, code, and safe message while remaining
+  fail-closed; 14 leverage-contract tests pass. The exchange rejection itself is not claimed fixed
+  until a later controlled VST observation supplies its real code. Plain Persian: اجرای بعدی علت
+  دقیق رد شدن margin/leverage را نشان می‌دهد؛ این تغییر هنوز خود رد شدن صرافی را حل‌شده اعلام نمی‌کند.
 
 - TASK-0435 adds the latest complete public candles and funding coverage to C-35. Integrity passes,
   but the decision count remains 248 with 3 signals and 3 completed outcomes; economics stay sealed,

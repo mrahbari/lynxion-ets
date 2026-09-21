@@ -95,7 +95,7 @@ def _entry_order(leverage="5"):
 
 def _admission_broker(monkeypatch, *, exchange="5", margin="ISOLATED", positions=None,
                       configured=5, ceiling=5, fail_endpoint=None, leverage_data=None,
-                      readback_time=None):
+                      readback_time=None, fail_code=1, fail_message=None):
     from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
 
     broker = object.__new__(_BingXBroker)
@@ -105,7 +105,7 @@ def _admission_broker(monkeypatch, *, exchange="5", margin="ISOLATED", positions
     def request(method, endpoint, **kwargs):
         calls.append((method, endpoint, kwargs.get("params")))
         if endpoint == fail_endpoint:
-            return {"code": 1, "data": None}
+            return {"code": fail_code, "msg": fail_message, "data": None}
         if endpoint.endswith("/user/positions"):
             return {"code": 0, "data": positions or []}
         if endpoint.endswith("/marginType") and method == "GET":
@@ -191,9 +191,16 @@ def test_existing_excessive_leverage_blocks_new_symbol(monkeypatch):
 
 def test_broker_write_error_rejects(monkeypatch):
     endpoint = "/openApi/swap/v2/trade/leverage"
-    broker, _ = _admission_broker(monkeypatch, fail_endpoint=endpoint)
+    broker, _ = _admission_broker(
+        monkeypatch,
+        fail_endpoint=endpoint,
+        fail_code=109400,
+        fail_message="leverage update rejected",
+    )
     allowed, reason = broker._assert_entry_admission(_entry_order())
-    assert allowed is False and "broker rejected" in reason
+    assert allowed is False
+    assert "broker rejected" in reason
+    assert "leverage code=109400 msg=leverage update rejected" in reason
 
 
 def test_rejection_never_reaches_order_execution(monkeypatch):
