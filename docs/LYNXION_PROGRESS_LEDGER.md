@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0441 records the frozen C-35 252-decision checkpoint. The next runtime action remains operator
-restart with plain `./lynxion`.
+TASK-0442 removes the synthetic execution-price fallback and fails closed when no verified price is
+available. The next runtime action remains operator restart with plain `./lynxion`.
 
 ## Status
 
@@ -18,6 +18,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0442 fixes a risk-critical execution-price defect: when both normal and public price lookup
+  failed, the order path synthesized `$50,000` and continued sizing/routing. It now rejects before
+  sizing unless price is positive and finite; eight focused heartbeat/execution tests pass. Plain
+  Persian: بدون قیمت واقعی و معتبر دیگر هیچ سفارشی با قیمت فرضی ساخته نمی‌شود.
 
 - TASK-0441 advances C-35 from 251 to 252 decisions with no new signal or outcome. Candle/funding
   integrity pass, economics remain sealed, all minimum gates remain false, and observed throughput

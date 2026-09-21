@@ -11,6 +11,7 @@ Verifies that:
 """
 
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 import pytest
 
 from domain.value_objects import Symbol, Percentage
@@ -144,3 +145,40 @@ def test_7_continuous_streaming_regression():
     last_time = processor._last_market_data_times["BTCUSDT"]
     elapsed = (datetime.now() - last_time).total_seconds()
     assert elapsed < 1.0
+
+
+def test_execution_rejects_when_no_verified_price_is_available(monkeypatch):
+    router = EventRouter()
+    processor = SignalProcessor(router)
+    processor.update_market_data_heartbeat("BTCUSDT")
+
+    class PriceUnavailableExecutionService:
+        is_backtest = False
+
+        def __init__(self):
+            self.execute_calls = 0
+
+        def get_current_price(self, symbol):
+            return None
+
+        def execute_order(self, order):
+            self.execute_calls += 1
+
+    class UnavailableExchange:
+        def fetch_ticker(self, symbol):
+            raise RuntimeError("public price unavailable")
+
+    monkeypatch.setitem(
+        __import__('sys').modules,
+        "ccxt",
+        SimpleNamespace(binance=lambda: UnavailableExchange()),
+    )
+    service = PriceUnavailableExecutionService()
+    event = SignalEvent(
+        event_type=EventType.EXECUTION_INTENT,
+        data=create_mock_intent("BTCUSDT"),
+        source_component="Test",
+    )
+
+    assert processor._process_execution_intent(event, service) is None
+    assert service.execute_calls == 0

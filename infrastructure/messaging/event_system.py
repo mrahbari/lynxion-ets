@@ -6,6 +6,7 @@ from typing import Callable, Dict, Any, List
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+import math
 import threading
 import queue
 from domain.entities import MarketObservation, InterpretedSignal, FusedSignal, ExecutionIntent
@@ -296,8 +297,9 @@ class SignalProcessor:
                 except:
                     pass  # Fallback to default price below
 
-            # If we still don't have a price, use a fallback
-            if current_price is None or current_price <= 0:
+            # If the configured service cannot supply a usable price, try the existing
+            # public fallback once. Never synthesize an execution price.
+            if current_price is None or not math.isfinite(float(current_price)) or current_price <= 0:
                 # Try to get price from exchange directly
                 try:
                     import ccxt
@@ -305,8 +307,15 @@ class SignalProcessor:
                     ticker = exchange.fetch_ticker(execution_intent.symbol.value)
                     current_price = ticker['last'] if 'last' in ticker else ticker['close']
                 except:
-                    # If all methods fail, use a default price
-                    current_price = 50000.0  # Fallback price
+                    current_price = None
+
+            if current_price is None or not math.isfinite(float(current_price)) or current_price <= 0:
+                if self.logger:
+                    self.logger.error(
+                        f"❌ ORDER REJECTED: No positive finite execution price available for "
+                        f"{execution_intent.symbol.value}."
+                    )
+                return None
 
             # Calculate quantity based on risk parameters
             risk_params = execution_intent.risk_parameters
@@ -355,14 +364,13 @@ class SignalProcessor:
                     self.logger.error(f"Error in NGDP calculation, falling back to static sizing: {e}")
                 
                 if fixed_position_size_enabled:
-                    fallback_price = 50000.0
-                    p = current_price if current_price and current_price > 0 else fallback_price
+                    p = current_price
                     quantity = fixed_position_amount / p
                 else:
                     position_size_pct = risk_params.get('max_position_size', 0.02)
                     account_balance = load_settings().position_sizing.default_account_balance if load_settings().position_sizing and hasattr(load_settings().position_sizing, 'default_account_balance') else 10000.0
                     position_value = account_balance * position_size_pct
-                    p = current_price if current_price and current_price > 0 else 50000.0
+                    p = current_price
                     quantity = position_value / p
 
                 if 'position_quantity' in risk_params:
@@ -406,7 +414,7 @@ class SignalProcessor:
             # Check if the strategy layer set incorrect SL/TP prices and recalculate if needed
             # For BUY orders: SL should be below entry price, TP should be above entry price
             # For SELL orders: SL should be above entry price, TP should be below entry price
-            entry_price = float(current_price) if current_price else 50000.0  # fallback
+            entry_price = float(current_price)
 
             # Validate signal direction consistency with order side
             # Check if there's a contradiction between signal bias and order side
