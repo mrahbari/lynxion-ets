@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0451 records a healthy C-35 checkpoint at 259 decisions. External Telegram
+TASK-0452 records a healthy C-35 checkpoint at 260 decisions. External Telegram
 credential revocation/reissue remains required before notifications can be fully trusted again.
 
 ## Status
@@ -18,6 +18,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0452 adds four complete candles for each of six symbols, six funding coverage receipts, and
+  one valid no-signal decision. Candle and funding integrity pass; decisions/signals/outcomes are
+  260/3/3, economics stay sealed, and every minimum gate remains false. Plain Persian: داده سالم و
+  یک تصمیم بدون سیگنال اضافه شد، اما نتیجه یا شواهد edge تازه‌ای ایجاد نشده است.
 
 - TASK-0451 adds four complete candles for each of six symbols, six funding coverage receipts, and
   one valid no-signal decision. Candle and funding integrity pass; decisions/signals/outcomes are
