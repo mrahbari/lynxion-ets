@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0448 requires filled broker evidence for position-closure attribution. Embedded Telegram
-credential removal/rotation remains a separate approval gate.
+TASK-0449 records the frozen C-35 258-decision checkpoint. Embedded Telegram credential
+removal/rotation remains a separate approval gate.
 
 ## Status
 
@@ -18,6 +18,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0449 advances C-35 from 257 to 258 decisions with no new signal or outcome. Candle/funding
+  integrity pass, economics remain sealed, all minimum gates remain false, and observed throughput
+  projects approximately 860 days to 240 outcomes. Plain Persian: داده سالم است ولی شواهد edge
+  تغییری نکرده و cohort فقط در پس‌زمینه ادامه دارد.
 
 - TASK-0448 fixes terminal-evidence classification: cancelled/rejected protection orders were
   eligible as position-closing evidence, so a newer cancelled TP could be classified as the exit
