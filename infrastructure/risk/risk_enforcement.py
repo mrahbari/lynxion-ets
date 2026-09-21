@@ -250,6 +250,23 @@ class RiskEnforcement:
 
                     # Sizing boundary enforcement: cap quantity if it exceeds max position limit slightly (<= 5% overflow)
                     max_exposure = getattr(self._rm, 'max_position_exposure', 50000.0)
+                    # Decimal-valid exact-cap orders can appear microscopically above the cap after
+                    # float conversion (for example 300 * 0.07 -> 21.000000000000004). Reduce the
+                    # executable quantity by one float step; never relax or exceed the hard cap.
+                    if self._strict_position_limit and size * entry > max_exposure:
+                        from decimal import Decimal, InvalidOperation
+                        raw_size = getattr(order, 'quantity', size)
+                        raw_price = getattr(getattr(order, 'price', None), 'amount', entry)
+                        try:
+                            exact_notional = Decimal(str(raw_size)) * Decimal(str(raw_price))
+                            if exact_notional <= Decimal(str(max_exposure)):
+                                size = math.nextafter(max_exposure / entry, 0.0)
+                                if isinstance(raw_size, Decimal):
+                                    order.quantity = Decimal(str(size))
+                                else:
+                                    order.quantity = size
+                        except (InvalidOperation, ValueError, TypeError):
+                            pass
                     if size * entry > max_exposure:
                         if self._strict_position_limit:
                             self.denials += 1

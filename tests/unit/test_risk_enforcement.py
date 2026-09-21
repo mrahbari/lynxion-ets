@@ -240,6 +240,17 @@ def test_vst_execution_risk_enforcer_rejects_notional_above_hard_cap():
     assert "exceeds max position limit" in reason
 
 
+def test_vst_execution_risk_enforcer_accepts_decimal_exact_cap_without_float_drift():
+    order = _order(Decimal("300"), Decimal("0.07"))
+    assert float(order.quantity) * float(order.price.amount) > VST_MAX_ORDER_NOTIONAL
+    assert order.quantity * order.price.amount == Decimal("21")
+
+    allowed, reason = build_vst_risk_enforcement().enforce(order)
+
+    assert allowed, reason
+    assert float(order.quantity) * float(order.price.amount) <= VST_MAX_ORDER_NOTIONAL
+
+
 def test_vst_execution_risk_enforcer_rejects_portfolio_exposure_above_hard_cap():
     enf = build_vst_risk_enforcement()
     enf._rm.positions["ETHUSDT"] = Position(
