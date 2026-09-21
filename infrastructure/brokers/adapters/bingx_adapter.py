@@ -612,26 +612,22 @@ class _BingXBroker:
             side = 'BOTH'
 
         writes = (
-            ('marginType', self._make_request(
-                'POST', '/openApi/swap/v2/trade/marginType', signed=True,
-                params={'symbol': symbol, 'marginType': 'ISOLATED'},
-            )),
-            ('leverage', self._make_request(
-                'POST', '/openApi/swap/v2/trade/leverage', signed=True,
-                params={'symbol': symbol, 'side': side, 'leverage': int(requested)},
-            )),
+            ('marginType', '/openApi/swap/v2/trade/marginType', {
+                'symbol': symbol, 'marginType': 'ISOLATED',
+            }),
+            ('leverage', '/openApi/swap/v2/trade/leverage', {
+                'symbol': symbol, 'side': side, 'leverage': int(requested),
+            }),
         )
-        rejected_writes = []
-        for operation, response in writes:
+        for operation, endpoint, params in writes:
+            response = self._make_request('POST', endpoint, signed=True, params=params)
             if response.get('code') != 0:
                 code = response.get('code', 'missing')
                 message = response.get('msg', response.get('message', 'missing'))
-                rejected_writes.append(f"{operation} code={code} msg={message}")
-        if rejected_writes:
-            return False, (
-                "broker rejected isolated margin or leverage establishment: "
-                + "; ".join(rejected_writes)
-            )
+                return False, (
+                    "broker rejected isolated margin or leverage establishment: "
+                    f"{operation} code={code} msg={message}"
+                )
 
         margin_response = self._make_request(
             'GET', '/openApi/swap/v2/trade/marginType', signed=True, params={'symbol': symbol}

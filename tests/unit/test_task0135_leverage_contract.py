@@ -203,6 +203,23 @@ def test_broker_write_error_rejects(monkeypatch):
     assert "leverage code=109400 msg=leverage update rejected" in reason
 
 
+def test_margin_write_failure_does_not_mutate_leverage(monkeypatch):
+    margin_endpoint = "/openApi/swap/v2/trade/marginType"
+    leverage_endpoint = "/openApi/swap/v2/trade/leverage"
+    broker, calls = _admission_broker(
+        monkeypatch,
+        fail_endpoint=margin_endpoint,
+        fail_code=109401,
+        fail_message="margin update rejected",
+    )
+
+    allowed, reason = broker._assert_entry_admission(_entry_order())
+
+    assert allowed is False
+    assert "marginType code=109401 msg=margin update rejected" in reason
+    assert not any(method == "POST" and endpoint == leverage_endpoint for method, endpoint, _ in calls)
+
+
 def test_rejection_never_reaches_order_execution(monkeypatch):
     broker, _ = _admission_broker(monkeypatch, exchange="10")
     reached = []
