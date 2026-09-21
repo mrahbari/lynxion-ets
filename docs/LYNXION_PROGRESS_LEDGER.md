@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0446 prevents cross-symbol terminal-order attribution during reconciliation. Embedded Telegram
-credential removal/rotation remains a separate approval gate.
+TASK-0447 records the frozen C-35 257-decision checkpoint. Embedded Telegram credential
+removal/rotation remains a separate approval gate.
 
 ## Status
 
@@ -18,6 +18,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0447 advances C-35 from 256 to 257 decisions with no new signal or outcome. Candle/funding
+  integrity pass, economics remain sealed, all minimum gates remain false, and observed throughput
+  projects approximately 857 days to 240 outcomes. Plain Persian: داده سالم است ولی شواهد edge
+  تغییری نکرده و cohort فقط در پس‌زمینه ادامه دارد.
 
 - TASK-0446 fixes a reconciliation identity defect: a mixed broker-history response could contribute
   a newer terminal order from another symbol because row identity was not rechecked. Rows carrying a
