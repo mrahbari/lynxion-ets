@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0440 prevents a leverage mutation after failed BingX isolated-margin establishment. The next
-runtime action remains operator restart with plain `./lynxion`.
+TASK-0441 records the frozen C-35 252-decision checkpoint. The next runtime action remains operator
+restart with plain `./lynxion`.
 
 ## Status
 
@@ -18,6 +18,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0441 advances C-35 from 251 to 252 decisions with no new signal or outcome. Candle/funding
+  integrity pass, economics remain sealed, all minimum gates remain false, and observed throughput
+  projects approximately 840 days to 240 outcomes. Plain Persian: داده سالم است ولی شواهد edge
+  تغییری نکرده و این cohort فقط در پس‌زمینه ادامه دارد.
 
 - TASK-0440 fixes a broker-mutation sequencing defect: both margin and leverage writes were eagerly
   issued even when the first margin write failed, after which admission was rejected anyway. Writes
