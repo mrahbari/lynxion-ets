@@ -197,16 +197,16 @@ class BrokerExecutionService(ExecutionPort):
     def execute_order(self, order: Order) -> str:
         """Execute an order through the configured broker."""
         try:
+            symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
             # Check if the system is still running - if not, reject the execution
             if hasattr(self, '_is_system_running') and not self._is_system_running:
-                self.logger.warning(f"System is shutting down, rejecting order execution for {order.symbol.value if hasattr(order, 'symbol') and hasattr(getattr(order, 'symbol', None), 'value') else 'UNKNOWN'}")
+                self.logger.warning(f"System is shutting down, rejecting order execution for {symbol_str}")
                 return None
 
             # First, check if the symbol is in the approved symbols list
             # This is the primary validation - if a symbol is not approved, it's not available for trading
             from infrastructure.services.symbol_validator import symbol_validator
             if not symbol_validator.is_symbol_approved(order.symbol):
-                symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
                 self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order execution denied.")
                 return None
 
@@ -224,7 +224,7 @@ class BrokerExecutionService(ExecutionPort):
                     symbol_obj = DomainSymbol(order.symbol) if isinstance(order.symbol, str) else order.symbol
                     current_position = self.broker.get_position(symbol_obj) if hasattr(self.broker, 'get_position') else None
                 except Exception as pos_error:
-                    self.logger.warning(f"⚠️ Could not get position for {order.symbol.value}, proceeding with order: {pos_error}")
+                    self.logger.warning(f"⚠️ Could not get position for {symbol_str}, proceeding with order: {pos_error}")
                     current_position = None
 
                 # Determine the intended side of the new order
@@ -254,9 +254,9 @@ class BrokerExecutionService(ExecutionPort):
                 if position_duplicate or pending_duplicate:
                     if position_duplicate:
                         pos_side_name = current_position.side.name if hasattr(current_position.side, 'name') else str(current_position.side)
-                        self.logger.info(f"❌ CONFLICT REJECTED: Active {pos_side_name} position exists for {order.symbol.value}. Preventing conflicting trade.")
+                        self.logger.info(f"❌ CONFLICT REJECTED: Active {pos_side_name} position exists for {symbol_str}. Preventing conflicting trade.")
                     else:
-                        self.logger.info(f"⚠️ CONFLICT CHECK BLOCKED: Internal pending order exists on {order.symbol.value} — broker confirmation needed.")
+                        self.logger.info(f"⚠️ CONFLICT CHECK BLOCKED: Internal pending order exists on {symbol_str} — broker confirmation needed.")
                     # Return a failure status instead of raising an exception to prevent system crashes
                     return None  # Indicate that the order was not placed due to duplicate prevention
 
@@ -281,7 +281,7 @@ class BrokerExecutionService(ExecutionPort):
                     has_take_profit = enhanced_has_take_profit
                 else:
                     # If enhancement failed to add both SL and TP, reject the order
-                    self.logger.error(f"❌ ORDER REJECTED: Enhancement failed to add required SL/TP parameters for {order.symbol.value} - "
+                    self.logger.error(f"❌ ORDER REJECTED: Enhancement failed to add required SL/TP parameters for {symbol_str} - "
                                     f"SL present after enhancement: {enhanced_has_stop_loss}, TP present after enhancement: {enhanced_has_take_profit}")
                     return None
 
@@ -290,7 +290,7 @@ class BrokerExecutionService(ExecutionPort):
             # At this point, if enhancement was needed and successful, has_stop_loss/has_take_profit should be True
             # If enhancement was needed but failed, the order would have been rejected above
             if not has_stop_loss or not has_take_profit:
-                self.logger.error(f"❌ ORDER REJECTED: Missing required SL/TP parameters for {order.symbol.value} - "
+                self.logger.error(f"❌ ORDER REJECTED: Missing required SL/TP parameters for {symbol_str} - "
                                 f"SL present: {has_stop_loss}, TP present: {has_take_profit}")
                 # Fail loudly instead of allowing the order to proceed
                 return None
@@ -367,7 +367,6 @@ class BrokerExecutionService(ExecutionPort):
                 trade_id = getattr(order, 'metadata', {}).get('trade_id', None)
                 if not trade_id:
                     # Generate trade ID if not available
-                    symbol_str = order.symbol.value if hasattr(order.symbol, 'value') else str(order.symbol)
                     exchange = getattr(order, 'exchange', 'BINANCE')
                     trade_id = forensic_logger._generate_trade_id(symbol_str, exchange)
 

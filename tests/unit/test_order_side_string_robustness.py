@@ -219,6 +219,51 @@ def test_broker_execution_service_side_robustness(monkeypatch):
 
 
 @pytest.mark.unit
+def test_broker_execution_service_string_symbol_survives_position_lookup_failure(monkeypatch):
+    """A failed duplicate check must not crash while formatting a raw string symbol."""
+    from infrastructure.services.broker_execution_service import BrokerExecutionService
+
+    class Config:
+        pass
+
+    settings = Config()
+    settings.execution = Config()
+    settings.execution.prevent_same_direction_trade_per_symbol = True
+
+    class Broker:
+        def get_position(self, symbol):
+            raise RuntimeError("position endpoint unavailable")
+
+        def execute_order(self, order):
+            return "ORDER-1"
+
+    service = object.__new__(BrokerExecutionService)
+    service._settings = settings
+    service.broker = Broker()
+    service.broker_name = "MultiBroker"
+    service.use_multi_broker = True
+    service.logger = logging.getLogger("test_string_symbol_position_failure")
+
+    monkeypatch.setattr(
+        "infrastructure.services.symbol_validator.symbol_validator.is_symbol_approved",
+        lambda symbol: True,
+    )
+    monkeypatch.setattr(service, "_has_any_pending_order", lambda symbol: False)
+    monkeypatch.setattr(service, "_validate_order_parameters_before_broker", lambda order: True)
+
+    order = Order(
+        symbol="BTCUSDT",
+        side="BUY",
+        quantity=Decimal("0.001"),
+        price=Money(Decimal("60000"), "USDT"),
+        stop_loss_price=Money(Decimal("59000"), "USDT"),
+        take_profit_price=Money(Decimal("62000"), "USDT"),
+    )
+
+    assert service.execute_order(order) == "ORDER-1"
+
+
+@pytest.mark.unit
 def test_multi_broker_execution_service_side_robustness(monkeypatch):
     from infrastructure.brokers.multi_broker_service import MultiBrokerExecutionService
     from domain.entities import Order

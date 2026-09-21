@@ -7,8 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0431 records the frozen C-35 244-decision checkpoint. The next runtime action remains operator
-restart with plain `./lynxion`.
+TASK-0432 closes a verified raw-string symbol crash in the broker execution boundary. The next
+runtime action remains operator restart with plain `./lynxion`.
 
 ## Status
 
@@ -18,6 +18,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0432 fixes a real execution-boundary defect: after a position-query failure, diagnostic code
+  assumed `order.symbol` had a `.value` attribute. Raw string symbols therefore raised a second
+  exception and were rejected before broker routing. The symbol display value is now normalized once
+  and a focused raw-string/failed-position regression passes; all eight symbol/side robustness tests
+  pass. No production policy or broker state changed. Plain Persian: یک خطای واقعی که می‌توانست سفارش
+  را قبل از مسیر broker متوقف کند در کد بسته شد؛ برای اثرگذاری روی رانر فعال، restart لازم است.
 
 - TASK-0431 advances C-35 from 243 to 244 decisions with no new signal or outcome. Integrity passes,
   economics remain sealed, all minimum gates remain false, and projected time to 240 outcomes is
