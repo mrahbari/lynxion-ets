@@ -7,7 +7,7 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0452 records a healthy C-35 checkpoint at 260 decisions. External Telegram
+TASK-0453 records frozen cohort refresh and recovery of the public C-33 collector. External Telegram
 credential revocation/reissue remains required before notifications can be fully trusted again.
 
 ## Status
@@ -18,6 +18,13 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0453 advances C-35 to 283 decisions with unchanged 3 signals/3 outcomes, clean integrity,
+  sealed economics, and no satisfied minimum gate. C-11 remains at five strictly prospective
+  outcomes and `COLLECTING`. C-33 was found with zero active collector sessions at 1,280 eligible
+  buckets; its pinned public collector was restarted and one active fresh session verified without
+  backfill. Plain Persian: جمع‌آوری C-33 پس از وقفه دوباره فعال شد؛ در هیچ‌یک از سه cohort شواهد
+  edge یا تغییر گیت تازه‌ای ایجاد نشده است.
 
 - TASK-0452 adds four complete candles for each of six symbols, six funding coverage receipts, and
   one valid no-signal decision. Candle and funding integrity pass; decisions/signals/outcomes are
