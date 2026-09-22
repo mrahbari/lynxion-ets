@@ -7,9 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0455 records C-35 at 284 decisions and verifies C-33 post-recovery productivity. Phase 3A
-upstream PASS-1/V2 files remain absent from
-the current checkout, so preregistration and evaluation await source evidence. External Telegram
+TASK-0456 corrects the Phase 3A source location and records unresolved V2 provenance conflicts.
+Preregistration awaits exact engine attribution and raw-source review. External Telegram
 credential revocation/reissue remains required before notifications can be fully trusted again.
 
 ## Status
@@ -21,16 +20,21 @@ proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy
 
 ## Latest verified findings
 
+- TASK-0456 corrects TASK-0454: PASS-1/V2 files are present under `tasks/1k-event/research/`,
+  with verified CSV counts of 306/307 total signals and 100 `1K_EVENT` signals. V2 narrative/manual
+  review references for the final HMT/TFS disclosure conflict with actual signal IDs and the
+  2,051-row evidence manifest; 42 recent signals also link later follow-up messages. Raw exports
+  and screenshots are absent from this tree. Plain Persian: داده‌های استخراج‌شده پیدا شدند، اما
+  انتساب موتور و چند شناسه منبع باید پیش از آزمون HMT/Phase 3A با فایل خام تطبیق داده شوند.
+
 - TASK-0455 advances C-35 to 284 decisions with unchanged 3 signals/3 outcomes, clean integrity,
   sealed economics, and no satisfied minimum gate. C-33 has one active public session and 1,291
   eligible buckets, 11 more than before recovery; no checkpoint is due. Plain Persian: C-33 دوباره
   داده معتبر جمع می‌کند، ولی هیچ شواهد edge یا تغییر گیت تازه‌ای دیده نشده است.
 
-- TASK-0454 reviews the operator's Phase 3A blind opportunity-fingerprint mandate. The required
-  `research/external_signal_study/` PASS-1/V2 artifacts are absent from the current checkout and
-  inspected attachment tree. Signal counts, HMT/TFS attribution, opportunity universe, and power
-  cannot yet be verified; no market reconstruction or economic test started. Plain Persian: روش
-  تحقیق مناسب است، اما تا فایل‌های منبع واقعی برسند آزمون معتبر و preregistration قطعی ممکن نیست.
+- TASK-0454 initially searched the prompt's expected `research/external_signal_study/` path and
+  reported PASS-1/V2 absent. TASK-0456 supersedes that location finding: the data is under
+  `tasks/1k-event/research/external_signal_study/`. Its attribution/provenance gate remains open.
 
 - TASK-0453 advances C-35 to 283 decisions with unchanged 3 signals/3 outcomes, clean integrity,
   sealed economics, and no satisfied minimum gate. C-11 remains at five strictly prospective
