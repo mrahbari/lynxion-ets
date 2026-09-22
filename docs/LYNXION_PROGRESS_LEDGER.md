@@ -7,7 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0453 records frozen cohort refresh and recovery of the public C-33 collector. External Telegram
+TASK-0454 audits the proposed Phase 3A research inputs; upstream PASS-1/V2 files are absent from
+the current checkout, so preregistration and evaluation await source evidence. External Telegram
 credential revocation/reissue remains required before notifications can be fully trusted again.
 
 ## Status
@@ -18,6 +19,12 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0454 reviews the operator's Phase 3A blind opportunity-fingerprint mandate. The required
+  `research/external_signal_study/` PASS-1/V2 artifacts are absent from the current checkout and
+  inspected attachment tree. Signal counts, HMT/TFS attribution, opportunity universe, and power
+  cannot yet be verified; no market reconstruction or economic test started. Plain Persian: روش
+  تحقیق مناسب است، اما تا فایل‌های منبع واقعی برسند آزمون معتبر و preregistration قطعی ممکن نیست.
 
 - TASK-0453 advances C-35 to 283 decisions with unchanged 3 signals/3 outcomes, clean integrity,
   sealed economics, and no satisfied minimum gate. C-11 remains at five strictly prospective
