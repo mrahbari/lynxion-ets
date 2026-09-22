@@ -7,7 +7,8 @@ correctness, experimental validity, and VST risk controls.
 
 ## Current task
 
-TASK-0454 audits the proposed Phase 3A research inputs; upstream PASS-1/V2 files are absent from
+TASK-0455 records C-35 at 284 decisions and verifies C-33 post-recovery productivity. Phase 3A
+upstream PASS-1/V2 files remain absent from
 the current checkout, so preregistration and evaluation await source evidence. External Telegram
 credential revocation/reissue remains required before notifications can be fully trusted again.
 
@@ -19,6 +20,11 @@ at evidence boundary `1f07520`; profitability, pilot readiness, and production a
 proven. C-35, C-11, and C-33 remain `COLLECTING`, and production strategy policy is unchanged.
 
 ## Latest verified findings
+
+- TASK-0455 advances C-35 to 284 decisions with unchanged 3 signals/3 outcomes, clean integrity,
+  sealed economics, and no satisfied minimum gate. C-33 has one active public session and 1,291
+  eligible buckets, 11 more than before recovery; no checkpoint is due. Plain Persian: C-33 دوباره
+  داده معتبر جمع می‌کند، ولی هیچ شواهد edge یا تغییر گیت تازه‌ای دیده نشده است.
 
 - TASK-0454 reviews the operator's Phase 3A blind opportunity-fingerprint mandate. The required
   `research/external_signal_study/` PASS-1/V2 artifacts are absent from the current checkout and
