@@ -1,0 +1,7 @@
+feature,formula,lookback,timestamp_rule,provenance
+F1_directional_4h_return,side*ln(last_completed_4h_close / 4_completed_4h_bars_prior_close),5 completed 4h bars,all component candle close_time <= record event_time; UTC close boundaries,frozen preregistration b9ec946
+F2_range_location_20,side*(2*(last_15m_close-lowest_low_20)/(highest_high_20-lowest_low_20)-1),20 completed 15m bars,all component candle close_time <= record event_time; UTC close boundaries,frozen preregistration b9ec946
+F3_countertrend_pullback_8,-side*ln(last_15m_close / close_8_bars_prior),9 completed 15m bars,all component candle close_time <= record event_time; UTC close boundaries,frozen preregistration b9ec946
+F4_compression_ratio,range(last_8_completed_15m)/range(last_32_completed_15m),32 completed 15m bars,all component candle close_time <= record event_time; UTC close boundaries,frozen preregistration b9ec946
+F5_relative_volume_8,sum(volume_last_8)/mean(sum(volume_each_8bar_block_for_20_prior_blocks)),168 completed 15m bars,all component candle close_time <= record event_time; UTC close boundaries,frozen preregistration b9ec946
+F9_BTC_directional_4h_return,side*ln(BTC_last_completed_4h_close / BTC_4_completed_4h_bars_prior_close),5 completed BTC 4h bars,all component candle close_time <= record event_time; UTC close boundaries,frozen preregistration b9ec946

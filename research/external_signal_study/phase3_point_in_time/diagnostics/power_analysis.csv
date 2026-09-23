@@ -1,0 +1,7 @@
+feature,nominal_cases,matched_complete_cases,case_utc_days,case_symbols,long_cases,short_cases,controls_per_case,practical_standardized_d,isolated_bh_alpha,pooled_robust_scale,day_cluster_power,symbol_cluster_power,conservative_power,day_95pct_ci_halfwidth_standardized,symbol_95pct_ci_halfwidth_standardized,day_isolated_bh_threshold_standardized,symbol_isolated_bh_threshold_standardized,power_class
+F1_directional_4h_return,56,56,23,22,25,31,3,0.4,0.016666666666666666,0.0212373162756,0.1265,0.1668,0.1265,0.6225,0.5279,0.7789,0.6482,UNDERPOWERED
+F2_range_location_20,56,56,23,22,25,31,3,0.4,0.016666666666666666,0.661886100629,0.8169,0.7057,0.7057,0.2391,0.2711,0.2934,0.3311,MARGINALLY_POWERED
+F3_countertrend_pullback_8,56,56,23,22,25,31,3,0.4,0.016666666666666666,0.00878350518504,0.1845,0.1527,0.1527,0.5394,0.5542,0.6455,0.6823,UNDERPOWERED
+F4_compression_ratio,56,56,23,22,25,31,3,0.4,0.016666666666666666,0.215051508036,0.4075,0.8427,0.4075,0.3554,0.2357,0.4367,0.2869,UNDERPOWERED
+F5_relative_volume_8,56,56,23,22,25,31,3,0.4,0.016666666666666666,0.661795893008,0.0626,0.0958,0.0626,0.9591,0.7711,1.1557,0.9430,UNDERPOWERED
+F9_BTC_directional_4h_return,56,56,23,22,25,31,3,0.4,0.016666666666666666,0.00958448585574,0.0823,0.2227,0.0823,0.8018,0.4666,0.9790,0.5735,UNDERPOWERED
