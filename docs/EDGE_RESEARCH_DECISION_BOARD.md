@@ -1,6 +1,6 @@
 # Lynxion Edge Research Decision Board
 
-**Updated:** 2026-09-19
+**Updated:** 2026-09-23
 
 **Primary-family capacity:** 5 maximum
 
@@ -27,6 +27,16 @@ five completed outcomes are far below the frozen 100-total/30-per-symbol gate an
 ETH-concentrated. Lead B failed costs, Funding Settlement failed its materiality gate, C-35 is too
 slow, and Lead A lacks provenance. No edge is identified or promotable, and no sixth historical
 family is justified without genuinely new information and an unopened boundary.
+
+## External-signal Phase 3A decision
+
+The separately frozen 1K_EVENT/HMT selection-fingerprint test closed at `a8a0db4` as
+`PHASE3A_INCONCLUSIVE_DATA_LIMITED`. None of six pre-event features passed its
+BH q<=.10 plus |d|>=.40 screen; five were underpowered and one marginally
+powered. The valid clock-shift placebos do not rescue the nominal F4 clue.
+This is neither an edge claim nor a definitive absence-of-fingerprint claim.
+Phase 3B economic analysis is **NO-GO NOW**; do not reuse this opened sample
+to tune a new test. See `research/external_signal_study/phase3_point_in_time/diagnostics/PLACEBO_AND_PHASE3A_VERDICT.md`.
 
 ## Current single next action
 
