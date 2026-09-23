@@ -1,0 +1,11 @@
+boundary_id,decision_stage,observed_source,epistemic_label,evidence_strength,evidence_ids,actor_classification,what_is_supported,what_is_unknown
+H01,watchlist_discovery,WatcherX_post,FACT,HIGH,EV-001594,SCANNER,Trending watchlist posted by bot,Selection and ranking algorithm
+H02,signal_broadcast_origin,V2_307_signals,OBSERVATION,MEDIUM,V2_TEMPORAL_SIGNALS,MIXED,266 labelled SYSTEM_SIGNAL 29 BOT_ALERT 12 MANUAL_TRADE,Labels describe message origin not autonomous execution
+H03,engine_HMT_attribution,operator_retrospective_statement,FACT,HIGH,EV-002024,HUMAN,Month-level claim for prior setups,Per-signal direct HMT labels
+H04,engine_TFS_attribution,operator_retrospective_statement,FACT,HIGH,EV-002023;EV-002024,HUMAN,Two late LDO and SEI TFS labels,Full internal TFS decision rules
+H05,directional_context,ONDO_SEI_explanations,OBSERVATION,MEDIUM,EV-001522;EV-002021;EV-002022,HUMAN_OR_MIXED,Author explained bearish structure and HTF context,Whether engine supplied bias or author overrode it
+H06,entry_trigger,signal_charts_and_text,UNKNOWN,INSUFFICIENT,V2_TEMPORAL_SIGNALS,UNKNOWN,Some plans and chart position boxes exist,Order type and trigger rule for most 1K signals
+H07,stop_and_size,LDO_NOT_ADA_comments,FACT,HIGH,EV-001801;EV-001876;EV-001890,HUMAN_CHANNEL,Author explicitly varied recommended size/leverage with wide stops,Automated sizing inside sibling engine
+H08,portfolio_correlation,two_same_direction_trades,FACT,HIGH,EV-001724,HUMAN_CHANNEL,Author recommended one trade or split risk,Whether scanner automatically suppresses duplicates
+H09,macro_wait,PPI_CPI_messages,FACT,HIGH,EV-001985;EV-001992,HUMAN_CHANNEL,Author conditioned entry advice on macro timing and risk appetite,Automatic macro veto
+H10,partial_exit_BE_runner,SOL_ONDO_AERO_followups,FACT,HIGH,EV-001515;EV-001557;EV-001937;EV-001941,HUMAN_CHANNEL,Some partial exits and BE movements explicitly described,Exchange order receipts and universal policy

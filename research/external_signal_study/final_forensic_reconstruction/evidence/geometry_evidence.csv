@@ -1,0 +1,12 @@
+geometry_id,scope,record_count,entry_count,stop_count,tp1_count,complete_entry_stop_tp1_count,confidence,evidence_ids,raw_check,interpretation,limitation
+G01,EARLY_BOMBICLUB,12,6,0,6,0,LOW,V2_TEMPORAL_SIGNALS,not_all_raw_verified,No complete text geometry,No reliable R or ATR ratio
+G02,BOMBICLUB,161,127,126,72,64,MEDIUM_STRUCTURED_ONLY,V2_TEMPORAL_SIGNALS,4_selected_raw_messages_checked,Text templates often contain numeric geometry,Do not treat all 64 as raw-verified
+G03,RADARX_TRANSITION,34,8,8,8,8,MEDIUM_STRUCTURED_ONLY,V2_TEMPORAL_SIGNALS,not_all_raw_verified,Some text geometry exists,Engine attribution and price provenance vary
+G04,1K_EVENT,100,1,2,2,0,LOW,V2_TEMPORAL_SIGNALS,selected_raw_messages_checked,Current generation mostly graphical or qualitative,No complete numeric text geometry
+G05,ALL_GENERATIONS,307,142,136,88,72,MIXED,V2_TEMPORAL_SIGNALS,4_selected_complete_cases_raw_verified,Structured field availability only,Not a count of verified tradable geometry
+G06,SOL_LONG_TEXT,1,1,1,1,1,HIGH,EV-000093,jan-jul:110 verified,Raw entry 166.1 stop 163.39 TP1 167.5,No claim of structural stop or profitability
+G07,SAND_LONG_TEXT,1,1,1,1,1,HIGH,EV-000190,jan-jul:224 verified,Raw entry 0.238 stop 0.232 TP1 0.24,No claim of structural stop or profitability
+G08,WIF_LONG_TEXT,1,1,1,1,1,HIGH,EV-000195,jan-jul:229 verified,Raw entry 0.829 stop 0.805 TP1 0.839,No claim of structural stop or profitability
+G09,TRX_SHORT_TEXT,1,1,1,1,1,HIGH,EV-000196,jan-jul:230 verified,Raw entry 0.2794 stop 0.2818 TP1 0.2774,No claim of structural stop or profitability
+G10,LTC_TEXT_DISCREPANCY,1,1,1,1,1,LOW_FOR_V2_NUMERIC,EV-000197,jan-jul:231 verified,Raw first entry 83.57 versus V2 83.0; preserve discrepancy,Do not silently repair V2 or use extracted 83.0 for R geometry
+G11,UNCALIBRATED_POSITION_BOXES,232,0,0,0,0,LOW,V2_TEMPORAL_SIGNALS;PASS1_IMAGE_FEATURE_CACHE,no_two_tick_price_calibration,Image box presence is a layout clue not numeric geometry,No HIGH/MEDIUM calibrated image entry-stop-target count

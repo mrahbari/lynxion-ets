@@ -1,0 +1,13 @@
+event_id,scope,signal_id,source_id,message_id,event_time_utc,behavior_type,epistemic_label,evidence_strength,decision_actor,verified_raw,limitation
+M01,1K_EVENT,SIG-000209,EV-001515,32,2026-08-03T10:46:28,half_exit_TP1_BE_runner,FACT,HIGH,HUMAN_CHANNEL,YES,post_signal_only
+M02,1K_EVENT,SIG-000216,EV-001557,76,2026-08-07T00:06:51,half_exit_BE_runner,FACT,HIGH,HUMAN_CHANNEL,YES,post_signal_only
+M03,1K_EVENT,,EV-001654,182,2026-08-13T15:30:22,conditional_half_exit_BE_for_high_leverage,FACT,HIGH,HUMAN_CHANNEL,YES,conditional_channel_advice
+M04,1K_EVENT,SIG-000281,EV-001937,499,2026-09-05T23:47:47,BE_without_immediate_partial_optional_half_exit,FACT,HIGH,HUMAN_CHANNEL,YES,contradicts_universal_half_exit_policy
+M05,1K_EVENT,SIG-000281,EV-001941,504,2026-09-06T08:20:18,later_half_exit_for_new_trade_capacity,FACT,HIGH,HUMAN_CHANNEL,YES,discretionary_reason
+M06,1K_EVENT,SIG-000303,EV-002044,619,2026-09-16T16:50:38,profit_taking_and_BE_permitted_after_one_R,FACT,HIGH,HUMAN_CHANNEL,YES,not_a_universal_trigger
+M07,1K_EVENT,SIG-000255,EV-001801,349,2026-08-24T15:28:57,one_third_size_for_triple_stop,FACT,HIGH,HUMAN_CHANNEL,YES,not_a_verified_engine_sizer
+M08,1K_EVENT,SIG-000271,EV-001876,434,2026-08-31T13:10:57,leverage_at_most_four_and_reasonable_size,FACT,HIGH,HUMAN_CHANNEL,YES,conditional_high_volatility_advice
+M09,1K_EVENT,SIG-000275,EV-001890,450,2026-09-01T14:54:52,reduce_size_for_wide_stop,FACT,HIGH,HUMAN_CHANNEL,YES,no_exact_size_fraction
+M10,1K_EVENT,,EV-001724,260,2026-08-20T09:07:37,choose_one_or_split_size_for_correlated_signals,FACT,HIGH,HUMAN_CHANNEL,YES,one_documented_case
+M11,1K_EVENT,,EV-001985,551,2026-09-10T14:08:18,wait_for_CPI_if_PPI_inconclusive,FACT,HIGH,HUMAN_CHANNEL,YES,macro_discretion_not_engine_veto
+M12,1K_EVENT,SIG-000296,EV-001992,559,2026-09-11T10:25:42,conditional_CPI_wait_or_risk_on_short,FACT,HIGH,HUMAN_CHANNEL,YES,no_universal_news_filter
