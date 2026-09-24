@@ -33,7 +33,8 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                  symbols: List[str],
                  risk_config: Optional[Dict[str, Any]] = None,
                  comprehensive_logging: bool = True,
-                 intent_claim_store=None):
+                 intent_claim_store=None,
+                 pending_orders_state=None):
         # Settings injected by the composition root (E1.T4); the auto-detection
         # mixins read the same fields off self._settings instead of importing
         # bootstrap.settings.loaders.
@@ -119,7 +120,7 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
 
         # Also use the shared PendingOrdersTracker for consistency with execution services
         from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
-        self._pending_orders_tracker = PendingOrdersTracker
+        self._pending_orders_tracker = pending_orders_state if pending_orders_state is not None else PendingOrdersTracker
 
         # TASK-0151: explicitly opt-in, forward-only evidence wiring. Disabled
         # by default for every existing constructor and non-approved runtime.

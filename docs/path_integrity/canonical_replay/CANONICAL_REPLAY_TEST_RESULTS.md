@@ -51,3 +51,7 @@ Combined all six new seam suites with Unit-1/2, F01, pending-tracker and path-in
 ## D3 reconciliation journal isolation
 
 Initial 20-test run passed but a subsequent read showed the shared `sl_cooldown_journal.json` hash differed from the earlier recorded hash; attribution was not provable without an immediate pre-test snapshot. The existing B4 fixture was amended to isolate the global cooldown gate to temporary journal paths. Repeating `test_reconciliation_journal_scope.py`, `test_b4_broker_reconciliation.py`, and `test_task0148_disconnected_exit_chain.py` then gave **20 passed, 0 failed**, 26 warnings, with all four protected persistence hashes identical immediately before/after. The altered shared journal was not reset or deleted.
+
+## E2 pending-order state
+
+`pytest -q tests/unit/test_pending_orders_tracker.py tests/unit/test_pending_orders_scope.py tests/unit/test_path_integrity_unit1_routes.py tests/unit/test_path_integrity_unit3_runtime_wiring.py tests/unit/test_intent_claim_scope.py --disable-warnings --tb=short`: **50 passed, 0 failed**, 26 warnings. Four protected production persistence hashes were identical immediately before/after. Live facade and two event-clock-owned states tested; broker-service injection remains untested/unimplemented.

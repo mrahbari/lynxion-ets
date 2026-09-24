@@ -91,3 +91,8 @@
 - Starting commit `b5df2c2`; production file `broker_reconciliation.py` gains optional active-position journal path, preserving the live default. Added isolated-journal test; B4 test fixture now isolates the global cooldown gate to temporary files.
 - Corrected focused run: 20 passed / 0 failed, four protected persistence hashes identical immediately before/after. An earlier run lacked a pre-test snapshot and was followed by a changed shared cooldown-journal hash; exact attribution is UNKNOWN. No data was reverted or deleted.
 - New tests used fake broker objects, no authenticated broker request/order. D remains PARTIAL; full replay scope, prefix invariance, parity and economics are not authorized.
+
+## E2 pending-order state addendum
+
+- Starting commit `d894fb3`; shared tracker core and optional AutoDetection pending-state injection, with one new focused test and documentation. 50 passed / 0 failed. Protected persistence hashes identical before/after; no authenticated network/broker action.
+- Live class facade and default remain process-wide. Broker services still use the live class directly; full E/F/G isolation remains incomplete. Prefix/parity/economic statuses unchanged.
