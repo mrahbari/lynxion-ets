@@ -49,28 +49,29 @@ def build_vst_risk_enforcement(cooldown_gate=None):
 class RiskEnforcement:
     """Order-path adapter over EnterpriseRiskManager (enforce + exposure feedback + state)."""
 
-    def __init__(self, risk_manager, strict_position_limit: bool = False, cooldown_gate=None):
+    def __init__(self, risk_manager, strict_position_limit: bool = False, cooldown_gate=None, cooldown_journal_path=None):
         self._rm = risk_manager
         self._lock = threading.Lock()
         self.checks = 0
         self.denials = 0
         self._strict_position_limit = strict_position_limit
         self._cooldown_gate = cooldown_gate
+        self._cooldown_journal_path = cooldown_journal_path or COOLDOWN_JOURNAL_PATH
         self._sl_cooldowns: Dict[str, float] = self._load_cooldown_journal()
 
     def _load_cooldown_journal(self) -> Dict[str, float]:
         """Load persistent Stop Loss cooldown timestamps from disk with corruption recovery."""
         try:
-            os.makedirs(os.path.dirname(COOLDOWN_JOURNAL_PATH), exist_ok=True)
-            if os.path.exists(COOLDOWN_JOURNAL_PATH):
-                with open(COOLDOWN_JOURNAL_PATH, "r") as f:
+            os.makedirs(os.path.dirname(self._cooldown_journal_path), exist_ok=True)
+            if os.path.exists(self._cooldown_journal_path):
+                with open(self._cooldown_journal_path, "r") as f:
                     return json.load(f)
         except Exception as e:
             from shared.logger import logger
             logger.error(f"⚠️ Cooldown Journal corrupt or unreadable: {e}. Backing up corrupt file and resetting.")
             try:
-                if os.path.exists(COOLDOWN_JOURNAL_PATH):
-                    os.rename(COOLDOWN_JOURNAL_PATH, f"{COOLDOWN_JOURNAL_PATH}.corrupt.{int(datetime.now().timestamp())}")
+                if os.path.exists(self._cooldown_journal_path):
+                    os.rename(self._cooldown_journal_path, f"{self._cooldown_journal_path}.corrupt.{int(datetime.now().timestamp())}")
             except Exception:
                 pass
         return {}
@@ -78,26 +79,30 @@ class RiskEnforcement:
     def _save_cooldown_journal(self) -> None:
         """Save persistent Stop Loss cooldown timestamps atomically via temp file replace."""
         try:
-            os.makedirs(os.path.dirname(COOLDOWN_JOURNAL_PATH), exist_ok=True)
-            tmp_path = f"{COOLDOWN_JOURNAL_PATH}.tmp.{os.getpid()}"
+            os.makedirs(os.path.dirname(self._cooldown_journal_path), exist_ok=True)
+            tmp_path = f"{self._cooldown_journal_path}.tmp.{os.getpid()}"
             with open(tmp_path, "w") as f:
                 json.dump(self._sl_cooldowns, f, indent=2)
                 f.flush()
                 os.fsync(f.fileno())
-            os.replace(tmp_path, COOLDOWN_JOURNAL_PATH)
+            os.replace(tmp_path, self._cooldown_journal_path)
         except Exception as e:
             from shared.logger import logger
             logger.error(f"⚠️ Failed atomic save of Cooldown Journal: {e}")
 
     def record_stop_loss_exit(self, symbol: str, exit_time: datetime = None) -> None:
         """Record Stop Loss exit for a symbol to activate persistent 60m cooldown across the entire order path."""
-        from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
-        symbol_cooldown_gate.record_stop_loss_exit(symbol, exit_time)
+        if self._cooldown_gate is None:
+            from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+            self._cooldown_gate = symbol_cooldown_gate
+        self._cooldown_gate.record_stop_loss_exit(symbol, exit_time)
 
     def record_take_profit_exit(self, symbol: str) -> None:
         """Clear Stop Loss exit cooldown for a symbol when trade exits via Take Profit."""
-        from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
-        symbol_cooldown_gate.record_take_profit_exit(symbol)
+        if self._cooldown_gate is None:
+            from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+            self._cooldown_gate = symbol_cooldown_gate
+        self._cooldown_gate.record_take_profit_exit(symbol)
 
     @staticmethod
     def _symbol(order) -> str:

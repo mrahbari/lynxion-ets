@@ -58,3 +58,8 @@
 
 - Starting commit `2c50834`; no production/config changes. Added only strategy instance-scope test and documentation. 2 passed / 0 failed. Fresh `StrategyManager()` construction is already available; full event-time/config binding remains unproven.
 - No new broker/network dependency. Production persistence before/after hash: NOT COLLECTED for this tiny constructor test; do not upgrade G7/I. XMR and broker retry statuses unchanged.
+
+## Autonomous program D1 addendum
+
+- Starting commit `a21c0f9`; one production file modified (`risk_enforcement.py`) for optional cooldown journal path and supplied-gate use. One new test and documentation. Live defaults unchanged by construction; focused test result 48 passed / 0 failed.
+- Post-test protected production persistence hashes matched the four values recorded in the Unit-3 addendum. No fresh pre-test snapshot was collected; do not claim full gate I. New tests used no broker/network client. D remains PARTIAL; XMR and broker retry statuses unchanged.
