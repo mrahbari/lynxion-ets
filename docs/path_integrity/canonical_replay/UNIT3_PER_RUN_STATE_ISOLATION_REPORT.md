@@ -22,4 +22,6 @@ The authoritative queued execution route uses a class-level `_claimed_intent_ids
 
 These seams touch several production components and persistence contracts. Implementing them opportunistically in this unit would risk changing live semantics or silently omitting controls; architectural review is required. Watcher archive limitations from Units 1–2 remain unchanged. No profitability or parity conclusion follows.
 
+The historical XMRUSDT repeated-entry case was reviewed separately as a forensic regression specification in `XMR_INCIDENT_REGRESSION_CASE.md`. It does not establish that the Unit-3 global-state finding caused that incident; the requested post-isolation test remains deferred because isolation was not implemented.
+
 خلاصهٔ فارسی: چند سرویس هنوز وضعیت و فایل‌های اجرای واقعی را به‌صورت سراسری می‌خوانند. اگر فقط یک container جدید بسازیم، تست تاریخی ممکن است همان وضعیت واقعی را مصرف یا تغییر دهد. برای همین این واحد را پیش از دست‌کاری کد متوقف کردم و مرزهای دقیق جداسازی را برای بازبینی ثبت کردم.
