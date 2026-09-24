@@ -55,3 +55,7 @@ Initial 20-test run passed but a subsequent read showed the shared `sl_cooldown_
 ## E2 pending-order state
 
 `pytest -q tests/unit/test_pending_orders_tracker.py tests/unit/test_pending_orders_scope.py tests/unit/test_path_integrity_unit1_routes.py tests/unit/test_path_integrity_unit3_runtime_wiring.py tests/unit/test_intent_claim_scope.py --disable-warnings --tb=short`: **50 passed, 0 failed**, 26 warnings. Four protected production persistence hashes were identical immediately before/after. Live facade and two event-clock-owned states tested; broker-service injection remains untested/unimplemented.
+
+## Final hard-stop regression checkpoint
+
+Combined all current scoped price/forensic/Fusion/Strategy/Risk/claim/cooldown/reconciliation/pending tests with Unit-1/2, F01 and path-integrity slices: **111 passed, 0 failed**, 26 warnings. Four protected production persistence hashes were identical immediately before/after this run. Risk correlation worker timing was audited from source, not changed or simulated. Full canonical prefix invariance, live/replay parity and baseline remain NOT TESTABLE.

@@ -96,3 +96,10 @@
 
 - Starting commit `d894fb3`; shared tracker core and optional AutoDetection pending-state injection, with one new focused test and documentation. 50 passed / 0 failed. Protected persistence hashes identical before/after; no authenticated network/broker action.
 - Live class facade and default remain process-wide. Broker services still use the live class directly; full E/F/G isolation remains incomplete. Prefix/parity/economic statuses unchanged.
+
+## Final autonomous-program hard stop
+
+- Starting commit `b95013d`; implementation commits `b5df2c2` (explicit market-price contract/A), `d894fb3` (reconciliation journal D3), `e622908` (pending state E2); this checkpoint is documentation-only.
+- Production files changed after `b95013d`: `domain/entities/signal.py`, `infrastructure/messaging/event_system.py`, `infrastructure/watchers/adapters/tick.py`, `infrastructure/execution/broker_reconciliation.py`, `infrastructure/shared/pending_orders_tracker.py`, `infrastructure/orchestrators/auto_detection_orchestrator.py`. No strategy/Fusion/Risk numerical policy or broker order behavior intentionally changed.
+- Final focused regression: 111 passed / 0 failed, 26 warnings; protected persistence hashes matched immediately before/after. No authenticated broker network request/order. See program log for an earlier cooldown-journal hash discrepancy without pre-test attribution.
+- Hard stop: EnterpriseRiskManager wall-clock correlation worker changes the matrix consumed by risk-derived quantity; no source-proven event-time schedule preserves live decisions. `CANONICAL_REPLAY_BLOCKED_BY_POLICY_DECISION`; `PREFIX_INVARIANCE_NOT_TESTABLE`; `LIVE_REPLAY_PARITY_NOT_TESTABLE`; `XMR_ROOT_CAUSE_UNRESOLVED`; `BROKER_RETRY_SEMANTICS_UNRESOLVED`. Baseline NOT authorized.

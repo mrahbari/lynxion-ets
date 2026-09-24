@@ -93,3 +93,28 @@ Watcher matrix correction at this checkpoint: the older HistoricalCandleWatcherA
 - The previous class-state tracker rules were moved into one `PendingOrdersState` implementation with a caller-owned clock and lock. The existing process-wide `PendingOrdersTracker` singleton/class API delegates to one live state, preserving legacy callers and duplicate/30-second expiry semantics. AutoDetectionOrchestrator accepts an optional pending state; its default remains the live facade. No broker calls or order-routing ownership changes.
 - Focused prior tracker, scope and route/claim regressions: 50 passed / 0 failed. Two scoped states do not contaminate each other or the live facade; expiry follows the supplied event clock. Four protected persistence hashes were identical immediately before/after this run. New tests used no broker/network adapter.
 - Status: E2 TEST_VERIFIED at the tracker/AutoDetection seam, E overall PARTIAL. Broker execution services still invoke the live class facade directly, so full replay execution would not yet be isolated. Do not build F/G or run economics until this is resolved with live-compatible injection. XMR and broker retry remain unresolved.
+
+## Hard-stop checkpoint — Risk correlation timing is decision-relevant
+
+- Start: `e622908`; this checkpoint is documentation-only. `EnterpriseRiskManager.__init__` starts a daemon `_correlation_worker_loop`; it sleeps for 10 wall-clock seconds then updates `correlation_matrix` from recorded prices. `ConsolidatedRiskEngineAdapter` reads that matrix through `calculate_correlation_penalty` and passes the penalty into `calculate_position_size`, where it divides risk allocation. Therefore worker timing can change pre-broker quantity. It is **not** merely observability state.
+- A replay-only choice to update correlations after every bar, on event-time 10-second boundaries, or never would produce different risk sizes from each other and potentially from live's unsynchronized worker. No source-defined deterministic event-time scheduling policy identifies one as equivalent. Disabling the thread without replacing its decision semantics would weaken/change Risk. Changing live scheduling to a deterministic event-time rule could also alter live sizing. This is H5/H10, not a harmless class/constructor decision. No change to `EnterpriseRiskManager` was made.
+- One independent capability remains conceptually possible: replay should use a structurally network-incapable simulated broker, so live `BrokerExecutionService` and its global pending tracker should not be constructed. This is not yet proven by a composition graph. E2 establishes local pending state only at the tracker/AutoDetection boundary. Do not upgrade E/F/G on that inference.
+- Combined focused regression across the new seams and prior causal/ownership/F01/reconciliation tests: **111 passed / 0 failed**, 26 warnings. Four protected persistence SHA-256 values matched immediately before/after this run (active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`). The earlier cooldown-journal hash change had no before snapshot and remains unattributed; it was not reverted. No authenticated broker request or order was made by this program turn.
+
+| Release gate | Checkpoint |
+|---|---|
+| A no replay-reachable mutable global | NOT MET: several global application/execution dependencies remain |
+| B no production persistence reachable | NOT MET: full composition does not exist |
+| C deterministic decision clock | PARTIAL: Fusion, cooldown, pending and aggregator seams; Risk correlation worker remains wall-clock |
+| D fresh Fusion/Strategy/Risk runtime | PARTIAL: Fusion/Strategy tests pass; Risk worker/persistence scope unresolved |
+| E live normalized semantics preserved | PARTIAL focused regressions only; no end-to-end parity |
+| F one execution owner | Previously offline-verified live composition; future replay scope not constructed |
+| G zero replay network capability | NOT TESTABLE: no ReplayScope |
+| H simultaneous replay contexts isolated | NOT TESTABLE |
+| I production persistence unchanged | PASS for the 111-test checkpoint only |
+| J canonical decision prefix invariance | NOT TESTABLE |
+| K live/replay parity | NOT TESTABLE |
+
+Final program status at this hard stop: `CANONICAL_REPLAY_BLOCKED_BY_POLICY_DECISION`. `PREFIX_INVARIANCE_NOT_TESTABLE`; `LIVE_REPLAY_PARITY_NOT_TESTABLE`; `XMR_ROOT_CAUSE_UNRESOLVED`; `BROKER_RETRY_SEMANTICS_UNRESOLVED`. Economic baseline is **not authorized**. Historical order-flow/tick/screener inputs remain unavailable; full watcher parity is not possible with the current archive, independently of this Risk timing blocker.
+
+Exact next action requiring review: define how the decision-relevant rolling-correlation update is scheduled in a canonical event-time contract, and whether live Risk scheduling may be changed to that contract with controlled parity/regression evidence. Until that decision, do not start ApplicationRunScope F, replay G, or baseline. Continue no additional policy-affecting Risk edit by inference.
