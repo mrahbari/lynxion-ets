@@ -32,6 +32,12 @@ class _FakeBroker:
 def _isolate_active_positions_journal(tmp_path, monkeypatch):
     test_path = str(tmp_path / "active_positions_journal.json")
     monkeypatch.setattr("infrastructure.execution.broker_reconciliation.ACTIVE_POSITIONS_JOURNAL_PATH", test_path)
+    from infrastructure.risk.symbol_cooldown_gate import SymbolCooldownGate
+    cooldown_gate = SymbolCooldownGate(
+        journal_path=str(tmp_path / "sl_cooldown_journal.json"),
+        trade_journal_path=str(tmp_path / "trade_journal.csv"),
+    )
+    monkeypatch.setattr("infrastructure.risk.symbol_cooldown_gate.symbol_cooldown_gate", cooldown_gate)
     yield
 
 

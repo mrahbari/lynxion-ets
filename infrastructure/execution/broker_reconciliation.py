@@ -50,11 +50,13 @@ class BrokerReconciliationService:
     """Reconcile journal vs broker; halt on unrecoverable drift."""
 
     def __init__(self, halt_fn: Optional[Callable[[str], None]] = None,
-                 position_identity_store=None, terminal_observer=None):
+                 position_identity_store=None, terminal_observer=None,
+                 active_positions_journal_path=None):
         # Default halt = engage the live execution guard kill switch (imported lazily).
         self._halt_fn = halt_fn
         self._position_identity_store = position_identity_store
         self._terminal_observer = terminal_observer
+        self._active_positions_journal_path = active_positions_journal_path or ACTIVE_POSITIONS_JOURNAL_PATH
         self._terminal_observation_counts = {"emitted": 0, "excluded": 0, "errors": 0}
         from shared.logger import EnhancedLogger
         self.logger = EnhancedLogger("BrokerReconciliationService")
@@ -137,8 +139,8 @@ class BrokerReconciliationService:
 
     def _load_active_symbols(self) -> set[str]:
         try:
-            if os.path.exists(ACTIVE_POSITIONS_JOURNAL_PATH):
-                with open(ACTIVE_POSITIONS_JOURNAL_PATH, "r", encoding="utf-8") as f:
+            if os.path.exists(self._active_positions_journal_path):
+                with open(self._active_positions_journal_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     if isinstance(data, list):
                         return set(data)
@@ -151,8 +153,8 @@ class BrokerReconciliationService:
 
     def _save_active_symbols(self) -> None:
         try:
-            os.makedirs(os.path.dirname(ACTIVE_POSITIONS_JOURNAL_PATH), exist_ok=True)
-            tmp_path = f"{ACTIVE_POSITIONS_JOURNAL_PATH}.tmp.{os.getpid()}"
+            os.makedirs(os.path.dirname(self._active_positions_journal_path), exist_ok=True)
+            tmp_path = f"{self._active_positions_journal_path}.tmp.{os.getpid()}"
             with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump({"active_symbols": sorted(list(self._previous_active_symbols))}, f, indent=2)
                 f.flush()
@@ -160,7 +162,7 @@ class BrokerReconciliationService:
                     os.fsync(f.fileno())
                 except (OSError, ValueError):
                     pass
-            os.replace(tmp_path, ACTIVE_POSITIONS_JOURNAL_PATH)
+            os.replace(tmp_path, self._active_positions_journal_path)
         except Exception as e:
             self.logger.warning(f"Failed to save active positions journal: {e}")
 

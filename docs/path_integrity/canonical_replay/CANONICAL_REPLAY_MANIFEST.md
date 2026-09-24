@@ -85,3 +85,9 @@
 - Starting commit `b95013d`; changed production files: `domain/entities/signal.py`, `infrastructure/messaging/event_system.py`, `infrastructure/watchers/adapters/tick.py`. New focused price-contract test and documentation. Old `observation.close`/silent inner swallow removed; optional explicit producer price and narrow recorder added.
 - Focused tests: 64 passed / 0 failed. Protected persistence hashes before/after matched the Unit-3 values above. New tests used no broker/network client. A is VERIFIED for the seam; no full replay/decision parity was attempted.
 - Price-contract blocker resolved by operator; producer uncertainty remains for candles/pulse/screener. D/E/F/G and A–K overall release gates remain incomplete. XMR and broker retry statuses unchanged.
+
+## D3 reconciliation journal seam
+
+- Starting commit `b5df2c2`; production file `broker_reconciliation.py` gains optional active-position journal path, preserving the live default. Added isolated-journal test; B4 test fixture now isolates the global cooldown gate to temporary files.
+- Corrected focused run: 20 passed / 0 failed, four protected persistence hashes identical immediately before/after. An earlier run lacked a pre-test snapshot and was followed by a changed shared cooldown-journal hash; exact attribution is UNKNOWN. No data was reverted or deleted.
+- New tests used fake broker objects, no authenticated broker request/order. D remains PARTIAL; full replay scope, prefix invariance, parity and economics are not authorized.
