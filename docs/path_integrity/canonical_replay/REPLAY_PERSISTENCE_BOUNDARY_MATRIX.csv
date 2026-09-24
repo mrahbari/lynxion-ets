@@ -1,0 +1,9 @@
+resource,current_binding,replay_safety,required_boundary
+data/active_positions_journal.json,production position persistence,UNPROVEN,"in-memory replay position port"
+data/sl_cooldown_journal.json,"RiskEnforcement fixed module path and SymbolCooldownGate default",UNSAFE_BY_CONSTRUCTION,"inject journal port/path; no live file access"
+data/trade_journal.csv,"SymbolCooldownGate startup loss reconciliation",UNSAFE_BY_CONSTRUCTION,"inject isolated history or empty replay history by explicit policy"
+data/live_order_journal.json,live order persistence,UNPROVEN,"network-free in-memory order journal"
+logs/execution_truth_ledger.jsonl,execution observability default,UNPROVEN,"isolated replay trace sink"
+intent claim set,"_AutoDetectionExecutionMixin class-level memory",SHARED,"per-run claim store"
+pending orders tracker,shared class/global tracker,SHARED,"per-run tracker or proven isolated port"
+reconciliation state,live broker/order mapping,UNPROVEN,"in-memory replay state; no live reconciliation loop"

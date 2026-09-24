@@ -7,3 +7,7 @@ Not run: full canonical-path test, live/replay parity, risk/guard parity, normal
 ## Unit 2 addendum
 
 `pytest -q tests/unit/test_replay_event_time_scope.py tests/unit/test_historical_closed_bar_source.py tests/unit/test_path_integrity_unit1_routes.py tests/unit/test_path_integrity_unit3_runtime_wiring.py tests/unit/test_f01_offline_intent_sizing.py --disable-warnings --tb=short`: **50 passed, 0 failed**, 26 warnings. T1/T2 typed event and historical watcher time: covered for supplied close time; T3/T4 synchronous same-method aggregation: covered; T5/T6 isolated aggregator/router/subscriptions: covered; T7 production persistence: only the tested scope contains no persistence dependency, full application not covered; T8 repeat intermediate selected symbols: covered; T9/T10 focused prior tests: passed. No sleep/wait race or network-capable broker in new tests. Full application state, decision prefix invariance and live/replay parity remain untested.
+
+## Unit 3 architectural stop
+
+No Unit-3 code was changed and no Unit-3 tests were added or run. T1–T10 (full per-run composition, risk/claim/persistence isolation and wall-clock independence) are **NOT TESTABLE** safely with the current graph. Unit-1/2/ownership test results above remain historical evidence, not fresh Unit-3 verification. Four production persistence files were hashed read-only before and after the document-only audit; compare the Unit-3 manifest. No replay or broker was constructed.
