@@ -1,0 +1,16 @@
+# Autonomous canonical replay program
+
+## P — observation-price contract investigation
+
+- Start: `c8e8bda`; end: this documentation/forensic-seam unit commit. No price-contract implementation.
+- All `MarketObservation` constructors found: funding, liquidity, anomaly-ML, orderflow-WS, trend-MTF, tick, historical-candle, market-pulse (two), volatility, CMC screener, and a Fusion-created mock observation. `observation_value` is polymorphic (funding rate, liquidity score, imbalance, trend/momentum/volatility/anomaly and screener metrics), **not a universal market price**.
+- Historical-candle and market-pulse include `metadata.latest_candle`, which may contain close; CMC screener has `metadata.cmc_data.price`. The remaining producers have no uniform causal price field. Several use wall-clock observation timestamps. Classification: candle/pulse = PRICE_DERIVABLE_CAUSALLY only after per-producer close-time provenance is verified; CMC = AMBIGUOUS due to quote/time semantics; other analytic observations = NON_PRICE_ANALYTICAL or UNKNOWN. None establishes a universal `observation.close` contract.
+- `SignalProcessor._process_observation` attempts `float(observation.close)` inside `except Exception: pass`; canonical entity has no `close`. Other `record_price` call: legacy `infrastructure/backtest/realistic_backtester.py` records `execution_price` directly, not in the canonical live observation route. The risk manager stores prices for rolling correlation (`price_history_for_correlation`); therefore the broken call is potentially decision-relevant, not safely removable as redundant. Current classification: **AUTHORITATIVE_BUT_BROKEN in the inspected live observation path**, subject to any external uninspected price feed; no unique replacement contract established.
+- Multiple plausible contracts would alter risk semantics. Status: `PRICE_CONTRACT_OPERATOR_DECISION_REQUIRED`; price recorder and exception policy parked. No `observation_value == price` assumption, no silent fallback.
+
+## A-partial — explicit forensic sink
+
+- Start: `c8e8bda`; changed production file: `infrastructure/messaging/event_system.py`; test file: `tests/unit/test_signal_processor_forensic_seam.py`; documents: this log, canonical manifest/test results.
+- Existing live constructor keeps lazy access to the identical module-level forensic logger. An explicit sink can handle subscribed Engine/Fusion forensic calls without writing via the global logger. The retained legacy direct handler uses the same seam; its execution ownership is unchanged. Price/container lookup remains as-is pending contract decision.
+- Focused result: 46 passed / 0 failed (new forensic tests plus Unit-1/2 and ownership/runtime-wiring regression slices). Broker network activity: NONE in the new tests; no broker adapter was constructed by them. Protected production persistence hashes matched their previously documented values after tests; no before/after snapshot was taken in this unit, so this is a limited unchanged-from-record check.
+- Status: `IMPLEMENTATION_A_PARTIAL`. Open: price contract, remaining global container lookup, later B–G seams, full causal/parity tests. XMR remains `XMR_ROOT_CAUSE_UNRESOLVED`; broker retry semantics unresolved. Next independent authorized action: assess Fusion instance seam from current source; do not infer that A is complete.

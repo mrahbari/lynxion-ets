@@ -41,3 +41,9 @@
 - Production persistence hash comparison: NOT PERFORMED (no focused tests or production state writes were attempted); no claim of A-G5 verification.
 - Network activity: NONE. Remaining globals: container risk lookup and forensic logger in SignalProcessor, plus previously documented globals; no seam was implemented.
 - Remaining units: Implementation A after contract review, then separately authorized later architecture units. XMR: `XMR_ROOT_CAUSE_UNRESOLVED`. Prefix invariance and live/replay parity: `NOT_TESTABLE`.
+
+## Autonomous program A-partial addendum
+
+- Starting commit `c8e8bda`; this bounded unit adds only optional forensic-sink injection in `infrastructure/messaging/event_system.py`, a focused test, and documentation. Live default forensic singleton identity is preserved. No price contract/recorder change was made.
+- Focused tests: 46 passed / 0 failed; see test-results addendum. Protected production persistence SHA-256 after tests matches the Unit-3 values recorded above; no fresh pre-test snapshot was taken, so A-G5 is not fully established. No authenticated network action was undertaken in the new tests.
+- Price contract: `PRICE_CONTRACT_OPERATOR_DECISION_REQUIRED`. A remains PARTIAL; B–G unimplemented. Prefix invariance and live/replay parity remain NOT TESTABLE. XMR and broker retry statuses unchanged.

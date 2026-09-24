@@ -147,10 +147,17 @@ class EventRouter:
 class SignalProcessor:
     """Processes signals through the proper architectural layers"""
 
-    def __init__(self, event_router: EventRouter):
+    def __init__(self, event_router: EventRouter, forensic_sink=None):
         self.event_router = event_router
+        self._forensic_sink = forensic_sink
         self.logger = None  # Will be set by calling component
         self._processing_subscribed = False
+
+    def _get_forensic_sink(self):
+        if self._forensic_sink is not None:
+            return self._forensic_sink
+        from infrastructure.logging.forensic_logger import forensic_logger
+        return forensic_logger
 
     def setup_signal_processing(self, engine_service, fusion_service, strategy_manager, execution_service):
         """Setup the proper signal processing chain"""
@@ -197,8 +204,7 @@ class SignalProcessor:
 
             if interpreted_signal:
                 # Log the engine interpretation to forensic logger
-                from infrastructure.logging.forensic_logger import forensic_logger
-                forensic_logger.log_engine_interpretation(
+                self._get_forensic_sink().log_engine_interpretation(
                     engine="EngineService",
                     symbol=interpreted_signal.symbol.value if hasattr(interpreted_signal.symbol, 'value') else str(interpreted_signal.symbol),
                     exchange=event.source_component if event.source_component else "UNKNOWN",
@@ -233,8 +239,7 @@ class SignalProcessor:
 
             if fused_signal:
                 # Log the fusion result to forensic logger
-                from infrastructure.logging.forensic_logger import forensic_logger
-                forensic_logger.log_fusion_result(
+                self._get_forensic_sink().log_fusion_result(
                     symbol=fused_signal.symbol.value if hasattr(fused_signal.symbol, 'value') else str(fused_signal.symbol),
                     exchange=event.source_component if event.source_component else "UNKNOWN",
                     regime=fused_signal.regime_context if hasattr(fused_signal, 'regime_context') else "unknown",
@@ -635,8 +640,7 @@ class SignalProcessor:
                             self.logger.info(f"Executed order with ID: {order_id}")
 
                         # Log the broker execution to forensic logger
-                        from infrastructure.logging.forensic_logger import forensic_logger
-                        forensic_logger.log_broker_execution(
+                        self._get_forensic_sink().log_broker_execution(
                             trade_id=order_id,
                             exchange=getattr(execution_service_to_use, 'get_broker_name', lambda: 'UNKNOWN')(),
                             side=order_side.name,
