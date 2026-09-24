@@ -1,9 +1,10 @@
 """Canonical order/execution domain entities."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional, Dict, Any
 from decimal import Decimal
+from uuid import uuid4
 from domain.value_objects import Symbol, Money, Percentage
 from domain.entities.position import PositionSide
 from domain.entities.signal import Signal, FusedSignal
@@ -23,6 +24,7 @@ class ExecutionIntent:
     fused_signal: Optional[FusedSignal] = None  # Reference to the fused signal that triggered this
     metadata: Optional[Dict[str, Any]] = None
     requested_leverage: Optional[Decimal] = None
+    intent_id: str = field(default_factory=lambda: uuid4().hex)
 
     def __post_init__(self):
         if not 0.0 <= float(self.intent_confidence.value) <= 1.0:

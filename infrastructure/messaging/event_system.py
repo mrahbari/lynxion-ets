@@ -146,9 +146,13 @@ class SignalProcessor:
     def __init__(self, event_router: EventRouter):
         self.event_router = event_router
         self.logger = None  # Will be set by calling component
+        self._processing_subscribed = False
 
     def setup_signal_processing(self, engine_service, fusion_service, strategy_manager, execution_service):
         """Setup the proper signal processing chain"""
+        if self._processing_subscribed:
+            return
+        self._processing_subscribed = True
         # Subscribe handlers to process each type of event
         self.event_router.subscribe(EventType.MARKET_OBSERVATION, 
                                   lambda event: self._process_observation(event, engine_service))
@@ -156,8 +160,8 @@ class SignalProcessor:
                                   lambda event: self._process_interpreted_signal(event, fusion_service))
         self.event_router.subscribe(EventType.FUSED_SIGNAL, 
                                   lambda event: self._process_fused_signal(event, strategy_manager))
-        self.event_router.subscribe(EventType.EXECUTION_INTENT, 
-                                  lambda event: self._process_execution_intent(event, execution_service))
+        # ExecutionIntent has one owner: AutoDetectionOrchestrator's queue.
+        # The legacy direct handler is retained for isolated F01 characterization only.
 
     def update_market_data_heartbeat(self, symbol, timestamp=None):
         """Canonical update method for market data heartbeat staleness safety check."""

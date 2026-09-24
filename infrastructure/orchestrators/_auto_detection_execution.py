@@ -1,16 +1,27 @@
-"""E5.T4 (infra-only mechanical split): trade-execution method extracted from
-``AutoDetectionOrchestrator``.
-
-Behavior-preserving mixin — ``_execute_trade_from_intent`` moved verbatim (signatures,
-``self`` semantics, Order/Money/Symbol construction and placement UNCHANGED) and composed
-back via inheritance. No layer move, no port inversion, no trading-logic change.
-"""
+"""Single queued execution owner; preserves pre-broker controls from the retired direct route."""
 from datetime import datetime
+import threading
+import math
+import os
 from domain.value_objects import Symbol
 
 
 class _AutoDetectionExecutionMixin:
     """Order construction + placement from an execution intent (trading execution)."""
+
+    _intent_claim_lock = threading.Lock()
+    _claimed_intent_ids = set()
+
+    def _claim_execution_intent(self, execution_intent):
+        """Claim once per process before any pre-broker work, regardless of symbol policy."""
+        intent_id = getattr(execution_intent, "intent_id", None)
+        if not intent_id:
+            return False
+        with _AutoDetectionExecutionMixin._intent_claim_lock:
+            if intent_id in _AutoDetectionExecutionMixin._claimed_intent_ids:
+                return False
+            _AutoDetectionExecutionMixin._claimed_intent_ids.add(intent_id)
+            return True
 
     def _stablecoin_filter_config(self):
         """Read the execution-side stablecoin guard from injected settings."""
@@ -42,6 +53,9 @@ class _AutoDetectionExecutionMixin:
                     'status': 'failed',
                     'error': f"SYSTEM_SHUTDOWN: Execution rejected as system is shutting down"
                 }
+
+            if not self._claim_execution_intent(execution_intent):
+                return {'status': 'failed', 'error': 'DUPLICATE_LOGICAL_INTENT'}
 
             # Check for active orders on the broker before processing the intent
             # This prevents duplicate orders when the system doesn't have full awareness of broker state
@@ -233,6 +247,40 @@ class _AutoDetectionExecutionMixin:
 
             # Use the side from the execution intent
             order_side = execution_intent.side
+
+            # Preserve the former direct route's SL/TP preparation before submission.
+            from shared.utils import sanitize_sltp_levels
+            raw_sl = getattr(execution_intent, 'stop_loss_price', None)
+            raw_tp = getattr(execution_intent, 'take_profit_price', None)
+            raw_sl = getattr(raw_sl, 'amount', raw_sl)
+            raw_tp = getattr(raw_tp, 'amount', raw_tp)
+            if raw_sl is None or float(raw_sl) <= 0:
+                raw_sl = risk_params.get('stop_loss')
+            if raw_tp is None or float(raw_tp) <= 0:
+                raw_tp = risk_params.get('take_profit')
+            sl_amount, tp_amount = sanitize_sltp_levels(
+                entry_price=float(current_price), side=order_side,
+                stop_loss=raw_sl, take_profit=raw_tp,
+            )
+            if not all(math.isfinite(value) and value > 0 for value in (sl_amount, tp_amount)):
+                return {'status': 'failed', 'error': 'INVALID_SL_TP'}
+            if max(abs(sl_amount - current_price), abs(tp_amount - current_price)) / current_price > 0.5:
+                return {'status': 'failed', 'error': 'SL_TP_DISTANCE'}
+            execution_intent.stop_loss_price = Money(amount=Decimal(str(sl_amount)), currency='USDT')
+            execution_intent.take_profit_price = Money(amount=Decimal(str(tp_amount)), currency='USDT')
+
+            # The optional configured notional cap was previously direct-route only.
+            cap = getattr(self._settings.risk, 'max_order_notional_amount', None)
+            env_cap = os.getenv('MAX_ORDER_NOTIONAL_AMOUNT')
+            if env_cap is not None and env_cap.strip():
+                cap = float(env_cap)
+            if cap is not None:
+                cap = float(cap)
+                if not math.isfinite(cap) or cap <= 0:
+                    return {'status': 'failed', 'error': 'INVALID_ORDER_NOTIONAL_CAP'}
+                quantity = min(quantity, cap / current_price)
+            if not math.isfinite(float(quantity)) or quantity < 0.001:
+                return {'status': 'failed', 'error': 'QUANTITY_BELOW_MINIMUM'}
 
             # Ensure symbol is properly formatted for the broker
             symbol_value = execution_intent.symbol.value if hasattr(execution_intent.symbol, 'value') else str(execution_intent.symbol)
