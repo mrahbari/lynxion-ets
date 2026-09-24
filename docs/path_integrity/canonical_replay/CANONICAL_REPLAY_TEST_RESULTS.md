@@ -31,3 +31,7 @@ T1–T11 were **NOT RUN**. Source inspection found a material price-contract mis
 ## Autonomous program D1
 
 `pytest -q tests/unit/test_risk_enforcement_state_seam.py tests/unit/test_f01_offline_intent_sizing.py tests/unit/test_path_integrity_unit1_routes.py tests/unit/test_path_integrity_unit3_runtime_wiring.py tests/unit/test_historical_closed_bar_source.py --disable-warnings --tb=short`: **48 passed, 0 failed**, 4 warnings. Covers explicit temporary RiskEnforcement journal/gate seam, F01 and execution-path regression slices. Full risk/persistence isolation remains unproven.
+
+## Autonomous program E1
+
+`pytest -q tests/unit/test_intent_claim_scope.py tests/unit/test_path_integrity_unit1_routes.py tests/unit/test_path_integrity_unit3_runtime_wiring.py tests/unit/test_f01_offline_intent_sizing.py --disable-warnings --tb=short`: **45 passed, 0 failed**, 26 warnings. Atomic concurrent claim, independent explicit stores, shared live default and existing ownership/F01 slices. No exchange-level exactly-once or restart claim.

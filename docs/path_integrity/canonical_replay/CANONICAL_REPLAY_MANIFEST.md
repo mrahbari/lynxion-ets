@@ -63,3 +63,8 @@
 
 - Starting commit `a21c0f9`; one production file modified (`risk_enforcement.py`) for optional cooldown journal path and supplied-gate use. One new test and documentation. Live defaults unchanged by construction; focused test result 48 passed / 0 failed.
 - Post-test protected production persistence hashes matched the four values recorded in the Unit-3 addendum. No fresh pre-test snapshot was collected; do not claim full gate I. New tests used no broker/network client. D remains PARTIAL; XMR and broker retry statuses unchanged.
+
+## Autonomous program E1 addendum
+
+- Starting commit `199b26d`; two production files changed for optional instance-scoped atomic claim store with shared live default. One focused test plus documentation. 45 passed / 0 failed.
+- New tests had no broker/network capability. Fresh production-persistence before/after hash: NOT COLLECTED; full E/state-isolation gate is not met. Broker timeout/restart and XMR root cause remain unresolved.

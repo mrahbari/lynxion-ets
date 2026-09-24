@@ -32,11 +32,13 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                  optimization_service: IOptimizationService,
                  symbols: List[str],
                  risk_config: Optional[Dict[str, Any]] = None,
-                 comprehensive_logging: bool = True):
+                 comprehensive_logging: bool = True,
+                 intent_claim_store=None):
         # Settings injected by the composition root (E1.T4); the auto-detection
         # mixins read the same fields off self._settings instead of importing
         # bootstrap.settings.loaders.
         self._settings = settings
+        self._intent_claim_store = intent_claim_store
         self.market_data_repo = market_data_repo
         self.execution_service = execution_service
         self.portfolio_service = portfolio_service

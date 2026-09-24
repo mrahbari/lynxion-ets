@@ -6,22 +6,34 @@ import os
 from domain.value_objects import Symbol
 
 
+class IntentClaimStore:
+    """Atomic in-process claim state; callers choose its lifetime."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._claimed_ids = set()
+
+    def claim(self, intent_id):
+        if not intent_id:
+            return False
+        with self._lock:
+            if intent_id in self._claimed_ids:
+                return False
+            self._claimed_ids.add(intent_id)
+            return True
+
+
+_live_intent_claim_store = IntentClaimStore()
+
+
 class _AutoDetectionExecutionMixin:
     """Order construction + placement from an execution intent (trading execution)."""
-
-    _intent_claim_lock = threading.Lock()
-    _claimed_intent_ids = set()
 
     def _claim_execution_intent(self, execution_intent):
         """Claim once per process before any pre-broker work, regardless of symbol policy."""
         intent_id = getattr(execution_intent, "intent_id", None)
-        if not intent_id:
-            return False
-        with _AutoDetectionExecutionMixin._intent_claim_lock:
-            if intent_id in _AutoDetectionExecutionMixin._claimed_intent_ids:
-                return False
-            _AutoDetectionExecutionMixin._claimed_intent_ids.add(intent_id)
-            return True
+        store = getattr(self, "_intent_claim_store", None) or _live_intent_claim_store
+        return store.claim(intent_id)
 
     def _stablecoin_filter_config(self):
         """Read the execution-side stablecoin guard from injected settings."""
