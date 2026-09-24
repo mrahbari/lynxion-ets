@@ -1,5 +1,5 @@
 watcher,classification,evidence_or_missing_input
-HistoricalCandleWatcherAdapter,APPROXIMATED,"candle history is available in principle but current observation timestamp uses datetime.now; not parity-ready"
+HistoricalCandleWatcherAdapter,UNKNOWN,"Unit-2 now preserves historical close/event timestamp; complete feature/input equivalence with live watcher remains unproven"
 MarketPulseWatcher,UNKNOWN,"needs exact live input and event-time semantics audit"
 VolatilityWatcher,UNKNOWN,"needs exact live input and event-time semantics audit"
 TrendMTFWatcher,UNKNOWN,"requires completed HTF feed and alignment proof"
