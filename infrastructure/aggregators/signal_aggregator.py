@@ -13,6 +13,7 @@ from shared.logger import EnhancedLogger
 from infrastructure.messaging.event_system import event_router, EventType, SignalEvent
 from infrastructure.strategies.strategy_manager import strategy_manager
 from infrastructure.services.broker_execution_service import BrokerExecutionService
+from infrastructure.messaging.clock import LiveClock
 
 
 class SignalAggregator:
@@ -21,17 +22,22 @@ class SignalAggregator:
     based on comprehensive evaluation criteria.
     """
 
-    def __init__(self, aggregation_window_seconds: int = 1, max_signals_to_evaluate: int = 1):  # Reduced aggregation window to 1 second
+    def __init__(self, aggregation_window_seconds: int = 1, max_signals_to_evaluate: int = 1,
+                 *, clock=None, router=None, strategy_selector=None, synchronous=False):  # Reduced aggregation window to 1 second
         self.aggregation_window_seconds = aggregation_window_seconds
         self.max_signals_to_evaluate = max_signals_to_evaluate
         self.logger = EnhancedLogger("SignalAggregator")
+        self.clock = clock or LiveClock()
+        self.router = router or event_router
+        self.strategy_selector = strategy_selector or strategy_manager
+        self.synchronous = synchronous
 
         # Storage for collected signals
         self.collected_signals: List[FusedSignal] = []
         self.signal_collection_lock = threading.Lock()
 
         # Time of last aggregation
-        self.last_aggregation_time = datetime.now()
+        self.last_aggregation_time = self.clock.now()
 
         # Execution service for placing orders
         self.execution_service = None
@@ -41,7 +47,7 @@ class SignalAggregator:
         self.aggregation_thread = None
 
         # Subscribe to fused signals
-        event_router.subscribe(EventType.FUSED_SIGNAL, self._collect_fused_signal)
+        self.router.subscribe(EventType.FUSED_SIGNAL, self._collect_fused_signal)
 
     def set_execution_service(self, execution_service):
         """Set the execution service for placing orders."""
@@ -61,7 +67,7 @@ class SignalAggregator:
                                 f"and dominance {fused_signal.dominance_score:.2f}")
 
                 # Check if we should trigger aggregation now
-                current_time = datetime.now()
+                current_time = self.clock.now()
                 time_since_last = (current_time - self.last_aggregation_time).total_seconds()
 
                 # Trigger aggregation if we have enough signals or enough time has passed
@@ -75,11 +81,14 @@ class SignalAggregator:
                 if should_trigger:
                     self.logger.info(f"🔄 Triggering aggregation: {len(self.collected_signals)} signals collected, {time_since_last:.2f}s since last aggregation")
                     # Call aggregation in a separate thread to avoid blocking the event processing
-                    aggregation_thread = threading.Thread(target=self._perform_aggregation, daemon=True)
-                    aggregation_thread.start()
+                    if not self.synchronous:
+                        aggregation_thread = threading.Thread(target=self._perform_aggregation, daemon=True)
+                        aggregation_thread.start()
                 else:
                     self.logger.debug(f"⏳ Not triggering aggregation yet: {len(self.collected_signals)}/{self.max_signals_to_evaluate} signals, {time_since_last:.2f}/{self.aggregation_window_seconds}s")
 
+            if should_trigger and self.synchronous:
+                self._perform_aggregation()
         except Exception as e:
             self.logger.error(f"Error collecting fused signal: {e}")
             import traceback
@@ -95,7 +104,7 @@ class SignalAggregator:
             self.logger.debug(f"🔍 Inside lock: signals_to_evaluate has {len(signals_to_evaluate)} signals, collected_signals has {len(self.collected_signals)} signals")
 
             self.collected_signals.clear()  # Clear the collection
-            self.last_aggregation_time = datetime.now()
+            self.last_aggregation_time = self.clock.now()
 
             self.logger.debug(f"🔍 After clearing: signals_to_evaluate has {len(signals_to_evaluate)} signals, collected_signals has {len(self.collected_signals)} signals")
 
@@ -234,7 +243,7 @@ class SignalAggregator:
             self.logger.debug(f"🎯 Attempting to generate execution intent for {fused_signal.symbol.value}")
 
             # Use the strategy manager to evaluate the fused signal
-            execution_intent = strategy_manager.evaluate_fused_signal(fused_signal)
+            execution_intent = self.strategy_selector.evaluate_fused_signal(fused_signal)
 
             if execution_intent:
                 self.logger.info(f"📥 EXECUTION INTENT: {execution_intent.symbol.value} | Side: {execution_intent.side.name} | Conf: {float(execution_intent.intent_confidence.value):.1%} | Strategy: {execution_intent.strategy_name}")
@@ -256,10 +265,10 @@ class SignalAggregator:
                 )
 
                 # Publish the execution intent to the event system
-                event_router.publish_execution_intent(
+                self.router.publish_execution_intent(
                     execution_intent,
                     source="SignalAggregator",
-                    correlation_id=f"agg_{fused_signal.symbol.value}_{datetime.now().timestamp()}"
+                    correlation_id=f"agg_{fused_signal.symbol.value}_{self.clock.now().timestamp()}"
                 )
 
                 self.logger.debug(f"📤 Published execution intent for {execution_intent.symbol.value} "

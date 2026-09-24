@@ -60,7 +60,7 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
                 'low': candle.get('low', 0),
                 'close': candle.get('close', 0),
                 'volume': candle.get('volume', 0),
-                'timestamp': candle.get('timestamp', datetime.now())
+                'timestamp': candle.get('close_time', candle.get('timestamp', datetime.now()))
             })
 
             # Keep history within limits
@@ -151,7 +151,7 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
             observation_type=observation_type,
             observation_value=observation_value,
             confidence=confidence_percentage,
-            timestamp=datetime.now(),
+            timestamp=self.candles[-1]['timestamp'],
             metadata={
                 'pattern_analysis': pattern_analysis,
                 'trend_analysis': trend_analysis,

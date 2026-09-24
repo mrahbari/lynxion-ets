@@ -70,6 +70,7 @@ class EventRouter:
         event = SignalEvent(
             event_type=EventType.MARKET_OBSERVATION,
             data=observation,
+            timestamp=observation.timestamp,
             source_component=source,
             correlation_id=correlation_id
         )
@@ -80,6 +81,7 @@ class EventRouter:
         event = SignalEvent(
             event_type=EventType.INTERPRETED_SIGNAL,
             data=signal,
+            timestamp=signal.timestamp,
             source_component=source,
             correlation_id=correlation_id
         )
@@ -90,6 +92,7 @@ class EventRouter:
         event = SignalEvent(
             event_type=EventType.FUSED_SIGNAL,
             data=signal,
+            timestamp=signal.timestamp,
             source_component=source,
             correlation_id=correlation_id
         )
@@ -100,6 +103,7 @@ class EventRouter:
         event = SignalEvent(
             event_type=EventType.EXECUTION_INTENT,
             data=intent,
+            timestamp=getattr(intent, "timestamp", None),
             source_component=source,
             correlation_id=correlation_id
         )

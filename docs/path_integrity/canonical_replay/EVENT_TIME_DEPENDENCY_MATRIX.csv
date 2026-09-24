@@ -1,0 +1,9 @@
+component,dependency,classification,unit2_result
+SignalEvent,default datetime.now,DECISION_RELEVANT_MUST_ABSTRACT,"typed publish methods now carry domain timestamp; direct construction still has live fallback"
+HistoricalCandleWatcherAdapter,input timestamp fallback and observation datetime.now,DECISION_RELEVANT_MUST_ABSTRACT,"close_time preserved when provided; absent time still falls back for live compatibility"
+SignalAggregator,datetime.now trigger and thread,DECISION_RELEVANT_MUST_ABSTRACT,"injected clock and synchronous scheduling option; live default unchanged"
+SignalAggregator,intent correlation datetime.now,OBSERVABILITY_ONLY,"injected clock now used; logical intent_id remains separately generated"
+FusionService,multi-signal datetime.now,DECISION_RELEVANT_MUST_ABSTRACT,"unresolved; single-signal path carries source timestamp"
+StrategyManager,health-loop sleep and status timestamps,UNKNOWN,"not used in tested aggregation slice; full replay audit remains"
+AutoDetectionExecution,cooldown and order datetime.now,DECISION_RELEVANT_MUST_ABSTRACT,"unresolved downstream"
+BaseWatcher,processing latency time.time,OBSERVABILITY_ONLY,"health telemetry; exact decision coupling not proven"

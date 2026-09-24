@@ -1,0 +1,10 @@
+component,state_class,unit2_isolation
+EventRouter subscriptions,GLOBAL_REQUIRES_INJECTION,"fresh injected router tested with one fused subscriber per context"
+SignalAggregator candidates,GLOBAL_REQUIRES_INJECTION,"fresh injected aggregator tested; no cross-context candidates"
+Fusion hierarchical service,GLOBAL_REQUIRES_INJECTION,"not isolated; full replay blocked"
+StrategyManager and adapters,GLOBAL_REQUIRES_INJECTION,"injected selector seam in aggregator; actual strategy state not isolated"
+SignalProcessor and container risk engine,GLOBAL_REQUIRES_INJECTION,"processor can use fresh router but observation handler still resolves global container"
+AutoDetection intent claim,GLOBAL_BUT_RESETTABLE,"process-wide class set; not reset because live state must not be touched"
+Cooldown and active-position state,PRODUCTION_PERSISTENT,"not consumed in tests; full replay needs isolated ports"
+Trade/order/reconciliation journals,PRODUCTION_PERSISTENT,"not opened in focused tests; full replay must not use live paths"
+EngineService,PER_RUN_ALREADY,"instantiable; not used in this unit's slice"
