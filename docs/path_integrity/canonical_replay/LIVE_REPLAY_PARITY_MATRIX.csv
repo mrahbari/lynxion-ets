@@ -1,0 +1,10 @@
+stage,status,reason
+MarketObservation,NOT_COMPARABLE,"no verified watcher-equivalent historical observations"
+Engine,UNKNOWN,"same code exists but no equivalent point-in-time inputs exercised"
+Fusion,UNKNOWN,"same code exists but no equivalent Engine outputs exercised"
+SignalAggregator,PARITY_MISMATCH,"wall-clock and thread scheduling not represented by deterministic replay"
+StrategyManager,UNKNOWN,"no canonical replay invocation"
+ExecutionIntent,UNKNOWN,"no canonical replay invocation"
+RiskEnforcement,UNKNOWN,"no canonical replay invocation"
+SL_TP_quantity_order,UNKNOWN,"no canonical replay invocation"
+Broker,EXPECTED_ADAPTER_DIFFERENCE,"network-incapable simulated broker not wired; no broker called"

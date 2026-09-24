@@ -1,0 +1,11 @@
+watcher,classification,evidence_or_missing_input
+HistoricalCandleWatcherAdapter,APPROXIMATED,"candle history is available in principle but current observation timestamp uses datetime.now; not parity-ready"
+MarketPulseWatcher,UNKNOWN,"needs exact live input and event-time semantics audit"
+VolatilityWatcher,UNKNOWN,"needs exact live input and event-time semantics audit"
+TrendMTFWatcher,UNKNOWN,"requires completed HTF feed and alignment proof"
+AnomalyMLWatcher,UNKNOWN,"requires model/version and point-in-time feature provenance"
+OrderFlowWSWatcher,NOT_REPLAYABLE,"trade/order-flow stream is not provided by closed-bar source"
+CMCScreener,NOT_REPLAYABLE,"external point-in-time screener snapshots are not provided"
+FundingRateWatcher,UNKNOWN,"needs venue-specific point-in-time funding history"
+LiquidityWatcher,UNKNOWN,"needs point-in-time liquidity/book provenance"
+TickWatcherAdapter,NOT_REPLAYABLE,"tick stream is not provided by closed-bar source"
