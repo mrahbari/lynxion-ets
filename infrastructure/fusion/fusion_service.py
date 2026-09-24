@@ -8,6 +8,7 @@ from typing import List, Optional, Dict, Any
 from domain.entities import InterpretedSignal, FusedSignal, MarketObservation
 from domain.value_objects import Symbol, Percentage
 from datetime import datetime
+from infrastructure.messaging.clock import LiveClock
 from decimal import Decimal
 import statistics
 
@@ -308,9 +309,12 @@ class FusionService:
 
     def __init__(self,
                  correlation_consensus_weight: float = 0.6,
-                 correlation_confidence_weight: float = 0.4):
+                 correlation_confidence_weight: float = 0.4,
+                 hierarchical_service=None,
+                 clock=None):
         self.logger = None  # Will be set by the calling component if needed
-        self.hierarchical_service = hierarchical_fusion_service
+        self.hierarchical_service = hierarchical_service if hierarchical_service is not None else hierarchical_fusion_service
+        self.clock = clock if clock is not None else LiveClock()
         self.watcher_classifier = WatcherClassifier()
         self.confidence_thresholds = ConfidenceThresholds()
 
@@ -404,7 +408,7 @@ class FusionService:
             # Calculate aggregated values
             symbol = interpreted_signals[0].symbol  # All signals should be for the same symbol
             symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
-            timestamp = datetime.now()
+            timestamp = self.clock.now()
 
             # Determine regime context based on signal diversity
             signal_types = [s.signal_type for s in interpreted_signals]
@@ -703,7 +707,7 @@ class FusionService:
             # Calculate aggregated values
             symbol = interpreted_signals[0].symbol  # All signals should be for the same symbol
             symbol_str = symbol.value if hasattr(symbol, 'value') else str(symbol)
-            timestamp = datetime.now()
+            timestamp = self.clock.now()
 
             # Calculate weighted average direction based on confidence and strength
             total_weight = 0.0

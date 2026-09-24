@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from domain.value_objects import Symbol
+from infrastructure.messaging.clock import LiveClock
 
 
 class SymbolState(Enum):
@@ -39,7 +40,8 @@ class SymbolStateMachine:
         SymbolState.SUSPENDED: [SymbolState.DISCOVERED, SymbolState.REGIME_ALLOWED, SymbolState.REGIME_BLOCKED],
     }
     
-    def __init__(self):
+    def __init__(self, clock=None):
+        self.clock = clock if clock is not None else LiveClock()
         self.symbol_states: Dict[str, SymbolState] = {}
         self.state_history: Dict[str, List[Dict[str, Any]]] = {}
         self.state_contexts: Dict[str, Dict[str, Any]] = {}  # Store context for each symbol's state
@@ -53,7 +55,7 @@ class SymbolStateMachine:
         self.symbol_states[symbol_str] = initial_state
         self.state_history[symbol_str] = [{
             'state': initial_state,
-            'timestamp': datetime.now(),
+            'timestamp': self.clock.now(),
             'reason': 'initialization',
             'context': {}
         }]
@@ -87,7 +89,7 @@ class SymbolStateMachine:
         transition_record = {
             'from_state': old_state,
             'to_state': new_state,
-            'timestamp': datetime.now(),
+            'timestamp': self.clock.now(),
             'reason': reason,
             'context': context or {}
         }
@@ -130,8 +132,9 @@ class SymbolStateMachine:
 class HierarchicalSymbolManager:
     """Manages symbols through the hierarchical decision process"""
     
-    def __init__(self):
-        self.state_machine = SymbolStateMachine()
+    def __init__(self, clock=None):
+        self.clock = clock if clock is not None else LiveClock()
+        self.state_machine = SymbolStateMachine(clock=self.clock)
     
     def process_discovery(self, symbol: Symbol, discovered_by: str = "unknown") -> bool:
         """Process a newly discovered symbol"""
@@ -142,7 +145,7 @@ class HierarchicalSymbolManager:
         # Update context with discovery information
         context = {
             'discovered_by': discovered_by,
-            'discovered_at': datetime.now().isoformat()
+            'discovered_at': self.clock.now().isoformat()
         }
         
         # Transition to discovered state (or remain if already discovered)
@@ -167,7 +170,7 @@ class HierarchicalSymbolManager:
         context = {
             'regime_state': regime_state,
             'regime_confidence': confidence,
-            'regime_applied_at': datetime.now().isoformat()
+            'regime_applied_at': self.clock.now().isoformat()
         }
         
         return self.state_machine.transition(symbol, new_state, reason, context)
@@ -187,7 +190,7 @@ class HierarchicalSymbolManager:
             context = {
                 'direction': direction,
                 'direction_confidence': confidence,
-                'direction_applied_at': datetime.now().isoformat()
+                'direction_applied_at': self.clock.now().isoformat()
             }
             
             # Transition to direction confirmed if we have a direction
@@ -204,7 +207,7 @@ class HierarchicalSymbolManager:
         context = {
             'execution_action': execution_action,
             'execution_confidence': confidence,
-            'execution_applied_at': datetime.now().isoformat()
+            'execution_applied_at': self.clock.now().isoformat()
         }
 
         # First transition to EXECUTION_PENDING (valid transition from DIRECTION_CONFIRMED)
@@ -232,7 +235,7 @@ class HierarchicalSymbolManager:
         
         context = {
             'execution_details': execution_details,
-            'executed_at': datetime.now().isoformat()
+            'executed_at': self.clock.now().isoformat()
         }
         
         return self.state_machine.transition(symbol, SymbolState.TRADE_EXECUTED, "trade_executed", context)
@@ -246,7 +249,7 @@ class HierarchicalSymbolManager:
         
         context = {
             'close_details': close_details,
-            'closed_at': datetime.now().isoformat()
+            'closed_at': self.clock.now().isoformat()
         }
         
         return self.state_machine.transition(symbol, SymbolState.TRADE_CLOSED, "trade_closed", context)

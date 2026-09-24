@@ -13,18 +13,20 @@ from .confidence_thresholds import ConfidenceThresholds, ConfidenceValidator, Re
 from .conflict_resolution import HierarchicalSignalFuser, ConflictResolutionRules
 from .symbol_state_machine import HierarchicalSymbolManager, SymbolState
 from .hierarchical_logger import hierarchical_logger
+from infrastructure.messaging.clock import LiveClock
 
 
 class HierarchicalFusionService:
     """Main fusion service implementing the hierarchical multi-watcher architecture"""
     
-    def __init__(self):
+    def __init__(self, clock=None, logger=None):
+        self.clock = clock if clock is not None else LiveClock()
         self.watcher_classifier = WatcherClassifier()
         self.confidence_validator = ConfidenceValidator()
         self.conflict_resolver = ConflictResolutionRules()
         self.signal_fuser = HierarchicalSignalFuser()
-        self.symbol_manager = HierarchicalSymbolManager()
-        self.logger = hierarchical_logger
+        self.symbol_manager = HierarchicalSymbolManager(clock=self.clock)
+        self.logger = logger if logger is not None else hierarchical_logger
         
         # Track symbol states and decisions
         self.symbol_regime_states = {}
@@ -223,7 +225,7 @@ class HierarchicalFusionService:
             dominance_score=0.0,
             regime_context=regime_context,
             confidence=Percentage(Decimal(str(confidence))),
-            timestamp=datetime.now(),
+            timestamp=self.clock.now(),
             metadata={
                 'reason': reason,
                 'hierarchical_fusion': True,
