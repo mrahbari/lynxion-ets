@@ -79,3 +79,9 @@
 - Starting source baseline `c8e8bda`; bounded commits, in order: `058f5ac` (forensic sink), `2c50834` (Fusion state/clock), `a21c0f9` (StrategyManager construction test), `199b26d` (RiskEnforcement journal/gate), `f0f434a` (intent claim store), `3d9f801` (cooldown event clock). This checkpoint is documentation-only.
 - Combined focused regression: 77 passed / 0 failed. The four protected production persistence files were hashed immediately before and after and were unchanged. No authenticated broker access/order; no replay scope or baseline was run.
 - Price contract requires decision; D/E are partial. `PREFIX_INVARIANCE_NOT_TESTABLE`; `LIVE_REPLAY_PARITY_NOT_TESTABLE`; `XMR_ROOT_CAUSE_UNRESOLVED`; `BROKER_RETRY_SEMANTICS_UNRESOLVED`.
+
+## Operator-resolved price contract / A completion
+
+- Starting commit `b95013d`; changed production files: `domain/entities/signal.py`, `infrastructure/messaging/event_system.py`, `infrastructure/watchers/adapters/tick.py`. New focused price-contract test and documentation. Old `observation.close`/silent inner swallow removed; optional explicit producer price and narrow recorder added.
+- Focused tests: 64 passed / 0 failed. Protected persistence hashes before/after matched the Unit-3 values above. New tests used no broker/network client. A is VERIFIED for the seam; no full replay/decision parity was attempted.
+- Price-contract blocker resolved by operator; producer uncertainty remains for candles/pulse/screener. D/E/F/G and A–K overall release gates remain incomplete. XMR and broker retry statuses unchanged.

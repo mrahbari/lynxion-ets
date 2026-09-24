@@ -37,6 +37,7 @@ class MarketObservation:
     confidence: Percentage  # 0.0 to 1.0
     timestamp: datetime
     metadata: Optional[Dict[str, Any]] = None
+    market_price: Optional[float] = None  # Producer-supplied causal price; never observation_value.
 
     def __post_init__(self):
         if not 0.0 <= float(self.confidence.value) <= 1.0:

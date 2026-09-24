@@ -43,3 +43,7 @@ T1–T11 were **NOT RUN**. Source inspection found a material price-contract mis
 ## Combined program checkpoint
 
 Combined all six new seam suites with Unit-1/2, F01, pending-tracker and path-integrity slices: **77 passed, 0 failed**, 26 warnings. Four protected production persistence SHA-256 values matched immediately before/after the combined run; see program log. No canonical replay, prefix-invariance, live/replay parity, or economic baseline test ran.
+
+## Market-price contract / Implementation A completion
+
+`pytest -q tests/unit/test_market_observation_price_contract.py tests/unit/test_signal_processor_forensic_seam.py tests/unit/test_replay_event_time_scope.py tests/unit/test_historical_closed_bar_source.py tests/unit/test_path_integrity_unit1_routes.py tests/unit/test_path_integrity_unit3_runtime_wiring.py tests/unit/test_f01_offline_intent_sizing.py --disable-warnings --tb=short`: **64 passed, 0 failed**, 26 warnings. Included explicit/absent/invalid price, analytical-value non-price, tick snapshot, injected recorder, live bridge identity, forensic and prior path regressions. Four protected persistence hashes matched before/after this run. P6 is not applicable yet: no candle-derived producer was classified eligible; P7 is covered at the tick/observation snapshot boundary, not full canonical prefix invariance. P8 source audit found no automatic price assignment in ambiguous producers.

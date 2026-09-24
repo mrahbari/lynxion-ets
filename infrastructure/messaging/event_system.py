@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 import math
+import logging
 import threading
 import queue
 from domain.entities import MarketObservation, InterpretedSignal, FusedSignal, ExecutionIntent
@@ -144,12 +145,21 @@ class EventRouter:
                     print(f"Error in event handler for {event.event_type}: {e}")
 
 
+class LiveRiskPriceRecorder:
+    """Narrow live adapter to the same bridged risk runtime used by execution."""
+
+    def record_price(self, symbol: str, price: float):
+        from application.containers.container import container
+        container.resolve("risk_engine")._risk_manager.record_price(symbol, price)
+
+
 class SignalProcessor:
     """Processes signals through the proper architectural layers"""
 
-    def __init__(self, event_router: EventRouter, forensic_sink=None):
+    def __init__(self, event_router: EventRouter, forensic_sink=None, price_recorder=None):
         self.event_router = event_router
         self._forensic_sink = forensic_sink
+        self._price_recorder = price_recorder if price_recorder is not None else LiveRiskPriceRecorder()
         self.logger = None  # Will be set by calling component
         self._processing_subscribed = False
 
@@ -191,13 +201,24 @@ class SignalProcessor:
             if self.logger and hasattr(observation, 'symbol'):
                 self.logger.info(f"Processing observation from {event.source_component} for {observation.symbol.value}")
 
-            # Record price for rolling correlation calculation (E3.T5)
-            try:
-                from application.containers.container import container
-                risk_engine = container.resolve("risk_engine")
-                risk_engine._risk_manager.record_price(observation.symbol.value, float(observation.close))
-            except Exception:
-                pass
+            # Only the producer's explicit causal market price may update risk state.
+            market_price = getattr(observation, "market_price", None)
+            if market_price is not None:
+                try:
+                    price = float(market_price)
+                    if isinstance(market_price, bool) or not math.isfinite(price) or price <= 0:
+                        raise ValueError("market price must be positive and finite")
+                except (TypeError, ValueError, OverflowError):
+                    logging.getLogger(__name__).warning(
+                        "Skipping invalid market_price for %s", observation.symbol.value
+                    )
+                else:
+                    try:
+                        self._price_recorder.record_price(observation.symbol.value, price)
+                    except Exception:
+                        logging.getLogger(__name__).exception(
+                            "Market price recording failed for %s", observation.symbol.value
+                        )
 
             # Process observation through engine
             interpreted_signal = engine_service.process_observation(observation)

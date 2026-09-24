@@ -5,6 +5,7 @@ from shared.logger import logger
 from datetime import datetime
 import numpy as np
 from decimal import Decimal
+from math import isfinite
 
 
 class TickWatcherAdapter(BaseWatcher):
@@ -124,12 +125,19 @@ class TickWatcherAdapter(BaseWatcher):
         confidence_percentage = Percentage(Decimal(str(confidence)))
 
         # Create and return a MarketObservation instead of a Signal
+        latest_tick_price = self.tick_history[-1]['price'] if self.tick_history else None
+        causal_market_price = (
+            latest_tick_price
+            if latest_tick_price is not None and isfinite(latest_tick_price) and latest_tick_price > 0
+            else None
+        )
         observation = MarketObservation(
             symbol=symbol,
             observation_type=observation_type,
             observation_value=observation_value,
             confidence=confidence_percentage,
             timestamp=datetime.now(),
+            market_price=causal_market_price,
             metadata={
                 'tick_intensity': tick_intensity,
                 'tick_imbalance': tick_imbalance,

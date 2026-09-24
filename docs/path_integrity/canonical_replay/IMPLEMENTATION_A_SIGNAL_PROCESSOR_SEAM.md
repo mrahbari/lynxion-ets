@@ -23,3 +23,20 @@ Choosing `observation_value`, `metadata.latest_candle.close`, or another source 
 Specify the causal market-price contract for each observation type: which explicit field/metadata value is a tradable price, when it is available, and what happens when absent. Decide whether correcting the current swallowed recording failure is authorized as a separate behavior change. Then inject a narrow recorder targeting the same bridged live risk instance, plus a scoped forensic sink, and run T1–T11 with production-persistence hashes. No global replacement, broker connection, replay, or research result is justified by this finding.
 
 The XMR blocker and causal status are unchanged: `XMR_ROOT_CAUSE_UNRESOLVED`. Full prefix invariance and live/replay parity remain `NOT_TESTABLE`.
+
+## Authorized contract resolution (after `b95013d`)
+
+The operator authorized an **optional explicit causal** `MarketObservation.market_price: Optional[float]`. The earlier price-source ambiguity is resolved by producer responsibility, not by interpreting `observation_value` or arbitrary metadata. The field was appended after existing fields so old positional/keyword constructors remain valid. `SignalProcessor` now forwards only a finite positive explicit value to a narrow recorder. Missing or invalid prices do not block analytical observation processing; invalid values and recorder failures are logged rather than silently swallowed. The former `observation.close` access and broad inner exception swallow were removed. A future replay composition can inject a local recorder. The default live adapter resolves the same risk-engine bridge registered by `bootstrap/lifecycle.py`; it does not create a second risk manager.
+
+| Producer | Classification | Price decision |
+|---|---|---|
+| `TickWatcherAdapter` | EXPLICIT_CAUSAL_PRICE_AVAILABLE | The already-received latest tick has `price`; observation is constructed after reception. Populate only when finite/positive. |
+| `HistoricalCandleWatcherAdapter` | AMBIGUOUS_PRICE_SEMANTICS | Stores a close and close-time-like timestamp, but `update_data` does not prove a completed bar for every caller; leave None. |
+| `MarketPulseWatcher` (both observation paths) | AMBIGUOUS_PRICE_SEMANTICS | Latest candle exists, but completion/time alignment not proved; leave None. |
+| `CMCScreener` | AMBIGUOUS_PRICE_SEMANTICS | Has a remote `price` field, but quote timestamp/price basis is not explicit; leave None. |
+| `FundingRateWatcher`, `LiquidityWatcher`, `OrderFlowWSWatcher`, `TrendMTFWatcher`, `VolatilityWatcher`, `AnomalyMLWatcher` | NO_CAUSAL_PRICE | Observations encode analytical metrics, not a source-proven market price; leave None. |
+| Fusion-created mock observation | NO_CAUSAL_PRICE | Reconstitutes interpreted signal for hierarchical classification; never a price source. |
+
+`HistoricalClosedBarSource` itself enforces complete UTC bars and causal visibility, but does not currently construct `MarketObservation`; no candle-to-watcher price claim is made. A future historical producer may set price only after its completed-bar provenance is wired and tested. Price used by the risk manager is for rolling correlation; no sizing or risk rule was moved into the recorder. The sole other `record_price` caller found is the legacy backtester, not the canonical live observation path.
+
+Focused source/contract/ownership/F01 regression: 64 passed, 0 failed. Four protected production persistence files had identical SHA-256 values immediately before and after the focused run. No broker client/order was constructed by new tests. Implementation A seam is VERIFIED for the scoped behavior; full replay, prefix invariance and live/replay parity are not.
