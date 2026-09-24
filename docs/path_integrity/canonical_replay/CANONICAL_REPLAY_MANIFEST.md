@@ -1,7 +1,7 @@
 # Unit 1 manifest
 
 - Starting commit: `87affd4`.
-- Resulting commit: NOT YET RECORDED; update only after a successful commit.
+- Resulting implementation commit: `7fe30d7` (this manifest line was finalized afterward).
 - Changed files: `infrastructure/replay/__init__.py`, `infrastructure/replay/historical_closed_bar_source.py`, `tests/unit/test_historical_closed_bar_source.py`, and the eight required documents in this directory. No production runtime file/config changed.
 - Tests: focused source suite, 5 pass / 0 fail.
 - Fixture identity: `tests/unit/test_historical_closed_bar_source.py`; SHA-256 `68ac84d4c9283d95722039ac99925a2e9de16b0b19e3d5eec61269c0a7b446c5`.
