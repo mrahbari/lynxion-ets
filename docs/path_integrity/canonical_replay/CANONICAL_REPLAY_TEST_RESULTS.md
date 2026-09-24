@@ -39,3 +39,7 @@ T1–T11 were **NOT RUN**. Source inspection found a material price-contract mis
 ## Autonomous program D2
 
 `pytest -q tests/unit/test_cooldown_event_clock_seam.py tests/unit/test_risk_enforcement_state_seam.py tests/unit/test_path_integrity_unit1_routes.py tests/unit/test_path_integrity_unit3_runtime_wiring.py --disable-warnings --tb=short`: **39 passed, 0 failed**, 26 warnings. Explicit event-time cooldown and prior risk/route slices; no full replay or parity test.
+
+## Combined program checkpoint
+
+Combined all six new seam suites with Unit-1/2, F01, pending-tracker and path-integrity slices: **77 passed, 0 failed**, 26 warnings. Four protected production persistence SHA-256 values matched immediately before/after the combined run; see program log. No canonical replay, prefix-invariance, live/replay parity, or economic baseline test ran.

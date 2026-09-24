@@ -49,3 +49,23 @@
 - An explicitly constructed gate can use `ReplayClock` for startup loss reconciliation, stop/target exit timestamps, and admission expiry. Default construction uses `LiveClock`, preserving wall-clock live semantics. Existing 60-minute/24-hour/15-minute rules, blacklist, journal format, and singleton live accessor were not changed.
 - Focused tests including risk/route regressions: 39 passed / 0 failed. An explicit temporary gate rejects at event time and allows after the unchanged 60-minute interval. This proves deterministic time only for this gate, not all risk/execution time. New tests used no broker/network client and temporary persistence paths. Full production persistence before/after hashes remain a future release gate.
 - D remains PARTIAL: EnterpriseRiskManager, reconciliation, active/pending-order state and other fixed paths are not isolated. F/G and economics remain unauthorized. Next: inspect remaining persistent state and decide if a bounded seam exists or a hard-stop architecture issue is reached.
+
+## Program checkpoint — release gates and stop boundary
+
+Combined focused regression (all six new seam tests plus Unit-1/2, F01, pending tracker and path-integrity slices): **77 passed / 0 failed**. SHA-256 of `active_positions_journal.json`, `live_order_journal.json`, `sl_cooldown_journal.json`, and `trade_journal.csv` was identical immediately before and after this combined run (respectively `11107b33...`, `e72c03f3...`, `d585dce9...`, `1eb076e6...`). Existing unrelated C-11/C-35 working-tree changes were neither staged nor edited. No authenticated broker request/order was performed; the replay/broker boundary was not constructed.
+
+| Gate | Current evidence |
+|---|---|
+| A no replay-reachable mutable global | FAIL/NOT ESTABLISHED: SignalProcessor price container, pending tracker, orchestration globals remain |
+| B no production persistence reachable | FAIL/NOT ESTABLISHED: reconciliation and live journal defaults remain reachable |
+| C controlled replay decision clock | PARTIAL: Fusion/cooldown/aggregator seams only; Risk/strategy/execution time remains |
+| D fresh Fusion/Strategy/Risk state | PARTIAL: Fusion and Strategy tested; Risk only narrow journal/gate seam |
+| E live normalized decisions preserved | NOT TESTABLE end-to-end; focused default/identity regressions passed |
+| F one execution owner | Prior offline production composition confirmed; full future replay not constructed |
+| G zero network capability | NOT ESTABLISHED structurally for ReplayScope; no ReplayScope exists |
+| H simultaneous scopes isolated | NOT TESTABLE |
+| I production persistence unchanged | PASS for this combined test only; not a general replay guarantee |
+| J decision prefix invariance | NOT TESTABLE |
+| K applicable live/replay parity | NOT TESTABLE |
+
+Remaining source-proven obstacles: `EnterpriseRiskManager` starts a background correlation thread in its constructor and reads wall time for daily/position events; `PendingOrdersTracker` is a class-state singleton used directly by orchestrator and broker services; `BrokerReconciliationService` loads a fixed active-position journal. Their safe composition is not established by the narrow seams. The price recorder additionally has an unresolved trading/risk semantic choice (Phase P); resolving it requires operator decision under H5. These are not reasons to fabricate a replay path or relax risk controls. Final program status at this checkpoint: `CANONICAL_REPLAY_BLOCKED_BY_POLICY_DECISION`; baseline NOT authorized. XMR and broker retry/restart remain unresolved. Exact next action: decide the causal per-observation market-price contract, then continue bounded D/E state and persistence seams with live-parity tests before F/G.

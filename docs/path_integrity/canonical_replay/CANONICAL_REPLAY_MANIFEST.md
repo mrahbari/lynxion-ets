@@ -73,3 +73,9 @@
 
 - Starting commit `f0f434a`; one production file changed for optional clock injection in `SymbolCooldownGate`, with temporary-path test and documentation. 39 passed / 0 failed. Live default remains `LiveClock`; cooldown policy untouched.
 - No new broker/network dependency. Fresh full production-persistence before/after hash: NOT COLLECTED. D/E isolation and decision-level parity remain incomplete; XMR and broker retry statuses unchanged.
+
+## Combined autonomous-program checkpoint
+
+- Starting source baseline `c8e8bda`; bounded commits, in order: `058f5ac` (forensic sink), `2c50834` (Fusion state/clock), `a21c0f9` (StrategyManager construction test), `199b26d` (RiskEnforcement journal/gate), `f0f434a` (intent claim store), `3d9f801` (cooldown event clock). This checkpoint is documentation-only.
+- Combined focused regression: 77 passed / 0 failed. The four protected production persistence files were hashed immediately before and after and were unchanged. No authenticated broker access/order; no replay scope or baseline was run.
+- Price contract requires decision; D/E are partial. `PREFIX_INVARIANCE_NOT_TESTABLE`; `LIVE_REPLAY_PARITY_NOT_TESTABLE`; `XMR_ROOT_CAUSE_UNRESOLVED`; `BROKER_RETRY_SEMANTICS_UNRESOLVED`.
