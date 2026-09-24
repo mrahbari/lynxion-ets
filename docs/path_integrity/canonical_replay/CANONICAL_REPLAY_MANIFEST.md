@@ -24,7 +24,7 @@
 
 ## Unit 3 architectural-stop addendum
 
-- Starting commit: `8016007`; result is a documentation-only architectural stop, with no production implementation. Resulting documentation commit recorded after creation.
+- Starting commit: `8016007`; resulting Unit-3 report commit: `0f950b1` (manifest finalized afterward). This is a documentation-only architectural stop, with no production implementation.
 - Files changed: Unit-3 report, application-state matrix, persistence matrix, this manifest, event-time matrix and test-results addendum. Production files changed: NONE. Tests added/executed: NONE; pass/fail count: not applicable.
 - Per-run components proven so far: only Unit-2's router/aggregator/clock slice. Full application context: NOT CONSTRUCTED.
 - Remaining globals: container risk engine, forensic logger, hierarchical Fusion, strategy defaults/nested dependencies, auto-detection class-level claims, cooldown gate, pending tracker and persistence.
