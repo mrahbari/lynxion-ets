@@ -14,7 +14,7 @@
 
 ## Unit 2 addendum
 
-- Starting commit: `3da13d5`; resulting implementation commit recorded after commit creation.
+- Starting commit: `3da13d5`; resulting Unit-2 implementation commit: `e84dcdf` (manifest finalized afterward).
 - Production-source files changed: `infrastructure/messaging/event_system.py`, `infrastructure/watchers/adapters/historical_candle.py`, `infrastructure/aggregators/signal_aggregator.py`; new clock file `infrastructure/messaging/clock.py` and focused test `tests/unit/test_replay_event_time_scope.py`.
 - Clock: injected `LiveClock` default / monotonic UTC `ReplayClock` for tested slice. State: fresh injected router, aggregator and selector in tests; full application state **not isolated**.
 - Tests: 50 passed / 0 failed in the focused suite (see test-results addendum).
