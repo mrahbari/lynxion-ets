@@ -23,3 +23,7 @@ T1–T11 were **NOT RUN**. Source inspection found a material price-contract mis
 ## Autonomous program B
 
 `pytest -q tests/unit/test_fusion_instance_seam.py tests/unit/test_anomaly_signal_consistency.py tests/unit/test_signal_processor_forensic_seam.py tests/unit/test_replay_event_time_scope.py tests/unit/test_historical_closed_bar_source.py tests/unit/test_path_integrity_unit1_routes.py tests/unit/test_path_integrity_unit3_runtime_wiring.py --disable-warnings --tb=short`: **52 passed, 0 failed**. Covers scoped Fusion state/clock and prior focused slices only. Full decision-prefix and live/replay parity remain NOT TESTABLE.
+
+## Autonomous program C
+
+`pytest -q tests/unit/test_strategy_instance_scope.py --disable-warnings --tb=short`: **2 passed, 0 failed**. Fresh manager/adapter state and registration isolation only; no strategy-signal or intent parity assertion.
