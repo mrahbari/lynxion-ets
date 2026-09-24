@@ -68,3 +68,8 @@
 
 - Starting commit `199b26d`; two production files changed for optional instance-scoped atomic claim store with shared live default. One focused test plus documentation. 45 passed / 0 failed.
 - New tests had no broker/network capability. Fresh production-persistence before/after hash: NOT COLLECTED; full E/state-isolation gate is not met. Broker timeout/restart and XMR root cause remain unresolved.
+
+## Autonomous program D2 addendum
+
+- Starting commit `f0f434a`; one production file changed for optional clock injection in `SymbolCooldownGate`, with temporary-path test and documentation. 39 passed / 0 failed. Live default remains `LiveClock`; cooldown policy untouched.
+- No new broker/network dependency. Fresh full production-persistence before/after hash: NOT COLLECTED. D/E isolation and decision-level parity remain incomplete; XMR and broker retry statuses unchanged.

@@ -30,7 +30,9 @@ class SymbolCooldownGate:
     _instance: Optional[SymbolCooldownGate] = None
     _lock = threading.RLock()
 
-    def __init__(self, journal_path: Optional[str] = None, trade_journal_path: Optional[str] = None):
+    def __init__(self, journal_path: Optional[str] = None, trade_journal_path: Optional[str] = None, clock=None):
+        from infrastructure.messaging.clock import LiveClock
+        self._clock = clock if clock is not None else LiveClock()
         self._journal_path = journal_path or COOLDOWN_JOURNAL_PATH
         self._trade_journal_path = trade_journal_path or os.path.join(
             os.path.dirname(__file__), "..", "..", "data", "trade_journal.csv"
@@ -74,7 +76,7 @@ class SymbolCooldownGate:
                     import pandas as pd
                     df = pd.read_csv(trade_journal_path)
                     if not df.empty and "pnl_usdt" in df.columns and "symbol" in df.columns:
-                        now_ts = datetime.now().timestamp()
+                        now_ts = self._clock.now().timestamp()
                         df_unique = df.drop_duplicates(subset=["trade_id"]).copy() if "trade_id" in df.columns else df
                         for _, row in df_unique.iterrows():
                             pnl = float(row.get("pnl_usdt", 0) or 0)
@@ -128,7 +130,7 @@ class SymbolCooldownGate:
         """Activate 60-minute Stop Loss Cooldown (or 24-hour Circuit Breaker on rapid multi-loss)."""
         with self._lock:
             clean_sym = self.normalize_symbol(symbol)
-            ts = (exit_time or datetime.now()).timestamp()
+            ts = (exit_time or self._clock.now()).timestamp()
 
             # Track loss events in the last 2 hours (7200s)
             if clean_sym not in self._symbol_loss_history:
@@ -152,7 +154,7 @@ class SymbolCooldownGate:
         """Register a 15-minute post-trade spacing window when trade exits via Take Profit."""
         with self._lock:
             clean_sym = self.normalize_symbol(symbol)
-            ts = (exit_time or datetime.now()).timestamp()
+            ts = (exit_time or self._clock.now()).timestamp()
             # Clear loss history on successful take profit
             if clean_sym in self._symbol_loss_history:
                 self._symbol_loss_history[clean_sym].clear()
@@ -170,7 +172,7 @@ class SymbolCooldownGate:
             if clean_sym in blacklisted or str(symbol or "").upper() in blacklisted:
                 return False, f"PERMANENT_BLACKLIST: {clean_sym} is blacklisted from trading in configuration"
 
-            now_ts = datetime.now().timestamp()
+            now_ts = self._clock.now().timestamp()
 
             expiry_ts = self._sl_cooldowns.get(clean_sym, 0.0)
             if now_ts < expiry_ts:
