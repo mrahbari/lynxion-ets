@@ -11,3 +11,7 @@ Not run: full canonical-path test, live/replay parity, risk/guard parity, normal
 ## Unit 3 architectural stop
 
 No Unit-3 code was changed and no Unit-3 tests were added or run. T1–T10 (full per-run composition, risk/claim/persistence isolation and wall-clock independence) are **NOT TESTABLE** safely with the current graph. Unit-1/2/ownership test results above remain historical evidence, not fresh Unit-3 verification. Four production persistence files were hashed read-only before and after the document-only audit; compare the Unit-3 manifest. No replay or broker was constructed.
+
+## Implementation A pre-edit stop
+
+T1–T11 were **NOT RUN**. Source inspection found a material price-contract mismatch before editing; see `IMPLEMENTATION_A_SIGNAL_PROCESSOR_SEAM.md`. No implementation test pass, production-persistence before/after test claim, prefix-invariance pass, or live/replay parity claim is made. No broker/network action occurred in this inspection.

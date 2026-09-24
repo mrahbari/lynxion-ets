@@ -31,3 +31,13 @@
 - Remaining wall-clock dependencies: multi-signal/neutral Fusion, state-machine transitions, strategy intent timestamps, cooldown/admission and pre-broker execution.
 - Production persistence SHA-256 **before and after** audit matched: `active_positions_journal.json=11107b33a93f7d616abc1009ce41fdba955cacb422236643d97414f14033e1ab`; `live_order_journal.json=e72c03f35a18cd0732b97b901bff480977760bfebc4de603c9abb860e170f348`; `sl_cooldown_journal.json=d585dce9a5772ef78b512c395ac2fb5b4681cc64fc0ac69593bc831966987bfa`; `trade_journal.csv=1eb076e61351de3f0cd9f4fda81493e12bdd1588f82b6e114b8c48993cda0d14`. This proves no change to these four files during the read-only audit, not future replay safety.
 - Network activity: NONE. Watcher limitations: unchanged. Remaining UNKNOWNs: exact safe persistence ports, all nested adapter state, event-time semantics downstream, full parity.
+
+## Implementation A pre-edit architecture stop
+
+- Starting HEAD: `fdeaa7a`. Result: documentation-only mismatch record; no implementation commit or production/config changes.
+- Changed files: `IMPLEMENTATION_A_SIGNAL_PROCESSOR_SEAM.md`, this manifest, and `CANONICAL_REPLAY_TEST_RESULTS.md` only.
+- Source inspected: `infrastructure/messaging/event_system.py`, `domain/entities/signal.py`, watcher constructors, `bootstrap/lifecycle.py`, `bootstrap/container.py`, architecture sequence. No new interface/adapter was created.
+- Tests added/executed: NONE; pass/fail count: not applicable. The T1–T11 requested suite remains pending review of the observation-price contract.
+- Production persistence hash comparison: NOT PERFORMED (no focused tests or production state writes were attempted); no claim of A-G5 verification.
+- Network activity: NONE. Remaining globals: container risk lookup and forensic logger in SignalProcessor, plus previously documented globals; no seam was implemented.
+- Remaining units: Implementation A after contract review, then separately authorized later architecture units. XMR: `XMR_ROOT_CAUSE_UNRESOLVED`. Prefix invariance and live/replay parity: `NOT_TESTABLE`.
