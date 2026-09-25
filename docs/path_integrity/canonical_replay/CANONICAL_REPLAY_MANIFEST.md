@@ -195,3 +195,8 @@
 
 - Start `32968b0`; resulting commit is this unit's commit. Production file: `infrastructure/services/broker_execution_service.py`; new `test_scoped_broker_execution_service.py`. Explicit constructor requires local broker, Guard with Risk enforcer, ledger, pending state, validator, forensic sink, notification callback and clock. Default Live path remains. Existing validation/send logic is reused, not copied into replay.
 - Expanded regression **173 passed / 0 failed**. Four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Canonical queued owner and full Risk/reconciliation controls are not yet composed; prefix/parity/baseline unavailable.
+
+## Queued-owner ordering forensic addendum
+
+- Start `a34e880`; resulting commit is this documentation/test unit. Production/config files changed: **0**. New `test_auto_detection_queue_scheduling_forensics.py` and documentation update. Existing Live queue worker selects among the intents present at its wake-up; equal event times alone do not fix delivery/batch order. Historical wake-up and delivery ordering is not recorded by this test or an inspected replay contract.
+- Focused regression **47 passed / 0 failed**. Four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No broker/network activity. Multi-intent queue parity and full canonical prefix/parity remain **NOT TESTABLE**; baseline forbidden.
