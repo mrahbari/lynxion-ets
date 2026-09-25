@@ -15,6 +15,7 @@ from infrastructure.messaging.clock import ReplayClock
 from infrastructure.messaging.event_system import EventRouter, SignalProcessor
 from infrastructure.orchestrators.architecture_orchestrator import ArchitectureOrchestrator
 from infrastructure.strategies.strategy_manager import StrategyManager
+from infrastructure.replay.normalized_decision_trace import normalize_event
 
 
 class _RunTraceSink:
@@ -51,6 +52,7 @@ class ReplayDecisionRunScope:
         self.clock = ReplayClock(initial_time)
         self.router = EventRouter()
         self.trace_sink = _RunTraceSink()
+        self.decision_trace = []
         self.trade_tracker = _RunTradeTracker()
         self.risk_manager = EnterpriseRiskManager(
             clock=self.clock, trade_tracker_instance=self.trade_tracker,
@@ -86,6 +88,7 @@ class ReplayDecisionRunScope:
             except Empty:
                 break
             reached.append(event.event_type)
+            self.decision_trace.append(normalize_event(event))
             self.router._route_event(event)
         return tuple(reached)
 

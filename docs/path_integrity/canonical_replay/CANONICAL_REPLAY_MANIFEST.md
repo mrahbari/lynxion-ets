@@ -205,3 +205,8 @@
 
 - Start `0d557ba`; resulting commit is this documentation-only unit. Files: `EDGE_MEASUREMENT_READINESS_AUDIT.md`, `PROJECT_DECISION_LEDGER.md`, and existing program/test/manifest docs. Production/research source/config changed: **0**. No migration or alternate strategy engine.
 - Focused regression **19 passed / 0 failed**; four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. Network/broker activity: **NONE**. Level-1 versus Level-2 gate split recorded; `EDGE_MEASUREMENT_NOT_READY`, no baseline.
+
+## Normalized signal-event trace addendum
+
+- Start `8fcd179`; resulting commit is this bounded trace unit. Production trading files changed: **0**. Replay-only files: `decision_run_scope.py`, new `normalized_decision_trace.py`; new `test_canonical_decision_trace_subset.py`. Trace is read-only and records actual router payloads, not a second decision engine. It excludes only random intent UUID; no generated intent was observed in the frozen two-bar fixture.
+- Expanded relevant regression **61 passed / 0 failed**. Four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. New fixture denied socket connections and observed none; no authenticated broker request/order. Existing adapter global historical-provider lookup means structural network incapability is **not yet proved**. Full decision-prefix, after-cost edge and baseline remain blocked.
