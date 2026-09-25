@@ -63,6 +63,10 @@ class ReplayDecisionRunScope:
         self.fusion = FusionService(
             hierarchical_service=self.hierarchical_fusion, clock=self.clock)
         self.strategies = StrategyManager()
+        for adapter in self.strategies.strategies.values():
+            # No point-in-time archive is bound yet. An empty result is safer
+            # than the adapter's live global/download-capable fallback.
+            adapter.bind_history_loader(lambda symbol, config: [])
         self.aggregator = SignalAggregator(
             clock=self.clock, router=self.router, strategy_selector=self.strategies,
             synchronous=True)

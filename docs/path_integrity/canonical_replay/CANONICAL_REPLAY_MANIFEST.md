@@ -210,3 +210,8 @@
 
 - Start `8fcd179`; resulting commit is this bounded trace unit. Production trading files changed: **0**. Replay-only files: `decision_run_scope.py`, new `normalized_decision_trace.py`; new `test_canonical_decision_trace_subset.py`. Trace is read-only and records actual router payloads, not a second decision engine. It excludes only random intent UUID; no generated intent was observed in the frozen two-bar fixture.
 - Expanded relevant regression **61 passed / 0 failed**. Four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. New fixture denied socket connections and observed none; no authenticated broker request/order. Existing adapter global historical-provider lookup means structural network incapability is **not yet proved**. Full decision-prefix, after-cost edge and baseline remain blocked.
+
+## Strategy history-loader seam addendum
+
+- Start `8c7ee54`; resulting commit is this bounded seam unit. Production source `infrastructure/strategies/strategy_adapters.py` changes only for optional loader injection; replay source `decision_run_scope.py` binds an empty fail-closed loader; new `test_strategy_history_loader_scope.py`. No Live default, strategy rule, Risk, Fusion or parameter changed.
+- Expanded relevant regression **66 passed / 0 failed**. Four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. Network/broker activity: **NONE** in tests. Point-in-time strategy history, multi-symbol adapter buffer semantics and full intent-level prefix remain open; baseline forbidden.

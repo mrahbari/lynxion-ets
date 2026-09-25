@@ -71,6 +71,7 @@ class BaseStrategyAdapter(StrategyPort):
 
     def __init__(self, name: str):
         self.name = name
+        self._history_loader = None
         self.logger = EnhancedLogger(f"Strategy_{name}")
         self.active = True
         self.data_buffer = []
@@ -122,6 +123,13 @@ class BaseStrategyAdapter(StrategyPort):
         """
         if not hasattr(self, 'data_buffer') or not self.data_buffer:
             self.data_buffer = []
+            if self._history_loader is not None:
+                # Explicit compositions own historical-data provenance. An empty
+                # result is not permission to fall through to the live registry.
+                data = self._history_loader(symbol, self.config)
+                if data:
+                    self.data_buffer = data
+                return
             try:
                 from bootstrap.settings.loaders import load_settings
                 from infrastructure.services.broker_registry import broker_registry
@@ -170,6 +178,12 @@ class BaseStrategyAdapter(StrategyPort):
                         self.logger.warning(f"No historical data returned for {symbol.value}")
             except Exception as e:
                 self.logger.error(f"Error pre-populating data buffer for {symbol.value}: {e}")
+
+    def bind_history_loader(self, loader):
+        """Bind a caller-owned historical source; omitted Live behavior is unchanged."""
+        if not callable(loader):
+            raise TypeError("history loader must be callable")
+        self._history_loader = loader
 
     def evaluate_fused_signal(self, fused_signal: FusedSignal) -> Optional[ExecutionIntent]:
         """Evaluate a fused signal and return execution intent if strategy accepts it"""
