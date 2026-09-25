@@ -130,3 +130,8 @@
 
 - Start `b153285`; resulting commit is this unit's commit. Production file `enterprise_risk_manager.py` adds optional worker startup; default Live worker remains enabled. New replay-only scheduler module and six tests. Replay anchor/tie rule documented in `REPLAY_CORRELATION_EVENT_TIME_CONTRACT.md`; no historical wake-up timing claim.
 - Expanded local regression **131 passed / 0 failed**. Protected hashes before/after unchanged: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No broker/network activity. Full ReplayScope and baseline not yet authorized.
+
+## Queued-owner Risk/cooldown dependency addendum
+
+- Start `3ecbdd7`; resulting commit is this unit's commit. Production files: `auto_detection_orchestrator.py`, `_auto_detection_execution.py`. One focused test file added. Explicit Risk-engine/cooldown-gate injection avoids those global lookups in the tested owner paths; default live paths remain.
+- Expanded applicable regression **134 passed / 0 failed**. Protected persistence hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Constructor and full replay safety remain incomplete; no baseline.

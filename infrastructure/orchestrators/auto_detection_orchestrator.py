@@ -34,12 +34,16 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                  risk_config: Optional[Dict[str, Any]] = None,
                  comprehensive_logging: bool = True,
                  intent_claim_store=None,
-                 pending_orders_state=None):
+                 pending_orders_state=None,
+                 risk_engine=None,
+                 cooldown_gate=None):
         # Settings injected by the composition root (E1.T4); the auto-detection
         # mixins read the same fields off self._settings instead of importing
         # bootstrap.settings.loaders.
         self._settings = settings
         self._intent_claim_store = intent_claim_store
+        self._risk_engine = risk_engine
+        self._cooldown_gate = cooldown_gate
         self.market_data_repo = market_data_repo
         self.execution_service = execution_service
         self.portfolio_service = portfolio_service
@@ -284,8 +288,7 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
 
                             # Check cooldown gate before processing strategy
                             try:
-                                from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
-                                allowed, cd_reason = symbol_cooldown_gate.is_symbol_allowed(symbol)
+                                allowed, cd_reason = self._get_cooldown_gate().is_symbol_allowed(symbol)
                                 if not allowed:
                                     self.logger.debug(f"Skipping opportunity for {symbol_str}: {cd_reason}")
                                     continue

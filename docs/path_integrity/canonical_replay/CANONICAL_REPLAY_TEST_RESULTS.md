@@ -79,3 +79,7 @@ After explicit legacy-global ownership was added, `test_architecture_orchestrato
 ## Replay correlation event-time scheduler
 
 `test_replay_correlation_scheduler.py`: **6 passed / 0 failed**. Expanded applicable 23-file collection including the prior 125 tests: **131 passed / 0 failed**. Tests reject duplicate timestamp batches, prove no future event price reaches prior ten-second boundaries, prove the ReplayClock visits due boundaries, and verify no thread/sleep plus two-scope isolation. Four protected production persistence hashes matched immediately before/after. No authenticated network/broker activity. This does not establish historical Live wake-up reconstruction or full canonical parity.
+
+## Queued-owner explicit Risk/cooldown binding
+
+`test_auto_detection_risk_scope_binding.py` plus offline runtime wiring: **23 passed / 0 failed**. Expanded applicable 24-file collection: **134 passed / 0 failed**. New test proves injected dependencies avoid global Risk/cooldown lookups in the tested calls, while omitted arguments retain Live fallback and injected cooldown rejects a queued intent. Four protected production persistence hashes identical immediately before/after; no authenticated broker/network activity. Full AutoDetection replay composition remains untested and unsafe.

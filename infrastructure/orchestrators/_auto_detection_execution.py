@@ -29,6 +29,20 @@ _live_intent_claim_store = IntentClaimStore()
 class _AutoDetectionExecutionMixin:
     """Order construction + placement from an execution intent (trading execution)."""
 
+    def _get_cooldown_gate(self):
+        gate = getattr(self, "_cooldown_gate", None)
+        if gate is not None:
+            return gate
+        from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+        return symbol_cooldown_gate
+
+    def _get_risk_engine(self):
+        engine = getattr(self, "_risk_engine", None)
+        if engine is not None:
+            return engine
+        from application.containers.container import container
+        return container.resolve("risk_engine")
+
     def _claim_execution_intent(self, execution_intent):
         """Claim once per process before any pre-broker work, regardless of symbol policy."""
         intent_id = getattr(execution_intent, "intent_id", None)
@@ -107,8 +121,7 @@ class _AutoDetectionExecutionMixin:
 
             # Hard Symbol Cooldown & Health Gate Admission Check
             try:
-                from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
-                allowed, cooldown_reason = symbol_cooldown_gate.is_symbol_allowed(execution_intent.symbol)
+                allowed, cooldown_reason = self._get_cooldown_gate().is_symbol_allowed(execution_intent.symbol)
                 if not allowed:
                     self.logger.warning(
                         f"🛑 COOLDOWN GATE REJECTION: {symbol_str} | Reason: {cooldown_reason} | "
@@ -198,8 +211,7 @@ class _AutoDetectionExecutionMixin:
             fixed_position_amount = self._settings.position_sizing.fixed_position_amount if self._settings.position_sizing and hasattr(self._settings.position_sizing, 'fixed_position_amount') else 10.0
 
             try:
-                from application.containers.container import container
-                risk_engine = container.resolve("risk_engine")
+                risk_engine = self._get_risk_engine()
                 from domain.entities.position import Portfolio, Position as DomainPosition
                 from domain.value_objects import Money as DomainMoney, Symbol as DomainSymbol
                 from domain.enums.position_side import PositionSide
