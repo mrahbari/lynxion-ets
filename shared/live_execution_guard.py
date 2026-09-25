@@ -98,8 +98,9 @@ class LiveExecutionGuard:
 
     _LIVE_TRADING_ENV = "LIVE_TRADING"
 
-    def __init__(self) -> None:
+    def __init__(self, breaker_lookup=None) -> None:
         self._lock = threading.RLock()
+        self._breaker_lookup = breaker_lookup
         # Runtime kill switch — defaults DISENGAGED, but any engage() blocks all sends.
         self._killed = False
         self._kill_reason: Optional[str] = None
@@ -166,6 +167,8 @@ class LiveExecutionGuard:
 
     def _breaker(self, broker: str):
         """Get/create the per-broker order-path circuit breaker from the shared manager."""
+        if self._breaker_lookup is not None:
+            return self._breaker_lookup(broker)
         from shared.circuit_breaker import CircuitBreaker, circuit_breaker_manager
         name = f"order_path:{broker}"
         cb = circuit_breaker_manager.get_circuit_breaker(name)

@@ -210,3 +210,8 @@ Exact next action requiring review: define how the decision-relevant rolling-cor
 
 - Start `68be87a`; `ClosedBarDecisionDriver` feeds the **existing** HistoricalCandleWatcherAdapter only from validated completed bars into the isolated canonical decision scope. It preserves close time and supplies explicit causal `market_price=bar.close`; no order-flow/tick/screener or MTF proxy is manufactured. This is a defined subset, not a full live watcher reconstruction.
 - Two tests cover prefix-plus-future stability through T, two-symbol watcher buffer separation, causal Risk price history and idempotent incremental driver calls. Expanded applicable regression **149 passed / 0 failed**; protected persistence hashes unchanged; no network/broker activity. Full decision-level prefix and live/replay parity remain NOT TESTABLE because execution/Risk/order and unavailable watchers are not yet wired.
+
+## E/F-prep — guard circuit-breaker lifetime and event time
+
+- Start `1b77289`; `CircuitBreaker` accepts an optional clock and `LiveExecutionGuard` an optional breaker lookup. Omitted defaults retain LiveClock and the process-global breaker manager. A scoped guard can consume a separate event-time breaker without changing failure threshold, reset interval or Guard precedence.
+- Focused tests cover two isolated guards, deterministic open/reset time, and Live default. Expanded applicable regression **162 passed / 0 failed**; four protected persistence hashes unchanged; no authenticated broker/network activity. The execution truth ledger, BrokerExecutionService and real queued owner are not yet bound into a full replay execution scope.

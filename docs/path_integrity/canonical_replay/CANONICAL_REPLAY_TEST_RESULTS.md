@@ -119,3 +119,7 @@ The scoped AutoDetection constructor test injects a no-op factory while replacin
 ## Closed-bar canonical decision subset
 
 `test_closed_bar_decision_driver.py`: **2 passed / 0 failed**. Appending a future completed bar does not change the bounded historical-watcher observation/event-type prefix or Risk price history through T; BTC/ETH watcher buffers remain distinct. Expanded applicable regression **149 passed / 0 failed**. Four protected persistence hashes matched before/after; no broker/network activity. Full prefix-invariance and live/replay parity gates remain untestable.
+
+## Scoped Guard circuit breaker
+
+`test_replay_guard_breaker_scope.py` and prior `test_live_execution_guard.py`: **13 passed / 0 failed**. Two guards do not share breaker state; event-time advances through unchanged 60-second reset threshold; omitted clock remains LiveClock. Expanded applicable regression **162 passed / 0 failed**. Four protected persistence hashes unchanged before/after; no authenticated network/broker activity. The complete Guard-to-simulated-broker path remains untested.

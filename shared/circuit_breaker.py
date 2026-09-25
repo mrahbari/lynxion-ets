@@ -23,11 +23,14 @@ class CircuitBreaker:
                  name: str,
                  failure_threshold: int = 5,
                  timeout: int = 60,  # seconds
-                 expected_exception: type = Exception):
+                 expected_exception: type = Exception,
+                 clock=None):
+        from infrastructure.messaging.clock import LiveClock
         self.name = name
         self.failure_threshold = failure_threshold
         self.timeout = timeout
         self.expected_exception = expected_exception
+        self.clock = clock if clock is not None else LiveClock()
         
         self.state = CircuitState.CLOSED
         self.failure_count = 0
@@ -72,7 +75,7 @@ class CircuitBreaker:
     def _on_failure(self):
         """Handle failed operation"""
         self.failure_count += 1
-        self.last_failure_time = datetime.now()
+        self.last_failure_time = self.clock.now()
         
         if self.state == CircuitState.HALF_OPEN:
             # Failure in half-open state means service is still down
@@ -84,7 +87,7 @@ class CircuitBreaker:
     def _trip(self):
         """Trip the circuit breaker to OPEN state"""
         self.state = CircuitState.OPEN
-        self.open_since = datetime.now()
+        self.open_since = self.clock.now()
         logger.warning(f"Circuit breaker {self.name} TRIPPED",
                       circuit_breaker=self.name,
                       failure_count=self.failure_count)
@@ -93,7 +96,7 @@ class CircuitBreaker:
         """Check if enough time has passed to attempt reset"""
         if self.open_since is None:
             return False
-        return datetime.now() - self.open_since > timedelta(seconds=self.timeout)
+        return self.clock.now() - self.open_since > timedelta(seconds=self.timeout)
     
     def get_status(self) -> Dict[str, Any]:
         """Get current status of the circuit breaker"""
