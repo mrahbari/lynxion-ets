@@ -111,3 +111,7 @@ The same two risk-clock tests now also verify that an explicit local tracker han
 ## Forward-exit activation factory
 
 The scoped AutoDetection constructor test injects a no-op factory while replacing the global builder with a failing stub; it proves the scoped path does not activate the production observer. Default Live construction remains covered by the existing offline runtime-wiring regression. Expanded applicable collection **145 passed / 0 failed**; protected persistence hashes unchanged; no broker/network activity.
+
+## Isolated decision-scope slice
+
+`test_replay_decision_run_scope.py`: **2 passed / 0 failed**. Independent routers/Engine/Fusion/Strategy/Risk/clock/traces, no broker capability, causal price/heartbeat isolation, and repeated reached event-type trace. Expanded applicable regression **147 passed / 0 failed**. Four protected persistence hashes matched before/after. No authenticated network/broker activity. This tests only the canonical decision slice, not full intent-to-order parity or prefix invariance.

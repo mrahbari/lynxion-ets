@@ -170,3 +170,8 @@
 
 - Start `e1e6998`; resulting commit is this unit's commit. Production file: `auto_detection_orchestrator.py`; existing scoped-constructor test strengthened. Explicit factory prevents production forward-exit activation in scoped construction; omitted default remains the existing Live builder. No observer definition or XMR safety blocker changed.
 - Expanded regression **145 passed / 0 failed**. Four protected persistence hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Full scope/parity/baseline not yet verified.
+
+## Isolated decision-scope slice addendum
+
+- Start `48ce1e3`; resulting commit is this unit's commit. New `infrastructure/replay/decision_run_scope.py` and `test_replay_decision_run_scope.py`; existing Live composition unchanged. Fresh per-run canonical decision objects and worker-free Risk manager; no execution service, credential, broker factory or simulated order route.
+- Expanded regression **147 passed / 0 failed**. Four protected persistence hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Full ApplicationRunScope, canonical source-to-order wiring, prefix/parity and baseline not yet verified.

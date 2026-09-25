@@ -199,3 +199,9 @@ Exact next action requiring review: define how the decision-relevant rolling-cor
 
 - Start `e1e6998`; AutoDetection now accepts an optional forward-exit bundle factory. Omitted construction calls the same Live builder; explicit composition can supply a no-production-write factory. A scoped-constructor test makes the global builder fail if called. No XMR blocker, exit rule or Live observer default changed.
 - Expanded applicable regression **145 passed / 0 failed**; four protected persistence hashes unchanged; zero authenticated broker/network activity. This closes one constructor side effect, not the full ReplayScope dependency graph.
+
+## F — isolated canonical decision-scope slice
+
+- Start `48ce1e3`; new `ReplayDecisionRunScope` owns ReplayClock, fresh router, Engine, hierarchical Fusion/FusionService, StrategyManager, synchronous SignalAggregator, SignalProcessor, worker-free Risk manager, local trade tracker and forensic trace sink. It feeds causal `MarketObservation` through the **same** event handlers and has no execution service/broker or order capability. It does not turn rows into mock fused signals.
+- Two-scope test proves mutable instance separation, no cross-subscriptions, no broker object, no scoped router thread, causal risk-price/heartbeat state, and repeatable reached event-type trace. Expanded applicable regression **147 passed / 0 failed**; four protected persistence hashes unchanged; socket connection prohibited in the focused test; no broker/network activity.
+- This is **not** full `ApplicationRunScope`: no queued owner, RiskEnforcement/order service/guard/simulated broker, historical watcher reconstruction or scheduler integration. It is not a full canonical replay run. `PREFIX_INVARIANCE_NOT_TESTABLE` and `LIVE_REPLAY_PARITY_NOT_TESTABLE` remain; baseline forbidden.
