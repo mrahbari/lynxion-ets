@@ -16,10 +16,18 @@ def test_replay_risk_uses_event_time_for_day_and_position_lifecycle(monkeypatch)
     clock = ReplayClock(origin)
     events = []
     monkeypatch.setattr(risk_module, "trade_tracker", SimpleNamespace(
+        register_trade=lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("global trade tracker reached")),
+        close_trade=lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("global trade tracker reached")),
+    ))
+    local_tracker = SimpleNamespace(
         register_trade=lambda **kwargs: events.append(("enter", kwargs["timestamp"])),
         close_trade=lambda **kwargs: events.append(("exit", kwargs["exit_timestamp"])),
-    ))
-    manager = EnterpriseRiskManager(clock=clock, start_correlation_worker=False)
+    )
+    manager = EnterpriseRiskManager(clock=clock, start_correlation_worker=False,
+                                    trade_tracker_instance=local_tracker)
+    assert manager._trade_tracker is local_tracker
     assert manager.daily_start == origin.date()
     assert manager.enter_position("BTCUSDT", 100, 1, PositionDirection.LONG,
                                   95, 110, trade_id="offline-risk-clock")
@@ -33,8 +41,10 @@ def test_replay_risk_uses_event_time_for_day_and_position_lifecycle(monkeypatch)
 
 
 def test_omitted_risk_clock_preserves_live_clock_default(monkeypatch):
+    import application.risk_management.enterprise_risk_manager as risk_module
     instant = datetime(2026, 1, 1)
     monkeypatch.setattr(LiveClock, "now", lambda self: instant)
     manager = EnterpriseRiskManager(start_correlation_worker=False)
     assert isinstance(manager.clock, LiveClock)
+    assert manager._trade_tracker is risk_module.trade_tracker
     assert manager.daily_start == instant.date()

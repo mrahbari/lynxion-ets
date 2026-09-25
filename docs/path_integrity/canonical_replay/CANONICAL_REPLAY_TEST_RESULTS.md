@@ -103,3 +103,7 @@ Four parametrized unavailable/invalid price cases in `test_auto_detection_risk_s
 ## Risk lifecycle clock
 
 `test_risk_event_clock_seam.py`: **2 passed / 0 failed**. Position entry/exit, daily reset and default LiveClock are covered with a fake trade tracker and worker-free replay manager. Expanded applicable regression **145 passed / 0 failed**. Four protected persistence hashes matched before/after; no authenticated network/broker activity. Global trade tracking is not yet scoped.
+
+## Risk trade-tracker injection
+
+The same two risk-clock tests now also verify that an explicit local tracker handles position entry/exit while the module-global tracker raises if reached; omitted construction retains identity with the Live default. Expanded applicable regression **145 passed / 0 failed**; four protected persistence hashes unchanged, no broker/network activity.

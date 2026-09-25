@@ -189,3 +189,8 @@ Exact next action requiring review: define how the decision-relevant rolling-cor
 
 - Start `423a5cd`; `EnterpriseRiskManager` now accepts an optional clock. Daily-start/reset and position entry/exit timestamps use it. Omitted default remains `LiveClock`; worker-start and correlation scheduling defaults remain unchanged. No Risk formula, threshold, fee or exposure policy changed.
 - A fake trade tracker proves replay event-time entry/exit and UTC day rollover without touching the production tracker. Expanded applicable regression **145 passed / 0 failed**; four protected persistence hashes unchanged; no network/broker activity. The production-global trade tracker still needs an explicit scope seam before position lifecycle may be used in replay.
+
+## D/F-prep — Risk trade-tracker ownership
+
+- Start `389bdc5`; `EnterpriseRiskManager` now accepts an optional trade-tracker instance for entry/exit recording. Omitted default remains the existing global Live tracker. An explicit tracker test makes the global fail if touched, then proves the local tracker receives causal entry/exit timestamps. No position/Risk policy or journal format changed.
+- Expanded applicable regression **145 passed / 0 failed**; four protected persistence hashes unchanged; zero authenticated broker/network activity. This isolates this manager's two tracker calls only, not every persistence path of a full ReplayScope.

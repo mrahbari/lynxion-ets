@@ -62,12 +62,14 @@ class EnterpriseRiskManager:
                  enable_multi_position: bool = True,
                  max_concurrent_positions: int = 50,
                  start_correlation_worker: bool = True,
-                 clock=None):
+                 clock=None,
+                 trade_tracker_instance=None):
 
         import os
         from shared.logger import logger
         from infrastructure.messaging.clock import LiveClock
         self.clock = clock if clock is not None else LiveClock()
+        self._trade_tracker = trade_tracker_instance if trade_tracker_instance is not None else trade_tracker
 
         # Load capacity values with priority: Env Var -> risk_config -> Constructor Parameter
         env_enable_multi = os.getenv("ENABLE_MULTI_POSITION")
@@ -319,7 +321,7 @@ class EnterpriseRiskManager:
             self.regime_exposures[regime_context] = self.regime_exposures.get(regime_context, 0.0) + (size * entry_price)
 
         # Register the trade with the trade tracker
-        trade_tracker.register_trade(
+        self._trade_tracker.register_trade(
             trade_id=trade_id,
             symbol=symbol,
             side=direction.value,
@@ -406,7 +408,7 @@ class EnterpriseRiskManager:
 
         # Close the trade with the trade tracker using the trade_id stored in the position
         if position.trade_id:
-            trade_tracker.close_trade(
+            self._trade_tracker.close_trade(
                 trade_id=position.trade_id,
                 exit_price=exit_price,
                 exit_reason=exit_type,

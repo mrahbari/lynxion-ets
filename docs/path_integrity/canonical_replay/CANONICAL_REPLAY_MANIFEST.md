@@ -160,3 +160,8 @@
 
 - Start `423a5cd`; resulting commit is this unit's commit. Production file: `enterprise_risk_manager.py`. New `test_risk_event_clock_seam.py`. Optional clock controls daily reset and position lifecycle timestamps; omitted default LiveClock preserves Live time. Correlation worker/sizing/policy unchanged.
 - Expanded regression **145 passed / 0 failed**. Protected persistence hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Risk trade tracking remains global; full scope/parity/baseline unavailable.
+
+## Risk trade-tracker ownership addendum
+
+- Start `389bdc5`; resulting commit is this unit's commit. Production file: `enterprise_risk_manager.py`. Existing `test_risk_event_clock_seam.py` strengthened: explicit local tracker is used while the module-global one fails if touched; omitted default retains global identity. No Risk policy/format change.
+- Expanded regression **145 passed / 0 failed**. Four protected persistence hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Full ReplayScope/prefix/parity/baseline still unavailable.
