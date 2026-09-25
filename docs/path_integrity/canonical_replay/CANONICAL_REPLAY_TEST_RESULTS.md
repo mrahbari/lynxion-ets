@@ -95,3 +95,7 @@ Two further scoped-clock tests in `test_auto_detection_risk_scope_binding.py`; f
 ## Explicit execution-price source
 
 Four parametrized unavailable/invalid price cases in `test_auto_detection_risk_scope_binding.py`: injected source receives exact symbol and event time; the live repository, Risk and broker are not reached. Expanded applicable regression **141 passed / 0 failed**; four protected persistence hashes matched. Live default fallback was preserved, not replayed. Full positive execution path and canonical parity are not yet tested.
+
+## Scoped heartbeat clock/source
+
+`test_replay_event_time_scope.py` verifies an explicitly composed SignalProcessor records heartbeat using ReplayClock during observation processing; `test_auto_detection_risk_scope_binding.py` verifies queued-owner stale/missing/fresh decisions with a simulated service and unchanged 90-second threshold. Expanded applicable regression **143 passed / 0 failed**. Four protected persistence hashes identical before/after. No broker/network activity; this does not prove full owner or replay parity.

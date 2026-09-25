@@ -1,5 +1,4 @@
 """Single queued execution owner; preserves pre-broker controls from the retired direct route."""
-from datetime import datetime
 import threading
 import math
 import os
@@ -49,6 +48,35 @@ class _AutoDetectionExecutionMixin:
             return engine
         from application.containers.container import container
         return container.resolve("risk_engine")
+
+    def _heartbeat_rejection(self, symbol_value, execution_service):
+        source = getattr(self, "_heartbeat_source", None)
+        is_live = not getattr(execution_service, 'is_backtest', False)
+        if source is None and not is_live:
+            return None
+        if source is None:
+            from infrastructure.messaging.event_system import signal_processor
+            source = signal_processor
+        symbol_key = str(symbol_value).upper().replace("-", "")
+        if hasattr(source, "last_market_data_time"):
+            last_time = source.last_market_data_time(symbol_key)
+        else:
+            last_time = getattr(source, '_last_market_data_times', {}).get(symbol_key)
+        if last_time:
+            elapsed = (self._execution_now() - last_time).total_seconds()
+            if elapsed > 90.0:
+                self.logger.warning(
+                    f"❌ HEARTBEAT GUARD VETO: Market data heartbeat is stale by {elapsed:.1f}s (> 90s) for "
+                    f"{symbol_key}. Submission rejected."
+                )
+                return 'HEARTBEAT_STALE'
+        else:
+            self.logger.warning(
+                f"❌ HEARTBEAT GUARD VETO: No market data heartbeat recorded for "
+                f"{symbol_key}. Submission rejected."
+            )
+            return 'HEARTBEAT_MISSING'
+        return None
 
     def _claim_execution_intent(self, execution_intent):
         """Claim once per process before any pre-broker work, regardless of symbol policy."""
@@ -332,26 +360,10 @@ class _AutoDetectionExecutionMixin:
             # Use self.execution_service for guards
             execution_service_to_use = self.execution_service
 
-            # --- MARKET DATA SAFETY HEARTBEAT GUARD (LIVE ONLY) ---
-            is_live = not hasattr(execution_service_to_use, 'is_backtest') or not getattr(execution_service_to_use, 'is_backtest', False)
-            if is_live:
-                from infrastructure.messaging.event_system import signal_processor
-                symbol_key = str(symbol_value).upper().replace("-", "")
-                last_time = getattr(signal_processor, '_last_market_data_times', {}).get(symbol_key)
-                if last_time:
-                    elapsed = (datetime.now() - last_time).total_seconds()
-                    if elapsed > 90.0:
-                        self.logger.warning(
-                            f"❌ HEARTBEAT GUARD VETO: Market data heartbeat is stale by {elapsed:.1f}s (> 90s) for "
-                            f"{symbol_key}. Submission rejected."
-                        )
-                        return {'status': 'failed', 'error': 'HEARTBEAT_STALE'}
-                else:
-                    self.logger.warning(
-                        f"❌ HEARTBEAT GUARD VETO: No market data heartbeat recorded for "
-                        f"{symbol_key}. Submission rejected."
-                    )
-                    return {'status': 'failed', 'error': 'HEARTBEAT_MISSING'}
+            # Explicit scopes enforce the same staleness check at event time.
+            heartbeat_rejection = self._heartbeat_rejection(symbol_value, execution_service_to_use)
+            if heartbeat_rejection:
+                return {'status': 'failed', 'error': heartbeat_rejection}
 
             # --- LIQUIDITY DEPTH PROTECTION GUARD ---
             max_liquidity = 999999.0

@@ -156,10 +156,12 @@ class LiveRiskPriceRecorder:
 class SignalProcessor:
     """Processes signals through the proper architectural layers"""
 
-    def __init__(self, event_router: EventRouter, forensic_sink=None, price_recorder=None):
+    def __init__(self, event_router: EventRouter, forensic_sink=None, price_recorder=None, clock=None):
+        from infrastructure.messaging.clock import LiveClock
         self.event_router = event_router
         self._forensic_sink = forensic_sink
         self._price_recorder = price_recorder if price_recorder is not None else LiveRiskPriceRecorder()
+        self.clock = clock if clock is not None else LiveClock()
         self.logger = None  # Will be set by calling component
         self._processing_subscribed = False
 
@@ -190,7 +192,12 @@ class SignalProcessor:
             self._last_market_data_times = {}
         symbol_key = symbol.value if hasattr(symbol, 'value') else str(symbol)
         symbol_key = str(symbol_key).upper().replace("-", "")
-        self._last_market_data_times[symbol_key] = timestamp or datetime.now()
+        self._last_market_data_times[symbol_key] = timestamp if timestamp is not None else self.clock.now()
+
+    def last_market_data_time(self, symbol):
+        symbol_key = symbol.value if hasattr(symbol, 'value') else str(symbol)
+        symbol_key = str(symbol_key).upper().replace("-", "")
+        return getattr(self, '_last_market_data_times', {}).get(symbol_key)
 
     def _process_observation(self, event: SignalEvent, engine_service):
         """Process market observation through engine layer"""

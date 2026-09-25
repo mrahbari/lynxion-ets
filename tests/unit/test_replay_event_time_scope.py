@@ -6,7 +6,7 @@ from domain.entities import FusedSignal, MarketObservation, SignalType
 from domain.value_objects import Percentage, Symbol
 from infrastructure.aggregators.signal_aggregator import SignalAggregator
 from infrastructure.messaging.clock import ReplayClock
-from infrastructure.messaging.event_system import EventRouter, EventType, SignalEvent
+from infrastructure.messaging.event_system import EventRouter, EventType, SignalEvent, SignalProcessor
 from infrastructure.watchers.adapters.historical_candle import HistoricalCandleWatcherAdapter
 
 
@@ -70,3 +70,25 @@ def test_replay_clock_monotonic():
     clock = ReplayClock(T)
     clock.advance(T + timedelta(minutes=15))
     assert clock.now() == T + timedelta(minutes=15)
+
+
+def test_explicit_processor_heartbeat_uses_event_clock_not_machine_time():
+    clock = ReplayClock(T)
+    processor = SignalProcessor(EventRouter(), forensic_sink=object(),
+                                price_recorder=object(), clock=clock)
+    processor.update_market_data_heartbeat(Symbol("BTCUSDT"))
+    assert processor.last_market_data_time("BTCUSDT") == T
+
+    processor.setup_signal_processing(
+        SimpleNamespace(process_observation=lambda observation: None),
+        object(), object(), object())
+    observation = SimpleNamespace(symbol=Symbol("SOLUSDT"), market_price=None,
+                                  timestamp=T)
+    processor.event_router._route_event(SignalEvent(
+        EventType.MARKET_OBSERVATION, observation, timestamp=T))
+    assert processor.last_market_data_time("SOLUSDT") == T
+    next_time = T + timedelta(seconds=91)
+    clock.advance(next_time)
+    processor.update_market_data_heartbeat(Symbol("ETHUSDT"))
+    assert processor.last_market_data_time("ETHUSDT") == next_time
+    assert processor.last_market_data_time("BTCUSDT") == T

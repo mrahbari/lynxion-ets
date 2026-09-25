@@ -150,3 +150,8 @@
 
 - Start `f772886`; resulting commit is this unit's commit. Production files: `auto_detection_orchestrator.py`, `_auto_detection_execution.py`. Four parametrized tests added. Explicit source has no fallback to live repository/exchange/synthetic price; invalid or unavailable price rejects before Risk/broker. Omitted source retains prior Live path. This is a source seam, not a replay runtime or Live policy change.
 - Expanded regression **141 passed / 0 failed**. Protected hashes matched before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated network/broker activity. A-K release gates incomplete; baseline forbidden.
+
+## Scoped heartbeat event-time addendum
+
+- Start `3e41773`; resulting commit is this unit's commit. Production files: `event_system.py`, `auto_detection_orchestrator.py`, `_auto_detection_execution.py`. Two focused tests added in existing files. Optional clock/source injection preserves Live defaults; explicit scoped source receives the same heartbeat freshness decision at event time.
+- Expanded regression **143 passed / 0 failed**. Protected persistence hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Full ReplayScope, prefix/parity and baseline remain unavailable.

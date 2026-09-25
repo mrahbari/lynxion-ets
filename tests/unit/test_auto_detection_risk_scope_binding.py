@@ -1,7 +1,7 @@
 """The queued execution owner can use explicit per-run Risk dependencies."""
 
 from types import SimpleNamespace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import threading
 import pytest
 
@@ -122,6 +122,21 @@ def test_explicit_price_source_rejects_unavailable_without_live_fallback(price):
     result = owner._execute_trade_from_intent(intent)
     assert result == {'status': 'failed', 'error': 'MARKET_PRICE_UNAVAILABLE'}
     assert seen == [("BTCUSDT", event_time)]
+
+
+def test_explicit_heartbeat_source_enforces_event_time_even_with_simulated_service():
+    instant = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    owner = Owner()
+    owner.logger = SimpleNamespace(warning=lambda *args: None)
+    owner._execution_clock = SimpleNamespace(now=lambda: instant)
+    source = SimpleNamespace(last_market_data_time=lambda symbol: instant - timedelta(seconds=91))
+    owner._heartbeat_source = source
+    simulated = SimpleNamespace(is_backtest=True)
+    assert owner._heartbeat_rejection("BTCUSDT", simulated) == "HEARTBEAT_STALE"
+    source.last_market_data_time = lambda symbol: None
+    assert owner._heartbeat_rejection("BTCUSDT", simulated) == "HEARTBEAT_MISSING"
+    source.last_market_data_time = lambda symbol: instant - timedelta(seconds=90)
+    assert owner._heartbeat_rejection("BTCUSDT", simulated) is None
 
 
 def test_explicit_risk_and_cooldown_do_not_resolve_live_globals(monkeypatch):
