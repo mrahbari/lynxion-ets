@@ -87,3 +87,7 @@ After explicit legacy-global ownership was added, `test_architecture_orchestrato
 ## Queued-owner event clock
 
 Two further scoped-clock tests in `test_auto_detection_risk_scope_binding.py`; focused selection **49 passed / 0 failed**, expanded applicable collection **136 passed / 0 failed**. Replay/event time supplies pending-intent and order/portfolio timestamps; omitted clock retains the LiveClock default. Four protected persistence hashes identical before/after. No network/broker adapter was used. Full replay decision-time control remains unverified.
+
+## Queued-owner explicit constructor/teardown
+
+`test_auto_detection_risk_scope_binding.py` plus offline runtime-wiring tests: **26 passed / 0 failed**. Expanded applicable regression **137 passed / 0 failed**. Two explicit owners bind different routers; construction does not add a subscriber to the live router; teardown stops and clears only injected instances. Four protected persistence hashes matched before/after. Test-only objects provide no network broker capability. Other constructor/execution globals still prevent full ReplayScope verification.

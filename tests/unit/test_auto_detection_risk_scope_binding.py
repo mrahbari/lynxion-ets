@@ -42,6 +42,54 @@ def test_omitted_execution_clock_retains_live_clock(monkeypatch):
     assert Owner()._execution_now() == expected
 
 
+def test_explicit_auto_detection_constructor_binds_only_scoped_router(monkeypatch):
+    from infrastructure.messaging.event_system import EventRouter, EventType, event_router
+    from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator
+    import infrastructure.observability.forward_exit_runtime as forward_runtime
+
+    monkeypatch.setattr(forward_runtime, "build_forward_exit_runtime_bundle", lambda: None)
+    live_count = len(event_router.subscribers.get(EventType.EXECUTION_INTENT, []))
+    owners = []
+    for _ in range(2):
+        router = EventRouter()
+        architecture = SimpleNamespace(
+            engine_service=object(), fusion_service=object(), strategy_manager=object(),
+            event_router=router, execution_service=None, starts=0, stops=0,
+        )
+        architecture.start = lambda architecture=architecture: setattr(
+            architecture, "starts", architecture.starts + 1)
+        architecture.stop = lambda architecture=architecture: setattr(
+            architecture, "stops", architecture.stops + 1)
+        watcher = SimpleNamespace(symbols=["BTCUSDT"], stop_monitoring=lambda: None)
+        alert = object()
+        execution = SimpleNamespace(set_system_running_state=lambda _: None)
+        pending = SimpleNamespace(clears=0)
+        pending.clear_all_pending_orders = lambda pending=pending: setattr(
+            pending, "clears", pending.clears + 1)
+        owner = AutoDetectionOrchestrator(
+            settings=SimpleNamespace(), market_data_repo=object(),
+            execution_service=execution, portfolio_service=object(),
+            optimization_service=object(), symbols=["BTCUSDT"],
+            architecture_orchestrator_instance=architecture,
+            opportunity_watcher_instance=watcher,
+            risk_alert_service_instance=alert,
+            pending_orders_state=pending,
+        )
+        assert owner.event_router is router
+        assert owner.opportunity_watcher is watcher
+        assert owner.risk_alert_service is alert
+        assert architecture.execution_service is execution
+        assert architecture.starts == 1
+        assert router.subscribers[EventType.EXECUTION_INTENT] == [
+            owner._handle_execution_intent_event]
+        owner.stop_system()
+        assert architecture.stops == 1
+        assert pending.clears == 1
+        owners.append(owner)
+    assert owners[0].event_router is not owners[1].event_router
+    assert len(event_router.subscribers.get(EventType.EXECUTION_INTENT, [])) == live_count
+
+
 def test_explicit_risk_and_cooldown_do_not_resolve_live_globals(monkeypatch):
     from application.containers.container import container
     import infrastructure.risk.symbol_cooldown_gate as cooldown_module

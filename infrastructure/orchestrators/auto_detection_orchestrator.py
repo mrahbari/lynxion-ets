@@ -37,7 +37,10 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                  pending_orders_state=None,
                  risk_engine=None,
                  cooldown_gate=None,
-                 execution_clock=None):
+                 execution_clock=None,
+                 architecture_orchestrator_instance=None,
+                 opportunity_watcher_instance=None,
+                 risk_alert_service_instance=None):
         # Settings injected by the composition root (E1.T4); the auto-detection
         # mixins read the same fields off self._settings instead of importing
         # bootstrap.settings.loaders.
@@ -58,52 +61,63 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
         self.logger = EnhancedLogger("AutoDetectionOrchestrator", comprehensive_mode=comprehensive_logging)
         self.comprehensive_logging = comprehensive_logging
 
-        # Import new architecture components
-        from infrastructure.engines.engine_service import engine_service
-        from infrastructure.fusion.fusion_service import fusion_service
-        from infrastructure.strategies.strategy_manager import strategy_manager
-        from infrastructure.messaging.event_system import event_router, signal_processor
-
-        self.engine_service = engine_service
-        self.fusion_service = fusion_service
-        self.strategy_manager = strategy_manager
-        self.event_router = event_router  # Store the event router as an instance variable
-
-        # Initialize the architecture orchestrator to handle proper flow
-        from infrastructure.orchestrators.architecture_orchestrator import architecture_orchestrator
-        # Pass the execution service to the architecture orchestrator
-        architecture_orchestrator.execution_service = self.execution_service
-        architecture_orchestrator.start()
+        # Explicit compositions keep their own canonical architecture services.
+        # Omitted dependencies retain the existing live singleton wiring.
+        if architecture_orchestrator_instance is None:
+            from infrastructure.engines.engine_service import engine_service
+            from infrastructure.fusion.fusion_service import fusion_service
+            from infrastructure.strategies.strategy_manager import strategy_manager
+            from infrastructure.messaging.event_system import event_router
+            from infrastructure.orchestrators.architecture_orchestrator import architecture_orchestrator
+            self.engine_service = engine_service
+            self.fusion_service = fusion_service
+            self.strategy_manager = strategy_manager
+            self.event_router = event_router
+            self._architecture_orchestrator = architecture_orchestrator
+        else:
+            self._architecture_orchestrator = architecture_orchestrator_instance
+            self.engine_service = architecture_orchestrator_instance.engine_service
+            self.fusion_service = architecture_orchestrator_instance.fusion_service
+            self.strategy_manager = architecture_orchestrator_instance.strategy_manager
+            self.event_router = architecture_orchestrator_instance.event_router
+        self._architecture_orchestrator.execution_service = self.execution_service
+        self._architecture_orchestrator.start()
 
         # Subscribe to execution intent events to handle them in the orchestrator
         from infrastructure.messaging.event_system import EventType
         self.event_router.subscribe(EventType.EXECUTION_INTENT, self._handle_execution_intent_event)
 
         # Initialize the market opportunity watcher with the event router (no internal flow processing)
-        from infrastructure.watchers.market_opportunity_watcher import MarketOpportunityWatcher
-        self.opportunity_watcher = MarketOpportunityWatcher(
-            settings=self._settings,
-            symbols=symbols if symbols else None,
-            opportunity_callback=None,  # No callback needed since we're using event-driven flow
-            auto_discover_symbols=not bool(symbols),  # Auto-discover if no symbols provided
-            comprehensive_logging=comprehensive_logging,
-            market_data_repo=market_data_repo,
-            event_router=event_router  # Use event router instead of direct services
-        )
+        if opportunity_watcher_instance is None:
+            from infrastructure.watchers.market_opportunity_watcher import MarketOpportunityWatcher
+            self.opportunity_watcher = MarketOpportunityWatcher(
+                settings=self._settings,
+                symbols=symbols if symbols else None,
+                opportunity_callback=None,  # No callback needed since we're using event-driven flow
+                auto_discover_symbols=not bool(symbols),  # Auto-discover if no symbols provided
+                comprehensive_logging=comprehensive_logging,
+                market_data_repo=market_data_repo,
+                event_router=self.event_router,
+            )
+        else:
+            self.opportunity_watcher = opportunity_watcher_instance
 
         # Set symbols from the opportunity watcher (handles auto-discovery)
         self.symbols = self.opportunity_watcher.symbols
 
         # Initialize risk management
-        from infrastructure.services.risk_alerts import RiskAlertService, EmailNotificationService, \
-            TelegramNotificationService
-        email_service = EmailNotificationService()
-        telegram_service = TelegramNotificationService()
-        self.risk_alert_service = RiskAlertService(
-            notification_services=[email_service, telegram_service],
-            max_leverage=10.0,
-            drawdown_threshold=-0.1
-        )
+        if risk_alert_service_instance is None:
+            from infrastructure.services.risk_alerts import RiskAlertService, EmailNotificationService, \
+                TelegramNotificationService
+            email_service = EmailNotificationService()
+            telegram_service = TelegramNotificationService()
+            self.risk_alert_service = RiskAlertService(
+                notification_services=[email_service, telegram_service],
+                max_leverage=10.0,
+                drawdown_threshold=-0.1
+            )
+        else:
+            self.risk_alert_service = risk_alert_service_instance
 
         # Initialize state
         self.is_running = False
@@ -852,17 +866,15 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
 
         # Stop the architecture orchestrator if it exists
         try:
-            from infrastructure.orchestrators.architecture_orchestrator import architecture_orchestrator
-            if hasattr(architecture_orchestrator, 'stop'):
-                architecture_orchestrator.stop()
+            if hasattr(self._architecture_orchestrator, 'stop'):
+                self._architecture_orchestrator.stop()
                 self.logger.info("Architecture orchestrator stopped")
         except Exception as e:
             self.logger.error(f"Error stopping architecture orchestrator: {e}")
 
         # Clear any remaining pending orders from the shared tracker
         try:
-            from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
-            PendingOrdersTracker.clear_all_pending_orders()
+            self._pending_orders_tracker.clear_all_pending_orders()
             self.logger.info("Shared pending orders tracker cleared")
         except Exception as e:
             self.logger.error(f"Error clearing pending orders tracker: {e}")
