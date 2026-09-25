@@ -25,7 +25,8 @@ class ArchitectureOrchestrator:
                  execution_service=None,
                  event_router=None,
                  signal_processor_instance=None,
-                 signal_aggregator_instance=None):
+                 signal_aggregator_instance=None,
+                 owns_live_globals=True):
         self.engine_service = engine_service or globals().get('engine_service')
         self.fusion_service = fusion_service or globals().get('fusion_service')
         self.strategy_manager = strategy_manager or globals().get('strategy_manager')
@@ -33,6 +34,7 @@ class ArchitectureOrchestrator:
         self.event_router = event_router or globals().get('event_router')
         self.signal_processor = signal_processor_instance or globals().get('signal_processor')
         self.signal_aggregator = signal_aggregator_instance or globals().get('signal_aggregator')
+        self.owns_live_globals = owns_live_globals
         if signal_processor_instance is not None and self.signal_processor.event_router is not self.event_router:
             raise ValueError("SignalProcessor and ArchitectureOrchestrator must use the same EventRouter")
 
@@ -77,7 +79,8 @@ class ArchitectureOrchestrator:
             )
 
             # Store the execution service globally so it can be accessed by the event system
-            architecture_orchestrator.execution_service = self.execution_service
+            if self.owns_live_globals:
+                architecture_orchestrator.execution_service = self.execution_service
 
             self.logger.info("Architecture Orchestrator started successfully")
             self.logger.info("Proper flow established: Watcher → Engine → Fusion → Strategy → Aggregator → Broker")
@@ -86,21 +89,21 @@ class ArchitectureOrchestrator:
         """Stop the architecture orchestrator."""
         self.is_running = False
 
-        # Clear any pending orders in the shared tracker to prevent resource leaks
-        try:
-            from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
-            PendingOrdersTracker.clear_all_pending_orders()
-            self.logger.info("Cleared pending orders in shared tracker")
-        except Exception as e:
-            self.logger.error(f"Error clearing pending orders tracker: {e}")
+        if self.owns_live_globals:
+            # Preserve legacy live teardown; scoped lifetimes own their cleanup.
+            try:
+                from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
+                PendingOrdersTracker.clear_all_pending_orders()
+                self.logger.info("Cleared pending orders in shared tracker")
+            except Exception as e:
+                self.logger.error(f"Error clearing pending orders tracker: {e}")
 
-        # Also clear the broker registry to free up resources
-        try:
-            from infrastructure.services.broker_registry import broker_registry
-            broker_registry.clear_registry()
-            self.logger.info("Cleared broker registry to free up resources")
-        except Exception as e:
-            self.logger.error(f"Error clearing broker registry: {e}")
+            try:
+                from infrastructure.services.broker_registry import broker_registry
+                broker_registry.clear_registry()
+                self.logger.info("Cleared broker registry to free up resources")
+            except Exception as e:
+                self.logger.error(f"Error clearing broker registry: {e}")
 
         self.logger.info("Architecture Orchestrator stopped")
 

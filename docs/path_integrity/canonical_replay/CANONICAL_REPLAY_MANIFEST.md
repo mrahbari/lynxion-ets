@@ -115,3 +115,8 @@
 
 - Start `892a57f`; resulting commit is this unit's commit. Production file changed: `infrastructure/orchestrators/architecture_orchestrator.py`; one test added. Optional binding of an explicit processor/aggregator preserves the same global live defaults. Mismatched explicit processor/router fails before subscriptions. Focused regression 56 passed / 0 failed; expanded applicable collection 117 passed / 0 failed, 26 warnings.
 - Protected persistence hashes matched immediately before/after the expanded run: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. New tests used no broker/network adapter. This unit does **not** instantiate ReplayScope or eliminate import-time global router, `start()` global execution-service publication, or `stop()` global cleanup. Risk correlation parity remains blocked; economic baseline not authorized.
+
+## F-prep legacy-global lifecycle ownership
+
+- Start `fb25f9d`; resulting commit is this unit's commit. Production file `architecture_orchestrator.py` adds an optional ownership flag with the existing Live default unchanged. Explicit scoped instances can start/stop without publishing execution service into the global orchestrator or clearing global pending/broker-registry state. The scoped caller remains responsible for its own cleanup; no ReplayScope exists yet.
+- Expanded regression **118 passed / 0 failed**, 26 warnings. Four protected persistence hashes matched immediately before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. New test uses no broker/network. Correlation parity and A–K release gates remain blocked/incomplete; baseline forbidden.
