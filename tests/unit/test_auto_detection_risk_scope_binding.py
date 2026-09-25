@@ -3,6 +3,7 @@
 from types import SimpleNamespace
 from datetime import datetime, timezone
 import threading
+import pytest
 
 from infrastructure.orchestrators._auto_detection_execution import _AutoDetectionExecutionMixin
 from infrastructure.orchestrators._auto_detection_dedup import _AutoDetectionDedupMixin
@@ -88,6 +89,39 @@ def test_explicit_auto_detection_constructor_binds_only_scoped_router(monkeypatc
         owners.append(owner)
     assert owners[0].event_router is not owners[1].event_router
     assert len(event_router.subscribers.get(EventType.EXECUTION_INTENT, [])) == live_count
+
+
+@pytest.mark.parametrize("price", [None, float("nan"), float("inf"), 0])
+def test_explicit_price_source_rejects_unavailable_without_live_fallback(price):
+    event_time = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    seen = []
+    owner = Owner()
+    owner.is_running = True
+    owner._execution_clock = SimpleNamespace(now=lambda: event_time)
+    owner._intent_claim_store = SimpleNamespace(claim=lambda _: True)
+    owner._check_broker_active_orders_for_duplicate = lambda _: True
+    owner._remove_pending_execution_intent = lambda _: None
+    owner._stablecoin_filter_config = lambda: (False, set())
+    owner._cooldown_gate = SimpleNamespace(is_symbol_allowed=lambda _: (True, ""))
+    owner._settings = SimpleNamespace(execution=SimpleNamespace(
+        prevent_same_direction_trade_per_symbol=False))
+    owner.market_data_repo = SimpleNamespace(get_current_price=lambda _: pytest.fail(
+        "live price repository reached"))
+    owner._risk_engine = SimpleNamespace(calculate_dynamic_size=lambda *args: pytest.fail(
+        "Risk reached without a causal price"))
+    owner.execution_service = SimpleNamespace(execute_order=lambda _: pytest.fail(
+        "broker reached without a causal price"))
+    owner.logger = SimpleNamespace(warning=lambda *args: None, error=lambda *args: None)
+    owner._execution_price_source = SimpleNamespace(get_current_price=lambda symbol, now: (
+        seen.append((symbol.value, now)), price)[1])
+    intent = SimpleNamespace(
+        intent_id="price-unavailable", symbol=SimpleNamespace(value="BTCUSDT"),
+        side=SimpleNamespace(name="BUY"), strategy_name="UNIT",
+        intent_confidence=SimpleNamespace(value=1.0),
+    )
+    result = owner._execute_trade_from_intent(intent)
+    assert result == {'status': 'failed', 'error': 'MARKET_PRICE_UNAVAILABLE'}
+    assert seen == [("BTCUSDT", event_time)]
 
 
 def test_explicit_risk_and_cooldown_do_not_resolve_live_globals(monkeypatch):

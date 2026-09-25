@@ -145,3 +145,8 @@
 
 - Start `16c1659`; resulting commit is this unit's commit. Production file: `auto_detection_orchestrator.py`. One constructor/teardown test added. Optional explicit architecture/watcher/alert instances are used without changing default Live construction; scoped stop uses owned architecture and pending tracker. No trading policy or numerical control changed.
 - Expanded regression **137 passed / 0 failed**. Protected persistence hashes identical before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated network/broker activity. Full ApplicationRunScope, prefix/parity and economic baseline remain unavailable.
+
+## Explicit execution-price source addendum
+
+- Start `f772886`; resulting commit is this unit's commit. Production files: `auto_detection_orchestrator.py`, `_auto_detection_execution.py`. Four parametrized tests added. Explicit source has no fallback to live repository/exchange/synthetic price; invalid or unavailable price rejects before Risk/broker. Omitted source retains prior Live path. This is a source seam, not a replay runtime or Live policy change.
+- Expanded regression **141 passed / 0 failed**. Protected hashes matched before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated network/broker activity. A-K release gates incomplete; baseline forbidden.

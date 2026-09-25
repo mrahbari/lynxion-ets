@@ -40,7 +40,8 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                  execution_clock=None,
                  architecture_orchestrator_instance=None,
                  opportunity_watcher_instance=None,
-                 risk_alert_service_instance=None):
+                 risk_alert_service_instance=None,
+                 execution_price_source=None):
         # Settings injected by the composition root (E1.T4); the auto-detection
         # mixins read the same fields off self._settings instead of importing
         # bootstrap.settings.loaders.
@@ -49,6 +50,7 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
         self._risk_engine = risk_engine
         self._cooldown_gate = cooldown_gate
         self._execution_clock = execution_clock
+        self._execution_price_source = execution_price_source
         self.market_data_repo = market_data_repo
         self.execution_service = execution_service
         self.portfolio_service = portfolio_service

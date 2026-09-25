@@ -91,3 +91,7 @@ Two further scoped-clock tests in `test_auto_detection_risk_scope_binding.py`; f
 ## Queued-owner explicit constructor/teardown
 
 `test_auto_detection_risk_scope_binding.py` plus offline runtime-wiring tests: **26 passed / 0 failed**. Expanded applicable regression **137 passed / 0 failed**. Two explicit owners bind different routers; construction does not add a subscriber to the live router; teardown stops and clears only injected instances. Four protected persistence hashes matched before/after. Test-only objects provide no network broker capability. Other constructor/execution globals still prevent full ReplayScope verification.
+
+## Explicit execution-price source
+
+Four parametrized unavailable/invalid price cases in `test_auto_detection_risk_scope_binding.py`: injected source receives exact symbol and event time; the live repository, Risk and broker are not reached. Expanded applicable regression **141 passed / 0 failed**; four protected persistence hashes matched. Live default fallback was preserved, not replayed. Full positive execution path and canonical parity are not yet tested.

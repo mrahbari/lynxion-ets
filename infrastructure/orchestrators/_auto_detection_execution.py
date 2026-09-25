@@ -173,7 +173,17 @@ class _AutoDetectionExecutionMixin:
 
             # Get current price for the symbol to determine position size
             current_price = None
-            if self.market_data_repo:
+            price_source = getattr(self, "_execution_price_source", None)
+            if price_source is not None:
+                try:
+                    current_price = float(price_source.get_current_price(
+                        execution_intent.symbol, self._execution_now()))
+                except (TypeError, ValueError, KeyError):
+                    current_price = None
+                if current_price is None or not math.isfinite(current_price) or current_price <= 0:
+                    self._remove_pending_execution_intent(execution_intent)
+                    return {'status': 'failed', 'error': 'MARKET_PRICE_UNAVAILABLE'}
+            elif self.market_data_repo:
                 try:
                     current_price = self.market_data_repo.get_current_price(execution_intent.symbol)
                 except:
@@ -181,7 +191,7 @@ class _AutoDetectionExecutionMixin:
                     pass
 
             # If we still don't have a price, use a fallback
-            if current_price is None or current_price <= 0:
+            if price_source is None and (current_price is None or current_price <= 0):
                 # Try to get price from exchange directly
                 try:
                     import ccxt
