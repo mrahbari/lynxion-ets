@@ -23,20 +23,26 @@ class ArchitectureOrchestrator:
                  fusion_service=None,
                  strategy_manager=None,
                  execution_service=None,
-                 event_router=None):
+                 event_router=None,
+                 signal_processor_instance=None,
+                 signal_aggregator_instance=None):
         self.engine_service = engine_service or globals().get('engine_service')
         self.fusion_service = fusion_service or globals().get('fusion_service')
         self.strategy_manager = strategy_manager or globals().get('strategy_manager')
         self.execution_service = execution_service
         self.event_router = event_router or globals().get('event_router')
+        self.signal_processor = signal_processor_instance or globals().get('signal_processor')
+        self.signal_aggregator = signal_aggregator_instance or globals().get('signal_aggregator')
+        if signal_processor_instance is not None and self.signal_processor.event_router is not self.event_router:
+            raise ValueError("SignalProcessor and ArchitectureOrchestrator must use the same EventRouter")
 
         self.logger = EnhancedLogger("ArchitectureOrchestrator")
         self.is_running = False
         self.orchestration_thread = None
 
         # Initialize the signal processor with the services
-        signal_processor.logger = self.logger
-        signal_processor.setup_signal_processing(
+        self.signal_processor.logger = self.logger
+        self.signal_processor.setup_signal_processing(
             self.engine_service,
             self.fusion_service,
             self.strategy_manager,
@@ -53,17 +59,17 @@ class ArchitectureOrchestrator:
 
             # Initialize the signal aggregator
             if self.execution_service:
-                signal_aggregator.set_execution_service(self.execution_service)
+                self.signal_aggregator.set_execution_service(self.execution_service)
                 self.logger.info("Signal aggregator configured with execution service")
             else:
                 self.logger.warning("No execution service provided to signal aggregator")
-            signal_aggregator.start_aggregation()
+            self.signal_aggregator.start_aggregation()
 
             # The signal processor is already set up to handle the flow
             # Watcher emits -> Event Router -> Signal Processor -> Proper Layer Processing
 
             # Ensure the signal processor has access to all required services
-            signal_processor.setup_signal_processing(
+            self.signal_processor.setup_signal_processing(
                 self.engine_service,
                 self.fusion_service,
                 self.strategy_manager,
