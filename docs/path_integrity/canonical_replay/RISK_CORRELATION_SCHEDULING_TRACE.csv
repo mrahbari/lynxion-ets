@@ -1,0 +1,8 @@
+stage,source,trigger_or_order,state_or_output,causal_time_proven,classification
+construction,EnterpriseRiskManager.__init__,constructor,empty matrix and daemon worker,no,RUNTIME_SCHEDULING
+price input,EnterpriseRiskManager.record_price,explicit price recorder,per-symbol last 100 prices without timestamps,no,CORRELATION_POLICY_INPUT
+worker,EnterpriseRiskManager._correlation_worker_loop,sleep 10 seconds then recalculate,repeated after calculation completion,no,RUNTIME_SCHEDULING
+calculation,EnterpriseRiskManager.recalculate_correlations,worker call,paired-index Pearson matrix if two symbols and min five prices,no,CORRELATION_POLICY
+penalty,EnterpriseRiskManager.calculate_correlation_penalty,sizing call,old or new matrix reference depending on interleaving,no,CORRELATION_POLICY_CONSUMER
+sizing,ConsolidatedRiskEngineAdapter._calculate_position_size,intent risk path,penalty passed to calculate_position_size,no,DECISION_RELEVANT
+quantity,EnterpriseRiskManager.calculate_position_size,sizing call,dynamic risk percentage divided by penalty,no,DECISION_RELEVANT
