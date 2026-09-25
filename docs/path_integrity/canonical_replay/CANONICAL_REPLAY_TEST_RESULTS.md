@@ -107,3 +107,7 @@ Four parametrized unavailable/invalid price cases in `test_auto_detection_risk_s
 ## Risk trade-tracker injection
 
 The same two risk-clock tests now also verify that an explicit local tracker handles position entry/exit while the module-global tracker raises if reached; omitted construction retains identity with the Live default. Expanded applicable regression **145 passed / 0 failed**; four protected persistence hashes unchanged, no broker/network activity.
+
+## Forward-exit activation factory
+
+The scoped AutoDetection constructor test injects a no-op factory while replacing the global builder with a failing stub; it proves the scoped path does not activate the production observer. Default Live construction remains covered by the existing offline runtime-wiring regression. Expanded applicable collection **145 passed / 0 failed**; protected persistence hashes unchanged; no broker/network activity.

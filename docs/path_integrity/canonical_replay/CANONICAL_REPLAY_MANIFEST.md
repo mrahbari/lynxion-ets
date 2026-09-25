@@ -165,3 +165,8 @@
 
 - Start `389bdc5`; resulting commit is this unit's commit. Production file: `enterprise_risk_manager.py`. Existing `test_risk_event_clock_seam.py` strengthened: explicit local tracker is used while the module-global one fails if touched; omitted default retains global identity. No Risk policy/format change.
 - Expanded regression **145 passed / 0 failed**. Four protected persistence hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Full ReplayScope/prefix/parity/baseline still unavailable.
+
+## Forward-exit factory addendum
+
+- Start `e1e6998`; resulting commit is this unit's commit. Production file: `auto_detection_orchestrator.py`; existing scoped-constructor test strengthened. Explicit factory prevents production forward-exit activation in scoped construction; omitted default remains the existing Live builder. No observer definition or XMR safety blocker changed.
+- Expanded regression **145 passed / 0 failed**. Four protected persistence hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Full scope/parity/baseline not yet verified.

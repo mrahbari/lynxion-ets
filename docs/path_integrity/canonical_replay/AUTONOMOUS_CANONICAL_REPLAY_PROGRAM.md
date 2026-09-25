@@ -194,3 +194,8 @@ Exact next action requiring review: define how the decision-relevant rolling-cor
 
 - Start `389bdc5`; `EnterpriseRiskManager` now accepts an optional trade-tracker instance for entry/exit recording. Omitted default remains the existing global Live tracker. An explicit tracker test makes the global fail if touched, then proves the local tracker receives causal entry/exit timestamps. No position/Risk policy or journal format changed.
 - Expanded applicable regression **145 passed / 0 failed**; four protected persistence hashes unchanged; zero authenticated broker/network activity. This isolates this manager's two tracker calls only, not every persistence path of a full ReplayScope.
+
+## F-prep — forward-exit activation ownership
+
+- Start `e1e6998`; AutoDetection now accepts an optional forward-exit bundle factory. Omitted construction calls the same Live builder; explicit composition can supply a no-production-write factory. A scoped-constructor test makes the global builder fail if called. No XMR blocker, exit rule or Live observer default changed.
+- Expanded applicable regression **145 passed / 0 failed**; four protected persistence hashes unchanged; zero authenticated broker/network activity. This closes one constructor side effect, not the full ReplayScope dependency graph.

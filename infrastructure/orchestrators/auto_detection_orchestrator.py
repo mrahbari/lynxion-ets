@@ -42,7 +42,8 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                  opportunity_watcher_instance=None,
                  risk_alert_service_instance=None,
                  execution_price_source=None,
-                 heartbeat_source=None):
+                 heartbeat_source=None,
+                 forward_exit_bundle_factory=None):
         # Settings injected by the composition root (E1.T4); the auto-detection
         # mixins read the same fields off self._settings instead of importing
         # bootstrap.settings.loaders.
@@ -148,8 +149,10 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
 
         # TASK-0151: explicitly opt-in, forward-only evidence wiring. Disabled
         # by default for every existing constructor and non-approved runtime.
-        from infrastructure.observability.forward_exit_runtime import build_forward_exit_runtime_bundle
-        self._forward_exit_bundle = build_forward_exit_runtime_bundle()
+        if forward_exit_bundle_factory is None:
+            from infrastructure.observability.forward_exit_runtime import build_forward_exit_runtime_bundle
+            forward_exit_bundle_factory = build_forward_exit_runtime_bundle
+        self._forward_exit_bundle = forward_exit_bundle_factory()
         if self._forward_exit_bundle is not None:
             from infrastructure.risk.active_position_manager import active_position_manager
             active_position_manager.configure_forward_observation(

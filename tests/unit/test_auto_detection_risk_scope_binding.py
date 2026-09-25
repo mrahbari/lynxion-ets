@@ -48,7 +48,8 @@ def test_explicit_auto_detection_constructor_binds_only_scoped_router(monkeypatc
     from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator
     import infrastructure.observability.forward_exit_runtime as forward_runtime
 
-    monkeypatch.setattr(forward_runtime, "build_forward_exit_runtime_bundle", lambda: None)
+    monkeypatch.setattr(forward_runtime, "build_forward_exit_runtime_bundle",
+                        lambda: pytest.fail("global forward-exit activation reached"))
     live_count = len(event_router.subscribers.get(EventType.EXECUTION_INTENT, []))
     owners = []
     for _ in range(2):
@@ -75,6 +76,7 @@ def test_explicit_auto_detection_constructor_binds_only_scoped_router(monkeypatc
             opportunity_watcher_instance=watcher,
             risk_alert_service_instance=alert,
             pending_orders_state=pending,
+            forward_exit_bundle_factory=lambda: None,
         )
         assert owner.event_router is router
         assert owner.opportunity_watcher is watcher
