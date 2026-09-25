@@ -5,9 +5,6 @@ Behavior-preserving mixin — methods moved verbatim (signatures, ``self`` seman
 broker-dedup behavior unchanged) and composed back via inheritance. No layer move,
 no port inversion, no logic change.
 """
-from datetime import datetime
-
-
 class _AutoDetectionDedupMixin:
     """Pending-intent dedup + broker active-order conflict checks (no order placement)."""
 
@@ -37,7 +34,7 @@ class _AutoDetectionDedupMixin:
             # Add this intent to the orchestrator's internal tracking only
             if symbol not in self._pending_intents:
                 self._pending_intents[symbol] = {}
-            self._pending_intents[symbol][direction] = datetime.now()
+            self._pending_intents[symbol][direction] = self._execution_now()
 
             # Store a reference to the execution intent for later removal
             self._pending_intent_temp_ids[id(execution_intent)] = None  # No shared tracker ID yet

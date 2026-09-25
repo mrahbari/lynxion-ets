@@ -36,7 +36,8 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                  intent_claim_store=None,
                  pending_orders_state=None,
                  risk_engine=None,
-                 cooldown_gate=None):
+                 cooldown_gate=None,
+                 execution_clock=None):
         # Settings injected by the composition root (E1.T4); the auto-detection
         # mixins read the same fields off self._settings instead of importing
         # bootstrap.settings.loaders.
@@ -44,6 +45,7 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
         self._intent_claim_store = intent_claim_store
         self._risk_engine = risk_engine
         self._cooldown_gate = cooldown_gate
+        self._execution_clock = execution_clock
         self.market_data_repo = market_data_repo
         self.execution_service = execution_service
         self.portfolio_service = portfolio_service

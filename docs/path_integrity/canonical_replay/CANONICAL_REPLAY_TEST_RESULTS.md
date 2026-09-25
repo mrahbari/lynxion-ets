@@ -83,3 +83,7 @@ After explicit legacy-global ownership was added, `test_architecture_orchestrato
 ## Queued-owner explicit Risk/cooldown binding
 
 `test_auto_detection_risk_scope_binding.py` plus offline runtime wiring: **23 passed / 0 failed**. Expanded applicable 24-file collection: **134 passed / 0 failed**. New test proves injected dependencies avoid global Risk/cooldown lookups in the tested calls, while omitted arguments retain Live fallback and injected cooldown rejects a queued intent. Four protected production persistence hashes identical immediately before/after; no authenticated broker/network activity. Full AutoDetection replay composition remains untested and unsafe.
+
+## Queued-owner event clock
+
+Two further scoped-clock tests in `test_auto_detection_risk_scope_binding.py`; focused selection **49 passed / 0 failed**, expanded applicable collection **136 passed / 0 failed**. Replay/event time supplies pending-intent and order/portfolio timestamps; omitted clock retains the LiveClock default. Four protected persistence hashes identical before/after. No network/broker adapter was used. Full replay decision-time control remains unverified.

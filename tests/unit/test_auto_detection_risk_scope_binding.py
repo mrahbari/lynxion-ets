@@ -1,12 +1,45 @@
 """The queued execution owner can use explicit per-run Risk dependencies."""
 
 from types import SimpleNamespace
+from datetime import datetime, timezone
+import threading
 
 from infrastructure.orchestrators._auto_detection_execution import _AutoDetectionExecutionMixin
+from infrastructure.orchestrators._auto_detection_dedup import _AutoDetectionDedupMixin
 
 
 class Owner(_AutoDetectionExecutionMixin):
     pass
+
+
+class ScopedOwner(_AutoDetectionDedupMixin, _AutoDetectionExecutionMixin):
+    pass
+
+
+def test_execution_and_dedup_use_injected_event_clock():
+    event_time = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    owner = ScopedOwner()
+    owner._execution_clock = SimpleNamespace(now=lambda: event_time)
+    owner._settings = SimpleNamespace(execution=SimpleNamespace(
+        prevent_same_direction_trade_per_symbol=True))
+    owner._pending_intents_lock = threading.RLock()
+    owner._pending_intents = {}
+    owner._pending_intent_temp_ids = {}
+    owner._pending_orders_tracker = SimpleNamespace(
+        get_pending_orders_for_symbol=lambda symbol: [])
+    owner.logger = SimpleNamespace(info=lambda *args: None)
+    intent = SimpleNamespace(symbol=SimpleNamespace(value="BTCUSDT"),
+                             side=SimpleNamespace(name="BUY"))
+    assert owner._execution_now() == event_time
+    assert owner._check_duplicate_execution_intent(intent) is False
+    assert owner._pending_intents["BTCUSDT"]["BUY"] == event_time
+
+
+def test_omitted_execution_clock_retains_live_clock(monkeypatch):
+    from infrastructure.messaging.clock import LiveClock
+    expected = datetime(2026, 1, 1)
+    monkeypatch.setattr(LiveClock, "now", lambda self: expected)
+    assert Owner()._execution_now() == expected
 
 
 def test_explicit_risk_and_cooldown_do_not_resolve_live_globals(monkeypatch):

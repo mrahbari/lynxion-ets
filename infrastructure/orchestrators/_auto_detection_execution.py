@@ -29,6 +29,13 @@ _live_intent_claim_store = IntentClaimStore()
 class _AutoDetectionExecutionMixin:
     """Order construction + placement from an execution intent (trading execution)."""
 
+    def _execution_now(self):
+        clock = getattr(self, "_execution_clock", None)
+        if clock is None:
+            from infrastructure.messaging.clock import LiveClock
+            clock = LiveClock()
+        return clock.now()
+
     def _get_cooldown_gate(self):
         gate = getattr(self, "_cooldown_gate", None)
         if gate is not None:
@@ -233,7 +240,7 @@ class _AutoDetectionExecutionMixin:
                     positions=active_positions,
                     cash_balance=DomainMoney(amount=Decimal(str(equity_val)), currency="USDT"),
                     total_value=DomainMoney(amount=Decimal(str(equity_val)), currency="USDT"),
-                    timestamp=datetime.now()
+                    timestamp=self._execution_now()
                 )
 
                 # Fetch volatility/ATR if available
@@ -373,7 +380,7 @@ class _AutoDetectionExecutionMixin:
                 quantity=quantity,
                 price=Money(amount=float(current_price), currency='USDT') if current_price else None,
                 strategy_name=execution_intent.strategy_name,  # Strategy name comes from intent
-                timestamp=datetime.now(),
+                timestamp=self._execution_now(),
                 position_side=position_side,  # Add position side for futures trading
                 stop_loss_price=getattr(execution_intent, 'stop_loss_price', None),  # SL from strategy
                 take_profit_price=getattr(execution_intent, 'take_profit_price', None),  # TP from strategy

@@ -135,3 +135,8 @@
 
 - Start `3ecbdd7`; resulting commit is this unit's commit. Production files: `auto_detection_orchestrator.py`, `_auto_detection_execution.py`. One focused test file added. Explicit Risk-engine/cooldown-gate injection avoids those global lookups in the tested owner paths; default live paths remain.
 - Expanded applicable regression **134 passed / 0 failed**. Protected persistence hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Constructor and full replay safety remain incomplete; no baseline.
+
+## Queued-owner event-time addendum
+
+- Start `d573cde`; resulting commit is this unit's commit. Production files: `auto_detection_orchestrator.py`, `_auto_detection_execution.py`, `_auto_detection_dedup.py`. Two tests added to the prior focused test file. Optional execution clock binds pending-intent, portfolio and order timestamps; omitted default retains LiveClock behavior. No policy/threshold change.
+- Expanded regression **136 passed / 0 failed**. Protected persistence hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Remaining live heartbeat/price fallback/global constructor dependencies mean full scope and baseline remain blocked.
