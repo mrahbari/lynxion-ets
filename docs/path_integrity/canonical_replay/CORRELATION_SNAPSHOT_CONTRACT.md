@@ -1,0 +1,13 @@
+# Correlation snapshot consumption contract
+
+Start HEAD `ee569dd`. This bounded unit implements the reviewer-approved **consumption** contract. It does not alter Live worker scheduling or Risk arithmetic.
+
+`EnterpriseRiskManager` publishes a `CorrelationSnapshot(version, matrix)` under its existing correlation lock. The outer and every inner matrix mapping are copied and immutable. The initial empty snapshot is version 0. Each completed `recalculate_correlations()` publication increments the version; insufficient input leaves the prior snapshot unchanged. Existing explicit `correlation_matrix = ...` assignment remains supported and publishes a whole snapshot. Readers cannot mutate published matrix state.
+
+The authoritative correlation-dependent sizing entry is `ConsolidatedRiskEngineAdapter.calculate_dynamic_size(intent, portfolio, volatility)`. It pins `get_correlation_snapshot()` before reading intent fields or computing drawdown/penalty. The same pinned object is passed to `calculate_correlation_penalty` for every portfolio-symbol lookup. The short lock is released before the rest of sizing. A worker publication after that pin is visible to later calls, never to the in-flight call. Direct callers of `calculate_correlation_penalty` without a supplied snapshot capture one latest snapshot at their own call boundary.
+
+This makes **future per-intent consumption deterministic given a particular published snapshot version and Risk inputs**. Live publication time remains worker/thread-dependent; the snapshot contract does not make the sequence of future Live versions deterministic in event time. Old worker wake-ups were not archived: `HISTORICAL_CORRELATION_SCHEDULE_NOT_RECONSTRUCTABLE`. Never claim bit-for-bit old Live timing parity. The existing approximately ten-second sleep loop, formula, 100-price window, five-sample threshold, correlation penalty and sizing formulas are unchanged.
+
+Offline test `test_risk_correlation_snapshot_contract.py` verifies immutable nested matrix, monotonic version, one pin through an in-flight refresh, later-version eligibility, same-version sizing repeatability and two independent manager states. Prior 10 versus 8.333333 quantities remain explainable by *different published versions*; an in-flight refresh cannot switch the current intent. Expanded local regression: **125 passed, 0 failed**. Four protected persistence hashes matched before/after. No broker/network operation. Replay scheduler and full ApplicationRunScope remain separate units.
+
+Classification: `CORRELATION_SNAPSHOT_CONTRACT_VERIFIED`; `LIVE_DECISION_BOUNDARY_STILL_NONDETERMINISTIC` with respect to which worker publication has occurred before a future intent begins; `HISTORICAL_CORRELATION_SCHEDULE_NOT_RECONSTRUCTABLE`.

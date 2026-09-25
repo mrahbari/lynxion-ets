@@ -3,10 +3,11 @@ Enhanced Enterprise Risk Manager based on Enterprise Hedge Fund Architecture
 """
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Mapping
 from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
+from types import MappingProxyType
 from infrastructure.tracking.trade_tracker import trade_tracker
 from infrastructure.market_regime.regime_detector import regime_detector, RegimeType
 
@@ -29,6 +30,14 @@ class Position:
     trade_id: str = None
     regime_context: str = None  # Store the regime context when position was opened
     setup_type: str = None
+
+
+@dataclass(frozen=True)
+class CorrelationSnapshot:
+    """One fully published, immutable correlation state."""
+
+    version: int
+    matrix: Mapping[str, Mapping[str, float]]
 
 
 class EnterpriseRiskManager:
@@ -136,9 +145,9 @@ class EnterpriseRiskManager:
         self.starting_equity = self.max_portfolio_exposure
 
         # Track correlations between symbols dynamically with background worker
-        self.correlation_matrix: Dict[str, Dict[str, float]] = {}
         import threading
         self.correlation_lock = threading.Lock()
+        self._correlation_snapshot = CorrelationSnapshot(0, MappingProxyType({}))
         self.price_history_for_correlation: Dict[str, List[float]] = {}
         self.max_price_history_len = 100
         self.correlation_update_interval_sec = 10.0  # Configurable update interval
@@ -497,11 +506,40 @@ class EnterpriseRiskManager:
             return True
         return False
 
-    def calculate_correlation_penalty(self, symbol: str, portfolio_symbols: List[str]) -> float:
+    @property
+    def correlation_matrix(self) -> Mapping[str, Mapping[str, float]]:
+        """Compatibility view of the latest fully published matrix."""
+        return self.get_correlation_snapshot().matrix
+
+    @correlation_matrix.setter
+    def correlation_matrix(self, matrix: Mapping[str, Mapping[str, float]]) -> None:
+        # Preserve explicit matrix assignment used by existing callers/tests.
+        with self.correlation_lock:
+            self._publish_correlation_matrix_locked(matrix)
+
+    def _publish_correlation_matrix_locked(self, matrix: Mapping[str, Mapping[str, float]]) -> None:
+        frozen = MappingProxyType({
+            symbol: MappingProxyType(dict(correlations))
+            for symbol, correlations in matrix.items()
+        })
+        self._correlation_snapshot = CorrelationSnapshot(
+            self._correlation_snapshot.version + 1, frozen
+        )
+
+    def get_correlation_snapshot(self) -> CorrelationSnapshot:
+        """Pin the latest published version with a short publication lock."""
+        with self.correlation_lock:
+            return self._correlation_snapshot
+
+    def calculate_correlation_penalty(
+        self, symbol: str, portfolio_symbols: List[str],
+        snapshot: Optional[CorrelationSnapshot] = None,
+    ) -> float:
         """
         Calculate correlation penalty based on correlation with other positions in portfolio.
         Higher correlation increases the penalty (reducing position size).
         """
+        snapshot = snapshot if snapshot is not None else self.get_correlation_snapshot()
         if not portfolio_symbols:
             return 1.0  # No penalty if no other positions
 
@@ -512,7 +550,7 @@ class EnterpriseRiskManager:
             if other_symbol != symbol:
                 # Get correlation between symbols (placeholder - in real implementation,
                 # this would come from actual correlation calculations)
-                correlation = self.correlation_matrix.get(symbol, {}).get(other_symbol, 0.0)
+                correlation = snapshot.matrix.get(symbol, {}).get(other_symbol, 0.0)
 
                 # If correlation is above threshold, apply penalty
                 if abs(correlation) > self.max_correlation:
@@ -645,4 +683,4 @@ class EnterpriseRiskManager:
                             corr = 0.0
                         new_matrix[s1][s2] = float(corr)
             
-            self.correlation_matrix = new_matrix
+            self._publish_correlation_matrix_locked(new_matrix)

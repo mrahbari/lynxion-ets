@@ -57,6 +57,9 @@ class ConsolidatedRiskEngineAdapter(PortfolioRiskEnginePort, StopLossTakeProfitP
         volatility: Optional[float] = None
     ) -> float:
         """Calculate dynamic position size based on drawdown, correlation, and volatility (NGDP)."""
+        # This is the correlation-dependent Risk/sizing entry boundary for one intent.
+        # A worker publication after this pin is eligible only for later evaluations.
+        correlation_snapshot = self._risk_manager.get_correlation_snapshot()
         limit_price = float(intent.risk_parameters.get('limit_price', 0.0))
         stop_loss = float(intent.risk_parameters.get('stop_loss', 0.0))
         
@@ -76,7 +79,9 @@ class ConsolidatedRiskEngineAdapter(PortfolioRiskEnginePort, StopLossTakeProfitP
         
         # 4. Correlation Penalty
         portfolio_symbols = [pos.symbol.value for pos in portfolio.positions]
-        correlation_penalty = self._risk_manager.calculate_correlation_penalty(intent.symbol.value, portfolio_symbols)
+        correlation_penalty = self._risk_manager.calculate_correlation_penalty(
+            intent.symbol.value, portfolio_symbols, snapshot=correlation_snapshot
+        )
         
         # 5. Confidence Adjustment
         confidence = float(intent.intent_confidence.value) if intent.intent_confidence else 1.0

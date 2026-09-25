@@ -120,3 +120,8 @@
 
 - Start `fb25f9d`; resulting commit is this unit's commit. Production file `architecture_orchestrator.py` adds an optional ownership flag with the existing Live default unchanged. Explicit scoped instances can start/stop without publishing execution service into the global orchestrator or clearing global pending/broker-registry state. The scoped caller remains responsible for its own cleanup; no ReplayScope exists yet.
 - Expanded regression **118 passed / 0 failed**, 26 warnings. Four protected persistence hashes matched immediately before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. New test uses no broker/network. Correlation parity and A–K release gates remain blocked/incomplete; baseline forbidden.
+
+## Correlation snapshot consumption unit
+
+- Start `ee569dd`; resulting commit is this unit's commit. Production files: `enterprise_risk_manager.py`, `risk_engine_adapter.py`. New test: `test_risk_correlation_snapshot_contract.py`. Immutable/versioned snapshots are published under the existing lock and pinned at dynamic-sizing entry. Live worker schedule, Risk formula, limits and strategy/Fusion behavior unchanged.
+- Expanded local regression **125 passed / 0 failed**. Four protected persistence hashes matched immediately before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. Network/broker activity: NONE. Old historical publication schedule unavailable; replay scheduler and full scope not built. Baseline forbidden.
