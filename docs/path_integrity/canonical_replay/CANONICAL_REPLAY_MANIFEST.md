@@ -200,3 +200,8 @@
 
 - Start `a34e880`; resulting commit is this documentation/test unit. Production/config files changed: **0**. New `test_auto_detection_queue_scheduling_forensics.py` and documentation update. Existing Live queue worker selects among the intents present at its wake-up; equal event times alone do not fix delivery/batch order. Historical wake-up and delivery ordering is not recorded by this test or an inspected replay contract.
 - Focused regression **47 passed / 0 failed**. Four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No broker/network activity. Multi-intent queue parity and full canonical prefix/parity remain **NOT TESTABLE**; baseline forbidden.
+
+## Edge-measurement readiness audit addendum
+
+- Start `0d557ba`; resulting commit is this documentation-only unit. Files: `EDGE_MEASUREMENT_READINESS_AUDIT.md`, `PROJECT_DECISION_LEDGER.md`, and existing program/test/manifest docs. Production/research source/config changed: **0**. No migration or alternate strategy engine.
+- Focused regression **19 passed / 0 failed**; four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. Network/broker activity: **NONE**. Level-1 versus Level-2 gate split recorded; `EDGE_MEASUREMENT_NOT_READY`, no baseline.

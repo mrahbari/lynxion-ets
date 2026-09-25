@@ -1,0 +1,11 @@
+# Lynxion P0 decision ledger
+
+| Question | Evidence | Decision/status | Commit/tests | Uncertainty | Edge blocker? | Production-only blocker? |
+|---|---|---|---|---|---|---|
+| Does Risk consume one correlation version per sizing operation? | Immutable nested snapshot pinned in `calculate_dynamic_size`; in-flight/new-version tests | VERIFIED; no forced refresh, Live worker unchanged | `b153285`; snapshot suite | Which Live version is latest at intent start remains worker-dependent | No for pre-queue Level 1; yes for exact Level 2 timing | Yes |
+| Can Replay publish correlation deterministically without claiming old Live phase? | ReplayClock 10-second boundary scheduler, same Risk recalc method | VERIFIED for defined replay runtime; old Live wake-ups unreconstructable | `3ecbdd7`; scheduler suite | Historical worker publication timestamps absent | No for Level 1 | Yes |
+| Is closed-bar historical input causal? | UTC close gating, gap/duplicate/invalid rejection; watcher receives completed bar | VERIFIED at source/partial observation boundary | `7fe30d7`, `1b77289`; closed-bar tests | Full feature/HTF and decision path unproved | Yes until end-to-end prefix test | Also relevant |
+| Is the old direct named-strategy backtest canonical? | Mock FusedSignal bypasses Watcher/Engine/Fusion/aggregator | NO; preserve legacy provenance only | Prior path audit | Individual old result provenance varies | Yes if used as canonical edge evidence | No |
+| Is the queued owner deterministic for equal-time multi-intent delivery? | Reversing delivery reverses first processed symbol; worker polls/schedules on wall time | NO for historical ordering; do not invent a tie rule | `0d557ba`; 47 focused passes | Historical batch/wake order absent | No for bounded pre-queue Level 1 | Yes for multi-intent Level 2 |
+| Is after-cost canonical Edge measurable now? | No full intent-level prefix/trace; simulated broker has no fills/costs | NOT READY; smallest critical path in readiness audit | This documentation unit; 19 focused passes | Relevant watcher archives and reached wall-clock calls | Yes | Also relevant |
+| Are XMR cause and broker retry solved? | Prior forensics insufficient; no new runtime evidence | UNRESOLVED; protection retained | Prior incident/path docs | Intent-to-broker historical lifecycle incomplete | Not proven for Level 1 | Yes |
