@@ -184,3 +184,8 @@ Exact next action requiring review: define how the decision-relevant rolling-cor
 
 - Start `3e41773`; `SignalProcessor` now accepts an optional clock for heartbeat recording (omitted default `LiveClock`) and exposes a narrow heartbeat-time query. The queued owner may consume an explicit heartbeat source; if supplied, the existing 90-second freshness check applies even to a simulated execution service at event time. The omitted Live source and existing simulated-service default bypass remain unchanged.
 - Focused test exercises observation processing and source query at ReplayClock time; owner test covers stale/missing/fresh at the unchanged threshold. Expanded applicable regression **143 passed / 0 failed**; four protected persistence hashes unchanged; no network/broker activity. The retired direct handler still contains wall-clock code but is not an ExecutionIntent subscriber. Full decision parity is not claimed.
+
+## D/F-prep — Risk lifecycle event clock
+
+- Start `423a5cd`; `EnterpriseRiskManager` now accepts an optional clock. Daily-start/reset and position entry/exit timestamps use it. Omitted default remains `LiveClock`; worker-start and correlation scheduling defaults remain unchanged. No Risk formula, threshold, fee or exposure policy changed.
+- A fake trade tracker proves replay event-time entry/exit and UTC day rollover without touching the production tracker. Expanded applicable regression **145 passed / 0 failed**; four protected persistence hashes unchanged; no network/broker activity. The production-global trade tracker still needs an explicit scope seam before position lifecycle may be used in replay.

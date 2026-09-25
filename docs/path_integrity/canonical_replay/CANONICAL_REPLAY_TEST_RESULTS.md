@@ -99,3 +99,7 @@ Four parametrized unavailable/invalid price cases in `test_auto_detection_risk_s
 ## Scoped heartbeat clock/source
 
 `test_replay_event_time_scope.py` verifies an explicitly composed SignalProcessor records heartbeat using ReplayClock during observation processing; `test_auto_detection_risk_scope_binding.py` verifies queued-owner stale/missing/fresh decisions with a simulated service and unchanged 90-second threshold. Expanded applicable regression **143 passed / 0 failed**. Four protected persistence hashes identical before/after. No broker/network activity; this does not prove full owner or replay parity.
+
+## Risk lifecycle clock
+
+`test_risk_event_clock_seam.py`: **2 passed / 0 failed**. Position entry/exit, daily reset and default LiveClock are covered with a fake trade tracker and worker-free replay manager. Expanded applicable regression **145 passed / 0 failed**. Four protected persistence hashes matched before/after; no authenticated network/broker activity. Global trade tracking is not yet scoped.

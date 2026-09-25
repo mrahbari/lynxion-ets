@@ -61,10 +61,13 @@ class EnterpriseRiskManager:
                  drawdown_decay_factor: float = 0.95,
                  enable_multi_position: bool = True,
                  max_concurrent_positions: int = 50,
-                 start_correlation_worker: bool = True):
+                 start_correlation_worker: bool = True,
+                 clock=None):
 
         import os
         from shared.logger import logger
+        from infrastructure.messaging.clock import LiveClock
+        self.clock = clock if clock is not None else LiveClock()
 
         # Load capacity values with priority: Env Var -> risk_config -> Constructor Parameter
         env_enable_multi = os.getenv("ENABLE_MULTI_POSITION")
@@ -142,7 +145,7 @@ class EnterpriseRiskManager:
         self.violations: List[str] = []
 
         # Track start of day for daily limits
-        self.daily_start = datetime.now().date()
+        self.daily_start = self.clock.now().date()
         self.starting_equity = self.max_portfolio_exposure
 
         # Track correlations between symbols dynamically with background worker
@@ -302,7 +305,7 @@ class EnterpriseRiskManager:
             direction=direction,
             stop_loss=stop_loss,
             take_profit=take_profit,
-            entry_time=datetime.now(),
+            entry_time=self.clock.now(),
             risk_amount=risk_amount,
             trade_id=trade_id,
             regime_context=regime_context,
@@ -407,7 +410,7 @@ class EnterpriseRiskManager:
                 trade_id=position.trade_id,
                 exit_price=exit_price,
                 exit_reason=exit_type,
-                exit_timestamp=datetime.now()
+                exit_timestamp=self.clock.now()
             )
 
         # Remove position
@@ -477,7 +480,7 @@ class EnterpriseRiskManager:
         Reset daily counters (should be called at start of each trading day)
         """
         self.daily_pnl = 0.0
-        self.daily_start = datetime.now().date()
+        self.daily_start = self.clock.now().date()
 
     def get_risk_metrics(self) -> Dict[str, Any]:
         """
