@@ -25,6 +25,12 @@ def _bar(index, close):
                      close - 1, close + 1, close - 2, close, 10.0)
 
 
+def _symbol_bar(symbol, index, close):
+    opened = T0 + index * MINUTE
+    return ClosedBar(symbol, MINUTE, opened, opened + MINUTE,
+                     close - 1, close + 1, close - 2, close, 10.0)
+
+
 def _trace(bars, through, monkeypatch):
     attempts = []
 
@@ -55,6 +61,27 @@ def test_canonical_candle_subset_decision_trace_repeats_and_is_prefix_stable(mon
         "market_observation", "interpreted_signal", "fused_signal"
     }
     assert all(datetime.fromisoformat(row["timestamp"]) <= second.close_time for row in prefix)
+
+
+def test_pre_intent_engine_fusion_two_symbol_prefix_and_fresh_scope(monkeypatch):
+    """Exercise real routed Engine/Fusion outputs, not only the source iterator."""
+    prefix_bars = tuple(
+        _symbol_bar(symbol, index, base + index)
+        for index in range(6)
+        for symbol, base in (("BTCUSDT", 100.0), ("ETHUSDT", 200.0))
+    )
+    future = (_symbol_bar("BTCUSDT", 6, 106.0),
+              _symbol_bar("ETHUSDT", 6, 206.0))
+    through = prefix_bars[-1].close_time
+    first = _trace(prefix_bars, through, monkeypatch)
+    assert first == _trace(prefix_bars, through, monkeypatch)
+    assert first == _trace(prefix_bars + future, through, monkeypatch)
+    for symbol in ("BTCUSDT", "ETHUSDT"):
+        assert any(row["event_type"] == "interpreted_signal"
+                   and row["data"]["symbol"]["value"] == symbol for row in first)
+        assert any(row["event_type"] == "fused_signal"
+                   and row["data"]["symbol"]["value"] == symbol for row in first)
+    assert not any(row["event_type"] == "execution_intent" for row in first)
 
 
 def test_trace_keeps_decision_fields_but_excludes_only_random_intent_uuid():
