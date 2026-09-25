@@ -220,3 +220,8 @@
 
 - Start `703e816`; resulting commit is this bounded feed unit. New `infrastructure/replay/causal_strategy_history.py`; replay-only `closed_bar_decision_driver.py` accepts an optional feed; new `test_causal_strategy_history_feed.py`. Production trading files/config changed: **0**. Existing strategy buffer method is reused. Actual timeframe bars only; one-symbol constraint is explicit. No historical data is invented.
 - Expanded relevant regression **69 passed / 0 failed**. Four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. Network/broker activity: **NONE**. No intent in frozen fixture, no full prefix/parity or after-cost gate, no baseline.
+
+## Strategy-input source-forensic addendum
+
+- Start `a45bf47`; resulting commit is this documentation-only unit. New `STRATEGY_INPUT_PROVENANCE_GAP.md`; readiness audit, decision ledger and program log updated. Production/research source/config modified: **0**. Source review identified setup wall-clock time and missing-OBI/CVD/bid/ask defaults on reachable adapter/pipeline paths; actual historical consumption and complete archive coverage remain UNKNOWN.
+- No test rerun in this documentation-only unit. Last immediately preceding expanded regression: **69 passed / 0 failed**, four protected hashes unchanged before/after. No broker/network action. `EDGE_MEASUREMENT_NOT_READY`; no baseline.
