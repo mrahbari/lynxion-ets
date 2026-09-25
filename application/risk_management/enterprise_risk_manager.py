@@ -60,7 +60,8 @@ class EnterpriseRiskManager:
                  regime_risk_multipliers: Optional[Dict[str, float]] = None,
                  drawdown_decay_factor: float = 0.95,
                  enable_multi_position: bool = True,
-                 max_concurrent_positions: int = 50):
+                 max_concurrent_positions: int = 50,
+                 start_correlation_worker: bool = True):
 
         import os
         from shared.logger import logger
@@ -153,8 +154,10 @@ class EnterpriseRiskManager:
         self.correlation_update_interval_sec = 10.0  # Configurable update interval
         
         # Start background correlation thread
-        self.worker_thread = threading.Thread(target=self._correlation_worker_loop, daemon=True)
-        self.worker_thread.start()
+        self.worker_thread = None
+        if start_correlation_worker:
+            self.worker_thread = threading.Thread(target=self._correlation_worker_loop, daemon=True)
+            self.worker_thread.start()
 
         # Track regime-specific risk metrics
         self.regime_exposures: Dict[str, float] = {}

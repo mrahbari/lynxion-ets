@@ -75,3 +75,7 @@ After explicit legacy-global ownership was added, `test_architecture_orchestrato
 ## Correlation snapshot consumption
 
 `test_risk_correlation_snapshot_contract.py` plus NGDP and correlation-source forensics: 10 passed / 0 failed. Expanded 22-file applicable regression collection: **125 passed / 0 failed**. It covers deep immutability, in-flight publication, next-intent version, scope independence, existing NGDP/F01 and path/owner behavior. Protected active-position, live-order, cooldown and trade journals had identical SHA-256 hashes immediately before/after. No authenticated broker/network call. These tests do not establish historical worker wake-up timing or end-to-end replay parity.
+
+## Replay correlation event-time scheduler
+
+`test_replay_correlation_scheduler.py`: **6 passed / 0 failed**. Expanded applicable 23-file collection including the prior 125 tests: **131 passed / 0 failed**. Tests reject duplicate timestamp batches, prove no future event price reaches prior ten-second boundaries, prove the ReplayClock visits due boundaries, and verify no thread/sleep plus two-scope isolation. Four protected production persistence hashes matched immediately before/after. No authenticated network/broker activity. This does not establish historical Live wake-up reconstruction or full canonical parity.

@@ -125,3 +125,8 @@
 
 - Start `ee569dd`; resulting commit is this unit's commit. Production files: `enterprise_risk_manager.py`, `risk_engine_adapter.py`. New test: `test_risk_correlation_snapshot_contract.py`. Immutable/versioned snapshots are published under the existing lock and pinned at dynamic-sizing entry. Live worker schedule, Risk formula, limits and strategy/Fusion behavior unchanged.
 - Expanded local regression **125 passed / 0 failed**. Four protected persistence hashes matched immediately before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. Network/broker activity: NONE. Old historical publication schedule unavailable; replay scheduler and full scope not built. Baseline forbidden.
+
+## Replay correlation scheduler unit
+
+- Start `b153285`; resulting commit is this unit's commit. Production file `enterprise_risk_manager.py` adds optional worker startup; default Live worker remains enabled. New replay-only scheduler module and six tests. Replay anchor/tie rule documented in `REPLAY_CORRELATION_EVENT_TIME_CONTRACT.md`; no historical wake-up timing claim.
+- Expanded local regression **131 passed / 0 failed**. Protected hashes before/after unchanged: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No broker/network activity. Full ReplayScope and baseline not yet authorized.
