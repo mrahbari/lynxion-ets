@@ -16,6 +16,10 @@
 
 `pytest -q tests/unit/test_strategy_history_loader_scope.py tests/unit/test_canonical_decision_trace_subset.py tests/unit/test_closed_bar_decision_driver.py tests/unit/test_replay_decision_run_scope.py tests/unit/test_strategy_instance_scope.py tests/unit/test_historical_closed_bar_source.py tests/unit/test_risk_correlation_snapshot_contract.py tests/unit/test_replay_correlation_scheduler.py tests/unit/test_path_integrity_unit1_routes.py tests/unit/test_path_integrity_unit3_runtime_wiring.py tests/unit/test_f01_offline_intent_sizing.py --disable-warnings --tb=short`: **66 passed / 0 failed**. Explicit empty history cannot invoke the global broker registry in the tested adapter or scope path; omitted loader still uses the prior Live provider. No causal strategy history is supplied, so no intent-level prefix claim. Four protected persistence hashes identical before/after; no authenticated broker/network action.
 
+## Single-symbol causal strategy-history feed
+
+The preceding collection plus `tests/unit/test_causal_strategy_history_feed.py`: **69 passed / 0 failed**. Same-time actual 1m/1h closes enter matching buffers before decision; future, duplicate and cross-symbol input are rejected. Prefix-plus-future normalized trace and strategy-buffer contents match for the bounded two-bar fixture, which produces no intent. Four protected persistence hashes identical before/after. No broker/network action.
+
 `pytest -q tests/unit/test_historical_closed_bar_source.py --disable-warnings --tb=short`: 5 passed, 0 failed. Covered completed-bar gating, source-prefix equality, duplicate/gap/order rejection, MTF close boundary, NaN rejection, repeated construction and UTC day boundary.
 
 Not run: full canonical-path test, live/replay parity, risk/guard parity, normalized decision trace, network-capable broker test, profitability/backtest. No authenticated exchange request was made by the tests. This result is insufficient for G1/G5/G6/G8/G9 at decision level.

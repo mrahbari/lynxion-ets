@@ -10,4 +10,6 @@ The existing `HistoricalCandleWatcherAdapter` now receives validated completed b
 
 ## Normalized routed-event subset
 
-A later two-bar fixture compares the complete normalized payloads of reached `MARKET_OBSERVATION`, `INTERPRETED_SIGNAL` and `FUSED_SIGNAL` events for a prefix run versus the same input with one future candle appended. The traces are identical through T and repeat identically. No `EXECUTION_INTENT` is produced; adapter lazy historical data sourcing is not point-in-time bound. This is **not** full decision-level or after-cost prefix invariance. Status remains `PREFIX_INVARIANCE_NOT_TESTABLE`.
+A later two-bar fixture compares the complete normalized payloads of reached `MARKET_OBSERVATION`, `INTERPRETED_SIGNAL` and `FUSED_SIGNAL` events for a prefix run versus the same input with one future candle appended. The traces are identical through T and repeat identically. No `EXECUTION_INTENT` is produced; that fixture's adapter history source was fail-closed empty. This is **not** full decision-level or after-cost prefix invariance. Status remains `PREFIX_INVARIANCE_NOT_TESTABLE`.
+
+An optional later one-symbol feed supplies only actual completed, exactly timeframe-matched bars to existing strategy buffers. With this feed, the two-bar normalized trace and buffer contents still match when a future bar is appended, and same-time 1m/1h closes are available only at their close. This fixture also produces no intent; full decision-level status is unchanged.
