@@ -175,3 +175,8 @@
 
 - Start `48ce1e3`; resulting commit is this unit's commit. New `infrastructure/replay/decision_run_scope.py` and `test_replay_decision_run_scope.py`; existing Live composition unchanged. Fresh per-run canonical decision objects and worker-free Risk manager; no execution service, credential, broker factory or simulated order route.
 - Expanded regression **147 passed / 0 failed**. Four protected persistence hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Full ApplicationRunScope, canonical source-to-order wiring, prefix/parity and baseline not yet verified.
+
+## Closed-bar decision subset addendum
+
+- Start `68be87a`; resulting commit is this unit's commit. New `infrastructure/replay/closed_bar_decision_driver.py`, `test_closed_bar_decision_driver.py`; watcher matrix, prefix-results and parity matrix updated with **subset-only** evidence. No production trading source or policy changed.
+- Expanded regression **149 passed / 0 failed**. Four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Full watcher coverage, execution scope, full prefix/parity and baseline remain unavailable.

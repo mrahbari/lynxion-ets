@@ -115,3 +115,7 @@ The scoped AutoDetection constructor test injects a no-op factory while replacin
 ## Isolated decision-scope slice
 
 `test_replay_decision_run_scope.py`: **2 passed / 0 failed**. Independent routers/Engine/Fusion/Strategy/Risk/clock/traces, no broker capability, causal price/heartbeat isolation, and repeated reached event-type trace. Expanded applicable regression **147 passed / 0 failed**. Four protected persistence hashes matched before/after. No authenticated network/broker activity. This tests only the canonical decision slice, not full intent-to-order parity or prefix invariance.
+
+## Closed-bar canonical decision subset
+
+`test_closed_bar_decision_driver.py`: **2 passed / 0 failed**. Appending a future completed bar does not change the bounded historical-watcher observation/event-type prefix or Risk price history through T; BTC/ETH watcher buffers remain distinct. Expanded applicable regression **149 passed / 0 failed**. Four protected persistence hashes matched before/after; no broker/network activity. Full prefix-invariance and live/replay parity gates remain untestable.

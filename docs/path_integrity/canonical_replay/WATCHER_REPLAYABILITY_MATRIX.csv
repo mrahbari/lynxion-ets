@@ -1,5 +1,5 @@
 watcher,classification,evidence_or_missing_input
-HistoricalCandleWatcherAdapter,UNKNOWN,"Unit-2 now preserves historical close/event timestamp; complete feature/input equivalence with live watcher remains unproven"
+HistoricalCandleWatcherAdapter,REPLAYABLE_FROM_HISTORICAL_DATA,"defined completed-bar subset now runs through the same watcher class and canonical decision handlers; full live watcher/input equivalence remains unproven"
 MarketPulseWatcher,UNKNOWN,"needs exact live input and event-time semantics audit"
 VolatilityWatcher,UNKNOWN,"needs exact live input and event-time semantics audit"
 TrendMTFWatcher,UNKNOWN,"requires completed HTF feed and alignment proof"
