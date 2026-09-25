@@ -123,3 +123,7 @@ The scoped AutoDetection constructor test injects a no-op factory while replacin
 ## Scoped Guard circuit breaker
 
 `test_replay_guard_breaker_scope.py` and prior `test_live_execution_guard.py`: **13 passed / 0 failed**. Two guards do not share breaker state; event-time advances through unchanged 60-second reset threshold; omitted clock remains LiveClock. Expanded applicable regression **162 passed / 0 failed**. Four protected persistence hashes unchanged before/after; no authenticated network/broker activity. The complete Guard-to-simulated-broker path remains untested.
+
+## Simulated broker boundary
+
+`test_simulated_broker_boundary.py`: **1 passed / 0 failed**. Local deterministic IDs/state, no fill/position or fabricated order-book depth, no connection/credential surface. Expanded applicable regression **163 passed / 0 failed**; four protected persistence hashes unchanged. Broker is not yet reachable from canonical queued execution.

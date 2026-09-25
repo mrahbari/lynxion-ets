@@ -215,3 +215,8 @@ Exact next action requiring review: define how the decision-relevant rolling-cor
 
 - Start `1b77289`; `CircuitBreaker` accepts an optional clock and `LiveExecutionGuard` an optional breaker lookup. Omitted defaults retain LiveClock and the process-global breaker manager. A scoped guard can consume a separate event-time breaker without changing failure threshold, reset interval or Guard precedence.
 - Focused tests cover two isolated guards, deterministic open/reset time, and Live default. Expanded applicable regression **162 passed / 0 failed**; four protected persistence hashes unchanged; no authenticated broker/network activity. The execution truth ledger, BrokerExecutionService and real queued owner are not yet bound into a full replay execution scope.
+
+## F-prep — network-incapable broker boundary
+
+- Start `f1ee5cb`; added `SimulatedBrokerAdapter`, a local BrokerAdapter port implementation that records accepted orders with deterministic IDs, supports local cancellation/status/open-order queries, and never assumes a fill, fabricates order-book depth, calculates Risk/PnL or contains credentials/network clients. It is **not yet wired** to the authoritative queued owner or Guard.
+- Focused test proves deterministic independent instances and no automatic position; expanded applicable regression **163 passed / 0 failed**. Four protected persistence hashes unchanged; no authenticated broker/network activity. Full pre-broker semantic parity and baseline remain forbidden.

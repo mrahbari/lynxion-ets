@@ -185,3 +185,8 @@
 
 - Start `1b77289`; resulting commit is this unit's commit. Production files: `shared/circuit_breaker.py`, `shared/live_execution_guard.py`; new `test_replay_guard_breaker_scope.py`. Optional event clock and breaker lookup retain existing Live defaults and numerical policy.
 - Expanded regression **162 passed / 0 failed**. Four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Full execution scope/prefix/parity/baseline not yet verified.
+
+## Simulated broker boundary addendum
+
+- Start `f1ee5cb`; resulting commit is this unit's commit. New `infrastructure/replay/simulated_broker.py` and `test_simulated_broker_boundary.py`. No production trading source changed. Network-incapable broker port only; no risk policy, fill/PnL or order-book approximation.
+- Expanded regression **163 passed / 0 failed**. Four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Not wired to canonical owner/Guard; baseline forbidden.
