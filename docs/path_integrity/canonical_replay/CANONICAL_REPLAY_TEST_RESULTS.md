@@ -127,3 +127,7 @@ The scoped AutoDetection constructor test injects a no-op factory while replacin
 ## Simulated broker boundary
 
 `test_simulated_broker_boundary.py`: **1 passed / 0 failed**. Local deterministic IDs/state, no fill/position or fabricated order-book depth, no connection/credential surface. Expanded applicable regression **163 passed / 0 failed**; four protected persistence hashes unchanged. Broker is not yet reachable from canonical queued execution.
+
+## Scoped existing order service
+
+`test_scoped_broker_execution_service.py` and `test_order_side_string_robustness.py`: **10 passed / 0 failed**. Explicit construction refuses missing Risk enforcer and uses a local broker, Guard, ledger, pending state, validator, forensic sink, notification and clock. One mechanical order reached only the local simulated broker. Expanded applicable regression **173 passed / 0 failed**. Four protected persistence hashes unchanged; network socket connection denied in the focused test. Full queued-owner/RiskEnforcement/reconciliation path remains unverified.

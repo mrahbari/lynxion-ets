@@ -190,3 +190,8 @@
 
 - Start `f1ee5cb`; resulting commit is this unit's commit. New `infrastructure/replay/simulated_broker.py` and `test_simulated_broker_boundary.py`. No production trading source changed. Network-incapable broker port only; no risk policy, fill/PnL or order-book approximation.
 - Expanded regression **163 passed / 0 failed**. Four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Not wired to canonical owner/Guard; baseline forbidden.
+
+## Scoped existing BrokerExecutionService addendum
+
+- Start `32968b0`; resulting commit is this unit's commit. Production file: `infrastructure/services/broker_execution_service.py`; new `test_scoped_broker_execution_service.py`. Explicit constructor requires local broker, Guard with Risk enforcer, ledger, pending state, validator, forensic sink, notification callback and clock. Default Live path remains. Existing validation/send logic is reused, not copied into replay.
+- Expanded regression **173 passed / 0 failed**. Four protected hashes unchanged before/after: active `11107b33...`, live orders `e72c03f3...`, cooldown `0607bcea...`, trade `1eb076e6...`. No authenticated broker/network activity. Canonical queued owner and full Risk/reconciliation controls are not yet composed; prefix/parity/baseline unavailable.

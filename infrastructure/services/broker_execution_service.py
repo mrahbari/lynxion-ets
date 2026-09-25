@@ -23,7 +23,10 @@ class BrokerExecutionService(ExecutionPort):
     # Duplicate prevention is now handled by the shared PendingOrdersTracker
     # See infrastructure/shared/pending_orders_tracker.py
 
-    def __init__(self, settings, broker_type: Optional[str] = None, config: Optional[Dict[str, Any]] = None, use_multi_broker: bool = False, primary_broker: Optional[str] = None):
+    def __init__(self, settings, broker_type: Optional[str] = None, config: Optional[Dict[str, Any]] = None, use_multi_broker: bool = False, primary_broker: Optional[str] = None,
+                 *, broker_adapter=None, guard_instance=None, ledger_instance=None,
+                 pending_orders_state=None, symbol_validator_instance=None,
+                 forensic_sink=None, notification_callback=None, clock=None):
         """
         Initialize the broker execution service.
 
@@ -39,6 +42,32 @@ class BrokerExecutionService(ExecutionPort):
         # Settings injected by the composition root (E1.T4); same values as before,
         # without importing bootstrap.settings.loaders here.
         self._settings = settings
+        if broker_adapter is None and any(item is not None for item in (
+            guard_instance, ledger_instance, pending_orders_state,
+            symbol_validator_instance, forensic_sink, notification_callback, clock,
+        )):
+            raise ValueError("scoped safety dependencies require an explicit broker adapter")
+        self._scoped_guard = guard_instance
+        self._scoped_ledger = ledger_instance
+        self._scoped_pending_orders = pending_orders_state
+        self._scoped_symbol_validator = symbol_validator_instance
+        self._scoped_forensic_sink = forensic_sink
+        self._scoped_notification_callback = notification_callback
+        self._scoped_clock = clock
+        if broker_adapter is not None:
+            if use_multi_broker or not broker_type or any(item is None for item in (
+                guard_instance, ledger_instance, pending_orders_state,
+                symbol_validator_instance, forensic_sink, notification_callback, clock,
+            )):
+                raise ValueError("scoped broker construction requires explicit safety dependencies")
+            if getattr(guard_instance, "_risk_enforcer", None) is None:
+                raise ValueError("scoped broker construction requires an active Risk enforcer")
+            self.use_multi_broker = False
+            self.broker_type = broker_type.lower()
+            self.broker_name = self.broker_type
+            self.broker = broker_adapter
+            self.logger = EnhancedLogger("BrokerExecutionService")
+            return
         from infrastructure.brokers.broker_adapters import (
             BingXBrokerAdapter, BinanceBrokerAdapter, MEXCBrokerAdapter, PhemexBrokerAdapter
         )
@@ -194,6 +223,41 @@ class BrokerExecutionService(ExecutionPort):
         from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
         return len(PendingOrdersTracker.get_pending_orders_for_symbol(symbol)) > 0
 
+    def _pending_has_any(self, symbol):
+        state = getattr(self, "_scoped_pending_orders", None)
+        return (bool(state.get_pending_orders_for_symbol(symbol)) if state is not None
+                else self._has_any_pending_order(symbol))
+
+    def _pending_add(self, symbol, side, order_id):
+        state = getattr(self, "_scoped_pending_orders", None)
+        if state is not None:
+            state.add_pending_order(symbol, side, order_id)
+        else:
+            self._add_pending_order(symbol, side, order_id)
+
+    def _pending_remove(self, symbol, order_id):
+        state = getattr(self, "_scoped_pending_orders", None)
+        if state is not None:
+            state.remove_pending_order(symbol, order_id)
+        else:
+            self._remove_pending_order(symbol, order_id)
+
+    def _execution_guard(self):
+        if getattr(self, "_scoped_guard", None) is not None:
+            return self._scoped_guard
+        from shared.live_execution_guard import live_execution_guard
+        return live_execution_guard
+
+    def _symbol_validator(self):
+        if getattr(self, "_scoped_symbol_validator", None) is not None:
+            return self._scoped_symbol_validator
+        from infrastructure.services.symbol_validator import symbol_validator
+        return symbol_validator
+
+    def _forensic(self):
+        sink = getattr(self, "_scoped_forensic_sink", None)
+        return sink if sink is not None else forensic_logger
+
     def execute_order(self, order: Order) -> str:
         """Execute an order through the configured broker."""
         try:
@@ -205,8 +269,7 @@ class BrokerExecutionService(ExecutionPort):
 
             # First, check if the symbol is in the approved symbols list
             # This is the primary validation - if a symbol is not approved, it's not available for trading
-            from infrastructure.services.symbol_validator import symbol_validator
-            if not symbol_validator.is_symbol_approved(order.symbol):
+            if not self._symbol_validator().is_symbol_approved(order.symbol):
                 self.logger.info(f"❌ SYMBOL REJECTED: {symbol_str} is not in approved symbols list. Order execution denied.")
                 return None
 
@@ -248,7 +311,7 @@ class BrokerExecutionService(ExecutionPort):
                         position_duplicate = True
 
                 # Check for pending orders on the symbol
-                pending_duplicate = self._has_any_pending_order(order.symbol)
+                pending_duplicate = self._pending_has_any(order.symbol)
 
                 # If either condition is true, prevent the trade
                 if position_duplicate or pending_duplicate:
@@ -308,8 +371,7 @@ class BrokerExecutionService(ExecutionPort):
                 # PAPER orders are filled by the paper engine and must not be connectivity-gated.
                 # (The multi-broker path handles its own connection check downstream.)
                 if not self.use_multi_broker:
-                    from shared.live_execution_guard import live_execution_guard
-                    if live_execution_guard.evaluate(self.broker_type, self._settings, order).is_real_send:
+                    if self._execution_guard().evaluate(self.broker_type, self._settings, order).is_real_send:
                         if hasattr(self.broker, 'connected'):
                             if not self.broker.connected:
                                 self.logger.error(f"❌ BROKER NOT CONNECTED: Cannot place order on {self.broker_name}")
@@ -332,10 +394,10 @@ class BrokerExecutionService(ExecutionPort):
                     # Single-broker send path (concrete broker = self.broker_type). Atomically
                     # evaluates, writes the Execution Truth Ledger BEFORE any send, and sends
                     # under the guard lock so the kill switch / breaker cannot interleave.
-                    from shared.live_execution_guard import live_execution_guard
-                    guard_decision, order_id = live_execution_guard.authorize_and_send(
+                    guard_decision, order_id = self._execution_guard().authorize_and_send(
                         broker_name=self.broker_type, settings=self._settings, order=order,
-                        send_fn=lambda: self.broker.place_order(order))
+                        send_fn=lambda: self.broker.place_order(order),
+                        ledger=getattr(self, "_scoped_ledger", None))
                     if not guard_decision.allowed:
                         self.logger.error(
                             f"🛑 LIVE_EXECUTION_GUARD BLOCKED order on {self.broker_name}: {guard_decision.reason}")
@@ -345,7 +407,7 @@ class BrokerExecutionService(ExecutionPort):
                             f"🧪 PAPER MODE — order SIMULATED on {self.broker_name} "
                             f"(NOT sent to exchange): {order_id} [{guard_decision.reason}]")
                         if prevent_same_direction and intended_position_side:
-                            self._add_pending_order(order.symbol, intended_position_side, order_id)
+                            self._pending_add(order.symbol, intended_position_side, order_id)
                         return order_id
                     self.logger.info(
                         f"🔐 LIVE_EXECUTION_GUARD authorized {guard_decision.mode.value.upper()} send "
@@ -359,7 +421,7 @@ class BrokerExecutionService(ExecutionPort):
 
                 # NOW we have a valid order ID from the broker, so we can add to pending orders
                 if prevent_same_direction and intended_position_side:
-                    self._add_pending_order(order.symbol, intended_position_side, order_id)
+                    self._pending_add(order.symbol, intended_position_side, order_id)
 
                 self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {self.broker_name}: {order_id}")
 
@@ -368,7 +430,7 @@ class BrokerExecutionService(ExecutionPort):
                 if not trade_id:
                     # Generate trade ID if not available
                     exchange = getattr(order, 'exchange', 'BINANCE')
-                    trade_id = forensic_logger._generate_trade_id(symbol_str, exchange)
+                    trade_id = self._forensic()._generate_trade_id(symbol_str, exchange)
 
                 # Prepare pre-validation checks and risk calculations for forensic logging
                 validation_checks = {
@@ -393,7 +455,7 @@ class BrokerExecutionService(ExecutionPort):
                 tp = float(order.take_profit_price.amount) if hasattr(order.take_profit_price, 'amount') else 0.0
                 quantity = float(order.quantity) if hasattr(order, 'quantity') else 0.0
 
-                forensic_logger.log_broker_execution(
+                self._forensic().log_broker_execution(
                     trade_id=trade_id,
                     exchange=self.broker_name,
                     side=order.side.name if hasattr(order.side, 'name') else str(order.side),
@@ -405,25 +467,23 @@ class BrokerExecutionService(ExecutionPort):
                     slippage=0.0,  # Slippage would need to be calculated based on execution
                     validation_checks=validation_checks,
                     order_status_lifecycle=['NEW', 'ACCEPTED', 'FILLED'],  # Would be updated based on actual lifecycle
-                    timestamp=datetime.now()
+                    timestamp=self._scoped_clock.now() if getattr(self, "_scoped_clock", None) is not None else datetime.now()
                 )
 
                 # Send Telegram notification about successful order placement
                 # Only send notification from BrokerExecutionService if not using multi-broker service
                 # (MultiBrokerExecutionService handles its own notifications)
                 if not self.use_multi_broker:
-                    self._send_order_placed_notification(order, order_id)
+                    if getattr(self, "_scoped_notification_callback", None) is not None:
+                        self._scoped_notification_callback(order, order_id)
+                    else:
+                        self._send_order_placed_notification(order, order_id)
 
                 # Release in-flight pending order lock once order is accepted by exchange
                 try:
-                    from infrastructure.shared.pending_orders_tracker.PendingOrdersTracker import PendingOrdersTracker
-                    PendingOrdersTracker.remove_pending_order(order.symbol, order_id)
+                    self._pending_remove(order.symbol, order_id)
                 except Exception:
-                    try:
-                        from infrastructure.shared.pending_orders_tracker import PendingOrdersTracker
-                        PendingOrdersTracker.remove_pending_order(order.symbol, order_id)
-                    except Exception:
-                        pass
+                    pass
 
                 return order_id
             except Exception as e:
