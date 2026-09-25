@@ -225,3 +225,8 @@
 
 - Start `a45bf47`; resulting commit is this documentation-only unit. New `STRATEGY_INPUT_PROVENANCE_GAP.md`; readiness audit, decision ledger and program log updated. Production/research source/config modified: **0**. Source review identified setup wall-clock time and missing-OBI/CVD/bid/ask defaults on reachable adapter/pipeline paths; actual historical consumption and complete archive coverage remain UNKNOWN.
 - No test rerun in this documentation-only unit. Last immediately preceding expanded regression: **69 passed / 0 failed**, four protected hashes unchanged before/after. No broker/network action. `EDGE_MEASUREMENT_NOT_READY`; no baseline.
+
+## Local input-archive schema addendum
+
+- Start `c127d18`; resulting commit is documentation-only. Inspected local compressed CSV headers/manifest read-only; updated `STRATEGY_INPUT_PROVENANCE_GAP.md`, decision ledger and program log. Production/research source/data/config changed: **0**. Direct timestamped BBO/OBI/CVD coverage is not established; no proxy was built.
+- No tests or broker/network calls in this source-data schema check. Last executed relevant regression: **69 passed / 0 failed**, protected hashes unchanged before/after that run. No baseline.
