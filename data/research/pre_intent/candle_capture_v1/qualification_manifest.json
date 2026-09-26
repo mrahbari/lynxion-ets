@@ -1,0 +1,22 @@
+{
+  "schema": "lynxion.pre_intent.candle_qualification.v1",
+  "capture_manifest_sha256": "4832beedbbddb4ea55da8882994cb7497f77298003f09e9642046331e8533ffb",
+  "parent_preregistration_sha256": "454485ff11fad12a9ad355517d3c1461b1df1676e182937c6c2d7e02d10a8cac",
+  "data_addendum_sha256": "b17e50a75591b26d08f435d460e9a9a8ca928ef0aab633b73de2ba495416bae5",
+  "source": "Binance USD-M Futures public 1h klines",
+  "time_semantics": "exchange row[0] open ms; row[6] final millisecond of close; causal availability = row[6] + 1 ms",
+  "symbols": {
+    "BTCUSDT": {"raw_sha256": "eb0868edc9ff94ce64d898c3a874d18c7979e3ae3d0a683e291b74210ff8c348", "rows": 768, "leading_margin": 24, "warmup": 50, "evaluation": 670, "trailing_margin": 24, "gaps": 0, "duplicates": 0, "invalid_ohlcv": 0},
+    "ETHUSDT": {"raw_sha256": "98d4f0c83d29974cb2d220616528d6bd8b998a016867bd37c85a14bd0e7f7190", "rows": 768, "leading_margin": 24, "warmup": 50, "evaluation": 670, "trailing_margin": 24, "gaps": 0, "duplicates": 0, "invalid_ohlcv": 0}
+  },
+  "common_warmup_and_evaluation": true,
+  "repeated_normalized_trace": "PASS",
+  "prefix_cuts_utc": ["2026-06-08T00:00:00+00:00", "2026-06-18T00:00:00+00:00", "2026-06-28T00:00:00+00:00"],
+  "prefix_results": ["PASS", "PASS", "PASS"],
+  "evaluation_fused_events": 1340,
+  "evaluation_directional_events": 0,
+  "frozen_minimum_directional_events": 100,
+  "study_outcomes_calculated": false,
+  "qualification": "CAUSAL_CANDLES_PASS; FROZEN_STUDY_SIGNAL_SAMPLE_FAIL",
+  "reason": "The existing watcher emits candle_reversal observations; the unchanged Engine maps this observation family to NEUTRAL, and single-input Fusion preserves that type."
+}
