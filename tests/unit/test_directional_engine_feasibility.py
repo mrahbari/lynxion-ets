@@ -4,7 +4,7 @@ import hashlib
 import json
 import socket
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from domain.value_objects import Symbol
@@ -73,6 +73,28 @@ def test_trend_live_defaults_and_explicit_run_dependencies():
                                forensic_sink=sink)
     assert isolated.clock is clock and isolated.forensic_sink is sink
     assert isolated.price_history is not live.price_history
+
+
+def test_trend_clock_reads_preserve_live_call_positions():
+    class StepClock:
+        def __init__(self):
+            self.calls = 0
+
+        def now(self):
+            self.calls += 1
+            return START + timedelta(seconds=self.calls)
+
+    clock = StepClock()
+    watcher = TrendMTFWatcher("TrendMTFWatcher", "BTCUSDT", clock=clock,
+                              forensic_sink=MemoryForensicSink())
+    watcher.update_data({"close": 100.0})
+    watcher.update_data({"close": 101.0})
+    observation = watcher.analyze(Symbol("BTCUSDT"))
+    assert clock.calls == 4
+    assert watcher.short_trend_state["timestamp"] == START + timedelta(seconds=1)
+    assert watcher.medium_trend_state["timestamp"] == START + timedelta(seconds=2)
+    assert watcher.long_trend_state["timestamp"] == START + timedelta(seconds=3)
+    assert observation.timestamp == START + timedelta(seconds=4)
 
 
 def test_existing_trend_engine_direction_is_causal_and_reproducible(monkeypatch):

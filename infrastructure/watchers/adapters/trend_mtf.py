@@ -77,10 +77,9 @@ class TrendMTFWatcher(BaseWatcher):
         long_trend = self.calculate_trend(self.price_history[-self.long_period:])
 
         # Update trend states
-        event_time = self.clock.now()
-        self.short_trend_state = {'direction': short_trend[0], 'strength': short_trend[1], 'timestamp': event_time}
-        self.medium_trend_state = {'direction': medium_trend[0], 'strength': medium_trend[1], 'timestamp': event_time}
-        self.long_trend_state = {'direction': long_trend[0], 'strength': long_trend[1], 'timestamp': event_time}
+        self.short_trend_state = {'direction': short_trend[0], 'strength': short_trend[1], 'timestamp': self.clock.now()}
+        self.medium_trend_state = {'direction': medium_trend[0], 'strength': medium_trend[1], 'timestamp': self.clock.now()}
+        self.long_trend_state = {'direction': long_trend[0], 'strength': long_trend[1], 'timestamp': self.clock.now()}
 
         # Calculate overall trend score (combination of all timeframes)
         overall_trend_score = self.calculate_overall_trend_score(short_trend, medium_trend, long_trend)
@@ -119,7 +118,7 @@ class TrendMTFWatcher(BaseWatcher):
             observation_type=observation_type,
             observation_value=observation_value,
             confidence=confidence_percentage,
-            timestamp=event_time,
+            timestamp=self.clock.now(),
             metadata={
                 'short_trend': {
                     'direction': short_trend[0],
