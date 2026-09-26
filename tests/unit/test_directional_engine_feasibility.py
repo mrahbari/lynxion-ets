@@ -104,6 +104,9 @@ def test_existing_trend_engine_direction_is_causal_and_reproducible(monkeypatch)
     selected_counts = Counter(row[1] for row in selected)
     selected_days = {symbol: len({row[0][:10] for row in selected if row[1] == symbol})
                      for symbol in ("BTCUSDT", "ETHUSDT")}
+    print("outcome-blind full/selected trace SHA-256:", _digest(full), _digest(selected))
+    assert _digest(full) == "e6efa4b9625812dbb864187b6ee87b5e87b939cc1729f040e092fe9b12c25126"
+    assert _digest(selected) == "d5f836229267d36d0f9ec62fa10281877618daf3d0ea939d40f2627688fdb54f"
     print("outcome-blind non-overlap counts:", dict(sorted(selected_counts.items())))
     print("outcome-blind distinct UTC days:", selected_days)
     assert len(selected) >= 100
