@@ -21,6 +21,12 @@ def test_structure_agreement_inventory_is_causal_repeated_and_symbol_isolated(mo
     full = inventory(bars)
     assert inventory(bars) == full
     assert counts(full)["selected_directional"] == 163
+    assert counts(full)["all_directional"] == 417
+    assert counts(full)["all_agreement"] == 291
+    assert counts(full)["all_nonagreement"] == 126
+    assert counts(full)["comparable_symbol_week_side_strata"] == 16
+    assert counts(full)["comparable_eligible"] == 266
+    assert counts(full)["comparable_controls"] == 126
     assert counts(full)["eligible_structure_agreement"] == 118
     assert counts(full)["nonagreement_controls"] == 45
     for cut in (datetime(2026, 6, day, tzinfo=timezone.utc) for day in (8, 18, 28)):

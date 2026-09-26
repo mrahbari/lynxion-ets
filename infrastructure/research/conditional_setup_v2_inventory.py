@@ -65,14 +65,25 @@ def inventory(bars):
 
 def counts(rows):
     all_directions = Counter(row[2] for row in rows)
-    directional = (row for row in rows if row[2] in {"BUY", "SELL"})
+    directional = tuple(row for row in rows if row[2] in {"BUY", "SELL"})
+    def matching(row):
+        return (row[2] == "BUY" and row[3] == "LONG") or (row[2] == "SELL" and row[3] == "SHORT")
+    all_eligible = tuple(row for row in directional if matching(row))
+    all_controls = tuple(row for row in directional if not matching(row))
+    arms_by_stratum = defaultdict(lambda: [0, 0])
+    for row in directional:
+        iso = datetime.fromisoformat(row[0]).isocalendar()
+        stratum = (row[1], iso.year, iso.week, row[2])
+        arms_by_stratum[stratum][0 if matching(row) else 1] += 1
+    paired_strata = {key for key, arm_counts in arms_by_stratum.items() if min(arm_counts) > 0}
+    comparable = tuple(row for row in directional
+                       if (row[1], datetime.fromisoformat(row[0]).isocalendar().year,
+                           datetime.fromisoformat(row[0]).isocalendar().week, row[2]) in paired_strata)
     first_by_block = {}
     for row in directional:
         event_time = datetime.fromisoformat(row[0])
         first_by_block.setdefault((row[1], int(event_time.timestamp()) // 14400), row)
     selected = tuple(first_by_block.values())
-    def matching(row):
-        return (row[2] == "BUY" and row[3] == "LONG") or (row[2] == "SELL" and row[3] == "SHORT")
     eligible = tuple(row for row in selected if matching(row))
     controls = tuple(row for row in selected if not matching(row))
     arms_by_day = defaultdict(set)
@@ -81,6 +92,13 @@ def counts(rows):
     return {
         "all_engine_directions": dict(sorted(all_directions.items())),
         "structure_bias_all": dict(sorted(Counter(row[3] for row in rows).items())),
+        "all_directional": len(directional),
+        "all_agreement": len(all_eligible),
+        "all_nonagreement": len(all_controls),
+        "comparable_symbol_week_side_strata": len(paired_strata),
+        "comparable_eligible": sum(matching(row) for row in comparable),
+        "comparable_controls": sum(not matching(row) for row in comparable),
+        "comparable_utc_days": len({row[0][:10] for row in comparable}),
         "selected_directional": len(selected),
         "eligible_structure_agreement": len(eligible),
         "nonagreement_controls": len(controls),
