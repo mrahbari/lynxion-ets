@@ -54,3 +54,20 @@ def test_closed_bar_subset_keeps_two_symbol_watcher_buffers_separate():
     assert [row[0] for row in normalized] == ["BTCUSDT", "ETHUSDT"]
     assert prices == {"BTCUSDT": [100.0], "ETHUSDT": [200.0]}
     assert len(driver.watchers) == 2
+
+
+def test_closed_bar_driver_preserves_live_watcher_identity_for_fusion():
+    candle = bar("BTCUSDT", 0, 100.0)
+    scope = ReplayDecisionRunScope(START)
+    try:
+        driver = ClosedBarDecisionDriver(
+            scope, HistoricalClosedBarSource((candle,)),
+            SimpleNamespace(watcher=SimpleNamespace(historical_candle_watcher_enabled=True)),
+        )
+        reached = driver.run_through(candle.close_time)
+        assert reached[0][0].metadata["watcher_name"] == "historical_candle"
+        fused = [row for row in scope.decision_trace if row["event_type"] == "fused_signal"]
+        assert len(fused) == 1
+        assert fused[0]["data"]["metadata"]["hierarchical_fusion"] is True
+    finally:
+        scope.close()

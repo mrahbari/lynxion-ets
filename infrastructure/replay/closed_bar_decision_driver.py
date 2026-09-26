@@ -46,6 +46,12 @@ class ClosedBarDecisionDriver:
                 if observation is not None:
                     if observation.timestamp != bar.close_time:
                         raise ValueError("historical watcher did not preserve completed-bar time")
+                    # Live MonitoringAnalysisService attaches the watcher registry
+                    # key before publishing. Preserve that same identity so Engine
+                    # and Fusion select their existing live interpretation path.
+                    if observation.metadata is None:
+                        observation.metadata = {}
+                    observation.metadata.setdefault("watcher_name", "historical_candle")
                     # This value comes from the already-completed, validated source bar.
                     observation.market_price = bar.close
                     event_types = self.scope.process_observation(observation)
