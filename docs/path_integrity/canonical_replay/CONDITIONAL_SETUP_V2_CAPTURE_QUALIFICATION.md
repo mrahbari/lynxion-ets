@@ -1,0 +1,16 @@
+# V2 frozen public capture qualification — pre-outcome
+
+Starting HEAD `9ebd1eb`. Frozen acquisition specification commit `4f5d9d4`, SHA-256 `7df09233b82f6f6594b1963d4403a35f5323abde7acd48488743592e8775f86f`; frozen V2 preregistration SHA-256 `47579b9a8e9d63633140773996bc748ee6e0947dc1e5c30e08e3def5c4dcceeb`. This qualification did **not** compute any later close, return, PnL or Edge outcome.
+
+Immutable source: Binance USD-M Futures public `/fapi/v1/klines`, exactly BTCUSDT and ETHUSDT 1h. Raw acquisition was executed once on 2026-09-27 UTC without credentials. Capture manifest SHA-256 `38813362968e9f9c696fe754badeea5bb0a765b79ac05ee8ee80cf1572beac36`; it records the exact four URLs, UTC request/receipt times, HTTP 200 and each raw response hash. The source row exposes exchange open milliseconds and close milliseconds; each observed `close_ms = open_ms + 3,599,999`, and the causal bar-availability instant is `close_ms + 1`. All requested bars had completed before their receipt timestamps.
+
+| Symbol | Page 1 SHA-256 | Page 2 SHA-256 | Rows | Warmup | Evaluation |
+|---|---|---|---:|---:|---:|
+| BTCUSDT | `80cb0866f9a3416eaf248ea08c96d24e2feead86893068fc59ae5b4538bb8854` | `c286b18fd024170ec2f8f7a4e18f48848e03ffc036312153de716f9a422141d0` | 2,088 | 72 | 2,016 |
+| ETHUSDT | `830a2105dd4cb0b51d99c0e2b11e3052f19ca818b92fbfb8cf24e7e967ad34b4` | `1585119c85bb313e9ad3e381b9429d23fac53848f9fd9addb363ccbf300c8179` | 2,088 | 72 | 2,016 |
+
+Acquisition open-time window `[2026-07-01 00:00,2026-09-26 00:00)` UTC; warmup `[2026-07-01,2026-07-04)`; evaluation `[2026-07-04,2026-09-26)`. Both symbols have the exact same 2,088-hour span. The fail-closed local loader checked the frozen spec and manifest identities, exact source/URL/page order and boundaries, immutable bytes/size/row count, 12-column source schema, strictly expected hourly open times, completed close times, finite positive OHLC, low/high geometry, and nonnegative finite volume. Results: **gaps 0, duplicates 0, invalid OHLCV 0, missing hours 0**. No cleaning, resampling, substitution or repair was applied.
+
+Qualification source and tamper/network-denial tests are scoped to `infrastructure/replay/conditional_setup_v2_capture.py` and `tests/unit/test_conditional_setup_v2_capture.py`. Focused collection with existing causal/inventory regressions: **8 PASS / 0 FAIL**. Protected production persistence hashes before/after: active positions `11107b33a93f7d616abc1009ce41fdba955cacb422236643d97414f14033e1ab`, cooldown `0607bcea11d4f81bf8890e0dfee39809d3d9ded4e3af96b4f64811d59e5c6a56`, live orders `e72c03f35a18cd0732b97b901bff480977760bfebc4de603c9abb860e170f348`, trade journal `1eb076e61351de3f0cd9f4fda81493e12bdd1588f82b6e114b8c48993cda0d14`. No authenticated broker/account/order activity during this unit; offline tests deny network.
+
+**DATA_PROVENANCE_PASS; CLOSED_BAR_PASS; DATA_QUALITY_PASS.** This does not activate V2: the outcome-blind sample floor and remaining causal gates must pass separately before any future label is read. The capture manifest remains unchanged with its original `RAW_CAPTURED_NOT_QUALIFIED` acquisition-stage status; this separate qualification artifact records the subsequent verdict.
