@@ -35,6 +35,19 @@ def test_is_symbol_approved_false_for_unlisted_symbol(approved_symbols_config):
 
 
 @pytest.mark.unit
+def test_raw_string_symbol_keeps_approval_and_blacklist_rules(approved_symbols_config, tmp_path):
+    blacklist = tmp_path / "blacklisted.json"
+    blacklist.write_text('["XMRUSDT"]', encoding="utf-8")
+    v = SymbolValidator(
+        config_path=approved_symbols_config(["BTCUSDT", "XMRUSDT"]),
+        blacklist_path=str(blacklist),
+    )
+    assert v.is_symbol_approved("BTCUSDT") is True
+    assert v.is_symbol_approved("DOGEUSDT") is False
+    assert v.is_symbol_approved("XMRUSDT") is False
+
+
+@pytest.mark.unit
 def test_slash_listed_symbol_matches_plain_symbol(approved_symbols_config):
     # Approved list carries "BTC/USDT"; a plain Symbol("BTCUSDT") should match
     # via the no-slash normalized form.

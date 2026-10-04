@@ -95,7 +95,7 @@ class SymbolValidator:
     def is_symbol_approved(self, symbol: Symbol) -> bool:
         """Check if a symbol is in the approved list and not blacklisted"""
         self._refresh_blacklist_if_changed()
-        symbol_str = symbol.value.upper()
+        symbol_str = str(getattr(symbol, "value", symbol)).upper()
         clean = self.normalize_symbol(symbol_str)
         if clean in self.blacklisted_symbols or symbol_str in self.blacklisted_symbols:
             self.logger.warning(f"🚫 SYMBOL BLACKLISTED: {symbol_str} is in blacklist configuration.")
