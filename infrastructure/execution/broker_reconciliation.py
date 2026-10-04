@@ -62,6 +62,9 @@ class BrokerReconciliationService:
         self.logger = EnhancedLogger("BrokerReconciliationService")
         # Persistent tracking for active position transitions and closed position idempotency across restarts
         self._previous_active_symbols: set[str] = self._load_active_symbols()
+        # Only a fill newer than an observed open position can explain its exit.
+        # Symbols restored from the journal have no safe timestamp until seen open.
+        self._active_seen_ms: dict[str, int] = {}
         self._processed_closed_exits: set[str] = set()
         self._unknown_exit_sequence = 0
 
@@ -180,6 +183,9 @@ class BrokerReconciliationService:
         """Detect exchange position closures (transition to positionAmt == 0) and propagate trade result."""
         # Find symbols that were active in the previous cycle but are absent in current cycle
         closed_symbols = self._previous_active_symbols - current_active_symbols
+        previously_seen_ms = self._active_seen_ms
+        observed_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+        self._active_seen_ms = {sym: observed_ms for sym in current_active_symbols}
         # Update active symbols for next cycle and persist atomically across process restarts
         self._previous_active_symbols = set(current_active_symbols)
         self._save_active_symbols()
@@ -191,7 +197,7 @@ class BrokerReconciliationService:
             try:
                 # 1. Resolve closing order from broker history
                 closing_order_id = "UNKNOWN"
-                is_profitable = False
+                is_profitable = None
                 realized_pnl = None
 
                 if hasattr(broker, "get_order_history"):
@@ -204,6 +210,14 @@ class BrokerReconciliationService:
                             reverse=True
                         )
                         for order in sorted_history:
+                            order_time = order.get("updateTime") or order.get("time")
+                            seen_ms = previously_seen_ms.get(sym)
+                            try:
+                                order_time_ms = int(order_time)
+                            except (TypeError, ValueError):
+                                continue
+                            if seen_ms is None or not seen_ms <= order_time_ms <= observed_ms:
+                                continue
                             order_symbol = _sym(order.get("symbol", ""))
                             if order_symbol:
                                 normalized_order_symbol = order_symbol.upper().replace("-", "").replace("/", "").replace("_", "")
@@ -226,10 +240,8 @@ class BrokerReconciliationService:
                                     except (ValueError, TypeError):
                                         pass
 
-                                if order_type == "TAKE_PROFIT_MARKET" or (realized_pnl is not None and realized_pnl > 0):
-                                    is_profitable = True
-                                elif order_type in {"STOP_MARKET", "LIQUIDATION"} or (realized_pnl is not None and realized_pnl < 0):
-                                    is_profitable = False
+                                if realized_pnl is not None:
+                                    is_profitable = realized_pnl > 0
                                 break
                     except Exception as hist_err:
                         self.logger.warning(f"Could not retrieve order history for {sym}: {hist_err}")
@@ -256,20 +268,24 @@ class BrokerReconciliationService:
                 if closing_order_id != "UNKNOWN":
                     self._observe_terminal_order(sym, order)
 
-                # 3. Propagate to strategy_manager and register with SymbolCooldownGate
+                # 3. Propagate verified outcomes. UNKNOWN is not a proven loss;
+                # apply one conservative safety cooldown without inventing a
+                # losing trade or double-counting a rapid-loss circuit breaker.
                 from infrastructure.strategies.strategy_manager import strategy_manager
-                strategy_manager.record_trade_result(sym, is_profitable=is_profitable, position_closed=True)
-
                 from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
-                if not is_profitable or realized_pnl is None or realized_pnl <= 0 or closing_order_id == "UNKNOWN":
-                    symbol_cooldown_gate.record_stop_loss_exit(sym)
-                    self.logger.warning(f"🛑 SYMBOL COOLDOWN GATE: Activated 60m Stop Loss Cooldown for {sym} (is_profitable={is_profitable}, PnL={realized_pnl})")
+                if is_profitable is None:
+                    symbol_cooldown_gate.record_unverified_exit(sym)
+                    self.logger.warning(f"🛑 SYMBOL COOLDOWN GATE: Safety cooldown for unverified exit on {sym}")
                 else:
-                    symbol_cooldown_gate.record_take_profit_exit(sym)
+                    strategy_manager.record_trade_result(sym, is_profitable=is_profitable, position_closed=True)
+                    if is_profitable:
+                        symbol_cooldown_gate.record_take_profit_exit(sym)
 
-                print(f"\n🔴 [POSITION CLOSED] {sym}: outcome={'TAKE PROFIT' if is_profitable else 'STOP LOSS'} PnL={realized_pnl if realized_pnl is not None else 'N/A'} USDT", flush=True)
+                outcome_label = "UNKNOWN" if is_profitable is None else "PROFITABLE" if is_profitable else "LOSS"
+                print(f"\n🔴 [POSITION CLOSED] {sym}: outcome={outcome_label} PnL={realized_pnl if realized_pnl is not None else 'N/A'} USDT", flush=True)
                 self.logger.warning(
-                    f"✅ POSITION CLOSED CONFIRMED for {sym}: exit_key={exit_key}, is_profitable={is_profitable}"
+                    f"✅ POSITION CLOSED CONFIRMED for {sym}: exit_key={exit_key}, "
+                    f"outcome={outcome_label}, realized_pnl={realized_pnl}"
                 )
 
                 # 3b. Sync terminal state to live_order_journal to prevent stale in-flight recovery warnings
@@ -297,18 +313,18 @@ class BrokerReconciliationService:
                 try:
                     from infrastructure.services.risk_alerts import send_telegram
                     # An absent closing order is not evidence of a stop-loss fill.
-                    # Preserve the existing conservative cooldown, but do not
-                    # report an inferred loss as an exchange-confirmed outcome.
-                    outcome_str = ("UNKNOWN — closing order not identified"
-                                   if closing_order_id == "UNKNOWN"
-                                   else "STOP LOSS" if not is_profitable else "TAKE PROFIT")
-                    emoji = "⚠️" if closing_order_id == "UNKNOWN" else "🛑" if not is_profitable else "✅"
+                    outcome_str = ("UNKNOWN — closing order not identified" if closing_order_id == "UNKNOWN"
+                                   else "UNKNOWN — realized PnL unavailable" if is_profitable is None
+                                   else "PROFITABLE EXIT" if is_profitable else "LOSS")
+                    emoji = "⚠️" if is_profitable is None else "✅" if is_profitable else "🛑"
+                    cooldown_str = ("Safety cooldown pending exit verification" if is_profitable is None
+                                    else "None" if is_profitable else "Loss cooldown active")
                     msg = (
                         f"{emoji} <b>EXCHANGE POSITION CLOSED</b>\n\n"
                         f"• <b>Symbol:</b> <code>{sym}</code>\n"
                         f"• <b>Outcome:</b> {outcome_str}\n"
                         f"• <b>Realized PnL:</b> <code>{realized_pnl if realized_pnl is not None else 'N/A'} USDT</code>\n"
-                        f"• <b>Cooldown:</b> {'60-Minute Stop Loss Cooldown Activated' if not is_profitable else 'None'}"
+                        f"• <b>Cooldown:</b> {cooldown_str}"
                     )
                     send_telegram(msg)
                 except Exception as tel_err:

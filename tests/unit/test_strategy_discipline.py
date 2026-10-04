@@ -67,11 +67,21 @@ def test_consecutive_loss_pause_is_temporary():
 
 def test_exit_cooldown_uses_simulated_time():
     a = _adapter()
+    a.config["enable_symbol_stoploss_cooldown"] = False
     t0 = datetime(2026, 1, 1, 0, 0)
-    a.record_trade_result(SYM, is_profitable=True, exit_time=t0, position_closed=True)
+    a.record_trade_result(SYM, is_profitable=False, exit_time=t0, position_closed=True)
     assert a.last_exit_time[SYM] == t0
     assert a._passes_exit_cooldown_check(SYM, t0 + timedelta(minutes=10)) is False  # < 30m
     assert a._passes_exit_cooldown_check(SYM, t0 + timedelta(minutes=31)) is True   # >= 30m
+
+
+def test_profitable_exit_has_no_time_cooldown():
+    a = _adapter()
+    t0 = datetime(2026, 1, 1, 0, 0)
+    a.record_trade_result(SYM, is_profitable=False, exit_time=t0, position_closed=True)
+    a.record_trade_result(SYM, is_profitable=True, exit_time=t0, position_closed=True)
+    assert SYM not in a.last_exit_time
+    assert a._passes_exit_cooldown_check(SYM, t0) is True
 
 
 def test_discipline_is_symbol_agnostic():
@@ -120,4 +130,3 @@ def test_regime_suitability_routing():
     mr = MeanReversionStrategyAdapter()
     assert mr.should_execute(sig_range) is True
     assert mr.should_execute(sig_trend) is False
-

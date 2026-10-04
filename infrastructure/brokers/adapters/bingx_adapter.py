@@ -200,6 +200,10 @@ class BingXBrokerAdapter(BrokerPort):
             self.connect()
         return self._broker.get_order_status(order_id, self._format_symbol(symbol))
 
+    def get_order_history(self, symbol: Symbol, limit: int = 20) -> List[Dict]:
+        """Expose exchange order history to position-exit reconciliation."""
+        return self._broker.get_order_history(self._format_symbol(symbol), limit=limit)
+
     def get_order_fill(self, order_id: str, symbol: Symbol) -> Dict[str, Any]:
         """B7: return {status, executed_qty, avg_price} for partial-fill tracking."""
         if not self.connected:

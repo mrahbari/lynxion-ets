@@ -150,18 +150,26 @@ class SymbolCooldownGate:
                 self._save_cooldown_journal()
                 logger.warning(f"🛑 SYMBOL COOLDOWN GATE: Activated 60m Stop Loss Cooldown for {symbol} ({clean_sym})")
 
-    def record_take_profit_exit(self, symbol: Any, exit_time: Optional[datetime] = None) -> None:
-        """Register a 15-minute post-trade spacing window when trade exits via Take Profit."""
+    def record_unverified_exit(self, symbol: Any, exit_time: Optional[datetime] = None) -> None:
+        """Hold re-entry for an unverified close without inventing a loss event."""
         with self._lock:
             clean_sym = self.normalize_symbol(symbol)
             ts = (exit_time or self._clock.now()).timestamp()
-            # Clear loss history on successful take profit
+            self._sl_cooldowns[clean_sym] = max(self._sl_cooldowns.get(clean_sym, 0.0), ts + 3600.0)
+            self._save_cooldown_journal()
+            logger.warning(f"🛑 SYMBOL COOLDOWN GATE: Unverified-exit safety hold for {symbol} ({clean_sym})")
+
+    def record_take_profit_exit(self, symbol: Any, exit_time: Optional[datetime] = None) -> None:
+        """Clear a symbol cooldown after a verified profitable exit."""
+        with self._lock:
+            clean_sym = self.normalize_symbol(symbol)
+            # A verified positive exit is not a stop-loss event. Do not retain
+            # either a prior loss lockout or a post-profit spacing timer.
             if clean_sym in self._symbol_loss_history:
                 self._symbol_loss_history[clean_sym].clear()
-            # 15-minute post-trade spacing cooldown
-            self._sl_cooldowns[clean_sym] = ts + 900.0
+            self._sl_cooldowns.pop(clean_sym, None)
             self._save_cooldown_journal()
-            logger.info(f"✅ SYMBOL COOLDOWN GATE: Registered 15m post-trade spacing window for {symbol} ({clean_sym}) via Take Profit exit.")
+            logger.info(f"✅ SYMBOL COOLDOWN GATE: Cleared cooldown after verified profitable exit for {symbol} ({clean_sym}).")
 
     def is_symbol_allowed(self, symbol: Any, cooldown_minutes: int = 60) -> Tuple[bool, str]:
         """Check if trading is allowed for symbol under cooldown, trade-spacing, and blacklist rules."""

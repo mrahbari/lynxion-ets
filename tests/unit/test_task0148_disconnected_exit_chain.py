@@ -1,12 +1,32 @@
 import json
 from unittest.mock import MagicMock
 
+import pytest
+
 from infrastructure.execution.broker_reconciliation import BrokerReconciliationService
 from infrastructure.observability.exit_event_ledger import ExitEventLedger
 from infrastructure.observability.position_identity_snapshot import (
     PositionIdentitySnapshot,
     deterministic_record_id,
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_operational_state(tmp_path, monkeypatch):
+    from infrastructure.risk.symbol_cooldown_gate import SymbolCooldownGate
+
+    monkeypatch.setattr(
+        "infrastructure.execution.broker_reconciliation.ACTIVE_POSITIONS_JOURNAL_PATH",
+        str(tmp_path / "active_positions.json"),
+    )
+    monkeypatch.setattr(
+        "infrastructure.risk.symbol_cooldown_gate.symbol_cooldown_gate",
+        SymbolCooldownGate(
+            journal_path=str(tmp_path / "cooldown.json"),
+            trade_journal_path=str(tmp_path / "trade_journal.csv"),
+        ),
+    )
+    monkeypatch.setattr("infrastructure.services.risk_alerts.send_telegram", lambda message: None)
 
 
 def _open_identity(side="LONG", first="2026-09-04T19:00:00+00:00"):
@@ -155,6 +175,7 @@ def _run_selected_closure(monkeypatch, tmp_path, *, identity_store=None, observe
         terminal_observer=observer,
     )
     service._previous_active_symbols = {"BTC-USDT"}
+    service._active_seen_ms["BTC-USDT"] = 1788552000000
     service._process_position_closures(broker, set())
     return service, history, trade_result, take_profit, journal_result, telegram
 

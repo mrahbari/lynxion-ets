@@ -38,6 +38,7 @@ def _isolate_active_positions_journal(tmp_path, monkeypatch):
         trade_journal_path=str(tmp_path / "trade_journal.csv"),
     )
     monkeypatch.setattr("infrastructure.risk.symbol_cooldown_gate.symbol_cooldown_gate", cooldown_gate)
+    monkeypatch.setattr("infrastructure.services.risk_alerts.send_telegram", lambda message: None)
     yield
 
 
@@ -134,8 +135,10 @@ def test_sl_position_close_triggers_cooldown(tmp_path, monkeypatch):
 
     # Pass 2: Position drops to 0 (CLOSED) via STOP_MARKET
     broker._positions = []
+    seen_ms = svc._active_seen_ms["ADA-USDT"]
     broker.get_order_history = lambda sym, limit=10: [
-        {"orderId": "SL_EXIT_OID", "type": "STOP_MARKET", "status": "FILLED", "realizedProfit": "-10.00"}
+        {"orderId": "SL_EXIT_OID", "type": "STOP_MARKET", "status": "FILLED", "realizedProfit": "-10.00",
+         "updateTime": seen_ms}
     ]
 
     trade_results = []
@@ -146,6 +149,32 @@ def test_sl_position_close_triggers_cooldown(tmp_path, monkeypatch):
 
     # Assert record_trade_result was called ONCE with is_profitable=False
     assert trade_results == [("ADA-USDT", False)]
+
+
+def test_verified_loss_is_registered_once_not_promoted_to_24h(tmp_path, monkeypatch):
+    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+
+    journal = _journal(tmp_path)
+    broker = _FakeBroker(positions=[_pos("ADA-USDT", 1.0)])
+    service = BrokerReconciliationService(halt_fn=lambda reason: None)
+    service.reconcile(broker, journal)
+    seen_ms = service._active_seen_ms["ADA-USDT"]
+    broker._positions = []
+    broker.get_order_history = lambda sym, limit=20: [{
+        "symbol": "ADA-USDT", "orderId": "LOSS_STOP", "type": "STOP_MARKET",
+        "status": "FILLED", "profit": "-0.2720", "updateTime": seen_ms,
+    }]
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(
+        strategy_manager, "record_trade_result",
+        lambda sym, is_profitable, position_closed=True: symbol_cooldown_gate.record_stop_loss_exit(sym),
+    )
+
+    service.reconcile(broker, journal)
+
+    assert len(symbol_cooldown_gate._symbol_loss_history["ADAUSDT"]) == 1
+    remaining = symbol_cooldown_gate._sl_cooldowns["ADAUSDT"] - symbol_cooldown_gate._clock.now().timestamp()
+    assert 0 < remaining <= 3600
 
 
 def test_tp_position_close_no_cooldown(tmp_path, monkeypatch):
@@ -160,8 +189,10 @@ def test_tp_position_close_no_cooldown(tmp_path, monkeypatch):
 
     # Pass 2: Position CLOSED via TAKE_PROFIT_MARKET
     broker._positions = []
+    seen_ms = svc._active_seen_ms["ADA-USDT"]
     broker.get_order_history = lambda sym, limit=10: [
-        {"orderId": "TP_EXIT_OID", "type": "TAKE_PROFIT_MARKET", "status": "FILLED", "realizedProfit": "15.00"}
+        {"orderId": "TP_EXIT_OID", "type": "TAKE_PROFIT_MARKET", "status": "FILLED", "realizedProfit": "15.00",
+         "updateTime": seen_ms}
     ]
 
     trade_results = []
@@ -172,6 +203,84 @@ def test_tp_position_close_no_cooldown(tmp_path, monkeypatch):
 
     # Assert record_trade_result was called ONCE with is_profitable=True
     assert trade_results == [("ADA-USDT", True)]
+
+
+def test_profitable_stop_fill_is_not_a_loss_or_cooldown(tmp_path, monkeypatch):
+    """A trailing STOP_MARKET can close in profit; exchange PnL decides."""
+    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+
+    journal = _journal(tmp_path)
+    broker = _FakeBroker(positions=[_pos("ADA-USDT", 1.0)])
+    service = BrokerReconciliationService(halt_fn=lambda reason: None)
+    service.reconcile(broker, journal)
+    broker._positions = []
+    seen_ms = service._active_seen_ms["ADA-USDT"]
+    broker.get_order_history = lambda sym, limit=20: [{
+        "symbol": "ADA-USDT", "orderId": "PROFITABLE_STOP", "type": "STOP_MARKET",
+        "status": "FILLED", "reduceOnly": True, "profit": "0.2720",
+        "updateTime": seen_ms,
+    }]
+    results = []
+    alerts = []
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(strategy_manager, "record_trade_result", lambda sym, is_profitable, position_closed=True: results.append(is_profitable))
+    monkeypatch.setattr("infrastructure.services.risk_alerts.send_telegram", alerts.append)
+
+    service.reconcile(broker, journal)
+
+    assert results == [True]
+    assert symbol_cooldown_gate.is_symbol_allowed("ADAUSDT")[0] is True
+    assert symbol_cooldown_gate._symbol_loss_history.get("ADAUSDT") in (None, [])
+    assert "PROFITABLE EXIT" in alerts[0]
+    assert "<b>Cooldown:</b> None" in alerts[0]
+
+
+def test_stale_filled_order_cannot_explain_new_position_close(tmp_path, monkeypatch):
+    journal = _journal(tmp_path)
+    broker = _FakeBroker(positions=[_pos("ADA-USDT", 1.0)])
+    service = BrokerReconciliationService(halt_fn=lambda reason: None)
+    service.reconcile(broker, journal)
+    broker._positions = []
+    broker.get_order_history = lambda sym, limit=20: [{
+        "symbol": "ADA-USDT", "orderId": "OLD_PROFIT", "type": "TAKE_PROFIT_MARKET",
+        "status": "FILLED", "profit": "10.0",
+        "updateTime": service._active_seen_ms["ADA-USDT"] - 1,
+    }]
+    results = []
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(strategy_manager, "record_trade_result", lambda *args, **kwargs: results.append(args))
+
+    service.reconcile(broker, journal)
+
+    assert results == []
+    assert "ADA-USDT_UNKNOWN_1" in service._processed_closed_exits
+
+
+def test_filled_stop_without_pnl_does_not_invent_a_loss(tmp_path, monkeypatch):
+    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+
+    journal = _journal(tmp_path)
+    broker = _FakeBroker(positions=[_pos("ADA-USDT", 1.0)])
+    service = BrokerReconciliationService(halt_fn=lambda reason: None)
+    service.reconcile(broker, journal)
+    seen_ms = service._active_seen_ms["ADA-USDT"]
+    broker._positions = []
+    broker.get_order_history = lambda sym, limit=20: [{
+        "symbol": "ADA-USDT", "orderId": "NO_PNL_STOP", "type": "STOP_MARKET",
+        "status": "FILLED", "updateTime": seen_ms,
+    }]
+    results = []
+    alerts = []
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(strategy_manager, "record_trade_result", lambda *args, **kwargs: results.append(args))
+    monkeypatch.setattr("infrastructure.services.risk_alerts.send_telegram", alerts.append)
+
+    service.reconcile(broker, journal)
+
+    assert results == []
+    assert symbol_cooldown_gate._symbol_loss_history.get("ADAUSDT") in (None, [])
+    assert symbol_cooldown_gate.is_symbol_allowed("ADAUSDT")[0] is False
+    assert "UNKNOWN — realized PnL unavailable" in alerts[0]
 
 
 def test_idempotent_closed_position_event(tmp_path, monkeypatch):
@@ -186,8 +295,10 @@ def test_idempotent_closed_position_event(tmp_path, monkeypatch):
 
     # Pass 2 & 3: Position CLOSED
     broker._positions = []
+    seen_ms = svc._active_seen_ms["ADA-USDT"]
     broker.get_order_history = lambda sym, limit=10: [
-        {"orderId": "SL_EXIT_OID", "type": "STOP_MARKET", "status": "FILLED", "realizedProfit": "-10.00"}
+        {"orderId": "SL_EXIT_OID", "type": "STOP_MARKET", "status": "FILLED", "realizedProfit": "-10.00",
+         "updateTime": seen_ms}
     ]
 
     trade_results = []
@@ -232,7 +343,7 @@ def test_separate_unknown_closures_for_same_symbol_are_not_collapsed(tmp_path, m
     broker._positions = []
     service.reconcile(broker, j)
 
-    assert trade_results == [("ADA-USDT", False), ("ADA-USDT", False)]
+    assert trade_results == []  # Unknown is not a proven loss.
     assert service._processed_closed_exits == {
         "ADA-USDT_UNKNOWN_1",
         "ADA-USDT_UNKNOWN_2",
@@ -240,6 +351,28 @@ def test_separate_unknown_closures_for_same_symbol_are_not_collapsed(tmp_path, m
     assert len(alerts) == 2
     assert all("UNKNOWN — closing order not identified" in alert for alert in alerts)
     assert all("<b>Outcome:</b> STOP LOSS" not in alert for alert in alerts)
+
+
+def test_unknown_exit_holds_reentry_without_inventing_a_loss(tmp_path, monkeypatch):
+    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+
+    journal = _journal(tmp_path)
+    broker = _FakeBroker(positions=[_pos("ADA-USDT", 1.0)])
+    service = BrokerReconciliationService(halt_fn=lambda reason: None)
+    service.reconcile(broker, journal)
+    broker._positions = []
+    results = []
+    alerts = []
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(strategy_manager, "record_trade_result", lambda *args, **kwargs: results.append(args))
+    monkeypatch.setattr("infrastructure.services.risk_alerts.send_telegram", alerts.append)
+
+    service.reconcile(broker, journal)
+
+    assert results == []
+    assert symbol_cooldown_gate._symbol_loss_history.get("ADAUSDT") in (None, [])
+    assert symbol_cooldown_gate.is_symbol_allowed("ADAUSDT")[0] is False
+    assert "Safety cooldown pending exit verification" in alerts[0]
 
 
 def test_failed_position_read_does_not_infer_close(tmp_path, monkeypatch):
@@ -297,6 +430,7 @@ def test_closure_history_ignores_terminal_order_from_another_symbol(tmp_path, mo
             "updateTime": 100,
         },
     ]
+    service._active_seen_ms["ADA-USDT"] = 99
     trade_results = []
     from infrastructure.strategies.strategy_manager import strategy_manager
     monkeypatch.setattr(
@@ -341,6 +475,7 @@ def test_closure_history_ignores_cancelled_protection_order(tmp_path, monkeypatc
             "updateTime": 100,
         },
     ]
+    service._active_seen_ms["ADA-USDT"] = 99
     trade_results = []
     from infrastructure.strategies.strategy_manager import strategy_manager
     monkeypatch.setattr(

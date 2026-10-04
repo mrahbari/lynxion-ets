@@ -631,7 +631,9 @@ class BaseStrategyAdapter(StrategyPort):
             self.consecutive_losses[sym_clean] = 0
             self.last_sl_exit_time[sym_raw] = None
             self.last_sl_exit_time[sym_clean] = None
-            self.logger.info(f"✅ Trade result for {symbol}: TAKE PROFIT. Symbol remains immediately tradable.")
+            for key in {symbol, sym_raw, sym_clean}:
+                self.last_exit_time.pop(key, None)
+            self.logger.info(f"✅ Trade result for {symbol}: PROFITABLE EXIT. Symbol remains immediately tradable.")
         else:
             # SL trade: Increment consecutive losses and record SL exit timestamp
             current_losses = self.consecutive_losses.get(sym_clean, 0)
@@ -651,7 +653,7 @@ class BaseStrategyAdapter(StrategyPort):
             )
 
         # Optionally update exit time after recording the trade result (but don't modify position state)
-        if position_closed:
+        if position_closed and not is_profitable:
             self.last_exit_time[symbol] = now
             self.last_exit_time[sym_raw] = now
             self.last_exit_time[sym_clean] = now
