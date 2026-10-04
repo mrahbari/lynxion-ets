@@ -296,8 +296,13 @@ class BrokerReconciliationService:
                 # 4. Dispatch immediate Telegram Alert for Position Close
                 try:
                     from infrastructure.services.risk_alerts import send_telegram
-                    outcome_str = "STOP LOSS" if not is_profitable else "TAKE PROFIT"
-                    emoji = "🛑" if not is_profitable else "✅"
+                    # An absent closing order is not evidence of a stop-loss fill.
+                    # Preserve the existing conservative cooldown, but do not
+                    # report an inferred loss as an exchange-confirmed outcome.
+                    outcome_str = ("UNKNOWN — closing order not identified"
+                                   if closing_order_id == "UNKNOWN"
+                                   else "STOP LOSS" if not is_profitable else "TAKE PROFIT")
+                    emoji = "⚠️" if closing_order_id == "UNKNOWN" else "🛑" if not is_profitable else "✅"
                     msg = (
                         f"{emoji} <b>EXCHANGE POSITION CLOSED</b>\n\n"
                         f"• <b>Symbol:</b> <code>{sym}</code>\n"

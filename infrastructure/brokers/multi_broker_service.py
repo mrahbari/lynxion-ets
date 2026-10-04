@@ -652,7 +652,9 @@ class MultiBrokerExecutionService(ExecutionPort):
                 self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {best_exchange.upper()}: {order_id}")
 
                 # Send Telegram notification about successful order placement
-                self._send_order_placed_notification(order, order_id, best_exchange.upper())
+                self._send_order_placed_notification(
+                    order, order_id, best_exchange.upper(), guard_decision.mode.value
+                )
 
                 # Release in-flight pending order lock once order is accepted by exchange
                 try:
@@ -1028,8 +1030,9 @@ class MultiBrokerExecutionService(ExecutionPort):
         except Exception:
             return False
 
-    def _send_order_placed_notification(self, order: Order, order_id: str, exchange_name: str):
-        """Send a Telegram notification about a successfully placed order."""
+    def _send_order_placed_notification(self, order: Order, order_id: str,
+                                        exchange_name: str, execution_mode: str):
+        """Report broker acceptance, not an unverified fill or position."""
         try:
             # Check if Telegram notifications are enabled
             telegram_notifications_enabled = self._settings.monitoring.telegram_notifications_enabled if self._settings.monitoring and hasattr(
@@ -1178,8 +1181,13 @@ class MultiBrokerExecutionService(ExecutionPort):
             tp_value_esc = escape_html(tp_value)
             order_time_esc = escape_html(order_time_str)
             order_id_esc = escape_html(order_id)
+            route = "VST / TESTNET" if execution_mode == "testnet" else execution_mode.upper()
+            route_esc = escape_html(route)
 
-            message = (f"📦 <b>Order Details:</b>\n"
+            message = (f"📦 <b>Order accepted by broker — fill not verified</b>\n"
+                       f" ├ <b>Route:</b> <code>{route_esc}</code>\n"
+                       f" └ <b>Check orders/fills in this route, not another account.</b>\n\n"
+                       f"<b>Order Details:</b>\n"
                        f" ├ <b>Side:</b> <code>{side_name_esc}</code>\n"
                        f" ├ <b>Symbol:</b> <code>{symbol_esc}</code>\n"
                        f" ├ <b>Exchange:</b> <code>{exchange_esc}</code>\n"
@@ -1198,7 +1206,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                        f"🕒 <b>Time:</b> <code>{order_time_esc}</code>\n"
                        f"🆔 <b>Order ID:</b> <code>{order_id_esc}</code>")
 
-            subject = f"{side_emoji} {symbol} {side_name} on {exchange_name}"
+            subject = f"{side_emoji} {symbol} {side_name} accepted on {exchange_name} {route}"
 
             # Send the notification
             success = telegram_service.send_notification(message, subject, "info", parse_mode="HTML")

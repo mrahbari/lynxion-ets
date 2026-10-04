@@ -211,6 +211,8 @@ def test_separate_unknown_closures_for_same_symbol_are_not_collapsed(tmp_path, m
     service = BrokerReconciliationService(halt_fn=lambda reason: None)
 
     trade_results = []
+    alerts = []
+    monkeypatch.setattr("infrastructure.services.risk_alerts.send_telegram", alerts.append)
     from infrastructure.strategies.strategy_manager import strategy_manager
     monkeypatch.setattr(
         strategy_manager,
@@ -235,6 +237,9 @@ def test_separate_unknown_closures_for_same_symbol_are_not_collapsed(tmp_path, m
         "ADA-USDT_UNKNOWN_1",
         "ADA-USDT_UNKNOWN_2",
     }
+    assert len(alerts) == 2
+    assert all("UNKNOWN — closing order not identified" in alert for alert in alerts)
+    assert all("<b>Outcome:</b> STOP LOSS" not in alert for alert in alerts)
 
 
 def test_closure_history_ignores_terminal_order_from_another_symbol(tmp_path, monkeypatch):
