@@ -1593,20 +1593,18 @@ class _BingXBroker:
         return set()
 
     def get_open_positions(self, symbol: str=None) -> List[Dict]:
-        """Get all open positions."""
-        try:
-            params = {}
-            if symbol:
-                params['symbol'] = symbol
-            response = self._make_request('GET', '/openApi/swap/v2/user/positions', signed=True, params=params)
-
-            if response.get('code') == 0:
-                return response.get('data', [])
-            else:
-                return []
-
-        except Exception as e:
-            return []
+        """Get open positions; never present a failed account read as a flat account."""
+        params = {}
+        if symbol:
+            params['symbol'] = symbol
+        response = self._make_request('GET', '/openApi/swap/v2/user/positions', signed=True, params=params)
+        if not isinstance(response, dict) or response.get('code') != 0:
+            code = response.get('code') if isinstance(response, dict) else 'INVALID_RESPONSE'
+            raise RuntimeError(f'BingX positions request failed (code={code})')
+        positions = response.get('data')
+        if not isinstance(positions, list):
+            raise RuntimeError('BingX positions response has no position list')
+        return positions
 
     def get_positions(self, symbol: str=None) -> List[Dict]:
         """Alias for get_open_positions."""

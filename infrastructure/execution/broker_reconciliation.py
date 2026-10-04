@@ -395,9 +395,15 @@ class BrokerReconciliationService:
         # --- 1. Pull broker truth: open positions ---
         broker_positions: List[Any] = []
         try:
-            broker_positions = broker.get_all_positions() or []
+            broker_positions = broker.get_all_positions()
+            if broker_positions is None:
+                raise RuntimeError("broker returned no position snapshot")
         except Exception as e:
             report["errors"].append(f"get_all_positions failed: {e}")
+            # A failed read is not evidence that a previously open position
+            # closed. Keep the prior snapshot and avoid closure side effects.
+            report["in_sync"] = False
+            return report
 
         open_positions = [p for p in broker_positions
                           if abs(float(getattr(p, "quantity", 0) or getattr(p, "position_amt", 0) or 0)) > 0]

@@ -242,6 +242,35 @@ def test_separate_unknown_closures_for_same_symbol_are_not_collapsed(tmp_path, m
     assert all("<b>Outcome:</b> STOP LOSS" not in alert for alert in alerts)
 
 
+def test_failed_position_read_does_not_infer_close(tmp_path, monkeypatch):
+    journal = _journal(tmp_path)
+    broker = _FakeBroker(positions=[_pos("DOGE-USDT", 240.0)])
+    service = BrokerReconciliationService(halt_fn=lambda reason: None)
+    service.reconcile(broker, journal)
+    assert service._previous_active_symbols == {"DOGE-USDT"}
+
+    alerts = []
+    trade_results = []
+    monkeypatch.setattr("infrastructure.services.risk_alerts.send_telegram", alerts.append)
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(
+        strategy_manager, "record_trade_result",
+        lambda *args, **kwargs: trade_results.append((args, kwargs)),
+    )
+
+    def failed_positions():
+        raise RuntimeError("temporary account read failure")
+
+    broker.get_all_positions = failed_positions
+    report = service.reconcile(broker, journal)
+
+    assert report["in_sync"] is False
+    assert report["errors"] == ["get_all_positions failed: temporary account read failure"]
+    assert service._previous_active_symbols == {"DOGE-USDT"}
+    assert alerts == []
+    assert trade_results == []
+
+
 def test_closure_history_ignores_terminal_order_from_another_symbol(tmp_path, monkeypatch):
     """A mixed broker response cannot attribute another symbol's newer exit to this close."""
     j = _journal(tmp_path)
