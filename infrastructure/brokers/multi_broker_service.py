@@ -468,7 +468,7 @@ class MultiBrokerExecutionService(ExecutionPort):
             # If there's a pending order, prevent the trade
             if pending_duplicate:
                 self.logger.info(
-                    f"⚠️ CONFLICT CHECK BLOCKED: Internal pending order exists on {order.symbol.value} — broker confirmation needed.")
+                    f"⚠️ CONFLICT CHECK BLOCKED: Internal pending order exists on {symbol_str} — broker confirmation needed.")
                 # Return None instead of raising an exception to prevent system crashes
                 return None  # Indicate that the order was not placed due to duplicate prevention
 

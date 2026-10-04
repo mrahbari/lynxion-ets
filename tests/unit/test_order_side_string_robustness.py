@@ -303,3 +303,33 @@ def test_multi_broker_execution_service_side_robustness(monkeypatch):
     
     # Check validation
     assert svc._validate_order_parameters_before_broker(enhanced) is True
+
+
+@pytest.mark.unit
+def test_multi_broker_duplicate_string_symbol_rejects_without_crashing(monkeypatch):
+    from infrastructure.brokers.multi_broker_service import MultiBrokerExecutionService
+
+    class Config:
+        pass
+
+    settings = Config()
+    settings.execution = Config()
+    settings.execution.prevent_same_direction_trade_per_symbol = True
+
+    service = object.__new__(MultiBrokerExecutionService)
+    service._settings = settings
+    service.logger = logging.getLogger("test_duplicate_string_symbol")
+    monkeypatch.setattr(
+        "infrastructure.services.symbol_validator.symbol_validator.is_symbol_approved",
+        lambda symbol: True,
+    )
+    monkeypatch.setattr(service, "_has_any_pending_order", lambda symbol: True)
+
+    order = Order(
+        symbol="BTCUSDT",
+        side="BUY",
+        quantity=Decimal("0.001"),
+        price=Money(Decimal("60000"), "USDT"),
+    )
+
+    assert service.execute_order(order) is None
