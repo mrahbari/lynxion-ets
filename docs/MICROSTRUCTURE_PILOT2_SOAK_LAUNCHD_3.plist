@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.lynxion.microstructure-pilot2-soak-3</string>
+  <key>ProgramArguments</key><array>
+    <string>/usr/bin/caffeinate</string><string>-is</string>
+    <string>/Users/mojtaba.rahbari/.pyenv/versions/3.10.13/bin/python3</string>
+    <string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/scripts/microstructure_pilot_supervisor.py</string>
+    <string>--activation</string><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/docs/MICROSTRUCTURE_PILOT2_SOAK_ACTIVATION_3.json</string>
+    <string>--contract</string><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/docs/MICROSTRUCTURE_PILOT2_READINESS.md</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+  <key>ThrottleInterval</key><integer>20</integer>
+  <key>StandardOutPath</key><string>/private/tmp/lynxion-microstructure-pilot2-soak-3.launchd.out</string>
+  <key>StandardErrorPath</key><string>/private/tmp/lynxion-microstructure-pilot2-soak-3.launchd.err</string>
+</dict></plist>
