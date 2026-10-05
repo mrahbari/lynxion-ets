@@ -178,7 +178,7 @@ Registry taxonomy: `IDEA`, `INDEPENDENT_LEAD`, `FEASIBILITY`, `PREREGISTERED`, `
 - **Family/status/priority:** prospective observational protocol lead; `INDEPENDENT_LEAD / NOT_YET_TESTED`; BACKLOG.
 - **Question/info/boundary/source/design/outcomes:** can a future operator-defined observation session capture **all** candidates without cherry-picking? Prospective manual timestamp, symbol, venue/source, screenshot/raw evidence and contemporaneous selection reason; exact selection rule and session window **not yet defined**; **outcomes NO** and collection **NOT STARTED**.
 - **Evidence/meaning/inactivity:** this is a data-governance idea, not Edge evidence. A future protocol must freeze session/window before observation, retain winners, losers, no-trades, failed setups and no-fills, forbid hindsight edits to reasons, and separate setup annotation from later outcome labeling.
-- **Dependencies/risks/next/approval/references:** [design-only schema](POST_PILOT_INDEPENDENT_BACKLOG_FEASIBILITY.md) specifies an all-candidate immutable observation record and separate later outcome labels; inclusion rule/window remain UNDEFINED. No collection has started. Activating collection or labels requires a frozen operator-approved rule. Source: operator directive; frozen hash `NONE`.
+- **Dependencies/risks/next/approval/references:** [design-only protocol draft](MANUAL_PROSPECTIVE_SETUP_ANNOTATION_PROTOCOL_DRAFT.md) specifies an all-candidate immutable observation record and separate later outcome labels; inclusion rule/window remain UNDEFINED. No collection has started. Activating collection or labels requires a frozen operator-approved rule. Source: operator directive; frozen hash `NONE`.
 
 ### R25 — liquidation / OI / observed OBI interaction proposal
 
