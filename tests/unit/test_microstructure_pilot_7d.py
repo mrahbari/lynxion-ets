@@ -1,9 +1,12 @@
 import base64
+import asyncio
 import gzip
 import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import time
+from types import SimpleNamespace
 
 import pytest
 
@@ -87,3 +90,71 @@ def test_raw_capture_retains_exact_payload_and_hash_and_refuses_overwrite(tmp_pa
     second = pilot.RawCapture(tmp_path, "BTCUSDT", "fixed-session")
     with pytest.raises(FileExistsError):
         second.append("depth", payload)
+
+
+def test_post_stop_depth_is_rejected_before_raw_file_creation(tmp_path, monkeypatch):
+    pilot = module()
+    monkeypatch.setattr(pilot.time, "time_ns", lambda: 1_000)
+    monkeypatch.setattr(pilot.time, "monotonic_ns", lambda: 900)
+    raw = pilot.RawCapture(tmp_path, "BTCUSDT", "boundary")
+    with pytest.raises(pilot.StopBoundaryReached):
+        raw.append("depth", b"raw", deadline_ns=1_000)
+    assert not list(tmp_path.iterdir())
+
+
+def test_wall_monotonic_discontinuity_is_fail_closed_without_ntp_claim():
+    pilot = module()
+    pilot.require_continuous_clocks(100, 100, 1_000_000_100, 1_000_000_100)
+    with pytest.raises(RuntimeError, match="wall_monotonic_discontinuity_ns=2000000000"):
+        pilot.require_continuous_clocks(100, 100, 3_000_000_100, 1_000_000_100)
+
+
+def test_hash_file_matches_finalized_chunk(tmp_path):
+    pilot = module()
+    raw = pilot.RawCapture(tmp_path, "ETHUSDT", "hash")
+    raw.append("depth", b"exact raw bytes")
+    item = raw.close()[0]
+    assert pilot.hash_file(Path(item["path"])) == item["sha256"]
+
+
+def test_technical_soak_cannot_be_confused_with_formal_pilot(tmp_path):
+    pilot = module()
+    contract = tmp_path / "contract.md"
+    contract.write_text("frozen test contract")
+    activation_path = tmp_path / "activation.json"
+    base = {"symbols": list(pilot.SYMBOLS),
+            "contract_sha256": pilot.hash_file(contract),
+            "collector_sha256": pilot.hash_file(Path(pilot.__file__)),
+            "websocket_base": pilot.WS_BASE,
+            "rest_snapshot": f"{pilot.REST_BASE}?symbol=<symbol>&limit=1000",
+            "start_utc_ns": 0, "stop_utc_ns": 20 * 60 * 10**9,
+            "output_root": str(tmp_path / "not_a_soak"), "mode": "TECHNICAL_SOAK"}
+    activation_path.write_text(json.dumps(base))
+    with pytest.raises(ValueError, match="isolated soak"):
+        asyncio.run(pilot.run(activation_path, contract))
+    base["mode"] = "PILOT_7D"
+    activation_path.write_text(json.dumps(base))
+    with pytest.raises(ValueError, match="seven complete UTC days"):
+        asyncio.run(pilot.run(activation_path, contract))
+
+
+def test_disk_guard_refuses_soak_before_network_or_raw_writes(tmp_path, monkeypatch):
+    pilot = module()
+    contract = tmp_path / "contract.md"
+    contract.write_text("frozen test contract")
+    root = tmp_path / "soak" / "capture"
+    start = time.time_ns() + 1_000_000_000
+    activation = {"symbols": list(pilot.SYMBOLS), "mode": "TECHNICAL_SOAK",
+                  "contract_sha256": pilot.hash_file(contract),
+                  "collector_sha256": pilot.hash_file(Path(pilot.__file__)),
+                  "websocket_base": pilot.WS_BASE,
+                  "rest_snapshot": f"{pilot.REST_BASE}?symbol=<symbol>&limit=1000",
+                  "start_utc_ns": start, "stop_utc_ns": start + 20 * 60 * 10**9,
+                  "output_root": str(root)}
+    activation_path = tmp_path / "activation.json"
+    activation_path.write_text(json.dumps(activation))
+    monkeypatch.setattr(pilot.shutil, "disk_usage", lambda _: SimpleNamespace(free=0))
+    with pytest.raises(RuntimeError, match="insufficient disk reserve"):
+        asyncio.run(pilot.run(activation_path, contract))
+    assert not (root / "capture_manifest.json").exists()
+    assert not (root / "raw").exists()

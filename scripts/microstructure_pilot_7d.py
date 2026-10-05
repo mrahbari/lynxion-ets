@@ -33,6 +33,35 @@ MIN_FREE_BYTES = 10 * 1024**3
 CONTRACT = Path(__file__).resolve().parents[1] / "docs/MICROSTRUCTURE_DATA_PILOT_7D_CONTRACT.md"
 
 
+class StopBoundaryReached(Exception):
+    """A received message cannot enter the frozen interval after its stop."""
+
+
+def wall_monotonic_discontinuity_ns(
+    prior_wall_ns: int, prior_mono_ns: int, wall_ns: int, mono_ns: int
+) -> int:
+    """Detect a clock/suspend discontinuity without asserting its root cause."""
+    return (wall_ns - prior_wall_ns) - (mono_ns - prior_mono_ns)
+
+
+def require_continuous_clocks(
+    prior_wall_ns: int, prior_mono_ns: int, wall_ns: int, mono_ns: int
+) -> None:
+    delta_ns = wall_monotonic_discontinuity_ns(
+        prior_wall_ns, prior_mono_ns, wall_ns, mono_ns
+    )
+    if abs(delta_ns) > 1_000_000_000:
+        raise RuntimeError(f"wall_monotonic_discontinuity_ns={delta_ns}")
+
+
+def hash_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def number(value: Any, *, positive: bool) -> Decimal:
     try:
         result = Decimal(str(value))
@@ -173,10 +202,13 @@ class RawCapture:
         self.count = 0
         self.bounds = {}
 
-    def append(self, kind: str, payload: bytes | None, **fields: Any) -> tuple[int, int]:
+    def append(self, kind: str, payload: bytes | None, *, deadline_ns: int | None = None,
+               **fields: Any) -> tuple[int, int]:
+        wall_ns, mono_ns = time.time_ns(), time.monotonic_ns()
+        if deadline_ns is not None and wall_ns >= deadline_ns:
+            raise StopBoundaryReached
         if self.handle is None:
             self._open()
-        wall_ns, mono_ns = time.time_ns(), time.monotonic_ns()
         record = {"kind": kind, "symbol": self.symbol, "session": self.session,
                   "receipt_utc_ns": wall_ns, "receipt_monotonic_ns": mono_ns,
                   "payload_b64": base64.b64encode(payload).decode("ascii") if payload is not None else None,
@@ -210,11 +242,7 @@ class RawCapture:
             os.fsync(fd)
         finally:
             os.close(fd)
-        digest = hashlib.sha256()
-        with self.path.open("rb") as source:
-            for block in iter(lambda: source.read(1024 * 1024), b""):
-                digest.update(block)
-        self.files.append({"path": str(self.path), "sha256": digest.hexdigest(),
+        self.files.append({"path": str(self.path), "sha256": hash_file(self.path),
                            "bytes": self.path.stat().st_size, "records": self.count,
                            "bounds": self.bounds})
         self.handle = None
@@ -234,7 +262,8 @@ def save_manifest(path: Path, state: dict[str, Any]) -> None:
     os.replace(temporary, path)
 
 
-async def capture_symbol(symbol: str, root: Path, stop_ns: int, manifest: dict[str, Any]) -> None:
+async def capture_symbol(symbol: str, root: Path, stop_ns: int, manifest: dict[str, Any],
+                         health: dict[str, Any]) -> None:
     attempts = 0
     while time.time_ns() < stop_ns:
         if shutil.disk_usage(root).free < MIN_FREE_BYTES:
@@ -243,6 +272,8 @@ async def capture_symbol(symbol: str, root: Path, stop_ns: int, manifest: dict[s
         session_id = uuid4().hex
         raw = RawCapture(root / "raw" / symbol, symbol, session_id)
         book = Book()
+        prior_receipt: tuple[int, int] | None = None
+        last_health_mono_ns = 0
         epoch: dict[str, Any] = {"symbol": symbol, "session": session_id,
                                   "start_utc_ns": time.time_ns(), "events": 0,
                                   "snapshots": 0, "applied": 0, "gaps": [], "errors": [],
@@ -265,7 +296,6 @@ async def capture_symbol(symbol: str, root: Path, stop_ns: int, manifest: dict[s
                     snapshot_task = asyncio.create_task(get_snapshot())
                     buffered: list[dict[str, Any]] = []
                     bootstrapped = False
-                    previous_clock_offset_ns: int | None = None
                     while time.time_ns() < stop_ns:
                         timeout = min(15.0, max(.1, (stop_ns - time.time_ns()) / 1e9))
                         try:
@@ -275,12 +305,24 @@ async def capture_symbol(symbol: str, root: Path, stop_ns: int, manifest: dict[s
                                 break
                             raise RuntimeError("stale_depth_stream")
                         payload = message.encode() if isinstance(message, str) else message
-                        receipt_ns, receipt_mono_ns = raw.append("depth", payload)
+                        receipt_ns, receipt_mono_ns = raw.append("depth", payload,
+                                                                  deadline_ns=stop_ns)
                         epoch["events"] += 1
-                        offset_ns = receipt_ns - receipt_mono_ns
-                        if previous_clock_offset_ns is not None and abs(offset_ns - previous_clock_offset_ns) > 1_000_000_000:
-                            raise RuntimeError("local_clock_jump")
-                        previous_clock_offset_ns = offset_ns
+                        if prior_receipt is not None:
+                            require_continuous_clocks(
+                                prior_receipt[0], prior_receipt[1], receipt_ns, receipt_mono_ns
+                            )
+                        prior_receipt = receipt_ns, receipt_mono_ns
+                        health["symbols"][symbol] = {
+                            "session": session_id, "events": epoch["events"],
+                            "last_receipt_utc_ns": receipt_ns,
+                            "last_receipt_monotonic_ns": receipt_mono_ns,
+                        }
+                        if receipt_mono_ns - last_health_mono_ns >= 10_000_000_000:
+                            health["heartbeat_utc_ns"] = receipt_ns
+                            health["heartbeat_monotonic_ns"] = receipt_mono_ns
+                            save_manifest(root / "health.json", health)
+                            last_health_mono_ns = receipt_mono_ns
                         if epoch["events"] % 1000 == 0 and shutil.disk_usage(root).free < MIN_FREE_BYTES:
                             raise RuntimeError("disk_reserve")
                         if len(raw.files) != len(epoch.get("files", [])):
@@ -298,7 +340,8 @@ async def capture_symbol(symbol: str, root: Path, stop_ns: int, manifest: dict[s
                             if not snapshot_task.done():
                                 continue
                             snap_raw, snapshot, request_ns, receive_ns = snapshot_task.result()
-                            raw.append("snapshot", snap_raw, request_utc_ns=request_ns,
+                            raw.append("snapshot", snap_raw, deadline_ns=stop_ns,
+                                       request_utc_ns=request_ns,
                                        response_utc_ns=receive_ns)
                             epoch["snapshots"] += 1
                             book.snapshot(snapshot)
@@ -319,6 +362,8 @@ async def capture_symbol(symbol: str, root: Path, stop_ns: int, manifest: dict[s
                                 raise RuntimeError(f"rebootstrap:{status}")
                     if not snapshot_task.done():
                         snapshot_task.cancel()
+        except StopBoundaryReached:
+            pass  # A message received after the frozen stop is excluded, not an error.
         except Exception as exc:
             epoch["errors"].append({"utc_ns": time.time_ns(), "error": type(exc).__name__,
                                     "detail": str(exc)[:200]})
@@ -336,16 +381,29 @@ async def capture_symbol(symbol: str, root: Path, stop_ns: int, manifest: dict[s
             await asyncio.sleep(min(30, 2**min(attempts, 4)))
 
 
-async def run(activation_path: Path) -> None:
+async def run(activation_path: Path, contract_path: Path = CONTRACT) -> None:
     activation = json.loads(activation_path.read_text())
     if activation["symbols"] != list(SYMBOLS):
         raise ValueError("activation symbols mismatch")
-    if activation["contract_sha256"] != hashlib.sha256(CONTRACT.read_bytes()).hexdigest():
+    if activation["contract_sha256"] != hash_file(contract_path):
         raise ValueError("frozen contract hash mismatch")
+    if activation.get("collector_sha256") != hash_file(Path(__file__)):
+        raise ValueError("frozen collector hash mismatch")
+    if activation.get("websocket_base") != WS_BASE or activation.get("rest_snapshot") != f"{REST_BASE}?symbol=<symbol>&limit=1000":
+        raise ValueError("activation source mismatch")
     start_ns = int(activation["start_utc_ns"])
     stop_ns = int(activation["stop_utc_ns"])
-    if stop_ns - start_ns != 7 * 86400 * 10**9 or start_ns % (86400 * 10**9):
-        raise ValueError("activation must span seven complete UTC days")
+    mode = activation.get("mode", "PILOT_7D")
+    if mode == "TECHNICAL_SOAK":
+        if not 20 * 60 * 10**9 <= stop_ns - start_ns <= 60 * 60 * 10**9:
+            raise ValueError("technical soak must span 20 to 60 minutes")
+        if "soak" not in Path(activation["output_root"]).parts:
+            raise ValueError("technical soak must have an isolated soak output root")
+    elif mode == "PILOT_7D":
+        if stop_ns - start_ns != 7 * 86400 * 10**9 or start_ns % (86400 * 10**9):
+            raise ValueError("activation must span seven complete UTC days")
+    else:
+        raise ValueError("unknown capture mode")
     if time.time_ns() >= stop_ns:
         raise ValueError("pilot boundary already elapsed")
     root = Path(activation["output_root"]).resolve()
@@ -365,25 +423,37 @@ async def run(activation_path: Path) -> None:
                 session["interruption_detected_utc_ns"] = time.time_ns()
             for item in session.get("files", []):
                 source = Path(item["path"])
-                if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest() != item["sha256"]:
+                if not source.is_file() or hash_file(source) != item["sha256"]:
                     raise ValueError("finalized raw hash mismatch on restart")
         listed = {item["path"] for session in manifest["sessions"] for item in session.get("files", [])}
-        orphans = sorted(str(path) for path in (root / "raw").rglob("*.jsonl.gz") if str(path) not in listed)
+        orphans = sorted((path for path in (root / "raw").rglob("*.jsonl.gz") if str(path) not in listed))
         manifest["failures"].append({"reason": "collector_restart", "utc_ns": time.time_ns(),
-                                     "unfinalized_raw_chunks": orphans})
+                                     "unfinalized_raw_chunks": [
+                                         {"path": str(path), "bytes": path.stat().st_size,
+                                          "sha256": hash_file(path)} for path in orphans
+                                     ]})
     else:
         manifest = {"activation": activation, "sessions": [], "failures": [],
                     "created_utc_ns": time.time_ns()}
     save_manifest(manifest_path, manifest)
+    health = {"pid": os.getpid(), "started_utc_ns": time.time_ns(), "symbols": {},
+              "heartbeat_utc_ns": time.time_ns(),
+              "heartbeat_monotonic_ns": time.monotonic_ns()}
+    save_manifest(root / "health.json", health)
     while time.time_ns() < start_ns:
         await asyncio.sleep(min(30, (start_ns - time.time_ns()) / 1e9))
-    await asyncio.gather(*(capture_symbol(symbol, root, stop_ns, manifest) for symbol in SYMBOLS))
+    await asyncio.gather(*(capture_symbol(symbol, root, stop_ns, manifest, health)
+                           for symbol in SYMBOLS))
     manifest["completed_utc_ns"] = time.time_ns()
     save_manifest(manifest_path, manifest)
+    health["status"] = "COMPLETED"
+    save_manifest(root / "health.json", health)
     lock_handle.close()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--activation", required=True, type=Path)
-    asyncio.run(run(parser.parse_args().activation))
+    parser.add_argument("--contract", type=Path, default=CONTRACT)
+    arguments = parser.parse_args()
+    asyncio.run(run(arguments.activation, arguments.contract))
