@@ -1,0 +1,16 @@
+{
+  "mode": "TECHNICAL_SOAK",
+  "classification": "MEASUREMENT_INTEGRITY_TECHNICAL_SOAK_NOT_PILOT2_NOT_V3",
+  "contract_sha256": "5391627a5070a247fc8e6a3d78d3befba4c0ea3c185ee809ce83257672bda23b",
+  "collector_sha256": "d4266aa5c1911baa447dfcbef5b23658dce6e0b2b76aa825d7948f5eabe2747a",
+  "supervisor_sha256": "3474fd08b041845470e19164708e16f3a84c9090a4e3ca915699cd2701b3e487",
+  "source": "Binance USD-M Futures public market data",
+  "websocket_base": "wss://fstream.binance.com/public/ws",
+  "rest_snapshot": "https://fapi.binance.com/fapi/v1/depth?symbol=<symbol>&limit=1000",
+  "symbols": ["BTCUSDT", "ETHUSDT"],
+  "start_utc": "2026-10-05T05:00:00Z",
+  "start_utc_ns": 1791176400000000000,
+  "stop_utc": "2026-10-05T05:20:00Z",
+  "stop_utc_ns": 1791177600000000000,
+  "output_root": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets/data/research/microstructure_pilot2/soak/soak_2026-10-05_0500"
+}
