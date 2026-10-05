@@ -1,0 +1,16 @@
+{
+  "mode": "PILOT_7D",
+  "classification": "OBSERVED_PRICE_LEVEL_MICROSTRUCTURE_MEASUREMENT_ONLY_NOT_V3",
+  "contract_sha256": "d10a475166954421c49492ecc65c4aa2265d95df7d5166bb2a1ffeec2e17963a",
+  "collector_sha256": "2f7391e75719ae69745e39504381cadfa3e43f770eee6fe4336afe548b71d94e",
+  "supervisor_sha256": "509a410368813aa28d0e593404dc0daf7969c5db4949c96d125fe10658dee2a9",
+  "source": "Binance USD-M Futures public market data",
+  "websocket_base": "wss://fstream.binance.com/public/ws",
+  "rest_snapshot": "https://fapi.binance.com/fapi/v1/depth?symbol=<symbol>&limit=1000",
+  "symbols": ["BTCUSDT", "ETHUSDT"],
+  "start_utc": "2026-10-06T00:00:00Z",
+  "start_utc_ns": 1791244800000000000,
+  "stop_utc": "2026-10-13T00:00:00Z",
+  "stop_utc_ns": 1791849600000000000,
+  "output_root": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets/data/research/microstructure_pilot2/formal_2026-10-06"
+}
