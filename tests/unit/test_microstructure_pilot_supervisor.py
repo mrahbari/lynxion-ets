@@ -28,6 +28,9 @@ def test_health_requires_current_pid_and_both_recent_feeds():
     assert s.health_problem(health, 42, now) == "stale_ETHUSDT_feed"
     health["heartbeat_monotonic_ns"] = now - 31_000_000_000
     assert s.health_problem(health, 42, now) == "stale_process_heartbeat"
+    health["heartbeat_monotonic_ns"] = now - 26_000_000_000
+    health["symbols"]["ETHUSDT"]["last_receipt_monotonic_ns"] = now - 1_000_000_000
+    assert s.health_problem(health, 42, now) == "stale_process_heartbeat"
 
 
 def test_restart_budget_is_durable_and_bounded():

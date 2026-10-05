@@ -20,7 +20,8 @@ from uuid import uuid4
 
 
 COLLECTOR = Path(__file__).with_name("microstructure_pilot_7d.py")
-STALE_NS = 30_000_000_000
+# Leave five seconds of scheduling margin for the frozen <=30 s detection gate.
+STALE_NS = 25_000_000_000
 START_GRACE_NS = 25_000_000_000
 RESTART_WINDOW_NS = 600_000_000_000
 MAX_DEATHS_IN_WINDOW = 3
