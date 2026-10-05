@@ -4,7 +4,7 @@ Date: 2026-10-05. **No new Edge experiment, outcome inspection, parameter choice
 
 ## R22 — CROSS_SECTIONAL_EXTREME_MOVER_SETUP
 
-Scientific status remains **INDEPENDENT_LEAD / NOT_YET_TESTED**. Outcome-blind feasibility conclusion: **prospective point-in-time universe capture appears technically feasible; a complete historical universe is not yet qualified.** No venue, cohort, Top N, gain/volume threshold, setup rule, horizon, or test statistic is selected.
+Scientific status remains **INDEPENDENT_LEAD / NOT_YET_TESTED**. Outcome-blind feasibility classification: **EXTREME_MOVER_PROSPECTIVE_UNIVERSE_FEASIBLE_HISTORICAL_UNQUALIFIED**. Public current-universe metadata and closed-bar archives make a future prospective point-in-time capture technically plausible, but a complete historical perpetual universe, including delistings and status changes, is not qualified. This is a data-feasibility classification, **not** an Edge verdict. No venue, cohort, Top N, gain/volume threshold, setup rule, horizon, or test statistic is selected.
 
 | Information need | Evidence | Unresolved qualification |
 |---|---|---|
