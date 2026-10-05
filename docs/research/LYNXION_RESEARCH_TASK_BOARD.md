@@ -4,10 +4,10 @@ Operational queue over [the canonical research backlog](LYNXION_RESEARCH_BACKLOG
 
 | Dashboard | Current state |
 |---|---|
-| Current active task | TASK-01 Pilot-2 pre-start integrity; TASK-09 sibling evidence reconciliation |
+| Current active task | TASK-01 Pilot-2 pre-start integrity; TASK-10 consolidated information-set map |
 | Current Pilot-2 status | PRE-START SUPERVISION; frozen 2026-10-06 00:00 to 2026-10-13 00:00 UTC; LaunchAgent and child PID 38441 running; 0 formal sessions; ~50 GiB available |
 | Next ready task | TASK-10 consolidated information-set map |
-| Done / remaining / parked or blocked queue tasks | 7 / 4 / 0 (the scientific R25 lead remains PARKED; V3 requires operator decision) |
+| Done / remaining / parked or blocked queue tasks | 8 / 3 / 0 (the scientific R25 lead remains PARKED; V3 requires operator decision) |
 
 Status vocabulary: `TODO`, `READY`, `IN_PROGRESS`, `WAITING_EXTERNAL`, `DONE`, `PARKED`, `BLOCKED_BY_SCIENTIFIC_DECISION`, `BLOCKED_BY_DATA`, `CLOSED`. Pilot-2 always preempts backlog work. `Latest commit` is `NONE` until that task's own deliverable is committed. Existing C-11/C-35 working-tree writes belong to independent collectors and must not be staged or altered here.
 
@@ -21,8 +21,8 @@ Status vocabulary: `TODO`, `READY`, `IN_PROGRESS`, `WAITING_EXTERNAL`, `DONE`, `
 | TASK-06 / P3 / prospective annotation | Design inactive all-candidate protocol; `DONE` | R24 draft | Pre-outcome schema, immutable evidence, separate labels / no collection or outcome labels | `8b3ab1e` / this protocol commit | [Protocol](MANUAL_PROSPECTIVE_ANNOTATION_PROTOCOL.md); no collection activated; inclusion rule not frozen; YES for activation |
 | TASK-07 / P4 / liquidation-OI-OBI | Reconcile prior information only; `DONE` | R08, R09, R12, R25, C-33 | Evidence/provenance map / no experiment or unpark | `8b3ab1e` / this reconciliation commit | [Reconciliation](LIQUIDATION_OI_OBI_RECONCILIATION.md); R25 stays PARKED; no blocker; YES to unpark |
 | TASK-08 / P4 / frozen studies | Status-only audit; `DONE` | Frozen protocols | Read existing status/gates / no collector repair, outcome opening or definition change | `8b3ab1e` / this audit commit | [Status audit](FROZEN_STUDIES_STATUS.md); live C-11/C-33/C-35 liveness UNKNOWN, no rerun; no blocker; NO |
-| TASK-09 / P4 / sibling selection | Source-vs-inference evidence map; `IN_PROGRESS` | R01–R03 and R20 | Read existing forensic work / no new profitability study | `8b3ab1e` / `NONE` | `SIBLING_RESEARCH_EVIDENCE_MAP.md`; reconcile provenance; no blocker; NO |
-| TASK-10 / P4 / information sets | Consolidated coverage map; `TODO` | TASK-03, 07, 09 | Compare observed/proxy/default and tested scope / no new signal | `8b3ab1e` / `NONE` | `LYNXION_INFORMATION_SET_MAP.md`; wait for source maps; no blocker; NO |
+| TASK-09 / P4 / sibling selection | Source-vs-inference evidence map; `DONE` | R01–R03 and R20 | Read existing forensic work / no new profitability study | `8b3ab1e` / this evidence-map commit | [Map](SIBLING_RESEARCH_EVIDENCE_MAP.md); selection mechanism still unproven; no blocker; NO |
+| TASK-10 / P4 / information sets | Consolidated coverage map; `IN_PROGRESS` | TASK-03, 07, 09 | Compare observed/proxy/default and tested scope / no new signal | `8b3ab1e` / `NONE` | `LYNXION_INFORMATION_SET_MAP.md`; consolidate verified sources; no blocker; NO |
 | TASK-11 / P5 / scientific decision | Outcome-blind next-experiment package; `TODO` | Earlier backlog tasks | Compare novelty/readiness/burden only / no V3 selection or outcomes | `8b3ab1e` / `NONE` | `NEXT_EDGE_EXPERIMENT_DECISION_PACKAGE.md`; wait for prior tasks; scientific selection deferred; YES to start a new Edge study |
 
 The queue is not a mandate to stay busy. Once authorized backlog tasks are complete, retain low-cost Pilot-2 monitoring until its frozen stop, then commit the measurement report and final handover. A negative, partial, or unavailable measurement remains evidence, not permission to rescue a cohort.
