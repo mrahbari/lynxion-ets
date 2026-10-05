@@ -98,3 +98,39 @@ def test_forced_child_death_is_recorded_and_restarted(tmp_path, monkeypatch):
     assert any(e["kind"] == "child_exit" and e["pid"] == first_pid and e["exit_code"] == -9
                for e in events)
     assert len([e for e in events if e["kind"] == "child_start"]) >= 2
+
+
+def test_stale_collector_is_detected_by_supervisor(tmp_path, monkeypatch):
+    s = module()
+    child_script = tmp_path / "stale_public_collector.py"
+    child_script.write_text(
+        "import json,os,pathlib,sys,time\n"
+        "a=json.load(open(sys.argv[sys.argv.index('--activation')+1]));"
+        "root=pathlib.Path(a['output_root']);now=time.monotonic_ns()\n"
+        "h={'pid':os.getpid(),'heartbeat_monotonic_ns':now,'symbols':{x:{"
+        "'last_receipt_monotonic_ns':now} for x in ('BTCUSDT','ETHUSDT')}}\n"
+        "(root/'health.json').write_text(json.dumps(h))\n"
+        "time.sleep(10)\n"
+    )
+    monkeypatch.setattr(s, "COLLECTOR", child_script)
+    monkeypatch.setattr(s, "START_GRACE_NS", 200_000_000)
+    monkeypatch.setattr(s, "STALE_NS", 500_000_000)
+    root = tmp_path / "capture"
+    root.mkdir()
+    now = time.time_ns()
+    activation = tmp_path / "activation.json"
+    activation.write_text(json.dumps({"output_root": str(root), "start_utc_ns": now,
+                                      "stop_utc_ns": now + 3_000_000_000}))
+    contract = tmp_path / "contract.md"
+    contract.write_text("test only")
+    result = []
+    thread = threading.Thread(target=lambda: result.append(
+        s.supervise(activation, contract, poll_seconds=.05)))
+    thread.start()
+    thread.join(timeout=10)
+    assert not thread.is_alive() and result == [0]
+    events = s.read_json(root / "supervisor_state.json")["events"]
+    starts = [e for e in events if e["kind"] == "child_start"]
+    stale = [e for e in events if e["kind"] == "child_stale"]
+    assert starts and stale and stale[0]["pid"] == starts[0]["pid"]
+    assert stale[0]["utc_ns"] - starts[0]["utc_ns"] < 1_500_000_000
