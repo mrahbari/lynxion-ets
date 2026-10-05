@@ -158,3 +158,65 @@ def test_disk_guard_refuses_soak_before_network_or_raw_writes(tmp_path, monkeypa
         asyncio.run(pilot.run(activation_path, contract))
     assert not (root / "capture_manifest.json").exists()
     assert not (root / "raw").exists()
+
+
+def test_injected_transport_loss_starts_new_snapshot_epoch(tmp_path, monkeypatch):
+    pilot = module()
+
+    class FakeResponse:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_):
+            pass
+
+        def raise_for_status(self):
+            pass
+
+        async def read(self):
+            return json.dumps(snapshot()).encode()
+
+    class FakeHttp:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_):
+            pass
+
+        def get(self, *_args, **_kwargs):
+            return FakeResponse()
+
+    class FakeWs:
+        def __init__(self):
+            self.sent = False
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_):
+            pass
+
+        async def recv(self):
+            await asyncio.sleep(.01)
+            if self.sent:
+                raise ConnectionError("injected_transport_disconnect")
+            self.sent = True
+            now_ms = time.time_ns() // 1_000_000
+            return json.dumps({"e": "depthUpdate", "s": "BTCUSDT", "E": now_ms,
+                               "T": now_ms, **event()})
+
+    monkeypatch.setattr(pilot.aiohttp, "ClientSession", lambda **_: FakeHttp())
+    monkeypatch.setattr(pilot.websockets, "connect", lambda *_args, **_kwargs: FakeWs())
+    root = tmp_path / "soak"
+    root.mkdir()
+    manifest = {"sessions": [], "failures": []}
+    health = {"pid": 1, "symbols": {}}
+    asyncio.run(pilot.capture_symbol("BTCUSDT", root, time.time_ns() + 3_100_000_000,
+                                     manifest, health))
+    assert len(manifest["sessions"]) >= 2
+    assert len({s["session"] for s in manifest["sessions"]}) == len(manifest["sessions"])
+    assert all(s["snapshots"] == 1 and s["applied"] >= 1 for s in manifest["sessions"])
+    assert all(s["status"] == "CLOSED" and not s["book_valid_at_stop"]
+               for s in manifest["sessions"])
+    assert all(s["errors"][0]["detail"] == "injected_transport_disconnect"
+               for s in manifest["sessions"])

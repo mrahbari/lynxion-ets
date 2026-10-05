@@ -365,6 +365,7 @@ async def capture_symbol(symbol: str, root: Path, stop_ns: int, manifest: dict[s
         except StopBoundaryReached:
             pass  # A message received after the frozen stop is excluded, not an error.
         except Exception as exc:
+            book.invalidate()  # A failed transport/clock/parser cannot leave a valid book.
             epoch["errors"].append({"utc_ns": time.time_ns(), "error": type(exc).__name__,
                                     "detail": str(exc)[:200]})
             raw.append("collector_error", None, error=type(exc).__name__, detail=str(exc)[:200])
