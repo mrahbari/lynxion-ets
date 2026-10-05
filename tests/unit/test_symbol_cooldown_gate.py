@@ -56,9 +56,9 @@ def test_opportunity_loop_handles_an_empty_queue_without_unbound_local(monkeypat
 
 
 @pytest.mark.unit
-def test_symbol_cooldown_gate_sl_exit():
+def test_symbol_cooldown_gate_sl_exit(tmp_path):
     """Verify that Stop Loss exit activates 60-minute cooldown on all symbol format variants."""
-    gate = SymbolCooldownGate()
+    gate = SymbolCooldownGate(journal_path=str(tmp_path / "cooldowns.json"), trade_journal_path=str(tmp_path / "trades.csv"))
     gate._sl_cooldowns.clear()
 
     # Record SL exit for BICOUSDT
@@ -81,9 +81,9 @@ def test_symbol_cooldown_gate_sl_exit():
 
 
 @pytest.mark.unit
-def test_symbol_cooldown_gate_tp_spacing():
-    """Verify that Take Profit exit registers a 15-minute spacing window and clears after 15m."""
-    gate = SymbolCooldownGate()
+def test_symbol_cooldown_gate_tp_clears_lockout(tmp_path):
+    """Verify that a profitable exit clears an existing symbol cooldown immediately."""
+    gate = SymbolCooldownGate(journal_path=str(tmp_path / "cooldowns.json"), trade_journal_path=str(tmp_path / "trades.csv"))
     gate._sl_cooldowns.clear()
 
     # Record SL exit (60m)
@@ -91,24 +91,18 @@ def test_symbol_cooldown_gate_tp_spacing():
     allowed_sl, _ = gate.is_symbol_allowed("BICOUSDT", cooldown_minutes=60)
     assert not allowed_sl
 
-    # Take Profit exit sets 15m spacing window
+    # A verified profitable exit clears the loss cooldown without spacing.
     gate.record_take_profit_exit("BICOUSDT")
-    # Immediate check should have 15m cooldown active
     allowed_tp_immediate, reason = gate.is_symbol_allowed("BICOUSDT", cooldown_minutes=60)
-    assert not allowed_tp_immediate
-    assert "Cooldown ACTIVE" in reason
-
-    # After 16 minutes, symbol should be allowed
-    gate._sl_cooldowns["BICOUSDT"] = time.time() - 3601.0
-    allowed_after, reason_after = gate.is_symbol_allowed("BICOUSDT", cooldown_minutes=60)
-    assert allowed_after
-    assert reason_after == "ALLOWED"
+    assert allowed_tp_immediate
+    assert reason == "ALLOWED"
+    assert "BICOUSDT" not in gate._sl_cooldowns
 
 
 @pytest.mark.unit
-def test_symbol_health_gate_24h_circuit_breaker():
+def test_symbol_health_gate_24h_circuit_breaker(tmp_path):
     """Verify that 2 rapid losses within 2 hours engage the 24-hour circuit breaker."""
-    gate = SymbolCooldownGate()
+    gate = SymbolCooldownGate(journal_path=str(tmp_path / "cooldowns.json"), trade_journal_path=str(tmp_path / "trades.csv"))
     gate._sl_cooldowns.clear()
     gate._symbol_loss_history.clear()
 
