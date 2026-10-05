@@ -4,10 +4,10 @@ Operational queue over [the canonical research backlog](LYNXION_RESEARCH_BACKLOG
 
 | Dashboard | Current state |
 |---|---|
-| Current active task | TASK-01 Pilot-2 pre-start integrity; TASK-04 extreme-mover information contract |
+| Current active task | TASK-01 Pilot-2 pre-start integrity; TASK-05 Qullamaggie methodology review |
 | Current Pilot-2 status | PRE-START SUPERVISION; frozen 2026-10-06 00:00 to 2026-10-13 00:00 UTC; LaunchAgent and child PID 38441 running; 0 formal sessions; ~50 GiB available |
 | Next ready task | TASK-05 Qullamaggie methodology review |
-| Done / remaining / parked or blocked queue tasks | 2 / 9 / 0 (the scientific R25 lead remains PARKED; V3 requires operator decision) |
+| Done / remaining / parked or blocked queue tasks | 3 / 8 / 0 (the scientific R25 lead remains PARKED; V3 requires operator decision) |
 
 Status vocabulary: `TODO`, `READY`, `IN_PROGRESS`, `WAITING_EXTERNAL`, `DONE`, `PARKED`, `BLOCKED_BY_SCIENTIFIC_DECISION`, `BLOCKED_BY_DATA`, `CLOSED`. Pilot-2 always preempts backlog work. `Latest commit` is `NONE` until that task's own deliverable is committed. Existing C-11/C-35 working-tree writes belong to independent collectors and must not be staged or altered here.
 
@@ -16,7 +16,7 @@ Status vocabulary: `TODO`, `READY`, `IN_PROGRESS`, `WAITING_EXTERNAL`, `DONE`, `
 | TASK-01 / P0 / observed microstructure | Monitor frozen Pilot-2; `IN_PROGRESS` | Frozen contract and activation | Local integrity/liveness and contract recovery only / no outcomes, backfill, boundary/source change, account or orders | `8b3ab1e` / `NONE` | [Contract](../MICROSTRUCTURE_DATA_PILOT2_CONTRACT.md), [activation](../MICROSTRUCTURE_DATA_PILOT2_ACTIVATION.json); check at start and during window, final report at stop; time boundary; NO unless semantics change |
 | TASK-02 / P1 / research governance | Reconcile R01–R26 and operational board; `DONE` | Existing reports and exact verdicts | Documentation/status verification / no study rerun or verdict reinterpretation | `8b3ab1e` / `17c511b` + this reconciliation commit | [Backlog](LYNXION_RESEARCH_BACKLOG.md) and this board; exact verdicts retained, stale R18 successor corrected; none; NO |
 | TASK-03 / P2 / extreme-mover selection | Point-in-time public data feasibility; `DONE` | R22 and source provenance | Universe/listings/rank/volume/liquidity/sample feasibility / no returns, thresholds or new study | `8b3ab1e` / this feasibility commit | [Feasibility](CROSS_SECTIONAL_EXTREME_MOVER_FEASIBILITY.md): `EXTREME_MOVER_DATA_PARTIAL`; preserve unqualified historical universe; none; NO |
-| TASK-04 / P2 / extreme-mover selection | Outcome-blind information contract; `IN_PROGRESS` | TASK-03 partial feasibility | Classify fields and time-T availability / no rule thresholds or outcomes | `8b3ab1e` / `NONE` | Information contract; specify prospective measurement fields without activating capture; no blocker; NO unless choosing a scientific hypothesis |
+| TASK-04 / P2 / extreme-mover selection | Outcome-blind information contract; `DONE` | TASK-03 partial feasibility | Classify fields and time-T availability / no rule thresholds or outcomes | `8b3ab1e` / this contract commit | [Information contract](CROSS_SECTIONAL_EXTREME_MOVER_INFORMATION_CONTRACT.md); no capture activated; no blocker; YES for hypothesis/activation |
 | TASK-05 / P3 / external methodology | Bounded Qullamaggie review; `READY` | Public original sources | Method taxonomy and research discipline / no stock thresholds or profit transfer | `8b3ab1e` / `NONE` | `QULLAMAGGIE_METHOD_RESEARCH_REVIEW.md`; source review; no blocker; NO |
 | TASK-06 / P3 / prospective annotation | Design inactive all-candidate protocol; `READY` | R24 draft | Pre-outcome schema, immutable evidence, separate labels / no collection or outcome labels | `8b3ab1e` / `NONE` | `MANUAL_PROSPECTIVE_ANNOTATION_PROTOCOL.md`; reconcile draft; inclusion rule not frozen; YES for activation |
 | TASK-07 / P4 / liquidation-OI-OBI | Reconcile prior information only; `READY` | R08, R09, R12, R25, C-33 | Evidence/provenance map / no experiment or unpark | `8b3ab1e` / `NONE` | `LIQUIDATION_OI_OBI_RECONCILIATION.md`; preserve PARKED status; no blocker; YES to unpark |
