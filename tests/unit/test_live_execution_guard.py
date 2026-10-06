@@ -68,10 +68,11 @@ def test_live_endpoint_blocked_without_explicit_opt_in(guard):
     assert d.mode is ExecutionMode.BLOCKED, "live endpoint must require LIVE_TRADING=true"
 
 
-def test_live_endpoint_allowed_with_explicit_opt_in(guard, monkeypatch):
+def test_live_endpoint_blocked_even_with_explicit_opt_in(guard, monkeypatch):
     monkeypatch.setenv("LIVE_TRADING", "true")
     d = guard.evaluate("bingx", _settings(paper=False, placement=True, testnet=False), _ORDER)
-    assert d.mode is ExecutionMode.LIVE and d.is_live_send
+    assert d.mode is ExecutionMode.BLOCKED and not d.is_live_send
+    assert d.rule == "3b:live_risk_policy_unconfigured"
 
 
 def test_testnet_does_not_grant_live_permission(guard, monkeypatch):
@@ -90,7 +91,7 @@ def test_kill_switch_has_highest_precedence(guard, monkeypatch):
     guard.disengage_kill_switch()
     assert not guard.is_killed()
     d2 = guard.evaluate("bingx", _settings(paper=False, placement=True, testnet=False), _ORDER)
-    assert d2.mode is ExecutionMode.LIVE
+    assert d2.mode is ExecutionMode.BLOCKED
 
 
 def test_missing_settings_defaults_to_paper(guard):

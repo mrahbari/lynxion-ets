@@ -278,6 +278,13 @@ class LiveExecutionGuard:
             return decision(ExecutionMode.PAPER,
                             "paper_trading enabled — order simulated, not sent", "3:paper_trading")
 
+        # The configured portfolio and loss limits are VST-specific.  A live
+        # BingX order needs a separately approved real-account risk policy.
+        if broker == "bingx" and not testnet:
+            return decision(ExecutionMode.BLOCKED,
+                            "BingX live risk policy is not configured; VST limits cannot authorize real orders",
+                            "3b:live_risk_policy_unconfigured")
+
         # 4. Order-placement permission for this broker.
         if not placement:
             return decision(ExecutionMode.BLOCKED,

@@ -35,9 +35,10 @@ def test_preflight_testnet_blocks_on_placeholder_keys():
     assert pf["mode"] == "TESTNET" and pf["ok"] is False and pf["blocking"]
 
 
-def test_preflight_live_ok_with_optin_and_keys():
+def test_preflight_live_blocked_without_independent_risk_policy():
     pf = run_preflight(_settings(paper=False, testnet=False, placement=True), env={"LIVE_TRADING": "true"})
-    assert pf["mode"] == "LIVE" and pf["ok"] is True
+    assert pf["mode"] == "LIVE" and pf["ok"] is False
+    assert any("live risk policy" in issue for issue in pf["blocking"])
     assert any("LIVE" in w for w in pf["warnings"])
 
 

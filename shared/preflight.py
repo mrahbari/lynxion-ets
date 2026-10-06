@@ -64,6 +64,8 @@ def run_preflight(settings: Any, env: Optional[Dict[str, str]] = None) -> Dict[s
     if mode == "LIVE":
         if not live_trading:  # defensive; mode==LIVE already implies it
             blocking.append("LIVE mode without explicit LIVE_TRADING=true")
+        if broker == "bingx":
+            blocking.append("BingX live risk policy is not configured; VST limits cannot authorize real orders")
         warnings.append("LIVE (real-funds) mode: orders will hit the live exchange endpoint")
 
     # Inconsistency: live endpoint selected (paper off, testnet off) but no opt-in -> everything blocked.

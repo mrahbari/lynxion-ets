@@ -673,6 +673,8 @@ class _BingXBroker:
 
     def _assert_entry_admission(self, order: Order) -> tuple[bool, str]:
         """Fail-closed final risk check against the authoritative broker snapshot."""
+        if getattr(self, 'testnet', True) is False:
+            return False, "BingX live risk policy is not configured; VST limits cannot authorize real orders"
         try:
             from infrastructure.risk.risk_enforcement import build_vst_risk_enforcement
 
