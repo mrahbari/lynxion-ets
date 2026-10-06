@@ -67,9 +67,10 @@ class ProductionTradingOrchestrator:
             TelegramNotificationService
         email_service = EmailNotificationService()
         telegram_service = TelegramNotificationService()
+        from bootstrap.settings.loaders import load_settings
         self.risk_alert_service = RiskAlertService(
             notification_services=[email_service, telegram_service],
-            max_leverage=10.0,
+            max_leverage=load_settings().risk.max_leverage,
             drawdown_threshold=-0.1
         )
 

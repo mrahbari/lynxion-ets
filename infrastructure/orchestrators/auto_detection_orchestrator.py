@@ -118,7 +118,7 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
             telegram_service = TelegramNotificationService()
             self.risk_alert_service = RiskAlertService(
                 notification_services=[email_service, telegram_service],
-                max_leverage=10.0,
+                max_leverage=self._settings.risk.max_leverage,
                 drawdown_threshold=-0.1
             )
         else:
