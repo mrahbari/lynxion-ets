@@ -32,11 +32,28 @@ def test_profit_lock_trigger_comes_from_risk_config(monkeypatch):
     assert manager.be_trigger_roe == 7.0
 
 
+def test_risk_breakeven_environment_setting_survives_loader_filter(monkeypatch):
+    from application.configs.env_loader import EnvLoader
+    from bootstrap.settings.loaders import load_settings
+
+    monkeypatch.setenv("RISK_BREAKEVEN_TRIGGER_ROE_PCT", "8.25")
+    loader = EnvLoader()
+    original_vars = loader._env_vars.copy()
+    original_loaded = loader._loaded
+    try:
+        loader._env_vars = {}
+        loader._loaded = False
+        assert load_settings().risk.breakeven_trigger_roe_pct == 8.25
+    finally:
+        loader._env_vars = original_vars
+        loader._loaded = original_loaded
+
+
 def test_default_exit_contract_is_economically_consistent_at_ten_x(monkeypatch):
     """10x must retain the intended 6%/10% ROE profit-protection contract."""
     from infrastructure.risk.active_position_manager import ActivePositionManager
 
-    manager = ActivePositionManager()
+    manager = ActivePositionManager(be_trigger_roe=6.0)
     synced = []
     monkeypatch.setattr(
         manager,

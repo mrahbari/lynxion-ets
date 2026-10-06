@@ -54,7 +54,7 @@ class _ConfigExtractorsMixin:
             'max_risk_per_trade': self.env_loader.get_float_env_var('RISK_MAX_RISK_PER_TRADE', 0.02),
             'max_correlation': self.env_loader.get_float_env_var('RISK_MAX_CORRELATION', 0.7),
             'max_leverage': execution_leverage,
-            'breakeven_trigger_roe_pct': self.env_loader.get_float_env_var('BREAKEVEN_TRIGGER_ROE_PCT', 6.0),
+            'breakeven_trigger_roe_pct': self.env_loader.get_float_env_var('RISK_BREAKEVEN_TRIGGER_ROE_PCT', 6.0),
             'max_initial_stop_roe_pct': self.env_loader.get_float_env_var('MAX_INITIAL_STOP_ROE_PCT', 35.0),
             'stop_loss_percentage': self.env_loader.get_float_env_var('RISK_STOP_LOSS_PERCENTAGE', 0.02),
             'take_profit_percentage': self.env_loader.get_float_env_var('RISK_TAKE_PROFIT_PERCENTAGE', 0.05),
