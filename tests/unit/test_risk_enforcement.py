@@ -163,7 +163,7 @@ def test_bingx_final_admission_applies_directional_capacity(
         "bootstrap.settings.loaders.load_settings",
         lambda: SimpleNamespace(
             safety=SimpleNamespace(
-                max_open_positions=10, max_long_positions=7, max_short_positions=7
+                max_open_positions=14, max_long_positions=7, max_short_positions=7
             ),
             risk=SimpleNamespace(max_leverage=5, max_leverage_limit=5),
         ),
