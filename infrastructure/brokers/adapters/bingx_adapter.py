@@ -769,7 +769,8 @@ class _BingXBroker:
             current_exposure = sum(open_position_exposures)
             order_price = float(getattr(getattr(order, 'price', None), 'amount', 0) or 0)
             order_notional = abs(float(getattr(order, 'quantity', 0) or 0)) * order_price
-            max_portfolio_exposure = 1_000.0
+            from infrastructure.risk.risk_enforcement import configured_vst_portfolio_exposure
+            max_portfolio_exposure = configured_vst_portfolio_exposure(settings.risk)
             if current_exposure + order_notional > max_portfolio_exposure:
                 return False, (
                     f"portfolio exposure limit exceeded: ${current_exposure + order_notional:.2f} "

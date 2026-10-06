@@ -45,6 +45,67 @@ def test_configured_vst_order_cap_and_initial_stop_roe_are_enforced(monkeypatch)
     assert order.stop_loss_price.amount == Decimal("96.500")
 
 
+def test_vst_portfolio_notional_cap_is_shared_by_risk_engine_and_broker_gate(monkeypatch):
+    import logging
+    from types import SimpleNamespace
+    from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
+
+    risk = SimpleNamespace(
+        max_order_notional_amount=201.0,
+        max_initial_stop_roe_pct=35.0,
+        max_leverage=5.0,
+        max_leverage_limit=5.0,
+        vst_max_portfolio_notional_usdt=3200.0,
+    )
+    monkeypatch.setattr(
+        "bootstrap.settings.loaders.load_settings",
+        lambda: SimpleNamespace(
+            risk=risk,
+            safety=SimpleNamespace(max_open_positions=14, max_long_positions=7, max_short_positions=7),
+        ),
+    )
+    risk_manager = build_vst_risk_enforcement()._rm
+    assert risk_manager.max_portfolio_exposure == 3200.0
+    assert risk_manager.starting_equity == 1000.0
+    risk_manager.daily_pnl = -51.0
+    assert not risk_manager.is_trading_allowed()  # existing 5% / $50 daily-loss gate
+    risk_manager.daily_pnl = 0.0
+    risk_manager.equity_curve = [1000.0, 840.0]
+    assert not risk_manager.is_trading_allowed()  # existing 15% drawdown gate
+
+    broker = object.__new__(_BingXBroker)
+    broker.logger = logging.getLogger("test_shared_vst_portfolio_cap")
+    broker._establish_and_verify_leverage = lambda *args: (True, "verified")
+    calls = []
+    position = {
+        "symbol": "OLD-USDT", "positionAmt": "31.89", "positionSide": "LONG",
+        "markPrice": "100", "avgPrice": "100", "leverage": "5",
+    }
+
+    def request(method, endpoint, **kwargs):
+        calls.append(method)
+        return {"code": 0, "data": [position]}
+
+    broker._make_request = request
+    allowed, reason = broker._assert_entry_admission(_broker_admission_order())
+    assert allowed, reason  # 3189 + 10 = 3199
+
+    position["positionAmt"] = "31.95"
+    allowed, reason = broker._assert_entry_admission(_broker_admission_order())
+    assert not allowed  # 3195 + 10 = 3205
+    assert "portfolio exposure limit exceeded" in reason
+    assert calls == ["GET", "GET"]
+
+
+@pytest.mark.parametrize("cap", [0, -1, float("nan"), float("inf")])
+def test_invalid_vst_portfolio_notional_cap_fails_closed(cap):
+    from types import SimpleNamespace
+    from infrastructure.risk.risk_enforcement import configured_vst_portfolio_exposure
+
+    with pytest.raises(ValueError, match="invalid configured VST portfolio notional cap"):
+        configured_vst_portfolio_exposure(SimpleNamespace(vst_max_portfolio_notional_usdt=cap))
+
+
 def test_initial_stop_roe_cap_is_symmetric_for_short(monkeypatch):
     from types import SimpleNamespace
     from domain.entities import OrderSide

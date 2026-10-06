@@ -73,6 +73,7 @@ class RiskConfig(BaseModel):
     max_leverage_limit: float = Field(default=5.0, description="Maximum leverage limit")
     max_order_size_limit: float = Field(default=0.05, description="Maximum order size limit")
     max_order_notional_amount: Optional[float] = Field(default=None, description="Optional maximum order notional amount cap")
+    vst_max_portfolio_notional_usdt: float = Field(default=1000.0, gt=0, description="VST aggregate open-position notional cap in USDT")
 
     # Derivatives Risk Gate
     derivatives_risk_gate: DerivativesRiskGateConfig = Field(default_factory=DerivativesRiskGateConfig, description="Derivatives risk gate settings")

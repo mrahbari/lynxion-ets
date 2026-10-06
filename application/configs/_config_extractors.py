@@ -81,6 +81,7 @@ class _ConfigExtractorsMixin:
             'max_leverage_limit': execution_leverage,
             'max_order_size_limit': self.env_loader.get_float_env_var('MAX_ORDER_SIZE', 0.05),
             'max_order_notional_amount': self.env_loader.get_float_env_var('MAX_ORDER_NOTIONAL_AMOUNT', None) if self.env_loader.get_env_var('MAX_ORDER_NOTIONAL_AMOUNT', '') else None,
+            'vst_max_portfolio_notional_usdt': self.env_loader.get_float_env_var('RISK_VST_MAX_PORTFOLIO_NOTIONAL_USDT', 1000.0),
 
 
         }

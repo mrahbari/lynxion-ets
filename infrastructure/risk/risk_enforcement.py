@@ -32,6 +32,14 @@ VST_MAX_PORTFOLIO_EXPOSURE = 1_000.0
 VST_MAX_ORDER_NOTIONAL = 21.0
 
 
+def configured_vst_portfolio_exposure(risk_settings) -> float:
+    """One validated VST notional ceiling shared by both execution risk gates."""
+    cap = float(getattr(risk_settings, "vst_max_portfolio_notional_usdt", VST_MAX_PORTFOLIO_EXPOSURE))
+    if not math.isfinite(cap) or cap <= 0:
+        raise ValueError("invalid configured VST portfolio notional cap")
+    return cap
+
+
 def build_vst_risk_enforcement(cooldown_gate=None):
     """Build the fail-closed risk enforcer used by the live execution guard."""
     from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager
@@ -43,11 +51,16 @@ def build_vst_risk_enforcement(cooldown_gate=None):
     if not math.isfinite(order_cap) or order_cap <= 0:
         raise ValueError("invalid configured maximum order notional")
 
+    risk_manager = EnterpriseRiskManager(
+        max_portfolio_exposure=configured_vst_portfolio_exposure(risk_settings),
+        max_position_exposure=order_cap,
+    )
+    # EnterpriseRiskManager normally aliases notional capacity to its loss/drawdown
+    # equity baseline. Raising only the VST notional cap must not relax those gates.
+    risk_manager.starting_equity = VST_MAX_PORTFOLIO_EXPOSURE
+
     return RiskEnforcement(
-        EnterpriseRiskManager(
-            max_portfolio_exposure=VST_MAX_PORTFOLIO_EXPOSURE,
-            max_position_exposure=order_cap,
-        ),
+        risk_manager,
         strict_position_limit=True,
         cooldown_gate=cooldown_gate,
         max_initial_stop_roe_pct=getattr(risk_settings, "max_initial_stop_roe_pct", 35.0),
