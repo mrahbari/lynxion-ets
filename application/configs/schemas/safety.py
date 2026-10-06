@@ -13,6 +13,8 @@ class SafetyConfig(BaseModel):
     emergency_stop_enabled: bool = Field(default=True, description="Whether emergency stop is enabled")
     position_limit_per_symbol: float = Field(default=10000.0, gt=0, description="Max position per symbol")
     max_open_positions: int = Field(default=10, ge=1, description="Maximum number of open positions")
+    max_long_positions: int = Field(default=7, ge=1, description="Maximum number of open long positions")
+    max_short_positions: int = Field(default=7, ge=1, description="Maximum number of open short positions")
 
     # Additional safety fields from .env
     kill_switch_enabled: bool = Field(default=True, description="Master kill switch")

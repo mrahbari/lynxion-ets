@@ -698,12 +698,21 @@ class _BingXBroker:
 
             open_positions = []
             open_position_exposures = []
+            open_position_sides = {'LONG': 0, 'SHORT': 0}
             for position in response['data']:
                 signed_quantity = float(position.get('positionAmt', 0) or 0)
                 if not math.isfinite(signed_quantity):
                     return False, "broker position snapshot contains non-finite quantity"
                 quantity = abs(signed_quantity)
                 if quantity > 0:
+                    position_side = str(position.get('positionSide') or '').upper()
+                    if position_side not in {'LONG', 'SHORT', 'BOTH'}:
+                        return False, f"broker position snapshot has unknown side: {position_side}"
+                    if position_side == 'LONG' and signed_quantity < 0:
+                        return False, "broker position snapshot has conflicting long side and negative quantity"
+                    if position_side == 'BOTH':
+                        position_side = 'SHORT' if signed_quantity < 0 else 'LONG'
+                    open_position_sides[position_side] += 1
                     position_leverage = self._parse_leverage(position.get('leverage'))
                     if position_leverage > configured_leverage:
                         return False, (
@@ -734,6 +743,21 @@ class _BingXBroker:
                 return False, (
                     f"portfolio capacity reached: {len(open_positions)} open positions "
                     f">= configured maximum {max_open_positions}"
+                )
+
+            requested_side = getattr(getattr(order, 'side', None), 'value', getattr(order, 'side', None))
+            requested_side = str(requested_side).upper()
+            if requested_side not in {'BUY', 'SELL'}:
+                return False, f"entry direction unavailable: {requested_side}"
+            entry_side = 'LONG' if requested_side == 'BUY' else 'SHORT'
+            explicit_side = getattr(getattr(order, 'position_side', None), 'value', getattr(order, 'position_side', None))
+            if explicit_side is not None and str(explicit_side).upper() not in {entry_side, 'BOTH'}:
+                return False, "entry direction conflicts with requested position side"
+            side_limit = int(getattr(settings.safety, f'max_{entry_side.lower()}_positions', 7))
+            if open_position_sides[entry_side] >= side_limit:
+                return False, (
+                    f"{entry_side.lower()} capacity reached: {open_position_sides[entry_side]} "
+                    f"open positions >= configured maximum {side_limit}"
                 )
 
             from infrastructure.services.symbol_validator import symbol_validator

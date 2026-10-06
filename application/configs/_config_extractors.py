@@ -174,6 +174,9 @@ class _ConfigExtractorsMixin:
     def _extract_safety_config_data(self) -> Dict[str, Any]:
         """Extract safety configuration data from environment variables."""
         safety_data = {
+            'max_open_positions': self.env_loader.get_int_env_var('SAFETY_MAX_OPEN_POSITIONS', 10),
+            'max_long_positions': self.env_loader.get_int_env_var('SAFETY_MAX_LONG_POSITIONS', 7),
+            'max_short_positions': self.env_loader.get_int_env_var('SAFETY_MAX_SHORT_POSITIONS', 7),
             'kill_switch_enabled': self.env_loader.get_bool_env_var('SAFETY_KILL_SWITCH_ENABLED', True),
             'emergency_stop_enabled': self.env_loader.get_bool_env_var('SAFETY_EMERGENCY_STOP_ENABLED', True),
             'max_order_size_usd': self.env_loader.get_float_env_var('SAFETY_MAX_ORDER_SIZE_USD', 10000.0),

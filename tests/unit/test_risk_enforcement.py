@@ -108,8 +108,8 @@ def test_bingx_final_admission_blocks_at_real_broker_position_capacity(monkeypat
     broker = object.__new__(_BingXBroker)
     broker.logger = logging.getLogger("test_capacity_admission")
     positions = [
-        {"symbol": "BTC-USDT", "positionAmt": "0.01", "avgPrice": "100", "markPrice": "100", "leverage": "5"},
-        {"symbol": "ETH-USDT", "positionAmt": "0.01", "avgPrice": "100", "markPrice": "100", "leverage": "5"},
+        {"symbol": "BTC-USDT", "positionAmt": "0.01", "positionSide": "LONG", "avgPrice": "100", "markPrice": "100", "leverage": "5"},
+        {"symbol": "ETH-USDT", "positionAmt": "0.01", "positionSide": "LONG", "avgPrice": "100", "markPrice": "100", "leverage": "5"},
     ]
     monkeypatch.setattr(
         broker, "_make_request", lambda *args, **kwargs: {"code": 0, "data": positions}
@@ -128,6 +128,86 @@ def test_bingx_final_admission_blocks_at_real_broker_position_capacity(monkeypat
     assert "capacity reached" in reason
 
 
+@pytest.mark.parametrize(
+    ("existing_side", "entry_side", "blocked"),
+    [
+        ("LONG", "BUY", True),
+        ("LONG", "SELL", False),
+        ("SHORT", "SELL", True),
+        ("SHORT", "BUY", False),
+    ],
+)
+def test_bingx_final_admission_applies_directional_capacity(
+    monkeypatch, existing_side, entry_side, blocked
+):
+    import logging
+    from types import SimpleNamespace
+    from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
+
+    broker = object.__new__(_BingXBroker)
+    broker.logger = logging.getLogger("test_directional_capacity")
+    calls = []
+    positions = [
+        {"symbol": f"OLD{i}-USDT", "positionAmt": "0.1", "positionSide": existing_side,
+         "avgPrice": "100", "markPrice": "100", "leverage": "5"}
+        for i in range(7)
+    ]
+
+    def request(method, endpoint, **kwargs):
+        calls.append((method, endpoint))
+        return {"code": 0, "data": positions}
+
+    broker._make_request = request
+    broker._establish_and_verify_leverage = lambda *args: (True, "verified")
+    monkeypatch.setattr(
+        "bootstrap.settings.loaders.load_settings",
+        lambda: SimpleNamespace(
+            safety=SimpleNamespace(
+                max_open_positions=10, max_long_positions=7, max_short_positions=7
+            ),
+            risk=SimpleNamespace(max_leverage=5, max_leverage_limit=5),
+        ),
+    )
+    order = _broker_admission_order()
+    order.side = OrderSide(entry_side)
+    if entry_side == "SELL":
+        order.stop_loss_price = Money(Decimal("102"), "USDT")
+        order.take_profit_price = Money(Decimal("96"), "USDT")
+
+    allowed, reason = broker._assert_entry_admission(order)
+
+    assert allowed is not blocked, reason
+    if blocked:
+        assert f"{existing_side.lower()} capacity reached" in reason
+    assert all(method == "GET" for method, _ in calls)
+
+
+@pytest.mark.parametrize("position_side", [None, "UNKNOWN"])
+def test_bingx_final_admission_fails_closed_on_unknown_position_side(monkeypatch, position_side):
+    import logging
+    from types import SimpleNamespace
+    from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
+
+    broker = object.__new__(_BingXBroker)
+    broker.logger = logging.getLogger("test_unknown_position_side")
+    broker._make_request = lambda *args, **kwargs: {
+        "code": 0,
+        "data": [{"symbol": "OLD-USDT", "positionAmt": "1", "positionSide": position_side}],
+    }
+    monkeypatch.setattr(
+        "bootstrap.settings.loaders.load_settings",
+        lambda: SimpleNamespace(
+            safety=SimpleNamespace(max_open_positions=10),
+            risk=SimpleNamespace(max_leverage=5, max_leverage_limit=5),
+        ),
+    )
+
+    allowed, reason = broker._assert_entry_admission(_broker_admission_order())
+
+    assert not allowed
+    assert "unknown side" in reason
+
+
 def test_bingx_final_admission_blocks_duplicate_from_real_broker_snapshot(monkeypatch):
     import logging
     from types import SimpleNamespace
@@ -140,7 +220,7 @@ def test_bingx_final_admission_blocks_duplicate_from_real_broker_snapshot(monkey
         "_make_request",
         lambda *args, **kwargs: {
             "code": 0,
-                "data": [{"symbol": "NEW-USDT", "positionAmt": "1", "avgPrice": "100", "markPrice": "100", "leverage": "5"}],
+                "data": [{"symbol": "NEW-USDT", "positionAmt": "1", "positionSide": "LONG", "avgPrice": "100", "markPrice": "100", "leverage": "5"}],
         },
     )
     monkeypatch.setattr(
@@ -189,11 +269,11 @@ def test_bingx_final_admission_fails_closed_when_position_snapshot_is_unavailabl
             "non-finite quantity",
         ),
         (
-            {"symbol": "BTC-USDT", "positionAmt": "1", "avgPrice": "100", "markPrice": "nan", "leverage": "5"},
+            {"symbol": "BTC-USDT", "positionAmt": "1", "positionSide": "LONG", "avgPrice": "100", "markPrice": "nan", "leverage": "5"},
             "non-finite mark price",
         ),
         (
-            {"symbol": "BTC-USDT", "positionAmt": "1", "avgPrice": "0", "markPrice": "0", "leverage": "5"},
+            {"symbol": "BTC-USDT", "positionAmt": "1", "positionSide": "LONG", "avgPrice": "0", "markPrice": "0", "leverage": "5"},
             "positive finite reference price",
         ),
     ],
