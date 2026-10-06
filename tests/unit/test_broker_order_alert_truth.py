@@ -40,7 +40,7 @@ def test_bingx_vst_alert_names_route_and_unverified_fill(monkeypatch):
     assert "VST / TESTNET" in message
     assert "BINGX" in message
     assert "OID-1" in message
-    assert "Order value (est.):</b> <code>20.98 USDT" in message
+    assert "Est. value:</b> <code>20.98 USDT" in message
     assert "fill not verified" in message
     assert "accepted on BINGX VST / TESTNET" in subject
     assert (level, parse_mode) == ("info", "HTML")
@@ -85,4 +85,4 @@ def test_single_broker_alert_shows_estimated_notional(monkeypatch):
     service._send_order_placed_notification(order, "OID-2")
 
     assert len(sent) == 1
-    assert "Order value (est.):</b> <code>20.98 USDT" in sent[0]
+    assert "Est. value:</b> <code>20.98 USDT" in sent[0]

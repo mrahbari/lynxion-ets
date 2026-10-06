@@ -1195,7 +1195,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                        f" ├ <b>Exchange:</b> <code>{exchange_esc}</code>\n"
                        f" ├ <b>Quantity:</b> <code>{quantity_esc}</code>\n"
                        f" ├ <b>Price:</b> <code>{price_amount_esc}</code>\n"
-                       f" └ <b>Order value (est.):</b> <code>{notional_esc}</code>\n\n"
+                       f" └ <b>Est. value:</b> <code>{notional_esc}</code>\n\n"
                        f"⚙️ <b>Execution Details:</b>\n"
                        f" ├ <b>Watcher:</b> <code>{watcher_name_esc}</code>\n"
                        f" ├ <b>Strategy:</b> <code>{strategy_name_esc}</code>\n"
