@@ -37,7 +37,7 @@ class ActivePositionManager:
 
     def __init__(
         self,
-        be_trigger_roe: float = 6.0,        # +6.0% ROE to trigger Breakeven (+0.6% price move @ 10x)
+        be_trigger_roe: Optional[float] = None,  # loaded from the risk configuration when omitted
         trail_trigger_roe: float = 10.0,    # +10.0% ROE to activate Trailing Stop (+1.0% price move @ 10x)
         trail_distance_pct: float = 0.005,  # 0.5% trailing distance from peak price
         fee_buffer_pct: float = 0.0035,
@@ -46,7 +46,10 @@ class ActivePositionManager:
         observer_run_id: Optional[str] = None,
         position_identity_store: Optional[Any] = None,
     ):
-        self.be_trigger_roe = be_trigger_roe
+        if be_trigger_roe is None:
+            from bootstrap.settings.loaders import load_settings
+            be_trigger_roe = load_settings().risk.breakeven_trigger_roe_pct
+        self.be_trigger_roe = float(be_trigger_roe)
         self.trail_trigger_roe = trail_trigger_roe
         self.trail_distance_pct = trail_distance_pct
         self.fee_buffer_pct = fee_buffer_pct

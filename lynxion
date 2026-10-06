@@ -36,8 +36,6 @@ cohort_commit="$(python -c 'import json,sys; print(json.loads(sys.argv[1])["comm
 
 env \
   LOG_LEVEL=WARNING \
-  RISK_MAX_LEVERAGE=10 \
-  MAX_LEVERAGE=10 \
   LYNXION_FORWARD_EXIT_OBSERVER_ENABLED=true \
   LYNXION_FORWARD_EXIT_ROOT="${evidence_root}" \
   LYNXION_FORWARD_EXIT_RUN_ID="${cohort_run_id}" \

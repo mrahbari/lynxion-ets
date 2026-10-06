@@ -42,6 +42,8 @@ class RiskConfig(BaseModel):
     max_risk_per_trade: float = Field(..., ge=0, le=1, description="Maximum risk per trade (0-1)")
     max_correlation: float = Field(..., ge=0, le=1, description="Maximum correlation threshold (0-1)")
     max_leverage: float = Field(..., ge=1, description="Maximum leverage allowed")
+    breakeven_trigger_roe_pct: float = Field(default=6.0, gt=0, description="ROE percent to activate first profit-lock stop")
+    max_initial_stop_roe_pct: float = Field(default=35.0, gt=0, le=100, description="Maximum initial stop distance in leveraged ROE percent")
     stop_loss_percentage: float = Field(..., ge=0, le=1, description="Stop loss percentage (0-1)")
     take_profit_percentage: float = Field(..., ge=0, description="Take profit percentage (0-1)")
 

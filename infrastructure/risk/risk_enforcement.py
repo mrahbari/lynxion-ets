@@ -35,26 +35,38 @@ VST_MAX_ORDER_NOTIONAL = 21.0
 def build_vst_risk_enforcement(cooldown_gate=None):
     """Build the fail-closed risk enforcer used by the live execution guard."""
     from application.risk_management.enterprise_risk_manager import EnterpriseRiskManager
+    from bootstrap.settings.loaders import load_settings
+
+    risk_settings = load_settings().risk
+    configured_cap = getattr(risk_settings, "max_order_notional_amount", None)
+    order_cap = VST_MAX_ORDER_NOTIONAL if configured_cap is None else float(configured_cap)
+    if not math.isfinite(order_cap) or order_cap <= 0:
+        raise ValueError("invalid configured maximum order notional")
 
     return RiskEnforcement(
         EnterpriseRiskManager(
             max_portfolio_exposure=VST_MAX_PORTFOLIO_EXPOSURE,
-            max_position_exposure=VST_MAX_ORDER_NOTIONAL,
+            max_position_exposure=order_cap,
         ),
         strict_position_limit=True,
         cooldown_gate=cooldown_gate,
+        max_initial_stop_roe_pct=getattr(risk_settings, "max_initial_stop_roe_pct", 35.0),
+        configured_leverage=getattr(risk_settings, "max_leverage", 5.0),
     )
 
 
 class RiskEnforcement:
     """Order-path adapter over EnterpriseRiskManager (enforce + exposure feedback + state)."""
 
-    def __init__(self, risk_manager, strict_position_limit: bool = False, cooldown_gate=None, cooldown_journal_path=None):
+    def __init__(self, risk_manager, strict_position_limit: bool = False, cooldown_gate=None, cooldown_journal_path=None,
+                 max_initial_stop_roe_pct=None, configured_leverage=None):
         self._rm = risk_manager
         self._lock = threading.Lock()
         self.checks = 0
         self.denials = 0
         self._strict_position_limit = strict_position_limit
+        self._max_initial_stop_roe_pct = max_initial_stop_roe_pct
+        self._configured_leverage = configured_leverage
         self._cooldown_gate = cooldown_gate
         self._cooldown_journal_path = cooldown_journal_path or COOLDOWN_JOURNAL_PATH
         self._sl_cooldowns: Dict[str, float] = self._load_cooldown_journal()
@@ -223,6 +235,33 @@ class RiskEnforcement:
                     if ("SELL" in side_upper or "SHORT" in side_upper) and sl_price <= entry:
                         self.denials += 1
                         return False, f"risk engine: Stop-Loss price ({sl_price}) for SELL must be strictly above entry price ({entry})"
+
+                    # Cap the *initial* loss in leveraged ROE, not in unleveraged
+                    # price percent. The order object is the one forwarded to the
+                    # broker, so this is enforced at the authoritative admission gate.
+                    if self._max_initial_stop_roe_pct is not None:
+                        from decimal import Decimal
+                        from domain.value_objects import Money
+
+                        leverage = getattr(order, "requested_leverage", None) or self._configured_leverage
+                        try:
+                            leverage_d = Decimal(str(leverage))
+                            limit_d = Decimal(str(self._max_initial_stop_roe_pct))
+                            if not leverage_d.is_finite() or leverage_d <= 0 or not limit_d.is_finite() or limit_d <= 0:
+                                raise ValueError("invalid stop limit or leverage")
+                        except (ValueError, TypeError, ArithmeticError):
+                            self.denials += 1
+                            return False, "risk engine: valid leverage and maximum stop ROE are required"
+                        entry_d = Decimal(str(entry))
+                        max_price_fraction = limit_d / (Decimal("100") * leverage_d)
+                        if abs(entry_d - Decimal(str(sl_price))) / entry_d > max_price_fraction:
+                            if "BUY" in side_upper or "LONG" in side_upper:
+                                capped_stop = entry_d * (Decimal("1") - max_price_fraction)
+                            else:
+                                capped_stop = entry_d * (Decimal("1") + max_price_fraction)
+                            currency = getattr(getattr(order, "price", None), "currency", "USDT")
+                            order.stop_loss_price = Money(amount=capped_stop, currency=currency)
+                            sl_price = float(capped_stop)
 
                     # P1.1 Short-Side Safety Gate: Block SHORT position entries on anomalous high-wick / low-liquidity symbols
                     if "SELL" in side_upper or "SHORT" in side_upper:

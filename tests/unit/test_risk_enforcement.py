@@ -22,6 +22,83 @@ def _broker_admission_order(symbol="NEWUSDT"):
     )
 
 
+def test_configured_vst_order_cap_and_initial_stop_roe_are_enforced(monkeypatch):
+    from types import SimpleNamespace
+    from infrastructure.risk.risk_enforcement import build_vst_risk_enforcement
+    from domain.value_objects import Money
+
+    monkeypatch.setattr(
+        "bootstrap.settings.loaders.load_settings",
+        lambda: SimpleNamespace(risk=SimpleNamespace(
+            max_order_notional_amount=201.0,
+            max_initial_stop_roe_pct=35.0,
+            max_leverage=10.0,
+        )),
+    )
+    enforcer = build_vst_risk_enforcement()
+    assert enforcer._rm.max_position_exposure == 201.0
+    order = _broker_admission_order("CAPUSDT")
+    order.requested_leverage = Decimal("10")
+    order.stop_loss_price = Money(Decimal("94"), "USDT")
+    allowed, reason = enforcer.enforce(order)
+    assert allowed, reason
+    assert order.stop_loss_price.amount == Decimal("96.500")
+
+
+def test_initial_stop_roe_cap_is_symmetric_for_short(monkeypatch):
+    from types import SimpleNamespace
+    from domain.entities import OrderSide
+    from domain.value_objects import Money
+    from infrastructure.risk.risk_enforcement import build_vst_risk_enforcement
+
+    monkeypatch.setattr(
+        "bootstrap.settings.loaders.load_settings",
+        lambda: SimpleNamespace(risk=SimpleNamespace(
+            max_order_notional_amount=201.0,
+            max_initial_stop_roe_pct=35.0,
+            max_leverage=10.0,
+        )),
+    )
+    order = _broker_admission_order("SHORTUSDT")
+    order.side = OrderSide.SELL
+    order.requested_leverage = Decimal("10")
+    order.stop_loss_price = Money(Decimal("106"), "USDT")
+    allowed, reason = build_vst_risk_enforcement().enforce(order)
+    assert allowed, reason
+    assert order.stop_loss_price.amount == Decimal("103.500")
+
+
+def test_bingx_final_boundary_rejects_outward_rounded_stop_without_network(monkeypatch):
+    import logging
+    from types import SimpleNamespace
+    from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
+    from infrastructure.services.symbol_validator import symbol_validator
+    from domain.value_objects import Money
+
+    monkeypatch.setattr(symbol_validator, "get_approved_symbols", lambda: ["NEWUSDT"])
+    monkeypatch.setattr(
+        "bootstrap.settings.loaders.load_settings",
+        lambda: SimpleNamespace(risk=SimpleNamespace(
+            max_leverage=10.0,
+            max_leverage_limit=10.0,
+            max_initial_stop_roe_pct=35.0,
+        )),
+    )
+    broker = object.__new__(_BingXBroker)
+    broker.logger = logging.getLogger("networkless_stop_boundary")
+    broker._format_quantity = lambda symbol, qty: str(qty)
+    broker._format_price = lambda symbol, price: str(price - 0.1)
+    broker._make_request = lambda *args, **kwargs: pytest.fail("authenticated request attempted")
+    order = _broker_admission_order()
+    order.requested_leverage = Decimal("10")
+    order.stop_loss_price = Money(Decimal("96.5"), "USDT")
+
+    result = broker._execute_order_after_admission(order)
+
+    assert result["success"] is False
+    assert "maximum initial stop ROE" in result["error"]
+
+
 def test_bingx_final_admission_blocks_at_real_broker_position_capacity(monkeypatch):
     """Internal risk state cannot permit entries beyond the exchange's real position count."""
     import logging

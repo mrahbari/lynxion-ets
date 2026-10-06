@@ -997,6 +997,28 @@ class _BingXBroker:
                         self.logger.warning(f"Invalid stop loss price: {sl_float}, skipping...")
                     else:
                         formatted_sl_price = self._format_price(symbol_formatted, sl_float)
+                        # Final exchange-boundary check also covers direct low-level callers
+                        # and adverse price rounding. Never send a stop wider than the
+                        # configured leveraged-ROE limit relative to the order reference.
+                        from bootstrap.settings.loaders import load_settings
+                        settings = load_settings()
+                        risk_settings = settings.risk
+                        try:
+                            reference = Decimal(str(getattr(getattr(order, 'price', None), 'amount', None)))
+                            formatted_stop = Decimal(str(formatted_sl_price))
+                            leverage = self._parse_leverage(getattr(order, 'requested_leverage', None))
+                            configured_leverage = self._configured_leverage(settings)
+                            max_roe = Decimal(str(risk_settings.max_initial_stop_roe_pct))
+                            if leverage != configured_leverage or not reference.is_finite() or reference <= 0:
+                                raise ValueError('missing or mismatched reference price/leverage')
+                            if not formatted_stop.is_finite() or formatted_stop <= 0 or not max_roe.is_finite() or max_roe <= 0:
+                                raise ValueError('invalid formatted stop or configured limit')
+                            distance_roe = abs(reference - formatted_stop) / reference * leverage * Decimal('100')
+                            wrong_side = (side_value == 'BUY' and formatted_stop >= reference) or (side_value == 'SELL' and formatted_stop <= reference)
+                            if wrong_side or distance_roe > max_roe:
+                                raise ValueError('formatted stop exceeds configured maximum initial stop ROE')
+                        except (ValueError, TypeError, ArithmeticError) as stop_gate_error:
+                            return {'success': False, 'order_id': None, 'error': f'stop risk gate: {stop_gate_error}'}
                         if order_type_value.upper() == 'LIMIT':
                             order_data['stopLoss'] = json.dumps(
                                 {

@@ -4,12 +4,10 @@ from types import SimpleNamespace
 import pytest
 
 
-def test_tracked_lynxion_launcher_pins_both_leverage_ceilings_to_ten():
+def test_tracked_lynxion_launcher_uses_canonical_configured_leverage():
     launcher = (Path(__file__).resolve().parents[2] / "lynxion").read_text(encoding="utf-8")
-    assert "RISK_MAX_LEVERAGE=10" in launcher
-    assert "MAX_LEVERAGE=10" in launcher
-    assert launcher.index("RISK_MAX_LEVERAGE=10") < launcher.index("python run_trading_system.py")
-    assert launcher.index("MAX_LEVERAGE=10") < launcher.index("python run_trading_system.py")
+    assert "RISK_MAX_LEVERAGE=10" not in launcher
+    assert "MAX_LEVERAGE=10" not in launcher
 
 
 def _position(mark_price):
@@ -22,6 +20,16 @@ def _position(mark_price):
         leverage=10.0,
         isolated=True,
     )
+
+
+def test_profit_lock_trigger_comes_from_risk_config(monkeypatch):
+    from infrastructure.risk.active_position_manager import ActivePositionManager
+    monkeypatch.setattr(
+        "bootstrap.settings.loaders.load_settings",
+        lambda: SimpleNamespace(risk=SimpleNamespace(breakeven_trigger_roe_pct=7.0)),
+    )
+    manager = ActivePositionManager()
+    assert manager.be_trigger_roe == 7.0
 
 
 def test_default_exit_contract_is_economically_consistent_at_ten_x(monkeypatch):

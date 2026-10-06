@@ -47,12 +47,15 @@ class _ConfigExtractorsMixin:
 
     def _extract_risk_config_data(self) -> Dict[str, Any]:
         """Extract risk configuration data from environment variables."""
+        execution_leverage = self.env_loader.get_float_env_var('RISK_MAX_LEVERAGE', 10.0)
         risk_data = {
             'max_position_size': self.env_loader.get_float_env_var('RISK_MAX_POSITION_SIZE', 0.05),
             'max_drawdown': self.env_loader.get_float_env_var('RISK_MAX_DRAWDOWN', 0.15),
             'max_risk_per_trade': self.env_loader.get_float_env_var('RISK_MAX_RISK_PER_TRADE', 0.02),
             'max_correlation': self.env_loader.get_float_env_var('RISK_MAX_CORRELATION', 0.7),
-            'max_leverage': self.env_loader.get_float_env_var('RISK_MAX_LEVERAGE', 5.0),
+            'max_leverage': execution_leverage,
+            'breakeven_trigger_roe_pct': self.env_loader.get_float_env_var('BREAKEVEN_TRIGGER_ROE_PCT', 6.0),
+            'max_initial_stop_roe_pct': self.env_loader.get_float_env_var('MAX_INITIAL_STOP_ROE_PCT', 35.0),
             'stop_loss_percentage': self.env_loader.get_float_env_var('RISK_STOP_LOSS_PERCENTAGE', 0.02),
             'take_profit_percentage': self.env_loader.get_float_env_var('RISK_TAKE_PROFIT_PERCENTAGE', 0.05),
             'max_total_exposure': self.env_loader.get_float_env_var('RISK_MAX_TOTAL_EXPOSURE', 0.80),
@@ -75,7 +78,7 @@ class _ConfigExtractorsMixin:
             'max_daily_loss_threshold': self.env_loader.get_float_env_var('MAX_DAILY_LOSS', 0.02),
             'max_total_positions_limit': self.env_loader.get_int_env_var('MAX_TOTAL_POSITIONS', 50),
             'max_correlation_limit': self.env_loader.get_float_env_var('MAX_CORRELATION', 0.7),
-            'max_leverage_limit': self.env_loader.get_float_env_var('MAX_LEVERAGE', 5.0),
+            'max_leverage_limit': execution_leverage,
             'max_order_size_limit': self.env_loader.get_float_env_var('MAX_ORDER_SIZE', 0.05),
             'max_order_notional_amount': self.env_loader.get_float_env_var('MAX_ORDER_NOTIONAL_AMOUNT', None) if self.env_loader.get_env_var('MAX_ORDER_NOTIONAL_AMOUNT', '') else None,
 
