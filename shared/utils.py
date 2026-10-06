@@ -3,8 +3,24 @@ import hashlib
 import hmac
 import json
 import math
+from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, Optional
 from datetime import datetime, timezone
+
+
+def format_requested_order_notional(order: Any) -> str:
+    """Format quantity × reference price; never present it as a verified fill."""
+    try:
+        price = getattr(order, "price", None)
+        price = getattr(price, "amount", price)
+        quantity = Decimal(str(getattr(order, "quantity", None)))
+        reference_price = Decimal(str(price))
+        notional = quantity * reference_price
+        if not notional.is_finite() or notional <= 0:
+            return "N/A"
+        return f"{notional:.2f} USDT"
+    except (InvalidOperation, ValueError, TypeError):
+        return "N/A"
 
 
 def generate_client_order_id(strategy_name: str, symbol: str) -> str:

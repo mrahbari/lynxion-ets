@@ -1171,6 +1171,8 @@ class MultiBrokerExecutionService(ExecutionPort):
             side_name_esc = escape_html(side_name)
             quantity_esc = escape_html(quantity)
             price_amount_esc = escape_html(price_amount)
+            from shared.utils import format_requested_order_notional
+            notional_esc = escape_html(format_requested_order_notional(order))
             watcher_name_esc = escape_html(watcher_name)
             strategy_name_esc = escape_html(strategy_name)
             regime_context_esc = escape_html(regime_context)
@@ -1192,7 +1194,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                        f" ├ <b>Symbol:</b> <code>{symbol_esc}</code>\n"
                        f" ├ <b>Exchange:</b> <code>{exchange_esc}</code>\n"
                        f" ├ <b>Quantity:</b> <code>{quantity_esc}</code>\n"
-                       f" └ <b>Price:</b> <code>{price_amount_esc}</code>\n\n"
+                       f" ├ <b>Price:</b> <code>{price_amount_esc}</code>\n"
+                       f" └ <b>Requested notional (estimate):</b> <code>{notional_esc}</code>\n\n"
                        f"⚙️ <b>Execution Details:</b>\n"
                        f" ├ <b>Watcher:</b> <code>{watcher_name_esc}</code>\n"
                        f" ├ <b>Strategy:</b> <code>{strategy_name_esc}</code>\n"
