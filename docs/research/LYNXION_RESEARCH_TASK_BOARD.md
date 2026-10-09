@@ -1,11 +1,11 @@
 # Lynxion research task board
 
-Operational queue over [the canonical research backlog](LYNXION_RESEARCH_BACKLOG.md), not a new scientific protocol. No future outcomes or trading activity are authorized by this board. Statuses and evidence below were last verified on **2026-10-05 10:27 UTC**; task-program starting HEAD `8b3ab1e`.
+Operational queue over [the canonical research backlog](LYNXION_RESEARCH_BACKLOG.md), not a new scientific protocol. No future outcomes or trading activity are authorized by this board. The Pilot-2 status below was last verified on **2026-10-09 11:41 UTC**; task-program starting HEAD `8b3ab1e`. Other completed backlog entries retain their prior evidence/status unless separately re-audited.
 
 | Dashboard | Current state |
 |---|---|
-| Current active task | TASK-01 Pilot-2 pre-start integrity; all authorized outcome-blind backlog deliverables complete |
-| Current Pilot-2 status | PRE-START SUPERVISION; frozen 2026-10-06 00:00 to 2026-10-13 00:00 UTC; LaunchAgent and child PID 38441 running; 0 formal sessions; ~50 GiB available |
+| Current active task | TASK-01 Pilot-2 measurement-integrity monitoring; all authorized outcome-blind backlog deliverables complete |
+| Current Pilot-2 status | COLLECTING with explicit earlier unobserved intervals; frozen 2026-10-06 00:00 to 2026-10-13 00:00 UTC. At 2026-10-09 11:41 UTC collector PID 2564 had fresh BTCUSDT/ETHUSDT receipts, one snapshot and applied updates in each current session; ~58 GiB disk free. This is **not** a final PASS/PARTIAL/FAIL verdict. |
 | Next ready task | None; monitor Pilot-2 at low cost until frozen stop |
 | Done / remaining / parked or blocked queue tasks | 10 / 1 / 0 (the scientific R25 lead remains PARKED; V3 requires operator decision) |
 
@@ -26,3 +26,9 @@ Status vocabulary: `TODO`, `READY`, `IN_PROGRESS`, `WAITING_EXTERNAL`, `DONE`, `
 | TASK-11 / P5 / scientific decision | Outcome-blind next-experiment package; `DONE` | Earlier backlog tasks | Compare novelty/readiness/burden only / no V3 selection or outcomes | `8b3ab1e` / this package commit | [Decision package](NEXT_EDGE_EXPERIMENT_DECISION_PACKAGE.md); no candidate selected; none until Pilot-2 verdict; YES to start a new Edge study |
 
 The queue is not a mandate to stay busy. Once authorized backlog tasks are complete, retain low-cost Pilot-2 monitoring until its frozen stop, then commit the measurement report and final handover. A negative, partial, or unavailable measurement remains evidence, not permission to rescue a cohort.
+
+## 2026-10-09 measurement checkpoint (outcome-blind)
+
+- The first collector epoch and subsequent epochs contain explicit clock/disconnect/DNS failures; two host restarts left the LaunchAgent unregistered and produced prolonged unobserved intervals. The same frozen LaunchAgent was restored, preserving distinct sessions and raw orphan evidence. No source, symbol, depth, timestamp semantic, or UTC boundary was changed. Zero sequence gaps *within valid sessions* must not be read as continuous seven-day coverage.
+- As of the timestamp above, the manifest listed 16 sessions, two `collector_restart` failure records, and 488 finalized raw chunks totaling 2,499,118,091 bytes. Independent readback verified byte size and SHA-256 for all 488 finalized chunks. The current BTCUSDT and ETHUSDT sessions each had one snapshot, applied updates, and zero recorded sequence gaps or errors; the live manifest is still changing. Disk free was ~58.26 GiB.
+- Exact total valid coverage, longest unobserved interval, orphan disposition, and the measurement verdict remain for the frozen stop-time audit. No predictive or trading outcome was opened. The unrelated VST runner has been observed stopped after the host restart; this board does not authorize broker/account access or a trading-runner restart.
