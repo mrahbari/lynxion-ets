@@ -1,6 +1,6 @@
 # Lynxion research task board
 
-Operational queue over [the canonical research backlog](LYNXION_RESEARCH_BACKLOG.md), not a new scientific protocol. No future outcomes or trading activity are authorized by this board. The Pilot-2 status below was last verified on **2026-10-10 20:35 UTC**; task-program starting HEAD `8b3ab1e`. Other completed backlog entries retain their prior evidence/status unless separately re-audited. The operator's **no repeat collection after Pilot-2** constraint and the full R01–R26 disposition are recorded in the [13 October decision brief](LYNXION_2026-10-13_NO_RECOLLECTION_DECISION_BRIEF.md).
+Operational queue over [the canonical research backlog](LYNXION_RESEARCH_BACKLOG.md), not a new scientific protocol. No future outcomes or trading activity are authorized by this board. The Pilot-2 status below was last verified on **2026-10-10 20:35 UTC**; task-program starting HEAD `8b3ab1e`. Other completed backlog entries retain their prior evidence/status unless separately re-audited. The operator's **no repeat collection after Pilot-2** constraint and the full R01–R26 disposition are recorded in the [13 October decision brief](LYNXION_2026-10-13_NO_RECOLLECTION_DECISION_BRIEF.md). The [closure audit](LYNXION_BACKLOG_CLOSURE_AUDIT_2026-10-10.md) identifies which unfinished entries are genuinely completable and which have immutable scientific/data gates.
 
 | Dashboard | Current state |
 |---|---|
