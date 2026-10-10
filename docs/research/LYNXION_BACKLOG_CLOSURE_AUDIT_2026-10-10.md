@@ -30,4 +30,8 @@ Scope: all 26 entries in the [canonical backlog](LYNXION_RESEARCH_BACKLOG.md), f
 2. Keep the research registry, decision brief and incident list internally consistent. This audit corrected stale pre-start wording and linked completed R22–R24 deliverables; it did **not** change any historical verdict.
 3. Separately diagnose existing VST execution-safety defects from local evidence and networkless tests. Do not classify an order as filled from a local acceptance, auto-restart an unknown submission, deploy trading-behavior changes, or query an authenticated account without the corresponding explicit gate.
 
+### Bounded raw-integrity checkpoint
+
+The read-only auditor `scripts/audit_microstructure_capture.py` was added with two synthetic tests. Its 2026-10-10 metadata-only run matched SHA-256 and byte counts for **684 finalized** files and **12 recorded orphan** files, with no mismatch in the manifest snapshot read. Two unlisted raw chunks belonged to the live capture at that instant; they were **not** counted as finalized. This fast check explicitly did **not** decompress/count every record, replay books, establish final coverage, or issue a verdict. The complete record audit was interrupted while the collector remained live to avoid a prolonged concurrent full-data scan; it must run on the finalized evidence at the frozen stop.
+
 **Conclusion:** all currently authorized *outcome-blind backlog deliverables* are complete or advanced to an explicit gate. Calling the remaining scientific questions “finished” would be misleading. At the checkpoint, the actionable deliverable is a trustworthy Pilot-2 measurement report plus a constrained operator decision package, not another data-collection plan.
