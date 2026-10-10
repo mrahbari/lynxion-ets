@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 
-def audit(activation_path: Path) -> dict:
+def audit(activation_path: Path, *, verify_records: bool = True) -> dict:
     activation = json.loads(activation_path.read_text())
     root = Path(activation["output_root"]).resolve()
     manifest = json.loads((root / "capture_manifest.json").read_text())
@@ -47,6 +47,8 @@ def audit(activation_path: Path) -> dict:
             path = check_path(entry, "finalized")
             if path is None:
                 continue
+            if not verify_records:
+                continue
             try:
                 count = 0
                 with gzip.open(path, "rt", encoding="utf-8") as handle:
@@ -76,13 +78,17 @@ def audit(activation_path: Path) -> dict:
 
     raw_root = root / "raw"
     unlisted = sorted(str(path) for path in raw_root.rglob("*.jsonl.gz") if path.resolve() not in checked) if raw_root.exists() else []
-    return {"integrity_ok": not errors, "finalized_files": finalized,
+    return {"integrity_ok": not errors, "record_verification": verify_records,
+            "finalized_files": finalized,
             "orphan_files": orphans, "unlisted_files": unlisted, "errors": errors}
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("activation", type=Path)
-    result = audit(parser.parse_args().activation)
+    parser.add_argument("--metadata-only", action="store_true",
+                        help="Check size and SHA-256 without gzip records; not a complete audit")
+    args = parser.parse_args()
+    result = audit(args.activation, verify_records=not args.metadata_only)
     print(json.dumps(result, indent=2))
     raise SystemExit(0 if result["integrity_ok"] else 1)

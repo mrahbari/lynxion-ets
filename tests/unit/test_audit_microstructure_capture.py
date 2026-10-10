@@ -32,8 +32,10 @@ def test_audit_finalized_and_orphan_evidence(tmp_path: Path):
     (root / "capture_manifest.json").write_text(json.dumps(manifest))
 
     result = audit(activation_path)
-    assert result == {"integrity_ok": True, "finalized_files": 1,
+    assert result == {"integrity_ok": True, "record_verification": True, "finalized_files": 1,
                       "orphan_files": 1, "unlisted_files": [], "errors": []}
+
+    assert audit(activation_path, verify_records=False)["record_verification"] is False
 
     manifest["sessions"][0]["files"][0]["records"] = 2
     (root / "capture_manifest.json").write_text(json.dumps(manifest))
