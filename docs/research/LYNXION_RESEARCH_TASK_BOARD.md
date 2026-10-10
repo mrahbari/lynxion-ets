@@ -1,12 +1,12 @@
 # Lynxion research task board
 
-Operational queue over [the canonical research backlog](LYNXION_RESEARCH_BACKLOG.md), not a new scientific protocol. No future outcomes or trading activity are authorized by this board. The Pilot-2 status below was last verified on **2026-10-09 11:41 UTC**; task-program starting HEAD `8b3ab1e`. Other completed backlog entries retain their prior evidence/status unless separately re-audited.
+Operational queue over [the canonical research backlog](LYNXION_RESEARCH_BACKLOG.md), not a new scientific protocol. No future outcomes or trading activity are authorized by this board. The Pilot-2 status below was last verified on **2026-10-10 20:35 UTC**; task-program starting HEAD `8b3ab1e`. Other completed backlog entries retain their prior evidence/status unless separately re-audited. The operator's **no repeat collection after Pilot-2** constraint and the full R01–R26 disposition are recorded in the [13 October decision brief](LYNXION_2026-10-13_NO_RECOLLECTION_DECISION_BRIEF.md).
 
 | Dashboard | Current state |
 |---|---|
 | Current active task | TASK-01 Pilot-2 measurement-integrity monitoring; all authorized outcome-blind backlog deliverables complete |
-| Current Pilot-2 status | COLLECTING with explicit earlier unobserved intervals; frozen 2026-10-06 00:00 to 2026-10-13 00:00 UTC. At 2026-10-09 11:41 UTC collector PID 2564 had fresh BTCUSDT/ETHUSDT receipts, one snapshot and applied updates in each current session; ~58 GiB disk free. This is **not** a final PASS/PARTIAL/FAIL verdict. |
-| Next ready task | None; monitor Pilot-2 at low cost until frozen stop |
+| Current Pilot-2 status | COLLECTING with explicit earlier unobserved intervals; frozen 2026-10-06 00:00 to 2026-10-13 00:00 UTC. At 2026-10-10 20:35 UTC collector PID 4783 had fresh BTCUSDT/ETHUSDT receipts, one snapshot and applied updates in each current session, zero current-session gaps/errors, and ~56.7 GiB disk free. 681 manifest-listed finalized/orphan files passed independent byte/hash readback. This is **not** a final verdict; prior multi-hour gaps preclude the contract's PASS. |
+| Next ready task | Continue low-cost frozen Pilot-2 integrity monitoring; finalize/audit at stop, then decision brief and handover. No Pilot-3 or new collection plan. |
 | Done / remaining / parked or blocked queue tasks | 10 / 1 / 0 (the scientific R25 lead remains PARKED; V3 requires operator decision) |
 
 Status vocabulary: `TODO`, `READY`, `IN_PROGRESS`, `WAITING_EXTERNAL`, `DONE`, `PARKED`, `BLOCKED_BY_SCIENTIFIC_DECISION`, `BLOCKED_BY_DATA`, `CLOSED`. Pilot-2 always preempts backlog work. `Latest commit` is `NONE` until that task's own deliverable is committed. Existing C-11/C-35 working-tree writes belong to independent collectors and must not be staged or altered here.
