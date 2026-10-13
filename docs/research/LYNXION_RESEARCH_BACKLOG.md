@@ -8,6 +8,41 @@ Each entry records: ID/name; family; **scientific status** (exact source verdict
 
 Registry taxonomy: `IDEA`, `INDEPENDENT_LEAD`, `FEASIBILITY`, `PREREGISTERED`, `COLLECTING`, `FROZEN_PROSPECTIVE`, `DATA_LIMITED`, `NOT_IDENTIFIABLE`, `PREDICTIVE_NOT_SUPPORTED`, `ECONOMIC_GATE_FAILED`, `PARKED`, `CLOSED`, `INSUFFICIENT_EVIDENCE`. These are **index categories only**; quoted source verdicts below remain authoritative. A phase may be operationally parked even when its scientific protocol remains frozen. `Priority` concerns *whether work may run now*, not expected profit.
 
+## 2026-10-13 resolution overlay — not a new scientific verdict
+
+This is an **operational disposition** for every existing R01–R26 item. It does not overwrite the exact frozen verdict in each entry below. `CLOSED_FINAL` closes the specified study, not its entire information family; `ACTIVE_DELIVERABLE` means a concrete pre-existing work product remains; `BLOCKED_EXTERNAL` requires evidence not currently available/authorized; `RESEARCH_ASSET` means a completed reusable design or evidence map, not an active Edge experiment. [Evidence and rationale for each](LYNXION_2026-10-13_PARKED_ITEMS_DECISION_LIST.md). Counts and liveness for C-11/C-33/C-35 are historical here, not current observations.
+
+| ID | Verified existing status | Disposition | Concrete remainder / evidence to reopen | Dependency; autonomous work now? |
+|---|---|---|---|---|
+| R01 | `PHASE3A_INCONCLUSIVE_DATA_LIMITED` | `CLOSED_FINAL` | New attributable cohort/preregistration for a different study | External feed; **NO** |
+| R02 | `FROZEN_PROSPECTIVE_RESEARCH_LEAD` | `BLOCKED_EXTERNAL` | Complete new sibling feed and valid activation | External feed; **NO** |
+| R03 | `COMPRESSION_FORWARD_1_BLOCKED_SIGNAL_FEED`, M3 `NOT_IDENTIFIABLE` | `BLOCKED_EXTERNAL` | Source IDs, cursors, UTC/gap evidence and unopened cohort | External feed; **NO** |
+| R04 | C-11 frozen prospective, dated N=5 | `ACTIVE_DELIVERABLE` | Frozen sample/breadth/cost verdict only at its existing gate | Existing collector; status-only audit **YES**, no early verdict |
+| R05 | C-33 `PROSPECTIVE_COLLECTING`, dated 1,034/8,640 warmup | `ACTIVE_DELIVERABLE` | Frozen warmup/provenance gate, then its own study decision | Existing collector; status-only audit **YES** |
+| R06 | C-35 `TOO_SLOW / COLLECTING`, dated 3/240 outcomes | `ACTIVE_DELIVERABLE` | Frozen sample/cost verdict only at its existing gate | Existing collector; status-only audit **YES** |
+| R07 | C-14/C-15 tested momentum rejected | `CLOSED_FINAL` | Distinct mechanism and unopened cohort for any new question | Scientific choice; **NO** |
+| R08 | C-16/C-17 OI net negative | `CLOSED_FINAL` | Distinct joint observed panel for any new question | External data/scientific choice; **NO** |
+| R09 | Tested aggregate flow/toxicity rejected | `CLOSED_FINAL` | Qualified different source/independent protocol | External data/scientific choice; **NO** |
+| R10 | `NO NEW FUNDING-STATE TEST — CONTINUE FROZEN C-11 ONLY` | `CLOSED_FINAL` | No broad-state retest; C-11 is R04 | Scientific choice for new mechanism; **NO** |
+| R11 | `LOW_INFORMATION_VALUE — DO_NOT_BUILD` | `CLOSED_FINAL` | None on this study | None; **NO** |
+| R12 | C-18/C-19 aggregated depth `REJECT` | `CLOSED_FINAL` | Distinct price-level hypothesis, not band-depth retuning | Scientific choice; **NO** |
+| R13 | Lead B `REJECT_ECONOMIC_EDGE` | `CLOSED_FINAL` | None on opened cohort | None; **NO** |
+| R14 | Lead A `INSUFFICIENT_PROVENANCE` | `ACTIVE_DELIVERABLE` | Authoritative joined mark, entry/exit fill, venue and timestamp evidence; **not** exit optimization | P0 Execution Recovery/external broker truth; requirements mapping **YES**, Edge test **NO** |
+| R15 | Pre-intent `NOT_IDENTIFIABLE` | `CLOSED_FINAL` | New direction semantics would be another study | Scientific/trading decision; **NO** |
+| R16 | V1 `PREDICTIVE_NOT_SUPPORTED` | `CLOSED_FINAL` | None on this study | None; **NO** |
+| R17 | V2 `V2_DATA_LIMITED` | `CLOSED_FINAL` | Unopened independent cohort for any new study | Scientific choice; **NO** |
+| R18 | Historical microstructure feasibility complete | `CLOSED_FINAL` | Separate qualified information/hypothesis required | No new capture authorized; **NO** |
+| R19 | Pilot-1 `MICROSTRUCTURE_COLLECTION_PILOT_PARTIAL` | `CLOSED_FINAL` | Immutable measurement evidence | None; **NO** |
+| R20 | Sibling forensic mechanism map complete, Edge unknown | `RESEARCH_ASSET` | Full denominator/attribution before economics | External feed; preserve map **YES**, new test **NO** |
+| R21 | Phase-6 `PROVISIONAL_ONLY`, zero full promotions | `CLOSED_FINAL` | None on opened screen | Scientific choice for new mechanism; **NO** |
+| R22 | `EXTREME_MOVER_DATA_PARTIAL`, contract complete | `RESEARCH_ASSET` | Qualified time-T universe/costs and a separately frozen experiment | External data; causal interface/synthetic tests **YES**, historical ranks **NO** |
+| R23 | Public methodology review complete | `RESEARCH_ASSET` | None; use only research discipline | No dependency; **NO** new task |
+| R24 | Annotation protocol design complete, inactive | `RESEARCH_ASSET` | Frozen inclusion/window and authorization to activate | New collection/scientific choice; **NO** |
+| R25 | Liquidation/OI/OBI reconciliation complete, joint panel absent | `BLOCKED_EXTERNAL` | Observed overlapping panel plus one directional hypothesis | External data/scientific choice; **NO** |
+| R26 | Pilot-2 `MICROSTRUCTURE_COLLECTION_PILOT_PARTIAL` | `CLOSED_FINAL` | Immutable measurement evidence, no repeat | None; **NO** |
+
+No R-item has an undefined disposition. `ACTIVE_DELIVERABLE` does not authorize changes to frozen sample/outcome gates. No new research epic or data collection is opened by this overlay.
+
 ## Frozen, completed, and independently collecting investigations
 
 ### R01 — Phase 3A opportunity fingerprint
