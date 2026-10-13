@@ -19,7 +19,8 @@ def audit(activation_path: Path, *, verify_records: bool = True) -> dict:
     if manifest.get("activation") != activation:
         errors.append("activation_mismatch")
     finalized = 0
-    orphans = 0
+    orphan_references = 0
+    orphan_paths: set[Path] = set()
     checked: set[Path] = set()
 
     def check_path(entry: dict, label: str) -> Path | None:
@@ -73,14 +74,17 @@ def audit(activation_path: Path, *, verify_records: bool = True) -> dict:
 
     for failure in manifest.get("failures", []):
         for entry in failure.get("unfinalized_raw_chunks", []):
-            orphans += 1
-            check_path(entry, "orphan")  # Never promote an orphan into valid coverage.
+            orphan_references += 1
+            path = check_path(entry, "orphan")  # Never promote an orphan into valid coverage.
+            if path is not None:
+                orphan_paths.add(path)
 
     raw_root = root / "raw"
     unlisted = sorted(str(path) for path in raw_root.rglob("*.jsonl.gz") if path.resolve() not in checked) if raw_root.exists() else []
     return {"integrity_ok": not errors, "record_verification": verify_records,
             "finalized_files": finalized,
-            "orphan_files": orphans, "unlisted_files": unlisted, "errors": errors}
+            "orphan_files": len(orphan_paths), "orphan_references": orphan_references,
+            "unlisted_files": unlisted, "errors": errors}
 
 
 if __name__ == "__main__":

@@ -1,12 +1,12 @@
 # 2026-10-13 decision brief — no repeat collection
 
-Prepared 2026-10-10, before the frozen Pilot-2 stop. This is a decision inventory, **not** a Pilot-2 verdict, a V3 preregistration, or a new trading policy. The [canonical backlog](LYNXION_RESEARCH_BACKLOG.md), [task board](LYNXION_RESEARCH_TASK_BOARD.md), [Pilot-2 contract](../MICROSTRUCTURE_DATA_PILOT2_CONTRACT.md), and source reports remain authoritative. Historical figures below are dated source-report figures, not refreshed outcomes. No future Pilot-2 returns, predictive labels, or PnL were opened for this brief.
+Prepared 2026-10-10 and updated after the frozen Pilot-2 stop. This is a decision inventory, **not** a V3 preregistration or a new trading policy. The [final Pilot-2 measurement report](../MICROSTRUCTURE_DATA_PILOT_7D_2_REPORT.md), [canonical backlog](LYNXION_RESEARCH_BACKLOG.md), [task board](LYNXION_RESEARCH_TASK_BOARD.md), [Pilot-2 contract](../MICROSTRUCTURE_DATA_PILOT2_CONTRACT.md), and source reports remain authoritative. Historical figures below are dated source-report figures, not refreshed outcomes. No future Pilot-2 returns, predictive labels, or PnL were opened for this brief.
 
 ## Operator constraint and fixed boundary
 
 - **No Pilot-3 or other repeat microstructure collection after 2026-10-13 00:00 UTC.** Do not extend, backfill, or concatenate Pilot-2. Do not activate a parallel/new research-data collector merely to rescue its coverage. Existing independently frozen C-11/C-33/C-35 protocols are not redefined or silently stopped by this decision; they are not a new primary collection plan.
 - Until the stop, maximize integrity of the **already-running** Pilot-2 only: supervisor/child and receipt freshness, snapshot/sequence validity, UTC/monotonic discontinuities, disk, manifest/orphan evidence and finalized hashes. Preserve all observed and missing intervals. No source/semantics/boundary change.
-- At/after stop, finalize and independently audit the exact seven-day evidence, then commit the measurement-only `MICROSTRUCTURE_DATA_PILOT_7D_2_REPORT` and program handover. The recorded multi-hour unobserved intervals already preclude the contract's `PASS` (which requires no interval over 60 seconds). The exact `PARTIAL` versus `FAIL` is **not known** until final coverage/provenance audit. A null/negative/data-limited result remains a result; do not seek another collection to convert it into a positive one.
+- Final Pilot-2 verdict: **`MICROSTRUCTURE_COLLECTION_PILOT_PARTIAL`**. The frozen stop was honored; 1,019 finalized files and 9,072,176 records passed full storage/envelope readback. Conservative CLOSED-session span is ~60.371% per symbol; interrupted finalized portions were not silently promoted. Even the unqualified all-recorded comparison is only ~76.667%. Multi-hour gaps preclude `PASS`; provenance and >50% conservative qualified span support `PARTIAL`, not `FAIL`. This is a measurement result, not Edge or permission to collect again.
 - By the 13 October checkpoint, deliver an evidence/unknowns/decision matrix. Perfect certainty, a new Edge claim, a guaranteed fill latency, or profitability is not an honest deliverable from the available evidence.
 
 ## Complete research-backlog disposition (R01–R26)
@@ -38,7 +38,7 @@ Prepared 2026-10-10, before the frozen Pilot-2 stop. This is a decision inventor
 | R23 Qullamaggie methodology | Public methodology review completed; stock setup concepts are not crypto-perpetual evidence. | Use research discipline only; no copied thresholds or trading policy. |
 | R24 manual prospective annotation | Design complete, inclusion rule/window unfrozen, collection not started. | Remain DESIGN-ONLY; no annotation campaign or later labels without a separate decision. |
 | R25 liquidation/OI/OBI interaction | PARKED; observed overlapping panel absent and “reversal OR continuation” is not one directional hypothesis. | No experiment, no synthetic/default OBI/CVD substitution. |
-| R26 Pilot-2 | Fresh frozen public BTCUSDT/ETHUSDT measurement, 2026-10-06 to 2026-10-13 UTC; currently collecting with explicit host/outage gaps, **no verdict yet**. | Stop/finalize at exact boundary; measurement `PARTIAL` or `FAIL` to be determined, no Pilot-3. |
+| R26 Pilot-2 | Frozen public BTCUSDT/ETHUSDT measurement, 2026-10-06 to 2026-10-13 UTC; final **`MICROSTRUCTURE_COLLECTION_PILOT_PARTIAL`**. | CLOSED as measurement evidence; no Pilot-3, no automatic V3 or Edge inference. |
 
 The table is deliberately exhaustive for the canonical R01–R26 registry; operational priority does not equal evidence strength. The [next-experiment package](NEXT_EDGE_EXPERIMENT_DECISION_PACKAGE.md) compares independent information families without ranking expected profit. As of this brief, no candidate is selected and no V3/Edge test is authorized.
 
@@ -58,9 +58,9 @@ This practical track can use existing local evidence, static analysis, and netwo
 
 | When | Deliverable | Decision boundary |
 |---|---|---|
-| Before 2026-10-13 00:00 UTC | Continue only frozen Pilot-2 capture/integrity checks; consolidate existing backlog/incident evidence and explicit unknowns. | No new or parallel research-data collection; no outcomes/V3. |
-| At/after frozen stop | Independently hash/replay/audit raw and manifest, quantify per-symbol valid coverage and longest unobserved interval, issue exact `PARTIAL`/`FAIL` if supported, commit report and handover. | No extension, favorable imputation, or rescue threshold. |
-| Immediately after report | Present a short **go/no-go decision** on which one independent question, if any, is worth a separately preregistered test with existing qualified evidence; distinguish research from operational VST safety. | Operator selects or rejects the next Edge experiment. No automatic V3, no automatic new capture. |
+| Before 2026-10-13 00:00 UTC | **DONE:** frozen Pilot-2 capture/integrity checks and backlog/incident evidence consolidation. | No new or parallel research-data collection; no outcomes/V3. |
+| At/after frozen stop | **DONE:** stopped at boundary and independently audited finalized raw/manifest; final `PARTIAL` measurement report records conservative coverage and unknowns. | No extension, favorable imputation, or rescue threshold. |
+| Immediately after report | Present a **go/no-go decision** on which one independent question, if any, is worth a separately preregistered test with existing qualified evidence; distinguish research from operational VST safety. | Operator selects or rejects the next Edge experiment. No automatic V3, no automatic new capture. |
 | In parallel as authorized | Prioritize VST safety/provenance and latency diagnosis using existing evidence; deploy only independently reviewed, operator-approved behavior changes. | Authenticated account/order access, trade policy, protective lifecycle and real funds remain explicit gates. |
 
 The no-repeat constraint can leave microstructure or extreme-mover questions **unidentifiable** at the chosen standard. Report that honestly. A practical next step may be fixing observable execution defects and declining a new Edge experiment, not manufacturing an Edge claim from incomplete data.

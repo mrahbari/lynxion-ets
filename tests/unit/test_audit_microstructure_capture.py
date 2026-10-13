@@ -33,9 +33,16 @@ def test_audit_finalized_and_orphan_evidence(tmp_path: Path):
 
     result = audit(activation_path)
     assert result == {"integrity_ok": True, "record_verification": True, "finalized_files": 1,
-                      "orphan_files": 1, "unlisted_files": [], "errors": []}
+                      "orphan_files": 1, "orphan_references": 1,
+                      "unlisted_files": [], "errors": []}
 
     assert audit(activation_path, verify_records=False)["record_verification"] is False
+
+    manifest["failures"].append({"unfinalized_raw_chunks": [orphan_entry]})
+    (root / "capture_manifest.json").write_text(json.dumps(manifest))
+    repeated = audit(activation_path, verify_records=False)
+    assert repeated["orphan_files"] == 1
+    assert repeated["orphan_references"] == 2
 
     manifest["sessions"][0]["files"][0]["records"] = 2
     (root / "capture_manifest.json").write_text(json.dumps(manifest))
