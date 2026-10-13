@@ -82,6 +82,8 @@ def build_opportunity_view(
     metric_ids = {item.metric_id for item in observations}
     if len(metric_ids) != 1 or not next(iter(metric_ids)):
         raise ValueError("one explicit metric identity required")
+    if len({item.interval_end_ms for item in observations}) != 1:
+        raise ValueError("mixed observation cutoffs")
     for item in observations:
         if not item.source_hash or not item.value.is_finite():
             raise ValueError("metric provenance or value invalid")

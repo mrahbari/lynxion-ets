@@ -56,6 +56,11 @@ class OpportunityViewTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_opportunity_view(100, self.universe, (nan, self.observations[1]))
 
+    def test_mixed_cutoff_cannot_be_ranked(self):
+        stale = MetricObservation("AAA", "externally-defined-metric", Decimal("2"), 80, 96, "a-hash")
+        with self.assertRaises(ValueError):
+            build_opportunity_view(100, self.universe, (stale, self.observations[1]))
+
     def test_equal_values_have_stable_symbol_tie_break(self):
         same = MetricObservation("AAA", "externally-defined-metric", Decimal("1"), 90, 96, "a-hash")
         view = build_opportunity_view(100, self.universe, (same, self.observations[1]))
