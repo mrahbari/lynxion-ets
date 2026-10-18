@@ -519,17 +519,10 @@ class BrokerReconciliationService:
             elif status in _OPEN_ORDER_STATES:
                 pass  # still open at broker — consistent
             else:
-                sym_clean = str(sym).upper().replace("-", "").replace("/", "").replace("_", "")
-                active_clean = {str(s).upper().replace("-", "").replace("/", "").replace("_", "") for s in current_active_symbols}
-                if sym_clean not in active_clean:
-                    try:
-                        journal.record_terminal(ref, "CANCELLED", reason=f"BROKER_STATUS_{status}_INACTIVE_SYMBOL")
-                        report["orders_resolved"].append({"order_id": oid, "status": f"CANCELLED_{status}"})
-                    except Exception:
-                        pass
-                else:
-                    report["recoverable"].append({"order_id": oid, "issue": f"status={status}", "symbol": sym})
-                    report["in_sync"] = False
+                # A flat position cannot prove cancellation after an unknown or
+                # failed order-status query. Preserve identity for reconciliation.
+                report["recoverable"].append({"order_id": oid, "issue": f"status={status}", "symbol": sym})
+                report["in_sync"] = False
 
         # --- 4. UNRECOVERABLE: a broker position with no local journal record ---
         for p in open_positions:

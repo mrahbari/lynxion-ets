@@ -84,6 +84,30 @@ def test_recoverable_resolves_inflight_order(tmp_path):
     assert rep["halted"] is False
 
 
+@pytest.mark.parametrize("query_fails", [False, True])
+def test_unknown_order_with_flat_position_remains_recoverable(tmp_path, query_fails):
+    journal = _journal(tmp_path)
+    ref = journal.record_intent("BTC-USDT", "BUY", "0.001", "bingx", "fake-client")
+    journal.record_submitted(ref, "fake-order", "bingx")
+    before = (tmp_path / "j.jsonl").read_bytes()
+
+    class UnknownBroker(_FakeBroker):
+        def get_order_status(self, order_id, symbol):
+            if query_fails:
+                raise TimeoutError("fake response lost")
+            return "UNKNOWN"
+
+    broker = UnknownBroker(positions=[])
+    service = BrokerReconciliationService(halt_fn=lambda _reason: None)
+    for _ in range(2):
+        report = service.reconcile(broker, journal)
+        assert report["in_sync"] is False
+        assert report["orders_resolved"] == []
+        assert any(row["issue"] == "status=UNKNOWN" for row in report["recoverable"])
+        assert journal.in_flight()[0]["status"] == "SUBMITTED"
+        assert (tmp_path / "j.jsonl").read_bytes() == before
+
+
 def test_unrecoverable_drift_halts(tmp_path):
     j = _journal(tmp_path)                            # journal empty: no local record of anything
     broker = _FakeBroker(positions=[_pos("ETH-USDT", 0.5)])  # broker holds a position we don't know about

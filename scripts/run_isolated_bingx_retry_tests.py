@@ -72,6 +72,10 @@ def _run_child():
             str(ROOT / "tests/unit/test_b6_retry.py"),
             str(ROOT / "tests/unit/test_production_cli_preflight_safety.py"),
             str(ROOT / "tests/unit/test_telegram_notification_service.py"),
+            str(ROOT / "tests/unit/test_runtime_submission_safety.py"),
+            str(ROOT / "tests/unit/test_b1_guaranteed_protection.py"),
+            str(ROOT / "tests/unit/test_b3_durable_recovery.py"),
+            str(ROOT / "tests/unit/test_b4_broker_reconciliation.py") + "::test_unknown_order_with_flat_position_remains_recoverable",
         ])
 
 
