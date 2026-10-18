@@ -60,3 +60,31 @@ def test_non_order_post_retains_transient_retry():
     )
     assert result["code"] == 0
     assert len(attempts) == 2
+
+
+@pytest.mark.parametrize("order_type", ["STOP_MARKET", "TAKE_PROFIT_MARKET"])
+def test_conditional_conflict_preserves_existing_protection(monkeypatch, order_type):
+    from infrastructure.brokers.adapters import bingx_adapter
+
+    broker = object.__new__(bingx_adapter._BingXBroker)
+    broker.logger = logging.getLogger("test_bingx_conditional_conflict")
+    broker._format_price = lambda _symbol, price: str(price)
+    broker._format_quantity = lambda _symbol, quantity: str(quantity)
+    requests_seen = []
+    broker._make_request = lambda *args, **kwargs: (
+        requests_seen.append((args, kwargs)),
+        {"code": 110406, "msg": "position protection already exists"},
+    )[1]
+    broker.get_pending_orders = lambda _symbol: [
+        {"type": order_type, "orderId": "existing-protection"},
+    ]
+    cancelled = []
+    broker.cancel_order = lambda order_id, symbol: cancelled.append((order_id, symbol))
+    monkeypatch.setattr(bingx_adapter.time, "sleep", lambda _seconds: None)
+
+    result = broker._place_conditional_order(
+        "BTC-USDT", "SELL", "1", "95", order_type, "LONG",
+    )
+    assert result["success"] is False
+    assert len(requests_seen) == 1
+    assert cancelled == []

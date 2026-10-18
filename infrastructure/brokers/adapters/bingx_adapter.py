@@ -1380,45 +1380,13 @@ class _BingXBroker:
                     'rate_limit_wait_ms': response.get('_client_rate_limit_wait_ms'),
                 }
             elif is_conflict:
-                # Position SL/TP conflict: cancel existing conditional order on this symbol and retry
-                self.logger.warning(f"Position order conflict on {formatted_sym} ({response.get('msg')}), cancelling stale conditional orders and retrying...")
-                open_orders = self.get_pending_orders(formatted_sym) or []
-                prefix = "STOP" if "STOP" in order_type.upper() else "TAKE_PROFIT"
-                for o in open_orders:
-                    if prefix in str(o.get("type", "")).upper():
-                        order_reference = extract_bingx_order_reference(o)
-                        if order_reference is not None:
-                            self.cancel_order(str(order_reference), formatted_sym)
-                time.sleep(0.25)
-                retry_resp = self._make_request(
-                    'POST', endpoint, params=conditional_order_data, signed=True,
-                    request_priority=True, rate_limit_timeout=15.0,
+                # A symbol/type match does not prove ownership of the existing
+                # protective order. Never cancel it or send another order here.
+                self.logger.error(
+                    "Conditional order conflict on %s; preserving existing protection",
+                    formatted_sym,
                 )
-                if retry_resp.get('code') == 0:
-                    return {
-                        'success': True,
-                        'order_id': extract_bingx_order_id(retry_resp),
-                        'response': retry_resp['data'],
-                        'rate_limit_wait_ms': retry_resp.get('_client_rate_limit_wait_ms'),
-                    }
-                elif retry_resp.get('code') in (110406, 110407, 110411, 100404, 100405, 80016) or 'already exists' in str(retry_resp.get('msg', '')).lower():
-                    # Second retry with longer propagation cushion
-                    time.sleep(0.40)
-                    retry2_resp = self._make_request(
-                        'POST', endpoint, params=conditional_order_data, signed=True,
-                        request_priority=True, rate_limit_timeout=15.0,
-                    )
-                    if retry2_resp.get('code') == 0:
-                        return {
-                            'success': True,
-                            'order_id': extract_bingx_order_id(retry2_resp),
-                            'response': retry2_resp['data'],
-                            'rate_limit_wait_ms': retry2_resp.get('_client_rate_limit_wait_ms'),
-                        }
-                    else:
-                        return {'success': False, 'error': retry2_resp.get('msg', str(retry2_resp))}
-                else:
-                    return {'success': False, 'error': retry_resp.get('msg', str(retry_resp))}
+                return {'success': False, 'error': response.get('msg', str(response))}
             else:
                 error_msg = response.get('msg', str(response))
                 self.logger.error(f"BingX Swap V2 conditional order failed on {formatted_sym}: {error_msg}")
