@@ -492,7 +492,10 @@ class _BingXBroker:
             from shared.retry import retry_with_backoff
             result = retry_with_backoff(
                 send_api_call,
-                max_attempts=3,
+                # A lost order response leaves broker submission state unknown.
+                # Do not send a second physical order; retain other endpoint retries.
+                max_attempts=(1 if method.upper() == 'POST' and
+                              endpoint == '/openApi/swap/v2/trade/order' else 3),
                 base_delay=0.5,
                 retry_on=(requests.exceptions.RequestException,),
                 should_retry=should_retry_request,
