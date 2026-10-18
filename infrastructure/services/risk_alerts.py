@@ -92,16 +92,20 @@ class TelegramNotificationService(INotificationService):
             if parse_mode:
                 data["parse_mode"] = parse_mode
                 
-            response = requests.post(url, data=data)
+            response = requests.post(url, data=data, timeout=10)
 
             if response.status_code == 200:
                 self.logger.info(f"Telegram sent: {subject}")
                 return True
             else:
-                self.logger.error(f"Telegram error: {response.status_code}")
+                if response.status_code == 401:
+                    self.logger.error("Telegram authentication failed (401): configured bot token rejected")
+                else:
+                    self.logger.error(f"Telegram error: {response.status_code}")
                 return False
         except Exception as e:
-            self.logger.error(f"Telegram error: {e}")
+            # Requests exceptions can embed the URL, which contains the bot token.
+            self.logger.error(f"Telegram request failed ({type(e).__name__})")
             return False
 
 

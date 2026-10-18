@@ -28,7 +28,7 @@ def test_html_subject_is_escaped(monkeypatch):
     service = TelegramNotificationService(bot_token="test-token", chat_id="chat-id")
     payloads = []
 
-    def post(url, data):
+    def post(url, data, **kwargs):
         payloads.append(data)
         return SimpleNamespace(status_code=200)
 
@@ -40,3 +40,34 @@ def test_html_subject_is_escaped(monkeypatch):
         parse_mode="HTML",
     ) is True
     assert payloads[0]["text"].startswith("<b>A &lt; B &amp; C</b>")
+
+
+def test_send_has_bounded_timeout(monkeypatch):
+    service = TelegramNotificationService(bot_token="test-token", chat_id="chat-id")
+    options = []
+
+    def post(_url, **kwargs):
+        options.append(kwargs)
+        return SimpleNamespace(status_code=200)
+
+    monkeypatch.setattr("infrastructure.services.risk_alerts.requests.post", post)
+    assert service.send_notification("message") is True
+    assert options[0]["timeout"] == 10
+
+
+def test_exception_does_not_log_bot_token(monkeypatch):
+    import requests
+
+    token = "synthetic-secret-token"
+    service = TelegramNotificationService(bot_token=token, chat_id="chat-id")
+    errors = []
+    service.logger = SimpleNamespace(error=errors.append)
+
+    def post(url, **_kwargs):
+        raise requests.exceptions.Timeout("timeout contacting " + url)
+
+    monkeypatch.setattr("infrastructure.services.risk_alerts.requests.post", post)
+    assert service.send_notification("message") is False
+    assert errors
+    assert all(token not in message for message in errors)
+    assert "Timeout" in errors[0]
