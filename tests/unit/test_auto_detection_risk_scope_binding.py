@@ -36,6 +36,56 @@ def test_execution_and_dedup_use_injected_event_clock():
     assert owner._pending_intents["BTCUSDT"]["BUY"] == event_time
 
 
+def test_duplicate_intent_is_rejected_while_same_symbol_is_pending():
+    owner = ScopedOwner()
+    owner._execution_clock = SimpleNamespace(now=lambda: datetime(2026, 1, 1, tzinfo=timezone.utc))
+    owner._settings = SimpleNamespace(execution=SimpleNamespace(
+        prevent_same_direction_trade_per_symbol=True))
+    owner._pending_intents_lock = threading.RLock()
+    owner._pending_intents = {}
+    owner._pending_intent_temp_ids = {}
+    owner._pending_orders_tracker = SimpleNamespace(
+        get_pending_orders_for_symbol=lambda symbol: [])
+    owner.logger = SimpleNamespace(info=lambda *args: None)
+    first = SimpleNamespace(symbol=SimpleNamespace(value="BTCUSDT"),
+                            side=SimpleNamespace(name="BUY"))
+    repeated = SimpleNamespace(symbol=SimpleNamespace(value="BTCUSDT"),
+                               side=SimpleNamespace(name="BUY"))
+
+    assert owner._check_duplicate_execution_intent(first) is False
+    assert owner._check_duplicate_execution_intent(repeated) is True
+    owner._remove_pending_execution_intent(first)
+    assert owner._check_duplicate_execution_intent(repeated) is False
+
+
+def test_cooldown_dropped_queue_item_releases_pending_identity():
+    from infrastructure.orchestrators.auto_detection_orchestrator import AutoDetectionOrchestrator
+
+    owner = object.__new__(AutoDetectionOrchestrator)
+    intent = SimpleNamespace(symbol=SimpleNamespace(value="XRPUSDT"),
+                             side=SimpleNamespace(name="BUY"))
+    owner.is_running = True
+    owner.opportunity_queue = [intent]
+    owner._opportunity_queue_lock = threading.RLock()
+    owner._pending_intents_lock = threading.RLock()
+    owner._pending_intents = {"XRPUSDT": {"BUY": datetime(2026, 1, 1, tzinfo=timezone.utc)}}
+    owner._pending_intent_temp_ids = {id(intent): None}
+    owner._pending_orders_tracker = SimpleNamespace(remove_pending_order=lambda *args: None)
+    owner.logger = SimpleNamespace(info=lambda *args: None, debug=lambda *args: None,
+                                   error=lambda *args: None)
+
+    def deny_once():
+        owner.is_running = False
+        return False, "cooldown"
+
+    owner._get_cooldown_gate = lambda: SimpleNamespace(is_symbol_allowed=lambda _: deny_once())
+    owner._opportunity_processing_loop()
+
+    assert owner.opportunity_queue == []
+    assert owner._pending_intents == {}
+    assert owner._pending_intent_temp_ids == {}
+
+
 def test_omitted_execution_clock_retains_live_clock(monkeypatch):
     from infrastructure.messaging.clock import LiveClock
     expected = datetime(2026, 1, 1)

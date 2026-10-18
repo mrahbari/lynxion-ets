@@ -195,6 +195,28 @@ class BrokerReconciliationService:
 
         for sym in closed_symbols:
             try:
+                if sym not in previously_seen_ms:
+                    # A persisted active symbol was not observed open in this
+                    # process.  The first flat snapshot cannot date or identify
+                    # its historical exit; do not announce a newly confirmed fill.
+                    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+                    symbol_cooldown_gate.record_unverified_exit(sym)
+                    self.logger.warning(
+                        f"Previously active {sym} absent from first broker snapshot; "
+                        "historical exit remains unverified"
+                    )
+                    try:
+                        from infrastructure.services.risk_alerts import send_telegram
+                        send_telegram(
+                            f"⚠️ <b>POSITION STATE UNVERIFIED</b>\n\n"
+                            f"• <b>Symbol:</b> <code>{sym}</code>\n"
+                            "• Previously active, absent from first broker snapshot after restart.\n"
+                            "• Historical exit and PnL unknown; safety cooldown active."
+                        )
+                    except Exception as tel_err:
+                        self.logger.warning(f"Telegram notification for {sym} state could not be sent: {tel_err}")
+                    continue
+
                 # 1. Resolve closing order from broker history
                 closing_order_id = "UNKNOWN"
                 is_profitable = None

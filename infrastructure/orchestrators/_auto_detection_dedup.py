@@ -20,6 +20,13 @@ class _AutoDetectionDedupMixin:
         direction = execution_intent.side.name if hasattr(execution_intent.side, 'name') else str(execution_intent.side)
 
         with self._pending_intents_lock:
+            # This owner records queued intents below.  Check that record before
+            # accepting another event; the shared order tracker is populated only
+            # later in the execution path.
+            if self._pending_intents.get(symbol):
+                self.logger.info(f"❌ DUPLICATE REJECTED: Intent already queued for {symbol}. Preventing conflicting {direction} intent.")
+                return True
+
             # Check the shared tracker used by execution services to ensure consistency
             from domain.value_objects import Symbol
             symbol_obj = Symbol(symbol)

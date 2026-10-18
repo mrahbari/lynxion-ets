@@ -314,11 +314,13 @@ class AutoDetectionOrchestrator(_AutoDetectionHelpersMixin, _AutoDetectionDedupM
                                 allowed, cd_reason = self._get_cooldown_gate().is_symbol_allowed(symbol)
                                 if not allowed:
                                     self.logger.debug(f"Skipping opportunity for {symbol_str}: {cd_reason}")
+                                    self._remove_pending_execution_intent(opportunity)
                                     continue
                             except Exception as gate_err:
                                 self.logger.error(
                                     f"Risk Health Gate unavailable for {symbol_str}; skipping opportunity: {gate_err}"
                                 )
+                                self._remove_pending_execution_intent(opportunity)
                                 continue
 
                             self.logger.debug(f"Processing opportunity for symbol: {symbol_str}, Recent symbols: {recent_symbols}")

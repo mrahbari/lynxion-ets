@@ -375,6 +375,27 @@ def test_unknown_exit_holds_reentry_without_inventing_a_loss(tmp_path, monkeypat
     assert "Safety cooldown pending exit verification" in alerts[0]
 
 
+def test_restored_active_symbol_absent_on_first_snapshot_is_not_new_confirmed_exit(
+        tmp_path, monkeypatch):
+    from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+
+    (tmp_path / "active_positions_journal.json").write_text(
+        '{"active_symbols": ["XRP-USDT"]}', encoding="utf-8")
+    broker = _FakeBroker(positions=[])
+    broker.get_order_history = lambda *args, **kwargs: pytest.fail(
+        "no observed-open timestamp exists for a causal exit join")
+    alerts = []
+    monkeypatch.setattr("infrastructure.services.risk_alerts.send_telegram", alerts.append)
+    service = BrokerReconciliationService(halt_fn=lambda reason: None)
+
+    service.reconcile(broker, _journal(tmp_path))
+
+    assert service._processed_closed_exits == set()
+    assert symbol_cooldown_gate.is_symbol_allowed("XRPUSDT")[0] is False
+    assert len(alerts) == 1
+    assert "previously active" in alerts[0].lower()
+
+
 def test_failed_position_read_does_not_infer_close(tmp_path, monkeypatch):
     journal = _journal(tmp_path)
     broker = _FakeBroker(positions=[_pos("DOGE-USDT", 240.0)])
