@@ -128,36 +128,12 @@ class MultiBrokerExecutionService(ExecutionPort):
             self._order_exchange_map.update(rec.get("order_exchange_map", {}))
             in_flight = rec.get("in_flight", [])
             if in_flight:
-                # Check broker pending orders to reconcile any filled/closed orders
-                primary_b = self.brokers.get(self.primary_broker)
-                active_pending_ids = set()
-                if primary_b and hasattr(primary_b, "get_pending_orders"):
-                    try:
-                        pending = primary_b.get_pending_orders() or []
-                        active_pending_ids = {str(o.get("orderId", "")) for o in pending if isinstance(o, dict)}
-                    except Exception:
-                        pass
-
-                truly_in_flight = []
-                for o in in_flight:
-                    oid = str(o.get("order_id", ""))
-                    ref = o.get("order_ref")
-                    if oid and oid not in active_pending_ids and primary_b:
-                        # Order is no longer active on broker -> mark terminal FILLED
-                        try:
-                            live_order_journal.record_terminal(ref, "FILLED")
-                        except Exception:
-                            pass
-                    else:
-                        truly_in_flight.append(o)
-
-                if truly_in_flight:
-                    self.logger.warning(
-                        f"♻️ STARTUP RECOVERY: {len(truly_in_flight)} in-flight order(s) from journal "
-                        f"need broker reconciliation: {[o.get('order_id') or o.get('order_ref') for o in truly_in_flight]}")
-                else:
-                    self.logger.info(
-                        f"♻️ STARTUP RECOVERY: loaded {rec.get('total_orders', 0)} journaled order(s); all reconciled to terminal state")
+                # Absence from open orders cannot distinguish a fill, rejection,
+                # cancellation or failed query. Identity-specific reconciliation
+                # must establish terminal evidence; startup never fabricates fills.
+                self.logger.warning(
+                    f"♻️ STARTUP RECOVERY: {len(in_flight)} in-flight order(s) from journal "
+                    f"need broker reconciliation: {[o.get('order_id') or o.get('order_ref') for o in in_flight]}")
             elif rec.get("total_orders"):
                 self.logger.info(
                     f"♻️ STARTUP RECOVERY: loaded {rec['total_orders']} journaled order(s); none in-flight")
@@ -541,6 +517,7 @@ class MultiBrokerExecutionService(ExecutionPort):
             self.logger.info(f"🎯 EXECUTING ORDER ON {best_exchange.upper()}: {order}")
 
             journal_ref = None
+            send_started = False
             try:
                 from shared.live_execution_guard import live_execution_guard
                 # Only a real (LIVE/TESTNET) send needs a connected broker. PAPER orders are
@@ -579,8 +556,12 @@ class MultiBrokerExecutionService(ExecutionPort):
                         journal_ref = live_order_journal.record_intent(
                             sym, side_name, order.quantity, best_exchange, coid,
                             **journal_metadata)
-                    except Exception:
-                        journal_ref = None
+                    except Exception as journal_error:
+                        self.logger.error(
+                            "Order blocked before send: INTENT persistence failed (%s)",
+                            type(journal_error).__name__,
+                        )
+                        return None
 
                 # === LIVE_EXECUTION_GUARD — single, race-free execution-safety enforcement point (Phase-9) ===
                 # Atomically: evaluate -> write the Execution Truth Ledger (BEFORE any send)
@@ -589,9 +570,15 @@ class MultiBrokerExecutionService(ExecutionPort):
                 # testnet-only-selects-endpoint, explicit LIVE_TRADING opt-in for live sends,
                 # per-broker order-placement permission, kill switch and circuit breaker.
                 from shared.live_execution_guard import live_execution_guard
+
+                def send_to_broker():
+                    nonlocal send_started
+                    send_started = True
+                    return broker.place_order(order)
+
                 guard_decision, order_id = live_execution_guard.authorize_and_send(
                     broker_name=best_exchange, settings=self._settings, order=order,
-                    send_fn=lambda: broker.place_order(order))
+                    send_fn=send_to_broker)
                 if not guard_decision.allowed:
                     self.logger.error(
                         f"🛑 LIVE_EXECUTION_GUARD BLOCKED order on {best_exchange.upper()}: {guard_decision.reason}")
@@ -625,7 +612,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                 if order_id is None or order_id == "":
                     self.logger.error(
                         f"❌ ORDER PLACEMENT FAILED ON {best_exchange.upper()}: Broker returned invalid order ID: {order_id}")
-                    if journal_ref:
+                    if journal_ref and not send_started:
                         try:
                             from infrastructure.execution.live_order_journal import live_order_journal
                             live_order_journal.record_failed(journal_ref, "broker returned no order id")
@@ -665,10 +652,9 @@ class MultiBrokerExecutionService(ExecutionPort):
 
                 return order_id
             except Exception as e:
-                # Send failures are recorded (ledger + circuit breaker) inside
-                # authorize_and_send before the exception propagates here. Also mark the
-                # journal intent FAILED so startup recovery does not treat it as in-flight.
-                if journal_ref:
+                # A lost response after entering the broker call is not a rejection.
+                # Keep the durable INTENT available for identity-based reconciliation.
+                if journal_ref and not send_started:
                     try:
                         from infrastructure.execution.live_order_journal import live_order_journal
                         live_order_journal.record_failed(journal_ref, str(e))

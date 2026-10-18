@@ -62,8 +62,8 @@ def test_exact_exchange_order_id_resolves_lifecycle_reference(tmp_path):
 def test_ambiguous_exchange_order_id_fails_closed(tmp_path):
     j = LiveOrderJournal(path=str(tmp_path / "j.jsonl"))
     first = j.record_intent("BTC-USDT", "BUY", "0.001", "bingx")
-    second = j.record_intent("ETH-USDT", "BUY", "0.01", "bingx")
     j.record_submitted(first, "OID-DUPLICATE", "bingx")
+    second = j.record_intent("ETH-USDT", "BUY", "0.01", "bingx")
     j.record_submitted(second, "OID-DUPLICATE", "bingx")
 
     assert j.order_ref_for_exchange_order("OID-DUPLICATE") is None

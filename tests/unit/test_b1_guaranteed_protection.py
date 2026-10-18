@@ -5,6 +5,8 @@ unwound; if the unwind also fails, the kill switch is engaged. Deterministic tes
 with a mocked BingX transport (no network)."""
 
 import logging
+import sys
+from types import SimpleNamespace
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -19,6 +21,7 @@ def _broker():
     b = object.__new__(_BingXBroker)          # bypass __init__ (no network/keys)
     b.logger = logging.getLogger("test_b1")
     b._assert_entry_admission = lambda order: (True, "test admission")
+    b._contract_precisions = {"BTC-USDT": {"pricePrecision": 1, "quantityPrecision": 4}}
     return b
 
 
@@ -27,12 +30,22 @@ def _order():
                  price=Money(Decimal("60000"), "USDT"), order_type="MARKET",
                  stop_loss_price=Money(Decimal("59000"), "USDT"),
                  take_profit_price=Money(Decimal("61000"), "USDT"),
+                 requested_leverage=Decimal("1"),
                  timestamp=datetime.now(timezone.utc))
 
 
 @pytest.fixture(autouse=True)
-def _reset_guard():
+def _reset_guard(monkeypatch):
     from shared.live_execution_guard import live_execution_guard
+    monkeypatch.setattr("bootstrap.settings.loaders.load_settings", lambda: SimpleNamespace(
+        risk=SimpleNamespace(max_leverage=1, max_leverage_limit=1, max_initial_stop_roe_pct=5),
+    ))
+    monkeypatch.setitem(sys.modules, "infrastructure.strategies.strategy_manager", SimpleNamespace(
+        strategy_manager=SimpleNamespace(record_trade_result=lambda *args, **kwargs: None),
+    ))
+    monkeypatch.setitem(sys.modules, "infrastructure.risk.symbol_cooldown_gate", SimpleNamespace(
+        symbol_cooldown_gate=SimpleNamespace(record_stop_loss_exit=lambda *args: None),
+    ))
     live_execution_guard.disengage_kill_switch()
     yield
     live_execution_guard.disengage_kill_switch()
@@ -43,6 +56,8 @@ def test_protection_failure_unwinds_position(monkeypatch):
     calls = {"unwind": 0}
 
     def fake_request(method, endpoint, params=None, data=None, signed=False):
+        if method == "GET":
+            return {"code": 0, "data": [{"symbol": "BTC-USDT", "positionAmt": "0"}]}
         # In Hedge mode (LONG/SHORT), reduceOnly is not sent.
         if data and (data.get("reduceOnly") == "true" or (data.get("side") == "SELL" and data.get("positionSide") == "LONG")):
             calls["unwind"] += 1
@@ -79,9 +94,28 @@ def test_unwind_failure_engages_kill_switch(monkeypatch):
     assert live_execution_guard.is_killed() is True, "naked position must halt trading"
 
 
+def test_accepted_unwind_with_open_snapshot_engages_kill_switch(monkeypatch):
+    from shared.live_execution_guard import live_execution_guard
+    b = _broker()
+
+    def fake_request(method, endpoint, params=None, data=None, signed=False):
+        if method == "GET":
+            return {"code": 0, "data": [{"symbol": "BTC-USDT", "positionAmt": "0.001"}]}
+        return {"code": 0, "data": {"order": {"orderId": "MAIN1"}}}
+
+    monkeypatch.setattr(b, "_make_request", fake_request)
+    monkeypatch.setattr(b, "_place_conditional_order",
+                        lambda **_kwargs: {"success": False, "error": "fake conflict"})
+    result = b.execute_order(_order())
+    assert result["protection_failed"] is True
+    assert result["unwound"] is False
+    assert result["orphaned_main_order_id"] == "MAIN1"
+    assert live_execution_guard.is_killed() is True
+
+
 def test_unwind_position_helper(monkeypatch):
     b = _broker()
-    monkeypatch.setattr(b, "_make_request", lambda *a, **k: {"code": 0})
+    monkeypatch.setattr(b, "_make_request", lambda *a, **k: {"code": 0, "data": []})
     assert b._unwind_position("BTC-USDT", "BUY", "0.001", "LONG") is True
     monkeypatch.setattr(b, "_make_request", lambda *a, **k: {"code": 1, "msg": "x"})
     assert b._unwind_position("BTC-USDT", "BUY", "0.001", "LONG") is False
@@ -93,8 +127,9 @@ def test_unwind_position_reduce_only_hedge_mode(monkeypatch):
 
     def fake_request(method, endpoint, params=None, data=None, signed=False):
         nonlocal sent_data
-        sent_data = data
-        return {"code": 0}
+        if method == "POST":
+            sent_data = data
+        return {"code": 0, "data": []}
 
     monkeypatch.setattr(b, "_make_request", fake_request)
 

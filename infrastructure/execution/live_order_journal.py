@@ -88,7 +88,10 @@ class LiveOrderJournal:
             rec["strategy"] = str(strategy)
             rec["strategy_name"] = str(strategy)
 
-        self._append(rec)
+        with self._lock:
+            if any(order.get("status") == "INTENT" for order in self._orders.values()):
+                raise RuntimeError("unresolved INTENT requires broker reconciliation before new order")
+            self._append(rec)
         return order_ref
 
     def record_submitted(self, order_ref: str, order_id: str, exchange: str) -> None:
@@ -191,20 +194,20 @@ class LiveOrderJournal:
         with self._lock:
             rec = {"ts": _now(), **fields}
             ref = rec["order_ref"]
-            cur = self._orders.get(ref, {})
-            cur.update({k: v for k, v in rec.items() if v is not None or k not in cur})
-            self._orders[ref] = cur
+            require_durable = rec.get("status") == "INTENT"
             try:
                 os.makedirs(os.path.dirname(self._path) or ".", exist_ok=True)
                 with open(self._path, "a", encoding="utf-8") as f:
                     f.write(json.dumps(rec, default=str) + "\n")
                     f.flush()
-                    try:
-                        os.fsync(f.fileno())
-                    except (OSError, ValueError):
-                        pass
+                    os.fsync(f.fileno())
             except Exception:
-                pass  # journaling must never break the order path
+                if require_durable:
+                    raise
+                return  # Retain recoverable memory when a lifecycle write fails.
+            cur = self._orders.get(ref, {})
+            cur.update({k: v for k, v in rec.items() if v is not None or k not in cur})
+            self._orders[ref] = cur
 
     def _load(self) -> None:
         if not os.path.exists(self._path):
