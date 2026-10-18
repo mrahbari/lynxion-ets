@@ -70,6 +70,7 @@ def _run_child():
             "-q", "--disable-warnings", "-p", "no:cacheprovider",
             str(ROOT / "tests/unit/test_bingx_order_post_retry_safety.py"),
             str(ROOT / "tests/unit/test_b6_retry.py"),
+            str(ROOT / "tests/unit/test_production_cli_preflight_safety.py"),
         ])
 
 

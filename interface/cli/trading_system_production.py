@@ -68,8 +68,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 1
 
     with lifespan() as container:
-        # R2: startup preflight — refuse to start a LIVE (real-funds) session on an
-        # inconsistent/unsafe configuration. PAPER/TESTNET only warn.
+        # R2: refuse broker-connected startup on an unsafe configuration.
         try:
             from bootstrap.settings.loaders import load_settings
             from shared.preflight import run_preflight
@@ -79,11 +78,12 @@ def main(argv: Optional[List[str]] = None) -> int:
                 print(f"   ⚠️ {w}", flush=True)
             for b in pf["blocking"]:
                 print(f"   ⛔ {b}", flush=True)
-            if pf["mode"] == "LIVE" and not pf["ok"]:
-                print("❌ Preflight FAILED for LIVE mode — refusing to start. Fix the blocking issues above.")
+            if pf["mode"] in ("LIVE", "TESTNET") and not pf["ok"]:
+                print("❌ Preflight FAILED for broker-connected mode — refusing to start. Fix the blocking issues above.")
                 return 2
         except Exception as e:
-            print(f"⚠️ Preflight check skipped due to error: {e}")
+            print(f"❌ Preflight check failed — refusing to start ({type(e).__name__}).")
+            return 2
 
         if args.auto_detect:
             use_case = RunAutoDetectionUseCase(
