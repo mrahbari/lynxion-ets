@@ -88,3 +88,27 @@ def test_conditional_conflict_preserves_existing_protection(monkeypatch, order_t
     assert result["success"] is False
     assert len(requests_seen) == 1
     assert cancelled == []
+
+
+@pytest.mark.parametrize("position_response,expected", [
+    ({"code": 0, "data": [{"symbol": "BTC-USDT", "positionAmt": "1"}]}, False),
+    ({"code": 0, "data": [{"symbol": "BTC-USDT", "positionAmt": "0"}]}, True),
+    ({"code": 0, "data": [{"symbol": "ETH-USDT", "positionAmt": "0"}]}, False),
+    ({"code": 100001, "msg": "position query failed"}, False),
+])
+def test_unwind_ack_requires_flat_broker_snapshot(position_response, expected):
+    from infrastructure.brokers.adapters.bingx_adapter import _BingXBroker
+
+    broker = object.__new__(_BingXBroker)
+    broker.logger = logging.getLogger("test_bingx_unwind_snapshot")
+    calls = []
+
+    def request(method, _endpoint, params=None, data=None, signed=False):
+        calls.append(method)
+        if method == "POST":
+            return {"code": 0, "data": {"order": {"orderId": "close-accepted"}}}
+        return position_response
+
+    broker._make_request = request
+    assert broker._unwind_position("BTC-USDT", "BUY", "1", "LONG") is expected
+    assert calls == ["POST", "GET"]

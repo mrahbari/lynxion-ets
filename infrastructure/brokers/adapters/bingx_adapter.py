@@ -5,7 +5,7 @@ import time
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import logging
 from enum import Enum
 import json
@@ -1283,9 +1283,8 @@ class _BingXBroker:
                          position_side: str) -> bool:
         """B1: flatten a just-opened position when its protective SL/TP could not be attached.
 
-        Places a MARKET order in the opposite direction. Returns True if the
-        exchange accepted the close. This is a protective unwind of an already-authorized
-        entry, so it bypasses the guard (it only ever reduces risk).
+        An accepted opposite MARKET request is not proof of a flat position.
+        Return True only after a broker position readback confirms flatness.
         """
         try:
             formatted_sym = self._format_symbol_str(symbol)
@@ -1302,9 +1301,23 @@ class _BingXBroker:
             resp = self._make_request('POST', '/openApi/swap/v2/trade/order',
                                       data=unwind_data, signed=True)
             if resp.get('code') == 0:
-                self.logger.warning(
-                    f"✅ UNWOUND unprotected position on {formatted_sym} ({close_side} {quantity})")
-                return True
+                snapshot = self._make_request(
+                    'GET', '/openApi/swap/v2/user/positions',
+                    params={'symbol': formatted_sym}, signed=True,
+                )
+                rows = snapshot.get('data') if snapshot.get('code') == 0 else None
+                if isinstance(rows, list):
+                    matching = [row for row in rows if isinstance(row, dict)
+                                and self._format_symbol_str(row.get('symbol')) == formatted_sym]
+                    try:
+                        if not rows or (matching and len(matching) == len(rows) and
+                                        all(Decimal(str(row['positionAmt'])) == 0 for row in matching)):
+                            self.logger.warning("Protective unwind confirmed flat on %s", formatted_sym)
+                            return True
+                    except (KeyError, InvalidOperation, TypeError):
+                        pass
+                self.logger.error("Protective unwind accepted but flat position not verified on %s", formatted_sym)
+                return False
             self.logger.error(f"❌ UNWIND FAILED on {formatted_sym}: {resp.get('msg', resp)}")
             return False
         except Exception as e:
