@@ -1,5 +1,40 @@
 # Lynxion Engineering Progress Ledger
 
+## 2026-10-18 — P0 runtime-checkout corrections
+
+This dated execution update supersedes the operational status of the older sections below;
+their frozen scientific verdicts are preserved.
+
+- Runtime source checkout: `task-00-ground-truth-audit`, baseline `7c3c941` for this session.
+  `41c04e0` bounds Telegram requests to 10 seconds and prevents token-bearing exception URLs
+  from appearing in application error logs. `.env` was not modified: its observed mtime was
+  2026-10-06 22:08:09 CEST; both Telegram keys had one definition and no parent-shell override.
+  A token-only Telegram `getMe` request returned HTTP 401. No Telegram message was sent.
+  Notification delivery remains blocked on a valid bot token; code cannot authenticate a rejected token.
+- `76cc8be` ports durable pre-send INTENT persistence, post-send UNKNOWN preservation,
+  atomic process-local admission blocking while an INTENT is unresolved, and lifecycle memory
+  updates only after successful persistence. Startup no longer marks an order FILLED because
+  it is absent from open orders. Four red-first restart cases covered null INTENT identity and
+  SUBMITTED identity with empty/failed pending queries; repeated startup preserves journal bytes.
+- `a79a418` preserves unknown order status as recoverable when broker positions are flat;
+  status-query failure or flatness no longer creates an invented CANCELLED event.
+- Verification command: `/Users/mojtaba.rahbari/.pyenv/versions/3.10.13/bin/python
+  scripts/run_isolated_bingx_retry_tests.py`. Clean re-exec environment, dotenv/network/BingX
+  constructor denial and temporary logging reported TEST_ISOLATION_PASS; **51 PASS**, 27 warnings.
+  An independent review session inspected the actual changes, independently reran the same
+  51 tests, and returned REVIEW_PASS_WITH_LIMITATIONS. This is Python-process fake-adapter
+  proof, not an OS network sandbox or broker behavior proof. B1 fixtures now provide explicit
+  synthetic risk settings and position readback; production risk settings were not changed.
+- Seven frozen Pilot-2 artifact hashes matched. Read-only journal integrity scan: 6,872 records,
+  zero malformed/missing-identity records and zero currently in-flight local records. Existing
+  startup-generated FILLED events may have unreliable attribution; local terminal status does
+  not authenticate historical broker fills. No original journal entries were repaired or deleted.
+- Remaining activation evidence: fresh authorized broker exposure/protective-order snapshot,
+  historical identity treatment, exact runtime/journal path, single-runner check and supervised
+  rollback/abort. No runner, order, broker write or deployment occurred in this session.
+  The independent review did not identify a blocking defect in the bounded diff; runtime GO
+  remains unestablished. Unrelated C-11/C-35 dirty files were preserved.
+
 ## Current goal
 
 Establish a statistically defensible, cost-adjusted trading edge while preserving execution
