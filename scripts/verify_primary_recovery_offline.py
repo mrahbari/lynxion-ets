@@ -3,6 +3,10 @@
 No broker/container construction. Run with python -I -B <script> <checkout>.
 """
 import contextlib
+import ast
+from datetime import datetime
+from decimal import Decimal
+import time
 import io
 import json
 import os
@@ -121,6 +125,40 @@ class StartupTests(unittest.TestCase):
 
 suite = unittest.defaultTestLoader.loadTestsFromTestCase(JournalTests)
 suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(StartupTests))
+class PositionSnapshotTests(unittest.TestCase):
+    def method(self):
+        tree = ast.parse((ROOT / "infrastructure/brokers/adapters/bingx_adapter.py").read_text())
+        cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "BingXBrokerAdapter")
+        method = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == "get_all_positions")
+        namespace = dict(List=list, Position=lambda **kw: types.SimpleNamespace(**kw),
+                         PositionSide=types.SimpleNamespace(SHORT="SHORT", LONG="LONG"),
+                         Money=lambda **kw: types.SimpleNamespace(**kw), Decimal=Decimal,
+                         datetime=datetime, time=time)
+        exec(compile(ast.Module(body=[method], type_ignores=[]), "actual-adapter-method", "exec"), namespace)
+        return namespace["get_all_positions"]
+
+    def adapter(self, rows):
+        return types.SimpleNamespace(connected=True, _broker=types.SimpleNamespace(get_open_positions=lambda: rows),
+                                     _parse_symbol=lambda s: s, logger=types.SimpleNamespace(warning=lambda *args: None))
+
+    def row(self, quantity="1"):
+        return dict(symbol="TEST-USDT", positionAmt=quantity, avgPrice="10", time=0,
+                    positionSide="LONG", leverage="5", isolated=True)
+
+    def test_invalid_rows_never_become_partial_or_flat(self):
+        for bad in ({}, {"positionAmt": "bad"}, self.row("NaN"), self.row("Infinity")):
+            with self.subTest(bad=bad):
+                with self.assertRaises(RuntimeError):
+                    self.method()(self.adapter([self.row(), bad]))
+
+    def test_valid_metadata_and_zero_preserved(self):
+        result = self.method()(self.adapter([self.row("0"), self.row("-2")]))
+        self.assertEqual(len(result), 1)
+        self.assertEqual((result[0].quantity, result[0].side), (2, "SHORT"))
+        self.assertEqual(result[0].leverage, Decimal("5"))
+        self.assertIs(result[0].isolated, True)
+
+suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(PositionSnapshotTests))
 result = unittest.TextTestRunner(verbosity=2).run(suite)
 print("ISOLATION: clean child environment; transports/subprocess denied; operational reads and external writes denied")
 scratch.cleanup()

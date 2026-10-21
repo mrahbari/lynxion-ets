@@ -264,10 +264,11 @@ class BingXBrokerAdapter(BrokerPort):
         positions_data = self._broker.get_open_positions()
         positions = []
         for p in positions_data:
-            # B4 resilience: one malformed/exotic exchange symbol must never break position
-            # reconciliation for the whole account — skip it (logged) and keep the rest.
+            # Reconciliation needs a complete snapshot, not a silently partial list.
             try:
                 quantity = float(p['positionAmt'])
+                if not Decimal(str(quantity)).is_finite():
+                    raise ValueError("nonfinite position quantity")
                 if quantity == 0:
                     continue  # not an open position
                 pnl_value = float(p.get('unrealisedPnl', p.get('unrealizedPnl', 0)))
@@ -298,9 +299,8 @@ class BingXBrokerAdapter(BrokerPort):
                         isolated=isolated,
                     )
                 )
-            except Exception as e:
-                self.logger.warning(f"Skipping unparseable position {p.get('symbol')!r}: {e}")
-                continue
+            except Exception:
+                raise RuntimeError("BingX position snapshot row conversion failed") from None
         return positions
 
     def get_available_symbols(self) -> set:
