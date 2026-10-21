@@ -17,6 +17,8 @@ import subprocess
 import sys
 import tempfile
 import types
+import typing
+import math
 import unittest
 
 ROOT = Path(sys.argv[1]).resolve()
@@ -184,6 +186,111 @@ class PositionSnapshotTests(unittest.TestCase):
         self.assertIs(result[0].isolated, True)
 
 suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(PositionSnapshotTests))
+class ProtectionMutationTests(unittest.TestCase):
+    def setUp(self):
+        self.journal = Journal(str(TMP / (self.id().split(".")[-1] + ".jsonl")))
+        selected_journal.live_order_journal = self.journal
+        package = module("infrastructure.utils")
+        package.__path__ = []
+        module("infrastructure.utils.symbol_format_helper", SymbolFormatHelper=types.SimpleNamespace(
+            format_symbol_for_exchange=lambda symbol, exchange: symbol))
+        tree = ast.parse((ROOT / "infrastructure/risk/active_position_manager.py").read_text())
+        cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "ActivePositionManager")
+        method = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == "_sync_sl_to_exchange")
+        self.logger = types.SimpleNamespace(warning=lambda *args: None, error=lambda *args: None)
+        namespace = dict(Any=typing.Any, Dict=typing.Dict, Optional=typing.Optional, time=time, logger=self.logger)
+        exec(compile(ast.Module(body=[method], type_ignores=[]), "actual-manager-method", "exec"), namespace)
+        self.sync = namespace["_sync_sl_to_exchange"]
+        self.manager = types.SimpleNamespace(_positions_state={}, _resolve_target_broker=lambda broker: broker,
+            _classify_stop_failure=lambda error: "AMBIGUOUS_TERMINAL",
+            _query_pending_stop_visibility=lambda *args, **kwargs: {"verified": True})
+        self.calls = []
+
+    def broker(self, response=None, error=False):
+        def place(**kwargs):
+            self.calls.append(kwargs)
+            if error:
+                raise TimeoutError("synthetic lost acknowledgement")
+            return response
+        return types.SimpleNamespace(name="fake", _place_conditional_order=place)
+
+    def invoke(self, broker):
+        return self.sync(self.manager, broker, "TESTUSDT", True, 1, 9)
+
+    def test_unknown_response_blocks_repeat_after_reopen(self):
+        broker = self.broker({"success": False, "unknown_submission": True})
+        self.assertFalse(self.invoke(broker))
+        reopened = Journal(self.journal.path)
+        self.assertEqual(reopened.recover()["status_counts"], {"PROTECTION_UNKNOWN": 1})
+        selected_journal.live_order_journal = reopened
+        self.assertFalse(self.invoke(broker))
+        self.assertEqual(len(self.calls), 1)
+
+    def test_transport_exception_blocks_repeat(self):
+        broker = self.broker(error=True)
+        self.assertFalse(self.invoke(broker))
+        self.assertFalse(self.invoke(broker))
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(self.journal.recover()["status_counts"], {"PROTECTION_UNKNOWN": 1})
+
+    def test_unverified_visibility_never_retries(self):
+        self.manager._query_pending_stop_visibility = lambda *args, **kwargs: {"verified": False}
+        broker = self.broker({"success": True, "order_id": "FAKE-SL"})
+        self.assertFalse(self.invoke(broker))
+        self.assertFalse(self.invoke(broker))
+        self.assertEqual(len(self.calls), 1)
+
+    def test_verified_ack_is_not_an_entry_fill(self):
+        broker = self.broker({"success": True, "order_id": "FAKE-SL"})
+        self.assertTrue(self.invoke(broker))
+        reopened = Journal(self.journal.path)
+        self.assertEqual(reopened.recover()["status_counts"], {"SUBMITTED": 1})
+        self.assertEqual(reopened.in_flight(), [])
+        self.assertEqual(reopened.net_positions(), {})
+
+    def test_pre_send_fsync_failure_prevents_mutation(self):
+        original = os.fsync
+        os.fsync = lambda _fd: (_ for _ in ()).throw(OSError("synthetic"))
+        try:
+            self.assertFalse(self.invoke(self.broker({"success": True, "order_id": "FAKE-SL"})))
+        finally:
+            os.fsync = original
+        self.assertEqual(self.calls, [])
+
+    def test_ack_persistence_failure_is_not_success(self):
+        self.journal.record_submitted = lambda *args: (_ for _ in ()).throw(OSError("synthetic"))
+        broker = self.broker({"success": True, "order_id": "FAKE-SL"})
+        self.assertFalse(self.invoke(broker))
+        self.assertFalse(self.invoke(broker))
+        self.assertEqual(len(self.calls), 1)
+
+suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(ProtectionMutationTests))
+class ConditionalAcknowledgementTests(unittest.TestCase):
+    def test_missing_identity_and_transport_are_unknown(self):
+        tree = ast.parse((ROOT / "infrastructure/brokers/adapters/bingx_adapter.py").read_text())
+        nodes = [node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef))
+                 and node.name in {"extract_bingx_order_id", "RateLimitAdmissionTimeout"}]
+        cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "_BingXBroker")
+        method = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == "_place_conditional_order")
+        namespace = dict(Dict=typing.Dict, Any=typing.Any, math=math)
+        exec(compile(ast.Module(body=nodes + [method], type_ignores=[]), "actual-conditional-method", "exec"), namespace)
+        for response in ({"code": 0, "data": {"order": {}}}, None):
+            with self.subTest(response=response):
+                calls = []
+                def request(*args, **kwargs):
+                    calls.append(True)
+                    if response is None:
+                        raise TimeoutError("synthetic")
+                    return response
+                broker = types.SimpleNamespace(_format_symbol_str=lambda symbol: symbol,
+                    _format_price=lambda symbol, value: str(value), _format_quantity=lambda symbol, value: str(value),
+                    _make_request=request, logger=types.SimpleNamespace(error=lambda *args: None))
+                result = namespace["_place_conditional_order"](broker, "TESTUSDT", "SELL", "1", "9", "STOP_MARKET", "LONG")
+                self.assertFalse(result["success"])
+                self.assertTrue(result["unknown_submission"])
+                self.assertEqual(len(calls), 1)
+
+suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(ConditionalAcknowledgementTests))
 result = unittest.TextTestRunner(verbosity=2).run(suite)
 print("ISOLATION: clean child environment; transports/subprocess denied; operational reads and external writes denied")
 scratch.cleanup()

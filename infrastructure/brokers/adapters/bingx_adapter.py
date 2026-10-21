@@ -1386,9 +1386,13 @@ class _BingXBroker:
             )
 
             if response.get('code') == 0:
+                conditional_order_id = extract_bingx_order_id(response)
+                if not conditional_order_id:
+                    return {'success': False, 'order_id': None, 'unknown_submission': True,
+                            'error': 'conditional acknowledgement identity unavailable'}
                 return {
                     'success': True,
-                    'order_id': extract_bingx_order_id(response),
+                    'order_id': conditional_order_id,
                     'response': response['data'],
                     'rate_limit_wait_ms': response.get('_client_rate_limit_wait_ms'),
                 }
@@ -1412,8 +1416,8 @@ class _BingXBroker:
                 'rate_limit_wait_ms': e.wait_ms,
             }
         except Exception as e:
-            self.logger.error(f"Failed to place conditional order on BingX Swap V2 for {symbol}: {e}")
-            return {'success': False, 'error': str(e)}
+            self.logger.error("Conditional order outcome unavailable; reconciliation required")
+            return {'success': False, 'unknown_submission': True, 'error': 'conditional submission outcome unknown'}
 
     def get_account_balance(self) -> List[Dict[str, Any]]:
         """Get account balance information."""

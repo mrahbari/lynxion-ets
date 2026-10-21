@@ -819,6 +819,12 @@ class ActivePositionManager:
         rather than being reported as protected based on local state alone.
         """
         try:
+            from infrastructure.execution.live_order_journal import live_order_journal
+            normalized_symbol = str(getattr(symbol, "value", symbol)).upper().replace("-", "").replace("/", "").replace("_", "")
+            for pending in live_order_journal.in_flight():
+                pending_symbol = str(pending.get("symbol", "")).upper().replace("-", "").replace("/", "").replace("_", "")
+                if pending.get("status") == "PROTECTION_UNKNOWN" and pending_symbol == normalized_symbol:
+                    return False
             observation_fields = None
             stop_sync_id = None
             if observation_context is not None:
@@ -890,6 +896,9 @@ class ActivePositionManager:
                     return response_event
 
                 try:
+                    protection_ref = live_order_journal.record_protection_unknown(
+                        normalized_symbol, close_side, quantity,
+                        str(getattr(target_broker, "name", "UNKNOWN")), stop_price=new_sl_price)
                     if hasattr(target_broker, "_place_conditional_order"):
                         res = target_broker._place_conditional_order(
                             symbol=formatted_symbol,
@@ -911,6 +920,8 @@ class ActivePositionManager:
                     else:
                         res = {"success": False, "error": "No _place_conditional_order method available"}
 
+                    if res.get("unknown_submission"):
+                        return False
                     response_accepted = bool(res.get("success"))
                     raw_order_id = res.get("order_id")
                     response_order_id = str(raw_order_id) if raw_order_id not in (None, "") else None
@@ -959,17 +970,25 @@ class ActivePositionManager:
                                 visibility_event["mismatch_reason"] = visibility_evidence["mismatch_reason"]
                             self._emit_exit_observation(visibility_event)
                         if placed:
+                            if not response_order_id:
+                                return False
+                            live_order_journal.record_submitted(
+                                protection_ref, response_order_id,
+                                str(getattr(target_broker, "name", "UNKNOWN")))
                             logger.warning(f"✅ Confirmed Broker Stop Loss on exchange for {symbol}: ${new_sl_price:.4f} (Attempt {attempt})")
                             break
                         logger.warning(f"SL placement for {symbol} was accepted but could not be verified as pending (Attempt {attempt})")
+                        break  # uncertain visibility is not permission to submit another stop
                     else:
                         err_msg = res.get("error", "Unknown error")
                         logger.warning(f"SL placement attempt {attempt}/{max_sl_attempts} failed on {symbol}: {err_msg}")
                         if retry_decision == "RETRY_NEW_TIMESTAMP":
+                            live_order_journal.record_failed(protection_ref, "explicit timestamp rejection")
                             time.sleep(0.30)
                             continue
                         break
                 except Exception as place_err:
+                    placed = False
                     response_latency_ms = (time.monotonic() - attempt_started) * 1000.0
                     response_error = str(place_err)
                     response_classification = "TRANSPORT_OR_ADAPTER_TERMINAL"

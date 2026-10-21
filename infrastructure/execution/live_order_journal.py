@@ -171,7 +171,8 @@ class LiveOrderJournal:
     def in_flight(self) -> List[Dict[str, Any]]:
         """Orders not in a terminal state — these need reconciliation against the broker on startup."""
         with self._lock:
-            return [dict(o) for o in self._orders.values() if o.get("status") in _OPEN_STATES]
+            return [dict(o) for o in self._orders.values() if o.get("status") in _OPEN_STATES
+                    and not (o.get("purpose") == "PROTECTION" and o.get("status") == "SUBMITTED")]
 
     def order_exchange_map(self) -> Dict[str, tuple]:
         """Rebuild order_id -> (exchange, symbol) from submitted orders (persists B5 across restart)."""
@@ -215,7 +216,8 @@ class LiveOrderJournal:
                 raise RuntimeError("journal integrity requires manual reconciliation")
             rec = {"ts": _now(), **fields}
             ref = rec["order_ref"]
-            require_durable = rec.get("status") in {"INTENT", "PROTECTION_UNKNOWN"}
+            require_durable = (rec.get("status") in {"INTENT", "PROTECTION_UNKNOWN"}
+                               or self._orders.get(ref, {}).get("purpose") == "PROTECTION")
             try:
                 os.makedirs(os.path.dirname(self._path) or ".", exist_ok=True)
                 with open(self._path, "a", encoding="utf-8") as f:
