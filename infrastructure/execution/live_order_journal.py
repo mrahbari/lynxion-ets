@@ -28,7 +28,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-_OPEN_STATES = {"INTENT", "SUBMITTED", "PARTIALLY_FILLED"}   # PARTIALLY_FILLED stays in-flight
+_OPEN_STATES = {"INTENT", "SUBMITTED", "PARTIALLY_FILLED", "PROTECTION_UNKNOWN"}
 _TERMINAL = {"FILLED", "CANCELLED", "REJECTED", "FAILED"}
 
 
@@ -90,10 +90,26 @@ class LiveOrderJournal:
             rec["strategy_name"] = str(strategy)
 
         with self._lock:
-            if any(order.get("status") == "INTENT" for order in self._orders.values()):
-                raise RuntimeError("unresolved INTENT requires broker reconciliation before new order")
+            if any(order.get("status") in {"INTENT", "PROTECTION_UNKNOWN"} for order in self._orders.values()):
+                raise RuntimeError("unresolved INTENT or protection requires broker reconciliation before new order")
             self._append(rec)
         return order_ref
+
+    def record_protection_unknown(self, symbol: str, side: str, quantity, exchange: str,
+                                  entry_order_ref: Optional[str] = None, stop_price=None) -> str:
+        """Preserve protection uncertainty durably; never synthesize a broker fill."""
+        with self._lock:
+            if entry_order_ref is not None:
+                parent = self._orders.get(entry_order_ref)
+                if (parent is None or parent.get("symbol") != symbol
+                        or parent.get("exchange") != exchange or parent.get("purpose") == "PROTECTION"):
+                    raise ValueError("protection parent identity mismatch")
+            ref = uuid.uuid4().hex
+            self._append({"order_ref": ref, "status": "PROTECTION_UNKNOWN", "purpose": "PROTECTION",
+                          "symbol": symbol, "side": str(side), "quantity": str(quantity),
+                          "exchange": exchange, "order_id": None, "entry_order_ref": entry_order_ref,
+                          "stop_price": None if stop_price is None else str(stop_price)})
+            return ref
 
     def record_submitted(self, order_ref: str, order_id: str, exchange: str) -> None:
         self._append({"order_ref": order_ref, "status": "SUBMITTED",
@@ -199,7 +215,7 @@ class LiveOrderJournal:
                 raise RuntimeError("journal integrity requires manual reconciliation")
             rec = {"ts": _now(), **fields}
             ref = rec["order_ref"]
-            require_durable = rec.get("status") == "INTENT"
+            require_durable = rec.get("status") in {"INTENT", "PROTECTION_UNKNOWN"}
             try:
                 os.makedirs(os.path.dirname(self._path) or ".", exist_ok=True)
                 with open(self._path, "a", encoding="utf-8") as f:

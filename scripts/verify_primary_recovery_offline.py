@@ -80,6 +80,31 @@ class JournalTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             Journal(str(TMP)).recover()
 
+    def test_protection_unknown_survives_restart_and_blocks_admission(self):
+        journal = Journal(str(TMP / "protection.jsonl"))
+        parent = journal.record_intent("TESTUSDT", "BUY", 1, "fake")
+        journal.record_submitted(parent, "FAKE-ENTRY", "fake")
+        ref = journal.record_protection_unknown("TESTUSDT", "SELL", 1, "fake", entry_order_ref=parent)
+        reopened = Journal(journal.path)
+        marker = next(record for record in reopened.in_flight() if record["order_ref"] == ref)
+        self.assertEqual(marker["status"], "PROTECTION_UNKNOWN")
+        self.assertEqual(marker["entry_order_ref"], parent)
+        self.assertIsNone(marker["order_id"])
+        with self.assertRaises(RuntimeError):
+            reopened.record_intent("OTHERUSDT", "BUY", 1, "fake")
+
+    def test_protection_unknown_requires_durable_write(self):
+        journal = Journal(str(TMP / "durable-protection.jsonl"))
+        original = os.fsync
+        def fail(_descriptor):
+            raise OSError("synthetic fsync failure")
+        os.fsync = fail
+        try:
+            with self.assertRaises(OSError):
+                journal.record_protection_unknown("TESTUSDT", "SELL", 1, "fake")
+        finally:
+            os.fsync = original
+
 def module(name, **values):
     result = types.ModuleType(name)
     result.__dict__.update(values)
