@@ -81,6 +81,15 @@ def main(argv: Optional[List[str]] = None) -> int:
             if pf["mode"] in ("LIVE", "TESTNET") and not pf["ok"]:
                 print("❌ Preflight FAILED for broker-connected mode — refusing to start. Fix the blocking issues above.")
                 return 2
+            if pf["mode"] in ("LIVE", "TESTNET"):
+                from infrastructure.execution.live_order_journal import live_order_journal
+                recovery = live_order_journal.recover()
+                counts = recovery["status_counts"]
+                if not isinstance(counts, dict):
+                    raise RuntimeError("invalid recovery summary")
+                if any(counts.get(status, 0) for status in ("INTENT", "PROTECTION_UNKNOWN")):
+                    print("Unresolved submission requires reconciliation — refusing to start.")
+                    return 2
         except Exception as e:
             print(f"❌ Preflight check failed — refusing to start ({type(e).__name__}).")
             return 2

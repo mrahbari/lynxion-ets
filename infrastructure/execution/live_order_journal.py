@@ -52,6 +52,7 @@ class LiveOrderJournal:
         self._path = path or _default_path()
         self._lock = threading.RLock()
         self._orders: Dict[str, Dict[str, Any]] = {}   # order_ref -> latest state
+        self._load_error = False
         self._load()
 
     @property
@@ -177,6 +178,8 @@ class LiveOrderJournal:
 
     def recover(self) -> Dict[str, Any]:
         """Startup recovery summary: counts, in-flight orders, and the order->exchange map."""
+        if self._load_error:
+            raise RuntimeError("journal integrity requires manual reconciliation")
         with self._lock:
             counts: Dict[str, int] = {}
             for o in self._orders.values():
@@ -192,6 +195,8 @@ class LiveOrderJournal:
 
     def _append(self, fields: Dict[str, Any]) -> None:
         with self._lock:
+            if self._load_error:
+                raise RuntimeError("journal integrity requires manual reconciliation")
             rec = {"ts": _now(), **fields}
             ref = rec["order_ref"]
             require_durable = rec.get("status") == "INTENT"
@@ -221,15 +226,22 @@ class LiveOrderJournal:
                     try:
                         rec = json.loads(line)
                     except Exception:
+                        self._load_error = True
+                        continue
+                    if not isinstance(rec, dict):
+                        self._load_error = True
                         continue
                     ref = rec.get("order_ref")
-                    if not ref:
+                    status = rec.get("status")
+                    if (not isinstance(ref, str) or not ref.strip()
+                            or not isinstance(status, str) or status not in _OPEN_STATES | _TERMINAL):
+                        self._load_error = True
                         continue
                     cur = self._orders.get(ref, {})
                     cur.update({k: v for k, v in rec.items() if v is not None or k not in cur})
                     self._orders[ref] = cur
         except Exception:
-            pass
+            self._load_error = True
 
 
 # Process-wide singleton — the live order journal the real-send path writes to.
