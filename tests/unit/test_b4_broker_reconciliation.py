@@ -9,6 +9,56 @@ from infrastructure.execution.live_order_journal import LiveOrderJournal
 from infrastructure.execution.broker_reconciliation import BrokerReconciliationService
 
 
+def test_complete_initial_ack_evidence_does_not_create_unknown_marker(tmp_path):
+    journal = _journal(tmp_path)
+    ref = journal.record_intent("BTC-USDT", "BUY", "1", "bingx", stop_loss="90", take_profit="110")
+    journal.record_submitted(ref, "ENTRY-1", "bingx", protective_order_ids={
+        "STOP_MARKET": "SL-1", "TAKE_PROFIT_MARKET": "TP-1"})
+    broker = _FakeBroker(positions=[_pos("BTC-USDT", 1)], statuses={"ENTRY-1": "FILLED"})
+    report = BrokerReconciliationService(halt_fn=lambda reason: None).reconcile(broker, journal)
+    # Existing contract reports a recovered transition as not-yet-in-sync this pass.
+    assert report["in_sync"] is False
+    assert report["orders_resolved"] == [{"order_id": "ENTRY-1", "status": "FILLED", "executed_qty": None}]
+    assert journal.in_flight() == []
+    assert BrokerReconciliationService(halt_fn=lambda reason: None).reconcile(broker, journal)["in_sync"] is True
+
+def test_recovery_protection_persistence_failure_halts(tmp_path, monkeypatch):
+    journal = _journal(tmp_path)
+    ref = journal.record_intent("BTC-USDT", "BUY", "1", "bingx", stop_loss="90")
+    journal.record_submitted(ref, "ENTRY-1", "bingx")
+    def fail(*args, **kwargs):
+        raise OSError("synthetic disk failure")
+    monkeypatch.setattr(journal, "record_protection_unknown", fail)
+    halts = []
+    report = BrokerReconciliationService(halt_fn=halts.append).reconcile(
+        _FakeBroker(positions=[_pos("BTC-USDT", 1)], statuses={"ENTRY-1": "FILLED"}), journal)
+    assert report["halted"] is True and report["in_sync"] is False
+    assert halts == ["UNVERIFIED_PROTECTION_PERSISTENCE_FAILED"]
+    assert journal.in_flight()[0]["status"] == "SUBMITTED"
+
+@pytest.mark.parametrize("status", ["FILLED", "PARTIALLY_FILLED", "PARTIAL", "UNKNOWN", "CANCELED"])
+@pytest.mark.parametrize("ids", [None, {"STOP_MARKET": "SL-1"}])
+def test_entry_fill_cannot_hide_missing_requested_protection(tmp_path, status, ids):
+    journal = _journal(tmp_path)
+    ref = journal.record_intent("BTC-USDT", "BUY", "1", "bingx", stop_loss="90", take_profit="110")
+    journal.record_submitted(ref, "ENTRY-1", "bingx", protective_order_ids=ids)
+    before = (tmp_path / "j.jsonl").read_bytes()
+    broker = _FakeBroker(positions=[_pos("BTC-USDT", 1)], statuses={"ENTRY-1": status})
+    broker.get_order_fill = lambda *args: {"status": status, "executed_qty": "1" if status == "FILLED" else "0.5",
+                                         "avg_price": "100"}
+    report = BrokerReconciliationService(halt_fn=lambda reason: None).reconcile(broker, journal)
+    assert report["in_sync"] is False and report["orders_resolved"] == []
+    assert any(row["issue"] == "requested_protection_acknowledgements_missing" for row in report["recoverable"])
+    assert journal.in_flight()[0]["status"] == "SUBMITTED"
+    assert (tmp_path / "j.jsonl").read_bytes().startswith(before)
+    assert any(row["status"] == "PROTECTION_UNKNOWN" and row["entry_order_ref"] == ref for row in journal.in_flight())
+    after = (tmp_path / "j.jsonl").read_bytes()
+    BrokerReconciliationService(halt_fn=lambda reason: None).reconcile(broker, journal)
+    assert (tmp_path / "j.jsonl").read_bytes() == after
+    with pytest.raises(RuntimeError):
+        journal.record_intent("ETH-USDT", "BUY", "1", "bingx")
+    assert LiveOrderJournal(path=str(tmp_path / "j.jsonl")).in_flight()[0]["order_ref"] == ref
+
 def _pos(symbol, qty, side="LONG", entry_price=0):
     return SimpleNamespace(
         symbol=Symbol(symbol),

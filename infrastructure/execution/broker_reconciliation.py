@@ -504,6 +504,33 @@ class BrokerReconciliationService:
                 report["errors"].append(f"status({oid}) failed: {e}")
 
             # B7: record fill progress (partial or full) when we have executed quantity.
+            requested = {kind for field, kind in (("stop_loss", "STOP_MARKET"), ("take_profit", "TAKE_PROFIT_MARKET"))
+                         if o.get(field) is not None}
+            ids = o.get("protective_order_ids") or {}
+            missing = sorted(kind for kind in requested if not isinstance(ids, dict) or not ids.get(kind))
+            try:
+                reported_quantity = Decimal(str(executed_qty or 0))
+                quantity_evidence = not reported_quantity.is_finite() or reported_quantity > 0
+            except Exception:
+                quantity_evidence = True  # malformed execution data is not proof of no exposure
+            if missing and (status in {"FILLED", "PARTIALLY_FILLED", "PARTIAL"} or quantity_evidence):
+                report["recoverable"].append({"order_ref": ref, "symbol": sym,
+                    "issue": "requested_protection_acknowledgements_missing", "entry_status": status,
+                    "missing": missing})
+                report["in_sync"] = False
+                try:
+                    if not any(record.get("status") == "PROTECTION_UNKNOWN"
+                               and record.get("entry_order_ref") == ref for record in journal.in_flight()):
+                        closing_side = {"BUY": "SELL", "SELL": "BUY"}.get(str(o.get("side", "")).upper(), "UNKNOWN")
+                        journal.record_protection_unknown(sym, closing_side, o.get("quantity"),
+                                                          o.get("exchange"), entry_order_ref=ref)
+                except Exception as persistence_error:
+                    report["errors"].append(f"protection uncertainty persistence failed ({type(persistence_error).__name__})")
+                    if halt_on_unrecoverable:
+                        self._halt("UNVERIFIED_PROTECTION_PERSISTENCE_FAILED")
+                        report["halted"] = True
+                continue
+
             recorded = None
             if executed_qty is not None and float(executed_qty or 0) > 0:
                 try:
