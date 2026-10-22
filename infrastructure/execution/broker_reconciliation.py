@@ -372,9 +372,13 @@ class BrokerReconciliationService:
             "journal_net_positions": {},
             "in_flight_orders": [],
             "broker_positions_missing_from_journal": [],
+            "protective_orders": [],
+            "protection_evidence_status": "UNAVAILABLE",
         }
         try:
             journal.recover()
+            report["protective_orders"] = journal.protection_records()
+            report["protection_evidence_status"] = "LOCAL_JOURNAL_ONLY"
         except Exception:
             report["errors"].append("journal recovery unavailable; inspection refused")
             return report

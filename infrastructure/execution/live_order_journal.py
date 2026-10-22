@@ -174,6 +174,13 @@ class LiveOrderJournal:
             return [dict(o) for o in self._orders.values() if o.get("status") in _OPEN_STATES
                     and not (o.get("purpose") == "PROTECTION" and o.get("status") == "SUBMITTED")]
 
+    def protection_records(self) -> List[Dict[str, Any]]:
+        """Local protective acknowledgements/uncertainties, not active broker proof."""
+        if self._load_error:
+            raise RuntimeError("journal integrity requires manual reconciliation")
+        with self._lock:
+            return [dict(order) for order in self._orders.values() if order.get("purpose") == "PROTECTION"]
+
     def order_exchange_map(self) -> Dict[str, tuple]:
         """Rebuild order_id -> (exchange, symbol) from submitted orders (persists B5 across restart)."""
         with self._lock:

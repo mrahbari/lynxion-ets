@@ -82,6 +82,19 @@ class JournalTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             Journal(str(TMP)).recover()
 
+    def test_acknowledged_protection_remains_visible_separately(self):
+        journal = Journal(str(TMP / "readout.jsonl"))
+        ref = journal.record_protection_unknown("TESTUSDT", "SELL", 1, "fake")
+        journal.record_submitted(ref, "FAKE-PROTECTION", "fake")
+        before = Path(journal.path).read_bytes()
+        records = journal.protection_records()
+        self.assertEqual(records[0]["order_id"], "FAKE-PROTECTION")
+        records[0]["status"] = "MUTATED-COPY"
+        self.assertEqual(journal.protection_records()[0]["status"], "SUBMITTED")
+        self.assertEqual(journal.in_flight(), [])
+        self.assertEqual(journal.net_positions(), {})
+        self.assertEqual(Path(journal.path).read_bytes(), before)
+
     def test_protection_unknown_survives_restart_and_blocks_admission(self):
         journal = Journal(str(TMP / "protection.jsonl"))
         parent = journal.record_intent("TESTUSDT", "BUY", 1, "fake")
@@ -292,6 +305,22 @@ class ConditionalAcknowledgementTests(unittest.TestCase):
 
 suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(ConditionalAcknowledgementTests))
 class ReconciliationIntegrityTests(unittest.TestCase):
+    def test_inspect_labels_protection_as_local_evidence_only(self):
+        journal = Journal(str(TMP / "inspect-protection.jsonl"))
+        ref = journal.record_protection_unknown("TESTUSDT", "SELL", 1, "fake")
+        journal.record_submitted(ref, "FAKE-PROTECTION", "fake")
+        before = Path(journal.path).read_bytes()
+        tree = ast.parse((ROOT / "infrastructure/execution/broker_reconciliation.py").read_text())
+        cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "BrokerReconciliationService")
+        method = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == "inspect")
+        namespace = dict(Dict=typing.Dict, Any=typing.Any)
+        exec(compile(ast.Module(body=[method], type_ignores=[]), "actual-inspection-method", "exec"), namespace)
+        report = namespace["inspect"](types.SimpleNamespace(), types.SimpleNamespace(get_all_positions=lambda: []), journal)
+        self.assertEqual(report["protection_evidence_status"], "LOCAL_JOURNAL_ONLY")
+        self.assertEqual(report["protective_orders"][0]["order_id"], "FAKE-PROTECTION")
+        self.assertEqual(report["journal_net_positions"], {})
+        self.assertEqual(Path(journal.path).read_bytes(), before)
+
     def check(self, name):
         path = TMP / (name + "-corrupt.jsonl")
         path.write_text("{broken\n")
