@@ -374,6 +374,11 @@ class BrokerReconciliationService:
             "broker_positions_missing_from_journal": [],
         }
         try:
+            journal.recover()
+        except Exception:
+            report["errors"].append("journal recovery unavailable; inspection refused")
+            return report
+        try:
             broker_positions = broker.get_all_positions() or []
         except Exception as exc:
             report["errors"].append(f"get_all_positions failed: {exc}")
@@ -429,6 +434,12 @@ class BrokerReconciliationService:
             "broker_positions": [], "recoverable": [], "unrecoverable": [],
             "orders_resolved": [],
         }
+        try:
+            journal.recover()
+        except Exception:
+            report["errors"].append("journal recovery unavailable; reconciliation refused")
+            report["in_sync"] = False
+            return report
 
         # --- 1. Pull broker truth: open positions ---
         broker_positions: List[Any] = []

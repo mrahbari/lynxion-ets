@@ -291,6 +291,35 @@ class ConditionalAcknowledgementTests(unittest.TestCase):
                 self.assertEqual(len(calls), 1)
 
 suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(ConditionalAcknowledgementTests))
+class ReconciliationIntegrityTests(unittest.TestCase):
+    def check(self, name):
+        path = TMP / (name + "-corrupt.jsonl")
+        path.write_text("{broken\n")
+        journal = Journal(str(path))
+        tree = ast.parse((ROOT / "infrastructure/execution/broker_reconciliation.py").read_text())
+        cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "BrokerReconciliationService")
+        method = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == name)
+        namespace = dict(Dict=typing.Dict, Any=typing.Any)
+        exec(compile(ast.Module(body=[method], type_ignores=[]), "actual-reconciliation-method", "exec"), namespace)
+        effects = []
+        def positions():
+            effects.append("broker_read")
+            return []
+        service = types.SimpleNamespace(_process_position_closures=lambda *args: effects.append("closure"))
+        report = namespace[name](service, types.SimpleNamespace(get_all_positions=positions), journal)
+        self.assertTrue(report["errors"])
+        self.assertEqual(effects, [])
+        self.assertEqual(path.read_text(), "{broken\n")
+        if name == "reconcile":
+            self.assertFalse(report["in_sync"])
+
+    def test_inspect_corrupt_journal_has_no_broker_read(self):
+        self.check("inspect")
+
+    def test_reconcile_corrupt_journal_has_no_closure_side_effect(self):
+        self.check("reconcile")
+
+suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(ReconciliationIntegrityTests))
 result = unittest.TextTestRunner(verbosity=2).run(suite)
 print("ISOLATION: clean child environment; transports/subprocess denied; operational reads and external writes denied")
 scratch.cleanup()
