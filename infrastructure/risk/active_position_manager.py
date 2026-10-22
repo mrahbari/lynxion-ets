@@ -1046,11 +1046,14 @@ class ActivePositionManager:
                     pending = target_broker.get_pending_orders(formatted_symbol) or []
                 for order in pending:
                     raw_symbol = order.get("symbol")
-                    if raw_symbol is not None:
-                        normalized_actual = str(raw_symbol).upper().replace("-", "").replace("/", "").replace("_", "")
-                        normalized_expected = str(formatted_symbol).upper().replace("-", "").replace("/", "").replace("_", "")
-                        if normalized_actual != normalized_expected:
-                            continue
+                    if raw_symbol is None:
+                        continue
+                    normalized_actual = str(raw_symbol).upper().replace("-", "").replace("/", "").replace("_", "")
+                    normalized_expected = str(formatted_symbol).upper().replace("-", "").replace("/", "").replace("_", "")
+                    if normalized_actual != normalized_expected:
+                        continue
+                    if str(order.get("status", "")).upper() in {"FILLED", "CANCELED", "CANCELLED", "REJECTED", "EXPIRED"}:
+                        continue
                     if "STOP" not in str(order.get("type", "")).upper():
                         continue
                     if str(order.get("side", "")).upper() != close_side:

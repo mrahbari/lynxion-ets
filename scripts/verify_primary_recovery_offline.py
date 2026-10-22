@@ -372,6 +372,39 @@ class ReconciliationIntegrityTests(unittest.TestCase):
         self.check("reconcile")
 
 suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(ReconciliationIntegrityTests))
+class PendingProtectionEvidenceTests(unittest.TestCase):
+    def query(self, order):
+        tree = ast.parse((ROOT / "infrastructure/risk/active_position_manager.py").read_text())
+        cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "ActivePositionManager")
+        method = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == "_query_pending_stop_visibility")
+        method.decorator_list = []
+        namespace = dict(Any=typing.Any, Dict=typing.Dict, Optional=typing.Optional,
+            ActivePositionManager=types.SimpleNamespace(_extract_float=float),
+            time=types.SimpleNamespace(sleep=lambda delay: None), datetime=datetime,
+            timezone=__import__("datetime").timezone,
+            logger=types.SimpleNamespace(warning=lambda *args: None))
+        exec(compile(ast.Module(body=[method], type_ignores=[]), "actual-pending-visibility-method", "exec"), namespace)
+        broker = types.SimpleNamespace(get_pending_orders_evidence=lambda symbol: {"status": "OK", "orders": [order]})
+        return namespace["_query_pending_stop_visibility"](broker, "TEST-USDT", "SELL", "LONG", 9, "FAKE-ID")
+
+    def valid(self):
+        return dict(symbol="TEST-USDT", type="STOP_MARKET", side="SELL", positionSide="LONG",
+                    stopPrice=9, orderId="FAKE-ID", status="NEW")
+
+    def test_terminal_or_unattributed_pending_order_not_verified(self):
+        for change in ({"symbol": None}, {"symbol": "OTHER-USDT"}, {"status": "CANCELED"}, {"status": "FILLED"}):
+            with self.subTest(change=change):
+                order = self.valid()
+                order.update(change)
+                self.assertFalse(self.query(order)["verified"])
+
+    def test_exact_pending_identity_and_symbol_verified(self):
+        self.assertTrue(self.query(self.valid())["verified"])
+        legacy = self.valid()
+        legacy.pop("status")
+        self.assertTrue(self.query(legacy)["verified"])
+
+suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(PendingProtectionEvidenceTests))
 result = unittest.TextTestRunner(verbosity=2).run(suite)
 print("ISOLATION: clean child environment; transports/subprocess denied; operational reads and external writes denied")
 scratch.cleanup()
