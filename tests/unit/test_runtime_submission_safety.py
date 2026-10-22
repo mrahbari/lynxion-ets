@@ -13,6 +13,28 @@ from domain.value_objects import Money, Symbol
 from infrastructure.execution.live_order_journal import LiveOrderJournal
 
 
+def test_initial_protective_ids_reach_durable_entry(monkeypatch, tmp_path):
+    from infrastructure.execution import live_order_journal as journal_module
+    from shared import live_execution_guard as guard_module
+    path = str(tmp_path / "initial-protection.jsonl")
+    monkeypatch.setattr(journal_module, "live_order_journal", LiveOrderJournal(path))
+    def place(order):
+        assert order.protective_order_ids is None
+        order.protective_order_ids = {"STOP_MARKET": "SL-1", "TAKE_PROFIT_MARKET": "TP-1"}
+        return "ENTRY-1"
+    service = _service(monkeypatch, SimpleNamespace(connected=True, place_order=place))
+    monkeypatch.setattr(guard_module, "live_execution_guard", SimpleNamespace(
+        evaluate=lambda *args: SimpleNamespace(is_real_send=True),
+        authorize_and_send=lambda **kwargs: (SimpleNamespace(allowed=True, simulate=False,
+            mode=SimpleNamespace(value="testnet"), reason="fake"), kwargs["send_fn"]())))
+    order = _order()
+    order.protective_order_ids = {"STOP_MARKET": "STALE"}
+    assert service.execute_order(order) == "ENTRY-1"
+    record = LiveOrderJournal(path).in_flight()[0]
+    assert record["protective_order_ids"] == {"STOP_MARKET": "SL-1", "TAKE_PROFIT_MARKET": "TP-1"}
+    assert "filled_qty" not in record
+
+
 def test_intent_fsync_failure_is_not_reported_durable(monkeypatch, tmp_path):
     journal = LiveOrderJournal(str(tmp_path / "orders.jsonl"))
 

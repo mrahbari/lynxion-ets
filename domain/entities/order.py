@@ -56,6 +56,7 @@ class Order:
     stop_loss_price: Optional[Money] = None
     take_profit_price: Optional[Money] = None
     requested_leverage: Optional[Decimal] = None
+    protective_order_ids: Optional[Dict[str, str]] = None  # acknowledgement evidence only
 
     def is_market_order(self) -> bool:
         return self.order_type.upper() == "MARKET"

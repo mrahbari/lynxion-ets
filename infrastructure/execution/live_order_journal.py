@@ -111,9 +111,18 @@ class LiveOrderJournal:
                           "stop_price": None if stop_price is None else str(stop_price)})
             return ref
 
-    def record_submitted(self, order_ref: str, order_id: str, exchange: str) -> None:
-        self._append({"order_ref": order_ref, "status": "SUBMITTED",
-                      "order_id": str(order_id), "exchange": exchange})
+    def record_submitted(self, order_ref: str, order_id: str, exchange: str,
+                         protective_order_ids: Optional[Dict[str, str]] = None) -> None:
+        fields = {"order_ref": order_ref, "status": "SUBMITTED",
+                  "order_id": str(order_id), "exchange": exchange}
+        if protective_order_ids is not None:
+            ids = dict(protective_order_ids)
+            if any(kind not in {"STOP_MARKET", "TAKE_PROFIT_MARKET"}
+                   or isinstance(value, bool) or not isinstance(value, (str, int))
+                   or not str(value).strip() for kind, value in ids.items()):
+                raise ValueError("invalid protective acknowledgement identity")
+            fields["protective_order_ids"] = {kind: str(value) for kind, value in ids.items()}
+        self._append(fields)
 
     def record_failed(self, order_ref: str, reason: str = "") -> None:
         self._append({"order_ref": order_ref, "status": "FAILED", "reason": reason})
@@ -224,6 +233,7 @@ class LiveOrderJournal:
             rec = {"ts": _now(), **fields}
             ref = rec["order_ref"]
             require_durable = (rec.get("status") in {"INTENT", "PROTECTION_UNKNOWN"}
+                               or bool(rec.get("protective_order_ids"))
                                or self._orders.get(ref, {}).get("purpose") == "PROTECTION")
             try:
                 os.makedirs(os.path.dirname(self._path) or ".", exist_ok=True)

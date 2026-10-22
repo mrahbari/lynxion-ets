@@ -5,6 +5,51 @@ import pytest
 from infrastructure.execution.live_order_journal import LiveOrderJournal
 
 
+def test_ack_field_belongs_to_order_not_execution_intent():
+    import inspect
+    from domain.entities.order import Order, ExecutionIntent
+    from domain.entities import OrderSide
+    from domain.value_objects import Symbol
+    from decimal import Decimal
+    assert "protective_order_ids" in inspect.signature(Order).parameters
+    assert "protective_order_ids" not in inspect.signature(ExecutionIntent).parameters
+    names = list(inspect.signature(ExecutionIntent).parameters)
+    assert names == ["symbol", "strategy_name", "side", "intent_confidence", "risk_parameters",
+                     "timestamp", "fused_signal", "metadata", "requested_leverage", "intent_id"]
+    order = Order(Symbol("BTC-USDT"), OrderSide.BUY, Decimal("1"), protective_order_ids={"STOP_MARKET": "SL-1"})
+    assert order.protective_order_ids == {"STOP_MARKET": "SL-1"}
+
+
+def test_initial_protective_metadata_survives_reopen(tmp_path):
+    path = str(tmp_path / "entry.jsonl")
+    journal = LiveOrderJournal(path)
+    ref = journal.record_intent("BTC-USDT", "BUY", "1", "bingx")
+    ids = {"STOP_MARKET": "SL-1", "TAKE_PROFIT_MARKET": "TP-1"}
+    journal.record_submitted(ref, "ENTRY-1", "bingx", protective_order_ids=ids)
+    ids["STOP_MARKET"] = "MUTATED"
+    record = LiveOrderJournal(path).in_flight()[0]
+    assert record["protective_order_ids"]["STOP_MARKET"] == "SL-1"
+    assert "filled_qty" not in record
+
+
+def test_initial_protective_write_failure_preserves_intent(tmp_path):
+    journal = LiveOrderJournal(str(tmp_path / "entry.jsonl"))
+    ref = journal.record_intent("BTC-USDT", "BUY", "1", "bingx")
+    journal._path = str(tmp_path)
+    with pytest.raises(OSError):
+        journal.record_submitted(ref, "ENTRY-1", "bingx", protective_order_ids={"STOP_MARKET": "SL-1"})
+    assert journal.in_flight()[0]["status"] == "INTENT"
+
+
+@pytest.mark.parametrize("ids", [{"STOP_MARKET": None}, {"STOP_MARKET": True}, {"STOP": "SL-1"}])
+def test_initial_invalid_protective_metadata_preserves_intent(tmp_path, ids):
+    journal = LiveOrderJournal(str(tmp_path / "entry.jsonl"))
+    ref = journal.record_intent("BTC-USDT", "BUY", "1", "bingx")
+    with pytest.raises(ValueError):
+        journal.record_submitted(ref, "ENTRY-1", "bingx", protective_order_ids=ids)
+    assert journal.in_flight()[0]["status"] == "INTENT"
+
+
 def test_journal_lifecycle_intent_submitted_terminal(tmp_path):
     j = LiveOrderJournal(path=str(tmp_path / "j.jsonl"))
     ref = j.record_intent("BTC-USDT", "BUY", "0.001", "bingx", client_order_id="x123")

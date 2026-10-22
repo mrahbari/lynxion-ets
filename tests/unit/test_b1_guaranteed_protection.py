@@ -34,6 +34,37 @@ def _order():
                  timestamp=datetime.now(timezone.utc))
 
 
+def test_initial_protective_acknowledgements_are_retained(monkeypatch):
+    b = _broker()
+    b._format_quantity = lambda symbol, quantity: str(quantity)
+    b._format_price = lambda symbol, price: str(price)
+    monkeypatch.setattr(b, "_make_request", lambda *args, **kwargs: {
+        "code": 0, "data": {"order": {"orderId": "MAIN-ACK"}}})
+    monkeypatch.setattr(b, "_place_conditional_order", lambda **kwargs: {
+        "success": True, "order_id": "SL-ACK" if kwargs["order_type"] == "STOP_MARKET" else "TP-ACK"})
+    result = b.execute_order(_order())
+    assert result["success"] is True
+    assert result["protective_order_ids"] == {"STOP_MARKET": "SL-ACK", "TAKE_PROFIT_MARKET": "TP-ACK"}
+
+
+def test_adapter_copies_initial_protective_metadata(monkeypatch):
+    from infrastructure.brokers.adapters.bingx_adapter import BingXBrokerAdapter
+    adapter = object.__new__(BingXBrokerAdapter)
+    adapter.connected = True
+    adapter.logger = logging.getLogger("fake_initial_ack")
+    adapter._format_symbol = lambda symbol: symbol.value
+    ids = {"STOP_MARKET": "SL-ACK", "TAKE_PROFIT_MARKET": "TP-ACK"}
+    adapter._broker = SimpleNamespace(execute_order=lambda order: {
+        "success": True, "order_id": "MAIN-ACK", "protective_order_ids": ids})
+    monkeypatch.setattr(sys.modules["infrastructure.risk.symbol_cooldown_gate"].symbol_cooldown_gate,
+                        "is_symbol_allowed", lambda symbol: (True, "fake"), raising=False)
+    order = _order()
+    assert adapter.place_order(order) == "MAIN-ACK"
+    assert order.protective_order_ids == ids
+    ids["STOP_MARKET"] = "MUTATED"
+    assert order.protective_order_ids["STOP_MARKET"] == "SL-ACK"
+
+
 @pytest.fixture(autouse=True)
 def _reset_guard(monkeypatch):
     from shared.live_execution_guard import live_execution_guard

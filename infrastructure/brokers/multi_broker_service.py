@@ -574,6 +574,8 @@ class MultiBrokerExecutionService(ExecutionPort):
                 def send_to_broker():
                     nonlocal send_started
                     send_started = True
+                    if hasattr(order, 'protective_order_ids'):
+                        order.protective_order_ids = None
                     return broker.place_order(order)
 
                 guard_decision, order_id = live_execution_guard.authorize_and_send(
@@ -624,7 +626,12 @@ class MultiBrokerExecutionService(ExecutionPort):
                 if journal_ref:
                     try:
                         from infrastructure.execution.live_order_journal import live_order_journal
-                        live_order_journal.record_submitted(journal_ref, order_id, best_exchange)
+                        protective_ids = getattr(order, 'protective_order_ids', None)
+                        if protective_ids:
+                            live_order_journal.record_submitted(
+                                journal_ref, order_id, best_exchange, protective_order_ids=protective_ids)
+                        else:
+                            live_order_journal.record_submitted(journal_ref, order_id, best_exchange)
                     except Exception:
                         pass
 

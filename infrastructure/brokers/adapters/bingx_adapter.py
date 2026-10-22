@@ -169,6 +169,7 @@ class BingXBrokerAdapter(BrokerPort):
 
         result = self._broker.execute_order(temp_order)
         if result.get('success') and not result.get('protection_failed') and not result.get('conditional_orders_errors'):
+            order.protective_order_ids = dict(result.get('protective_order_ids') or {})
             exchange_order_id = result.get('order_id')
             if exchange_order_id is None:
                 self.logger.warning(
@@ -1142,6 +1143,7 @@ class _BingXBroker:
 
                     # If main order was successful, now place separate conditional orders for SL/TP
                     conditional_errors = []
+                    protective_order_ids = {}
 
                     # Place stop loss order if needed
                     # For stop loss: if we're long (BUY), we want to SELL to close when price goes down
@@ -1168,6 +1170,8 @@ class _BingXBroker:
 
                         if not sl_response['success']:
                             conditional_errors.append(f"SL order failed: {sl_response['error']}")
+                        elif sl_response.get('order_id') not in (None, ''):
+                            protective_order_ids['STOP_MARKET'] = str(sl_response['order_id'])
 
                     # Place take profit order if needed
                     # For take profit: if we're long (BUY), we want to SELL to close when price goes up
@@ -1194,6 +1198,8 @@ class _BingXBroker:
 
                         if not tp_response['success']:
                             conditional_errors.append(f"TP order failed: {tp_response['error']}")
+                        elif tp_response.get('order_id') not in (None, ''):
+                            protective_order_ids['TAKE_PROFIT_MARKET'] = str(tp_response['order_id'])
 
                     # B1 GUARANTEED PROTECTION: a position must never remain open without its
                     # SL/TP. If any protective order failed, unwind the just-opened position;
@@ -1242,6 +1248,7 @@ class _BingXBroker:
                         'order_id': main_order_id,
                         'response': response['data'],
                         'conditional_orders_errors': None,
+                        'protective_order_ids': protective_order_ids,
                     }
                 else:
                     return {
