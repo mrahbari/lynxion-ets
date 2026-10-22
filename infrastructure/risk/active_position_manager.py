@@ -924,6 +924,9 @@ class ActivePositionManager:
                         return False
                     response_accepted = bool(res.get("success"))
                     raw_order_id = res.get("order_id")
+                    if response_accepted and (isinstance(raw_order_id, bool)
+                            or not isinstance(raw_order_id, (str, int)) or not str(raw_order_id).strip()):
+                        return False
                     response_order_id = str(raw_order_id) if raw_order_id not in (None, "") else None
                     rate_limit_wait_ms = res.get("rate_limit_wait_ms")
                     response_error = None if response_accepted else str(res.get("error", "Unknown error"))

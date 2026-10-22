@@ -1387,7 +1387,9 @@ class _BingXBroker:
 
             if response.get('code') == 0:
                 conditional_order_id = extract_bingx_order_id(response)
-                if not conditional_order_id:
+                if (isinstance(conditional_order_id, bool)
+                        or not isinstance(conditional_order_id, (str, int))
+                        or not str(conditional_order_id).strip()):
                     return {'success': False, 'order_id': None, 'unknown_submission': True,
                             'error': 'conditional acknowledgement identity unavailable'}
                 return {

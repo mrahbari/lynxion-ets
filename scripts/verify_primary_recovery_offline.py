@@ -246,6 +246,17 @@ class ProtectionMutationTests(unittest.TestCase):
         self.assertEqual(len(self.calls), 1)
         self.assertEqual(self.journal.recover()["status_counts"], {"PROTECTION_UNKNOWN": 1})
 
+    def test_unusable_ack_identity_blocks_repeat(self):
+        for index, identity in enumerate((" ", True, 1.5)):
+            with self.subTest(identity=identity):
+                self.journal = Journal(str(TMP / ("bad-ack-" + str(index) + ".jsonl")))
+                selected_journal.live_order_journal = self.journal
+                self.calls.clear()
+                broker = self.broker({"success": True, "order_id": identity})
+                self.assertFalse(self.invoke(broker))
+                self.assertFalse(self.invoke(broker))
+                self.assertEqual(len(self.calls), 1)
+
     def test_unverified_visibility_never_retries(self):
         self.manager._query_pending_stop_visibility = lambda *args, **kwargs: {"verified": False}
         broker = self.broker({"success": True, "order_id": "FAKE-SL"})
@@ -254,12 +265,16 @@ class ProtectionMutationTests(unittest.TestCase):
         self.assertEqual(len(self.calls), 1)
 
     def test_verified_ack_is_not_an_entry_fill(self):
-        broker = self.broker({"success": True, "order_id": "FAKE-SL"})
-        self.assertTrue(self.invoke(broker))
-        reopened = Journal(self.journal.path)
-        self.assertEqual(reopened.recover()["status_counts"], {"SUBMITTED": 1})
-        self.assertEqual(reopened.in_flight(), [])
-        self.assertEqual(reopened.net_positions(), {})
+        for index, identity in enumerate(("FAKE-SL", 123)):
+            with self.subTest(identity=identity):
+                self.journal = Journal(str(TMP / ("valid-ack-" + str(index) + ".jsonl")))
+                selected_journal.live_order_journal = self.journal
+                broker = self.broker({"success": True, "order_id": identity})
+                self.assertTrue(self.invoke(broker))
+                reopened = Journal(self.journal.path)
+                self.assertEqual(reopened.recover()["status_counts"], {"SUBMITTED": 1})
+                self.assertEqual(reopened.in_flight(), [])
+                self.assertEqual(reopened.net_positions(), {})
 
     def test_pre_send_fsync_failure_prevents_mutation(self):
         original = os.fsync
@@ -287,7 +302,10 @@ class ConditionalAcknowledgementTests(unittest.TestCase):
         method = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == "_place_conditional_order")
         namespace = dict(Dict=typing.Dict, Any=typing.Any, math=math)
         exec(compile(ast.Module(body=nodes + [method], type_ignores=[]), "actual-conditional-method", "exec"), namespace)
-        for response in ({"code": 0, "data": {"order": {}}}, None):
+        responses = [{"code": 0, "data": {"order": {}}}, None]
+        responses += [{"code": 0, "data": {"orderId": identity}} for identity in (" ", True, 1.5)]
+        responses += [{"code": 0, "data": {"orderId": identity}} for identity in ("FAKE-VALID", 123)]
+        for response in responses:
             with self.subTest(response=response):
                 calls = []
                 def request(*args, **kwargs):
@@ -299,8 +317,13 @@ class ConditionalAcknowledgementTests(unittest.TestCase):
                     _format_price=lambda symbol, value: str(value), _format_quantity=lambda symbol, value: str(value),
                     _make_request=request, logger=types.SimpleNamespace(error=lambda *args: None))
                 result = namespace["_place_conditional_order"](broker, "TESTUSDT", "SELL", "1", "9", "STOP_MARKET", "LONG")
-                self.assertFalse(result["success"])
-                self.assertTrue(result["unknown_submission"])
+                expected_id = response.get("data", {}).get("orderId") if response else None
+                if expected_id in ("FAKE-VALID", 123):
+                    self.assertTrue(result["success"])
+                    self.assertEqual(result["order_id"], expected_id)
+                else:
+                    self.assertFalse(result["success"])
+                    self.assertTrue(result["unknown_submission"])
                 self.assertEqual(len(calls), 1)
 
 suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(ConditionalAcknowledgementTests))
