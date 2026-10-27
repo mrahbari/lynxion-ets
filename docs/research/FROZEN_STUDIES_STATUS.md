@@ -11,12 +11,12 @@ protocol label says COLLECTING. No process was started/stopped or protocol chang
 
 | Artifact | Bytes | Last modification UTC |
 |---|---:|---|
-| C11 prospective_ledger.json | 2946 | 2026-09-24T08:41:40+00:00 |
-| C33 events.jsonl | 60142613 | 2026-09-24T14:52:10+00:00 |
-| C35 candles.jsonl | 7027000 | 2026-09-24T13:08:44+00:00 |
-| C35 decisions.jsonl | 60760 | 2026-09-24T13:09:25+00:00 |
-| C35 funding.jsonl | 42511 | 2026-09-24T09:42:21+00:00 |
-| C35 funding_coverage.jsonl | 295470 | 2026-09-24T13:08:46+00:00 |
+| C11 prospective_ledger.json | 2946 | 2026-09-24T07:21:40+00:00 |
+| C33 events.jsonl | 60142613 | 2026-09-24T13:32:10+00:00 |
+| C35 candles.jsonl | 7027000 | 2026-09-24T11:48:44+00:00 |
+| C35 decisions.jsonl | 60760 | 2026-09-24T11:49:25+00:00 |
+| C35 funding.jsonl | 42511 | 2026-09-24T08:22:21+00:00 |
+| C35 funding_coverage.jsonl | 295470 | 2026-09-24T11:48:46+00:00 |
 
 All five previously dirty C11/C35 files remain untouched. This completes the current
 authorized status-audit action, NOT these prospective studies or their frozen sample
