@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import runpy
+import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
@@ -41,5 +42,62 @@ class LaunchTests(unittest.TestCase):
         self.assertEqual(env['LIVE_TRADING'],'false');self.assertEqual(env['BINGX_TESTNET'],'true')
     def test_recovery_timeout_stops_launch(self):
         self.assertEqual(self.evaluate(error=TimeoutError())[0][0],2)
+
+    def test_normal_launch_mode_never_spawns_after_recovery_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for proof,code in (({'blocked':True},2),
+                               ({'blocked':False,'status_counts':{'PROTECTION_UNKNOWN':1}},0),
+                               ({'blocked':False,'status_counts':{'INTENT':1}},0)):
+                run=Mock(side_effect=[SimpleNamespace(stdout=''),
+                    SimpleNamespace(returncode=code,stdout=json.dumps(proof))])
+                child=Mock()
+                actual,_=launch(check_only=False,run=run,popen=child,root=directory)
+                self.assertEqual(actual,2)
+                child.assert_not_called()
+                self.assertEqual(list(Path(directory).iterdir()),[])
+
+    def test_normal_launch_uses_testnet_original_journal_and_detached_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'logs').mkdir()
+            run=Mock(side_effect=[SimpleNamespace(stdout=''),
+                SimpleNamespace(returncode=0,stdout=json.dumps(
+                    {'blocked':False,'status_counts':{'FILLED':1}}))])
+            child=Mock(return_value=SimpleNamespace(pid=4242))
+            code,result=launch(check_only=False,run=run,popen=child,
+                               root=root,executable='/synthetic/python')
+            self.assertEqual(code,0);self.assertTrue(result['launched'])
+            self.assertEqual(result['pid'],4242);child.assert_called_once()
+            call=child.call_args
+            self.assertEqual(call.args[0],['/synthetic/python','-B','-u',
+                'run_trading_system.py','--mode','production','--auto-detect'])
+            self.assertEqual(call.kwargs['cwd'],root)
+            env=call.kwargs['env']
+            self.assertEqual(env['LIVE_TRADING'],'false')
+            self.assertEqual(env['BINGX_TESTNET'],'true')
+            self.assertEqual(env['BROKER_TESTNET'],'true')
+            self.assertEqual(env['LIVE_ORDER_JOURNAL_PATH'],str(root/'data/live_order_journal.json'))
+            self.assertTrue(call.kwargs['start_new_session'])
+            self.assertTrue(call.kwargs['stdout'].closed)
+            self.assertTrue(Path(result['stdout_log']).exists())
+            self.assertFalse((root/'data').exists())
+
+    def test_invalid_recovery_json_stops_normal_launch(self):
+        child=Mock()
+        run=Mock(side_effect=[SimpleNamespace(stdout=''),
+            SimpleNamespace(returncode=0,stdout='{broken')])
+        code,_=launch(check_only=False,run=run,popen=child)
+        self.assertEqual(code,2);child.assert_not_called()
+
+    def test_spawn_failure_is_reported_not_readiness(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'logs').mkdir()
+            run=Mock(side_effect=[SimpleNamespace(stdout=''),
+                SimpleNamespace(returncode=0,stdout=json.dumps(
+                    {'blocked':False,'status_counts':{}}))])
+            child=Mock(side_effect=OSError('synthetic spawn failure'))
+            code,result=launch(check_only=False,run=run,popen=child,root=root)
+            self.assertEqual(code,2)
+            self.assertNotIn('launched',result);self.assertNotIn('pid',result)
+            self.assertFalse((root/'data').exists())
 
 if __name__=='__main__':unittest.main()
