@@ -1,5 +1,31 @@
 # Frozen / collecting studies — status-only audit
 
+## 2026-10-27 22:05 UTC — requested unfinished-backlog status refresh
+
+Completed a fresh **metadata-only** local status audit; no sealed outcomes, candidate
+counts, sample gate or economics were opened. Limited sanitized Python process-name
+matching for c11/c33/c35/forced_liquidation/funding_shadow found no matching resident
+local collector. This does not exclude remote hosts, renamed processes or intermittent
+schedulers. Current collector liveness is NOT VERIFIED, not healthy because an old
+protocol label says COLLECTING. No process was started/stopped or protocol changed.
+
+| Artifact | Bytes | Last modification UTC |
+|---|---:|---|
+| C11 prospective_ledger.json | 2946 | 2026-09-24T08:41:40+00:00 |
+| C33 events.jsonl | 60142613 | 2026-09-24T14:52:10+00:00 |
+| C35 candles.jsonl | 7027000 | 2026-09-24T13:08:44+00:00 |
+| C35 decisions.jsonl | 60760 | 2026-09-24T13:09:25+00:00 |
+| C35 funding.jsonl | 42511 | 2026-09-24T09:42:21+00:00 |
+| C35 funding_coverage.jsonl | 295470 | 2026-09-24T13:08:46+00:00 |
+
+All five previously dirty C11/C35 files remain untouched. This completes the current
+authorized status-audit action, NOT these prospective studies or their frozen sample
+requirements. Their old outcomes/gates are unchanged. Any resumed collection must be
+treated as a separately scoped restoration of its exact existing protocol with explicit
+gap accounting and source/host verification, not synthetic backfill, early unsealing,
+a replacement cohort or permission to repeat Pilot1/2. No liveness guarantee or new
+scientific result follows. The historical audit and constraints below remain preserved.
+
 2026-10-05. **Read-only status audit, not a gate execution or outcome refresh.** The canonical statuses and exact verdicts are in [R02–R06](LYNXION_RESEARCH_BACKLOG.md). No frozen definition, file or collector was changed. Local file modification times are not proof of a presently healthy process, and sealed economic outcomes were not inspected.
 
 | Study | Existing scientific/operational state | Latest scoped evidence and next frozen gate | Current health certainty |
