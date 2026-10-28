@@ -31,3 +31,18 @@ package. They are not current instructions, live status or a full code/data back
 
 - [Original English report](Lynxion-Codex-to-Claude-Code-Migration-2026-10-26/Lynxion-Comprehensive-Handover-Codex-to-Claude-Code-English.md)
 - [گزارش فارسی اصلی](Lynxion-Codex-to-Claude-Code-Migration-2026-10-26/Lynxion-Comprehensive-Handover-Codex-to-Claude-Code-Persian.md)
+
+## Post-snapshot engineering delta — 29 October 2026
+
+Offline main advanced to `7f45c5bc34943f505755f72c3384a61cf0afc795` after the reviewed package was frozen.
+A reproduced maker-entry defect allowed unqualified candle/force/manual/market exits,
+including a pre-fill candle. The entry-only model now retains position provenance and
+refuses those paths before ledger mutation. RED10failures; maker-focused28PASS/1warning;
+existing30-file isolated allowlist347PASS/27warnings. Qualified causal exits/funding
+and the strategy economic experiment remain unfinished; no deployment or runner recovery.
+See the [current main evidence record](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/evidence/EPIC01_MTF_MAKER_2026-10-28.json).
+The reviewed ZIP and all its source snapshots remain unchanged dated documentation.
+
+فارسی: پس از بستهٔ frozen، گارد خروج‌های نامعتبر maker در main آفلاین اصلاح شد؛
+این تکمیل چرخهٔ خروج/funding، آزمون اقتصادی یا بازیابی رانر نیست. Claude پیش از ادامه
+HEAD و شاهد جاری را بررسی کند؛ فایل‌های ZIP قبلی بازنویسی نشده‌اند.
