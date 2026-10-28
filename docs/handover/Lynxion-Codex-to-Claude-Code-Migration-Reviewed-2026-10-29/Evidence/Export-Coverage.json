@@ -1,0 +1,74 @@
+{
+  "built_utc": "2026-10-28T23:10:06.137393+00:00",
+  "local_review_date": "2026-10-29 Europe/Stockholm",
+  "source_baselines": {
+    "primary": {
+      "root": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets",
+      "head": "8e9663136f85b566bdc1bc6d85e4c6b3037ecaf1",
+      "branch": "task-00-ground-truth-audit",
+      "status_short": [
+        "M data/research/c11/prospective_ledger.json",
+        " M data/research/c35/candles.jsonl",
+        " M data/research/c35/decisions.jsonl",
+        " M data/research/c35/funding.jsonl",
+        " M data/research/c35/funding_coverage.jsonl"
+      ],
+      "env_file_present": true,
+      "env_contents_exported": false
+    },
+    "main": {
+      "root": "/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets",
+      "head": "1599af9a1932ba25aee252ae76dfa5ad6b050a76",
+      "branch": "main",
+      "status_short": [],
+      "env_file_present": false,
+      "env_contents_exported": false
+    }
+  },
+  "current_snapshot_count": 1426,
+  "current_snapshot_kind_counts": {
+    "current_document": 1324,
+    "code_reference_not_full_backup": 85,
+    "current_structured_evidence": 4,
+    "historical_inventory_only": 1,
+    "public_data_manifest_not_raw_data": 9,
+    "observed_component_receipt_not_raw_data": 2,
+    "btc_archive_manifest_only": 1
+  },
+  "current_markdown_documents_by_root": {
+    "primary": 1124,
+    "main": 200
+  },
+  "current_primary_task_markdown": 701,
+  "historical_zip_embedded_byte_identical": true,
+  "historical_zip_internal_checksums": 1459,
+  "historical_document_snapshots": 1450,
+  "historical_task_documents": 701,
+  "core_six_symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "ADAUSDT",
+    "XRPUSDT"
+  ],
+  "selected_panel_files_hash_matched": 43,
+  "normalized_canonical_row_hashes_matched": 18,
+  "new_observed_raw_files_hash_matched": 2,
+  "epic_original_ids_preserved": 30,
+  "epic_final_counts": {
+    "REMOVED_NOT_DELIVERED": 21,
+    "PASS": 9
+  },
+  "epic_active_todo": 0,
+  "research_registry_ids_preserved": 26,
+  "registry_sha256": "f5987d757bc5ad5cb6cf90c04c65b6ce3e37f92773f5655c59940714313190fc",
+  "no_trading_test_rerun_for_export": true,
+  "no_independent_review_claimed": true,
+  "no_source_data_strategy_or_runtime_mutation": true,
+  "no_broker_or_new_acquisition_call": true,
+  "automation_not_paused_or_deleted": true,
+  "raw_data_and_full_code_backup_included": false,
+  "missing_reference_count": 0,
+  "snapshot_redactions": {}
+}

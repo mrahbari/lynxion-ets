@@ -1,0 +1,250 @@
+8e9663136f85b566bdc1bc6d85e4c6b3037ecaf1 2026-10-28T23:37:13+01:00  (HEAD -> task-00-ground-truth-audit) docs: align navigation with settled EPIC delivery scope
+1599af9a1932ba25aee252ae76dfa5ad6b050a76 2026-10-28T23:36:46+01:00  (main) docs(epic01): settle every failed or blocked delivery obligation
+ed87642a25bf60343a03e42675b2ce89339eb1c5 2026-10-28T23:35:07+01:00  feat(epic01): complete per-file input eligibility adjudication
+8995ffe5cff8481c4a2d732be60916354303f46b 2026-10-28T23:18:37+01:00  docs: update operator status with actual MTF and maker progress
+930464c5f7edd83d6c296695d89ce68652fe8062 2026-10-28T23:17:52+01:00  docs(epic01): record actual MTF and maker replay evidence limits
+a4edfb5f63adc3296b9f7e4aad49dd51f37fbe8e 2026-10-28T23:14:27+01:00  fix(epic01): account valid maker partials below submission minimum
+62eed4314d51ace5a8c88fbc4bd73cf3dac33ef9 2026-10-28T23:10:09+01:00  feat(epic01): qualify observed MTF inputs and model maker event fills
+7eab7ae0957e42c1e13d81030636bb74ca4167ef 2026-10-28T22:56:54+01:00  docs(epic01): freeze observed MTF and maker qualification contract
+d9307db15ac860536dd9c784305bdfac6a639eb6 2026-10-28T22:48:33+01:00  docs: reconcile EPIC recovery and Radar guidance
+5191c02da6a4a47b114861d723ebdc1d06ec4c11 2026-10-28T22:48:24+01:00  docs: refresh Lynxion status and retire misleading guidance
+70e7f8805e5dcba08929c6830547a91965217774 2026-10-27T23:06:22+01:00  docs(research): correct status-table UTC epoch conversion
+97c123d2de20c4a112822bc60eca9c55d1cff8cc 2026-10-27T23:06:08+01:00  docs(research): refresh frozen-study local liveness without outcomes
+6e99742d9ab8103e9d8388b3dfad6e26a4a3a933 2026-10-27T23:04:56+01:00  fix(hyperopt): preserve missing backtester metrics as invalid objectives
+a95527ecbed64f4a36adc81df3a4d35b334fdbb9 2026-10-27T23:02:52+01:00  docs(p0): record launcher coverage and exact recovery decision boundary
+35cef1f376b75882a635632faaebcd35553ffc35 2026-10-27T23:01:42+01:00  test(p0): cover normal launcher admission and spawn failures
+80eaad539c20faea887e4161138fa34797e2ef3b 2026-10-27T23:01:10+01:00  fix(wfo): retain real asset identity across training callbacks
+45c6c081bdc993eea026d894d052e754b957740a 2026-10-27T22:57:39+01:00  docs: verify Radar delivery and distinguish unresolved runtime and backlog gates
+264e6fedd145bae9ddc3d435982637f2e5387311 2026-10-26T14:15:23+01:00  fix(wfo): reject silently reduced requested asset population
+6f458681b7a291631b481e94276d72bc71c66c38 2026-10-26T13:52:29+01:00  docs(p0): record bounded attribution probe and launch precheck correction
+cc7823288396fd34b22747a0027f63c92d88ada4 2026-10-26T13:51:40+01:00  fix(p0): stop supervised launcher after blocked journal recovery
+0649178bb4404b2a04a4b4cd457d76030cef20e3 2026-10-26T12:40:09+01:00  docs(p0): record renewed audit and concrete TRX unknown startup block
+10357e8dee7c4d1fc03d9bb4aff2679e960cf25d 2026-10-26T10:08:09+01:00  docs(p0): record missing runtime process and stale log evidence
+d699ca90496f74168a9bc7c2a4f7d80ef479bc1e 2026-10-25T01:29:51+02:00  docs(epic): make reduced-baseline scientific scope gate explicit
+02c2f2ef6301d9a1eb1c312a57a3635d7e917d5e 2026-10-25T00:32:46+02:00  docs(epic): qualify existing execution simulator reuse limits
+e68b2ac5b9166996b97504a7e6aecc61af8a31c0 2026-10-24T23:38:09+02:00  fix(backtest): reject unsupported maker intents instead of market fills
+76f6c8d447dccfc8cb7f3758854822671465b286 2026-10-24T22:33:41+02:00  fix(replay): validate intent clocks before execution confirmation
+0da916a330f41e919759907cb95c955448c61561 2026-10-24T21:33:32+02:00  fix(replay): propagate confirmed clock into existing setup and signal paths
+3cb237d2aea1e3111e02a0250eb8579836884b28 2026-10-24T19:26:07+02:00  fix(strategy): compare freshness using absolute UTC instants
+7bde6b78bc3fe46fff00a8eb8c943d2cb06d690e 2026-10-24T18:28:57+02:00  fix(strategy): require known timestamps before price freshness fallback
+8c62064c650f21f344d67ec4cac3f747a8898546 2026-10-24T18:22:21+02:00  fix(replay): accept explicit confirmed setup availability clock
+a04d1f6ce6f7bea46b9050fba4f9e8918c2181b7 2026-10-23T23:57:41+02:00  fix(wfo): preserve multi-asset identity through optimizer wrapper
+2782e8846b8f608fbafb0d7c3a1e939b40b1e90a 2026-10-23T23:56:06+02:00  fix(wfo): bind strategy evaluations to actual factory asset
+ce4a5bbd21d7e9c1abf04ca83bb1df00177a2e8c 2026-10-23T23:48:22+02:00  docs(p0): record operator-directed TESTNET runtime startup
+c8803c7982a6d4498453a2ab55e7e8d5cb59b009 2026-10-23T23:45:27+02:00  docs(p0): record authorized fresh VST exposure and FET audit
+547a93cdb051805547d4c9ec88ee068b18589152 2026-10-22T15:52:13+02:00  fix(wfo): reject empty and nonfinite optimization objectives
+c5c95b44b877e5b5fa5bd6c8a046af6c59cd753d 2026-10-22T14:50:46+02:00  docs(p0): verify exact latest primary compatibility without activation
+992260518dbef37cf5b4b41beb2467d5300d1e60 2026-10-22T14:10:48+02:00  fix(wfo): reject invalid metric evaluations as failed trials
+0f0cf792665e2bc80726ef6e840b61374af2c31a 2026-10-22T12:14:55+02:00  docs(p0): record pending protection attribution regression and proof limits
+958dbd7ad684bfeb4940f97fbe16ce46d1033ca7 2026-10-22T12:14:53+02:00  fix(p0): reject terminal and unattributed pending protection evidence
+94064850c8b09d00aecb124d20ed423f0f6ffb70 2026-10-22T11:19:13+02:00  docs(p0): record primary missing-protection recovery port and regressions
+d3069c329c60eda2bd930e67ca0ef980232cbf82 2026-10-22T11:19:10+02:00  fix(p0): preserve missing requested protection evidence during primary recovery
+79680bf4462dc3816c2da2c01cbdb1ba77716170 2026-10-22T10:20:07+02:00  docs(p0): record primary initial ACK retention and independent port correction
+64e6fa31f49e9ce2771305d3e5dc73f9b34e75b8 2026-10-22T10:20:05+02:00  fix(p0): retain initial protective acknowledgements with primary entry identity
+13c1d09946a27f35ad533b04cc4c74a93d9408c4 2026-10-22T09:15:35+02:00  docs(p0): record unchanged activation gate and preserved evidence hashes
+ead5e61a9b315a847cedf89093740383d60b9f1b 2026-10-22T08:14:39+02:00  fix(wfo): isolate cached parameter results from caller mutation
+20ff0e5b58e23c3542c567bda3772f4803a2e4b9 2026-10-22T07:08:41+02:00  fix(wfo): isolate copyable strategy state per objective evaluation
+b81f012f319b80a3ce4c04690a3d9c61e3ecb74b 2026-10-22T06:11:54+02:00  docs(epic01): record independent Radar replay and WFO continuity checks
+f0e7d07d2c59ccf42550b759d95af8048ee1319f 2026-10-22T05:08:58+02:00  docs(p0): freeze exact primary offline verification and activation evidence gaps
+191d2aed7d2aac48c587df5060b8d34ec7299d85 2026-10-22T04:12:25+02:00  docs(p0): record protective identity regression and independent controls
+8733cfb0bc0f77c88f6e9a844edd4e11dc673f34 2026-10-22T04:12:23+02:00  fix(p0): reject unusable protective acknowledgement identities
+9b1ffe4ed1ac5c0bef7d672db03476e319ade5fd 2026-10-22T03:08:49+02:00  docs(p0): record protective evidence inspection boundaries
+336e1d5a284c6f480b250af5ece39823b3828ab8 2026-10-22T03:08:47+02:00  fix(p0): retain protective journal evidence in read-only inspection
+d4e684e8bfcba3db713711953f88ba7e45346cd8 2026-10-22T02:09:39+02:00  docs(p0): record primary reconciliation integrity gate verification
+294eced6861a406ee5e8c50878997f923c2e91b5 2026-10-22T02:09:37+02:00  fix(p0): refuse reconciliation side effects after journal load failure
+aa6dd595629c6f42a4535b75175d1349835eed7c 2026-10-22T01:09:05+02:00  docs(p0): record integrated protective unknown-response recovery evidence
+00a11ef980c31d6c8bc9d3bcf05405f98af72a10 2026-10-22T01:08:32+02:00  fix(p0): wire durable protection uncertainty and block unsafe stop retries
+eba1826fc5a17b0dcf6dd72e45805effebdcf2d7 2026-10-22T00:02:38+02:00  docs(p0): record primary durable protection prerequisite and operator boundary
+0d212aede359b2e143edfaece17b1fd5af9240d1 2026-10-22T00:02:35+02:00  fix(p0): integrate durable protection uncertainty into primary journal
+653bb5393cd04546ee35c7069c07b248291ad6a1 2026-10-21T23:13:11+02:00  docs(p0): verify Telegram credential source and direct authentication result
+8e072b599f384362c751db49177c75ff72e1d2f9 2026-10-21T23:03:22+02:00  docs(p0): reproduce primary conditional identity gap and bound safe port
+0f0d416ec5be1a5936f84fc5b3265c3e27b8a599 2026-10-21T21:46:35+02:00  docs(p0): record reviewed primary position-snapshot integration
+f57e487882a79b2d5989a95edf91a6a27d242423 2026-10-21T21:46:33+02:00  fix(p0): reject incomplete position conversions in runner adapter
+7969a13a977ea4330ad6ff21da8b7f5994996a48 2026-10-21T21:11:17+02:00  docs(p0): record completed primary source integration and exact-target tests
+98bac9c886ea5da407437bc806645f8a352714ce 2026-10-21T21:10:27+02:00  fix(p0): integrate reviewed recovery and journal guards into runner source
+10ea83985eb246c2991bfe924453358f7d16cbe2 2026-10-21T20:40:37+02:00  docs(epic01): retain independent offline WFO gate evidence
+fbb8d8463bc41939ff77d4d68525dff7448f5f01 2026-10-21T19:42:12+02:00  test(p0): preserve reviewed primary startup gate candidate and evidence
+5fd0a1faab423eeb91e72758e9df8847df08413c 2026-10-21T07:43:28+02:00  test(p0): verify TESTNET ledger ordering and supervised abort boundary
+82eff6d4cd621ac75a7e3d87625a9bbe10cf3622 2026-10-21T06:44:12+02:00  docs(p0): compare primary candidate against unchanged regression baseline
+915afd5b589c6d83531a8f4c6884f9705db38295 2026-10-21T05:47:12+02:00  docs(p0): record primary-target journal candidate and focused validation
+383ca116f959ff50d1528c4154cd154aa7b88424 2026-10-21T04:42:34+02:00  docs(p0): verify all-state launch boundary and safe integration route
+3a7f502cf23d95a451200d19748eb0b65cd7a54f 2026-10-21T03:39:56+02:00  docs(p0): verify explicit journal binding without runtime activation
+bf4e252349aae5d12ae363ebdcc6b0ea32aa9250 2026-10-21T02:40:27+02:00  docs(p0): verify journal compatibility and expose launch-path gap
+114cc79ae6ae61dc3e0c56d1151efac1b38ef094 2026-10-21T01:39:47+02:00  fix(journal): reject invalid loaded lifecycle identities and statuses
+bf90c6d391d376dc7fff5dbde068802ad2cf4388 2026-10-21T00:35:11+02:00  docs(p0): record independent journal integrity review and limits
+9d51d3a099b5e9a34fc0ba8a96d2cb659f389b20 2026-10-20T23:37:26+02:00  fix(journal): retain load integrity failures for startup gate
+8e190e0eaf40547f5925b2744d190b83f581f599 2026-10-20T21:36:09+02:00  fix(startup): refuse trading dispatch with unresolved recovery state
+50a8e1a4e10616855723eb58b550bbd0c726f03e 2026-10-20T20:40:47+02:00  fix(recovery): retain durable uncertainty for missing initial protection
+bd1cb91c0c900cfeec5a289883cce6ff6868740a 2026-10-20T07:57:54+02:00  fix(protection): retain initial protective acknowledgements with entry identity
+c073e197af9a445c560b11a8f1b2c9c6eafcd2b1 2026-10-20T06:59:55+02:00  fix(protection): persist manager uncertainty before broker actions
+c2a23ffb4846bf2c2a34171d06c6e2d52440b9d0 2026-10-20T06:52:17+02:00  fix(protection): retain unknown holds through position cleanup
+347d622aead314f051e8f4c62a4ef32f4fb17f86 2026-10-19T23:29:55+02:00  fix(protection): block repeat stop submissions after ambiguous acknowledgement
+086a588e47043623bdf7475de5e0c6bb701745a3 2026-10-19T15:35:51+02:00  docs(p0): identify missing acknowledged protective lifecycle binding
+2121e5ccd46f4d8743ebb085eb3b3c4b9abdc5a6 2026-10-19T14:24:49+02:00  fix(reconciliation): require observed exit side and filled quantity
+8e3a1100c61705976bdb7377bca2b9728c51c2ea 2026-10-19T13:21:18+02:00  docs(p0): pin source candidate and journal binding hazards
+89ac7468eb1c5ca9014fae73f76e2558e067f5e5 2026-10-19T12:19:00+02:00  fix(reconciliation): classify reported result independently of trigger type
+cda027eaf9a1a555d1a2b837347faece0747b2e7 2026-10-19T11:22:14+02:00  fix(reconciliation): require explicit exit history symbol identity
+c31418ca732e59ff0f85080e3322d30995a86754 2026-10-19T10:22:36+02:00  fix(reconciliation): preserve unknown exit economics without fabricated losses
+21e770e8a8fa386520dd43783a9815fdc091e602 2026-10-19T09:16:54+02:00  fix(reconciliation): preserve restored first-flat uncertainty
+f80a790f728b1901a9cb7a1a40576d8154face70 2026-10-19T09:08:11+02:00  docs(p0): preserve independent epic work alongside runner priority
+1e4f0dd629543026921e988addda9589ee5ae16b 2026-10-19T09:06:59+02:00  docs(p0): prioritize bounded supervised runner recovery
+ee4cd0ff66b0d6a38c3a8efd053a0ec7ee12b9a1 2026-10-19T08:19:46+02:00  fix(reconciliation): never promote nonfilled protective orders to fills
+37714beeaeaf6b88ad30590a257dc2088ee0f395 2026-10-19T07:21:45+02:00  docs(p0): record independent position snapshot review
+5620b4c7b426a95be3a32bf97700eef61a91648f 2026-10-19T07:21:38+02:00  fix(bingx): reject incomplete converted position snapshots
+85c82a1451f519e3258df1ab18fdb5f06470abe7 2026-10-19T06:14:15+02:00  fix(bingx): preserve failed position snapshot uncertainty
+f1d5b719fdea53fc1ff24cd03849fbd61bd5c67a 2026-10-19T05:17:54+02:00  fix(reconciliation): preserve uncertainty on unavailable position snapshots
+9818a041ed5a7be90ed0be5de40a16ec274cf8c2 2026-10-19T04:14:11+02:00  fix(wfo): isolate cached results from mutable objective context
+79bebf364cd83ca1d6d78f9888be8f571db3c328 2026-10-19T03:05:41+02:00  fix(wfo): fingerprint complete training data for optimizer cache
+cd20d70bd2c99eb93f055f74708d811fcad8f3f4 2026-10-18T23:12:21+02:00  docs(epic01): close reproduced WFO constructor blocker with evidence
+bf8bfc225584440f0fb0cb197cc5026ceca2d276 2026-10-18T23:11:44+02:00  fix(wfo): bind the existing Hyperopt objective implementation
+50deeef611745caf5848d32d390b277f999fb834 2026-10-18T22:51:38+02:00  docs(integration): consolidate EPIC P0 and resolved research registry on main
+246c4ece97b54db87a65e3d08b26dd4499274da5 2026-10-18T22:49:58+02:00  feat(research): consolidate verified structural and opportunity assets
+f53e6fa94a32eb9ab1d466f7082e5bf635b040bc 2026-10-18T22:47:59+02:00  fix(wfo): integrate train-only chronological evaluation guards
+37b05662f9df056fc8401bde44244d3d44467257 2026-10-18T22:47:18+02:00  feat(research): integrate verified observed-cohort opportunity radar
+ab534c57fab8f3f3382c20cdce855843029ae709 2026-10-18T22:46:08+02:00  fix(backtest): integrate verified causal next-open replay
+edc1154e9cd028366c86a7f26646d19337fedc9d 2026-10-18T22:42:47+02:00  fix(p0): integrate reviewed startup and Telegram safety corrections
+56fef143903b30d44a4598170f7ba6bdbc03a055 2026-10-18T22:35:42+02:00  docs(p0): record reviewed runtime fixes and Telegram credential evidence
+a79a418907c6cba0036775765299a5e1d70d3f73 2026-10-18T22:34:50+02:00  fix(reconciliation): preserve unknown orders on flat snapshots
+76cc8be362c2b6adf3658e6410813b044db96e9d 2026-10-18T22:34:29+02:00  fix(execution): preserve durable unknown intents through send and restart
+41c04e06cda1678de4681d3f9bb414001b54f28b 2026-10-18T22:28:27+02:00  fix(notifications): bound Telegram requests and redact token-bearing errors
+7c3c94156de1dc55fe0fd5949b55f05dcffd2559 2026-10-18T22:26:13+02:00  fix(execution): verify broker flatness after protective unwind
+0da4a635908c11d1331357eeae06d37b9e8cb99d 2026-10-18T22:25:32+02:00  fix(execution): preserve existing conditional protection on conflict
+04ecb6bfc58b70c9a1fa02d409a4808d3e94c2ba 2026-10-18T22:24:09+02:00  fix(execution): fail closed on TESTNET startup preflight
+bac9f73ff6a032f8f497f5219cd5ad7e05e5eee3 2026-10-18T22:23:07+02:00  fix(execution): stop blind BingX order POST retries in runtime checkout
+e2c65fa35e7d2ecf170275da9b3d290ce7e3774c 2026-10-18T14:09:14+02:00  fix(execution): reject duplicate queued intents on main
+acfbd190744582359dfc84aa083591c5ef86b4ac 2026-10-18T14:07:02+02:00  fix(execution): suppress duplicate queued intents and clarify restored exits
+41fe2ec9cb5e6a8fd05154b9ccef78633a462a10 2026-10-18T00:46:48+02:00  Bound FET history audit and record residual uncertainty
+ff8f04148181c8a6eff976d6b73dc3562c2adbbb 2026-10-18T00:45:30+02:00  Record scoped order POST retry correction and remaining gate
+d20b1b56f00c00d6de05981d0c14dc71826bbd30 2026-10-18T00:45:06+02:00  Stop blind retries on BingX order POST endpoint
+709e427eb1538a16a7a2c524cb12346e203cbf27 2026-10-18T00:44:12+02:00  Record conditional conflict safety correction
+2dd290275163c782ef0b38e4bff697efaa59e267 2026-10-18T00:43:58+02:00  Preserve existing stops on conditional order conflict
+9e5a730d7a78951211cf7334bb2160a781e24fd0 2026-10-18T00:43:10+02:00  Record protective unwind verification fix and no-go
+3663aa8252240b099984e97faa88de45a294b2e2 2026-10-18T00:42:52+02:00  Require broker-flat readback after protective unwind
+8da0e5bee47d9b61825cf31f766f0803d94a04a3 2026-10-18T00:41:20+02:00  Record current VST snapshot and fail-closed startup fix
+c63b8bd96bf2b8657e969ecf1489e80632a7b422 2026-10-18T00:41:00+02:00  Fail closed on broker-connected startup preflight errors
+bb8604c56582b6684e29b270377b354873f867ca 2026-10-18T00:31:55+02:00  Record source-backed BingX identity fix and remaining gate
+09903022b68dc11423993539c94c2c1643925b9c 2026-10-18T00:31:39+02:00  Use documented BingX clientOrderId request key
+b3e25e4b4ce2b52660fe1765cd0a5db03752ad35 2026-10-18T00:30:24+02:00  Record BingX conditional ID support limit
+7d4395ce8625154c12a640e0e86510261dc79d81 2026-10-18T00:23:45+02:00  Record execution runner no-go and POST retry evidence
+7f83e33e4f959e2ae0f91d28f3f9be94bcc804f7 2026-10-18T00:23:03+02:00  Record failing BingX POST retry safety fixture
+2b78a0655e7fe08d4cae8349f710fde47d10d7cd 2026-10-18T00:22:01+02:00  Fail closed on unresolved durable order intents
+92218ed8e295495994f25e1d12658ca009e8e539 2026-10-18T00:19:26+02:00  (lynx/epic01-trading-v1) docs(epic01): record P0 source fixes merged into local main
+d3e0ae88aa91087cc97d7096c001acabbc2c47b4 2026-10-18T00:19:00+02:00  docs(p0): track verified fixes integrated to main
+a2d3f291dc6a084f3982dd247e7f40d52264ecd6 2026-10-18T00:18:26+02:00  fix(execution): preserve durable and unknown submission state
+f39928e46a0961d0a967c8e5363d3c1e183dbcba 2026-10-18T00:15:38+02:00  fix(execution): preserve unknown broker order state on flat snapshot
+95255e0e3746e7abcedb3126a1fcaf06090ce5e1 2026-10-16T22:46:30+02:00  docs(epic01): qualify existing lower-timeframe metadata
+c32cef42a9109285c9d2d4e346a92da148c69f57 2026-10-16T21:43:15+02:00  docs(epic01): expose modeled MTF admission gate
+028f33d7c15d6df9bb7f05e2ca64432d6b132be2 2026-10-16T21:41:05+02:00  docs(epic01): record main indicator integration
+63e9cd69469be26c35cfcb52dd7bb981e13402d4 2026-10-16T21:40:54+02:00  fix(backtest): keep historical indicators causal and aligned
+478ebd6b40ecf22905b7c498a0062a530b712ef8 2026-10-16T19:13:39+02:00  fix(backtest): align ADX to candle index
+86344e2f25377e0031a7bf8b98ce10275cb46b02 2026-10-16T18:17:39+02:00  fix(backtest): remove future indicator backfill
+aedcfb2ff131fd9b727a5871f732165015fcf8a6 2026-10-16T17:03:51+02:00  fix(backtest): stamp explicit closed-bar availability
+997d3b01e0f31849049a40b0e16fd6f1e221a7da 2026-10-16T15:59:56+02:00  fix(backtest): reject missing historical strategy clock
+c44165558c5629cc18cc095ba3bbd3bb16cbab81 2026-10-16T14:49:54+02:00  docs(epic01): record scheduled causal gate check
+861856564b5f59a7eb17198c0ab4c0ac237ebba6 2026-10-16T12:43:58+02:00  docs(epic01): record main replay-clock integration
+27c3f8dd6b800748eeea18f549524781605c5749 2026-10-16T12:43:46+02:00  fix(backtest): reject ambiguous replay bar clocks
+14c6a095391488875053598c61821ee32b1fe437 2026-10-16T12:41:33+02:00  docs(epic01): record main integration and causal clock gate
+f5a8e98542c132c0e9f4461b05b56105597f7ff1 2026-10-16T12:40:30+02:00  test(fusion): verify alias pair cannot double vote
+c45c553b81356c2dd7333bfef29eb41ab976f6b6 2026-10-16T12:37:44+02:00  fix(fusion): canonicalize TrendMTF watcher identity
+6790acdbaff291045d2068abb56373fd0dbfc3d4 2026-10-16T12:37:44+02:00  fix(fusion): canonicalize TrendMTF watcher identity
+5bc4cddfda63eb06f61166330dd20e7faa660ce8 2026-10-16T12:35:24+02:00  fix(backtest): honor recorded signal-trade identity
+698142fe3a2edbcdf399c722ed94fe7907178a40 2026-10-15T18:14:08+02:00  fix(backtest): apply stop priority on ambiguous candles
+42defe83c30b4fff7173c2b9130ff098c8285c67 2026-10-16T11:29:25+02:00  Require explicit causal WFO data frame and separate provenance
+bc4d7486482e21a5e2a304815db2a8a8721491e4 2026-10-16T10:27:24+02:00  Record futures-panel qualification and WFO loader gate
+2d1c8835694e6970b871bad7e8eaa798cbed79a7 2026-10-16T09:25:35+02:00  Record bounded BTC spot source qualification
+8c8dd4b8573d870b7e0d7ac9bff21af6dd0ebfaf 2026-10-16T08:25:26+02:00  Fail closed on walk-forward CV replay errors
+02ae0e01d5e34029da7744bd9f7107fcb1541b37 2026-10-16T08:23:34+02:00  Constrain WFO optimization to training windows
+8acd274ef89a87adb0baf6e01ab773c629230c2b 2026-10-16T07:21:43+02:00  Reject nonchronological bars in offline replay
+c977f81b5fe410a0925e8391fc6f2b8fe6712e11 2026-10-16T06:22:43+02:00  Fail closed on conflicting replay bar timestamps
+e068982912f808045a07568523a9624675526c78 2026-10-16T05:22:36+02:00  Reject gap-crossed brackets in offline next-open replay
+3d53237ff61ca6625acbda833ce657af2c666cde 2026-10-16T04:24:35+02:00  Price offline stop gaps at worse opening price
+655b52e76c76061dfd77e211dbbc5bec9fdf103f 2026-10-16T03:24:57+02:00  Defer offline fills to next observed bar open
+4504e9a452122d58fb3bd5ae8b3d4a5021295e31 2026-10-16T02:22:36+02:00  Fail closed when WFO has no valid windows
+d31e02577fc8c735421001dc5495b443a311d181 2026-10-16T01:25:37+02:00  Isolate WFO analyzer state across repeated runs
+a05db63fef8694eb4fd2e04f6bfe807bdcde59e2 2026-10-16T00:22:32+02:00  Pin final-bar orphan execution defect
+3a99f3219adb9589416928406e387571f404911d 2026-10-15T23:22:48+02:00  Fail early when WFO strategy is missing
+524f23f44eae3a648a7acb88447b70b211e2afa0 2026-10-15T22:23:02+02:00  Fail closed on missing WFO strategy and replay errors
+3ef932be768b183fccb7c640d834efc521c0b0c5 2026-10-15T22:10:03+02:00  test: prove WFO full-history optimization leaks into OOS
+42bb150fa2ad20e3327f82827c5ab35b8d48c0b2 2026-10-15T21:50:20+02:00  fix: match backtest trades by recorded signal identity
+77ebe13ac3d596d037d4274b28230371a16df6de 2026-10-15T18:28:45+02:00  docs: record networkless EPIC-01 regression evidence
+5c818447a29b9af1acc6d2601a0cd8e480d80fc0 2026-10-15T18:27:50+02:00  test: propagate calendar mode through WFO orchestrator
+7cc4be05a021dcbd411df5508c07ac09848b57e2 2026-10-15T18:27:12+02:00  test: pin same-bar execution defect with causal fixture
+97db2efccb0a1e35f392af042279d2e7c75cd29d 2026-10-15T18:25:59+02:00  test: route WFO analyzer through calendar windows and retain OOS gate
+90f96964e21f0e0ea87fcd8ed41af6f09482f8a8 2026-10-15T18:23:13+02:00  fix: use calendar-day windows for configured WFO
+d6c3cae960b81fa7f20f739fffd526f2f088d052 2026-10-15T18:19:07+02:00  epic01: adjudicate thirty scenarios and record no-go gates
+437c0c22bda2c824bee4aa35329e75de431fd5d4 2026-10-15T18:16:12+02:00  epic01: record reproducible local candle inventory
+02643c732b6ed18470a2e9df0149b56bb3d015b3 2026-10-15T12:16:21+02:00  Deduplicate replayed radar setup identities
+21b20044f4d0b40b422de6f859012d56f290c34b 2026-10-14T06:41:23+02:00  Reject late out-of-order radar source records
+d382fd1caa393a7892d51d4dd956620756c17186 2026-10-13T20:11:44+02:00  research: separate local bar validity from source qualification
+bf0126a9eea074b9af62bdef401ac3cfaef4106e 2026-10-13T20:09:28+02:00  test: pin radar canonical synthetic output hash
+dbdc44ffaf57ede69387e2398d39e6b1d7dd2a02 2026-10-13T20:08:11+02:00  research: deliver offline observed-cohort opportunity radar
+7b5eb7d9503bb27f93db9af437f15acd96de08e7 2026-10-15T18:14:14+02:00  test(epic01): characterize evaluation and fusion gates
+3f2c7f2c135fd9f8aa5a972abd765866639272af 2026-10-15T18:14:08+02:00  fix(backtest): apply stop priority on ambiguous candles
+ab0d4dd251f0aad420ca38f9d8f712895de4a5ca 2026-10-15T18:13:52+02:00  epic01: establish bounded board and data inventory instrument
+9de64589c82d6ed05703361f62624fca45b7585e 2026-10-15T18:01:30+02:00  Record unsafe scope in legacy fault-injection suite
+35971f681e7ce18adcdf9b1741041f8701709af0 2026-10-15T12:16:21+02:00  Deduplicate replayed radar setup identities
+ef57be33e4e6794d24c14c55b88b18d51f441e7f 2026-10-15T11:19:50+02:00  Preserve in-flight journal state when lifecycle append fails
+6bbffa768a850076f9553a76bb2303eb1b519e6a 2026-10-15T10:16:18+02:00  Keep unknown post-send intents in recovery journal
+5a308e4c3dabade0fb79b1fa3b0c6775d6bc4ed7 2026-10-15T09:23:24+02:00  Fail closed when pre-send intent cannot be persisted
+1d0a6325a0584dab4d0c66c1e6c131b06ee93dc6 2026-10-14T06:48:36+02:00  Preserve unknown broker status in isolated reconciliation
+ad20cac32f15b20eb786ff9f8fd2e0fe7057f115 2026-10-14T06:41:23+02:00  Reject late out-of-order radar source records
+d99070553f62ee1d7d9d1b795437299c65ba09ad 2026-10-13T20:46:21+02:00  Document snapshot-qualified XAUT NEAR FET reconciliation
+29f75108b06f4d991f16b94afece6eeaa376ef8a 2026-10-13T20:11:44+02:00  research: separate local bar validity from source qualification
+b492ced283f99f87ff148d017669a801082c59c4 2026-10-13T20:10:24+02:00  docs: record execution test runtime blocker
+52ba91f9d6497e4871c6852d4c2e21cf22c772c9 2026-10-13T20:09:28+02:00  test: pin radar canonical synthetic output hash
+96e066771e9d3af2b60fc3a249267200ba879381 2026-10-13T20:08:56+02:00  docs: record conditional order retry hazard and P0 gate
+ddd469aec117b7f80ee244e4ca51513d30e0fff7 2026-10-13T20:08:11+02:00  research: deliver offline observed-cohort opportunity radar
+096885bbe9f03f2389c2fc62766cdbe4d0ba7b23 2026-10-13T15:44:23+02:00  (origin/task-00-ground-truth-audit) research: close cutoff gap and hand over backlog resolution
+1e4b38e62ce185af557d5c73e38d7468883e51f4 2026-10-13T15:43:28+02:00  docs: map Lead A provenance to execution recovery
+b609b20c98a4e1b325774e20518f9bafa55a3eb0 2026-10-13T15:43:20+02:00  research: add causal extreme mover opportunity view
+8bc7d1c07a34e3efed5fb27092ea34d85ff7b779 2026-10-13T15:43:20+02:00  docs: resolve 26 research backlog dispositions
+025094a01fbace792b7698dcb0afc14b6673d563 2026-10-13T15:27:54+02:00  docs: map parked research decisions and gates
+aeab55513ed56af3c6641d546fc9c78cf0a24ef0 2026-10-13T13:23:59+02:00  (lynx/structural-pullback-failure-v1) research: verify checkpoint B and specify independent experiment design
+57bebc59ef192c8ec8588ac7bc3e58289ea49fc6 2026-10-13T13:12:16+02:00  test: independently review fixture timing and strengthen V1 boundaries
+7ee0ef74f2be894493f94066fbc2bd2894775721 2026-10-13T13:09:39+02:00  research: freeze descriptive V1 candidates and checkpoint B proposal
+6f60333bf572f1ab032a8605b39926ba14c1819b 2026-10-13T13:07:14+02:00  research: make candidate artifacts immutable and replay command exact
+29628b380372a705e2f1ba3aa87478764b47603f 2026-10-13T13:01:25+02:00  research: implement causal structural pullback failure V1 detector
+2a7daae25dcf847eb02e6fb77f43586e319ec61f 2026-10-13T12:47:59+02:00  docs: propose structural pullback failure V1 contract at checkpoint A
+c9161a054b251ce88112fad0a969492f87a5ddf9 2026-10-13T10:53:20+02:00  Correct VST audit signing and record verified history
+46b98e1ba3c5c9367b051da7a5fd1c89ada923d8 2026-10-13T10:50:29+02:00  Record operator-approved read-only VST gate audit
+dd3cb82df042f37aba3f5a340f47cc6808bdebb4 2026-10-13T09:30:38+02:00  Record bounded post-pilot execution recovery evidence
+e5dd4db29c1477388caa64833ef1263b649ccbbd 2026-10-13T07:33:50+02:00  Document Pilot-2 operator context for external review
+ee3ca530827251e2b45af9112398cb2da52dfeaa 2026-10-13T02:12:21+02:00  Record final no-recollection research handover
+b6e9e0eb6be9013b030d931c0316272810404a0b 2026-10-13T02:11:42+02:00  Finalize Pilot-2 partial measurement verdict
+47a92fd65bee9510989b39774bd58fcbd48061b6 2026-10-10T23:45:15+02:00  Record bounded Pilot-2 raw hash checkpoint
+a5326e61c1bb54ff30ece3cfdc73beb0fe6687b3 2026-10-10T23:44:46+02:00  Support bounded metadata-only Pilot-2 audit
+2afd78cc4903bf73d451e56fe5f11b45030e99fd 2026-10-10T23:41:23+02:00  Add read-only Pilot-2 raw integrity audit
+3833e96d3eb4c0d86453128aa58a96606ae86fe8 2026-10-10T23:38:08+02:00  Reconcile incomplete research backlog and frozen-study gates
+96d11e44348dafff26294340a36ac649edd387a9 2026-10-10T23:31:21+02:00  Document no-repeat Pilot-2 decision and post-stop research options
+b30756c89cc0bc188267593d2753c9694d6c0126 2026-10-09T22:30:22+02:00  docs: refresh Pilot-2 measurement task board checkpoint
+cfa58d93cbc072eb937adf1ad2a61e581cf63900 2026-10-08T23:03:02+02:00  diagnostics: distinguish empty order history from query failure
+e278bfe841d1906711c1031aa3088585a7b01489 2026-10-07T23:01:08+02:00  docs: record XAUT and NEAR unknown-exit evidence gap
+3379d9b8b20e8bc82a6853b005721bf0cd1ac121 2026-10-07T16:16:40+02:00  record independent review of BingX HTTP timing refinement
+48e250d1c42edefb565ca5c82dfd094be535db4a 2026-10-07T16:15:41+02:00  measure BingX HTTP attempts separately from local limiter wait
+a4302f9ccf69197638d0110b4a0997bccb939e90 2026-10-07T12:04:02+02:00  record independent entry-timing review and isolation gate
+83e37b724bcf6fc4c0d4184866a4724b5c4117e5 2026-10-07T12:02:41+02:00  preserve legacy fail-closed broker construction in timing probe
+35152337c8eb04d0054af9e9b4d2ecdb643f743a 2026-10-07T12:01:03+02:00  instrument BingX entry latency in isolated hardening worktree
+c117deca68f00d0f864af56ae706eefe0ed86723 2026-10-07T09:47:59+02:00  docs: record VST entry latency forensic evidence
+3bb4995fe338cb1d12863e3d5a932b13a66fecf0 2026-10-07T08:37:40+02:00  docs: record controlled VST restart and unresolved submission
+478acdcc776694b9b86d54d449d0e44a2ed18d2e 2026-10-07T08:26:22+02:00  fix: journal executable protective prices before stale intent values
+be86d7e90f6fe4a4b029313f542e94cf978ca7b4 2026-10-07T08:04:34+02:00  docs: record neutral fusion and ETH VST stop forensics
+138147070b1ce5460bcda0e1749b2186b08291ec 2026-10-07T01:17:35+02:00  Clarify inactive real-account risk setting names and units
+8a3dafd390c08bf079ed9af990342b5e81582ef4 2026-10-06T22:49:40+02:00  Prepare offline live-account risk admission without enabling orders
+f21626ef0c0c046d7943284aaae13488c39355cd 2026-10-06T22:39:51+02:00  Define inactive real-account risk limits separately from VST
+b3124534a9d49220cfbee5acb135e2c707bdfe74 2026-10-06T22:17:21+02:00  Block real BingX orders until independent live risk policy exists
+1275a20ae769b2be1909bb5a7064d234d606209f 2026-10-06T22:10:49+02:00  Configure VST notional cap without relaxing loss limits
+f6680763ee81d35ce99fce70ac57d0223e68b6b1 2026-10-06T22:00:49+02:00  Raise total BingX position cap to fourteen
+9fd15f13f83a7303cd1b0e5af7b258a05def1825 2026-10-06T21:56:30+02:00  Cap concurrent BingX entries at seven per direction
+cfc0141947837fd414aaee7c33d4d4d5a150ba1b 2026-10-06T21:28:46+02:00  Shorten estimated order value label further
+175be7812f79c6fc1fa4c7535beb85f611b69acf 2026-10-06T21:26:45+02:00  Shorten estimated order value alert label
+9ff74fcee7d88381cec1934098c4dafba3785488 2026-10-06T18:21:17+02:00  Load configured profit-lock trigger through risk env
+187b182bba3cfacb6f2de0de8a522049b2f804e6 2026-10-06T18:07:47+02:00  Show estimated order notional in Telegram acceptance alerts
+526748b3134dc42b0e2a27d9ec2519b29c476d53 2026-10-06T17:58:47+02:00  Read risk-alert leverage from canonical risk config
+7163d12659bb68b4da60d4026807cd7c816b72bf 2026-10-06T17:57:15+02:00  Centralize VST leverage and stop-risk configuration
+cd0fd036a481271132e9afd6e76c626eda671f12 2026-10-06T18:07:47+02:00  Show estimated order notional in Telegram acceptance alerts
+e1596e01e19d23b7851562dbf3c04ed16e3470ca 2026-10-06T17:58:47+02:00  Read risk-alert leverage from canonical risk config
+b7ab33943ed0f6df05bf30e13834f69bc9158aa1 2026-10-06T17:57:15+02:00  Centralize VST leverage and stop-risk configuration
+d859e6ff6c89400e195f09477724dec55d1d42ef 2026-10-06T10:39:56+02:00  docs: establish isolated platform hardening Phase-0 gate
+9c1d087e506f2a03724cab838e200603f86eff59 2026-10-05T16:36:29+02:00  test: isolate cooldown gate fixtures and assert immediate profitable reentry
+daaec75c1ff8440b1b3bcfa4a9fb66fe1535cd8e 2026-10-05T12:28:36+02:00  docs: prepare outcome-blind next experiment decision package
+2a41be9a6518e125ddea9050f7ddfd7b760e2f8f 2026-10-05T12:27:30+02:00  docs: map observed proxy and synthetic Lynxion information

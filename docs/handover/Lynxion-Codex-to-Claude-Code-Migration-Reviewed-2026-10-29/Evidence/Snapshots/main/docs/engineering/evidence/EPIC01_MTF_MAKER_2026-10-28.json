@@ -1,0 +1,220 @@
+{
+  "code_contract_commit": "7eab7ae",
+  "code_component_commit": "62eed43",
+  "partial_accounting_fix_commit": "a4edfb5",
+  "source_root": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets/data/research/epic01_mtf_maker/qualification_2026-10-28",
+  "acquisition": {
+    "contract_commit": "7eab7ae",
+    "scope": "two fixed free samples, no API key/payment/account, no retry",
+    "not_a_pilot_extension": true,
+    "raw_files": [
+      {
+        "kind": "book_snapshot_5",
+        "symbol": "BTCUSDT",
+        "utc_day": "2024-01-01",
+        "url": "https://datasets.tardis.dev/v1/binance-futures/book_snapshot_5/2024/01/01/BTCUSDT.csv.gz",
+        "method": "GET",
+        "request_utc": "2026-10-28T21:57:31.199059+00:00",
+        "byte_cap": 268435456,
+        "filename": "binance-futures_book_snapshot_5_2024-01-01_BTCUSDT.csv.gz",
+        "source": "TARDIS_VENDOR_NORMALIZED_OBSERVED",
+        "status": 200,
+        "content_length": "22782992",
+        "content_type": "text/csv",
+        "acquisition": "COMPLETE_BYTES_ONLY_NOT_QUALIFIED",
+        "sha256": "e777c8ffecb6106aa029be30b4606fdc7409863e6f34b677d550b5855aa289ab",
+        "bytes": 22782992,
+        "completion_utc": "2026-10-28T21:57:38.261051+00:00"
+      },
+      {
+        "kind": "trades",
+        "symbol": "BTCUSDT",
+        "utc_day": "2024-01-01",
+        "url": "https://datasets.tardis.dev/v1/binance-futures/trades/2024/01/01/BTCUSDT.csv.gz",
+        "method": "GET",
+        "request_utc": "2026-10-28T21:57:31.200759+00:00",
+        "byte_cap": 268435456,
+        "filename": "binance-futures_trades_2024-01-01_BTCUSDT.csv.gz",
+        "source": "TARDIS_VENDOR_NORMALIZED_OBSERVED",
+        "status": 200,
+        "content_length": "20848659",
+        "content_type": "text/csv",
+        "acquisition": "COMPLETE_BYTES_ONLY_NOT_QUALIFIED",
+        "sha256": "8387c9d605f986bb6bde754735f5f9c2440ec76908f0d143af1b9282cefe981a",
+        "bytes": 20848659,
+        "completion_utc": "2026-10-28T21:57:35.249034+00:00"
+      }
+    ],
+    "outcomes_opened": false
+  },
+  "qualification": {
+    "contract_commit": "7eab7ae",
+    "version": "OBSERVED_TOP5_MTF_V1",
+    "outcomes_opened": false,
+    "full_baseline_admitted": false,
+    "book": {
+      "raw_rows": 1201744,
+      "first_receipt_us": 1704067201962082,
+      "last_receipt_us": 1704153599994892,
+      "max_receive_gap_us": 1831042,
+      "observed_minute_buckets": 1440
+    },
+    "trades": {
+      "raw_rows": 2197331,
+      "late_trades": 52,
+      "first_receipt_us": 1704067200009899,
+      "last_receipt_us": 1704153599981592,
+      "observed_five_minute_buckets": 288,
+      "late_five_minute_buckets": 10
+    },
+    "minute_rows": 1440,
+    "quote_status_counts": {
+      "OBSERVED_ASOF": 1440
+    },
+    "flow_status_counts": {
+      "NOT_A_FIVE_MINUTE_CLOSE": 1152,
+      "OBSERVED_ASOF": 278,
+      "LATE_TRADES_EXCLUDED": 10
+    },
+    "feature_sha256": "ba8305a23447af1c38eff4566a91341765bba2d09336864b00488a730d1600d9",
+    "raw_sha256": {
+      "book_snapshot_5": "e777c8ffecb6106aa029be30b4606fdc7409863e6f34b677d550b5855aa289ab",
+      "trades": "8387c9d605f986bb6bde754735f5f9c2440ec76908f0d143af1b9282cefe981a"
+    },
+    "limits": [
+      "Vendor-normalized top-five, not raw exchange depth/queue",
+      "CSV disconnect markers absent; stale/gap masks do not establish continuous capture",
+      "One selected development day, not independent OOS or market-wide cohort",
+      "Actual composed strategy/cost/funding/execution acceptance still required"
+    ],
+    "integrity_status": "PASS_STRUCTURAL_ONLY"
+  },
+  "actual_tape_probe": {
+    "classification": "ACTUAL_TAPE_MODELED_EXECUTION_PROBE_ONLY",
+    "strategy_economics_run": false,
+    "broker_orders": false,
+    "simultaneous_portfolio": false,
+    "contract_commit": "7eab7ae",
+    "decision_at": "2024-01-01T00:05:00+00:00",
+    "quantity_per_independent_probe": "0.001",
+    "arrival_quote_source": "book:4950",
+    "orders": [
+      {
+        "side": "BUY",
+        "status": "FILLED",
+        "filled_quantity": "0.001",
+        "remaining": "0.000",
+        "modeled_fees": "0.00848742",
+        "fills": [
+          {
+            "time": "2024-01-01T00:05:01.560167+00:00",
+            "price": "42437.1",
+            "quantity": "0.001",
+            "source_trade_id": "4426800528"
+          }
+        ]
+      },
+      {
+        "side": "SELL",
+        "status": "FILLED",
+        "filled_quantity": "0.00100",
+        "remaining": "0.00000",
+        "modeled_fees": "0.0084874400",
+        "fills": [
+          {
+            "time": "2024-01-01T00:05:33.518945+00:00",
+            "price": "42437.2",
+            "quantity": "0.00003",
+            "source_trade_id": "4426801438"
+          },
+          {
+            "time": "2024-01-01T00:05:33.518946+00:00",
+            "price": "42437.2",
+            "quantity": "0.00021",
+            "source_trade_id": "4426801439"
+          },
+          {
+            "time": "2024-01-01T00:05:33.518947+00:00",
+            "price": "42437.2",
+            "quantity": "0.00015",
+            "source_trade_id": "4426801440"
+          },
+          {
+            "time": "2024-01-01T00:05:33.518952+00:00",
+            "price": "42437.2",
+            "quantity": "0.00003",
+            "source_trade_id": "4426801441"
+          },
+          {
+            "time": "2024-01-01T00:05:33.518953+00:00",
+            "price": "42437.2",
+            "quantity": "0.00004",
+            "source_trade_id": "4426801442"
+          },
+          {
+            "time": "2024-01-01T00:05:33.518958+00:00",
+            "price": "42437.2",
+            "quantity": "0.00007",
+            "source_trade_id": "4426801443"
+          },
+          {
+            "time": "2024-01-01T00:05:33.518961+00:00",
+            "price": "42437.2",
+            "quantity": "0.00040",
+            "source_trade_id": "4426801444"
+          },
+          {
+            "time": "2024-01-01T00:05:33.518966+00:00",
+            "price": "42437.2",
+            "quantity": "0.00007",
+            "source_trade_id": "4426801445"
+          }
+        ]
+      }
+    ],
+    "limits": [
+      "Two separate directional execution probes, not a trading strategy",
+      "Queue/latency/participation are declared assumptions",
+      "No PnL, expectancy, OOS, funding or full baseline admission"
+    ]
+  },
+  "verification": {
+    "focused_before_partial_fix": "37 PASS / 27 warnings",
+    "selected_before_partial_fix": "334 PASS / 27 warnings",
+    "subminimum_partial_red": "1 FAIL reproduced against 62eed43",
+    "focused_after_partial_fix": "36 PASS / 27 warnings (different selected targets)",
+    "selected_after_partial_fix": "337 PASS / 27 warnings; TEST_ISOLATION_PASS",
+    "independent_review": "NOT_PERFORMED"
+  },
+  "economic_experiment_status": "NOT_RUN_FULL_COMPOSITION_DATA_COST_GATES_REMAIN",
+  "not_deployed_to_primary": true,
+  "broker_writes": false,
+  "strategy_economics_opened": false,
+  "next_existing_task": "T03/T04 causal actual-family replay with observed MTF inputs, explicit parameter/strategy/model hashes, post-fill exits/funding and ledger reconciliation before economic output",
+  "epic_scenarios": {
+    "PASS": 8,
+    "FAIL": 1,
+    "BLOCKED": 21
+  },
+  "actual_entry_ledger_check": {
+    "result": "PASS_ENTRY_LEDGER_ONLY",
+    "actual_tape_modeled_fills": [
+      {
+        "side": "BUY",
+        "source_modeled_fills_applied": 1,
+        "quantity_matches_original": true,
+        "cash_identity_matches": true,
+        "fees_match_model": true
+      },
+      {
+        "side": "SELL",
+        "source_modeled_fills_applied": 8,
+        "quantity_matches_original": true,
+        "cash_identity_matches": true,
+        "fees_match_model": true
+      }
+    ],
+    "no_strategy_pnl": true,
+    "not_exit_funding_or_full_economic_acceptance": true
+  }
+}

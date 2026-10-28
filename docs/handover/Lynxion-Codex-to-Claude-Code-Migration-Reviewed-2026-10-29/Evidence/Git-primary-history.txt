@@ -1,0 +1,80 @@
+8e9663136f85b566bdc1bc6d85e4c6b3037ecaf1 2026-10-28T23:37:13+01:00 docs: align navigation with settled EPIC delivery scope
+8995ffe5cff8481c4a2d732be60916354303f46b 2026-10-28T23:18:37+01:00 docs: update operator status with actual MTF and maker progress
+5191c02da6a4a47b114861d723ebdc1d06ec4c11 2026-10-28T22:48:24+01:00 docs: refresh Lynxion status and retire misleading guidance
+70e7f8805e5dcba08929c6830547a91965217774 2026-10-27T23:06:22+01:00 docs(research): correct status-table UTC epoch conversion
+97c123d2de20c4a112822bc60eca9c55d1cff8cc 2026-10-27T23:06:08+01:00 docs(research): refresh frozen-study local liveness without outcomes
+35cef1f376b75882a635632faaebcd35553ffc35 2026-10-27T23:01:42+01:00 test(p0): cover normal launcher admission and spawn failures
+cc7823288396fd34b22747a0027f63c92d88ada4 2026-10-26T13:51:40+01:00 fix(p0): stop supervised launcher after blocked journal recovery
+958dbd7ad684bfeb4940f97fbe16ce46d1033ca7 2026-10-22T12:14:53+02:00 fix(p0): reject terminal and unattributed pending protection evidence
+d3069c329c60eda2bd930e67ca0ef980232cbf82 2026-10-22T11:19:10+02:00 fix(p0): preserve missing requested protection evidence during primary recovery
+64e6fa31f49e9ce2771305d3e5dc73f9b34e75b8 2026-10-22T10:20:05+02:00 fix(p0): retain initial protective acknowledgements with primary entry identity
+8733cfb0bc0f77c88f6e9a844edd4e11dc673f34 2026-10-22T04:12:23+02:00 fix(p0): reject unusable protective acknowledgement identities
+336e1d5a284c6f480b250af5ece39823b3828ab8 2026-10-22T03:08:47+02:00 fix(p0): retain protective journal evidence in read-only inspection
+294eced6861a406ee5e8c50878997f923c2e91b5 2026-10-22T02:09:37+02:00 fix(p0): refuse reconciliation side effects after journal load failure
+00a11ef980c31d6c8bc9d3bcf05405f98af72a10 2026-10-22T01:08:32+02:00 fix(p0): wire durable protection uncertainty and block unsafe stop retries
+0d212aede359b2e143edfaece17b1fd5af9240d1 2026-10-22T00:02:35+02:00 fix(p0): integrate durable protection uncertainty into primary journal
+f57e487882a79b2d5989a95edf91a6a27d242423 2026-10-21T21:46:33+02:00 fix(p0): reject incomplete position conversions in runner adapter
+98bac9c886ea5da407437bc806645f8a352714ce 2026-10-21T21:10:27+02:00 fix(p0): integrate reviewed recovery and journal guards into runner source
+56fef143903b30d44a4598170f7ba6bdbc03a055 2026-10-18T22:35:42+02:00 docs(p0): record reviewed runtime fixes and Telegram credential evidence
+a79a418907c6cba0036775765299a5e1d70d3f73 2026-10-18T22:34:50+02:00 fix(reconciliation): preserve unknown orders on flat snapshots
+76cc8be362c2b6adf3658e6410813b044db96e9d 2026-10-18T22:34:29+02:00 fix(execution): preserve durable unknown intents through send and restart
+41c04e06cda1678de4681d3f9bb414001b54f28b 2026-10-18T22:28:27+02:00 fix(notifications): bound Telegram requests and redact token-bearing errors
+7c3c94156de1dc55fe0fd5949b55f05dcffd2559 2026-10-18T22:26:13+02:00 fix(execution): verify broker flatness after protective unwind
+0da4a635908c11d1331357eeae06d37b9e8cb99d 2026-10-18T22:25:32+02:00 fix(execution): preserve existing conditional protection on conflict
+04ecb6bfc58b70c9a1fa02d409a4808d3e94c2ba 2026-10-18T22:24:09+02:00 fix(execution): fail closed on TESTNET startup preflight
+bac9f73ff6a032f8f497f5219cd5ad7e05e5eee3 2026-10-18T22:23:07+02:00 fix(execution): stop blind BingX order POST retries in runtime checkout
+acfbd190744582359dfc84aa083591c5ef86b4ac 2026-10-18T14:07:02+02:00 fix(execution): suppress duplicate queued intents and clarify restored exits
+096885bbe9f03f2389c2fc62766cdbe4d0ba7b23 2026-10-13T15:44:23+02:00 research: close cutoff gap and hand over backlog resolution
+b609b20c98a4e1b325774e20518f9bafa55a3eb0 2026-10-13T15:43:20+02:00 research: add causal extreme mover opportunity view
+8bc7d1c07a34e3efed5fb27092ea34d85ff7b779 2026-10-13T15:43:20+02:00 docs: resolve 26 research backlog dispositions
+025094a01fbace792b7698dcb0afc14b6673d563 2026-10-13T15:27:54+02:00 docs: map parked research decisions and gates
+e5dd4db29c1477388caa64833ef1263b649ccbbd 2026-10-13T07:33:50+02:00 Document Pilot-2 operator context for external review
+ee3ca530827251e2b45af9112398cb2da52dfeaa 2026-10-13T02:12:21+02:00 Record final no-recollection research handover
+b6e9e0eb6be9013b030d931c0316272810404a0b 2026-10-13T02:11:42+02:00 Finalize Pilot-2 partial measurement verdict
+47a92fd65bee9510989b39774bd58fcbd48061b6 2026-10-10T23:45:15+02:00 Record bounded Pilot-2 raw hash checkpoint
+a5326e61c1bb54ff30ece3cfdc73beb0fe6687b3 2026-10-10T23:44:46+02:00 Support bounded metadata-only Pilot-2 audit
+2afd78cc4903bf73d451e56fe5f11b45030e99fd 2026-10-10T23:41:23+02:00 Add read-only Pilot-2 raw integrity audit
+3833e96d3eb4c0d86453128aa58a96606ae86fe8 2026-10-10T23:38:08+02:00 Reconcile incomplete research backlog and frozen-study gates
+96d11e44348dafff26294340a36ac649edd387a9 2026-10-10T23:31:21+02:00 Document no-repeat Pilot-2 decision and post-stop research options
+b30756c89cc0bc188267593d2753c9694d6c0126 2026-10-09T22:30:22+02:00 docs: refresh Pilot-2 measurement task board checkpoint
+e278bfe841d1906711c1031aa3088585a7b01489 2026-10-07T23:01:08+02:00 docs: record XAUT and NEAR unknown-exit evidence gap
+c117deca68f00d0f864af56ae706eefe0ed86723 2026-10-07T09:47:59+02:00 docs: record VST entry latency forensic evidence
+3bb4995fe338cb1d12863e3d5a932b13a66fecf0 2026-10-07T08:37:40+02:00 docs: record controlled VST restart and unresolved submission
+be86d7e90f6fe4a4b029313f542e94cf978ca7b4 2026-10-07T08:04:34+02:00 docs: record neutral fusion and ETH VST stop forensics
+b3124534a9d49220cfbee5acb135e2c707bdfe74 2026-10-06T22:17:21+02:00 Block real BingX orders until independent live risk policy exists
+1275a20ae769b2be1909bb5a7064d234d606209f 2026-10-06T22:10:49+02:00 Configure VST notional cap without relaxing loss limits
+f6680763ee81d35ce99fce70ac57d0223e68b6b1 2026-10-06T22:00:49+02:00 Raise total BingX position cap to fourteen
+9fd15f13f83a7303cd1b0e5af7b258a05def1825 2026-10-06T21:56:30+02:00 Cap concurrent BingX entries at seven per direction
+cfc0141947837fd414aaee7c33d4d4d5a150ba1b 2026-10-06T21:28:46+02:00 Shorten estimated order value label further
+175be7812f79c6fc1fa4c7535beb85f611b69acf 2026-10-06T21:26:45+02:00 Shorten estimated order value alert label
+9ff74fcee7d88381cec1934098c4dafba3785488 2026-10-06T18:21:17+02:00 Load configured profit-lock trigger through risk env
+187b182bba3cfacb6f2de0de8a522049b2f804e6 2026-10-06T18:07:47+02:00 Show estimated order notional in Telegram acceptance alerts
+526748b3134dc42b0e2a27d9ec2519b29c476d53 2026-10-06T17:58:47+02:00 Read risk-alert leverage from canonical risk config
+7163d12659bb68b4da60d4026807cd7c816b72bf 2026-10-06T17:57:15+02:00 Centralize VST leverage and stop-risk configuration
+9c1d087e506f2a03724cab838e200603f86eff59 2026-10-05T16:36:29+02:00 test: isolate cooldown gate fixtures and assert immediate profitable reentry
+daaec75c1ff8440b1b3bcfa4a9fb66fe1535cd8e 2026-10-05T12:28:36+02:00 docs: prepare outcome-blind next experiment decision package
+2a41be9a6518e125ddea9050f7ddfd7b760e2f8f 2026-10-05T12:27:30+02:00 docs: map observed proxy and synthetic Lynxion information
+370732d256df4373669c79364937dc72ebd5423f 2026-10-05T12:26:27+02:00 docs: map sibling evidence without profitability inference
+5f9efc7887e9c5320e72cce8b03e4556977ffa5e 2026-10-05T12:25:31+02:00 docs: audit frozen study statuses without outcomes
+0b6871a3b6b571ea4b99fd7df17cc3e5dc577a37 2026-10-05T12:24:23+02:00 docs: reconcile parked liquidation OI and OBI evidence
+92f8ca742f72173f3218387a397e1b80d9c19cb2 2026-10-05T12:23:24+02:00 docs: record inactive prospective annotation protocol
+def4ac0f766902fa4778e4d529e2ba510132f55b 2026-10-05T12:22:35+02:00 docs: review external setup methodology without Edge claims
+4e1f292fee818ef485a16afbac76690ad07c8355 2026-10-05T12:21:41+02:00 docs: define outcome-blind extreme-mover information contract
+b433112502a1c7a803cff5ca72fb8731bbdafac0 2026-10-05T12:20:46+02:00 docs: qualify extreme-mover data feasibility without outcomes
+68c22b11ef6273df3c4ac1fe207fd1a11db178e8 2026-10-05T12:18:40+02:00 docs: reconcile research backlog with Pilot-2 queue
+17c511b338a838b296980ff90858b06c3c4d8432 2026-10-05T12:17:57+02:00 docs: add outcome-blind Lynxion research task board
+8b3ab1eed88bcee3168af44494b551b3db590993 2026-10-05T08:15:34+02:00 Index Pilot-2 and outcome-blind research feasibility
+647ab4b53268e1c26ef5fa6fadd0bd11917f4973 2026-10-05T08:11:26+02:00 Freeze fresh Pilot-2 UTC activation and supervisor
+4f351dc645bbad0dddb70d17148d12c374511953 2026-10-05T08:10:26+02:00 Freeze prospective seven-day Pilot-2 measurement contract
+6665b97a33a815239a07c131f098382a4f235c7b 2026-10-05T08:07:55+02:00 Record passing Pilot-2 mechanical readiness soak
+fe9f40cc1965dbb48083b7a44f14ee5b7dec8cab 2026-10-05T07:36:54+02:00 Exercise stale-feed supervision with a frozen fake collector
+6617f17f35466bb87a23633370dff461839cb0fa 2026-10-05T07:35:40+02:00 Record failed stale gate and freeze third technical soak
+eda0347343220fa6393a283de85b6afe019440f9 2026-10-05T07:34:33+02:00 Detect stale microstructure feeds within readiness limit
+9fc544870fbc4b9eb2599d621f994d1ad7719568 2026-10-05T07:15:28+02:00 Document inactive all-candidate annotation protocol draft
+2e5d5985a91b4405a95a66003deb4b4186e825a9 2026-10-05T07:00:18+02:00 Freeze corrected Pilot-2 technical soak activation
+69630e23fa278951f6c2e28e816a0420e781b99b 2026-10-05T06:59:29+02:00 Invalidate microstructure book after transport failure
+0e01ab0df9b46bf3c3b05166eaff07c2503c33a5 2026-10-05T06:55:16+02:00 docs: qualify independent post-pilot research leads without outcomes
+a540a6fd579cb2f6a2d04b8153c8a6792afd7b0e 2026-10-05T06:50:55+02:00 docs: freeze segregated microstructure readiness soak
+3fc2ff2d9ff491bc052590bfa80c1e62161adc7f 2026-10-05T06:49:25+02:00 fix: bound public depth collector and supervise recovery
+b4960df26bed4331cb312155e8d7afb72e65b32b 2026-10-05T06:42:28+02:00 docs: freeze post-pilot evidence and Pilot-2 readiness gates
+f7508413179402f479b012ec5d3459b050f44abc 2026-10-05T05:30:33+02:00 docs: record seven-day microstructure pilot integrity verdict

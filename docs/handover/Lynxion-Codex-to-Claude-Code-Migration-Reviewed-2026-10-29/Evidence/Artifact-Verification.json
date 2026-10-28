@@ -1,0 +1,11 @@
+{
+  "observed_utc": "2026-10-28T23:10:10.751705+00:00",
+  "navigation_links_pass": true,
+  "report_epic_ids_each": 30,
+  "report_registry_ids_each": 26,
+  "all_current_task_documents_present": 701,
+  "all_snapshot_source_and_export_hashes_match": true,
+  "old_zip_byte_identity_and_internal_checksums_pass": true,
+  "data_integrity_scope": "43 selected panel files,18 canonical row hashes,2 observed raw files; not full source/scientific certification",
+  "not_strategy_or_runtime_test": true
+}

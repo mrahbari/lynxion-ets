@@ -1,0 +1,20 @@
+# TASK-0286 — C-35 hourly checkpoint at 50 decisions
+
+## Scope
+
+Run the frozen C-35 public-only pipeline and preserve its append-only evidence. Do not authenticate,
+access a broker account, place orders, or alter candidate gates.
+
+## Evidence
+
+- All eleven stages pass.
+- Candle integrity passes with 18,576 total records, 1,188 prospective records, zero gaps, zero
+  duplicates, and zero boundary-role errors.
+- Funding integrity passes with 36 records and 162 coverage receipts.
+- One new decision brings the prospective ledger to 50 decisions; no signal or outcome exists.
+- Aggregate economics remain sealed. Fifty decisions is not a preregistered interpretation gate;
+  the first frozen signal-rate checkpoint remains 168 decisions.
+
+## Verdict
+
+`COLLECTING — NO EDGE EVIDENCE OR GATE TRANSITION`.

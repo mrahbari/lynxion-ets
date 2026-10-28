@@ -1,0 +1,30 @@
+# MICROSTRUCTURE_DATA_PILOT_7D — collection contract v1
+
+Status: **FROZEN BEFORE ACTIVATION**. This artifact defines data collection only; it does not authorize future-outcome analysis or make pilot data a confirmatory V3 cohort. Starting repository HEAD: `acda00e988780942ece8b1a424cb44f0333c0658`.
+
+## Source and boundaries
+
+- One venue/market: Binance USD-M Futures public market data, no API key or account endpoint. Symbols **BTCUSDT** and **ETHUSDT** only.
+- Public diff-depth stream `<lowercase-symbol>@depth@100ms`; public snapshot `GET /fapi/v1/depth?symbol=<symbol>&limit=1000`. Record the exact URL and source documentation version used. No feed substitution. A failed public REST or WebSocket preflight blocks activation.
+- Formal start: the first `00:00:00 UTC` boundary **after** this contract is committed, public REST+WebSocket reachability is proven, a bounded technical rate/storage preflight passes, and an activation record containing that UTC boundary is durably committed/written. Formal stop is exactly `start + 7 UTC days` at `00:00:00 UTC`. No partial earlier day counts. No extension for a gap/failure. A technical preflight capture is separated under `preflight/`, excluded from formal raw/metrics.
+- If the collector cannot be active at the predeclared start boundary, mark activation failed; create a new prospective activation record/boundary before trying again. Never silently slide the boundary.
+
+## Exact raw evidence
+
+- Store raw WebSocket message bytes and raw REST snapshot response bytes **without modification**, with UTC wall receipt (`time.time_ns()`), monotonic receipt (`time.monotonic_ns()`), collector receive counter, symbol, session/epoch ID, and transport/source kind. Exchange fields (`E`, `T`, `U`, `u`, `pu`, `lastUpdateId`) remain inside the untouched payload. Local receipt is not substituted for exchange time.
+- Append-only, UTC-day/session chunk files in `data/research/microstructure_pilot_7d/raw/`. Finalized chunks are never reopened or overwritten. Store raw bytes as base64 in one JSONL envelope per received event; envelope normalization does not modify the decoded payload. Include raw snapshot request/response timing in its envelope. Internal event/gap/reconnect/error records are separate from exchange payloads and labeled collector-derived.
+- On finalization, manifest records file path, SHA-256, bytes, event count, first/last local receipt and exchange timestamps where present, symbol, session/epoch, source URL, snapshot IDs, sequence range, disconnect/gap/restart counters and reason, and validity intervals. Atomic manifest replacement must not mutate a finalized raw chunk. Verify hashes on readback. Record host clock synchronization/offset evidence if available; if unavailable, mark `UNKNOWN`, never infer synchronization.
+
+## Reconstruction and missing data
+
+- Per symbol and epoch, buffer diff events, obtain a snapshot, discard buffered events whose `u < lastUpdateId`, then require first retained event `U <= lastUpdateId <= u` per the currently documented USD-M source contract. Apply snapshot as base and that event as the bridge. Subsequently require each diff event `pu == previous u`; ignore exact previously applied duplicates, count them; count nonidentical repeats/out-of-order separately and invalidate if continuity cannot be established. Apply absolute price-level quantities; zero deletes a level. Validate finite positive prices, nonnegative quantities, non-crossed best quotes, and nonempty sides before publishing a derived book.
+- On any unresolvable sequence mismatch, parse/schema/clock failure, transport disconnect, restart, or dropped raw write: invalidate immediately, record UTC/monotonic gap start and reason, and re-bootstrap from a **new** public snapshot with a new epoch. Never interpolate or backfill an unknown state from candles, aggregated depth, or a later snapshot. Disconnected/reconnecting intervals remain unobserved even if a new book later becomes valid.
+- Reconstructed best bid/ask, quantities, spread, version and validity are **DERIVED_FROM_OBSERVED**; raw snapshot/diff payloads are **OBSERVED**. No strategy OBI/CVD, directional feature, proxy or synthetic fallback is collected or calculated. Record validity coverage and invalid/unobserved coverage separately. Multiple updates can share exchange time; local receipt counter orders them within the capture session.
+
+## Operational gates and pilot output
+
+- Preflight: prove both public REST and WebSocket can be reached from the intended local collector host, confirm the public responses' expected schema, conduct a short segregated rate/size observation, then require conservative disk headroom for seven days plus source bursts and existing system reserve. If measured rate or free space cannot justify that reserve, **do not activate**. No authenticated endpoint probes.
+- During pilot, monitor disk reserve, raw append failures, stale connection/heartbeat, reconnects, sequence mismatches, snapshot attempts, clock jumps, event counts and per-file hash finalization. A disk safety trip stops writing/collection and is recorded as failure; it does not authorize deleting old data. No automatic extension.
+- At `start + 7 days`, stop capture and produce `MICROSTRUCTURE_DATA_PILOT_7D_REPORT` with exact UTC coverage, raw bytes/growth, per-symbol counts and valid/invalid coverage, gaps/durations, duplicates/out-of-order, sessions/reconnects/rebootstrap, clock/schema/hash integrity, failures, disk use, tests and protected-persistence/network activity. Classification is only `MICROSTRUCTURE_COLLECTION_PILOT_PASS`, `..._PARTIAL`, or `..._FAIL`. No Edge result.
+
+Source procedures: [Binance USD-M local-order-book reconstruction](https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/websocket-market-streams/How-to-manage-a-local-order-book-correctly); [public REST market-data catalog](https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/rest-api/market-data). Recheck endpoint syntax at preflight but do not change source/symbol/depth semantics without review.

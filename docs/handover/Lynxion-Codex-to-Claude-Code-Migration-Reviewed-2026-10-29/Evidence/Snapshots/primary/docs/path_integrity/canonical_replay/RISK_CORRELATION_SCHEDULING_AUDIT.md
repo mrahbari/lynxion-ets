@@ -1,0 +1,25 @@
+# Risk correlation scheduling audit
+
+Start HEAD: `42b9985`. Scope: source forensics and network-free characterization only. No production source/configuration or trading policy was changed.
+
+## Live path and policy
+
+`EnterpriseRiskManager.__init__` initializes an empty correlation matrix and per-symbol price histories, then starts a daemon thread. Its first action is `sleep(10.0)`; it then calls `recalculate_correlations()` and repeats **ten seconds after the prior calculation completes**, not at fixed UTC or market-event boundaries. Worker exceptions are swallowed. There is no stop/join lifecycle. Before the first successful update, the matrix is empty. `record_price` appends the supplied price under a lock, retaining the last 100 values per symbol; the price event time is not retained. The live `SignalProcessor` records only explicit valid `MarketObservation.market_price` through the existing risk manager bridge. There is no correlation calculation on a price event or sizing request.
+
+The calculation requires at least two symbols and at least five observations in the **shortest** symbol history. It takes each symbol's last `min_len` prices and computes pairwise Pearson correlation by index, with 0 when either variance is zero and 1 on the diagonal. It does not align observations by timestamp. It assigns a fresh matrix under `correlation_lock`; with insufficient data it retains the prior matrix. Two calculations with identical history are idempotent. Missing symbol pairs read as zero correlation. These are current **CORRELATION_POLICY**, not candidate improvements.
+
+`ConsolidatedRiskEngineAdapter._calculate_position_size` reads `calculate_correlation_penalty(symbol, portfolio_symbols)` and passes it to `calculate_position_size`. A pair with `abs(correlation) > max_correlation` contributes `1 + (abs(correlation) - max_correlation)`; the average penalty is capped at 3. Dynamic risk allocation is divided by this penalty before size/cap calculation. Fixed-size mode calculates its quantity independently of the adjusted risk percentage. No other consumer of this specific market-price correlation matrix was found in the canonical risk path.
+
+## Runtime scheduling and ordering
+
+The worker takes `correlation_lock` while reading history and replacing the matrix. `record_price` uses the same lock. The penalty reader does **not** take the lock; it observes either the old or new matrix reference, depending on thread interleaving. There is no event timestamp on stored prices, no durable worker-start/wake timestamp, and no common ordering lock/queue among price recording, worker update, and sizing. If an order-size calculation races with a worker update, the observed penalty depends on which runs first. At an equal logical market timestamp, the repository provides no defined price → correlation → sizing order. Multiple price records in one interval affect the next worker snapshot according to which have acquired the lock before it. Different-symbol histories are paired by index, not time.
+
+Focused offline tests in `tests/unit/test_risk_correlation_scheduling_forensics.py` establish: construction starts a deferred daemon worker with a 10-second interval and an empty matrix; explicit calculation over five paired observations yields correlation 1; a repeated no-new-data calculation is idempotent; the same five observations and sizing inputs yield 10 units before the update and 8.333333 units after it. The tests defer the thread and never sleep, connect to a broker, or place an order. They characterize the existing methods, not live-process timing distribution.
+
+## Decision
+
+Wall time is a scheduler input, not an arithmetic input to Pearson correlation. Nevertheless the **effective live decision** includes an unsynchronized worker/sizing ordering that can change quantity. An injected replay scheduler could reproduce the calculation and nominal 10-second delay, but cannot prove which side of a live wake-up a same-time sizing request would have observed. Choosing market-first, worker-first, or sizing-first in replay would create a deterministic convention absent from current Live. Preserving Live scheduling while asserting strict decision-level parity is therefore unsupported.
+
+**CORRELATION_PARITY_BLOCKED_BY_LIVE_CONCURRENCY**; also classify `LIVE_CORRELATION_ORDERING_NONDETERMINISTIC`. No replay scheduler or `ApplicationRunScope` wiring was implemented. The smallest future production change is an explicit serialization/linearization boundary for price updates, correlation updates and sizing (with a declared tie-break rule and worker-start anchor), then live regression and prospective observation. That behavior change is **not authorized** by this unit; it must be reviewed as a Risk semantic change. A replay-only deterministic order must not be called live-equivalent.
+
+XMR cause and broker timeout/restart semantics remain unresolved. No economic baseline, prefix-invariance or live/replay parity claim follows from this audit. C-35 public monitoring is `C35_MONITORING_UNAVAILABLE_IN_CURRENT_ENVIRONMENT`, noncritical to P0 and not retried here.

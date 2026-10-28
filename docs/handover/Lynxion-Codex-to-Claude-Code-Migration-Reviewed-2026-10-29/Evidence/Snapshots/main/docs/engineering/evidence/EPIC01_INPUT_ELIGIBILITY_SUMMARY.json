@@ -1,0 +1,29 @@
+{
+  "scope": "T01-S04 supplied 5150-file inventory plus six C06 inputs and two observed component files",
+  "inventory_path": "/Users/mojtaba.rahbari/.codex/worktrees/lynxion-epic-01-trading-v1/lynxion-ets/docs/engineering/LYNXION_EPIC_01_DATA_INVENTORY.jsonl",
+  "inventory_sha256": "f52e60a963ce74705b6f319715ce97b2423dd4e48ea1d74c48e35236b2a5e7aa",
+  "total_files": 5158,
+  "source_hashes_matched": 5158,
+  "source_roles": {
+    "UNQUALIFIED_RESEARCH_INPUT": 5150,
+    "DEVELOPMENT_ONLY": 8
+  },
+  "validation_files_admitted": 0,
+  "holdout_files_admitted": 0,
+  "economic_baseline_files_admitted": 0,
+  "reason_counts": {
+    "LINEAGE_UNVERIFIED_IN_SUPPLIED_INVENTORY": 5150,
+    "NO_PRECOMMITTED_INDEPENDENT_PARTITION_ATTESTATION_SUPPLIED": 5150,
+    "GAPS": 4216,
+    "RELATED_PRICE_COHORT_ALREADY_DEVELOPMENT_OPENED": 8,
+    "ONE_DAY_SELECTED_COMPONENT_SAMPLE": 2,
+    "VENDOR_DISCONNECT_MARKERS_ABSENT": 2
+  },
+  "disposition": "CLASSIFICATION_COMPLETE_NO_INDEPENDENT_PARTITION_ADMITTED",
+  "output_sha256": "3f07eaeb9d23235e9b5e78212efa839db62c5f09346c2cf0645d83115904bcd4",
+  "limits": [
+    "Eligibility decision for supplied evidence, not proof no other evidence could ever exist",
+    "No prices/returns/strategy outcomes parsed or evaluated",
+    "No new partitions, data repairs, OOS or economic admission created"
+  ]
+}

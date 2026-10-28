@@ -1,0 +1,19 @@
+# Unit 1 — historical decision-path provenance, no reruns
+
+Classification is about **evidence for canonical Lynxion behavior**, not a change to any frozen research verdict. `USED_DIFFERENT_RESEARCH_HARNESS` does not automatically mean causal or economically valid; it only means the identified `BacktestStrategyProvider` mock-Fusion route was not used.
+
+| Family/result | Traced runner/decision path | Path class | Confidence | Interpretation action |
+|---|---|---|---|---|
+| Older Phase-5/strategy-fidelity and CLI backtests | `docs/reports/strategy-fidelity-audit.md:17-27`; `runner_backtest.py` → `application/use_cases/run_backtest.py` → `BacktestStrategyProvider`/`RealisticBacktester` as identified in `docs/reports/E3.T1-backtest-discovery.md:47-58,90` | USED_LEGACY_NONCANONICAL_PATH | HIGH for cited run family; artifact-level versions may differ | CANONICAL_REVALIDATION_REQUIRED **if** used to claim current-system strategy performance; no rerun authorized now |
+| Profitability diagnostics: eval matrix, exit forensics, higher-timeframe eval, WFO eval, lifecycle dump | Each imports `BacktestRequest, RunBacktestUseCase` from `application/use_cases/run_backtest.py` (`research/profitability_diagnostics/*.py`) | USED_LEGACY_NONCANONICAL_PATH | HIGH for current source wiring; exact historical execution/version not individually proven | CANONICAL_REVALIDATION_REQUIRED before treating its strategy PnL as canonical; preserve original descriptive findings |
+| A1 mean-reversion × flow (`scripts/explore_a1_mean_reversion_flow.py`) | Own CSV/pandas event-index loop, no `RunBacktestUseCase`/provider import | USED_DIFFERENT_RESEARCH_HARNESS | HIGH for current script | REVALIDATION_NOT_YET_JUSTIFIED; negative frozen verdict unchanged, not canonical strategy-path evidence |
+| A2 funding state/C-12 (`scripts/evaluate_cross_symbol_funding_c12.py`) and C-11 prospective monitor | Own funding/price mechanics, public prospective ledger updater | USED_DIFFERENT_RESEARCH_HARNESS | HIGH for current scripts | NOT_AFFECTED_BY_THIS_FINDING; separate data/cost/protocol gates remain |
+| A3 time-series momentum/C-14 (`scripts/evaluate_time_series_momentum_c14.py`) | Own OHLCV CSV/pandas engine | USED_DIFFERENT_RESEARCH_HARNESS | HIGH for current script | REVALIDATION_NOT_YET_JUSTIFIED; no candidate reopened |
+| B1 liquidation/OI and B2 toxicity, including Phase-17 (`scripts/phase17_microstructure_analysis.py`) | Own research-data loaders/evaluators, not the named-strategy provider | USED_DIFFERENT_RESEARCH_HARNESS for traced Phase-17; other subtests PATH_PROVENANCE_UNKNOWN | MEDIUM | PROVENANCE_REVIEW_REQUIRED for any specific untraced subtest; no blanket invalidation |
+| Lead B clock/holdout (`scripts/evaluate_lead_b_economic_holdout.py`) | Frozen standalone holdout script | USED_DIFFERENT_RESEARCH_HARNESS | HIGH for current script | NOT_AFFECTED_BY_THIS_FINDING; its existing verdict remains, no selection for rerun |
+| C-35 frozen prospective and external-signal Phase 3A | Dedicated frozen evaluator/point-in-time research modules | USED_DIFFERENT_RESEARCH_HARNESS | HIGH for current scripts | NOT_AFFECTED_BY_THIS_FINDING; their own limitations/gates remain unchanged |
+| Earlier unspecified A/B/C or archived strategy-performance snapshots without executable manifest | No verified runner/version binding in this bounded audit | PATH_PROVENANCE_UNKNOWN | LOW | PROVENANCE_REVIEW_REQUIRED before citing as current-system evidence |
+
+The historical decision-path finding **does not imply all prior research is invalid**. A result that materially depended on the legacy strategy/provider path cannot be promoted as evidence for the canonical live decision system. Candidate-level revalidation priority awaits live route remediation, canonical replay, parity, prefix invariance and untouched baseline; Unit 1 selects no historical candidate.
+
+HISTORICAL_PROVENANCE_AUDIT_COMPLETE

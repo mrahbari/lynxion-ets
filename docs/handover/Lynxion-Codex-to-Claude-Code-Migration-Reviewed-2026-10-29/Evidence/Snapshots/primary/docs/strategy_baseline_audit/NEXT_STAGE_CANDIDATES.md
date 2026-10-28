@@ -1,0 +1,9 @@
+# Later review candidates — no experiment started
+
+No strategy qualifies for parameter sensitivity or Hyperopt now. Eligibility is blocked by unverified canonical backtest/live equivalence and potentially lookahead-contaminated warmup data. The following are *review topics*, not authorized research branches or changes.
+
+1. **Path-equivalence gate (correctness, highest priority).** Observation: backtest calls adapter `generate_signal()` per bar before a mock fused signal; inspected live route evaluates watcher-fused signals directly. Falsify the concern only with a bounded trace demonstrating identical point-in-time inputs, calls, gates and intent fields on the same closed-bar fixture. Minimum later experiment: side-by-side deterministic route trace, after separate approval. Production change authorized: **NO**.
+2. **Backtest warmup provenance (correctness).** Observation: shifted indicators are followed by `bfill()` in `run_backtest.py`. Falsify impact only if a bounded closed-bar test proves no decision ever sees a value propagated from a later bar. Minimum later experiment: inspect first valid indices and one deterministic warmup fixture. Production change authorized: **NO**.
+3. **Configuration-to-decision binding (correctness).** Observation: the fresh settings loader returns fixed sizing true, amount 21, risk 0.02 and leverage 5, while the container risk manager is built with independent defaults; known strategy timeframe map can shadow the profile. Falsify a mismatch by tracing a specific process's loaded settings through constructed adapter and final intent without secrets. Minimum later experiment: read-only configuration binding test. Production change authorized: **NO**.
+
+No parameter ranges are proposed because parameters have not yet passed the path-integrity, sufficient-sample, or active-binding gates. F01 remains closed; no sibling candidates are reopened.

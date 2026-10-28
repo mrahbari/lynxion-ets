@@ -1,0 +1,1665 @@
+from typing import Dict, Optional, List, Union, Any
+import hmac
+import hashlib
+import time
+import requests
+import pandas as pd
+from datetime import datetime, timedelta
+from decimal import Decimal, InvalidOperation
+import logging
+from enum import Enum
+import json
+import traceback
+import uuid
+import threading
+import math
+
+from domain.entities import Order, Fill, Position, Balance, OrderSide, PositionSide
+from domain.ports.broker_ports import BrokerPort
+from domain.value_objects import Symbol, Money
+from infrastructure.data.adapters.rest_client import RestClient
+from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
+from shared.rate_limiter import global_rate_limiter
+from shared.utils import format_price_for_api
+
+
+_BINGX_ENTRY_ADMISSION_LOCK = threading.RLock()
+
+
+class RateLimitAdmissionTimeout(TimeoutError):
+    """A local request was not admitted before its bounded queue deadline."""
+
+    def __init__(self, wait_ms: float):
+        super().__init__("BingX rate-limit admission timed out")
+        self.wait_ms = wait_ms
+
+
+def ensure_client_order_id(order) -> str:
+    """B2: return the order's client_order_id, generating + assigning one once if absent.
+
+    Assigning back to the order means a retry of the SAME order object reuses the id, so
+    the exchange can deduplicate (idempotency). BingX clientOrderId: alphanumeric, <=40 chars.
+    """
+    coid = getattr(order, "client_order_id", None)
+    if not coid:
+        coid = "x" + uuid.uuid4().hex[:30]
+        try:
+            order.client_order_id = coid
+        except Exception:
+            pass
+    return coid
+
+
+def extract_bingx_order_id(response: Dict[str, Any]):
+    """Read current direct and legacy nested BingX order response shapes."""
+    data = response.get("data") if isinstance(response, dict) else None
+    if not isinstance(data, dict):
+        return None
+    direct = data.get("orderID")
+    if direct is not None:
+        return direct
+    direct = data.get("orderId")
+    if direct is not None:
+        return direct
+    nested = data.get("order")
+    if not isinstance(nested, dict):
+        return None
+    return nested.get("orderID", nested.get("orderId"))
+
+
+def extract_bingx_order_reference(order: Dict[str, Any]):
+    """Choose a usable exchange or client identity from an order record."""
+    if not isinstance(order, dict):
+        return None
+    return order.get("orderID") or order.get("orderId") or order.get("clientOrderId")
+
+
+class BingXBrokerAdapter(BrokerPort):
+    def __init__(self, config: Dict):
+        self._broker = _BingXBroker(config)
+        self.connected = False
+        # Initialize logger for the adapter
+        import logging
+        self.logger = logging.getLogger(__name__)
+
+    def _format_symbol(self, symbol: Union[Symbol, str]) -> str:
+        """Formats the domain symbol to the broker's expected format using the helper."""
+        # Handle both string and Symbol object formats
+        if isinstance(symbol, str):
+            symbol_str = symbol
+        else:
+            # If it's a Symbol object, get its value
+            if hasattr(symbol, 'value'):
+                symbol_str = symbol.value
+            else:
+                # Fallback: convert to string
+                symbol_str = str(symbol)
+
+        # Use the symbol format helper to format for BingX
+        return SymbolFormatHelper.format_symbol_for_exchange(symbol_str, 'bingx')
+
+    def _parse_symbol(self, symbol_str: str) -> Symbol:
+        """Parses the broker's symbol string into a domain Symbol."""
+        return Symbol(symbol_str.replace("-", ""))
+
+    def connect(self):
+        try:
+            if self._broker.get_account_balance():
+                self.connected = True
+                return True
+            return False
+        except Exception:
+            self.connected = False
+            return False
+
+    def disconnect(self):
+        self.connected = False
+
+    def place_order(self, order: Order) -> str:
+        if not self.connected:
+            self.connect()
+
+        # Universal fail-closed check for SymbolCooldownGate
+        try:
+            from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+            allowed, reason = symbol_cooldown_gate.is_symbol_allowed(order.symbol)
+            if not allowed:
+                self.logger.warning(f"🛑 [BINGX GATE] Order REJECTED for {order.symbol}: {reason}")
+                raise ValueError(f"Symbol {order.symbol} blocked by Risk Health Gate: {reason}")
+        except ValueError:
+            raise
+        except Exception as gate_err:
+            self.logger.error(f"SymbolCooldownGate unavailable in place_order; rejecting order: {gate_err}")
+            raise RuntimeError(f"Risk Health Gate unavailable; order rejected: {gate_err}") from gate_err
+
+        # Store original symbol
+        original_symbol = order.symbol
+
+        # Format the symbol for the API call
+        formatted_symbol = self._format_symbol(original_symbol)
+
+        # Temporarily modify the order's symbol for the API call
+        # We'll create a temporary order with the formatted symbol
+        from domain.entities import Order as DomainOrder
+        from datetime import datetime
+
+        # Bind idempotency to the caller's logical order before creating the formatted copy.
+        # A retry of adapter.place_order(order) must not mint a different exchange identity.
+        client_order_id = ensure_client_order_id(order)
+
+        # Create a temporary order with the formatted symbol but preserve all other attributes
+        temp_order = DomainOrder(
+            symbol=formatted_symbol,
+            side=order.side,
+            order_type=order.order_type,
+            quantity=order.quantity,
+            price=order.price,
+            strategy_name=getattr(order, 'strategy_name', 'unknown'),
+            timestamp=getattr(order, 'timestamp', datetime.now()),
+            position_side=getattr(order, 'position_side', 'BOTH'),
+            stop_price=getattr(order, 'stop_price', None),
+            time_in_force=getattr(order, 'time_in_force', 'GTC'),
+            client_order_id=client_order_id,
+            parent_signal=getattr(order, 'parent_signal', None),
+            risk_adjusted_quantity=getattr(order, 'risk_adjusted_quantity', None),
+            stop_loss_price=getattr(order, 'stop_loss_price', None),  # Add stop loss price
+            take_profit_price=getattr(order, 'take_profit_price', None),  # Add take profit price
+            requested_leverage=getattr(order, 'requested_leverage', None)
+        )
+
+        result = self._broker.execute_order(temp_order)
+        if result.get('success') and not result.get('protection_failed') and not result.get('conditional_orders_errors'):
+            order.protective_order_ids = dict(result.get('protective_order_ids') or {})
+            exchange_order_id = result.get('order_id')
+            if exchange_order_id is None:
+                self.logger.warning(
+                    "BingX accepted an order without exchange order identity; "
+                    "using stable clientOrderId for reconciliation"
+                )
+            return str(exchange_order_id or client_order_id)
+        else:
+            error_msg = result.get('error') or f"protective orders failed: {result.get('conditional_orders_errors')}"
+            # Make error messages more readable
+            if 'error code:109400' in error_msg or 'Rate Limit' in error_msg or 'rate limit' in error_msg:
+                readable_error = "API Rate Limit Exceeded: Too many requests to BingX API. Please reduce request frequency."
+            elif 'over 20' in error_msg and 'requests within' in error_msg:
+                readable_error = "Rate Limit Exceeded: Exceeded BingX API request limits. Consider implementing request throttling."
+            elif 'TriggerClose' in error_msg or 'stop loss' in error_msg.lower() or 'take profit' in error_msg.lower() or 'stopLoss' in error_msg or 'takeProfit' in error_msg or 'stopLossPrice' in error_msg or 'takeProfitPrice' in error_msg:
+                readable_error = "API Parameter Error: Invalid parameter format for stop loss/take profit. Check parameter formatting. Ensure SL/TP prices are properly formatted as strings with appropriate decimal precision."
+            else:
+                readable_error = f"Order placement failed: {error_msg}"
+
+            raise Exception(f"Failed to place order: {readable_error}")
+
+    def cancel_order(self, order_id: str, symbol: Symbol) -> bool:
+        if not self.connected:
+            self.connect()
+        return self._broker.cancel_order(order_id, self._format_symbol(symbol))
+
+    def get_order_status(self, order_id: str, symbol: Symbol) -> str:
+        if not self.connected:
+            self.connect()
+        return self._broker.get_order_status(order_id, self._format_symbol(symbol))
+
+    def get_order_history(self, symbol: Symbol, limit: int = 20) -> List[Dict]:
+        """Expose exchange order history to position-exit reconciliation."""
+        return self._broker.get_order_history(self._format_symbol(symbol), limit=limit)
+
+    def get_order_fill(self, order_id: str, symbol: Symbol) -> Dict[str, Any]:
+        """B7: return {status, executed_qty, avg_price} for partial-fill tracking."""
+        if not self.connected:
+            self.connect()
+        return self._broker.get_order_fill(order_id, self._format_symbol(symbol))
+
+    def get_balance(self, asset: str = None) -> List[Balance]:
+        if not self.connected:
+            self.connect()
+
+        balances_data = self._broker.get_account_balance()
+        balances = []
+        for b in balances_data:
+            if asset is None or b.get('asset') == asset:
+                total = float(b.get('balance', 0))
+                available = float(b.get('availableMargin', 0))
+                balances.append(
+                    Balance(
+                        asset=b.get('asset'),
+                        total=Money(amount=total, currency=b.get('asset')),
+                        available=Money(amount=available, currency=b.get('asset')),
+                        reserved=Money(amount=total - available, currency=b.get('asset')),
+                        timestamp=datetime.now()
+                    )
+                )
+        return balances
+
+    def _place_conditional_order(self, symbol: str, side: str, quantity: str, stop_price: str,
+                                order_type: str, position_side: str) -> Dict[str, Any]:
+        """Place a conditional order via internal broker."""
+        if not self.connected:
+            self.connect()
+        return self._broker._place_conditional_order(
+            symbol=symbol,
+            side=side,
+            quantity=quantity,
+            stop_price=stop_price,
+            order_type=order_type,
+            position_side=position_side
+        )
+
+    def get_position(self, symbol) -> Optional[Position]:
+        from domain.value_objects import Symbol as DomainSymbol
+        symbol_obj = symbol if hasattr(symbol, 'value') else DomainSymbol(str(symbol))
+        if not self.connected:
+            self.connect()
+
+        positions = self.get_all_positions()
+        for pos in positions:
+            if pos.symbol == symbol_obj:
+                return pos
+        return None
+
+    def get_all_positions(self) -> List[Position]:
+        if not self.connected:
+            self.connect()
+
+        positions_data = self._broker.get_open_positions()
+        positions = []
+        for p in positions_data:
+            # Reconciliation needs a complete snapshot, not a silently partial list.
+            try:
+                quantity = float(p['positionAmt'])
+                if not Decimal(str(quantity)).is_finite():
+                    raise ValueError("nonfinite position quantity")
+                if quantity == 0:
+                    continue  # not an open position
+                pnl_value = float(p.get('unrealisedPnl', p.get('unrealizedPnl', 0)))
+                mark_p = float(p.get('markPrice', 0) or p.get('mark_price', 0) or 0)
+                leverage = None
+                raw_leverage = p.get('leverage')
+                if raw_leverage is not None:
+                    try:
+                        parsed_leverage = Decimal(str(raw_leverage))
+                        if parsed_leverage.is_finite() and parsed_leverage >= Decimal('1'):
+                            leverage = parsed_leverage
+                    except Exception:
+                        leverage = None
+                raw_isolated = p.get('isolated')
+                isolated = raw_isolated if isinstance(raw_isolated, bool) else None
+                pos_side_raw = str(p.get('positionSide', '')).upper()
+                is_short_side = pos_side_raw == 'SHORT' or float(p['positionAmt']) < 0
+                positions.append(
+                    Position(
+                        symbol=self._parse_symbol(p['symbol']),
+                        side=PositionSide.SHORT if is_short_side else PositionSide.LONG,
+                        quantity=abs(quantity),
+                        entry_price=Money(amount=float(p['avgPrice']), currency='USDT'),
+                        unrealized_pnl=Money(amount=pnl_value, currency='USDT'),
+                        timestamp=datetime.fromtimestamp(int(p.get('time', time.time() * 1000)) / 1000),
+                        mark_price=mark_p,
+                        leverage=leverage,
+                        isolated=isolated,
+                    )
+                )
+            except Exception:
+                raise RuntimeError("BingX position snapshot row conversion failed") from None
+        return positions
+
+    def get_available_symbols(self) -> set:
+        """Get set of available symbols on this broker."""
+        if not self.connected:
+            self.connect()
+        return self._broker.get_available_symbols()
+
+    def get_pending_orders(self, symbol: Any = None) -> List[Dict]:
+        """Get pending orders for a symbol or all symbols."""
+        if not self.connected:
+            self.connect()
+        sym_str = self._format_symbol(symbol) if symbol else None
+        return self._broker.get_pending_orders(sym_str)
+
+    def get_pending_orders_evidence(self, symbol: Any = None) -> Dict[str, Any]:
+        """Return structured query evidence without changing the legacy list contract."""
+        if not self.connected:
+            self.connect()
+        sym_str = self._format_symbol(symbol) if symbol else None
+        return self._broker.get_pending_orders_evidence(sym_str)
+
+    def _place_conditional_order(self, symbol: Any, side: str, quantity: str, stop_price: str,
+                                order_type: str, position_side: str) -> Dict[str, Any]:
+        """Place a conditional stop order directly on the exchange."""
+        if not self.connected:
+            self.connect()
+        sym_str = self._format_symbol(symbol)
+        return self._broker._place_conditional_order(
+            symbol=sym_str,
+            side=side,
+            quantity=quantity,
+            stop_price=stop_price,
+            order_type=order_type,
+            position_side=position_side
+        )
+
+    def _unwind_position(self, symbol: Any, original_side: str, quantity: str, position_side: str) -> Dict[str, Any]:
+        """Execute market unwind for position close."""
+        if not self.connected:
+            self.connect()
+        sym_str = self._format_symbol(symbol)
+        return self._broker._unwind_position(
+            symbol=sym_str,
+            original_side=original_side,
+            quantity=quantity,
+            position_side=position_side
+        )
+
+
+class _BingXBroker:
+    """BingX broker implementation with full API coverage."""
+
+    def __init__(self, config: Dict):
+        self.name = config.get('name', 'bingx')
+        self.api_key = config['api_key']
+        self.secret_key = config['secret_key']
+        self.passphrase = config.get('passphrase', '')
+        self.testnet = config.get('testnet', True)
+
+        # Base URLs
+        if self.testnet:
+            self.base_url = "https://open-api-vst.bingx.com"  # Testnet (simulation)
+        else:
+            self.base_url = "https://open-api.bingx.com"  # Live trading
+
+        self.logger = logging.getLogger(__name__)
+
+        # Rate limiting settings - responsive and safe
+        self.requests_per_minute = 300
+        self.min_request_interval = 0.2  # 200ms between requests for fast trailing SL sync
+        self.last_request_time = 0
+        self.request_count = 0
+        self.request_window_start = time.time()
+
+        # Session for connection pooling
+        self.session = requests.Session()
+        self.session.headers.update({
+            'X-BX-APIKEY': self.api_key
+        })
+
+        # Set default timeout for all requests
+        self.default_timeout = 10  # 10 seconds
+        self._contract_precisions = {}
+
+    def _generate_signature(self, params_str: str) -> str:
+        """Generate signature for BingX API authentication."""
+        signature = hmac.new(
+            self.secret_key.encode('utf-8'),
+            params_str.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+        return signature
+
+    def _rate_limit(self, *, priority: bool = False, timeout: Optional[float] = None) -> float:
+        """Implement rate limiting for API requests using global rate limiter."""
+        started = time.monotonic()
+        admitted = global_rate_limiter.wait_for_tokens(
+            'bingx', 1, priority=priority, timeout=timeout
+        )
+        wait_ms = (time.monotonic() - started) * 1000.0
+        if not admitted:
+            raise RateLimitAdmissionTimeout(wait_ms)
+        return wait_ms
+
+    def _make_request(self, method: str, endpoint: str, params: Dict = None, data: Dict = None,
+                      signed: bool = False, *, request_priority: bool = False,
+                      rate_limit_timeout: Optional[float] = None) -> Dict:
+        """Make authenticated request to BingX API with transient fault retries."""
+        try:
+            rate_limit_wait_ms = 0.0
+            url = f"{self.base_url}{endpoint}"
+            headers = {
+                'X-BX-APIKEY': self.api_key
+            }
+
+            def send_api_call():
+                nonlocal rate_limit_wait_ms
+                # Every physical HTTP attempt consumes capacity. Admission outside
+                # the retry callback would let transient retries bypass the bucket.
+                rate_limit_wait_ms += self._rate_limit(
+                    priority=request_priority, timeout=rate_limit_timeout
+                )
+                if signed:
+                    all_params = {}
+                    if params:
+                        all_params.update(params)
+                    if data:
+                        all_params.update(data)
+
+                    # Update timestamp on each attempt to prevent signature expiry/skew
+                    all_params['timestamp'] = str(int(time.time() * 1000))
+
+                    param_strings = []
+                    for key in sorted(all_params.keys()):
+                        param_strings.append(f"{key}={all_params[key]}")
+
+                    query_string = '&'.join(param_strings)
+
+                    signature = hmac.new(
+                        self.secret_key.encode('utf-8'),
+                        query_string.encode('utf-8'),
+                        hashlib.sha256
+                    ).hexdigest()
+
+                    query_string_with_signature = query_string + f"&signature={signature}"
+
+                    if method.upper() == 'POST':
+                        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+
+                    full_url = f"{url}?{query_string_with_signature}"
+                    timeout = getattr(self, 'default_timeout', 10)
+                    if method.upper() == 'DELETE':
+                        response = self.session.delete(full_url, headers=headers, timeout=timeout)
+                    elif method.upper() == 'GET':
+                        response = self.session.get(full_url, headers=headers, timeout=timeout)
+                    elif method.upper() == 'POST':
+                        response = self.session.post(full_url, headers=headers, timeout=timeout)
+                    else:
+                        raise ValueError(f"Unsupported HTTP method for signed request: {method}")
+                else:
+                    is_klines_request = '/quote/klines' in endpoint
+                    timeout = getattr(self, 'default_timeout', 10)
+                    if method.upper() == 'GET':
+                        if is_klines_request:
+                            klines_headers = {}
+                            response = self.session.get(url, headers=klines_headers, params=params, timeout=timeout)
+                        else:
+                            response = self.session.get(url, headers=headers, params=params, timeout=timeout)
+                    elif method.upper() == 'POST':
+                        response = self.session.post(url, headers=headers, json=data or params, timeout=timeout)
+                    elif method.upper() == 'DELETE':
+                        response = self.session.delete(url, headers=headers, params=params, timeout=timeout)
+                    else:
+                        raise ValueError(f"Unsupported HTTP method: {method}")
+
+                response.raise_for_status()
+                return response.json()
+
+            def should_retry_request(exc: BaseException) -> bool:
+                if isinstance(exc, requests.exceptions.HTTPError):
+                    if exc.response is not None:
+                        # Retry on 429 Rate Limit or 5xx Server errors
+                        return exc.response.status_code == 429 or exc.response.status_code >= 500
+                elif isinstance(exc, (requests.exceptions.ConnectionError, requests.exceptions.Timeout)):
+                    return True
+                return False
+
+            from shared.retry import retry_with_backoff
+            result = retry_with_backoff(
+                send_api_call,
+                # A lost order response leaves broker submission state unknown.
+                # Do not send a second physical order; retain other endpoint retries.
+                max_attempts=(1 if method.upper() == 'POST' and
+                              endpoint == '/openApi/swap/v2/trade/order' else 3),
+                base_delay=0.5,
+                retry_on=(requests.exceptions.RequestException,),
+                should_retry=should_retry_request,
+                on_retry=lambda attempt, exc, delay: self.logger.warning(
+                    f"⚠️ BingX API {method} {endpoint} failed (attempt {attempt}): {exc}; retrying in {delay:.2f}s..."
+                )
+            )
+            if isinstance(result, dict):
+                result["_client_rate_limit_wait_ms"] = rate_limit_wait_ms
+            return result
+
+        except RateLimitAdmissionTimeout:
+            raise
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Request failed: {str(e)}\n{traceback.format_exc()}")
+            raise
+        except Exception as e:
+            self.logger.error(f"Error in _make_request: {str(e)}\nFull traceback:\n{traceback.format_exc()}")
+            raise ValueError(f"Request preparation failed: {str(e)}") from e
+
+    def _fetch_all_contracts(self) -> None:
+        """Fetch all swap contracts and cache their precisions."""
+        try:
+            # signed=False because contracts endpoint is public
+            response = self._make_request('GET', '/openApi/swap/v2/quote/contracts', signed=False)
+            if response.get('code') == 0:
+                data = response.get('data', [])
+                for contract_info in data:
+                    symbol = contract_info.get('symbol')
+                    if symbol:
+                        self._contract_precisions[symbol] = {
+                            'pricePrecision': int(contract_info.get('pricePrecision', 4)),
+                            'quantityPrecision': int(contract_info.get('quantityPrecision', 4))
+                        }
+                self.logger.info(f"Successfully cached precision info for {len(self._contract_precisions)} BingX contracts.")
+        except Exception as e:
+            self.logger.error(f"Failed to fetch and cache contract precisions: {e}")
+
+    def _get_contract_precision(self, symbol: str) -> Dict[str, int]:
+        """Get the cached precision info for the symbol, fetching it if not present."""
+        if not hasattr(self, '_contract_precisions'):
+            self._contract_precisions = {}
+        api_symbol = symbol
+        if '-' not in symbol:
+            if symbol.endswith('USDT'):
+                api_symbol = symbol[:-4] + '-' + symbol[-4:]
+            elif symbol.endswith('USDC'):
+                api_symbol = symbol[:-4] + '-' + symbol[-4:]
+                
+        if not self._contract_precisions:
+            if hasattr(self, 'api_key') and hasattr(self, 'base_url') and self.api_key:
+                self._fetch_all_contracts()
+            
+        if api_symbol in self._contract_precisions:
+            return self._contract_precisions[api_symbol]
+            
+        if hasattr(self, 'api_key') and hasattr(self, 'base_url') and self.api_key:
+            try:
+                response = self._make_request('GET', '/openApi/swap/v2/quote/contracts', params={'symbol': api_symbol}, signed=False)
+                if response.get('code') == 0:
+                    data = response.get('data', [])
+                    if data and isinstance(data, list):
+                        contract_info = data[0]
+                        precision_info = {
+                            'pricePrecision': int(contract_info.get('pricePrecision', 4)),
+                            'quantityPrecision': int(contract_info.get('quantityPrecision', 4))
+                        }
+                        self._contract_precisions[api_symbol] = precision_info
+                        return precision_info
+            except Exception as e:
+                self.logger.warning(f"Failed to fetch contract precision for {api_symbol}: {e}")
+            
+        return {'pricePrecision': 4, 'quantityPrecision': 4}
+
+    def _format_price(self, symbol: str, price: float) -> str:
+        """Format price according to the symbol's actual pricePrecision on the exchange."""
+        precision_info = self._get_contract_precision(symbol)
+        precision = precision_info.get('pricePrecision', 4)
+        return f"{price:.{precision}f}"
+
+    def _format_quantity(self, symbol: str, quantity: float) -> str:
+        """Format quantity according to the symbol's actual quantityPrecision on the exchange."""
+        precision_info = self._get_contract_precision(symbol)
+        precision = precision_info.get('quantityPrecision', 4)
+        return f"{quantity:.{precision}f}"
+
+    @staticmethod
+    def _parse_leverage(value: Any) -> Decimal:
+        if value is None or isinstance(value, bool):
+            raise ValueError("leverage is missing or malformed")
+        leverage = Decimal(str(value))
+        if not leverage.is_finite() or leverage < Decimal('1') or leverage != leverage.to_integral_value():
+            raise ValueError("leverage must be a finite integer >= 1")
+        return leverage
+
+    @classmethod
+    def _configured_leverage(cls, settings: Any) -> Decimal:
+        risk = settings.risk
+        configured = cls._parse_leverage(getattr(risk, 'max_leverage', None))
+        ceiling = cls._parse_leverage(getattr(risk, 'max_leverage_limit', None))
+        if configured != ceiling:
+            raise ValueError(
+                f"conflicting leverage ceilings: max_leverage={configured}, "
+                f"max_leverage_limit={ceiling}"
+            )
+        return configured
+
+    def _establish_and_verify_leverage(self, order: Order, requested: Decimal) -> tuple[bool, str]:
+        """Set isolated mode/leverage and verify a post-write authoritative readback."""
+        from infrastructure.services.symbol_validator import symbol_validator
+
+        write_started_ms = int(time.time() * 1000)
+        symbol = symbol_validator.normalize_symbol(order.symbol)
+        if symbol.endswith('USDT') and '-' not in symbol:
+            symbol = f"{symbol[:-4]}-USDT"
+
+        position_side = getattr(order, 'position_side', None)
+        side = getattr(position_side, 'value', position_side)
+        side = str(side or 'BOTH').upper()
+        if side not in {'LONG', 'SHORT'}:
+            side = 'BOTH'
+
+        writes = (
+            ('marginType', '/openApi/swap/v2/trade/marginType', {
+                'symbol': symbol, 'marginType': 'ISOLATED',
+            }),
+            ('leverage', '/openApi/swap/v2/trade/leverage', {
+                'symbol': symbol, 'side': side, 'leverage': int(requested),
+            }),
+        )
+        for operation, endpoint, params in writes:
+            response = self._make_request('POST', endpoint, signed=True, params=params)
+            if response.get('code') != 0:
+                code = response.get('code', 'missing')
+                message = response.get('msg', response.get('message', 'missing'))
+                return False, (
+                    "broker rejected isolated margin or leverage establishment: "
+                    f"{operation} code={code} msg={message}"
+                )
+
+        margin_response = self._make_request(
+            'GET', '/openApi/swap/v2/trade/marginType', signed=True, params={'symbol': symbol}
+        )
+        leverage_response = self._make_request(
+            'GET', '/openApi/swap/v2/trade/leverage', signed=True, params={'symbol': symbol}
+        )
+        if margin_response.get('code') != 0 or leverage_response.get('code') != 0:
+            return False, "authoritative leverage readback unavailable"
+        for response in (margin_response, leverage_response):
+            response_time = response.get('timestamp', response.get('time'))
+            if response_time is not None:
+                try:
+                    if int(response_time) < write_started_ms - 5_000:
+                        return False, "authoritative leverage readback is stale"
+                except (TypeError, ValueError):
+                    return False, "authoritative leverage readback timestamp malformed"
+        margin_data = margin_response.get('data')
+        leverage_data = leverage_response.get('data')
+        if not isinstance(margin_data, dict) or not isinstance(leverage_data, dict):
+            return False, "authoritative leverage readback malformed"
+        margin_type = str(margin_data.get('marginType', '')).upper()
+        if margin_type not in {'ISOLATED', 'SEPARATE_ISOLATED'}:
+            return False, f"cross-margin state rejected: {margin_type or 'missing'}"
+
+        keys = ('longLeverage', 'shortLeverage') if side == 'BOTH' else (
+            'longLeverage' if side == 'LONG' else 'shortLeverage',
+        )
+        try:
+            readbacks = [self._parse_leverage(leverage_data.get(key)) for key in keys]
+        except Exception as exc:
+            return False, f"authoritative leverage readback malformed: {exc}"
+        if any(value != requested for value in readbacks):
+            return False, (
+                f"authoritative leverage mismatch: requested {requested}, "
+                f"exchange {','.join(str(value) for value in readbacks)}"
+            )
+        return True, "authoritative isolated leverage verified"
+
+    def _assert_entry_admission(self, order: Order) -> tuple[bool, str]:
+        """Fail-closed final risk check against the authoritative broker snapshot."""
+        if getattr(self, 'testnet', True) is False:
+            return False, "BingX live risk policy is not configured; VST limits cannot authorize real orders"
+        try:
+            from infrastructure.risk.risk_enforcement import build_vst_risk_enforcement
+
+            allowed, reason = build_vst_risk_enforcement().enforce(order)
+            if not allowed:
+                return False, reason
+
+            from bootstrap.settings.loaders import load_settings
+            settings = load_settings()
+            configured_leverage = self._configured_leverage(settings)
+            requested_leverage = self._parse_leverage(getattr(order, 'requested_leverage', None))
+            if requested_leverage != configured_leverage:
+                return False, (
+                    f"requested leverage {requested_leverage} does not match configured "
+                    f"leverage {configured_leverage}"
+                )
+
+            response = self._make_request(
+                'GET', '/openApi/swap/v2/user/positions', signed=True, params={}
+            )
+            if response.get('code') != 0 or not isinstance(response.get('data'), list):
+                return False, "broker position snapshot unavailable or malformed"
+
+            open_positions = []
+            open_position_exposures = []
+            open_position_sides = {'LONG': 0, 'SHORT': 0}
+            for position in response['data']:
+                signed_quantity = float(position.get('positionAmt', 0) or 0)
+                if not math.isfinite(signed_quantity):
+                    return False, "broker position snapshot contains non-finite quantity"
+                quantity = abs(signed_quantity)
+                if quantity > 0:
+                    position_side = str(position.get('positionSide') or '').upper()
+                    if position_side not in {'LONG', 'SHORT', 'BOTH'}:
+                        return False, f"broker position snapshot has unknown side: {position_side}"
+                    if position_side == 'LONG' and signed_quantity < 0:
+                        return False, "broker position snapshot has conflicting long side and negative quantity"
+                    if position_side == 'BOTH':
+                        position_side = 'SHORT' if signed_quantity < 0 else 'LONG'
+                    open_position_sides[position_side] += 1
+                    position_leverage = self._parse_leverage(position.get('leverage'))
+                    if position_leverage > configured_leverage:
+                        return False, (
+                            f"existing position leverage {position_leverage} exceeds configured "
+                            f"ceiling {configured_leverage}"
+                        )
+                    raw_mark_price = position.get('markPrice')
+                    raw_average_price = position.get('avgPrice')
+                    if raw_mark_price not in (None, ''):
+                        mark_price = float(raw_mark_price)
+                        if not math.isfinite(mark_price):
+                            return False, "broker position snapshot contains non-finite mark price"
+                    else:
+                        mark_price = 0.0
+                    if mark_price <= 0:
+                        average_price = float(raw_average_price or 0)
+                        if not math.isfinite(average_price) or average_price <= 0:
+                            return False, "broker position snapshot lacks a positive finite reference price"
+                        mark_price = average_price
+                    position_exposure = quantity * mark_price
+                    if not math.isfinite(position_exposure):
+                        return False, "broker position snapshot contains non-finite exposure"
+                    open_positions.append(position)
+                    open_position_exposures.append(position_exposure)
+
+            max_open_positions = int(getattr(settings.safety, 'max_open_positions', 5))
+            if len(open_positions) >= max_open_positions:
+                return False, (
+                    f"portfolio capacity reached: {len(open_positions)} open positions "
+                    f">= configured maximum {max_open_positions}"
+                )
+
+            requested_side = getattr(getattr(order, 'side', None), 'value', getattr(order, 'side', None))
+            requested_side = str(requested_side).upper()
+            if requested_side not in {'BUY', 'SELL'}:
+                return False, f"entry direction unavailable: {requested_side}"
+            entry_side = 'LONG' if requested_side == 'BUY' else 'SHORT'
+            explicit_side = getattr(getattr(order, 'position_side', None), 'value', getattr(order, 'position_side', None))
+            if explicit_side is not None and str(explicit_side).upper() not in {entry_side, 'BOTH'}:
+                return False, "entry direction conflicts with requested position side"
+            side_limit = int(getattr(settings.safety, f'max_{entry_side.lower()}_positions', 7))
+            if open_position_sides[entry_side] >= side_limit:
+                return False, (
+                    f"{entry_side.lower()} capacity reached: {open_position_sides[entry_side]} "
+                    f"open positions >= configured maximum {side_limit}"
+                )
+
+            from infrastructure.services.symbol_validator import symbol_validator
+            requested_symbol = symbol_validator.normalize_symbol(order.symbol)
+            for position in open_positions:
+                if symbol_validator.normalize_symbol(position.get('symbol')) == requested_symbol:
+                    return False, f"duplicate position blocked: {requested_symbol} is already open"
+
+            current_exposure = sum(open_position_exposures)
+            order_price = float(getattr(getattr(order, 'price', None), 'amount', 0) or 0)
+            order_notional = abs(float(getattr(order, 'quantity', 0) or 0)) * order_price
+            from infrastructure.risk.risk_enforcement import configured_vst_portfolio_exposure
+            max_portfolio_exposure = configured_vst_portfolio_exposure(settings.risk)
+            if current_exposure + order_notional > max_portfolio_exposure:
+                return False, (
+                    f"portfolio exposure limit exceeded: ${current_exposure + order_notional:.2f} "
+                    f"> ${max_portfolio_exposure:.2f}"
+                )
+            leverage_allowed, leverage_reason = self._establish_and_verify_leverage(
+                order, requested_leverage
+            )
+            if not leverage_allowed:
+                return False, leverage_reason
+            return True, "broker-backed risk admission and authoritative leverage approved"
+        except Exception as admission_error:
+            return False, f"broker-backed risk admission error: {admission_error}"
+
+    def execute_order(self, order: Order) -> Dict[str, Any]:
+        """Execute only after an atomic, broker-backed, fail-closed risk admission."""
+        with _BINGX_ENTRY_ADMISSION_LOCK:
+            allowed, reason = self._assert_entry_admission(order)
+            if not allowed:
+                self.logger.error(f"🛑 [BINGX RISK ADMISSION] Order REJECTED: {reason}")
+                return {"success": False, "order_id": None, "error": reason}
+            return self._execute_order_after_admission(order)
+
+    def _execute_order_after_admission(self, order: Order) -> Dict[str, Any]:
+        """Perform the exchange request after final admission has succeeded."""
+        try:
+            # Final exchange-boundary admission check.  Some recovery/service paths
+            # call this low-level method directly instead of adapter.place_order().
+            try:
+                from infrastructure.services.symbol_validator import symbol_validator
+                clean_symbol = symbol_validator.normalize_symbol(order.symbol)
+                blacklisted = symbol_validator.get_blacklisted_symbols()
+                if clean_symbol in blacklisted:
+                    reason = f"PERMANENT_BLACKLIST: {clean_symbol} is blacklisted from trading in configuration"
+                    self.logger.warning(f"🛑 [BINGX FINAL GATE] Order REJECTED for {order.symbol}: {reason}")
+                    return {"success": False, "order_id": None, "error": reason}
+                approved = {
+                    symbol_validator.normalize_symbol(symbol)
+                    for symbol in symbol_validator.get_approved_symbols()
+                }
+                if not clean_symbol or clean_symbol not in approved:
+                    return {
+                        "success": False,
+                        "order_id": None,
+                        "error": f"symbol is not approved: {clean_symbol or 'missing'}",
+                    }
+            except Exception as gate_err:
+                self.logger.error(f"BingX final risk gate unavailable; rejecting order: {gate_err}")
+                return {
+                    "success": False,
+                    "order_id": None,
+                    "error": f"Risk Health Gate unavailable: {gate_err}",
+                }
+
+            # Some recovery/service paths intentionally call this low-level method directly.
+            # Re-check every exchange-boundary numeric so NaN/Infinity cannot bypass upstream
+            # comparisons and be serialized into an authenticated order request.
+            numeric_fields = {
+                "quantity": getattr(order, "quantity", None),
+                "price": getattr(order, "price", None),
+                "stop_price": getattr(order, "stop_price", None),
+                "stop_loss_price": getattr(order, "stop_loss_price", None),
+                "take_profit_price": getattr(order, "take_profit_price", None),
+            }
+            for field, raw_value in numeric_fields.items():
+                if raw_value is None:
+                    if field == "quantity":
+                        return {"success": False, "order_id": None, "error": "quantity is missing"}
+                    continue
+                scalar = getattr(raw_value, "amount", raw_value)
+                try:
+                    numeric = float(scalar)
+                except (TypeError, ValueError, OverflowError):
+                    return {
+                        "success": False,
+                        "order_id": None,
+                        "error": f"{field} is malformed",
+                    }
+                if not math.isfinite(numeric) or numeric <= 0:
+                    return {
+                        "success": False,
+                        "order_id": None,
+                        "error": f"{field} must be positive and finite",
+                    }
+
+            raw_side = getattr(order, "side", None)
+            side_value = raw_side.value if hasattr(raw_side, "value") else str(raw_side or "")
+            side_value = side_value.upper()
+            if side_value not in {"BUY", "SELL"}:
+                return {
+                    "success": False,
+                    "order_id": None,
+                    "error": "side must be BUY or SELL",
+                }
+            raw_order_type = getattr(order, "order_type", None)
+            order_type_value = (
+                raw_order_type.value if hasattr(raw_order_type, "value") else str(raw_order_type or "")
+            ).upper()
+            if order_type_value not in {"MARKET", "LIMIT"}:
+                return {
+                    "success": False,
+                    "order_id": None,
+                    "error": "entry order type must be MARKET or LIMIT",
+                }
+            time_in_force_value = None
+            if order_type_value == "LIMIT":
+                if getattr(order, "price", None) is None:
+                    return {
+                        "success": False,
+                        "order_id": None,
+                        "error": "limit order requires price",
+                    }
+                raw_time_in_force = str(getattr(order, "time_in_force", "GTC") or "").upper()
+                time_in_force_values = {
+                    "GTC": "GTC",
+                    "IOC": "IOC",
+                    "FOK": "FOK",
+                    "POSTONLY": "PostOnly",
+                    "POST_ONLY": "PostOnly",
+                }
+                time_in_force_value = time_in_force_values.get(raw_time_in_force)
+                if time_in_force_value is None:
+                    return {
+                        "success": False,
+                        "order_id": None,
+                        "error": "limit time in force must be GTC, IOC, FOK, or PostOnly",
+                    }
+            raw_position_side = getattr(order, "position_side", None)
+            if raw_position_side is not None:
+                position_side_value = (
+                    raw_position_side.value
+                    if hasattr(raw_position_side, "value")
+                    else str(raw_position_side)
+                ).upper()
+                if position_side_value not in {"LONG", "SHORT", "BOTH"}:
+                    return {
+                        "success": False,
+                        "order_id": None,
+                        "error": "position side must be LONG, SHORT, or BOTH",
+                    }
+
+            # Handle the symbol formatting here
+            # Ensure symbol is properly formatted for BingX REST API (must include hyphen, e.g. XMR-USDT)
+            if isinstance(order.symbol, str):
+                raw_sym = order.symbol
+            elif hasattr(order.symbol, 'value'):
+                raw_sym = str(order.symbol.value)
+            else:
+                raw_sym = str(order.symbol)
+
+            if '-' not in raw_sym:
+                if raw_sym.endswith('USDT') or raw_sym.endswith('USDC'):
+                    symbol_formatted = raw_sym[:-4] + '-' + raw_sym[-4:]
+                else:
+                    symbol_formatted = raw_sym
+            else:
+                symbol_formatted = raw_sym
+
+            # Ensure side is handled properly
+            if hasattr(order.side, 'value'):
+                side_value = order.side.value
+            else:
+                side_value = str(order.side)
+
+            # Ensure order_type is handled properly
+            if hasattr(order.order_type, 'value'):
+                order_type_value = order.order_type.value
+            else:
+                order_type_value = str(order.order_type)
+
+            # Handle position_side similarly
+            if hasattr(order, 'position_side') and order.position_side:
+                if hasattr(order.position_side, 'value'):
+                    position_side_value = order.position_side.value
+                else:
+                    position_side_value = str(order.position_side)
+            else:
+                # For BingX, if position_side is not specified, determine it based on order side
+                # For LONG positions with BUY orders or SHORT positions with SELL orders
+                side_upper = side_value.upper()
+                if side_upper == 'BUY':
+                    position_side_value = 'LONG'
+                elif side_upper == 'SELL':
+                    position_side_value = 'SHORT'
+                else:
+                    position_side_value = 'BOTH'
+
+            # B2 idempotency: ensure a client order id is sent so the exchange can dedupe.
+            client_order_id = ensure_client_order_id(order)
+            if (
+                not isinstance(client_order_id, str)
+                or len(client_order_id) > 40
+                or not client_order_id.isalnum()
+            ):
+                return {
+                    "success": False,
+                    "order_id": None,
+                    "error": "client order id must be alphanumeric and at most 40 characters",
+                }
+
+            order_data = {
+                'symbol': symbol_formatted,
+                'side': side_value.upper(),
+                'type': order_type_value.upper(),
+                'quantity': self._format_quantity(symbol_formatted, float(order.quantity)),
+                'positionSide': position_side_value,
+                'clientOrderId': client_order_id,
+            }
+            if time_in_force_value is not None:
+                order_data['timeInForce'] = time_in_force_value
+
+            if order.price:
+                # Handle both Money object and float/numeric values
+                if hasattr(order.price, 'amount'):
+                    # If it's a Money object, use the amount attribute
+                    price_value = order.price.amount
+                else:
+                    # If it's already a numeric value, use it directly
+                    price_value = order.price
+                # Format price using exchange-specific precision
+                formatted_price = self._format_price(symbol_formatted, float(price_value))
+                order_data['price'] = formatted_price
+
+            # Add Stop Loss and Take Profit parameters if they exist in the order
+            # According to the BingX API documentation, these should be separate parameters in the same request
+            # For setting SL/TP with market orders, use stopLossPrice and takeProfitPrice (not stopLoss/takeProfit)
+            # The error suggests that the API expects different parameter names or format
+            has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
+            has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
+            formatted_sl_price = None
+            formatted_tp_price = None
+
+            if has_stop_loss:
+                # For stop loss, use stopLossPrice parameter (according to API docs)
+                # Handle both Money object and float/numeric values
+                if hasattr(order.stop_loss_price, 'amount'):
+                    sl_price_value = order.stop_loss_price.amount
+                else:
+                    sl_price_value = order.stop_loss_price
+                # Format as string with appropriate precision to avoid type issues
+                # Ensure the value is properly formatted as a string to avoid type mismatch
+                if sl_price_value is not None:
+                    # Format as string to ensure proper type handling by the API
+                    # Use the new API-compliant formatting function to avoid precision issues
+                    # Convert to float first to handle Decimal objects properly
+                    sl_float = float(sl_price_value)
+                    # Validate that the stop loss price is a valid positive number
+                    if sl_float <= 0:
+                        self.logger.warning(f"Invalid stop loss price: {sl_float}, skipping...")
+                    else:
+                        formatted_sl_price = self._format_price(symbol_formatted, sl_float)
+                        # Final exchange-boundary check also covers direct low-level callers
+                        # and adverse price rounding. Never send a stop wider than the
+                        # configured leveraged-ROE limit relative to the order reference.
+                        from bootstrap.settings.loaders import load_settings
+                        settings = load_settings()
+                        risk_settings = settings.risk
+                        try:
+                            reference = Decimal(str(getattr(getattr(order, 'price', None), 'amount', None)))
+                            formatted_stop = Decimal(str(formatted_sl_price))
+                            leverage = self._parse_leverage(getattr(order, 'requested_leverage', None))
+                            configured_leverage = self._configured_leverage(settings)
+                            max_roe = Decimal(str(risk_settings.max_initial_stop_roe_pct))
+                            if leverage != configured_leverage or not reference.is_finite() or reference <= 0:
+                                raise ValueError('missing or mismatched reference price/leverage')
+                            if not formatted_stop.is_finite() or formatted_stop <= 0 or not max_roe.is_finite() or max_roe <= 0:
+                                raise ValueError('invalid formatted stop or configured limit')
+                            distance_roe = abs(reference - formatted_stop) / reference * leverage * Decimal('100')
+                            wrong_side = (side_value == 'BUY' and formatted_stop >= reference) or (side_value == 'SELL' and formatted_stop <= reference)
+                            if wrong_side or distance_roe > max_roe:
+                                raise ValueError('formatted stop exceeds configured maximum initial stop ROE')
+                        except (ValueError, TypeError, ArithmeticError) as stop_gate_error:
+                            return {'success': False, 'order_id': None, 'error': f'stop risk gate: {stop_gate_error}'}
+                        if order_type_value.upper() == 'LIMIT':
+                            order_data['stopLoss'] = json.dumps(
+                                {
+                                    'type': 'STOP_MARKET',
+                                    'stopPrice': float(formatted_sl_price),
+                                    'workingType': 'MARK_PRICE',
+                                },
+                                separators=(',', ':'),
+                            )
+                        self.logger.debug(f"Added stop loss price: {formatted_sl_price}")
+
+            if has_take_profit:
+                # For take profit, use takeProfitPrice parameter (according to API docs)
+                # Handle both Money object and float/numeric values
+                if hasattr(order.take_profit_price, 'amount'):
+                    tp_price_value = order.take_profit_price.amount
+                else:
+                    tp_price_value = order.take_profit_price
+                # Format as string with appropriate precision to avoid type issues
+                # Ensure the value is properly formatted as a string to avoid type mismatch
+                if tp_price_value is not None:
+                    # Format as string to ensure proper type handling by the API
+                    # Use the new API-compliant formatting function to avoid precision issues
+                    # Convert to float first to handle Decimal objects properly
+                    tp_float = float(tp_price_value)
+                    # Validate that the take profit price is a valid positive number
+                    if tp_float <= 0:
+                        self.logger.warning(f"Invalid take profit price: {tp_float}, skipping...")
+                    else:
+                        formatted_tp_price = self._format_price(symbol_formatted, tp_float)
+                        if order_type_value.upper() == 'LIMIT':
+                            order_data['takeProfit'] = json.dumps(
+                                {
+                                    'type': 'TAKE_PROFIT_MARKET',
+                                    'stopPrice': float(formatted_tp_price),
+                                    'workingType': 'MARK_PRICE',
+                                },
+                                separators=(',', ':'),
+                            )
+                        self.logger.debug(f"Added take profit price: {formatted_tp_price}")
+
+            # When stop loss or take profit is specified, we may need to set additional parameters
+            # depending on the order type and API requirements
+            # For market orders with SL/TP, we might need to place them as separate conditional orders
+            # This is a common pattern in many exchanges
+            if has_stop_loss or has_take_profit:
+                # Check if this is a market order with SL/TP attached
+                if order_type_value.upper() == 'MARKET':
+                    # For market orders with SL/TP, we might need to place the main order first,
+                    # then place separate conditional orders for SL/TP
+                    # This is often the correct approach for many exchanges
+                    self.logger.debug(f"Processing market order with SL/TP - attempting to place main order with attached SL/TP: SL={has_stop_loss}, TP={has_take_profit}")
+
+                    # For now, let's continue with the current approach but add better error handling
+                    # If the single order approach fails, we'll need to implement the separate order approach
+                else:
+                    # For LIMIT orders with SL/TP, the attachment should work directly
+                    self.logger.debug(f"Processing limit order with SL/TP attached: SL={has_stop_loss}, TP={has_take_profit}")
+
+            # Check if we have SL/TP and it's a market order - we might need to handle this differently
+            if (has_stop_loss or has_take_profit) and order_type_value.upper() == 'MARKET':
+                # For market orders with SL/TP, we may need to place the main order first,
+                # then place separate conditional orders for SL/TP
+                # This is a common pattern in many exchanges
+                self.logger.info(f"Placing market order with separate SL/TP handling for {symbol_formatted}")
+
+                # First, create the main market order without SL/TP
+                main_order_data = {
+                    'symbol': symbol_formatted,
+                    'side': side_value.upper(),
+                    'type': order_type_value.upper(),
+                    'quantity': self._format_quantity(symbol_formatted, float(order.quantity)),
+                    'positionSide': position_side_value,
+                    'clientOrderId': client_order_id,
+                }
+
+                if order.price:
+                    if hasattr(order.price, 'amount'):
+                        price_value = order.price.amount
+                    else:
+                        price_value = order.price
+                    formatted_price = self._format_price(symbol_formatted, float(price_value))
+                    main_order_data['price'] = formatted_price
+
+                # Place the main market order
+                endpoint = "/openApi/swap/v2/trade/order"
+                response = self._make_request('POST', endpoint, data=main_order_data, signed=True)
+
+                if response.get('code') == 0:
+                    main_order_id = extract_bingx_order_id(response)
+
+                    # If main order was successful, now place separate conditional orders for SL/TP
+                    conditional_errors = []
+                    protective_order_ids = {}
+
+                    # Place stop loss order if needed
+                    # For stop loss: if we're long (BUY), we want to SELL to close when price goes down
+                    # For stop loss: if we're short (SELL), we want to BUY to close when price goes up
+                    sl_side = 'SELL' if side_value.upper() == 'BUY' else 'BUY'
+                    if side_value.upper() == 'BUY':
+                        # For long positions, stop loss triggers when price goes BELOW the stop price
+                        # So for a BUY order, we place a STOP_MARKET order to SELL when price drops
+                        sl_order_type = 'STOP_MARKET'
+                    else:
+                        # For short positions, stop loss triggers when price goes ABOVE the stop price
+                        # So for a SELL order, we place a STOP_MARKET order to BUY when price rises
+                        sl_order_type = 'STOP_MARKET'
+
+                    if has_stop_loss:
+                        sl_response = self._place_conditional_order(
+                            symbol=symbol_formatted,
+                            side=sl_side,
+                            quantity=self._format_quantity(symbol_formatted, float(order.quantity)),
+                            stop_price=formatted_sl_price,
+                            order_type=sl_order_type,
+                            position_side=position_side_value
+                        )
+
+                        if not sl_response['success']:
+                            conditional_errors.append(f"SL order failed: {sl_response['error']}")
+                        elif sl_response.get('order_id') not in (None, ''):
+                            protective_order_ids['STOP_MARKET'] = str(sl_response['order_id'])
+
+                    # Place take profit order if needed
+                    # For take profit: if we're long (BUY), we want to SELL to close when price goes up
+                    # For take profit: if we're short (SELL), we want to BUY to close when price goes down
+                    tp_side = 'SELL' if side_value.upper() == 'BUY' else 'BUY'
+                    if side_value.upper() == 'BUY':
+                        # For long positions, take profit triggers when price goes ABOVE the take profit price
+                        # So for a BUY order, we place a TAKE_PROFIT_MARKET order to SELL when price rises
+                        tp_order_type = 'TAKE_PROFIT_MARKET'
+                    else:
+                        # For short positions, take profit triggers when price goes BELOW the take profit price
+                        # So for a SELL order, we place a TAKE_PROFIT_MARKET order to BUY when price drops
+                        tp_order_type = 'TAKE_PROFIT_MARKET'
+
+                    if has_take_profit:
+                        tp_response = self._place_conditional_order(
+                            symbol=symbol_formatted,
+                            side=tp_side,
+                            quantity=self._format_quantity(symbol_formatted, float(order.quantity)),
+                            stop_price=formatted_tp_price,
+                            order_type=tp_order_type,
+                            position_side=position_side_value
+                        )
+
+                        if not tp_response['success']:
+                            conditional_errors.append(f"TP order failed: {tp_response['error']}")
+                        elif tp_response.get('order_id') not in (None, ''):
+                            protective_order_ids['TAKE_PROFIT_MARKET'] = str(tp_response['order_id'])
+
+                    # B1 GUARANTEED PROTECTION: a position must never remain open without its
+                    # SL/TP. If any protective order failed, unwind the just-opened position;
+                    # if the unwind also fails, halt all trading (kill switch) and flag the orphan.
+                    if conditional_errors:
+                        self.logger.error(
+                            f"🛑 PROTECTION FAILED for {main_order_id} on {symbol_formatted}: "
+                            f"{conditional_errors} — unwinding position (B1)")
+                        unwound = self._unwind_position(
+                            symbol_formatted, side_value.upper(),
+                            self._format_quantity(symbol_formatted, float(order.quantity)), position_side_value)
+                        if unwound:
+                            try:
+                                from infrastructure.strategies.strategy_manager import strategy_manager
+                                strategy_manager.record_trade_result(symbol_formatted, is_profitable=False, position_closed=True, is_execution_unwind=True)
+                                from infrastructure.risk.symbol_cooldown_gate import symbol_cooldown_gate
+                                symbol_cooldown_gate.record_stop_loss_exit(symbol_formatted)
+                                self.logger.warning(f"🛑 Activated 60m Cooldown for {symbol_formatted} following protective unwind.")
+                            except Exception as sm_err:
+                                self.logger.warning(f"Could not forward B1 unwind to strategy_manager: {sm_err}")
+                        else:
+                            try:
+                                from shared.live_execution_guard import live_execution_guard
+                                live_execution_guard.engage_kill_switch(
+                                    f"UNPROTECTED naked position {main_order_id} on "
+                                    f"{symbol_formatted}: protective orders AND unwind both failed")
+                            except Exception:
+                                pass
+                            self.logger.critical(
+                                f"❌ NAKED POSITION {main_order_id} on {symbol_formatted}: unwind FAILED "
+                                f"— trading HALTED, manual intervention required")
+                        return {
+                            'success': False,
+                            'order_id': None,
+                            'error': f'protective orders failed ({conditional_errors}); unwound={unwound}',
+                            'protection_failed': True,
+                            'unwound': unwound,
+                            'orphaned_main_order_id': None if unwound else main_order_id,
+                        }
+
+                    # Both main order and protective orders succeeded.
+                    print(f"\n🟢 [ORDER EXECUTED] Main order & SL/TP placed successfully: OrderID={main_order_id} Symbol={symbol_formatted} Side={side_value.upper()} Qty={order.quantity}", flush=True)
+                    self.logger.warning(f"🟢 [ORDER EXECUTED] Main order & SL/TP placed successfully: OrderID={main_order_id} Symbol={symbol_formatted}")
+                    return {
+                        'success': True,
+                        'order_id': main_order_id,
+                        'response': response['data'],
+                        'conditional_orders_errors': None,
+                        'protective_order_ids': protective_order_ids,
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'error': response.get('msg', 'Unknown error from main order')
+                    }
+            else:
+                # For orders without SL/TP or non-market orders with SL/TP, use the original approach
+                endpoint = "/openApi/swap/v2/trade/order"
+                response = self._make_request('POST', endpoint, data=order_data, signed=True)
+
+                if response.get('code') == 0:
+                    return {
+                        'success': True,
+                        'order_id': extract_bingx_order_id(response),
+                        'response': response['data']
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'error': response.get('msg', 'Unknown error')
+                    }
+        except Exception as e:
+            self.logger.error(f"Failed to execute order: {e}")
+            return {'success': False, 'error': str(e)}
+
+    def _format_symbol_str(self, symbol: str) -> str:
+        """Ensure standard BingX perpetual contract symbol format with hyphen (e.g. BTC-USDT)."""
+        s = str(symbol or "").upper().replace("/", "").replace("_", "").strip()
+        if "-" in s:
+            return s
+        if s.endswith("USDT") and len(s) > 4:
+            return f"{s[:-4]}-USDT"
+        elif s.endswith("USDC") and len(s) > 4:
+            return f"{s[:-4]}-USDC"
+        return s
+
+    def _unwind_position(self, symbol: str, original_side: str, quantity: str,
+                         position_side: str) -> bool:
+        """B1: flatten a just-opened position when its protective SL/TP could not be attached.
+
+        An accepted opposite MARKET request is not proof of a flat position.
+        Return True only after a broker position readback confirms flatness.
+        """
+        try:
+            formatted_sym = self._format_symbol_str(symbol)
+            close_side = 'SELL' if original_side.upper() == 'BUY' else 'BUY'
+            unwind_data = {
+                'symbol': formatted_sym,
+                'side': close_side,
+                'type': 'MARKET',
+                'quantity': quantity,
+                'positionSide': position_side,
+            }
+            if position_side.upper() not in ('LONG', 'SHORT'):
+                unwind_data['reduceOnly'] = 'true'
+            resp = self._make_request('POST', '/openApi/swap/v2/trade/order',
+                                      data=unwind_data, signed=True)
+            if resp.get('code') == 0:
+                snapshot = self._make_request(
+                    'GET', '/openApi/swap/v2/user/positions',
+                    params={'symbol': formatted_sym}, signed=True,
+                )
+                rows = snapshot.get('data') if snapshot.get('code') == 0 else None
+                if isinstance(rows, list):
+                    matching = [row for row in rows if isinstance(row, dict)
+                                and self._format_symbol_str(row.get('symbol')) == formatted_sym]
+                    try:
+                        if not rows or (matching and len(matching) == len(rows) and
+                                        all(Decimal(str(row['positionAmt'])) == 0 for row in matching)):
+                            self.logger.warning("Protective unwind confirmed flat on %s", formatted_sym)
+                            return True
+                    except (KeyError, InvalidOperation, TypeError):
+                        pass
+                self.logger.error("Protective unwind accepted but flat position not verified on %s", formatted_sym)
+                return False
+            self.logger.error(f"❌ UNWIND FAILED on {formatted_sym}: {resp.get('msg', resp)}")
+            return False
+        except Exception as e:
+            self.logger.error(f"❌ UNWIND EXCEPTION on {symbol}: {e}")
+            return False
+
+    def _place_conditional_order(self, symbol: str, side: str, quantity: str, stop_price: str,
+                               order_type: str, position_side: str) -> Dict[str, Any]:
+        """Place a standard position-level conditional order (stop loss or take profit) using Swap V2 endpoint with closePosition=true."""
+        try:
+            try:
+                quantity_value = float(quantity)
+                stop_price_value = float(stop_price)
+            except (TypeError, ValueError, OverflowError):
+                return {'success': False, 'error': 'conditional quantity or stop price is malformed'}
+            if (
+                not math.isfinite(quantity_value)
+                or quantity_value <= 0
+                or not math.isfinite(stop_price_value)
+                or stop_price_value <= 0
+            ):
+                return {
+                    'success': False,
+                    'error': 'conditional quantity and stop price must be positive and finite',
+                }
+            side_value = str(side or '').upper()
+            order_type_value = str(order_type or '').upper()
+            position_side_value = str(position_side or '').upper()
+            if side_value not in {'BUY', 'SELL'}:
+                return {'success': False, 'error': 'conditional side must be BUY or SELL'}
+            if order_type_value not in {'STOP_MARKET', 'TAKE_PROFIT_MARKET'}:
+                return {
+                    'success': False,
+                    'error': 'conditional type must be STOP_MARKET or TAKE_PROFIT_MARKET',
+                }
+            if position_side_value not in {'LONG', 'SHORT', 'BOTH'}:
+                return {
+                    'success': False,
+                    'error': 'conditional position side must be LONG, SHORT, or BOTH',
+                }
+            formatted_sym = self._format_symbol_str(symbol)
+            formatted_stop_price = self._format_price(formatted_sym, stop_price_value)
+            formatted_qty = self._format_quantity(formatted_sym, quantity_value)
+            conditional_order_data = {
+                'symbol': formatted_sym,
+                'side': side_value,
+                'type': order_type_value,
+                'quantity': formatted_qty,
+                'stopPrice': formatted_stop_price,
+                'positionSide': position_side_value,
+                'closePosition': 'true',
+                'workingType': 'MARK_PRICE'
+            }
+
+            endpoint = "/openApi/swap/v2/trade/order"
+            response = self._make_request(
+                'POST', endpoint, params=conditional_order_data, signed=True,
+                request_priority=True, rate_limit_timeout=15.0,
+            )
+
+            resp_code = response.get('code')
+            resp_msg = str(response.get('msg', '')).lower()
+            is_conflict = (
+                resp_code in (110406, 110407, 110411, 100404, 100405, 80016)
+                or any(phrase in resp_msg for phrase in ('already exists', 'conflict', 'position sl', 'position tp'))
+            )
+
+            if response.get('code') == 0:
+                conditional_order_id = extract_bingx_order_id(response)
+                if (isinstance(conditional_order_id, bool)
+                        or not isinstance(conditional_order_id, (str, int))
+                        or not str(conditional_order_id).strip()):
+                    return {'success': False, 'order_id': None, 'unknown_submission': True,
+                            'error': 'conditional acknowledgement identity unavailable'}
+                return {
+                    'success': True,
+                    'order_id': conditional_order_id,
+                    'response': response['data'],
+                    'rate_limit_wait_ms': response.get('_client_rate_limit_wait_ms'),
+                }
+            elif is_conflict:
+                # A symbol/type match does not prove ownership of the existing
+                # protective order. Never cancel it or send another order here.
+                self.logger.error(
+                    "Conditional order conflict on %s; preserving existing protection",
+                    formatted_sym,
+                )
+                return {'success': False, 'error': response.get('msg', str(response))}
+            else:
+                error_msg = response.get('msg', str(response))
+                self.logger.error(f"BingX Swap V2 conditional order failed on {formatted_sym}: {error_msg}")
+                return {'success': False, 'error': error_msg}
+        except RateLimitAdmissionTimeout as e:
+            self.logger.error(f"BingX stop mutation admission timed out for {symbol}")
+            return {
+                'success': False,
+                'error': 'rate limit admission timeout',
+                'rate_limit_wait_ms': e.wait_ms,
+            }
+        except Exception as e:
+            self.logger.error("Conditional order outcome unavailable; reconciliation required")
+            return {'success': False, 'unknown_submission': True, 'error': 'conditional submission outcome unknown'}
+
+    def get_account_balance(self) -> List[Dict[str, Any]]:
+        """Get account balance information."""
+        try:
+            response = self._make_request('GET', '/openApi/swap/v2/user/balance', signed=True)
+
+            if response.get('code') != 0:
+                raise ValueError(f"API error: {response.get('msg', 'Unknown error')}")
+
+            balance_data = response.get('data', {})
+            # The actual response is {'code': 0, 'msg': '', 'data': {'balance': {..}}}
+            if 'balance' in balance_data:
+                return [balance_data['balance']]
+            return []
+        except Exception as e:
+            self.logger.error(f"Failed to get balance: {str(e)}")
+            return []
+
+    def cancel_order(self, order_id: str, symbol: str) -> bool:
+        """Cancel an order."""
+        try:
+            formatted_sym = self._format_symbol_str(symbol)
+            identity_field = 'orderId' if str(order_id).isdigit() else 'clientOrderId'
+            params = {'symbol': formatted_sym, identity_field: order_id}
+
+            response = self._make_request('DELETE', '/openApi/swap/v2/trade/order', params=params, signed=True)
+            return response.get('code') == 0
+
+        except Exception as e:
+            self.logger.error(f"Failed to cancel order: {str(e)}")
+            return False
+
+    def get_order_status(self, order_id: str, symbol: str) -> str:
+        formatted_sym = self._format_symbol_str(symbol)
+        pending_orders = self.get_pending_orders(formatted_sym)
+        for order in pending_orders:
+            if str(order.get('orderId')) == str(order_id) or str(order.get('clientOrderId')) == str(order_id):
+                return order.get('status')
+
+        history = self.get_order_history(formatted_sym, limit=100)
+        for order in history:
+            if str(order.get('orderId')) == str(order_id) or str(order.get('clientOrderId')) == str(order_id):
+                return order.get('status')
+
+        return "UNKNOWN"
+
+    def get_order_fill(self, order_id: str, symbol: str) -> Dict[str, Any]:
+        """B7: return the order's {status, executed_qty, avg_price} from open orders + history."""
+        formatted_sym = self._format_symbol_str(symbol)
+        for order in list(self.get_pending_orders(formatted_sym)) + list(self.get_order_history(formatted_sym, limit=100)):
+            if str(order.get('orderId')) == str(order_id) or str(order.get('clientOrderId')) == str(order_id):
+                return {
+                    "status": order.get('status', 'UNKNOWN'),
+                    "executed_qty": order.get('executedQty', order.get('cumQty', 0)) or 0,
+                    "avg_price": order.get('avgPrice', order.get('avgFillPrice')),
+                }
+        return {"status": "UNKNOWN", "executed_qty": 0, "avg_price": None}
+
+    def get_pending_orders(self, symbol: str = None) -> List[Dict]:
+        """Get all pending orders."""
+        evidence = self.get_pending_orders_evidence(symbol)
+        return evidence["orders"] if evidence["status"] == "OK" else []
+
+    def get_pending_orders_evidence(self, symbol: str = None) -> Dict[str, Any]:
+        """Distinguish successful empty results from query and payload failures."""
+        try:
+            params = {}
+            if symbol:
+                params['symbol'] = self._format_symbol_str(symbol)
+
+            response = self._make_request('GET', '/openApi/swap/v2/trade/openOrders', params=params, signed=True)
+            if not isinstance(response, dict):
+                return {"status": "MALFORMED", "orders": [], "error": "response_not_object"}
+            if response.get('code') != 0:
+                return {
+                    "status": "API_ERROR", "orders": [],
+                    "error": f"exchange_code:{response.get('code')}",
+                }
+            data = response.get('data')
+            orders = data.get('orders') if isinstance(data, dict) else data
+            if not isinstance(orders, list):
+                return {"status": "MALFORMED", "orders": [], "error": "orders_not_list"}
+            return {"status": "OK", "orders": orders, "error": None}
+        except Exception as error:
+            return {"status": "EXCEPTION", "orders": [], "error": type(error).__name__}
+
+    def get_order_history(
+            self,
+            symbol: str = None,
+            start_time: Optional[datetime] = None,
+            end_time: Optional[datetime] = None,
+            limit: int = 500
+    ) -> List[Dict]:
+        """Get order history."""
+        try:
+            params = {'limit': limit}
+            if symbol:
+                params['symbol'] = self._format_symbol_str(symbol)
+            if start_time:
+                params['startTime'] = int(start_time.timestamp() * 1000)
+            if end_time:
+                params['endTime'] = int(end_time.timestamp() * 1000)
+
+            response = self._make_request('GET', '/openApi/swap/v2/trade/allOrders', params=params, signed=True)
+
+            if response.get('code') == 0:
+                data = response.get('data', {})
+                if isinstance(data, dict) and 'orders' in data:
+                    return data['orders']
+                elif isinstance(data, list):
+                    return data
+                else:
+                    return []
+            else:
+                return []
+        except Exception as e:
+            return []
+
+    def get_available_symbols(self) -> set:
+        """Get set of available symbols on BingX."""
+        try:
+            # Try the correct BingX API endpoint for getting all trading pairs
+            # According to BingX API documentation, the exchangeInfo endpoint is the most reliable
+            response = self._make_request('GET', '/openApi/spot/v1/public/exchangeInfo', signed=False)
+
+            if response.get('code') == 0:
+                symbols = set()
+                data = response.get('data', {})
+
+                # Check if the response has a 'symbols' field (common format for exchange info)
+                if 'symbols' in data:
+                    for symbol_info in data['symbols']:
+                        if isinstance(symbol_info, dict):
+                            # Check if the symbol is currently trading
+                            status = symbol_info.get('status', '').upper()
+                            if status in ['TRADING', 'ENABLED', 'ACTIVE']:
+                                symbol = symbol_info.get('symbol', '')
+                                if symbol:
+                                    # Convert from BingX format (e.g., BTC-USDT) to our format (BTCUSDT)
+                                    formatted_symbol = symbol.replace('-', '')
+                                    symbols.add(formatted_symbol)
+
+                # If we found symbols using exchangeInfo, return them
+                if symbols:
+                    self.logger.debug(f"Retrieved {len(symbols)} symbols from exchangeInfo endpoint")
+                    return symbols
+
+            # If the exchangeInfo endpoint didn't work, try the ticker/24hr endpoint for all symbols
+            try:
+                ticker_response = self._make_request('GET', '/openApi/spot/v1/market/ticker/24hr', signed=False)
+
+                if ticker_response.get('code') == 0:
+                    symbols = set()
+                    data = ticker_response.get('data', [])
+
+                    if isinstance(data, list):
+                        for item in data:
+                            if isinstance(item, dict) and 'symbol' in item:
+                                symbol = item['symbol']
+                                # Convert from BingX format (e.g., BTC-USDT) to our format (BTCUSDT)
+                                formatted_symbol = symbol.replace('-', '')
+                                symbols.add(formatted_symbol)
+
+                    if symbols:
+                        self.logger.debug(f"Retrieved {len(symbols)} symbols from ticker/24hr endpoint")
+                        return symbols
+            except Exception as ticker_error:
+                self.logger.debug(f"Ticker endpoint failed: {ticker_error}")
+
+            # If that doesn't work, try the ticker/price endpoint for all symbols
+            try:
+                price_response = self._make_request('GET', '/openApi/spot/v1/market/ticker/price', signed=False)
+
+                if price_response.get('code') == 0:
+                    symbols = set()
+                    data = price_response.get('data', [])
+
+                    if isinstance(data, list):
+                        for item in data:
+                            if isinstance(item, dict) and 'symbol' in item:
+                                symbol = item['symbol']
+                                # Convert from BingX format (e.g., BTC-USDT) to our format (BTCUSDT)
+                                formatted_symbol = symbol.replace('-', '')
+                                symbols.add(formatted_symbol)
+
+                    if symbols:
+                        self.logger.debug(f"Retrieved {len(symbols)} symbols from ticker/price endpoint")
+                        return symbols
+            except Exception as price_error:
+                self.logger.debug(f"Price ticker endpoint failed: {price_error}")
+
+        except Exception as e:
+            self.logger.error(f"Error getting available symbols from BingX: {e}")
+            # If API call fails, return empty set but log the error
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
+            return set()
+
+        # If all API methods fail, return the approved symbols as a fallback
+        # since we know these should be available on BingX
+        try:
+            from infrastructure.services.symbol_validator import symbol_validator
+            if hasattr(symbol_validator, 'get_approved_symbols'):
+                approved_symbols = symbol_validator.get_approved_symbols()
+                self.logger.debug(f"Using {len(approved_symbols)} approved symbols as fallback")
+                return approved_symbols
+        except ImportError:
+            # If we can't import the symbol validator, return empty set
+            self.logger.warning("Could not import symbol validator, using empty set as fallback")
+            pass
+        except Exception as e:
+            self.logger.warning(f"Could not get approved symbols from validator: {e}")
+
+        return set()
+
+    def get_open_positions(self, symbol: str=None) -> List[Dict]:
+        """Get open positions; never present a failed account read as a flat account."""
+        params = {}
+        if symbol:
+            params['symbol'] = symbol
+        response = self._make_request('GET', '/openApi/swap/v2/user/positions', signed=True, params=params)
+        if not isinstance(response, dict) or response.get('code') != 0:
+            code = response.get('code') if isinstance(response, dict) else 'INVALID_RESPONSE'
+            raise RuntimeError(f'BingX positions request failed (code={code})')
+        positions = response.get('data')
+        if not isinstance(positions, list):
+            raise RuntimeError('BingX positions response has no position list')
+        return positions
+
+    def get_positions(self, symbol: str=None) -> List[Dict]:
+        """Alias for get_open_positions."""
+        return self.get_open_positions(symbol)
+
+    def get_all_positions(self) -> List[Dict]:
+        """Alias for get_open_positions."""
+        return self.get_open_positions()

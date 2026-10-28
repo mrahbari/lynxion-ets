@@ -1,0 +1,20 @@
+{
+  "explicit_exclusions": [
+    "all docs/handover source paths to prevent recursive export; original V1 ZIP embedded byte-identical instead",
+    ".env and auth/credential/private-key files",
+    "raw operational journal contents",
+    "private/raw frozen study cohorts and five dirty research file contents",
+    "market dataset payloads (CSV/gzip/JSONL) except explicit engineering eligibility inventory/evidence",
+    "Git objects/full code checkout/dependencies/virtualenv/database/runtime logs"
+  ],
+  "missing_requested_source_references": [],
+  "secret_scan_patterns": [
+    "telegram_token",
+    "private_key",
+    "literal_api_secret"
+  ],
+  "redactions_in_current_snapshots": {},
+  "secret_scan_proof_limit": "Narrow known-form scan only, not universal historical-secret assurance. Sources untouched; original archive scan had zero matches.",
+  "documentation_links_limit": "Current reports/index links checked; historical snapshot source links can point to excluded local/binary/data assets.",
+  "migration_is_not_full_backup": true
+}

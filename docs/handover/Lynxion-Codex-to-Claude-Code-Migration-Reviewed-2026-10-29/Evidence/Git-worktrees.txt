@@ -1,0 +1,35 @@
+worktree /Users/mojtaba.rahbari/Sites/python/lynxion-ets
+HEAD 8e9663136f85b566bdc1bc6d85e4c6b3037ecaf1
+branch refs/heads/task-00-ground-truth-audit
+
+worktree /Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets
+HEAD 1599af9a1932ba25aee252ae76dfa5ad6b050a76
+branch refs/heads/main
+
+worktree /Users/mojtaba.rahbari/.codex/worktrees/live-risk-200/lynxion-ets
+HEAD 138147070b1ce5460bcda0e1749b2186b08291ec
+detached
+
+worktree /Users/mojtaba.rahbari/.codex/worktrees/lynxion-epic-01-trading-v1/lynxion-ets
+HEAD 92218ed8e295495994f25e1d12658ca009e8e539
+branch refs/heads/lynx/epic01-trading-v1
+
+worktree /Users/mojtaba.rahbari/.codex/worktrees/opportunity-radar-v1/lynxion-ets
+HEAD 35971f681e7ce18adcdf9b1741041f8701709af0
+detached
+
+worktree /Users/mojtaba.rahbari/.codex/worktrees/platform-hardening/lynxion-ets
+HEAD cfa58d93cbc072eb937adf1ad2a61e581cf63900
+detached
+
+worktree /Users/mojtaba.rahbari/.codex/worktrees/post-pilot2-execution-recovery/lynxion-ets
+HEAD 41fe2ec9cb5e6a8fd05154b9ccef78633a462a10
+detached
+
+worktree /Users/mojtaba.rahbari/.codex/worktrees/structural-pullback-failure-v1/lynxion-ets
+HEAD aeab55513ed56af3c6641d546fc9c78cf0a24ef0
+branch refs/heads/lynx/structural-pullback-failure-v1
+
+worktree /Users/mojtaba.rahbari/.codex/worktrees/vst-config-safety/lynxion-ets
+HEAD cd0fd036a481271132e9afd6e76c626eda671f12
+detached

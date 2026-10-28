@@ -1,0 +1,11 @@
+# Strategy baseline audit manifest
+
+- Repository HEAD at start: `424275d`; date: 2026-09-23 UTC.
+- Scope: source/config/path inventory and a read-only fresh settings-loader probe in the audit process; the running trading process was not inspected. No production code/config edit, broker call, VST order, Hyperopt, parameter sweep, performance backtest, or frozen-cohort modification.
+- Primary source paths: `infrastructure/strategies/strategy_manager.py`, `strategy_config.py`, adapter files and `setup_engine.py`; `infrastructure/orchestrators/architecture_orchestrator.py`; `infrastructure/messaging/event_system.py`; `infrastructure/aggregators/signal_aggregator.py`; `infrastructure/fusion/fusion_service.py`; `infrastructure/backtest/strategy_provider.py`; `application/use_cases/run_backtest.py`; `bootstrap/container.py`; configuration profiles/extractor.
+- Read-only settings probe: fresh `load_settings()` in this audit process printed **only non-secret fields**. Strategy timeframe 1m, lookback 50, min confidence 0.5, risk per trade 0.02; risk max-risk 0.02, max leverage 5, stop 0.02, TP 0.05, max order notional 21; position sizing fixed true/amount 21; fusion weighted_average/max signals per asset 5. These are not proof of an already-running trading process's values.
+- Existing logs: sampled only the tail of `logs/system.log`; recent manager registration/NGDP lines correspond to F01 unit tests and cannot establish production invocation. `logs/forensic.log` is ~11 GB and was not scanned in full. The default signal census path was absent. No strategy-specific, stage-complete run ledger was available.
+- Backtest integrity gate: provider's signal-generation and mock-Fusion path diverges from inspected live event path; `run_backtest.py` applies `bfill()` after shifted indicators. No baseline performance metrics were computed or imported.
+- CSV policy: flat typed status fields; `UNKNOWN` means unavailable/unverified, not zero. `SOURCE_PATH` means statically reachable, not observed runtime invocation.
+- Output files: the four required CSVs and four required Markdown files only.
+- Frozen C-11/C-35, Compression, Phase 3A and sibling forensic artifacts were not modified for this audit.

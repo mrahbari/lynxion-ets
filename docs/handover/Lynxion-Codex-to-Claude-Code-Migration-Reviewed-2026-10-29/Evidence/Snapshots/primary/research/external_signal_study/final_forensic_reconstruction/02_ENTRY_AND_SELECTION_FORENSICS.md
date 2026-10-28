@@ -1,0 +1,11 @@
+# Entry and opportunity selection
+
+The observable selected universe contains 307 V2 signals (12 EARLY_BOMBICLUB, 161 BOMBICLUB, 34 RADARX_TRANSITION, 100 1K_EVENT). A WatcherX list (EV-001594) establishes scanner output, not the number of eligible/rejected candidates. `OBSERVED_SELECTED_UNIVERSE` is these messages; `INFERRED_ELIGIBLE_UNIVERSE` and `UNKNOWN_TRUE_CANDIDATE_UNIVERSE` have no reliable denominator. An opportunity-ranking layer is a HYPOTHESIS / LOW-strength transfer lead, not a reconstructed sibling algorithm.
+
+Entry evidence differs sharply by generation. Older messages include explicit planned prices and one LTC limit-like plan (EV-000197); 1K_EVENT has only one extracted numeric entry among 100 signals. Chart position boxes occur in 232/307 V2 rows but cannot establish order type, fill, or trigger. The LTC raw entry is 83.57 while V2 extracted 83.0: primary evidence overrides the derivative table. No retrospective repair of V2 was made.
+
+Structure, impulse, pullback, and compression words recur (84, 46, and 17 V2 flags for structure, pullback, compression respectively), but flags overlap and are not algorithm definitions. ONDO bearish-structure and AVAX downward-impulse explanations support directional *reasoning* (EV-001522, EV-001621), not who/what generated the bias. SEI 4h context followed by a 15m setup (EV-002021/22) supports one chronological HTF-context/lower-timeframe example; it does not establish a standard 4h-to-15m workflow. Other screenshot timeframes cannot be assigned confidently to context/setup/execution roles.
+
+Possible entry types—immediate, pullback, breakout, retest, limit-like, stop-trigger-like, failed counter-move—cannot be reliably assigned across the 307 signals. A few plans are limit-like; most are UNKNOWN. `DIRECTION_FIRST` versus `SETUP_GEOMETRY_FIRST` is UNKNOWN at system level. The selected-message sample and absent rejected-candidate tape prohibit a claim that the sibling ranks the best opportunities rather than broadcasts most qualifying signals.
+
+No minimum risk/reward, structural entry offset, breakout confirmation threshold, or target-space veto can be inferred. These would be new hypotheses requiring a fresh boundary, not facts extracted here.

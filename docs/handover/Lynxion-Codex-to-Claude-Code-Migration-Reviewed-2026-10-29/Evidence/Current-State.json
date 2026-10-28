@@ -1,0 +1,116 @@
+{
+  "observed_utc": "2026-10-28T22:48:07.980327+00:00",
+  "repositories": {
+    "primary": {
+      "root": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets",
+      "head": "8e9663136f85b566bdc1bc6d85e4c6b3037ecaf1",
+      "branch": "task-00-ground-truth-audit",
+      "status_short": [
+        "M data/research/c11/prospective_ledger.json",
+        " M data/research/c35/candles.jsonl",
+        " M data/research/c35/decisions.jsonl",
+        " M data/research/c35/funding.jsonl",
+        " M data/research/c35/funding_coverage.jsonl"
+      ],
+      "env_file_present": true,
+      "env_contents_exported": false
+    },
+    "main": {
+      "root": "/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets",
+      "head": "1599af9a1932ba25aee252ae76dfa5ad6b050a76",
+      "branch": "main",
+      "status_short": [],
+      "env_file_present": false,
+      "env_contents_exported": false
+    }
+  },
+  "git_worktrees_porcelain": "worktree /Users/mojtaba.rahbari/Sites/python/lynxion-ets\nHEAD 8e9663136f85b566bdc1bc6d85e4c6b3037ecaf1\nbranch refs/heads/task-00-ground-truth-audit\n\nworktree /Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets\nHEAD 1599af9a1932ba25aee252ae76dfa5ad6b050a76\nbranch refs/heads/main\n\nworktree /Users/mojtaba.rahbari/.codex/worktrees/live-risk-200/lynxion-ets\nHEAD 138147070b1ce5460bcda0e1749b2186b08291ec\ndetached\n\nworktree /Users/mojtaba.rahbari/.codex/worktrees/lynxion-epic-01-trading-v1/lynxion-ets\nHEAD 92218ed8e295495994f25e1d12658ca009e8e539\nbranch refs/heads/lynx/epic01-trading-v1\n\nworktree /Users/mojtaba.rahbari/.codex/worktrees/opportunity-radar-v1/lynxion-ets\nHEAD 35971f681e7ce18adcdf9b1741041f8701709af0\ndetached\n\nworktree /Users/mojtaba.rahbari/.codex/worktrees/platform-hardening/lynxion-ets\nHEAD cfa58d93cbc072eb937adf1ad2a61e581cf63900\ndetached\n\nworktree /Users/mojtaba.rahbari/.codex/worktrees/post-pilot2-execution-recovery/lynxion-ets\nHEAD 41fe2ec9cb5e6a8fd05154b9ccef78633a462a10\ndetached\n\nworktree /Users/mojtaba.rahbari/.codex/worktrees/structural-pullback-failure-v1/lynxion-ets\nHEAD aeab55513ed56af3c6641d546fc9c78cf0a24ef0\nbranch refs/heads/lynx/structural-pullback-failure-v1\n\nworktree /Users/mojtaba.rahbari/.codex/worktrees/vst-config-safety/lynxion-ets\nHEAD cd0fd036a481271132e9afd6e76c626eda671f12\ndetached",
+  "limited_local_runner_probe": {
+    "observed_utc": "2026-10-28T22:48:08.505700+00:00",
+    "matches": [],
+    "limit": "Local Python command-name filter only; not remote/renamed/scheduler or continuous-supervision proof"
+  },
+  "journal": {
+    "path": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets/data/live_order_journal.json",
+    "bytes": 2187526,
+    "sha256": "84ad9165f288106d1e995e68f3a90852141c2abe6bf02210ff84b868c2da420f",
+    "latest_logical_records": 3014,
+    "malformed_json_lines": 0,
+    "status_counts": {
+      "FILLED": 631,
+      "FAILED": 2315,
+      "CANCELLED": 67,
+      "PROTECTION_UNKNOWN": 1
+    },
+    "contents_exported": false,
+    "terminal_labels_are_not_fill_or_pnl_evidence": true,
+    "unresolved_records": [
+      {
+        "order_ref": "e554207318004a458b6abf16edc3f39d",
+        "status": "PROTECTION_UNKNOWN",
+        "ts": "2026-10-24T05:49:22.655564+00:00",
+        "symbol": "TRXUSDT",
+        "side": "SELL",
+        "quantity": "21.0",
+        "purpose": "PROTECTION",
+        "stop_price": "0.328502",
+        "order_id": null,
+        "entry_order_ref": null
+      }
+    ]
+  },
+  "preserved_dirty_assets": [
+    {
+      "path": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets/data/research/c11/prospective_ledger.json",
+      "bytes": 2946,
+      "sha256": "f6ee7114a34f78d1df269dc5c682f7f23e8254bd970c3abe38300d0dfd59d97d",
+      "mtime_utc": "2026-09-24T07:21:40.637514+00:00",
+      "contents_exported": false
+    },
+    {
+      "path": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets/data/research/c35/candles.jsonl",
+      "bytes": 7027000,
+      "sha256": "53b7d1d44315e0bbefd97e50895159eb74532198115516eaf2b07f739d8f8380",
+      "mtime_utc": "2026-09-24T11:48:44.046736+00:00",
+      "contents_exported": false
+    },
+    {
+      "path": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets/data/research/c35/decisions.jsonl",
+      "bytes": 60760,
+      "sha256": "b10720fd135e6440f0df62b62717494a8bd1f231a7ef8b040722fa9ccb38b538",
+      "mtime_utc": "2026-09-24T11:49:25.534158+00:00",
+      "contents_exported": false
+    },
+    {
+      "path": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets/data/research/c35/funding.jsonl",
+      "bytes": 42511,
+      "sha256": "6517095738a43e3139f2ed5c80ed7f828fa9c2348f6c039e41f0f975c52acbae",
+      "mtime_utc": "2026-09-24T08:22:21.145505+00:00",
+      "contents_exported": false
+    },
+    {
+      "path": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets/data/research/c35/funding_coverage.jsonl",
+      "bytes": 295470,
+      "sha256": "ee9c3a42784ddfbe2a5e3e5f03ac6b71e2c11dbae64627d1f7f21bba8c748c90",
+      "mtime_utc": "2026-09-24T11:48:46.470805+00:00",
+      "contents_exported": false
+    }
+  ],
+  "automation": {
+    "id": "lynxion-p0-execution-recovery-and-opportunity-radar",
+    "kind": "heartbeat",
+    "name": "Lynxion P0 execution safety and runner readiness",
+    "status": "ACTIVE",
+    "target_thread_id": "01a0633b-3fbe-70b0-8f07-8d48ba5e3708",
+    "frequency_description": "hourly",
+    "config_sha256": "764e94564c40bfe772cd31405aa91d5350593431401923abbac08daeb4bd1835",
+    "not_paused_or_deleted_by_handover": true,
+    "no_sole_execution_ownership_transfer_inferred": true
+  },
+  "historical_package": {
+    "directory": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets/docs/handover/Lynxion-Codex-to-Claude-Code-Migration-2026-10-26",
+    "zip": "/Users/mojtaba.rahbari/Sites/python/lynxion-ets/docs/handover/Lynxion-Codex-to-Claude-Code-Migration-2026-10-26.zip",
+    "zip_sha256": "cca0039301ab0265d66138c4310e95bf4708542936a4c47e5a8b85a74671678f",
+    "package_manifest_sha256": "f8577c013b7e2c37fbac034a5df2cca415b85846609154c1f02891f4660fa666"
+  }
+}

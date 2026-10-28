@@ -1,0 +1,42 @@
+{
+  "contract_commit": "7eab7ae",
+  "version": "OBSERVED_TOP5_MTF_V1",
+  "outcomes_opened": false,
+  "full_baseline_admitted": false,
+  "book": {
+    "raw_rows": 1201744,
+    "first_receipt_us": 1704067201962082,
+    "last_receipt_us": 1704153599994892,
+    "max_receive_gap_us": 1831042,
+    "observed_minute_buckets": 1440
+  },
+  "trades": {
+    "raw_rows": 2197331,
+    "late_trades": 52,
+    "first_receipt_us": 1704067200009899,
+    "last_receipt_us": 1704153599981592,
+    "observed_five_minute_buckets": 288,
+    "late_five_minute_buckets": 10
+  },
+  "minute_rows": 1440,
+  "quote_status_counts": {
+    "OBSERVED_ASOF": 1440
+  },
+  "flow_status_counts": {
+    "NOT_A_FIVE_MINUTE_CLOSE": 1152,
+    "OBSERVED_ASOF": 278,
+    "LATE_TRADES_EXCLUDED": 10
+  },
+  "feature_sha256": "ba8305a23447af1c38eff4566a91341765bba2d09336864b00488a730d1600d9",
+  "raw_sha256": {
+    "book_snapshot_5": "e777c8ffecb6106aa029be30b4606fdc7409863e6f34b677d550b5855aa289ab",
+    "trades": "8387c9d605f986bb6bde754735f5f9c2440ec76908f0d143af1b9282cefe981a"
+  },
+  "limits": [
+    "Vendor-normalized top-five, not raw exchange depth/queue",
+    "CSV disconnect markers absent; stale/gap masks do not establish continuous capture",
+    "One selected development day, not independent OOS or market-wide cohort",
+    "Actual composed strategy/cost/funding/execution acceptance still required"
+  ],
+  "integrity_status": "PASS_STRUCTURAL_ONLY"
+}

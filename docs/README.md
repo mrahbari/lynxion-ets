@@ -18,7 +18,7 @@ It distinguishes freshly checked local facts from dated tests, exchange snapshot
 | [Frozen studies](research/FROZEN_STUDIES_STATUS.md) | Dated metadata/liveness audit; no early outcome opening |
 | [Progress ledger](LYNXION_PROGRESS_LEDGER.md) | Dated execution history; newest status overlay is first |
 | [Documentation review](DOCUMENTATION_REVIEW_2026-10-28.md) | Corrections, deletion rationale, inventory and verification limits |
-| [Migration packages](handover/README.md) | Frozen bilingual 26 October package, not live status or full backup |
+| [Migration packages](handover/README.md) | Reviewed bilingual 29 October handover, six-symbol data catalog and Claude continuation; original 26 October archive preserved |
 
 Absolute links to `main` intentionally identify the actual local checkout; they are not portable
 remote URLs. If worktrees move, locate the named branch/files and repair navigation. Do not

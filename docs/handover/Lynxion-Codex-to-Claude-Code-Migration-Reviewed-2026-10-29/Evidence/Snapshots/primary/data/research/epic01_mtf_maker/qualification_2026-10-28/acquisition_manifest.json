@@ -1,0 +1,44 @@
+{
+  "contract_commit": "7eab7ae",
+  "scope": "two fixed free samples, no API key/payment/account, no retry",
+  "not_a_pilot_extension": true,
+  "raw_files": [
+    {
+      "kind": "book_snapshot_5",
+      "symbol": "BTCUSDT",
+      "utc_day": "2024-01-01",
+      "url": "https://datasets.tardis.dev/v1/binance-futures/book_snapshot_5/2024/01/01/BTCUSDT.csv.gz",
+      "method": "GET",
+      "request_utc": "2026-10-28T21:57:31.199059+00:00",
+      "byte_cap": 268435456,
+      "filename": "binance-futures_book_snapshot_5_2024-01-01_BTCUSDT.csv.gz",
+      "source": "TARDIS_VENDOR_NORMALIZED_OBSERVED",
+      "status": 200,
+      "content_length": "22782992",
+      "content_type": "text/csv",
+      "acquisition": "COMPLETE_BYTES_ONLY_NOT_QUALIFIED",
+      "sha256": "e777c8ffecb6106aa029be30b4606fdc7409863e6f34b677d550b5855aa289ab",
+      "bytes": 22782992,
+      "completion_utc": "2026-10-28T21:57:38.261051+00:00"
+    },
+    {
+      "kind": "trades",
+      "symbol": "BTCUSDT",
+      "utc_day": "2024-01-01",
+      "url": "https://datasets.tardis.dev/v1/binance-futures/trades/2024/01/01/BTCUSDT.csv.gz",
+      "method": "GET",
+      "request_utc": "2026-10-28T21:57:31.200759+00:00",
+      "byte_cap": 268435456,
+      "filename": "binance-futures_trades_2024-01-01_BTCUSDT.csv.gz",
+      "source": "TARDIS_VENDOR_NORMALIZED_OBSERVED",
+      "status": 200,
+      "content_length": "20848659",
+      "content_type": "text/csv",
+      "acquisition": "COMPLETE_BYTES_ONLY_NOT_QUALIFIED",
+      "sha256": "8387c9d605f986bb6bde754735f5f9c2440ec76908f0d143af1b9282cefe981a",
+      "bytes": 20848659,
+      "completion_utc": "2026-10-28T21:57:35.249034+00:00"
+    }
+  ],
+  "outcomes_opened": false
+}

@@ -1,0 +1,80 @@
+1599af9a1932ba25aee252ae76dfa5ad6b050a76 2026-10-28T23:36:46+01:00 docs(epic01): settle every failed or blocked delivery obligation
+ed87642a25bf60343a03e42675b2ce89339eb1c5 2026-10-28T23:35:07+01:00 feat(epic01): complete per-file input eligibility adjudication
+930464c5f7edd83d6c296695d89ce68652fe8062 2026-10-28T23:17:52+01:00 docs(epic01): record actual MTF and maker replay evidence limits
+a4edfb5f63adc3296b9f7e4aad49dd51f37fbe8e 2026-10-28T23:14:27+01:00 fix(epic01): account valid maker partials below submission minimum
+62eed4314d51ace5a8c88fbc4bd73cf3dac33ef9 2026-10-28T23:10:09+01:00 feat(epic01): qualify observed MTF inputs and model maker event fills
+7eab7ae0957e42c1e13d81030636bb74ca4167ef 2026-10-28T22:56:54+01:00 docs(epic01): freeze observed MTF and maker qualification contract
+d9307db15ac860536dd9c784305bdfac6a639eb6 2026-10-28T22:48:33+01:00 docs: reconcile EPIC recovery and Radar guidance
+6e99742d9ab8103e9d8388b3dfad6e26a4a3a933 2026-10-27T23:04:56+01:00 fix(hyperopt): preserve missing backtester metrics as invalid objectives
+a95527ecbed64f4a36adc81df3a4d35b334fdbb9 2026-10-27T23:02:52+01:00 docs(p0): record launcher coverage and exact recovery decision boundary
+80eaad539c20faea887e4161138fa34797e2ef3b 2026-10-27T23:01:10+01:00 fix(wfo): retain real asset identity across training callbacks
+45c6c081bdc993eea026d894d052e754b957740a 2026-10-27T22:57:39+01:00 docs: verify Radar delivery and distinguish unresolved runtime and backlog gates
+264e6fedd145bae9ddc3d435982637f2e5387311 2026-10-26T14:15:23+01:00 fix(wfo): reject silently reduced requested asset population
+6f458681b7a291631b481e94276d72bc71c66c38 2026-10-26T13:52:29+01:00 docs(p0): record bounded attribution probe and launch precheck correction
+0649178bb4404b2a04a4b4cd457d76030cef20e3 2026-10-26T12:40:09+01:00 docs(p0): record renewed audit and concrete TRX unknown startup block
+10357e8dee7c4d1fc03d9bb4aff2679e960cf25d 2026-10-26T10:08:09+01:00 docs(p0): record missing runtime process and stale log evidence
+d699ca90496f74168a9bc7c2a4f7d80ef479bc1e 2026-10-25T01:29:51+02:00 docs(epic): make reduced-baseline scientific scope gate explicit
+02c2f2ef6301d9a1eb1c312a57a3635d7e917d5e 2026-10-25T00:32:46+02:00 docs(epic): qualify existing execution simulator reuse limits
+e68b2ac5b9166996b97504a7e6aecc61af8a31c0 2026-10-24T23:38:09+02:00 fix(backtest): reject unsupported maker intents instead of market fills
+76f6c8d447dccfc8cb7f3758854822671465b286 2026-10-24T22:33:41+02:00 fix(replay): validate intent clocks before execution confirmation
+0da916a330f41e919759907cb95c955448c61561 2026-10-24T21:33:32+02:00 fix(replay): propagate confirmed clock into existing setup and signal paths
+3cb237d2aea1e3111e02a0250eb8579836884b28 2026-10-24T19:26:07+02:00 fix(strategy): compare freshness using absolute UTC instants
+7bde6b78bc3fe46fff00a8eb8c943d2cb06d690e 2026-10-24T18:28:57+02:00 fix(strategy): require known timestamps before price freshness fallback
+8c62064c650f21f344d67ec4cac3f747a8898546 2026-10-24T18:22:21+02:00 fix(replay): accept explicit confirmed setup availability clock
+a04d1f6ce6f7bea46b9050fba4f9e8918c2181b7 2026-10-23T23:57:41+02:00 fix(wfo): preserve multi-asset identity through optimizer wrapper
+2782e8846b8f608fbafb0d7c3a1e939b40b1e90a 2026-10-23T23:56:06+02:00 fix(wfo): bind strategy evaluations to actual factory asset
+ce4a5bbd21d7e9c1abf04ca83bb1df00177a2e8c 2026-10-23T23:48:22+02:00 docs(p0): record operator-directed TESTNET runtime startup
+c8803c7982a6d4498453a2ab55e7e8d5cb59b009 2026-10-23T23:45:27+02:00 docs(p0): record authorized fresh VST exposure and FET audit
+547a93cdb051805547d4c9ec88ee068b18589152 2026-10-22T15:52:13+02:00 fix(wfo): reject empty and nonfinite optimization objectives
+c5c95b44b877e5b5fa5bd6c8a046af6c59cd753d 2026-10-22T14:50:46+02:00 docs(p0): verify exact latest primary compatibility without activation
+992260518dbef37cf5b4b41beb2467d5300d1e60 2026-10-22T14:10:48+02:00 fix(wfo): reject invalid metric evaluations as failed trials
+0f0cf792665e2bc80726ef6e840b61374af2c31a 2026-10-22T12:14:55+02:00 docs(p0): record pending protection attribution regression and proof limits
+94064850c8b09d00aecb124d20ed423f0f6ffb70 2026-10-22T11:19:13+02:00 docs(p0): record primary missing-protection recovery port and regressions
+79680bf4462dc3816c2da2c01cbdb1ba77716170 2026-10-22T10:20:07+02:00 docs(p0): record primary initial ACK retention and independent port correction
+13c1d09946a27f35ad533b04cc4c74a93d9408c4 2026-10-22T09:15:35+02:00 docs(p0): record unchanged activation gate and preserved evidence hashes
+ead5e61a9b315a847cedf89093740383d60b9f1b 2026-10-22T08:14:39+02:00 fix(wfo): isolate cached parameter results from caller mutation
+20ff0e5b58e23c3542c567bda3772f4803a2e4b9 2026-10-22T07:08:41+02:00 fix(wfo): isolate copyable strategy state per objective evaluation
+b81f012f319b80a3ce4c04690a3d9c61e3ecb74b 2026-10-22T06:11:54+02:00 docs(epic01): record independent Radar replay and WFO continuity checks
+f0e7d07d2c59ccf42550b759d95af8048ee1319f 2026-10-22T05:08:58+02:00 docs(p0): freeze exact primary offline verification and activation evidence gaps
+191d2aed7d2aac48c587df5060b8d34ec7299d85 2026-10-22T04:12:25+02:00 docs(p0): record protective identity regression and independent controls
+9b1ffe4ed1ac5c0bef7d672db03476e319ade5fd 2026-10-22T03:08:49+02:00 docs(p0): record protective evidence inspection boundaries
+d4e684e8bfcba3db713711953f88ba7e45346cd8 2026-10-22T02:09:39+02:00 docs(p0): record primary reconciliation integrity gate verification
+aa6dd595629c6f42a4535b75175d1349835eed7c 2026-10-22T01:09:05+02:00 docs(p0): record integrated protective unknown-response recovery evidence
+eba1826fc5a17b0dcf6dd72e45805effebdcf2d7 2026-10-22T00:02:38+02:00 docs(p0): record primary durable protection prerequisite and operator boundary
+653bb5393cd04546ee35c7069c07b248291ad6a1 2026-10-21T23:13:11+02:00 docs(p0): verify Telegram credential source and direct authentication result
+8e072b599f384362c751db49177c75ff72e1d2f9 2026-10-21T23:03:22+02:00 docs(p0): reproduce primary conditional identity gap and bound safe port
+0f0d416ec5be1a5936f84fc5b3265c3e27b8a599 2026-10-21T21:46:35+02:00 docs(p0): record reviewed primary position-snapshot integration
+7969a13a977ea4330ad6ff21da8b7f5994996a48 2026-10-21T21:11:17+02:00 docs(p0): record completed primary source integration and exact-target tests
+10ea83985eb246c2991bfe924453358f7d16cbe2 2026-10-21T20:40:37+02:00 docs(epic01): retain independent offline WFO gate evidence
+fbb8d8463bc41939ff77d4d68525dff7448f5f01 2026-10-21T19:42:12+02:00 test(p0): preserve reviewed primary startup gate candidate and evidence
+5fd0a1faab423eeb91e72758e9df8847df08413c 2026-10-21T07:43:28+02:00 test(p0): verify TESTNET ledger ordering and supervised abort boundary
+82eff6d4cd621ac75a7e3d87625a9bbe10cf3622 2026-10-21T06:44:12+02:00 docs(p0): compare primary candidate against unchanged regression baseline
+915afd5b589c6d83531a8f4c6884f9705db38295 2026-10-21T05:47:12+02:00 docs(p0): record primary-target journal candidate and focused validation
+383ca116f959ff50d1528c4154cd154aa7b88424 2026-10-21T04:42:34+02:00 docs(p0): verify all-state launch boundary and safe integration route
+3a7f502cf23d95a451200d19748eb0b65cd7a54f 2026-10-21T03:39:56+02:00 docs(p0): verify explicit journal binding without runtime activation
+bf4e252349aae5d12ae363ebdcc6b0ea32aa9250 2026-10-21T02:40:27+02:00 docs(p0): verify journal compatibility and expose launch-path gap
+114cc79ae6ae61dc3e0c56d1151efac1b38ef094 2026-10-21T01:39:47+02:00 fix(journal): reject invalid loaded lifecycle identities and statuses
+bf90c6d391d376dc7fff5dbde068802ad2cf4388 2026-10-21T00:35:11+02:00 docs(p0): record independent journal integrity review and limits
+9d51d3a099b5e9a34fc0ba8a96d2cb659f389b20 2026-10-20T23:37:26+02:00 fix(journal): retain load integrity failures for startup gate
+8e190e0eaf40547f5925b2744d190b83f581f599 2026-10-20T21:36:09+02:00 fix(startup): refuse trading dispatch with unresolved recovery state
+50a8e1a4e10616855723eb58b550bbd0c726f03e 2026-10-20T20:40:47+02:00 fix(recovery): retain durable uncertainty for missing initial protection
+bd1cb91c0c900cfeec5a289883cce6ff6868740a 2026-10-20T07:57:54+02:00 fix(protection): retain initial protective acknowledgements with entry identity
+c073e197af9a445c560b11a8f1b2c9c6eafcd2b1 2026-10-20T06:59:55+02:00 fix(protection): persist manager uncertainty before broker actions
+c2a23ffb4846bf2c2a34171d06c6e2d52440b9d0 2026-10-20T06:52:17+02:00 fix(protection): retain unknown holds through position cleanup
+347d622aead314f051e8f4c62a4ef32f4fb17f86 2026-10-19T23:29:55+02:00 fix(protection): block repeat stop submissions after ambiguous acknowledgement
+086a588e47043623bdf7475de5e0c6bb701745a3 2026-10-19T15:35:51+02:00 docs(p0): identify missing acknowledged protective lifecycle binding
+2121e5ccd46f4d8743ebb085eb3b3c4b9abdc5a6 2026-10-19T14:24:49+02:00 fix(reconciliation): require observed exit side and filled quantity
+8e3a1100c61705976bdb7377bca2b9728c51c2ea 2026-10-19T13:21:18+02:00 docs(p0): pin source candidate and journal binding hazards
+89ac7468eb1c5ca9014fae73f76e2558e067f5e5 2026-10-19T12:19:00+02:00 fix(reconciliation): classify reported result independently of trigger type
+cda027eaf9a1a555d1a2b837347faece0747b2e7 2026-10-19T11:22:14+02:00 fix(reconciliation): require explicit exit history symbol identity
+c31418ca732e59ff0f85080e3322d30995a86754 2026-10-19T10:22:36+02:00 fix(reconciliation): preserve unknown exit economics without fabricated losses
+21e770e8a8fa386520dd43783a9815fdc091e602 2026-10-19T09:16:54+02:00 fix(reconciliation): preserve restored first-flat uncertainty
+f80a790f728b1901a9cb7a1a40576d8154face70 2026-10-19T09:08:11+02:00 docs(p0): preserve independent epic work alongside runner priority
+1e4f0dd629543026921e988addda9589ee5ae16b 2026-10-19T09:06:59+02:00 docs(p0): prioritize bounded supervised runner recovery
+ee4cd0ff66b0d6a38c3a8efd053a0ec7ee12b9a1 2026-10-19T08:19:46+02:00 fix(reconciliation): never promote nonfilled protective orders to fills
+37714beeaeaf6b88ad30590a257dc2088ee0f395 2026-10-19T07:21:45+02:00 docs(p0): record independent position snapshot review
+5620b4c7b426a95be3a32bf97700eef61a91648f 2026-10-19T07:21:38+02:00 fix(bingx): reject incomplete converted position snapshots
+85c82a1451f519e3258df1ab18fdb5f06470abe7 2026-10-19T06:14:15+02:00 fix(bingx): preserve failed position snapshot uncertainty
+f1d5b719fdea53fc1ff24cd03849fbd61bd5c67a 2026-10-19T05:17:54+02:00 fix(reconciliation): preserve uncertainty on unavailable position snapshots
+9818a041ed5a7be90ed0be5de40a16ec274cf8c2 2026-10-19T04:14:11+02:00 fix(wfo): isolate cached results from mutable objective context
+79bebf364cd83ca1d6d78f9888be8f571db3c328 2026-10-19T03:05:41+02:00 fix(wfo): fingerprint complete training data for optimizer cache

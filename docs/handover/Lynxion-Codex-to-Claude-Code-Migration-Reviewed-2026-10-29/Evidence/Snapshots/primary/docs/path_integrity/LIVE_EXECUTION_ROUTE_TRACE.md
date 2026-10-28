@@ -1,0 +1,26 @@
+# Unit 1 — offline execution-route trace
+
+**Finding:** one logical `ExecutionIntent` can reach two independent `execution_service.execute_order(order)` calls before a broker, under an offline fixture where no pending broker order exists. This is **not** evidence that two orders were sent or filled at BingX. The spy has no broker, network, or `LiveExecutionGuard`; guard invocation count in this fixture is **0 by construction**, and live guard behavior remains unmeasured.
+
+## Subscriber map and activation
+
+`ArchitectureOrchestrator.__init__` registers `SignalProcessor._process_execution_intent` via `setup_signal_processing`; `ArchitectureOrchestrator.start()` registers the processing handlers again (`infrastructure/orchestrators/architecture_orchestrator.py:39,66`). `EventRouter.subscribe` appends without deduplication (`infrastructure/messaging/event_system.py:44-48`). Thus the number of registered SignalProcessor handlers may itself exceed one, depending on import/start lifecycle; Unit 1's fixture deliberately registers it **once**. `AutoDetectionOrchestrator.__init__` starts the architecture orchestrator and additionally registers `_handle_execution_intent_event` (`infrastructure/orchestrators/auto_detection_orchestrator.py:64-71`). The first subscriber constructs/sends pre-broker synchronously (`event_system.py:277-624`); the second queues, then `_opportunity_processing_loop` calls `_execute_strategy_for_opportunity` → `_execute_trade_from_intent` → constructs/sends another order (`auto_detection_orchestrator.py:297,430-486`; `_auto_detection_execution.py:33-357`). Their activation is source/lifecycle-dependent, not a mutually exclusive mode flag in these subscriptions.
+
+## Deterministic trace
+
+`tests/unit/test_path_integrity_unit1_routes.py` uses a local `EventRouter`, real `SignalProcessor` handler, real auto-detection event handler/queued execution method, fixed price 100, fixed size 1 from an offline risk spy, allowed cooldown, and a network-incapable `PreBrokerSpy`. Neither the auto-detection constructor nor a production runner is started. `router._route_event` is synchronous; the queued item is then drained deterministically by the test. The test isolates route topology and does not prove a real broker would accept either order.
+
+| Fixture | Source/event ID | Intent identity | Subscriber invocations | Queued | Risk sizing invocations | Pre-broker orders | Guard invocations | Result |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| Normal LONG | `unit1-one-intent` | same Python object | SignalProcessor 1; auto-detection 1 | 1 | 2 | 2 | 0 (spy) | Both orders reference same parent intent |
+| Normal SHORT | `unit1-one-intent` | same Python object | SignalProcessor 1; auto-detection 1 | 1 | 2 | 2 | 0 (spy) | Both orders reference same parent intent |
+| Duplicate delivery, each side | same event and intent delivered twice | same Python object | SignalProcessor 2; auto-detection 2 | 1 (auto dedup) | 3 | 3 | 0 (spy) | Auto queue dedup does not dedup synchronous handler |
+| Cooldown veto, each side | one event; veto before queued execution | same Python object | SignalProcessor 1; auto-detection 1 | 1 | 1 | 1 | 0 (spy) | Queued route blocked, synchronous handler already attempted |
+
+`pytest -q tests/unit/test_path_integrity_unit1_routes.py --disable-warnings` passed **6/6**. The Domain `ExecutionIntent` has no stable exposed ID in this fixture; object identity plus event `correlation_id` are the trace keys. The order-construction counts are evidenced by distinct `Order` objects reaching the spy. Neither route produced a successful broker ID; the spy returns `None`, so broker-level pending-order deduplication was not exercised. Consequently this proves **multiple authoritative pre-broker attempts are possible**, but not two broker sends. Duplicate delivery was tested with an offline auto-detection dedup stub; the synchronous handler remained unprotected. Cooldown veto was tested at the queued route after the synchronous route had already attempted. Concurrent delivery, genuine risk rejection, and guard arbitration are not fully characterized by this fixture. The exactly-once safety invariant is already falsified at the pre-broker service-call boundary.
+
+## Ownership and minimal later remediation
+
+SignalProcessor: **AUTHORITATIVE_EXECUTION_ROUTE**. Auto-detection queue and `_execute_trade_from_intent`: **AUTHORITATIVE_EXECUTION_ROUTE** when auto-detect is constructed and queue runs. Together: **DUPLICATE_EXECUTION_RISK**; not proven duplicate *broker fills*. A minimal separately reviewed remediation would choose one existing handler as sole owner of intent-to-order conversion for auto-detect, make the other observation/queue-only or unsubscribe it for that mode, and add a source-event/intent-id idempotency gate before order construction. Do not merely rely on broker pending-order rejection: that occurs after a redundant attempt and can race. Regression must assert one logical intent → at most one pre-broker service call for LONG/SHORT, duplicate and concurrent delivery, cooldown and risk blocks, with a network-incapable spy. **No subscriber or production path was changed in Unit 1.**
+
+LIVE_ROUTE_DUPLICATE_EXECUTION_CONFIRMED
