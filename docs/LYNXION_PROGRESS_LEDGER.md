@@ -1,5 +1,24 @@
 # Lynxion Engineering Progress Ledger
 
+## 2026-10-28 — authorized observed MTF and maker work executed
+
+Actual offline progress in main, not deployed primary: scientific/data/model contract
+7eab7ae, component/source62eed43 and subminimum-partial fixa4edfb5. Separate real public
+BTCUSDT2024-01-01 top-five/trade samples total43,631,651compressed bytes. Full source
+qualification:1,201,744book rows,2,197,331trade rows;1,440observed as-of minute quotes,
+278usable five-minute OBI/delta closes;10late buckets excluded. Source/root/hashes:
+data/research/epic01_mtf_maker/qualification_2026-10-28/.
+Actual tape maker probes produced modeled fills/partials with source IDs, no strategy
+PnL or broker action. Ledger minimum-size partial bug reproduced RED1FAIL and fixed.
+Final selected isolated337PASS/27warnings; no independent review or full baseline claim.
+Full economics is NOT_RUN until real family/MTF/event composition, post-fill exits,
+funding/accounting and source/parameter/OOS gates pass. Existing7packages30scenarios
+remain8PASS1FAIL21BLOCKED. Runtime P0/Telegram unresolved; no restart, journal clearing,
+authenticated broker access, new secrets or real funds. Five old dirty research files,
+raw journal, prior Pilot1/2/cohorts and migration package preserved.
+Next authorized work is executable T03/T04 composition and economic input/cost gates,
+not passive repeated source metadata checks. General engineering permission is present.
+
 ## 2026-10-28 — documentation correction and fresh local runtime facts
 
 This is a documentation-only task following the operator's request to remove stale navigation
