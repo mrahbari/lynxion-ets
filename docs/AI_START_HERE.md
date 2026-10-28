@@ -26,16 +26,17 @@ changes, record exact proof limits and continue to the next ready existing task.
 
 ## Current continuation boundary
 
-- P0: exact TRX protective marker remains unresolved. Preserve it. No startup, manual broker
-  writes, journal/cooldown clearing or fabricated terminal outcome.
-- T03: qualify the actual composed causal replay, then Fusion HOLD/rejection/registration and
-  symbol/cooldown evidence with synthetic offline fixtures; do not silently promote unit fixes
-  to full acceptance or change live policy.
-- T04/T05: no economic baseline until the plan, observed MTF inputs and supported execution
-  model are qualified. A reduced component experiment needs its exact frozen scientific contract.
-- Radar: reuse the existing [CLI handover](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/research/OPPORTUNITY_RADAR_V1_HANDOVER.md).
-  Do not rebuild it or describe six observed symbols as the historical whole market.
-- R01–R26 and frozen cohorts retain their own verdicts, no-new-collection and outcome gates.
+Read the [operator scope settlement](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/LYNXION_EPIC_01_SCOPE_CLOSEOUT.md) first: EPIC has9accepted/21withdrawn/0activeTODO.
+Do not resume or recreate its cancelled original V1 scenarios, including the old full-plan
+optimization/live-certification obligations. Withdrawal is not a PASS or repaired defect.
+
+- P0 exact TRX uncertainty and current safety gates remain; no startup, broker writes,
+  journal/cooldown clearing or fabricated terminal outcome.
+- The independently authorized bounded observed-MTF/maker/development contract remains
+  its own scope. No economic output until that contract's source/composition/cost gates;
+  no substitution for the withdrawn full V1 or untouched-OOS claim.
+- Reuse the delivered offline Radar; live watcher/screener shadow-port delivery was withdrawn.
+- Preserve R01–R26 exact verdicts, frozen cohorts, raw journals and the five research dirties.
 
 The [26 October bilingual migration package](handover/README.md) is useful historical context,
 not current runtime truth, a full code/data backup or an ownership transfer.

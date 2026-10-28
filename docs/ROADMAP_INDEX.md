@@ -13,24 +13,24 @@ Use [current status](LYNXION_CURRENT_STATUS_AND_BLOCKERS.md) for the latest date
 [R01–R26](research/LYNXION_RESEARCH_BACKLOG.md) for research dispositions.
 September investor-release and edge boards are historical decisions, not today's release authority.
 
-## Existing work order
+## EPIC scope settlement and existing independent authority
 
-| Existing scope | Remaining action | Gate / completion evidence |
-|---|---|---|
-| P0 recovery | Authoritatively attribute the exact unknown TRX protective attempt and review durable disposition | Preserve uncertainty; current positions or no history match cannot identify a past submission. The separately reviewed isolated-TESTNET retirement option is not automatically selected. |
-| T01 | Qualify active composition, MTF raw-to-processed lineage and holdout eligibility | Source metadata, timestamp units/availability, actual observations, no survivorship substitution |
-| T02 | Finish bounded watcher/screener shadow-port acceptance using existing Radar | Read-only composition, no trading registration/routing changes; current CLI already delivered |
-| T03 | Actual composed replay clock/freshness, Fusion/HOLD/rejections, registration and symbol/cooldown evidence | Synthetic integration first; explicit input/clock contracts; current FAIL cannot be closed by isolated seam tests |
-| T04 | Define three actual plans and run a qualified after-cost baseline | Existing family names do not prove requested pullback/retest/momentum semantics; observed 5m flow/1m quotes and truthful maker model are missing |
-| T05 | Freeze parameters/budget/objective; actual chronological WFO and untouched OOS | Depends on qualified T04; prior optimizer isolation/callback/metric repairs are engineering evidence only |
-| T06 | Complete composed signal-to-intent, duplicate, uncertainty, protection, persistence and replay fault acceptance | Fake-adapter tests do not prove deployed broker state or restart safety |
-| T07 | Maintain linked decisions and release separation | Reporting PASS; release remains NO-GO while other gates are open |
-| R04/R05/R06/R14 | Frozen sample/provenance deliverables and exact execution attribution | Current local collector health unverified; no new collection, early outcome opening or threshold changes |
-| R02/R03/R25 | Required external feed/overlapping observed panel | Blocked externally, not ordinary coding tasks |
+The [original EPIC](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/LYNXION_EPIC_01_TRADING_V1.md) is CLOSED_PARTIAL_DELIVERY:9accepted bounded deliverables,
+21removed without delivery and0activeTODO. [Row-level closeout](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/LYNXION_EPIC_01_SCOPE_CLOSEOUT.md) preserves all30IDs.
+Only T01-S04 newly completed through actual per-file eligibility/hash evidence; the
+other withdrawn promises must not be recreated as TODOs or moved into another backlog.
+The original full TradingV1 was not delivered; release remainsNO-GO.
 
-Independent qualified synthetic work may continue while P0 is blocked. Do not replace this
-roadmap with repeated HEAD checks or declare continuous execution between scheduled turns.
-No new backlog or strategy architecture is created by this index.
+Existing independent scopes are not silently cancelled or promoted:
+
+- P0 exact-attempt attribution and safety invariants still govern any future startup.
+- The already authorized [observed-MTF/maker component contract](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/research/EPIC01_MTF_MAKER_ECONOMIC_CONTRACT.md)
+  remains limited scientific work; it is not the withdrawn full three-plan V1,
+  Hyperopt/OOS certification or production-readiness program.
+- R01–R26 exact verdicts, frozen cohort/outcome gates and external dependencies remain unchanged.
+
+No new backlog, replacement promise or architectural program is created by this settlement.
+Routine in-scope engineering remains authorized; do not imply continuous work between turns.
 
 ## Edge validation sequence
 

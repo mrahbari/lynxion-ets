@@ -17,7 +17,7 @@ This is local process/journal evidence, not a current exchange snapshot.
 | Opportunity Radar | Offline, read-only six-symbol observed-cohort CLI, tested historically | Live watcher/screener shadow integration, qualified point-in-time market universe |
 | WFO/backtesting | Bounded causal timing, training isolation, symbol binding and objective-validity corrections | Qualified inputs, supported maker execution, frozen plans and OOS evaluation |
 | Economic Edge | Prior studies and reproducible negative/data-limited verdicts retained | No qualifying positive after-cost/OOS/prospective evidence |
-| EPIC-01 | Seven packages, thirty acceptance scenarios | 8 PASS / 1 FAIL / 21 BLOCKED; release NO-GO |
+| EPIC-01 | Closed with partial delivery; all thirty IDs adjudicated | 9 accepted / 21 removed, not delivered / 0 active TODO; release NO-GO |
 
 ## Source locations
 
@@ -39,6 +39,9 @@ qualified offline engineering.
 The checked launcher is [scripts/lynxion_safe_testnet_launcher.py](scripts/lynxion_safe_testnet_launcher.py).
 Its `--check-only` option never launches; a failed recovery blocks normal launch as well.
 The launcher repair is not a resolution of the uncertain order. Do not start while blocked.
+
+The [scope closeout](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/LYNXION_EPIC_01_SCOPE_CLOSEOUT.md) records cancellation separately from successful delivery.
+Original Trading V1 remains undelivered; P0 and economic gates remain enforced.
 
 ## Documentation and evidence
 

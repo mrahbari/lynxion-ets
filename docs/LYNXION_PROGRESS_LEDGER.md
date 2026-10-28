@@ -1,5 +1,20 @@
 # Lynxion Engineering Progress Ledger
 
+## EPIC-01 scope settlement — operator instruction applied
+
+The former22unaccepted scenarios have final dispositions: T01-S04 actually completed
+per-file eligibility classification and hash readback for5158inputs (5150unqualified,
+eightdevelopment-only; zero independent validation/holdout/economic admissions).
+The remaining20BLOCKED plus1FAIL are withdrawn as REMOVED_NOT_DELIVERED, never PASS.
+Final charter:9accepted/21withdrawn/0activeTODO; CLOSED_PARTIAL_DELIVERY.
+[Every decision](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/LYNXION_EPIC_01_SCOPE_CLOSEOUT.md); original TradingV1 NOT_DELIVERED, releaseNO-GO.
+No replacement backlog or automatic resurrection of cancelled IDs. The original failure
+and blocked evidence remain in the closeout record/source history. Existing P0/research
+gates are not removed and no runner, broker, data/secret/cooldown mutation occurred.
+The separately authorized bounded MTF/maker/development contract survives independently;
+it is not successful delivery or a requeue of the withdrawn full-V1 promises.
+This task adds an outcome-blind eligibility auditor and evidence; runtime source is unchanged.
+
 ## 2026-10-28 — authorized observed MTF and maker work executed
 
 Actual offline progress in main, not deployed primary: scientific/data/model contract

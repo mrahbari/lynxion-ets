@@ -1,6 +1,7 @@
 # Lynxion — documentation index
 
 Reviewed 2026-10-28. Start with [current status and blockers](LYNXION_CURRENT_STATUS_AND_BLOCKERS.md).
+The [EPIC closeout](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/LYNXION_EPIC_01_SCOPE_CLOSEOUT.md) records9accepted/21withdrawn/0activeTODO and preserves non-delivery.
 It distinguishes freshly checked local facts from dated tests, exchange snapshots and research verdicts.
 
 ## Current navigation
@@ -11,7 +12,7 @@ It distinguishes freshly checked local facts from dated tests, exchange snapshot
 | [AI continuation](AI_START_HERE.md) | Read order, task isolation and how to continue without routine reapproval |
 | [Roadmap](ROADMAP_INDEX.md) | Existing task order and exact external/scientific gates |
 | [P0 recovery handover](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/POST_PILOT2_EXECUTION_RECOVERY_HANDOVER.md) | Canonical operational dossier in integrated local main |
-| [EPIC-01 board](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/LYNXION_EPIC_01_TRADING_V1.md) | Canonical 7 packages / 30 scenarios in integrated local main |
+| [EPIC-01 board](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/LYNXION_EPIC_01_TRADING_V1.md) | Final disposition of 7 packages / 30 original IDs; partial delivery, no active TODO |
 | [Radar handover](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/research/OPPORTUNITY_RADAR_V1_HANDOVER.md) | Actual offline capability and test limitations |
 | [Research registry](research/LYNXION_RESEARCH_BACKLOG.md) | R01–R26; exact scientific verdicts retained |
 | [Frozen studies](research/FROZEN_STUDIES_STATUS.md) | Dated metadata/liveness audit; no early outcome opening |
