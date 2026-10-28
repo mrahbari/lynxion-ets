@@ -1,5 +1,7 @@
 # Operator Autonomy Authorization
 
+> **2026-10-28 applicability note:** ordinary in-scope engineering remains authorized without routine reapproval. Read this older general grant together with later explicit limits and the current unresolved recovery gate. It does not permit clearing UNKNOWN, broker writes, account/credential reset or startup while recovery is blocked. [Exact current boundary](/Users/mojtaba.rahbari/Sites/python/lynxion-ets/docs/LYNXION_CURRENT_STATUS_AND_BLOCKERS.md).
+
 **Recorded:** 2026-08-29
 **Scope:** Lynxion ETS repository and VST/paper engineering workflow
 

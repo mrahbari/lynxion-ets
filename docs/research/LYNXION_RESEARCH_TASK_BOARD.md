@@ -1,5 +1,7 @@
 # Lynxion research task board
 
+> **Scope clarification, 2026-10-28:** 11 DONE / 0 remaining applies only to this outcome-blind measurement/documentation queue. The project still has 22 unaccepted EPIC scenarios; see [current status](/Users/mojtaba.rahbari/Sites/python/lynxion-ets/docs/LYNXION_CURRENT_STATUS_AND_BLOCKERS.md) and [canonical EPIC](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/LYNXION_EPIC_01_TRADING_V1.md). This clarification does not reopen or alter any task or frozen research verdict.
+
 Operational queue over [the canonical research backlog](LYNXION_RESEARCH_BACKLOG.md), not a new scientific protocol. No future outcomes or trading activity are authorized by this board. Pilot-2 was finalized on **2026-10-13 after its 00:00 UTC boundary**; task-program starting HEAD `8b3ab1e`. Other completed backlog entries retain their prior evidence/status unless separately re-audited. The operator's **no repeat collection after Pilot-2** constraint and the full R01–R26 disposition are recorded in the [13 October decision brief](LYNXION_2026-10-13_NO_RECOLLECTION_DECISION_BRIEF.md). The [closure audit](LYNXION_BACKLOG_CLOSURE_AUDIT_2026-10-10.md) identifies which unfinished entries are genuinely completable and which have immutable scientific/data gates.
 
 | Dashboard | Current state |

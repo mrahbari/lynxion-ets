@@ -1,5 +1,8 @@
 # Lynxion autonomous research program — final handover
 
+> **HISTORICAL SNAPSHOT — status reviewed 2026-10-28.** The 11-completed-task measurement/governance queue is not the whole project backlog. Later P0/EPIC/Radar work has separate acceptance and remains unfinished.
+> Current source locations, runner evidence, backlog and next steps: [current status](/Users/mojtaba.rahbari/Sites/python/lynxion-ets/docs/LYNXION_CURRENT_STATUS_AND_BLOCKERS.md). Historical counts, commands and readiness labels below are not current authorization or runtime proof.
+
 Checkpoint: 2026-10-13 after the frozen 00:00 UTC Pilot-2 stop. Starting HEAD for the ordered backlog program: `8b3ab1e`; pre-handover HEAD after the measurement report: `b6e9e0e`. The ending HEAD is the commit containing this handover (resolve `git rev-parse HEAD` in the checkout); a Git commit cannot embed its own stable hash in its contents.
 
 ## Pilot-2: accepted measurement result

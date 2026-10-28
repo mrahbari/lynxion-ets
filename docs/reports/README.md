@@ -1,5 +1,7 @@
 # Reports
 
+> **Historical report archive — reviewed 2026-10-28.** Reports below describe their own source/date and may conflict across eras. No report title containing final, production-ready, PASS or GO certifies today’s runtime. Start with [current status](/Users/mojtaba.rahbari/Sites/python/lynxion-ets/docs/LYNXION_CURRENT_STATUS_AND_BLOCKERS.md); retain original findings and frozen evidence instead of treating this archive as an active task queue.
+
 Audit and analysis reports for the Lynxion ETS codebase.
 
 ## Phase 1 — Codebase Audit & System Analysis (read-only)

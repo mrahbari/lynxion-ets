@@ -1,5 +1,8 @@
 # Lynxion ETS — Complete Single-File AI Handoff
 
+> **HISTORICAL SNAPSHOT — status reviewed 2026-10-28.** This is the 2026-09-14 single-file handoff, not a complete current handoff. Use the dated bilingual migration package only together with the current status.
+> Current source locations, runner evidence, backlog and next steps: [current status](/Users/mojtaba.rahbari/Sites/python/lynxion-ets/docs/LYNXION_CURRENT_STATUS_AND_BLOCKERS.md). Historical counts, commands and readiness labels below are not current authorization or runtime proof.
+
 **Audience:** AI engineering agents, quantitative researchers, technical reviewers, and investors'
 technical advisers
 

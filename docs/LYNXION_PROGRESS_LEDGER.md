@@ -1,5 +1,31 @@
 # Lynxion Engineering Progress Ledger
 
+## 2026-10-28 — documentation correction and fresh local runtime facts
+
+This is a documentation-only task following the operator's request to remove stale navigation
+and explain the stalled work. Baselines: primary `70e7f88`, main `6e99742`; no runtime deployment.
+At21:36:18UTC sanitized limited local process inventory found no matching Python trading runner.
+At21:36:14UTC read-only latest-order journal scan found631FILLED/2315FAILED/67CANCELLED/
+1PROTECTION_UNKNOWN across3014orders, zero malformed JSON lines. Labels do not prove fills/PnL.
+Exact unresolved TRX marker and stop0.328502 remain unchanged; no broker call, launch,
+journal/cooldown/secret modification or outcome opening occurred.
+
+Current navigation: [status](LYNXION_CURRENT_STATUS_AND_BLOCKERS.md),
+[documentation review](DOCUMENTATION_REVIEW_2026-10-28.md), [P0](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/POST_PILOT2_EXECUTION_RECOVERY_HANDOVER.md), [EPIC](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/LYNXION_EPIC_01_TRADING_V1.md).
+The thirty-row scenario table remains8PASS/1FAIL/21BLOCKED. The historical 11DONE queue
+is not project completion. Latest314PASS/27warnings and launcher13PASS remain dated tests,
+not rerun today. The generic README's guaranteed-profit claims were withdrawn and the original
+archived; older handoffs/investor READMEs explicitly marked historical. Empty task10001 removed.
+Frozen migration snapshots/ZIP, raw journal, protocols and five research dirty files preserved.
+
+Recent scheduled HEAD/status checks were surveillance, not sustained engineering or continuous
+supervision. P0 blocks startup; it does not justify halting independent qualified offline work.
+Next existing engineering task: T03 actual composed causal replay/decision evidence with synthetic
+fixtures, followed by Fusion/HOLD/registration/symbol/cooldown acceptance. Full economics still
+needs qualified observed inputs, supported maker execution and frozen scientific scope.
+Older Current task/Status sections below describe their original dates and are superseded by
+this overlay for changing operational facts; their scientific verdicts remain preserved.
+
 ## 2026-10-18 — P0 runtime-checkout corrections
 
 This dated execution update supersedes the operational status of the older sections below;

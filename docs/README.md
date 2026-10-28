@@ -1,47 +1,38 @@
-# Lynxion ETS — Documentation Index
+# Lynxion — documentation index
 
-This directory contains durable project documentation, reviewer material, roadmaps, audits, and
-evidence indexes. Executable task definitions and completion records belong under `tasks/`.
+Reviewed 2026-10-28. Start with [current status and blockers](LYNXION_CURRENT_STATUS_AND_BLOCKERS.md).
+It distinguishes freshly checked local facts from dated tests, exchange snapshots and research verdicts.
 
-## Start here
+## Current navigation
 
-| Document | Purpose |
-|:---|:---|
-| [`LYNXION_SINGLE_FILE_AI_HANDOFF.md`](./LYNXION_SINGLE_FILE_AI_HANDOFF.md) | Complete standalone attachment for an AI or technical reviewer |
-| [`AI_START_HERE.md`](./AI_START_HERE.md) | Repository-aware AI continuation guide |
-| [`ROADMAP_INDEX.md`](./ROADMAP_INDEX.md) | Canonical short/long-term roadmap navigation and authority order |
-| [`LYNXION_PROGRESS_LEDGER.md`](./LYNXION_PROGRESS_LEDGER.md) | Current operational context and chronological evidence record |
+| Document | Role / location |
+|---|---|
+| [Current status](LYNXION_CURRENT_STATUS_AND_BLOCKERS.md) | Runtime, Radar, Edge, all existing backlog categories and next bounded actions |
+| [AI continuation](AI_START_HERE.md) | Read order, task isolation and how to continue without routine reapproval |
+| [Roadmap](ROADMAP_INDEX.md) | Existing task order and exact external/scientific gates |
+| [P0 recovery handover](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/POST_PILOT2_EXECUTION_RECOVERY_HANDOVER.md) | Canonical operational dossier in integrated local main |
+| [EPIC-01 board](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/LYNXION_EPIC_01_TRADING_V1.md) | Canonical 7 packages / 30 scenarios in integrated local main |
+| [Radar handover](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/research/OPPORTUNITY_RADAR_V1_HANDOVER.md) | Actual offline capability and test limitations |
+| [Research registry](research/LYNXION_RESEARCH_BACKLOG.md) | R01–R26; exact scientific verdicts retained |
+| [Frozen studies](research/FROZEN_STUDIES_STATUS.md) | Dated metadata/liveness audit; no early outcome opening |
+| [Progress ledger](LYNXION_PROGRESS_LEDGER.md) | Dated execution history; newest status overlay is first |
+| [Documentation review](DOCUMENTATION_REVIEW_2026-10-28.md) | Corrections, deletion rationale, inventory and verification limits |
+| [Migration packages](handover/README.md) | Frozen bilingual 26 October package, not live status or full backup |
 
-## Investor release
+Absolute links to `main` intentionally identify the actual local checkout; they are not portable
+remote URLs. If worktrees move, locate the named branch/files and repair navigation. Do not
+copy offline source into runtime merely to make a relative link work.
 
-| Document | Purpose |
-|:---|:---|
-| [`README_INVESTOR_RELEASE.md`](./README_INVESTOR_RELEASE.md) | Investor-readable technical release narrative |
-| [`README_AGENT_TECHNICAL_REVIEW.md`](./README_AGENT_TECHNICAL_REVIEW.md) | Technical and AI reviewer brief |
-| [`INVESTOR_RELEASE_EVIDENCE_INDEX.md`](./INVESTOR_RELEASE_EVIDENCE_INDEX.md) | Frozen claim-to-evidence index |
-| [`INVESTOR_RELEASE_ROADMAP.md`](./INVESTOR_RELEASE_ROADMAP.md) | Short-term technical delivery roadmap |
-| [`INVESTOR_DELIVERY_EDGE_ACCELERATION_PLAN.md`](./INVESTOR_DELIVERY_EDGE_ACCELERATION_PLAN.md) | Long-term edge-validation roadmap |
-| [`INVESTOR_RELEASE_GAP_ASSESSMENT.md`](./INVESTOR_RELEASE_GAP_ASSESSMENT.md) | Dated pre-fix gap snapshot; not current release status |
+## Historical material
 
-## Architecture and audits
+`reports/`, `archive/`, `old/`, incident reports, September investor-release documents and older
+handoffs retain dated evidence. Their words CURRENT, READY, PASS or COLLECTING apply only to
+their original scope/date. The [report index](reports/README.md),
+[historical single-file handoff](LYNXION_SINGLE_FILE_AI_HANDOFF.md) and
+[archived README](archive/README-before-documentation-review-2026-10-28.md) carry this distinction.
+Do not delete useful audit/protocol evidence simply because it is old.
 
-| Document | Description |
-|:---|:---|
-| [`system_components_catalog.md`](./system_components_catalog.md) | System-component catalog; verify mutable claims against current source |
-| [`architecture_flow.md`](./architecture_flow.md) | Event-driven architecture orientation; source remains authoritative |
-| [`LYNXION_GROUND_TRUTH_AUDIT.md`](./LYNXION_GROUND_TRUTH_AUDIT.md) | Ground-truth safety and evidence audit |
-| [`LYNXION_LEVERAGE_CONSISTENCY_AUDIT.md`](./LYNXION_LEVERAGE_CONSISTENCY_AUDIT.md) | Leverage consistency findings |
-| [`LYNXION_LEVERAGE_IMPLEMENTATION_MAP.md`](./LYNXION_LEVERAGE_IMPLEMENTATION_MAP.md) | Leverage implementation map |
-| [`LYNXION_EXIT_EVENT_LEDGER_SPEC.md`](./LYNXION_EXIT_EVENT_LEDGER_SPEC.md) | Exit-event evidence specification |
-| [`LYNXION_RECENT_BINGX_EXIT_AUDIT.md`](./LYNXION_RECENT_BINGX_EXIT_AUDIT.md) | Dated recent BingX exit audit |
-| [`LYNXION_EXTENDED_BINGX_EXIT_AUDIT.md`](./LYNXION_EXTENDED_BINGX_EXIT_AUDIT.md) | Dated extended BingX exit audit |
-| [`reports/README.md`](./reports/README.md) | Report archive index |
-
-## Placement rule
-
-- Put task briefs, acceptance criteria, task outcomes, epics, and frozen candidate registers under
-  `tasks/` (candidate protocols remain under `tasks/research/`).
-- Put explanations, roadmaps, handoffs, audits, specifications, reports, and investor/reviewer
-  material under `docs/`.
-- Do not keep a second active copy in both directories. Historical task records may link to a
-  current document, but they must not become competing sources of truth.
+The [machine-readable inventory](DOCUMENTATION_INVENTORY_2026-10-28.json) records the
+pre-review file hashes, source checkout, disposition and review depth. Inventory scanning is
+not line-by-line semantic certification of every historical report. Frozen migration bytes
+and scientific source verdicts remain unchanged.

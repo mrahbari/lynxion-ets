@@ -1,5 +1,8 @@
 # Lynxion Investor Delivery and Edge Acceleration Plan
 
+> **HISTORICAL SNAPSHOT — status reviewed 2026-10-28.** This September technical VST/shadow release record is not a current GO or evidence of a working runner. Current release is NO-GO with unresolved P0; no real-funds approval or Edge follows.
+> Current source locations, runner evidence, backlog and next steps: [current status](/Users/mojtaba.rahbari/Sites/python/lynxion-ets/docs/LYNXION_CURRENT_STATUS_AND_BLOCKERS.md). Historical counts, commands and readiness labels below are not current authorization or runtime proof.
+
 **Frozen:** 2026-09-09
 
 **Status:** ACTIVE

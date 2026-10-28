@@ -1,5 +1,8 @@
 # Lynxion Edge Research Decision Board
 
+> **HISTORICAL SNAPSHOT — status reviewed 2026-10-28.** The ranked September portfolio and its exact scientific verdicts are retained. COLLECTING is a historical protocol label; current local collector health is unverified.
+> Current source locations, runner evidence, backlog and next steps: [current status](/Users/mojtaba.rahbari/Sites/python/lynxion-ets/docs/LYNXION_CURRENT_STATUS_AND_BLOCKERS.md). Historical counts, commands and readiness labels below are not current authorization or runtime proof.
+
 **Updated:** 2026-09-23
 
 **Primary-family capacity:** 5 maximum
