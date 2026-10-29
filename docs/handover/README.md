@@ -46,3 +46,21 @@ The reviewed ZIP and all its source snapshots remain unchanged dated documentati
 فارسی: پس از بستهٔ frozen، گارد خروج‌های نامعتبر maker در main آفلاین اصلاح شد؛
 این تکمیل چرخهٔ خروج/funding، آزمون اقتصادی یا بازیابی رانر نیست. Claude پیش از ادامه
 HEAD و شاهد جاری را بررسی کند؛ فایل‌های ZIP قبلی بازنویسی نشده‌اند.
+
+## Further post-snapshot delta — replay/MTF provider boundary
+
+Offline main `e582cb108b634be8a9b258b8fd2a3d13689c9b6f` repairs an additional reproduced input-loss defect.
+The actual backtest provider now retains three explicit replay-clock markers and
+supplied OBI/CVD/bid/ask rather than erasing them before the strategy adapter.
+Eight source lines were added with original CRLF bytes preserved. RED:4FAIL/5PASS;
+focused clock/indicator/closed-bar suite29PASS/27warnings; existing30-file isolated
+allowlist352PASS/27warnings. Synthetic opposing flow now reaches the actual confirmation
+engine and is rejected before optimization; no missing inputs are invented.
+This does not qualify observed source-record/hash/as-of binding, actual family economics
+or post-fill exit/funding. No real-data probe, economic outcome or deployment was run.
+The [current component evidence](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/evidence/EPIC01_MTF_MAKER_2026-10-28.json)
+records exact limits. Both frozen migration packages remain unchanged.
+
+فارسی: حذف ناخواستهٔ ساعت replay و ورودی‌های صریح MTF در واسط backtest اصلاح شد.
+این اصلاحِ مسیر انتقال داده است؛ هنوز صلاحیت کامل اتصال دادهٔ مشاهده‌شده، خروج/funding،
+آزمون اقتصادی یا بازیابی رانر را ثابت نمی‌کند. Claude آخرین HEAD و شاهد جاری را بخواند.
