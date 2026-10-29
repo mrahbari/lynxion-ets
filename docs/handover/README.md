@@ -1,5 +1,7 @@
 # Lynxion — handover packages
 
+Latest post-snapshot engineering source: offline main `7b8bd5c08672614d0ed0e21acb4542e94d9180d3`; see the pinned observed-record binding delta below. Frozen reports/ZIPs retain their original capture baselines.
+
 Latest reviewed migration: **29 October 2026 Europe/Stockholm**. Source evidence was
 captured 28 October 22:48–22:55 UTC at primary `8e96631` / offline main `1599af9`. This is a
 documentation package; current operational state must still be checked in the actual checkouts.
@@ -64,3 +66,24 @@ records exact limits. Both frozen migration packages remain unchanged.
 فارسی: حذف ناخواستهٔ ساعت replay و ورودی‌های صریح MTF در واسط backtest اصلاح شد.
 این اصلاحِ مسیر انتقال داده است؛ هنوز صلاحیت کامل اتصال دادهٔ مشاهده‌شده، خروج/funding،
 آزمون اقتصادی یا بازیابی رانر را ثابت نمی‌کند. Claude آخرین HEAD و شاهد جاری را بخواند.
+
+## Pinned observed-record binding delta — 29 October 2026
+
+Offline main `7b8bd5c08672614d0ed0e21acb4542e94d9180d3` adds the explicit `ObservedMTFSource` opt-in.
+It pins the derived feature bytes by SHA, binds only the exact symbol/closed-bar cut,
+retains a per-record witness in accepted intents, and rejects missing/late windows
+before synthetic defaults. Unavailable intervals may still warm the OHLC context.
+A first changed-code check on the existing actual feature file bound95of96fixed M15
+cuts and explicitly excluded one late bucket;96cross-symbol controls rejected.
+This used timestamp-only context, not actual C06/setup/strategy replay or economics.
+Initial focused50PASS/27warnings; final existing30-file isolated allowlist379PASS/27warnings.
+No independent review, raw download/requalification, old maker-probe rerun, broker call
+or deployment. Actual-family/parameter/source/model/cost freeze, closed M15/H1 context
+composition, post-fill exits/observed funding/full ledger remain required.
+
+- [Current source binder](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/infrastructure/replay/observed_mtf_source.py)
+- [Exact evidence and per-cut witnesses](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/evidence/EPIC01_MTF_MAKER_2026-10-28.json)
+
+فارسی: اتصال دقیقِ فایل ویژگی‌های موجود به نماد و زمان پیاده شد؛۹۵ مرز از۹۶مرز ثابت
+متصل و یک مرز دیررس رد شد. این فقط کنترل ورودی با زمینهٔ زمانی است، نه نتیجهٔ استراتژی،
+سود، تکمیل خروج/funding یا بازیابی رانر. هر دو بستهٔ migration بدون تغییر باقی‌اند.
