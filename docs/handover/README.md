@@ -1,6 +1,6 @@
 # Lynxion — handover packages
 
-Latest post-snapshot engineering source: offline main `3dd39c1` (corrected physical CSV-line witness and strict five-unstarted-only continuation). The admitted fixed development batch is EXECUTING; four profiles have completed, one original input failure is retained and Liquidity stress is RUNNING. Do not restart the batch or reuse spent slots. Latest observed results are in the current status/evidence links below; frozen reports/ZIPs retain their capture baselines.
+Latest post-snapshot evidence: offline main `106110467eecebb0f7b821809bd742420f9dc393`, fixed executable `3dd39c1`. The six-slot development budget is FINISHED: FIVE completed model profiles plus ONE retained input failure; zero running/unspent slots. Final Liquidity nominal/stress modeled cash changes are -15.943200836418 / -17.100641478199; the other three completed profiles had no fills after original-risk admission. All five persisted outputs passed same-agent read-only receipt reconciliation; no independent review. Do not rerun spent slots, tune parameters or treat the frozen migration snapshot as current. Full V1 remains undelivered/NO-GO, Edge unestablished and P0 recovery unresolved.
 
 Latest reviewed migration: **29 October 2026 Europe/Stockholm**. Source evidence was
 captured 28 October 22:48–22:55 UTC at primary `8e96631` / offline main `1599af9`. This is a
@@ -218,45 +218,85 @@ intents, and original9accepted/21withdrawn/0activeEPIC obligations remain settle
 وضعیت انضباط خانوادهٔ واقعی هنوز شرط اجرای اقتصادی است. هیچ PnL واقعی یا استقرار و
 شروع رانر انجام نشد؛ دو بستهٔ frozen، ژورنال و پنج فایل dirty پژوهش حفظ شده‌اند.
 
-## Fixed development component — execution update, 29 October 2026
+## Fixed development component — FINAL results, 29 October 2026
 
 Pre-outcome admission `8e2abe4` froze actual family/order/maker/exit/funding/discipline
 composition, exact code/runtime/data pins and a maximum SIX attempt slots, after
 471selected isolated tests. First trend_following/nominal attempt failed at the raw
 quote-row identity gate before any order/fill. Failure/partial evidence was retained
-in `c5cfc6b`; it is never relabeled PASS or retried. The new loader had numbered data
-records from1 while the frozen qualifier uses physical CSV line2 after the header.
-Clocks/prices/latest-asof identity matched at the failed boundary. Correction and
-separate admission `3dd39c1` cover ONLY the five original UNSTARTED slots; the failed
-slot/old marker are immutable, data/model/quantity/cost/window/source parameters stay
-fixed, and maximum6total attempts is unchanged. One row-number test first failed;
-focused35PASS/27warnings and final existing30-file480PASS/27warnings passed. No independent review.
+in `c5cfc6b`; it is never relabeled PASS or retried. The new loader numbered data records
+from1 while the frozen qualifier uses physical CSV line2 after the header. Clocks,
+prices and latest-asof identity matched. Minimal correction/separate admission3dd39c1
+covered ONLY the five original UNSTARTED slots; failed slot/old marker/data/model/
+quantity/cost/window/source parameters stayed fixed. The row-number regression was
+RED1FAIL, then focused35PASS/27warnings and existing30-file480PASS/27warnings.
+Selections overlap; none were rerun for documentation or added together. No independent review.
 
-Current batch: Trend stress and Breakout nominal/stress completed with no modeled fills
-because unchanged original order quantity/exposure admission rejected their orders.
-Liquidity nominal completed one original roundtrip split into59entry partials; modeled
-cash change is -15.943200836418, total fees0.90065704725 and observed funding credit
-0.431550710822098902. These are selected-day MODEL outputs, not broker/account PnL or
-Edge. A read-only cross-check on completed outputs matched raw entry/exit rows,
-prices/fees/clocks/quantity, funding-before-inventory mutation, cash and running-peak
-drawdown. Liquidity stress is still RUNNING at this update, without final metrics.
-Do not infer its result or start another process. The original failed nominal Trend
-slot has no qualified economic metric; never substitute its stress result.
+All FIVE remaining profiles completed by2026-10-29T09:23:41Z. Final receipt/audit commit
+`106110467eecebb0f7b821809bd742420f9dc393` records:
 
-- [Current Persian status and per-slot table](../LYNXION_CURRENT_STATUS_AND_BLOCKERS.md)
-- [Canonical component attempt/evidence ledger](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/evidence/EPIC01_MTF_MAKER_2026-10-28.json)
+| Actual family | Cost | Final disposition | Original orders closed | Net modeled cash change |
+| --- | --- | --- | ---: | ---: |
+| Trend Follow | nominal | Input witness failure; spent; no qualified economic metric | — | — |
+| Trend Follow | stress | Complete, four original-admission rejections, no fills | 0 | 0 |
+| Breakout | nominal | Complete, two original-admission rejections, no fills | 0 | 0 |
+| Breakout | stress | Complete, two original-admission rejections, no fills | 0 | 0 |
+| Liquidity | nominal | Complete, modeled loss | 1 | -15.943200836418 |
+| Liquidity | stress | Complete, modeled loss | 1 | -17.100641478199 |
+
+Each Liquidity cost profile represents one original roundtrip with59entry/59exit
+partials, terminal inventory0, funding credit0.431550710822098902 and total fees
+0.90065704725000 nominal /1.929003189000 stress. Maximum equity drawdown fractions:
+0.001650016032547257 /0.0017275538810749302. Empty-profile win-rate/PF/expectancy are
+null. One-loss PF0 is measured, not a missing-metric substitute. Do not combine cost
+profiles into a portfolio/independent validation, count partials as original trades,
+substitute stress for the failed nominal slot or infer actual broker/account losses.
+
+The persisted read-only audit checked all five result hashes and failed-marker
+preservation;96ordered decisions/95exact observed/raw quote witnesses per profile;
+raw entry/exit source rows, clocks/prices/fees and declared participation; post-fill
+fresh quotes/shared depth; quantity/entry-fee allocations, observed funding against
+preexisting inventory, Decimal cash reconciliation within1e-8, source discipline
+feedback and running-peak drawdown. All checks PASS. This audit spent no economic
+attempt and is this agent's arithmetic/source cross-check, not independent review.
+Audit receipt SHA256:`b8637ebd044b6a08eca3dad00727b6a58917aea24670aba2c7f9e0975ced3c84`.
+
+- [Current Persian status and complete per-slot explanation](../LYNXION_CURRENT_STATUS_AND_BLOCKERS.md)
+- [Canonical component results/audit/attempt ledger](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/evidence/EPIC01_MTF_MAKER_2026-10-28.json)
+- [Read-only audit source](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/scripts/audit_epic01_component_results.py)
 - [Guarded fixed-budget CLI; spent slots refuse](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/scripts/run_epic01_development_component.py)
 - [Full event composition](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/infrastructure/replay/component_economic_replay.py)
 
-Model results live OUTSIDE frozen ZIPs under primary:
+Model outputs remain OUTSIDE both frozen documentation ZIPs under primary:
 `data/research/epic01_mtf_maker/qualification_2026-10-28/development_component_runs_2026-10-29/`.
-Both original once-marker and separate unstarted-continuation marker are retained.
-No original EPIC promise reopened, runtime deployment/start, broker access or account
-mutation occurred. Bounded local argv-name check at2026-10-29T08:44:19Z found no matching
-trading runner and separately identified the offline replay. TRX P0 remains unresolved.
+Persistent audit receipt is alongside that directory as
+`development_component_results_audit_2026-10-29.json`. Both once-markers, raw failed
+partial, all18frozen source pins/declaration bytes, five dirty research assets and
+raw journal remain unchanged. Original26October and Reviewed29October ZIP hashes
+also match. New result evidence does not rewrite either frozen migration package.
 
-فارسی: ترکیب کامل توسعه‌ای واقعاً وارد اجرا شد؛ یک شکست ورودی حفظ شد و رفع شناسهٔ ردیف،
-آن تلاش را تکرار نکرد. چهار جایگاه کامل‌اند؛ Trend/Breakout به سقف ریسک منبع رسیدند و
-fill نداشتند. Liquidity nominal یک گردش سفارش با59partial و حدود15.94زیان مدل‌شده داشت؛
-آخرین سناریوی stress هنوز در حال اجراست. بودجهٔ6تلاش، تنظیمات/دادهٔ ثابت و همهٔ شواهد
-حفظ شده‌اند. این نتیجهٔ حساب واقعی، ادج، تحویل کامل V1 یا بازیابی رانر نیست.
+Scope remains DEVELOPMENT_COMPONENT_MODEL_ONLY: one already-opened BTC day, uniform
+M15/closed-H1/fallback configs, declared visible queue/continuous participation/taker/
+linear-inventory assumptions. This is not venue filter/lot/tick/margin/liquidation
+or matching-engine proof, native/live equivalence, untouched OOS, independent Edge
+or original full V1 delivery. No parameter search, new window, resize, extra attempt,
+broker request, deployment or runtime start occurred. Main source is not primary runtime.
+
+The SIX-slot budget is exhausted: one input failure/five completed results/zero
+running/zero unstarted. No economic task remains authorized under this fixed contract.
+Do not rerun it, create a replacement backlog or revive cancelled original scenarios.
+Further economics requires an explicit new scientific scope/budget before outcomes.
+Independent P0 can progress only with new authoritative exact-attempt evidence and
+applicable read scope, or separately selected genuinely isolated TESTNET retirement.
+The unchanged TRX protection UNKNOWN cannot be cleared by these research results.
+Dated local argv-name check at2026-10-29T08:44:19Z found no matching trading runner;
+no health/protection claim follows. Telegram identity/delivery remains unverified.
+No sole-execution ownership transfer to Claude or automation cancellation was received.
+
+فارسی: پنج اجرای باقی‌مانده واقعاً تمام و رسیدهایشان تطبیق شد؛ شکست ورودی تلاش اول
+مصرف‌شده و محفوظ است. Liquidity در دو هزینه، هرکدام یک سفارش اصلی با۵۹partial، حدود
+۱۵٫۹۴ و۱۷٫۱۰ زیان مدل‌شده داشت. سه اجرای دیگر به محدودیت ریسک اصلی خوردند و fill
+نداشتند؛ متریک تعریف‌نشده null ماند. این بودجهٔ شش‌تلاشی پایان یافت و اجرای اضافه،
+تغییر سایز/روز یا جست‌وجو مجاز نیست. ادج اثبات نشده، V1 تحویل نشده و رانر با P0
+حل‌نشده شروع نشده است. ژورنال، داده‌های شش نماد، پنج فایل dirty و دو بستهٔ migration
+حفظ شده‌اند؛ نتایج جدید بیرون ZIP و در لینک شواهد جاری هستند.
