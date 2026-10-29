@@ -1,6 +1,6 @@
 # Lynxion — handover packages
 
-Latest post-snapshot engineering source: offline main `7b8bd5c08672614d0ed0e21acb4542e94d9180d3`; see the pinned observed-record binding delta below. Frozen reports/ZIPs retain their original capture baselines.
+Latest post-snapshot engineering source: offline main `e4022f0f5e4fde9a6829d522a8cd25711aa4b2e6`; see the frozen component declaration and closed-H1 input receipt below. Frozen reports/ZIPs retain their original capture baselines.
 
 Latest reviewed migration: **29 October 2026 Europe/Stockholm**. Source evidence was
 captured 28 October 22:48–22:55 UTC at primary `8e96631` / offline main `1599af9`. This is a
@@ -87,3 +87,31 @@ composition, post-fill exits/observed funding/full ledger remain required.
 فارسی: اتصال دقیقِ فایل ویژگی‌های موجود به نماد و زمان پیاده شد؛۹۵ مرز از۹۶مرز ثابت
 متصل و یک مرز دیررس رد شد. این فقط کنترل ورودی با زمینهٔ زمانی است، نه نتیجهٔ استراتژی،
 سود، تکمیل خروج/funding یا بازیابی رانر. هر دو بستهٔ migration بدون تغییر باقی‌اند.
+
+## Frozen component declaration and closed-H1 receipt — 29 October 2026
+
+Declaration freeze commit `db1064750991dfab5c0f33a97754db3c69493025` preceded the first
+new C06 context check. Declaration SHA256:
+`cf7f7b74eeb9d9fa7136de72fe25cf0f01301ab6e9d1de45523320f5ca547e06`.
+The file records three actual public constructor configs in an explicitly isolated
+fallback-settings environment, eighteen source hashes, the fixed BTC/day/grid/warmup
+and model/cost/quantity/budget rules. These are not deployed settings or an admitted
+economic experiment; source family metadata1h/15m/5m differs from the declared M15
+component grid, and that limitation is explicit. Funding/exit/executable-binding
+receipts remain gates; no parameter or window was selected using new outcomes.
+
+The pure `closed_mtf_context` helper builds genuine H1 OHLCV from four contiguous
+completed M15 candles. Eight new targeted controls PASS/1warning; the prior379-test
+selection was not rerun or summed. Post-freeze receipt commit `e4022f0` verifies the
+existing BTC C06 SHA and1096warmup+unit rows: every96fixed cut has1000known M15bars and
+20complete H1bars, with no forming hour. This was input/context validation only.
+Current actual adapter H1/open/volume/config wiring and exit/funding/full ledger remain
+unqualified and unfinished; no actual family signal/economic run or deployment.
+
+- [Frozen declaration — preserve bytes](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/evidence/EPIC01_COMPONENT_DECLARATION_V1.json)
+- [Closed context helper](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/infrastructure/replay/closed_mtf_context.py)
+- [Current component evidence/receipt](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/evidence/EPIC01_MTF_MAKER_2026-10-28.json)
+
+فارسی: مشخصات منبع/پارامتر/مدل/هزینه پیش از ارزیابی تازه ثابت شد و ساخت H1 از
+کندل‌های کامل M15 روی دادهٔ موجود کنترل شد. این به معنی تکمیل اتصال خانواده‌های واقعی،
+خروج/funding، آزمون اقتصادی یا بازیابی رانر نیست. هر دو بستهٔ frozen بدون تغییرند.
