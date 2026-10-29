@@ -1,6 +1,6 @@
 # Lynxion — handover packages
 
-Latest post-snapshot engineering source: offline main `5739f28ddb5fe9283706fb2cc6ffdb2ad94a72b2`; synthetic post-fill quote/cost/funding ledger controls and the four actual funding input receipts are recorded below. Full actual-family/order/tape/cancel/marking/discipline composition remains a gate before economics. Frozen reports/ZIPs retain their original capture baselines.
+Latest post-snapshot engineering source: offline main `3dd39c1` (corrected physical CSV-line witness and strict five-unstarted-only continuation). The admitted fixed development batch is EXECUTING; four profiles have completed, one original input failure is retained and Liquidity stress is RUNNING. Do not restart the batch or reuse spent slots. Latest observed results are in the current status/evidence links below; frozen reports/ZIPs retain their capture baselines.
 
 Latest reviewed migration: **29 October 2026 Europe/Stockholm**. Source evidence was
 captured 28 October 22:48–22:55 UTC at primary `8e96631` / offline main `1599af9`. This is a
@@ -217,3 +217,46 @@ intents, and original9accepted/21withdrawn/0activeEPIC obligations remain settle
 ورودی را مفقود یا صفر فرض کرد. ترکیب کامل با سفارش، tape، لغو/انقضا، عمق مشترک و
 وضعیت انضباط خانوادهٔ واقعی هنوز شرط اجرای اقتصادی است. هیچ PnL واقعی یا استقرار و
 شروع رانر انجام نشد؛ دو بستهٔ frozen، ژورنال و پنج فایل dirty پژوهش حفظ شده‌اند.
+
+## Fixed development component — execution update, 29 October 2026
+
+Pre-outcome admission `8e2abe4` froze actual family/order/maker/exit/funding/discipline
+composition, exact code/runtime/data pins and a maximum SIX attempt slots, after
+471selected isolated tests. First trend_following/nominal attempt failed at the raw
+quote-row identity gate before any order/fill. Failure/partial evidence was retained
+in `c5cfc6b`; it is never relabeled PASS or retried. The new loader had numbered data
+records from1 while the frozen qualifier uses physical CSV line2 after the header.
+Clocks/prices/latest-asof identity matched at the failed boundary. Correction and
+separate admission `3dd39c1` cover ONLY the five original UNSTARTED slots; the failed
+slot/old marker are immutable, data/model/quantity/cost/window/source parameters stay
+fixed, and maximum6total attempts is unchanged. One row-number test first failed;
+focused35PASS/27warnings and final existing30-file480PASS/27warnings passed. No independent review.
+
+Current batch: Trend stress and Breakout nominal/stress completed with no modeled fills
+because unchanged original order quantity/exposure admission rejected their orders.
+Liquidity nominal completed one original roundtrip split into59entry partials; modeled
+cash change is -15.943200836418, total fees0.90065704725 and observed funding credit
+0.431550710822098902. These are selected-day MODEL outputs, not broker/account PnL or
+Edge. A read-only cross-check on completed outputs matched raw entry/exit rows,
+prices/fees/clocks/quantity, funding-before-inventory mutation, cash and running-peak
+drawdown. Liquidity stress is still RUNNING at this update, without final metrics.
+Do not infer its result or start another process. The original failed nominal Trend
+slot has no qualified economic metric; never substitute its stress result.
+
+- [Current Persian status and per-slot table](../LYNXION_CURRENT_STATUS_AND_BLOCKERS.md)
+- [Canonical component attempt/evidence ledger](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/evidence/EPIC01_MTF_MAKER_2026-10-28.json)
+- [Guarded fixed-budget CLI; spent slots refuse](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/scripts/run_epic01_development_component.py)
+- [Full event composition](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/infrastructure/replay/component_economic_replay.py)
+
+Model results live OUTSIDE frozen ZIPs under primary:
+`data/research/epic01_mtf_maker/qualification_2026-10-28/development_component_runs_2026-10-29/`.
+Both original once-marker and separate unstarted-continuation marker are retained.
+No original EPIC promise reopened, runtime deployment/start, broker access or account
+mutation occurred. Bounded local argv-name check at2026-10-29T08:44:19Z found no matching
+trading runner and separately identified the offline replay. TRX P0 remains unresolved.
+
+فارسی: ترکیب کامل توسعه‌ای واقعاً وارد اجرا شد؛ یک شکست ورودی حفظ شد و رفع شناسهٔ ردیف،
+آن تلاش را تکرار نکرد. چهار جایگاه کامل‌اند؛ Trend/Breakout به سقف ریسک منبع رسیدند و
+fill نداشتند. Liquidity nominal یک گردش سفارش با59partial و حدود15.94زیان مدل‌شده داشت؛
+آخرین سناریوی stress هنوز در حال اجراست. بودجهٔ6تلاش، تنظیمات/دادهٔ ثابت و همهٔ شواهد
+حفظ شده‌اند. این نتیجهٔ حساب واقعی، ادج، تحویل کامل V1 یا بازیابی رانر نیست.
