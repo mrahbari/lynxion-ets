@@ -1,6 +1,6 @@
 # Lynxion — handover packages
 
-Latest post-snapshot engineering source: offline main `dd2c1a07da1f33c100c6ee1f4607433fc10a2c46`; explicit actual-family composition and its first fixed decision-only trace are recorded below. Qualified post-fill exits/observed funding/full ledger remain gates before economics. Frozen reports/ZIPs retain their original capture baselines.
+Latest post-snapshot engineering source: offline main `5739f28ddb5fe9283706fb2cc6ffdb2ad94a72b2`; synthetic post-fill quote/cost/funding ledger controls and the four actual funding input receipts are recorded below. Full actual-family/order/tape/cancel/marking/discipline composition remains a gate before economics. Frozen reports/ZIPs retain their original capture baselines.
 
 Latest reviewed migration: **29 October 2026 Europe/Stockholm**. Source evidence was
 captured 28 October 22:48–22:55 UTC at primary `8e96631` / offline main `1599af9`. This is a
@@ -156,3 +156,64 @@ TRX attribution/startup remains unresolved independently; no journal clearing or
 این پیشرفت بازیابی رانر، اثبات ادج یا تحویل21تعهد لغوشده نیست. فایل‌های دو بستهٔ
 frozen، ژورنال و پنج فایل dirty پژوهش بدون تغییر حفظ شدند؛ Claude این index و شاهد
 جاری را همراه بستهٔ مورخ بخواند و یک writer واحد نگه دارد.
+
+## Post-fill lifecycle and actual funding input — 29 October 2026
+
+Plan commit `2094e4f` froze the quote/fee/funding rules and one fixed unsigned public
+BTC funding-history GET before acquisition. Executable commit `e7717b9f310cf292af90f92a257f92969a6ce40f`
+then froze the new explicit offline lifecycle and verification before first actual
+funding-binder qualification; receipt commit `5739f28ddb5fe9283706fb2cc6ffdb2ad94a72b2` records that qualification.
+All18frozen source files, original declaration bytes and legacy maker-exit refusals
+remain unchanged. No offline main source was deployed to primary.
+
+`PostFillMakerLifecycle` calls the original entry ledger/risk/cash/exposure/minimum
+admission. Strictly post-fill, fresh executable-side quote batches can trigger modeled
+SL/TP with SL-first ambiguity, declared adverse slippage/taker costs, one adverse
+snapshot's shared visible-depth budget, partial exits and exact fee/funding allocation.
+Cached terminal quotes use only unconsumed depth; insufficient/missing depth blocks.
+Funding precedes same-clock fills/exits. Independent cash/inventory/source/mark/partial
+identities, terminal flatness, frozen risk parameters and cumulative-peak drawdown are
+controlled. This is explicit prototype linear-inventory research accounting, not
+exchange margin/liquidation certification or a live execution path.
+
+Final synthetic maker selection81PASS/1warning, including53new parametrized controls;
+overlapping existing30-file isolated selection449PASS/27warnings. Earlier74/442are
+intermediate selections, not additive or final. A new in-progress terminal fixture
+reproduced3FAIL/74PASS before its correction; no production RED or independent review
+is claimed. Synthetic market/settlement tests have not opened actual strategy PnL.
+
+The ONE public funding GET returned HTTP200/505bytes. Actual pinned input qualification
+accepted exactly BTC's declared2024-01-01 UTC00/08/16 and2024-01-02 UTC00settlements,
+with finite signed rates and positive associated marks. Raw SHA256:
+`6be2df20102fb31ec797754c69047e31ad3a984d55191676cc9419c0fdf364a9`.
+This is now observed ex-post settlement billing data; it is not missing/assumed0, a
+historical receive-clock claim, a strategy feature or VST/account funding evidence.
+The frozen declaration's historical null funding placeholder is preserved; its new
+source evidence is appended in the existing component dossier. Economic admission
+remains false. No repeat acquisition or new window is needed.
+
+Data remain outside both documentation ZIPs, under primary:
+`data/research/epic01_mtf_maker/qualification_2026-10-28/`:
+
+- `raw/binance_fundingRate_BTCUSDT_2024-01-01_to_2024-01-02.json`
+- `funding_acquisition_receipt.json`
+- `funding_qualification_receipt.json` (SHA256 `b22dac207e0eecee2184e37602b058a65b24fe8c74948c502f6cf5fc53d9974a`)
+
+Next existing gate: combine actual-family decisions with original-order admission,
+arrival/expiry/cancel/nonfill/tape ordering/shared-volume, this post-fill quote/funding
+lifecycle and actual adapter discipline callbacks. Qualify complete marking/cash/
+partial/exposure/drawdown/terminal receipts and freeze final executable/config/source
+admission before any economics. No actual-market exit, maker-tape strategy replay,
+fill/PnL/optimization or runtime recovery was run. Existing7intents are still only
+intents, and original9accepted/21withdrawn/0activeEPIC obligations remain settled.
+
+- [New explicit offline lifecycle](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/infrastructure/replay/post_fill_maker_lifecycle.py)
+- [Current engineering and funding evidence](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/evidence/EPIC01_MTF_MAKER_2026-10-28.json)
+- [Official funding history schema](https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/rest-api/market-data#get-funding-rate-history)
+
+فارسی: مسیر صریح خروج پس ازfill، هزینه، funding و تطبیق دفتر مالی با ورودی مصنوعی
+کنترل شد؛ نتیجهٔ مجموعهٔ انتخاب‌شده449تست موفق است، نه تأیید سوددهی یا کل سیستم.
+چهار رکورد واقعی funding همان واحد ثابت نیز با هش منبع پذیرفته شدند؛ دیگر نباید این
+ورودی را مفقود یا صفر فرض کرد. ترکیب کامل با سفارش، tape، لغو/انقضا، عمق مشترک و
+وضعیت انضباط خانوادهٔ واقعی هنوز شرط اجرای اقتصادی است. هیچ PnL واقعی یا استقرار و
+شروع رانر انجام نشد؛ دو بستهٔ frozen، ژورنال و پنج فایل dirty پژوهش حفظ شده‌اند.
