@@ -1,6 +1,6 @@
 # Lynxion — handover packages
 
-Latest post-snapshot engineering source: offline main `e4022f0f5e4fde9a6829d522a8cd25711aa4b2e6`; see the frozen component declaration and closed-H1 input receipt below. Frozen reports/ZIPs retain their original capture baselines.
+Latest post-snapshot engineering source: offline main `dd2c1a07da1f33c100c6ee1f4607433fc10a2c46`; explicit actual-family composition and its first fixed decision-only trace are recorded below. Qualified post-fill exits/observed funding/full ledger remain gates before economics. Frozen reports/ZIPs retain their original capture baselines.
 
 Latest reviewed migration: **29 October 2026 Europe/Stockholm**. Source evidence was
 captured 28 October 22:48–22:55 UTC at primary `8e96631` / offline main `1599af9`. This is a
@@ -105,8 +105,9 @@ completed M15 candles. Eight new targeted controls PASS/1warning; the prior379-t
 selection was not rerun or summed. Post-freeze receipt commit `e4022f0` verifies the
 existing BTC C06 SHA and1096warmup+unit rows: every96fixed cut has1000known M15bars and
 20complete H1bars, with no forming hour. This was input/context validation only.
-Current actual adapter H1/open/volume/config wiring and exit/funding/full ledger remain
-unqualified and unfinished; no actual family signal/economic run or deployment.
+At that receipt, actual adapter H1/open/volume/config wiring and exit/funding/full ledger
+were unfinished. The later explicit offline composition below advances input wiring;
+production call sites, economic admission and deployment are not certified.
 
 - [Frozen declaration — preserve bytes](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/evidence/EPIC01_COMPONENT_DECLARATION_V1.json)
 - [Closed context helper](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/infrastructure/replay/closed_mtf_context.py)
@@ -115,3 +116,43 @@ unqualified and unfinished; no actual family signal/economic run or deployment.
 فارسی: مشخصات منبع/پارامتر/مدل/هزینه پیش از ارزیابی تازه ثابت شد و ساخت H1 از
 کندل‌های کامل M15 روی دادهٔ موجود کنترل شد. این به معنی تکمیل اتصال خانواده‌های واقعی،
 خروج/funding، آزمون اقتصادی یا بازیابی رانر نیست. هر دو بستهٔ frozen بدون تغییرند.
+
+## Actual-family offline composition and first fixed trace — 29 October 2026
+
+Executable freeze `ce82ad23a48788b75e47c0030b45f8be1ca6b70b` precedes the first fixed
+actual-family trace; receipt commit `dd2c1a07da1f33c100c6ee1f4607433fc10a2c46` retains the full per-cut witnesses in
+existing component evidence. The new explicit offline wrapper feeds true last20
+completed H1 bars to the actual structure calculation and1000closed M15 bars with
+actual open/volume and frozen setup config to the original detectors. The provider,
+family methods, confirmation and optimizer are real and their18frozen source pins
+remain unchanged. Exact recorded constructor/config/runtime hashes are checked.
+Temporary instance hooks run only in a credential-empty/network-denied process.
+This does not change or certify production/native-timeframe strategy behavior.
+
+The existing30-file isolated selection passed396tests/27warnings; focused18/27 is an
+overlapping selection, not additive. First actual BTCUSDT 2024-01-01 trace:288ordered
+family/cut rows, seven intents (trend4, breakout2, liquidity1), thirteen flow rejections,
+three terminal no-new-entry boundaries and no unexplained source-return/error state.
+Each family retained95eligible/1late source masks; no intent was admitted on the late
+cut. Trace SHA256 `79c2bc6489af63621a16bd6502aca303cd9f399965ffcf456513dda41194b3b8`.
+Seven intents are not seven trades, portfolio admission or Edge. There were no fills,
+PnL, optimization, broker calls, runtime launch/deployment or independent review.
+The exact selected day is development-only; uniform M15 grid is not native/live equivalence.
+
+Next existing component gate: explicit causal post-fill maker exit/cost, observed
+funding and full partial/nonfill/duplicate/exposure/cash/equity ledger reconciliation;
+append final model/source/executable admission before economic output. Preserve the
+legacy maker-exit refusal and frozen declaration bytes. Do not rerun this completed
+trace or create a new baseline/window/search to obtain a different outcome. P0 exact
+TRX attribution/startup remains unresolved independently; no journal clearing or start.
+
+- [Offline composition](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/infrastructure/replay/component_family_composition.py)
+- [Fixed isolated trace CLI](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/scripts/replay_epic01_component_decisions.py)
+- [Execution freeze and complete trace receipt](/Users/mojtaba.rahbari/.codex/worktrees/epic01-main-integration/lynxion-ets/docs/engineering/evidence/EPIC01_MTF_MAKER_2026-10-28.json)
+
+فارسی: اتصال آفلاین به محاسبات واقعی سه خانواده و ورودی H1/M15/جریان مشاهده‌شده انجام
+و نخستین ردگیری288مرز ثبت شد:7intent و13رد جریان سفارش؛ هیچ fill یا PnL اجرا نشد.
+خروج پس ازfill، funding واقعی و تطبیق کامل دفتر مالی هنوز شرط اجرای اقتصادی‌اند.
+این پیشرفت بازیابی رانر، اثبات ادج یا تحویل21تعهد لغوشده نیست. فایل‌های دو بستهٔ
+frozen، ژورنال و پنج فایل dirty پژوهش بدون تغییر حفظ شدند؛ Claude این index و شاهد
+جاری را همراه بستهٔ مورخ بخواند و یک writer واحد نگه دارد.
