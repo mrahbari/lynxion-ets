@@ -1,5 +1,10 @@
 # Lynxion ETS
 
+> **Active work (2026-11-22+): Lynxion v2 edge research — see [tasks/ROADMAP_V2.md](tasks/ROADMAP_V2.md)** and
+> [docs/reviews/CLAUDE_PROJECT_REVIEW_2026-11-22.md](docs/reviews/CLAUDE_PROJECT_REVIEW_2026-11-22.md).
+> Research code: `research/v2/` (tests: `cd research/v2 && python3 -m pytest -q tests`).
+> Journal epoch 1 retired 2026-11-22 (archive in `data/journal_archive/`). The text below is the pre-v2 state.
+
 Lynxion is a cryptocurrency trading and research codebase. Economic Edge is **not established**;
 the current trading runtime is **blocked**, and real-money deployment is not approved.
 
