@@ -6,6 +6,13 @@ import requests
 import json
 import html
 import time
+import os
+import socket
+try:
+    import urllib3.util.connection as urllib_conn
+    urllib_conn.allowed_gai_family = lambda: socket.AF_INET
+except Exception:
+    pass
 from typing import Dict, Any, List
 from abc import ABC, abstractmethod
 
@@ -91,8 +98,13 @@ class TelegramNotificationService(INotificationService):
             }
             if parse_mode:
                 data["parse_mode"] = parse_mode
-                
-            response = requests.post(url, data=data, timeout=10)
+
+            kwargs = {"data": data, "timeout": 10}
+            proxy_url = os.getenv("TELEGRAM_PROXY")
+            if proxy_url:
+                kwargs["proxies"] = {"http": proxy_url, "https": proxy_url}
+
+            response = requests.post(url, **kwargs)
 
             if response.status_code == 200:
                 self.logger.info(f"Telegram sent: {subject}")

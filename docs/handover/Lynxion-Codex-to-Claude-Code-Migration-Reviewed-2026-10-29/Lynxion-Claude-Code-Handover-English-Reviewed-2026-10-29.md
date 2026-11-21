@@ -224,3 +224,9 @@ Excluded: `.env`, auth/private credential files, raw operational journal content
 Read-only byte verification: `python3 verify_package.py` from this package checks every manifest entry; it never imports Lynxion, acquires data or starts a process. The accompanying ZIP has a sibling SHA256 file. Fresh source-status, data scope/byte hashes, package checksums, 30-ID/26-ID coverage, all701 task coverage and source preservation were checked as artifact checks; these are not new strategy/runtime tests.
 
 Proceed with the concrete [Claude continuation runbook](Claude-Code-Start-Here.md). Report changed source, actual tests run, commit, review scope, proof limits and exact remaining gate in the **existing** boards. Do not make new architectural cleanup or claim all project work complete from the 11-task historical queue, a cancelled EPIC or a growing test count.
+
+
+
+
+‌TAEGET : 
+The primary objective is to turn Lynxion into a continuously evolving, data-driven quantitative research platform capable of identifying, validating, and developing genuine trading edges across all eligible symbols on our target exchanges. The agent should independently explore and determine the most promising research approaches across order flow, order book dynamics, derivatives, liquidity, market regimes, cross-exchange behavior, and machine learning, without being restricted to predefined methods or assumptions. It should systematically audit existing strategies to identify weaknesses, hidden strengths, inefficiencies, and opportunities for improvement, while also discovering entirely new, statistically robust and exploitable trading edges. The agent is expected to propose its own research methodologies, data sources, tools, experiments, and implementation plans, prioritizing evidence-based findings, rigorous validation, and real-world trading viability over speculative optimization.
