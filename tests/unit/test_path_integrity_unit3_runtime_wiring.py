@@ -95,6 +95,8 @@ def test_production_auto_factory_has_one_execution_subscriber_no_network(monkeyp
     monkeypatch.setattr(paper_module, "PaperTradingEngine", lambda **kwargs: SimpleNamespace(simulate_fill=lambda order: {}))
     monkeypatch.setattr(watcher_module, "MarketOpportunityWatcher", lambda **kwargs: SimpleNamespace(symbols=[Symbol("BTCUSDT")]))
     monkeypatch.setattr(forward_module, "build_forward_exit_runtime_bundle", lambda: None)
+    from infrastructure.orchestrators._auto_detection_execution import _AutoDetectionExecutionMixin
+    monkeypatch.setattr(_AutoDetectionExecutionMixin, "_venue_price", lambda self, symbol: 100.0)
     monkeypatch.setattr(signal_aggregator, "start_aggregation", lambda: None)
     monkeypatch.setattr(symbol_cooldown_gate, "is_symbol_allowed", lambda symbol, **kwargs: (True, "offline"))
     monkeypatch.delenv("MAX_ORDER_NOTIONAL_AMOUNT", raising=False)

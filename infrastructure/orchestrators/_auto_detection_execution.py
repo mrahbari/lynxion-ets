@@ -28,6 +28,29 @@ _live_intent_claim_store = IntentClaimStore()
 class _AutoDetectionExecutionMixin:
     """Order construction + placement from an execution intent (trading execution)."""
 
+    def _venue_price(self, symbol):
+        """Live last price from the BingX host orders go to (VST or live); None if unavailable."""
+        import requests
+        sym = symbol.value if hasattr(symbol, 'value') else str(symbol)
+        sym = sym.upper().replace('-', '')
+        for quote in ('USDT', 'USDC'):
+            if sym.endswith(quote):
+                sym = f"{sym[:-len(quote)]}-{quote}"
+                break
+        broker = getattr(getattr(self, '_settings', None), 'broker', None)
+        testnet = getattr(broker, 'bingx_testnet', True) is not False
+        host = "https://open-api-vst.bingx.com" if testnet else "https://open-api.bingx.com"
+        try:
+            r = requests.get(f"{host}/openApi/swap/v2/quote/price", params={"symbol": sym}, timeout=5)
+            data = r.json()
+            price = float((data.get("data") or {}).get("price"))
+            if data.get("code") == 0 and math.isfinite(price) and price > 0:
+                return price
+        except Exception:
+            pass
+        self.logger.warning(f"Venue price unavailable for {sym}; order refused")
+        return None
+
     def _execution_now(self):
         clock = getattr(self, "_execution_clock", None)
         if clock is None:
@@ -211,44 +234,14 @@ class _AutoDetectionExecutionMixin:
                 if current_price is None or not math.isfinite(current_price) or current_price <= 0:
                     self._remove_pending_execution_intent(execution_intent)
                     return {'status': 'failed', 'error': 'MARKET_PRICE_UNAVAILABLE'}
-            elif self.market_data_repo:
-                try:
-                    current_price = self.market_data_repo.get_current_price(execution_intent.symbol)
-                except:
-                    # If we can't get current price from data repo, try to get from exchange directly
-                    pass
-
-            # If we still don't have a price, use a fallback
-            if price_source is None and (current_price is None or current_price <= 0):
-                # Try to get price from exchange directly
-                try:
-                    import ccxt
-                    exchange = ccxt.binance()
-                    ticker = exchange.fetch_ticker(execution_intent.symbol.value)
-                    current_price = ticker['last'] if 'last' in ticker else ticker['close']
-                except:
-                    # If all methods fail, we'll still proceed but log the issue
-                    self.logger.warning(f"Could not get current price for {execution_intent.symbol.value}, using default price")
-                    # Use a more reasonable fallback price based on the symbol
-                    # Extract base currency to estimate a reasonable price
-                    symbol_str = execution_intent.symbol.value
-                    if symbol_str.startswith(('BTC', 'WBTC')):
-                        current_price = 45000.0  # Bitcoin price range
-                    elif symbol_str.startswith(('ETH', 'WETH')):
-                        current_price = 2500.0  # Ethereum price range
-                    elif symbol_str.startswith(('SOL', 'AVAX', 'FTM', 'APT', 'AR')):
-                        current_price = 90.0   # Mid-range altcoins
-                    elif symbol_str.startswith(('BNB', 'XRP', 'ADA', 'DOGE', 'DOT', 'MATIC', 'LINK', 'UNI', 'LTC', 'BCH')):
-                        current_price = 10.0   # Lower range altcoins
-                    elif symbol_str.startswith(('XLM', 'TRX', 'ATOM', 'NEAR', 'FIL', 'ETC', 'VET', 'XTZ', 'ICX', 'HBAR', 'SUI')):
-                        current_price = 0.5    # Penny stocks/crypto range
-                    elif symbol_str.startswith(('SHIB', 'PEPE', 'FLOKI')):
-                        current_price = 0.00001  # Meme coin range
-                    else:
-                        # For any other symbol, use a reasonable default based on common patterns
-                        # Use a random price between $0.01 and $500 to cover most crypto ranges
-                        import random
-                        current_price = random.uniform(0.01, 500.0)
+            else:
+                # Size, SL and TP must be computed from the execution venue's live price.
+                # Local CSV closes can be stale and the former hard-coded/random fallback
+                # prices could size orders thousands of times too large (P0). Fail closed.
+                current_price = self._venue_price(execution_intent.symbol)
+                if current_price is None:
+                    self._remove_pending_execution_intent(execution_intent)
+                    return {'status': 'failed', 'error': 'MARKET_PRICE_UNAVAILABLE'}
 
             # Calculate quantity based on risk parameters and account balance
             risk_params = execution_intent.risk_parameters

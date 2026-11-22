@@ -78,6 +78,7 @@ def test_execution_route_variants_with_no_network_broker(monkeypatch, side, scen
         auto.is_running = True
         auto.execution_service = spy
         auto.market_data_repo = SimpleNamespace(get_current_price=lambda symbol: 100.0)
+        auto._venue_price = lambda symbol: 100.0  # execution venue price (no network)
         auto._settings = SimpleNamespace(
             position_sizing=SimpleNamespace(fixed_position_size_enabled=False),
             risk=SimpleNamespace(max_leverage=2.0, max_order_notional_amount=50.0 if scenario == "notional_cap" else None),
