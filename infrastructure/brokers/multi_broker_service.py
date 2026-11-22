@@ -1025,6 +1025,25 @@ class MultiBrokerExecutionService(ExecutionPort):
         except Exception:
             return False
 
+    def _verified_fill(self, exchange_name, order_id, symbol, attempts: int = 3):
+        """(filled_qty, avg_price) read back from the broker, or None if not verifiable."""
+        import time as _time
+        broker = getattr(self, 'brokers', {}).get(str(exchange_name).lower()) if hasattr(self, 'brokers') else None
+        if broker is None or not hasattr(broker, 'get_order_fill') or symbol is None:
+            return None
+        for i in range(attempts):
+            try:
+                f = broker.get_order_fill(order_id, symbol) or {}
+                qty = float(f.get('executed_qty') or 0)
+                px = float(f.get('avg_price') or 0)
+                if str(f.get('status', '')).upper() == 'FILLED' and qty > 0 and px > 0:
+                    return qty, px
+            except Exception:
+                pass
+            if i < attempts - 1:
+                _time.sleep(1.0)
+        return None
+
     def _send_order_placed_notification(self, order: Order, order_id: str,
                                         exchange_name: str, execution_mode: str):
         """Report broker acceptance, not an unverified fill or position."""
@@ -1181,16 +1200,26 @@ class MultiBrokerExecutionService(ExecutionPort):
             route = "VST / TESTNET" if execution_mode == "testnet" else execution_mode.upper()
             route_esc = escape_html(route)
 
-            message = (f"📦 <b>Order accepted by broker — fill not verified</b>\n"
-                       f" ├ <b>Route:</b> <code>{route_esc}</code>\n"
-                       f" └ <b>Check orders/fills in this route, not another account.</b>\n\n"
+            fill = self._verified_fill(exchange_name, order_id, getattr(order, 'symbol', None))
+            if fill:
+                fill_qty, fill_px = fill
+                header = (f"✅ <b>Order filled</b>\n"
+                          f" └ <b>Route:</b> <code>{route_esc}</code>\n\n")
+                size_lines = (f" ├ <b>Filled qty:</b> <code>{escape_html(f'{fill_qty:g}')}</code>\n"
+                              f" ├ <b>Fill price:</b> <code>{escape_html(f'{fill_px:g}')}</code>\n"
+                              f" └ <b>Value:</b> <code>{escape_html(f'{fill_qty * fill_px:.2f} USDT')}</code>\n\n")
+            else:
+                header = (f"📦 <b>Order accepted by broker — fill not verified</b>\n"
+                          f" └ <b>Route:</b> <code>{route_esc}</code>\n\n")
+                size_lines = (f" ├ <b>Quantity:</b> <code>{quantity_esc}</code>\n"
+                              f" ├ <b>Price:</b> <code>{price_amount_esc}</code>\n"
+                              f" └ <b>Est. value:</b> <code>{notional_esc}</code>\n\n")
+            message = (header +
                        f"<b>Order Details:</b>\n"
                        f" ├ <b>Side:</b> <code>{side_name_esc}</code>\n"
                        f" ├ <b>Symbol:</b> <code>{symbol_esc}</code>\n"
-                       f" ├ <b>Exchange:</b> <code>{exchange_esc}</code>\n"
-                       f" ├ <b>Quantity:</b> <code>{quantity_esc}</code>\n"
-                       f" ├ <b>Price:</b> <code>{price_amount_esc}</code>\n"
-                       f" └ <b>Est. value:</b> <code>{notional_esc}</code>\n\n"
+                       f" ├ <b>Exchange:</b> <code>{exchange_esc}</code>\n" +
+                       size_lines +
                        f"⚙️ <b>Execution Details:</b>\n"
                        f" ├ <b>Watcher:</b> <code>{watcher_name_esc}</code>\n"
                        f" ├ <b>Strategy:</b> <code>{strategy_name_esc}</code>\n"
@@ -1204,7 +1233,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                        f"🕒 <b>Time:</b> <code>{order_time_esc}</code>\n"
                        f"🆔 <b>Order ID:</b> <code>{order_id_esc}</code>")
 
-            subject = f"{side_emoji} {symbol} {side_name} accepted on {exchange_name} {route}"
+            subject = f"{side_emoji} {symbol} {side_name} {'filled' if fill else 'accepted'} on {exchange_name} {route}"
 
             # Send the notification
             success = telegram_service.send_notification(message, subject, "info", parse_mode="HTML")

@@ -86,3 +86,33 @@ def test_single_broker_alert_shows_estimated_notional(monkeypatch):
 
     assert len(sent) == 1
     assert "Est. value:</b> <code>20.98 USDT" in sent[0]
+
+
+def test_verified_fill_is_reported_with_actual_price_and_qty(monkeypatch):
+    sent = []
+
+    class FakeTelegram:
+        def __init__(self, **kwargs):
+            pass
+
+        def send_notification(self, message, subject, level, parse_mode):
+            sent.append((message, subject))
+            return True
+
+    monkeypatch.setattr("infrastructure.services.risk_alerts.TelegramNotificationService", FakeTelegram)
+    service = MultiBrokerExecutionService.__new__(MultiBrokerExecutionService)
+    service._settings = SimpleNamespace(monitoring=SimpleNamespace(
+        telegram_notifications_enabled=True, telegram_bot_token="test", telegram_chat_id="test"))
+    service.logger = SimpleNamespace(info=lambda *args: None, warning=lambda *args: None)
+    service.brokers = {"bingx": SimpleNamespace(get_order_fill=lambda oid, sym: {
+        "status": "FILLED", "executed_qty": "240", "avg_price": "0.0875"})}
+    order = SimpleNamespace(symbol=SimpleNamespace(value="DOGEUSDT"), side=SimpleNamespace(name="BUY"),
+                            quantity="240", price=SimpleNamespace(amount="0.08741"), strategy_name="VWAPReversal")
+
+    service._send_order_placed_notification(order, "OID-3", "BINGX", "testnet")
+
+    message, subject = sent[0]
+    assert "Order filled" in message and "fill not verified" not in message
+    assert "Fill price:</b> <code>0.0875" in message and "Value:</b> <code>21.00 USDT" in message
+    assert "Check orders/fills" not in message
+    assert "filled on BINGX VST / TESTNET" in subject
