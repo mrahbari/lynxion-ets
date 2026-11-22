@@ -646,9 +646,13 @@ class MultiBrokerExecutionService(ExecutionPort):
                 self.logger.info(f"✅ ORDER PLACED SUCCESSFULLY ON {best_exchange.upper()}: {order_id}")
 
                 # Send Telegram notification about successful order placement
-                self._send_order_placed_notification(
-                    order, order_id, best_exchange.upper(), guard_decision.mode.value
-                )
+                # Off the order thread: fill verification + Telegram took 4-17 s live and
+                # delayed the next queued entry.
+                threading.Thread(
+                    target=self._send_order_placed_notification,
+                    args=(order, order_id, best_exchange.upper(), guard_decision.mode.value),
+                    name=f"order-alert-{order_id}", daemon=True,
+                ).start()
 
                 # Release in-flight pending order lock once order is accepted by exchange
                 try:
