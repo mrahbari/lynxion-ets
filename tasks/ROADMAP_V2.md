@@ -91,4 +91,5 @@ Codex cohorts C-11/C-33/C-35, microstructure collectors, investor-release track.
 
 ## Results log
 - 2026-11-22: XS-COMBO-V1 holdout PASS (Binance SR 1.39; BingX SR 0.96). See docs/v2/reports/E2_E4_RESULTS_2026-11-22.md
+- 2026-11-22: R22 extreme movers (operator idea) REJECTED on dev (best PF 1.05, SR 0.19; shorts PF 0.69). docs/v2/reports/R22_extreme_movers_dev_2026-11-22.md
 - 2026-11-22: VST book resized to .env cap (3,200 gross), 50% disaster stops, per-trade Telegram, daily launchd installed.
