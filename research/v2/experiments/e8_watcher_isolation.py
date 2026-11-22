@@ -36,6 +36,7 @@ SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT", "A
            "LINKUSDT", "SUIUSDT", "AAVEUSDT"]
 HORIZONS = {"15m": 15, "1h": 60, "4h": 240}
 WARMUP = 300
+RETURN_CONF = False  # E8c sets True to also get each observation's confidence
 
 
 def _get(url: str):
@@ -126,6 +127,7 @@ def run_watcher(kind: str, sym: str, df: pd.DataFrame, fund: pd.DataFrame, engin
     s = Symbol(sym)
     sig = np.zeros(len(df))
     fsig = np.zeros(len(df))
+    conf = np.full(len(df), np.nan)
     ft, fr = fund.fundingTime.values, fund.fundingRate.values
     last_fund_idx = -1
     for i, row in enumerate(df.itertuples(index=False)):
@@ -150,6 +152,7 @@ def run_watcher(kind: str, sym: str, df: pd.DataFrame, fund: pd.DataFrame, engin
         if obs is None:
             continue
         fsig[i] = fusion_side(obs.observation_type)
+        conf[i] = float(obs.confidence.value)
         if obs.metadata is None:
             obs.metadata = {}
         obs.metadata.setdefault("watcher_name", kind)
@@ -158,7 +161,9 @@ def run_watcher(kind: str, sym: str, df: pd.DataFrame, fund: pd.DataFrame, engin
             continue
         st = getattr(it.signal_type, "name", str(it.signal_type))
         sig[i] = 1.0 if st == "BUY" else -1.0 if st == "SELL" else 0.0
-    return sig, fsig
+    if kind == "funding_rate" or not RETURN_CONF:
+        return sig, fsig
+    return sig, fsig, conf
 
 
 def evaluate(kind: str, frames: dict) -> list:
