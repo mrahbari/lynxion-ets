@@ -307,47 +307,57 @@ class TradeFeatureCollector:
             if key:
                 meta_map[str(key)] = dict(resolved)
 
+    def _journal_files(self) -> List[str]:
+        """Retired journal epochs (oldest first) followed by the live journal."""
+        import glob
+        archive = os.path.join(os.path.dirname(os.path.abspath(self.journal_path)), "journal_archive")
+        retired = sorted(glob.glob(os.path.join(archive, "*", os.path.basename(self.journal_path))))
+        retired = [f for f in retired if "test_pollution" not in f]  # synthetic test rows
+        return retired + [self.journal_path]
+
     def _load_intent_metadata_map(self) -> Dict[str, Dict[str, Any]]:
         """Load strategy-level metadata (stop_loss, take_profit, confidence, regime, strategy) from journal/ledger keyed by order_ref and order_id."""
         meta_map: Dict[str, Dict[str, Any]] = {}
 
-        # 1. Read live_order_journal.json
-        if os.path.exists(self.journal_path):
-            try:
-                with open(self.journal_path, "r", encoding="utf-8") as f:
-                    for line in f:
-                        if not line.strip():
-                            continue
-                        try:
-                            entry = json.loads(line)
-                            ref = entry.get("order_ref") or entry.get("client_order_id")
-                            oid = entry.get("order_id")
-                            sl = entry.get("stop_loss") or entry.get("initial_stop_loss")
-                            tp = entry.get("take_profit") or entry.get("initial_take_profit")
-                            conf = entry.get("confidence")
-                            reg = entry.get("regime")
-                            strat = entry.get("strategy") or entry.get("strategy_name")
+        # 1. Read live_order_journal.json, including retired journal epochs: a trade that closes
+        #    after a journal rotation must keep the strategy recorded at its INTENT.
+        for journal_file in self._journal_files():
+            if os.path.exists(journal_file):
+                try:
+                    with open(journal_file, "r", encoding="utf-8") as f:
+                        for line in f:
+                            if not line.strip():
+                                continue
+                            try:
+                                entry = json.loads(line)
+                                ref = entry.get("order_ref") or entry.get("client_order_id")
+                                oid = entry.get("order_id")
+                                sl = entry.get("stop_loss") or entry.get("initial_stop_loss")
+                                tp = entry.get("take_profit") or entry.get("initial_take_profit")
+                                conf = entry.get("confidence")
+                                reg = entry.get("regime")
+                                strat = entry.get("strategy") or entry.get("strategy_name")
 
-                            meta = {
-                                "initial_stop_loss": str(sl) if sl is not None else "",
-                                "initial_take_profit": str(tp) if tp is not None else "",
-                                "confidence": str(conf) if conf is not None else "",
-                                "regime": str(reg) if reg is not None else "",
-                                "strategy": str(strat) if strat is not None else "",
-                            }
-                            # The journal's order_ref, broker client order ID, and exchange
-                            # order ID are distinct identities.  Index all of them so a later
-                            # sparse SUBMITTED lifecycle record cannot sever the collector's
-                            # link to the original signal metadata.
-                            self._index_intent_metadata(
-                                meta_map,
-                                [ref, entry.get("client_order_id"), oid],
-                                meta,
-                            )
-                        except Exception:
-                            pass
-            except Exception as e:
-                logger.warning(f"TRADE_JOURNAL: Could not load metadata from journal: {e}")
+                                meta = {
+                                    "initial_stop_loss": str(sl) if sl is not None else "",
+                                    "initial_take_profit": str(tp) if tp is not None else "",
+                                    "confidence": str(conf) if conf is not None else "",
+                                    "regime": str(reg) if reg is not None else "",
+                                    "strategy": str(strat) if strat is not None else "",
+                                }
+                                # The journal's order_ref, broker client order ID, and exchange
+                                # order ID are distinct identities.  Index all of them so a later
+                                # sparse SUBMITTED lifecycle record cannot sever the collector's
+                                # link to the original signal metadata.
+                                self._index_intent_metadata(
+                                    meta_map,
+                                    [ref, entry.get("client_order_id"), oid],
+                                    meta,
+                                )
+                            except Exception:
+                                pass
+                except Exception as e:
+                    logger.warning(f"TRADE_JOURNAL: Could not load metadata from journal: {e}")
 
         # 2. Read execution_truth_ledger.jsonl
         if os.path.exists(self.ledger_path):
