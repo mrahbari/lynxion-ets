@@ -8,6 +8,12 @@ from typing import List
 from domain.value_objects import Symbol
 from shared.logger import EnhancedLogger
 
+import os as _os
+
+# Symbols taken per discovery source (was hard-coded 10). WATCHER_SYMBOLS_PER_SOURCE in .env.
+def _per_source() -> int:
+    return max(1, int(_os.getenv("WATCHER_SYMBOLS_PER_SOURCE", "10") or 10))
+
 
 class SymbolDiscoveryService:
     """Service class for discovering symbols to monitor based on various market conditions."""
@@ -239,7 +245,7 @@ class SymbolDiscoveryService:
                             change_abs = abs(ticker['change'])
                             if change_abs > 3.0 and ticker.get('quoteVolume') and ticker['quoteVolume'] > 1000000:
                                 trending_symbols.append(valid_symbol)
-                                if len(trending_symbols) >= 10:
+                                if len(trending_symbols) >= _per_source():
                                     break
                 except ValueError:
                     continue
@@ -270,7 +276,7 @@ class SymbolDiscoveryService:
                                 volatility = abs((ticker['high'] - ticker['low']) / ticker['open']) * 100
                                 if volatility > 5.0 and ticker['quoteVolume'] > 500000:
                                     volatile_symbols.append(valid_symbol)
-                                    if len(volatile_symbols) >= 10:
+                                    if len(volatile_symbols) >= _per_source():
                                         break
                 except ValueError:
                     continue
@@ -297,7 +303,7 @@ class SymbolDiscoveryService:
                                 'quoteVolume' in ticker and ticker['quoteVolume'] is not None):
                             if abs(ticker['change']) > 2.5 and ticker['quoteVolume'] > 2000000:
                                 momentum_symbols.append(valid_symbol)
-                                if len(momentum_symbols) >= 10:
+                                if len(momentum_symbols) >= _per_source():
                                     break
                 except ValueError:
                     continue
@@ -329,7 +335,7 @@ class SymbolDiscoveryService:
                             volatility = abs((ticker['high'] - ticker['low']) / ticker['open']) * 100 if ticker['open'] != 0 else 0
                             if change_abs > 4.0 and volatility > 6.0 and ticker['quoteVolume'] > 1000000:
                                 anomaly_symbols.append(valid_symbol)
-                                if len(anomaly_symbols) >= 10:
+                                if len(anomaly_symbols) >= _per_source():
                                     break
                 except ValueError:
                     continue
@@ -355,7 +361,7 @@ class SymbolDiscoveryService:
                         if 'quoteVolume' in ticker and ticker['quoteVolume'] is not None:
                             if ticker['quoteVolume'] > 50000000:
                                 high_volume_symbols.append(valid_symbol)
-                                if len(high_volume_symbols) >= 10:
+                                if len(high_volume_symbols) >= _per_source():
                                     break
                 except ValueError:
                     continue
@@ -385,7 +391,7 @@ class SymbolDiscoveryService:
                                 volatility = abs((ticker['high'] - ticker['low']) / ticker['high']) * 100
                                 if volatility < 8.0:
                                     liquid_symbols.append(valid_symbol)
-                                    if len(liquid_symbols) >= 10:
+                                    if len(liquid_symbols) >= _per_source():
                                         break
                 except ValueError:
                     continue
@@ -410,12 +416,12 @@ class SymbolDiscoveryService:
                     if symbol_validator.is_symbol_approved(valid_symbol):
                         if market.get('swap', False) and market.get('active', True):
                             perp_symbols.append(valid_symbol)
-                            if len(perp_symbols) >= 20:
+                            if len(perp_symbols) >= 2 * _per_source():
                                 break
                 except ValueError:
                     continue
 
-            return perp_symbols[:10]
+            return perp_symbols[:_per_source()]
         except Exception as e:
             self.logger.warning(f"Using fallback for funding-oriented discovery: {e}")
             return self.discover_by_market_cap()
@@ -474,7 +480,7 @@ class SymbolDiscoveryService:
                         try:
                             valid_symbol = Symbol(formatted_symbol)  # This will validate the format
                             discovered_symbols.append(valid_symbol)
-                            if len(discovered_symbols) >= 10:  # Limit to top 10 for auto-discovery
+                            if len(discovered_symbols) >= _per_source():  # Limit to top 10 for auto-discovery
                                 break
                         except ValueError:
                             continue  # Skip invalid symbols
@@ -498,7 +504,7 @@ class SymbolDiscoveryService:
             discovered_symbols = self.get_active_symbols_from_exchange()
 
             if discovered_symbols:
-                return discovered_symbols[:10]  # Limit to top 10
+                return discovered_symbols[:_per_source()]  # Limit to top 10
 
             # If exchange-based discovery fails, return empty list and let fallback happen
             return []
@@ -525,7 +531,7 @@ class SymbolDiscoveryService:
                     continue
 
             sorted_symbols = sorted(usdt_pairs.items(), key=lambda x: x[1], reverse=True)
-            top_symbols = [pair for pair, volume in sorted_symbols[:10]]
+            top_symbols = [pair for pair, volume in sorted_symbols[:_per_source()]]
             return top_symbols
         except Exception as e:
             self.logger.warning(f"Error getting active symbols from exchange: {e}")
@@ -552,7 +558,7 @@ class SymbolDiscoveryService:
                             trade_count = ticker['count']
                             if volume > 5000000 and trade_count > 2000:
                                 historical_oriented_symbols.append(valid_symbol)
-                                if len(historical_oriented_symbols) >= 10:
+                                if len(historical_oriented_symbols) >= _per_source():
                                     break
                 except ValueError:
                     continue
@@ -586,7 +592,7 @@ class SymbolDiscoveryService:
                             trade_count = ticker['count']
                             if volume > 10000000 and trade_count > 5000:
                                 tick_oriented_symbols.append(valid_symbol)
-                                if len(tick_oriented_symbols) >= 10:
+                                if len(tick_oriented_symbols) >= _per_source():
                                     break
                 except ValueError:
                     continue
@@ -601,7 +607,7 @@ class SymbolDiscoveryService:
                             if 'quoteVolume' in ticker and ticker['quoteVolume'] is not None:
                                 if ticker['quoteVolume'] > 20000000:
                                     high_volume_symbols.append(valid_symbol)
-                                    if len(high_volume_symbols) >= 10:
+                                    if len(high_volume_symbols) >= _per_source():
                                         break
                     except ValueError:
                         continue

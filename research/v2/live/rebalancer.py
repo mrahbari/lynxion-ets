@@ -41,7 +41,7 @@ MIN_ORDER_NOTIONAL = 6.0
 def limits() -> dict:
     """Sizing/risk limits from the platform .env (call after load_env)."""
     import os
-    return {"book": float(os.getenv("RISK_VST_MAX_PORTFOLIO_NOTIONAL_USDT", "3200")),     # gross notional
+    return {"book": float(os.getenv("V2_BOOK_USDT") or os.getenv("RISK_VST_MAX_PORTFOLIO_NOTIONAL_USDT", "3200")),  # gross
             "max_order": float(os.getenv("MAX_ORDER_NOTIONAL_AMOUNT", "201")),
             "max_positions": int(os.getenv("MAX_TOTAL_POSITIONS", "50")),
             # disaster stop, price distance from entry. Dev-period check (E5_stop_check_dev.csv):
