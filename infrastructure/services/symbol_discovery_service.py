@@ -11,6 +11,21 @@ from shared.logger import EnhancedLogger
 import os as _os
 
 # Symbols taken per discovery source (was hard-coded 10). WATCHER_SYMBOLS_PER_SOURCE in .env.
+# Stablecoin bases: a stablecoin/USDT perp has no tradable movement for these strategies.
+_STABLECOIN_BASES = {
+    "USDT", "USDC", "USD1", "USDG", "USDD", "USDE", "PYUSD", "RLUSD", "FDUSD", "TUSD", "BUSD",
+    "DAI", "PAX", "USDP", "USDS", "GUSD", "LUSD", "FRAX", "EURC", "EURT",
+}
+
+
+def _tradable_on_venue(symbol: str) -> bool:
+    """Execution venue is BingX USDT-M: discovered non-USDT quotes (BTCUSDC, ETHUSDC) can never
+    be priced or traded there (hundreds of MARKET_PRICE_UNAVAILABLE rejections per hour), and
+    stablecoin bases carry no signal. Operator watchlist symbols bypass this filter."""
+    sym = symbol.upper().replace("/", "").replace("-", "").replace("_", "")
+    return sym.endswith("USDT") and sym[:-4] not in _STABLECOIN_BASES
+
+
 def _per_source() -> int:
     return max(1, int(_os.getenv("WATCHER_SYMBOLS_PER_SOURCE", "10") or 10))
 
@@ -148,6 +163,7 @@ class SymbolDiscoveryService:
         discovered_symbols = [
             s for s in all_discovered_symbols 
             if (s.value if hasattr(s, 'value') else str(s)).upper().replace("/", "").replace("-", "").replace("_", "") not in blacklisted
+            and _tradable_on_venue((s.value if hasattr(s, 'value') else str(s)))
         ]
 
         # Operator watchlist (e.g. BingX TradFi perpetuals: indices, metals, oil, FX) is always

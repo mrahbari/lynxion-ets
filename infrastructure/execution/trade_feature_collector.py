@@ -405,6 +405,11 @@ class TradeFeatureCollector:
             adapter.connect()
 
             intent_meta = self._load_intent_metadata_map()
+            try:
+                from infrastructure.brokers.adapters.bingx_adapter import v2_owned_symbols
+                v2_symbols = {str(x).upper().replace("-", "") for x in v2_owned_symbols()}
+            except Exception:
+                v2_symbols = set()
             demo_order_ids = self._load_demo_order_ids()
 
             now_ms = int(time.time() * 1000)
@@ -488,10 +493,14 @@ class TradeFeatureCollector:
                     conf_val = meta.get("confidence", "")
                     reg_val = meta.get("regime", "")
                     is_technical_demo = order_ref in demo_order_ids or order_id in demo_order_ids
+                    # Orders without platform intent metadata are not platform strategy trades.
+                    # Labelling them "trend_following" put XS-COMBO sleeve rebalances into the
+                    # platform's per-strategy results (39 trades, -179.6 USDT on 2026-11-22).
                     strat_val = (
                         "INVESTOR_TECHNICAL_DEMO"
                         if is_technical_demo
-                        else (meta.get("strategy") or "trend_following")
+                        else meta.get("strategy")
+                        or ("XS-COMBO-V1" if clean_sym in v2_symbols else "UNATTRIBUTED")
                     )
 
                     risk_usdt = ""

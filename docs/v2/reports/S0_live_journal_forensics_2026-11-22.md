@@ -35,3 +35,13 @@ OIFootprint 47 PF 3.61; MeanReversion 201 PF 0.67; SweepScalper 124 PF 0.50; MTF
 Verify/fix in the platform: per-order notional cap, per-symbol duplicate-entry/cooldown guard,
 stop placement verification; then run trend_following + VWAPReversal (+ OIFootprint) on VST through
 the real platform runner under `.env` limits, isolated from the v2 XS-COMBO book (symbol exclusion).
+
+## Correction (2026-11-22, evening)
+1. **"trend_following" was not a strategy label.** All 800 journal rows labelled `trend_following` had no
+   strategy metadata: the trade collector used `trend_following` as a default for unattributed orders.
+   The "trend_following PF 1.80" figure above is therefore for *unattributed* trades, not the TrendFollow
+   strategy. Rows were relabelled `UNATTRIBUTED` (761) and `XS-COMBO-V1` (39 sleeve rebalances on
+   2026-11-22); backup in `data/journal_archive/relabel_2026-11-22/`.
+2. **Platform strategy results before 2026-11-22 ~18:50 local are not evidence either way**: every live
+   strategy priced its entries from one stale, foreign-symbol candle buffer (fix `1f3028a`). The
+   VWAPReversal PF 3.25 above is from that period and must not be used for the edge decision.
