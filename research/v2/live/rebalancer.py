@@ -46,7 +46,10 @@ def limits() -> dict:
             "max_positions": int(os.getenv("MAX_TOTAL_POSITIONS", "50")),
             # disaster stop, price distance from entry. Dev-period check (E5_stop_check_dev.csv):
             # 10-35% stops cut SR 1.94 -> 0.43-1.42; 50% keeps 1.79 and lowers max DD.
-            "stop_pct": float(os.getenv("V2_STOP_LOSS_PCT", "50")) / 100}
+            "stop_pct": float(os.getenv("V2_STOP_LOSS_PCT", "50")) / 100,
+            # wide take profit (E5_tp_check_dev*.csv, TP from day 2): 40% -> SR 1.98 vs 1.79 none,
+            # max DD -10.9% vs -16.6%; tight TPs (5-20%) destroy the strategy.
+            "tp_pct": float(os.getenv("V2_TAKE_PROFIT_PCT", "40")) / 100}
 
 
 def load_env():
@@ -105,46 +108,56 @@ def publish_owned(symbols) -> None:
     tmp.replace(OWNED)
 
 
-def ensure_stops(cli: BingXVST, contracts: dict, stop_pct: float) -> dict:
-    """Every open position side gets exactly one closePosition STOP_MARKET at entry*(1 -/+ stop_pct).
-    Orphan stops (no position) are cancelled. Idempotent; safe to run daily."""
+def ensure_stops(cli: BingXVST, contracts: dict, stop_pct: float, tp_pct: float | None = None) -> dict:
+    """Every open position side gets exactly one closePosition STOP_MARKET at entry*(1 -/+ stop_pct)
+    and (if tp_pct) one TAKE_PROFIT_MARKET at entry*(1 +/- tp_pct).
+    Orphan protective orders (no position) are cancelled. Idempotent; safe to run daily."""
     mine = owned() or set()
     pos = [x for x in cli.positions() if float(x.get("positionAmt") or 0) != 0
            and x["symbol"].replace("-", "") in mine]
+    kinds = {"STOP_MARKET": stop_pct}
+    if tp_pct:
+        kinds["TAKE_PROFIT_MARKET"] = tp_pct
     stops: dict[tuple, list] = {}
     for o in cli.open_orders():
-        if str(o.get("type")).upper() == "STOP_MARKET" and o["symbol"].replace("-", "") in mine:
-            stops.setdefault((o["symbol"], str(o.get("positionSide")).upper()), []).append(o)
+        typ = str(o.get("type")).upper()
+        if typ in kinds and o["symbol"].replace("-", "") in mine:
+            stops.setdefault((o["symbol"], str(o.get("positionSide")).upper(), typ), []).append(o)
     placed = kept = failed = cancelled = 0
     live = set()
     ad = platform_adapter()
     for x in pos:
-        bx = x["symbol"]; side = str(x.get("positionSide")).upper(); live.add((bx, side))
+        bx = x["symbol"]; side = str(x.get("positionSide")).upper()
         entry = float(x.get("avgPrice") or 0)
         if entry <= 0:
             failed += 1; continue
         prec = int(contracts.get(bx.replace("-", ""), {}).get("pricePrecision", 6))
-        tgt = round(entry * (1 - stop_pct) if side == "LONG" else entry * (1 + stop_pct), prec)
-        have = stops.get((bx, side), [])
-        if len(have) == 1 and abs(float(have[0].get("stopPrice") or 0) / tgt - 1) < 0.02:
-            kept += 1; continue
-        for o in have:
-            ad._broker.cancel_order(str(o["orderId"]), bx); cancelled += 1
-        qty = abs(float(x.get("positionAmt") or 0))
-        r = ad._broker._place_conditional_order(bx, "SELL" if side == "LONG" else "BUY", f"{qty}",
-                                                f"{tgt:.{prec}f}", "STOP_MARKET", side)
-        log({"event": "stop", "symbol": bx, "positionSide": side, "entry": entry, "stopPrice": tgt,
-             "resp": {k: v for k, v in r.items() if k != "response"}})
-        if r.get("success"):
-            placed += 1
-        else:
-            failed += 1
-        time.sleep(0.25)
+        for typ, pct in kinds.items():
+            live.add((bx, side, typ))
+            down = (side == "LONG") == (typ == "STOP_MARKET")      # long stop / short TP are below entry
+            tgt = round(entry * (1 - pct) if down else entry * (1 + pct), prec)
+            if tgt <= 0:
+                failed += 1; continue
+            have = stops.get((bx, side, typ), [])
+            if len(have) == 1 and abs(float(have[0].get("stopPrice") or 0) / tgt - 1) < 0.02:
+                kept += 1; continue
+            for o in have:
+                ad._broker.cancel_order(str(o["orderId"]), bx); cancelled += 1
+            qty = abs(float(x.get("positionAmt") or 0))
+            r = ad._broker._place_conditional_order(bx, "SELL" if side == "LONG" else "BUY", f"{qty}",
+                                                    f"{tgt:.{prec}f}", typ, side)
+            log({"event": "stop" if typ == "STOP_MARKET" else "take_profit", "symbol": bx, "positionSide": side,
+                 "entry": entry, "stopPrice": tgt, "resp": {k: v for k, v in r.items() if k != "response"}})
+            if r.get("success"):
+                placed += 1
+            else:
+                failed += 1
+            time.sleep(0.25)
     for key, orders in stops.items():
         if key not in live:
             for o in orders:
                 ad._broker.cancel_order(str(o["orderId"]), key[0]); cancelled += 1
-    res = {"positions": len(pos), "placed": placed, "kept": kept, "cancelled": cancelled, "failed": failed}
+    res = {"positions": len(pos), "orders_expected": len(pos) * len(kinds), "placed": placed, "kept": kept, "cancelled": cancelled, "failed": failed}
     log({"event": "ensure_stops", **res})
     return res
 
@@ -275,7 +288,7 @@ def rebalance(cli: BingXVST, book: float, dry: bool, asof: pd.Timestamp, lim: di
     save_state(st)
     if not dry:
         publish_owned(set(targets.index) | set(current_positions(cli, mine | set(targets.index))))
-    stops = ensure_stops(cli, contracts, lim["stop_pct"]) if not dry else {}
+    stops = ensure_stops(cli, contracts, lim["stop_pct"], lim["tp_pct"]) if not dry else {}
     nL = int((targets > 0).sum()); nS = int((targets < 0).sum())
     summary = {"asof": str(asof.date()), "dry": dry, "longs": nL, "shorts": nS, "orders": len(orders), "ok": ok,
                "fail": fail, "book": book, "stops": stops, "top_long": list(targets.tail(5).index), "top_short": list(targets.head(5).index)}
@@ -343,8 +356,8 @@ def main():
             if gone:
                 msgs.append(f"Closed since last rebalance (stop?): {', '.join(gone)}")
             if not a.dry_run:
-                st = ensure_stops(cli, BingXVST.contracts(), lim["stop_pct"])
-                msgs.append(f"Stops: {st['placed'] + st['kept']}/{st['positions']} protected, failed {st['failed']}")
+                st = ensure_stops(cli, BingXVST.contracts(), lim["stop_pct"], lim["tp_pct"])
+                msgs.append(f"SL/TP orders: {st['placed'] + st['kept']}/{st['orders_expected']} in place ({st['positions']} positions), failed {st['failed']}")
         due = a.mode == "rebalance"
         if a.mode == "auto":
             last = state().get("last_rebalance")

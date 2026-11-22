@@ -27,3 +27,6 @@ The old runner (`run_trading_system.py`) must not run on the same account at the
   The daily run re-checks and repairs stops and cancels orphan stops; names closed since the last rebalance are reported.
 - Telegram: one message per order (OPEN/ADD, REDUCE, CLOSE, with errors) plus the daily summary.
 - Scheduler installed 2026-11-22: `launchctl list | grep com.lynxion.v2.xs-combo`.
+- 2026-11-22: XS-COMBO positions also get a 40% TAKE_PROFIT_MARKET (`V2_TAKE_PROFIT_PCT`). Dev check with TP from
+  day 2 (`E5_tp_check_dev_skipday1.csv`): none SR 1.79 / max DD -16.6%; 40% SR 1.98 / -10.9%; 30% SR 1.79 / -10.8%;
+  20% SR 1.11. Tight TPs cut the weekly carry winners; wide TPs only bank extreme spikes.
