@@ -111,3 +111,17 @@ Pre-registered decision rule (fixed before any results; 9 strategies tested):
   of its own time-ordered trades. Report the number of strategies tested (9) next to any winner.
 - A window that ends at 48h with < 40 trades is "inconclusive", not a pass.
 - Survivors get a second, combined VST run before any real-capital discussion.
+
+## S1 update (2026-11-22 23:00): live one-at-a-time rotation stopped
+Operator decision: a 48h live window per strategy sees one regime (Monday open after a sell-off) and ~40 trades —
+mostly noise. Strategy selection moves to long offline backtests (S2); VST keeps running the normal allowlist
+(TrendFollow, VWAPReversal, OIFootprint) to validate execution realism.
+
+## S2 — per-strategy long backtest (E9), pre-registered rule (fixed before any results)
+Script `research/v2/experiments/e9_strategy_backtest.py`. 8 strategies tested alone (sweep_scalper excluded: 1m
+design TF too slow for a year; crypto_breakout = breakout alias). 10 liquid perps, design timeframe, live-equivalent
+execution (next-bar entry, sanitized SL/TP, R-mode APM, SL-first, fees+slippage).
+- DEV 2025-11-01..2026-06-30 decides candidates: trades >= 100, PF >= 1.2, mean R >= +0.05, both halves of its
+  dev trades > 0, and >= 6/10 symbols positive.
+- HOLDOUT 2026-07-01..2026-10-31 confirms, read once: mean R > 0 and PF >= 1.1. Report "8 strategies tested".
+- Only candidates that pass both go to a VST run; everything else is documented as no-edge (as implemented).
