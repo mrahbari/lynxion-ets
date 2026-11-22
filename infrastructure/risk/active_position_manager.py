@@ -24,6 +24,10 @@ from typing import Any, Dict, List, Optional, Tuple
 from shared.logger import logger
 
 
+class _SnapshotUnavailable(Exception):
+    """Open-order snapshot could not be read; defer stop verification."""
+
+
 class ActivePositionManager:
     """Thread-safe real-time manager for Trailing Stops, Breakeven Protection, and Profit Locking."""
 
@@ -468,7 +472,21 @@ class ActivePositionManager:
                             try:
                                 from infrastructure.utils.symbol_format_helper import SymbolFormatHelper
                                 formatted_sym = SymbolFormatHelper.format_symbol_for_exchange(clean_sym, "bingx")
-                                pending = target_broker.get_pending_orders(formatted_sym) or []
+                                # A failed order query is not evidence of a missing stop: only an
+                                # OK snapshot may trigger an attach (else a duplicate/UNKNOWN stop).
+                                if hasattr(target_broker, "get_pending_orders_evidence"):
+                                    evidence = target_broker.get_pending_orders_evidence(formatted_sym) or {}
+                                    if evidence.get("status") != "OK":
+                                        state["initial_sl_verified"] = False
+                                        logger.warning(
+                                            f"Open-order snapshot for {clean_sym} unavailable "
+                                            f"({evidence.get('status')}: {evidence.get('error')}); "
+                                            "stop verification deferred"
+                                        )
+                                        raise _SnapshotUnavailable()
+                                    pending = evidence.get("orders") or []
+                                else:
+                                    pending = target_broker.get_pending_orders(formatted_sym) or []
                                 stop_orders = [
                                     order for order in pending
                                     if "STOP" in str(order.get("type", "")).upper()
@@ -529,6 +547,8 @@ class ActivePositionManager:
                                         self._emit_state_committed(observation_context, state)
                                     else:
                                         state["initial_sl_verified"] = False
+                            except _SnapshotUnavailable:
+                                pass
                             except Exception as ex:
                                 logger.error(f"Error checking/attaching initial SL for {clean_sym}: {ex}")
 
