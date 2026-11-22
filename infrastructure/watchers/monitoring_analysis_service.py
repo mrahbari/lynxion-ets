@@ -189,12 +189,20 @@ class MonitoringAnalysisService:
             if hasattr(self.market_data_repo, 'get_historical_data'):
                 # Get historical data for initializing watchers with sufficient history
                 try:
-                    historical_data = self.market_data_repo.get_historical_data(symbol=Symbol(symbol.value), period="30m", timeframe="1m")
+                    warm = symbol.value in getattr(self, '_last_fed_bar', {})
+                    historical_data = self.market_data_repo.get_historical_data(
+                        symbol=Symbol(symbol.value), period="30m" if warm else "6h", timeframe="1m")
                     if historical_data:
-                        # Use the most recent data point to initialize, but the historical data will help populate history
-                        market_data = historical_data[0] if historical_data else None
-                        # Initialize watcher histories with historical data
-                        self._initialize_watcher_histories_with_historical_data(symbol, historical_data)
+                        # Feed each CLOSED 1m bar exactly once. Previously every ~30s cycle re-appended
+                        # the whole 30-bar window (and the oldest bar again), so every watcher's history
+                        # was the same window repeated and its trend/volatility math ran on a sawtooth.
+                        self._feed_new_closed_bars(symbol, historical_data)
+                        try:
+                            from infrastructure.messaging.event_system import signal_processor
+                            signal_processor.update_market_data_heartbeat(symbol)
+                        except Exception as heartbeat_err:
+                            self.logger.warning(f"Failed to update heartbeat timestamp for {symbol.value}: {heartbeat_err}")
+                        return
                     else:
                         # Fallback to current price if no historical data
                         market_data = None
@@ -255,6 +263,91 @@ class MonitoringAnalysisService:
 
         except Exception as e:
             self.logger.error(f"Error fetching market data for {symbol.value}: {e}")
+
+    @staticmethod
+    def _bar_open_epoch(bar) -> Optional[float]:
+        ts = bar.get('timestamp') if isinstance(bar, dict) else None
+        if ts is None:
+            return None
+        if hasattr(ts, 'timestamp'):
+            return float(ts.timestamp())
+        try:
+            ts = float(ts)
+        except (TypeError, ValueError):
+            return None
+        return ts / 1000.0 if ts > 1e11 else ts
+
+    def _feed_new_closed_bars(self, symbol: Symbol, bars, bar_seconds: int = 60) -> int:
+        """Feed bars that are closed and not fed before, oldest first, once each."""
+        symbol_str = symbol.value
+        if symbol_str not in self.watchers:
+            return 0
+        if not hasattr(self, '_last_fed_bar'):
+            self._last_fed_bar = {}
+        last = self._last_fed_bar.get(symbol_str, float('-inf'))
+        now = time.time()
+        fresh = []
+        for bar in bars:
+            opened = self._bar_open_epoch(bar)
+            if opened is None or opened <= last or opened + bar_seconds > now:
+                continue  # unknown time, already fed, or still forming
+            fresh.append((opened, bar))
+        fresh.sort(key=lambda item: item[0])
+        funding = self._funding_payload(symbol_str)
+        for opened, bar in fresh:
+            payload = self._format_market_data_for_watcher(bar)
+            payload['candle'] = {
+                'open': payload.get('open'), 'high': payload.get('high'), 'low': payload.get('low'),
+                'close': payload.get('close'), 'volume': payload.get('volume', 0),
+                'timestamp': datetime.fromtimestamp(opened),
+                'close_time': datetime.fromtimestamp(opened + bar_seconds),
+            }
+            for watcher_name, watcher in self.watchers[symbol_str].items():
+                try:
+                    watcher.update_data(payload)
+                except Exception as e:
+                    self.logger.warning(f"Error updating watcher {watcher_name} with bar: {e}")
+            self._last_fed_bar[symbol_str] = opened
+        if funding is not None:
+            for watcher_name, watcher in self.watchers[symbol_str].items():
+                try:
+                    watcher.update_data(funding)
+                except Exception as e:
+                    self.logger.warning(f"Error updating watcher {watcher_name} with funding: {e}")
+        return len(fresh)
+
+    _FUNDING_TTL_S = 600.0
+
+    def _funding_payload(self, symbol_str: str) -> Optional[Dict[str, Any]]:
+        """Latest settled funding rate from BingX, returned once per new funding value/period.
+
+        FundingRateWatcher keeps one history point per update, so the same rate must not be
+        re-sent every cycle. Public endpoint, cached per symbol for _FUNDING_TTL_S.
+        """
+        if not hasattr(self, '_funding_cache'):
+            self._funding_cache = {}
+        cached = self._funding_cache.get(symbol_str)
+        now = time.time()
+        if cached and now - cached['fetched'] < self._FUNDING_TTL_S:
+            return None
+        try:
+            import requests
+            base = symbol_str[:-4] if symbol_str.endswith('USDT') else symbol_str
+            r = requests.get('https://open-api.bingx.com/openApi/swap/v2/quote/premiumIndex',
+                             params={'symbol': f'{base}-USDT'}, timeout=5).json()
+            data = r.get('data') or {}
+            if isinstance(data, list):
+                data = data[0] if data else {}
+            rate = float(data.get('lastFundingRate'))
+            period_key = data.get('nextFundingTime')
+        except Exception:
+            self._funding_cache[symbol_str] = {'fetched': now, 'key': cached and cached.get('key')}
+            return None
+        previous_key = cached.get('key') if cached else None
+        self._funding_cache[symbol_str] = {'fetched': now, 'key': (period_key, rate)}
+        if previous_key == (period_key, rate):
+            return None
+        return {'funding_rate': rate}
 
     def _format_market_data_for_watcher(self, market_data):
         """Format market data to the structure expected by watchers."""

@@ -138,6 +138,21 @@ class EngineService:
             else:
                 return SignalType.NEUTRAL
 
+        # Funding: crowded side pays. Extreme/high positive funding (crowded longs) is read
+        # contrarian (SELL), negative funding contrarian (BUY). Previously always NEUTRAL.
+        elif 'funding' in obs_type:
+            if 'positive' in obs_type:
+                return SignalType.SELL
+            elif 'negative' in obs_type:
+                return SignalType.BUY
+            return SignalType.NEUTRAL
+
+        # Candle-pattern observations (historical_candle) carry their side in the name, e.g.
+        # 'candle_reversal_bullish_emerging'. Previously no rule matched -> always NEUTRAL,
+        # while Fusion read the same names as BUY/SELL.
+        elif 'candle' in obs_type and ('bullish' in obs_type or 'bearish' in obs_type):
+            return SignalType.BUY if 'bullish' in obs_type else SignalType.SELL
+
         # Handle single candle observations (our new observation type)
         elif 'single_candle' in obs_type:
             # For single candle observations, we can't determine direction from just price

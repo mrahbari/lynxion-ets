@@ -12,7 +12,7 @@ from infrastructure.watchers.adapters.historical_candle import HistoricalCandleW
 from infrastructure.watchers.monitoring_analysis_service import MonitoringAnalysisService
 
 
-def test_current_engine_does_not_interpret_candle_reversal_as_a_side():
+def test_engine_reads_candle_reversal_side_like_fusion_does():
     observation = MarketObservation(
         symbol=Symbol("BTCUSDT"),
         observation_type="candle_reversal_bullish_emerging",
@@ -21,8 +21,9 @@ def test_current_engine_does_not_interpret_candle_reversal_as_a_side():
         timestamp=datetime(2026, 6, 1, tzinfo=timezone.utc),
     )
     signal = EngineService().process_observation(observation)
-    assert signal.signal_type is SignalType.NEUTRAL
-    assert signal.direction > 0  # Numeric direction alone is not a BUY decision.
+    # Engine and Fusion must agree: Fusion already reads 'bullish' in the name as BUY.
+    assert signal.signal_type is SignalType.BUY
+    assert signal.direction > 0
 
 
 def test_current_live_monitoring_shape_does_not_fill_candle_watcher_buffer():

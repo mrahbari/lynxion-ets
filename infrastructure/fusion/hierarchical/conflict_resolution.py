@@ -137,13 +137,15 @@ class ConflictResolutionRules:
             
             total_confidence += conf
             
-            # Classify regime signal based on observation type
-            if any(indicator in obs_type for indicator in ['risk_on', 'positive', 'bullish', 'market_pulse_positive']):
+            # Classify regime signal based on observation type. Extremes are checked first:
+            # 'funding_rate_extremely_positive' (crowded longs) used to match 'positive' and
+            # count as RISK_ON, so the OVERHEATED branch was unreachable.
+            if any(indicator in obs_type for indicator in ['overheated', 'extreme']):
+                overheated_signals += 1
+            elif any(indicator in obs_type for indicator in ['risk_on', 'positive', 'bullish', 'market_pulse_positive']):
                 risk_on_signals += 1
             elif any(indicator in obs_type for indicator in ['risk_off', 'negative', 'bearish', 'volatile']):
                 risk_off_signals += 1
-            elif any(indicator in obs_type for indicator in ['overheated', 'extreme']):
-                overheated_signals += 1
             else:
                 neutral_signals += 1
         

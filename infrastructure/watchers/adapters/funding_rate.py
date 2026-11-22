@@ -39,9 +39,12 @@ class FundingRateWatcher(BaseWatcher):
         self.funding_rate_timestamps = []
 
         # Thresholds for different market conditions
-        self.high_funding_threshold = 0.005  # 0.5% per funding period
-        self.low_funding_threshold = -0.005  # -0.5% per funding period
-        self.extreme_funding_threshold = 0.01  # 1% per funding period
+        # Typical perp funding is ~0.01% per period; the former 0.5% / 1% thresholds essentially
+        # never fired, so every reading was 'normal'. 0.05% (5x typical) and 0.1% are the defaults.
+        import os as _os
+        self.high_funding_threshold = float(_os.getenv("FUNDING_HIGH_THRESHOLD", "0.0005"))
+        self.low_funding_threshold = -self.high_funding_threshold
+        self.extreme_funding_threshold = float(_os.getenv("FUNDING_EXTREME_THRESHOLD", "0.001"))
 
     def update_data(self, data: dict):
         """Update with new funding rate data"""
