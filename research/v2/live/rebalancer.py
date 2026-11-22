@@ -34,6 +34,7 @@ STATE = STATE_DIR / "state.json"
 LEDGER = STATE_DIR / "orders.jsonl"
 EQUITY = STATE_DIR / "equity.csv"
 STOP = STATE_DIR / "STOP"
+OWNED = STATE_DIR / "owned_symbols.json"   # read by the platform BingX adapter (sleeve isolation)
 MIN_ORDER_NOTIONAL = 6.0
 
 
@@ -88,13 +89,31 @@ def platform_adapter():
     return ad
 
 
+def owned() -> set[str] | None:
+    """Symbols (BTCUSDT form) owned by this sleeve; None if never published."""
+    if not OWNED.exists():
+        return None
+    return {x.replace("-", "") for x in json.loads(OWNED.read_text())["symbols"]}
+
+
+def publish_owned(symbols) -> None:
+    """Atomic write so the platform never reads a partial file."""
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = OWNED.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"symbols": sorted({s.replace("-", "") for s in symbols}),
+                               "updated": datetime.now(timezone.utc).isoformat()}, indent=1))
+    tmp.replace(OWNED)
+
+
 def ensure_stops(cli: BingXVST, contracts: dict, stop_pct: float) -> dict:
     """Every open position side gets exactly one closePosition STOP_MARKET at entry*(1 -/+ stop_pct).
     Orphan stops (no position) are cancelled. Idempotent; safe to run daily."""
-    pos = [x for x in cli.positions() if float(x.get("positionAmt") or 0) != 0]
+    mine = owned() or set()
+    pos = [x for x in cli.positions() if float(x.get("positionAmt") or 0) != 0
+           and x["symbol"].replace("-", "") in mine]
     stops: dict[tuple, list] = {}
     for o in cli.open_orders():
-        if str(o.get("type")).upper() == "STOP_MARKET":
+        if str(o.get("type")).upper() == "STOP_MARKET" and o["symbol"].replace("-", "") in mine:
             stops.setdefault((o["symbol"], str(o.get("positionSide")).upper()), []).append(o)
     placed = kept = failed = cancelled = 0
     live = set()
@@ -162,9 +181,11 @@ def _round_qty(q: float, prec: int) -> float:
     return math.floor(abs(q) * f) / f
 
 
-def current_positions(cli: BingXVST) -> dict[str, dict]:
+def current_positions(cli: BingXVST, only: set[str] | None = None) -> dict[str, dict]:
     out: dict[str, dict] = {}
     for x in cli.positions():
+        if only is not None and x["symbol"].replace("-", "") not in only:
+            continue
         amt = abs(float(x.get("positionAmt") or 0))
         if amt == 0:
             continue
@@ -206,8 +227,14 @@ def plan_orders(targets: pd.Series, book: float, pos: dict, prices: dict, contra
 def rebalance(cli: BingXVST, book: float, dry: bool, asof: pd.Timestamp, lim: dict) -> dict:
     contracts = BingXVST.contracts()
     prices = BingXVST.prices()
-    targets = target_weights(asof, contracts)
-    pos = current_positions(cli)
+    allpos = current_positions(cli)
+    mine = owned()
+    if mine is None:                      # first run with isolation: every open position is ours
+        mine = set(allpos)
+    foreign = set(allpos) - mine          # platform positions: never trade these symbols
+    targets = target_weights(asof, {k: v for k, v in contracts.items() if k not in foreign})
+    pos = {k: v for k, v in allpos.items() if k in mine}
+    publish_owned(set(targets.index) | set(pos))   # before any order: platform keeps out
     orders = plan_orders(targets, book, pos, prices, contracts)
     gross = float(targets.abs().sum() * book)
     if (gross > book * 1.05 or len(targets) > lim["max_positions"]
@@ -246,6 +273,8 @@ def rebalance(cli: BingXVST, book: float, dry: bool, asof: pd.Timestamp, lim: di
     if not dry:
         st["last_rebalance"] = str(asof.date())
     save_state(st)
+    if not dry:
+        publish_owned(set(targets.index) | set(current_positions(cli, mine | set(targets.index))))
     stops = ensure_stops(cli, contracts, lim["stop_pct"]) if not dry else {}
     nL = int((targets > 0).sum()); nS = int((targets < 0).sum())
     summary = {"asof": str(asof.date()), "dry": dry, "longs": nL, "shorts": nS, "orders": len(orders), "ok": ok,
@@ -255,8 +284,10 @@ def rebalance(cli: BingXVST, book: float, dry: bool, asof: pd.Timestamp, lim: di
 
 
 def report(cli: BingXVST) -> dict:
-    b = cli.balance(); pos = cli.positions()
-    eq = float(b.get("equity") or 0); upnl = float(b.get("unrealizedProfit") or 0)
+    b = cli.balance(); mine = owned()
+    pos = [x for x in cli.positions() if mine is None or x["symbol"].replace("-", "") in mine]
+    eq = float(b.get("equity") or 0)              # account-wide (shared with the platform sleeve)
+    upnl = sum(float(x.get("unrealizedProfit") or 0) for x in pos)   # this sleeve only
     st = state()
     if "start_equity" not in st:
         st["start_equity"] = eq; st["start_date"] = str(datetime.now(timezone.utc).date()); save_state(st)
@@ -280,7 +311,7 @@ def closed_since_rebalance(cli: BingXVST) -> list[str]:
     if not last or not f.exists():
         return []
     tg = json.loads(f.read_text())
-    have = current_positions(cli)
+    have = current_positions(cli, owned() or set(tg))
     out = []
     for s, w in tg.items():
         side = "LONG" if w > 0 else "SHORT"
@@ -305,8 +336,9 @@ def main():
         msgs = []
         if a.mode in ("auto", "report"):
             r = report(cli)
-            msgs.append(f"Equity {r['equity']:.2f} VST | PnL since start {r['pnl_since_start']:+.2f} | "
-                        f"positions {r['positions']} | gross {r['gross_notional']:.0f}")
+            msgs.append(f"Account equity {r['equity']:.2f} VST (since start {r['pnl_since_start']:+.2f}, all sleeves)\n"
+                        f"XS-COMBO: positions {r['positions']} | gross {r['gross_notional']:.0f} | "
+                        f"unrealized {r['unrealized']:+.2f}")
             gone = closed_since_rebalance(cli)
             if gone:
                 msgs.append(f"Closed since last rebalance (stop?): {', '.join(gone)}")

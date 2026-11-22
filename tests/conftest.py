@@ -15,6 +15,10 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# Tests must not depend on the live v2 sleeve ownership file (data/v2_live/owned_symbols.json).
+import os  # noqa: E402
+os.environ.setdefault("V2_OWNED_SYMBOLS_FILE", str(ROOT / "tests" / "_no_v2_owned_symbols.json"))
+
 
 @pytest.fixture
 def approved_symbols_config(tmp_path):

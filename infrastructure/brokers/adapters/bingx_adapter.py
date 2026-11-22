@@ -22,6 +22,41 @@ from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 from shared.rate_limiter import global_rate_limiter
 from shared.utils import format_price_for_api
 
+# --- v2 sleeve isolation -------------------------------------------------------------
+# The v2 XS-COMBO portfolio (research/v2/live/rebalancer.py) trades on the same VST
+# account. It publishes the symbols it owns; the platform must neither see (manage,
+# trail, reconcile, count) nor enter those symbols. Missing file = nothing owned.
+import os as _os
+from pathlib import Path as _Path
+
+_V2_DEFAULT_FILE = _Path(__file__).resolve().parents[3] / "data" / "v2_live" / "owned_symbols.json"
+_v2_cache: Dict[str, Any] = {"path": None, "mtime": None, "symbols": frozenset()}
+
+
+def _norm_sym(s: Any) -> str:
+    return str(s or "").upper().replace("-", "").replace("/", "").replace("_", "")
+
+
+def v2_owned_symbols() -> frozenset:
+    """Symbols owned by the v2 sleeve. Corrupt file after a good read keeps the last good
+    set; corrupt file with no prior good read raises (fail closed)."""
+    path = _Path(_os.getenv("V2_OWNED_SYMBOLS_FILE", str(_V2_DEFAULT_FILE)))
+    if path != _v2_cache["path"]:
+        _v2_cache.update(path=path, mtime=None, symbols=frozenset())
+    try:
+        mtime = path.stat().st_mtime
+    except FileNotFoundError:
+        return frozenset()
+    if mtime != _v2_cache["mtime"]:
+        try:
+            data = json.loads(path.read_text())
+            _v2_cache["symbols"] = frozenset(_norm_sym(s) for s in data["symbols"])
+            _v2_cache["mtime"] = mtime
+        except Exception:
+            if _v2_cache["mtime"] is None:
+                raise RuntimeError("v2 owned-symbols file unreadable; refusing to expose positions")
+    return _v2_cache["symbols"]
+
 
 _BINGX_ENTRY_ADMISSION_LOCK = threading.RLock()
 
@@ -705,7 +740,10 @@ class _BingXBroker:
             open_positions = []
             open_position_exposures = []
             open_position_sides = {'LONG': 0, 'SHORT': 0}
+            owned = v2_owned_symbols()
             for position in response['data']:
+                if isinstance(position, dict) and _norm_sym(position.get('symbol')) in owned:
+                    continue  # v2 sleeve capacity is managed by the v2 rebalancer
                 signed_quantity = float(position.get('positionAmt', 0) or 0)
                 if not math.isfinite(signed_quantity):
                     return False, "broker position snapshot contains non-finite quantity"
@@ -794,6 +832,10 @@ class _BingXBroker:
     def execute_order(self, order: Order) -> Dict[str, Any]:
         """Execute only after an atomic, broker-backed, fail-closed risk admission."""
         with _BINGX_ENTRY_ADMISSION_LOCK:
+            if _norm_sym(getattr(order.symbol, "value", order.symbol)) in v2_owned_symbols():
+                reason = f"symbol {order.symbol} is owned by the v2 sleeve"
+                self.logger.warning(f"🛑 [BINGX V2 ISOLATION] Order REJECTED: {reason}")
+                return {"success": False, "order_id": None, "error": reason}
             allowed, reason = self._assert_entry_admission(order)
             if not allowed:
                 self.logger.error(f"🛑 [BINGX RISK ADMISSION] Order REJECTED: {reason}")
@@ -1509,6 +1551,8 @@ class _BingXBroker:
             orders = data.get('orders') if isinstance(data, dict) else data
             if not isinstance(orders, list):
                 return {"status": "MALFORMED", "orders": [], "error": "orders_not_list"}
+            owned = v2_owned_symbols()
+            orders = [o for o in orders if not (isinstance(o, dict) and _norm_sym(o.get("symbol")) in owned)]
             return {"status": "OK", "orders": orders, "error": None}
         except Exception as error:
             return {"status": "EXCEPTION", "orders": [], "error": type(error).__name__}
@@ -1654,7 +1698,8 @@ class _BingXBroker:
         positions = response.get('data')
         if not isinstance(positions, list):
             raise RuntimeError('BingX positions response has no position list')
-        return positions
+        owned = v2_owned_symbols()
+        return [p for p in positions if not (isinstance(p, dict) and _norm_sym(p.get("symbol")) in owned)]
 
     def get_positions(self, symbol: str=None) -> List[Dict]:
         """Alias for get_open_positions."""
