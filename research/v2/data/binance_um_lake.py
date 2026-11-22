@@ -23,6 +23,7 @@ import json
 import re
 import sys
 import time
+import urllib.parse
 import urllib.request
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -47,6 +48,7 @@ DATASETS = {
 def _get(url: str, retries: int = 5) -> bytes:
     for i in range(retries):
         try:
+            url = urllib.parse.quote(url, safe=':/?&=.-_%')
             with urllib.request.urlopen(url, timeout=60) as r:
                 return r.read()
         except Exception:  # noqa: BLE001 - network retry

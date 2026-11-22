@@ -34,7 +34,7 @@ FIELDS = ["close", "open", "high", "low", "quote_volume", "taker_buy_quote", "tr
 
 def _daily_for_symbol(sym: str, lag_h: int = 1) -> pd.DataFrame | None:
     kp = LAKE / "klines_1h" / f"{sym}.parquet"
-    if not kp.exists():
+    if not kp.exists() or not kp.with_suffix(".months.json").exists():
         return None
     k = pd.read_parquet(kp)
     k = k[k["close"] > 0]
@@ -60,7 +60,7 @@ def _daily_for_symbol(sym: str, lag_h: int = 1) -> pd.DataFrame | None:
     fp = LAKE / "funding" / f"{sym}.parquet"
     d["funding_fwd"] = 0.0
     d["funding_past"] = 0.0
-    if fp.exists():
+    if fp.exists() and fp.with_suffix(".months.json").exists():
         f = pd.read_parquet(fp)
         ft = f["calc_time"].values
         fr = f["funding_rate"].fillna(0).values
@@ -72,7 +72,7 @@ def _daily_for_symbol(sym: str, lag_h: int = 1) -> pd.DataFrame | None:
         lab_fwd = ((ft - lag_h * HOUR - 1) // (24 * HOUR)) * 24 * HOUR
         d["funding_fwd"] = pd.Series(fr).groupby(lab_fwd).sum().reindex(days).fillna(0).values
     pp = LAKE / "premium_1h" / f"{sym}.parquet"
-    if pp.exists():
+    if pp.exists() and pp.with_suffix(".months.json").exists():
         p = pd.read_parquet(pp)
         p["day"] = ((p["open_time"] // (24 * HOUR)) + 1) * 24 * HOUR
         gp = p.groupby("day")

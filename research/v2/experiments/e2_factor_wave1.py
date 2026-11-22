@@ -68,7 +68,7 @@ def main() -> None:
     rows, nets = [], {}
     for name, sig in S.items():
         for reb in (1, 7):
-            w = bt.rank_long_short(sig, mask, frac=0.2)
+            w = bt.rank_long_short(sig, mask, frac=0.2, min_names=30)
             r = bt.run(w, fr, p, rebalance_every=reb)
             r2 = bt.run(w, fr, p, bt.CostModel(cost_mult=2.0), rebalance_every=reb)
             s = st.summary(r.net, r.gross, r.turnover)
