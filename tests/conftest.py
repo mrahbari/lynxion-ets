@@ -19,6 +19,32 @@ if str(ROOT) not in sys.path:
 import os  # noqa: E402
 os.environ.setdefault("V2_OWNED_SYMBOLS_FILE", str(ROOT / "tests" / "_no_v2_owned_symbols.json"))
 
+# Tests must never write the live runtime state in data/ (order journal, SL cooldowns,
+# active positions). Before this, a unit-test run left synthetic PROTECTION_UNKNOWN rows in
+# data/live_order_journal.json, which blocks the TESTNET launcher.
+import tempfile  # noqa: E402
+_STATE_DIR = Path(tempfile.mkdtemp(prefix="lynxion-test-state-"))
+os.environ.setdefault("LIVE_ORDER_JOURNAL_PATH", str(_STATE_DIR / "live_order_journal.json"))
+# Operator runtime allowlist from .env must not filter test strategies (dotenv never overrides).
+os.environ["STRATEGY_ALLOWLIST"] = ""
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _isolate_runtime_state_files():
+    import infrastructure.risk.symbol_cooldown_gate as gate_mod
+    import infrastructure.risk.risk_enforcement as enf_mod
+    import infrastructure.execution.broker_reconciliation as rec_mod
+    cooldown = str(_STATE_DIR / "sl_cooldown_journal.json")
+    gate_mod.COOLDOWN_JOURNAL_PATH = cooldown
+    enf_mod.COOLDOWN_JOURNAL_PATH = cooldown
+    gate_mod.symbol_cooldown_gate._journal_path = cooldown
+    # Tests assert the default active-positions path, so snapshot/restore that file instead.
+    active = Path(rec_mod.ACTIVE_POSITIONS_JOURNAL_PATH)
+    saved = active.read_bytes() if active.exists() else None
+    yield
+    if saved is not None:
+        active.write_bytes(saved)
+
 
 @pytest.fixture
 def approved_symbols_config(tmp_path):
