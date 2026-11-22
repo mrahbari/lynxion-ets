@@ -72,3 +72,4 @@ class BingXVST:
         return self._req("POST", "/openApi/swap/v2/trade/order", {
             "symbol": sym, "side": side, "positionSide": position_side, "type": "MARKET",
             "quantity": qty, "clientOrderID": client_id})
+

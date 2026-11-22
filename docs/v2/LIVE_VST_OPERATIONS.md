@@ -17,3 +17,13 @@ Host is hard-coded to `open-api-vst.bingx.com` (demo); this code cannot trade re
 Evaluation plan: after 8–12 weeks compare weekly VST returns to the backtest's expected
 (~+0.5%/week on the book, weekly vol ~3%); decision on real capital only after that, with operator approval.
 The old runner (`run_trading_system.py`) must not run on the same account at the same time.
+
+## Update 2026-11-22: sizing, stops, notifications
+- Sizing comes from the platform `.env`: gross book = `RISK_VST_MAX_PORTFOLIO_NOTIONAL_USDT` (3,200 → ~80 USDT per name),
+  per-order cap = `MAX_ORDER_NOTIONAL_AMOUNT`, max names = `MAX_TOTAL_POSITIONS`. `--book` overrides for one run.
+- Every position side gets an exchange-side `STOP_MARKET` (closePosition, mark price) at 50% from entry
+  (`V2_STOP_LOSS_PCT`, default 50). Tighter stops destroy this strategy in the dev period
+  (`docs/v2/reports/E5_stop_check_dev.csv`: 35% → SR 1.42, 25% → 0.85 vs 1.94 none; 50% → 1.79 with lower max DD).
+  The daily run re-checks and repairs stops and cancels orphan stops; names closed since the last rebalance are reported.
+- Telegram: one message per order (OPEN/ADD, REDUCE, CLOSE, with errors) plus the daily summary.
+- Scheduler installed 2026-11-22: `launchctl list | grep com.lynxion.v2.xs-combo`.

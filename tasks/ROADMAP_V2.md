@@ -62,10 +62,27 @@ exhaustively negative and are out of scope.
 | E4-2 | Open holdout once; verdict EDGE / NO EDGE | report | DONE |
 | E4-3 | Capacity & BingX tradability (symbol overlap, min size, fees) | report | DONE |
 | **E5** | **Execution on BingX (only if E4 = EDGE)** | | |
-| E5-1 | Lean portfolio rebalancer (target weights → orders), rate-limit aware | VST dry run | TODO |
-| E5-2 | Telegram trade + daily PnL notifications | message received | TODO |
-| E5-3 | Forward paper 60–90 days, tracking error vs backtest | report | TODO |
+| E5-1 | Lean portfolio rebalancer (target weights → orders), rate-limit aware | first VST rebalance 39/40 | DONE (2026-11-22) |
+| E5-1b | Sizing from platform .env (`RISK_VST_MAX_PORTFOLIO_NOTIONAL_USDT`, `MAX_ORDER_NOTIONAL_AMOUNT`, `MAX_TOTAL_POSITIONS`) | book resized to 3,200 | DONE (2026-11-22) |
+| E5-1c | Exchange-side disaster stop on every position (50%, dev check `docs/v2/reports/E5_stop_check_dev.csv`), daily repair | all positions protected | DONE (2026-11-22) |
+| E5-2 | Telegram: one message per trade + daily summary | messages received | DONE (2026-11-22) |
+| E5-2b | Daily launchd job `com.lynxion.v2.xs-combo` (02:15 local) | loaded | DONE (2026-11-22) |
+| E5-3 | Forward paper on VST, live-vs-model tracking report | weekly report | IN PROGRESS |
 | E5-4 | Real-capital decision | operator approval | GATED |
+
+## Sprint plan — 4 weeks (VST account usable only until ~2026-12-22)
+
+Principle: less offline testing, more live VST trading. Offline work is limited to quick
+dev-period checks that decide whether a candidate goes live. Every live position has a stop.
+Note: 4 weeks of live data cannot statistically prove a Sharpe ~1 edge; it validates
+execution realism (fills, slippage, funding received vs model, tracking error, operations).
+
+| Week | Dates | Tasks | Done when |
+|---|---|---|---|
+| W1 | 11-22 → 11-29 | E5-1b/1c/2/2b (done 11-22). S1: live-vs-model tracking report (daily, auto). S2: quick dev checks of edge-2 candidates — B1 funding-only daily carry, B2 OI / long-short ratio (download `metrics` for liquid subset), B3 listing-age, B4 (operator idea) separate strategy, own sleeve/ledger/Telegram tag: momentum entries on liquid names, LONG strong / SHORT weak, ATR/trailing stop; judged beta-adjusted and vs buy-and-hold. 2nd rebalance 11-29. | tracking report runs; best candidate chosen |
+| W2 | 11-30 → 12-06 | S3: best candidate live on VST as a 2nd sleeve (net target weights, per-sleeve model ledger, stops). S4: risk guard — per-name cap + extreme-funding exit. | 2 sleeves trading |
+| W3 | 12-07 → 12-13 | S5: mid-sprint review: slippage/funding vs model, stop hits, tracking error; kill or keep each sleeve. | review report |
+| W4 | 12-14 → 12-20 | S6: final report + real-capital go/no-go package (sizing, limits, kill switch). | report; E5-4 decision by operator |
 
 ## Out of scope (explicitly)
 
@@ -74,3 +91,4 @@ Codex cohorts C-11/C-33/C-35, microstructure collectors, investor-release track.
 
 ## Results log
 - 2026-11-22: XS-COMBO-V1 holdout PASS (Binance SR 1.39; BingX SR 0.96). See docs/v2/reports/E2_E4_RESULTS_2026-11-22.md
+- 2026-11-22: VST book resized to .env cap (3,200 gross), 50% disaster stops, per-trade Telegram, daily launchd installed.

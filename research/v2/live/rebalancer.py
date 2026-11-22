@@ -34,9 +34,18 @@ STATE = STATE_DIR / "state.json"
 LEDGER = STATE_DIR / "orders.jsonl"
 EQUITY = STATE_DIR / "equity.csv"
 STOP = STATE_DIR / "STOP"
-DEFAULT_BOOK = 20_000.0          # gross notional (VST): 10k long + 10k short
-MAX_ORDER_NOTIONAL = 2_000.0
 MIN_ORDER_NOTIONAL = 6.0
+
+
+def limits() -> dict:
+    """Sizing/risk limits from the platform .env (call after load_env)."""
+    import os
+    return {"book": float(os.getenv("RISK_VST_MAX_PORTFOLIO_NOTIONAL_USDT", "3200")),     # gross notional
+            "max_order": float(os.getenv("MAX_ORDER_NOTIONAL_AMOUNT", "201")),
+            "max_positions": int(os.getenv("MAX_TOTAL_POSITIONS", "50")),
+            # disaster stop, price distance from entry. Dev-period check (E5_stop_check_dev.csv):
+            # 10-35% stops cut SR 1.94 -> 0.43-1.42; 50% keeps 1.79 and lowers max DD.
+            "stop_pct": float(os.getenv("V2_STOP_LOSS_PCT", "50")) / 100}
 
 
 def load_env():
@@ -47,12 +56,78 @@ def load_env():
         pass
 
 
-def telegram(subject: str, body: str):
+def telegram(subject: str, body: str, level: str = "info"):
     try:
         from infrastructure.services.risk_alerts import TelegramNotificationService
-        TelegramNotificationService().send_notification(body, subject, "info", parse_mode="HTML")
+        TelegramNotificationService().send_notification(body, subject, level, parse_mode="HTML")
     except Exception:  # noqa: BLE001
         print("telegram failed", file=sys.stderr)
+
+
+def notify_trade(o: dict, r: dict, px: float):
+    """One Telegram message per executed (or failed) order."""
+    ok = r.get("code") == 0
+    action = ("CLOSE" if o.get("close_all") else "REDUCE") if o["reduce"] else "OPEN/ADD"
+    body = (f"{'✅' if ok else '❌'} {action} {o['positionSide']} {o['symbol']}\n"
+            f"{o['side']} qty {o['qty']} @ ~{px:g} | notional ~{o['notional']:.2f} USDT")
+    if not ok:
+        body += f"\nerror {r.get('code')}: {r.get('msg')}"
+    telegram("XS-COMBO-V1 trade (VST)", body, "info" if ok else "warning")
+    time.sleep(1.0)     # Telegram per-chat rate limit
+
+
+def platform_adapter():
+    """The real platform BingX adapter (settings from .env). Must be the VST host."""
+    from bootstrap.settings.loaders import load_settings
+    from infrastructure.brokers.adapters.bingx_adapter import BingXBrokerAdapter
+    b = load_settings().broker
+    ad = BingXBrokerAdapter({"api_key": b.bingx_api_key, "secret_key": b.bingx_secret_key,
+                             "testnet": b.bingx_testnet, "passphrase": getattr(b, "bingx_passphrase", "")})
+    if "open-api-vst" not in ad._broker.base_url:
+        raise RuntimeError("platform adapter is not on the VST host; refusing to place stops")
+    return ad
+
+
+def ensure_stops(cli: BingXVST, contracts: dict, stop_pct: float) -> dict:
+    """Every open position side gets exactly one closePosition STOP_MARKET at entry*(1 -/+ stop_pct).
+    Orphan stops (no position) are cancelled. Idempotent; safe to run daily."""
+    pos = [x for x in cli.positions() if float(x.get("positionAmt") or 0) != 0]
+    stops: dict[tuple, list] = {}
+    for o in cli.open_orders():
+        if str(o.get("type")).upper() == "STOP_MARKET":
+            stops.setdefault((o["symbol"], str(o.get("positionSide")).upper()), []).append(o)
+    placed = kept = failed = cancelled = 0
+    live = set()
+    ad = platform_adapter()
+    for x in pos:
+        bx = x["symbol"]; side = str(x.get("positionSide")).upper(); live.add((bx, side))
+        entry = float(x.get("avgPrice") or 0)
+        if entry <= 0:
+            failed += 1; continue
+        prec = int(contracts.get(bx.replace("-", ""), {}).get("pricePrecision", 6))
+        tgt = round(entry * (1 - stop_pct) if side == "LONG" else entry * (1 + stop_pct), prec)
+        have = stops.get((bx, side), [])
+        if len(have) == 1 and abs(float(have[0].get("stopPrice") or 0) / tgt - 1) < 0.02:
+            kept += 1; continue
+        for o in have:
+            ad._broker.cancel_order(str(o["orderId"]), bx); cancelled += 1
+        qty = abs(float(x.get("positionAmt") or 0))
+        r = ad._broker._place_conditional_order(bx, "SELL" if side == "LONG" else "BUY", f"{qty}",
+                                                f"{tgt:.{prec}f}", "STOP_MARKET", side)
+        log({"event": "stop", "symbol": bx, "positionSide": side, "entry": entry, "stopPrice": tgt,
+             "resp": {k: v for k, v in r.items() if k != "response"}})
+        if r.get("success"):
+            placed += 1
+        else:
+            failed += 1
+        time.sleep(0.25)
+    for key, orders in stops.items():
+        if key not in live:
+            for o in orders:
+                ad._broker.cancel_order(str(o["orderId"]), key[0]); cancelled += 1
+    res = {"positions": len(pos), "placed": placed, "kept": kept, "cancelled": cancelled, "failed": failed}
+    log({"event": "ensure_stops", **res})
+    return res
 
 
 def state() -> dict:
@@ -123,20 +198,22 @@ def plan_orders(targets: pd.Series, book: float, pos: dict, prices: dict, contra
                 side = "SELL" if delta > 0 else "BUY"
             reduce = (side_name == "LONG" and side == "SELL") or (side_name == "SHORT" and side == "BUY")
             orders.append({"symbol": s, "bx": c["symbol"], "side": side, "positionSide": side_name,
-                           "qty": abs(q), "notional": round(notional, 2), "reduce": reduce})
+                           "qty": abs(q), "notional": round(notional, 2), "reduce": reduce, "close_all": close_all})
     # reducing orders first (frees margin)
     return sorted(orders, key=lambda o: (not o["reduce"], o["symbol"]))
 
 
-def rebalance(cli: BingXVST, book: float, dry: bool, asof: pd.Timestamp) -> dict:
+def rebalance(cli: BingXVST, book: float, dry: bool, asof: pd.Timestamp, lim: dict) -> dict:
     contracts = BingXVST.contracts()
     prices = BingXVST.prices()
     targets = target_weights(asof, contracts)
     pos = current_positions(cli)
     orders = plan_orders(targets, book, pos, prices, contracts)
     gross = float(targets.abs().sum() * book)
-    if gross > book * 1.05 or any(o["notional"] > MAX_ORDER_NOTIONAL and not o["reduce"] for o in orders):
-        raise RuntimeError(f"safety cap violated: gross={gross:.0f} max order={max((o['notional'] for o in orders), default=0)}")
+    if (gross > book * 1.05 or len(targets) > lim["max_positions"]
+            or any(o["notional"] > lim["max_order"] and not o["reduce"] for o in orders)):
+        raise RuntimeError(f"safety cap violated: gross={gross:.0f} names={len(targets)} "
+                           f"max order={max((o['notional'] for o in orders), default=0)}")
     (STATE_DIR / "targets").mkdir(parents=True, exist_ok=True)
     (STATE_DIR / "targets" / f"{asof.date()}.json").write_text(json.dumps(targets.round(6).to_dict(), indent=1))
     ok = fail = 0
@@ -159,6 +236,7 @@ def rebalance(cli: BingXVST, book: float, dry: bool, asof: pd.Timestamp) -> dict
         cid = f"xs{asof.strftime('%y%m%d')}{o['symbol'][:10]}{o['positionSide'][0]}{o['side'][0]}"[:40]
         r = cli.market_order(o["bx"], o["side"], o["positionSide"], o["qty"], cid)
         log({"event": "order", **o, "client_id": cid, "resp": r})
+        notify_trade(o, r, prices[o["symbol"]])
         if r.get("code") == 0:
             ok += 1
         else:
@@ -168,9 +246,10 @@ def rebalance(cli: BingXVST, book: float, dry: bool, asof: pd.Timestamp) -> dict
     if not dry:
         st["last_rebalance"] = str(asof.date())
     save_state(st)
+    stops = ensure_stops(cli, contracts, lim["stop_pct"]) if not dry else {}
     nL = int((targets > 0).sum()); nS = int((targets < 0).sum())
     summary = {"asof": str(asof.date()), "dry": dry, "longs": nL, "shorts": nS, "orders": len(orders), "ok": ok,
-               "fail": fail, "book": book, "top_long": list(targets.tail(5).index), "top_short": list(targets.head(5).index)}
+               "fail": fail, "book": book, "stops": stops, "top_long": list(targets.tail(5).index), "top_short": list(targets.head(5).index)}
     log({"event": "rebalance_summary", **summary})
     return summary
 
@@ -194,13 +273,31 @@ def report(cli: BingXVST) -> dict:
     return row
 
 
+def closed_since_rebalance(cli: BingXVST) -> list[str]:
+    """Target names from the last rebalance that no longer have a position (e.g. stopped out)."""
+    last = state().get("last_rebalance")
+    f = STATE_DIR / "targets" / f"{last}.json"
+    if not last or not f.exists():
+        return []
+    tg = json.loads(f.read_text())
+    have = current_positions(cli)
+    out = []
+    for s, w in tg.items():
+        side = "LONG" if w > 0 else "SHORT"
+        if have.get(s, {}).get(side, 0) == 0:
+            out.append(f"{s} {side}")
+    return sorted(out)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["auto", "rebalance", "report"], default="auto")
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--book", type=float, default=DEFAULT_BOOK)
+    ap.add_argument("--book", type=float, default=None, help="gross notional; default RISK_VST_MAX_PORTFOLIO_NOTIONAL_USDT")
     a = ap.parse_args()
     load_env()
+    lim = limits()
+    book = a.book if a.book is not None else lim["book"]
     cli = BingXVST()
     now = pd.Timestamp.now(tz="UTC")
     asof = now.normalize()
@@ -210,6 +307,12 @@ def main():
             r = report(cli)
             msgs.append(f"Equity {r['equity']:.2f} VST | PnL since start {r['pnl_since_start']:+.2f} | "
                         f"positions {r['positions']} | gross {r['gross_notional']:.0f}")
+            gone = closed_since_rebalance(cli)
+            if gone:
+                msgs.append(f"Closed since last rebalance (stop?): {', '.join(gone)}")
+            if not a.dry_run:
+                st = ensure_stops(cli, BingXVST.contracts(), lim["stop_pct"])
+                msgs.append(f"Stops: {st['placed'] + st['kept']}/{st['positions']} protected, failed {st['failed']}")
         due = a.mode == "rebalance"
         if a.mode == "auto":
             last = state().get("last_rebalance")
@@ -218,9 +321,12 @@ def main():
             if STOP.exists():
                 msgs.append("STOP file present: rebalance skipped")
             else:
-                s = rebalance(cli, a.book, a.dry_run, asof)
+                s = rebalance(cli, book, a.dry_run, asof, lim)
                 msgs.append(f"Rebalance {s['asof']}{' (dry-run)' if s['dry'] else ''}: {s['longs']} long / "
-                            f"{s['shorts']} short, orders ok {s['ok']} fail {s['fail']} of {s['orders']}")
+                            f"{s['shorts']} short, book {book:.0f}, orders ok {s['ok']} fail {s['fail']} of {s['orders']}")
+                if s.get("stops"):
+                    msgs.append(f"Stops ({lim['stop_pct']:.0%}): placed {s['stops']['placed']} kept {s['stops']['kept']} "
+                                f"failed {s['stops']['failed']}")
         text = "\n".join(msgs)
         print(text)
         if not a.dry_run:
