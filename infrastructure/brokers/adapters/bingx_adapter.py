@@ -1589,8 +1589,35 @@ class _BingXBroker:
         except Exception as e:
             return []
 
+    _SYMBOLS_TTL_S = 3600.0
+
     def get_available_symbols(self) -> set:
-        """Get set of available symbols on BingX."""
+        """Get set of tradable perpetual symbols on BingX (cached).
+
+        Called before every order; uncached spot-endpoint lookups queued behind the shared
+        rate limiter and delayed orders by ~2 minutes. Swap contracts are the right market.
+        """
+        cache = getattr(self, "_symbols_cache", None)
+        now = time.time()
+        if cache and now - cache[0] < self._SYMBOLS_TTL_S:
+            return cache[1]
+        try:
+            response = self._make_request('GET', '/openApi/swap/v2/quote/contracts', signed=False)
+            rows = response.get('data') if isinstance(response, dict) and response.get('code') == 0 else None
+            if isinstance(rows, list):
+                symbols = {str(r.get('symbol', '')).replace('-', '') for r in rows
+                           if isinstance(r, dict) and r.get('symbol') and str(r.get('status', 1)) == '1'}
+                if symbols:
+                    self._symbols_cache = (now, symbols)
+                    return symbols
+        except Exception as e:
+            self.logger.warning(f"BingX swap contracts lookup failed: {e}")
+        if cache:
+            return cache[1]   # stale but real beats a slow fallback chain
+        return self._get_available_symbols_legacy()
+
+    def _get_available_symbols_legacy(self) -> set:
+        """Previous spot-endpoint lookup chain, kept only as a cold-start fallback."""
         try:
             # Try the correct BingX API endpoint for getting all trading pairs
             # According to BingX API documentation, the exchangeInfo endpoint is the most reliable

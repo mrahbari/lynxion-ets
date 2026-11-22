@@ -126,7 +126,10 @@ class GlobalRateLimiter:
         self._initialized = True
         # Default rate limits for different exchanges
         self.limiters: Dict[str, RateLimiter] = {
-            'bingx': RateLimiter(max_requests=5, time_window=60),  # Very conservative for BingX
+            # 5/min starved every order flow (6-10 calls: admission, symbol lookup, POST, SL, TP,
+            # reconciliation) and delayed entries by minutes. BingX allows far more per IP;
+            # 2 req/s keeps a wide safety margin.
+            'bingx': RateLimiter(max_requests=120, time_window=60),
             'binance': RateLimiter(max_requests=10, time_window=60),
             'mexc': RateLimiter(max_requests=10, time_window=60),
             'phemex': RateLimiter(max_requests=10, time_window=60),
