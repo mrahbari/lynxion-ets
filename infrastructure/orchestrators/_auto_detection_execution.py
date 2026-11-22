@@ -327,6 +327,19 @@ class _AutoDetectionExecutionMixin:
                 raw_sl = risk_params.get('stop_loss')
             if raw_tp is None or float(raw_tp) <= 0:
                 raw_tp = risk_params.get('take_profit')
+            # Strategy levels on the wrong side of the live venue price (or absurdly far away)
+            # mean the setup was not computed from this symbol's current candles. Silently
+            # clamping them to defaults would execute a trade the strategy never priced.
+            if raw_sl is not None and float(raw_sl) > 0:
+                is_buy = str(getattr(order_side, 'name', order_side)).upper() in ('BUY', 'LONG')
+                sl_val = float(raw_sl)
+                if (sl_val >= current_price if is_buy else sl_val <= current_price) or \
+                        abs(sl_val - current_price) / current_price > 0.25:
+                    self.logger.warning(
+                        f"STRATEGY LEVELS INCONSISTENT: {execution_intent.symbol} side={order_side} "
+                        f"venue_price={current_price} strategy_sl={sl_val}; trade rejected")
+                    self._remove_pending_execution_intent(execution_intent)
+                    return {'status': 'failed', 'error': 'STRATEGY_LEVELS_INCONSISTENT'}
             sl_amount, tp_amount = sanitize_sltp_levels(
                 entry_price=float(current_price), side=order_side,
                 stop_loss=raw_sl, take_profit=raw_tp,

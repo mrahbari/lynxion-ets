@@ -172,7 +172,9 @@ def test_production_auto_factory_has_one_execution_subscriber_no_network(monkeyp
             assert [float(order.quantity) for order in spy.orders] == pytest.approx([0.1, 0.05])
             assert spy.broker_dispatches == 2  # two distinct intents, memory-only callbacks
             return
-        if scenario == "cooldown":
+        if scenario in ("cooldown", "wrong_side_sltp"):
+            # A strategy stop on the wrong side of the venue price means the setup was not
+            # priced from this symbol's live candles: reject, never clamp-and-trade.
             assert spy.orders == []
             assert spy.broker_dispatches == 0
             return
@@ -186,9 +188,6 @@ def test_production_auto_factory_has_one_execution_subscriber_no_network(monkeyp
             assert spy.broker_dispatches == 1  # memory-only callback, never a broker
         if scenario == "notional_cap":
             assert float(spy.orders[0].quantity) == pytest.approx(0.05)
-        if scenario == "wrong_side_sltp":
-            stop = float(spy.orders[0].stop_loss_price.amount)
-            assert stop < 100 if side == OrderSide.BUY else stop > 100
         assert composition.risk_enforcement() is not None
         assert spy.orders[0].parent_execution_intent.intent_id == intent.intent_id
         assert risk.calculate_dynamic_size.call_count == 1

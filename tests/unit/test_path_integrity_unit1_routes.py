@@ -43,7 +43,7 @@ def make_intent(side):
 
 @pytest.mark.unit
 @pytest.mark.parametrize("side", [OrderSide.BUY, OrderSide.SELL])
-@pytest.mark.parametrize("scenario", ["normal", "duplicate_delivery", "queue_redelivery", "cooldown_blocked", "concurrent_delivery", "notional_cap", "inverse_sizing"])
+@pytest.mark.parametrize("scenario", ["normal", "duplicate_delivery", "queue_redelivery", "cooldown_blocked", "concurrent_delivery", "notional_cap", "inverse_sizing", "foreign_levels"])
 def test_execution_route_variants_with_no_network_broker(monkeypatch, side, scenario):
     from infrastructure.messaging import event_system
     from infrastructure.orchestrators.architecture_orchestrator import architecture_orchestrator
@@ -102,6 +102,8 @@ def test_execution_route_variants_with_no_network_broker(monkeypatch, side, scen
         router.subscribe(EventType.EXECUTION_INTENT, auto._handle_execution_intent_event)
 
         intent = make_intent(side)
+        if scenario == "foreign_levels":  # another symbol's levels (stale shared buffer P0)
+            intent.risk_parameters["stop_loss"] = 3500.0 if side == OrderSide.BUY else 0.9
         event = SignalEvent(EventType.EXECUTION_INTENT, intent, correlation_id="unit1-one-intent")
         router._route_event(event)
         assert len(auto.opportunity_queue) == 1
@@ -129,7 +131,7 @@ def test_execution_route_variants_with_no_network_broker(monkeypatch, side, scen
                 assert auto._execute_trade_from_intent(intent)["error"] == "DUPLICATE_LOGICAL_INTENT"
         expected = {"normal": 1, "duplicate_delivery": 1, "cooldown_blocked": 0,
                     "concurrent_delivery": 1, "notional_cap": 1, "inverse_sizing": 2,
-                    "queue_redelivery": 1}[scenario]
+                    "queue_redelivery": 1, "foreign_levels": 0}[scenario]
         assert len(spy.orders) == expected
         assert all(order.parent_execution_intent is intent for order in spy.orders[:1])
         if scenario == "notional_cap":
@@ -137,7 +139,8 @@ def test_execution_route_variants_with_no_network_broker(monkeypatch, side, scen
             assert float(order.quantity) == pytest.approx(0.5)
             assert float(order.stop_loss_price.amount) == pytest.approx(97.0 if side == OrderSide.BUY else 103.0)
             assert float(order.take_profit_price.amount) == pytest.approx(105.5 if side == OrderSide.BUY else 94.5)
-        assert risk.calculate_dynamic_size.call_count == expected
+        if scenario != "foreign_levels":
+            assert risk.calculate_dynamic_size.call_count == expected
     finally:
         if original is None:
             container._services.pop("risk_engine", None)

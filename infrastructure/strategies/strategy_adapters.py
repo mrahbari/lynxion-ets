@@ -5,6 +5,8 @@ Following hexagonal architecture principles with proper separation of concerns.
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, List
 from decimal import Decimal
+import os
+import time
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
@@ -121,63 +123,81 @@ class BaseStrategyAdapter(StrategyPort):
         In live trading mode, the websocket stream doesn't populate data_buffer,
         so we load historical data on-demand if the buffer is empty.
         """
-        if not hasattr(self, 'data_buffer') or not self.data_buffer:
-            self.data_buffer = []
-            if self._history_loader is not None:
-                # Explicit compositions own historical-data provenance. An empty
-                # result is not permission to fall through to the live registry.
-                data = self._history_loader(symbol, self.config)
+        # A buffer this method did not load (fed bar-by-bar by backtest/replay via
+        # update_with_market_data, or set by a caller) is caller-owned and left untouched.  A buffer this method loaded belongs to ONE symbol: it is
+        # reloaded when another symbol is evaluated or it is older than the refresh interval.
+        # (P0: a single never-refreshed buffer used to price every symbol's entry/SL/TP.)
+        sym_key = symbol.value if hasattr(symbol, 'value') else str(symbol)
+        loaded = getattr(self, '_buffer_loaded_for', None)
+        if self.data_buffer and loaded is None:
+            return
+        if (self.data_buffer and loaded is not None and loaded[0] == sym_key
+                and time.time() - loaded[1] < self._buffer_refresh_seconds()):
+            return
+        self.data_buffer = []
+        self._buffer_loaded_for = (sym_key, time.time())
+        if self._history_loader is not None:
+            # Explicit compositions own historical-data provenance. An empty
+            # result is not permission to fall through to the live registry.
+            data = self._history_loader(symbol, self.config)
+            if data:
+                self.data_buffer = data
+            return
+        try:
+            from bootstrap.settings.loaders import load_settings
+            from infrastructure.services.broker_registry import broker_registry
+            
+            settings = load_settings()
+            historical_data_source = (
+                settings.data.preferred_historical_data_source
+                if settings.data and hasattr(settings.data, 'preferred_historical_data_source')
+                else 'binance'
+            )
+            
+            provider = broker_registry.get_historical_data_provider(
+                settings=settings,
+                csv_base_path=None,
+                download_enabled=True,
+                broker_service=None,
+                historical_data_source=historical_data_source,
+                fallback_sources=['mexc', 'phemex', 'bingx']
+            )
+            
+            if provider:
+                timeframe = self.config.get('timeframe', '1h')
+                
+                # Determine period based on timeframe to get at least 100-200 bars
+                if timeframe == '1m':
+                    period = '3h'
+                elif timeframe == '5m':
+                    period = '12h'
+                elif timeframe == '15m':
+                    period = '3d'
+                elif timeframe == '1h':
+                    period = '10d'
+                elif timeframe == '4h':
+                    period = '30d'
+                elif timeframe == '1d':
+                    period = '100d'
+                else:
+                    period = '10d'
+
+                self.logger.info(f"Fetching historical data dynamically for {symbol.value} (Timeframe: {timeframe}, Period: {period})...")
+                data = provider.get_historical_data(symbol, period=period, timeframe=timeframe)
                 if data:
                     self.data_buffer = data
-                return
-            try:
-                from bootstrap.settings.loaders import load_settings
-                from infrastructure.services.broker_registry import broker_registry
-                
-                settings = load_settings()
-                historical_data_source = (
-                    settings.data.preferred_historical_data_source
-                    if settings.data and hasattr(settings.data, 'preferred_historical_data_source')
-                    else 'binance'
-                )
-                
-                provider = broker_registry.get_historical_data_provider(
-                    settings=settings,
-                    csv_base_path=None,
-                    download_enabled=True,
-                    broker_service=None,
-                    historical_data_source=historical_data_source,
-                    fallback_sources=['mexc', 'phemex', 'bingx']
-                )
-                
-                if provider:
-                    timeframe = self.config.get('timeframe', '1h')
-                    
-                    # Determine period based on timeframe to get at least 100-200 bars
-                    if timeframe == '1m':
-                        period = '3h'
-                    elif timeframe == '5m':
-                        period = '12h'
-                    elif timeframe == '15m':
-                        period = '3d'
-                    elif timeframe == '1h':
-                        period = '10d'
-                    elif timeframe == '4h':
-                        period = '30d'
-                    elif timeframe == '1d':
-                        period = '100d'
-                    else:
-                        period = '10d'
+                    self.logger.info(f"Successfully pre-populated data buffer with {len(data)} bars for {symbol.value}")
+                else:
+                    self.logger.warning(f"No historical data returned for {symbol.value}")
+        except Exception as e:
+            self.logger.error(f"Error pre-populating data buffer for {symbol.value}: {e}")
 
-                    self.logger.info(f"Fetching historical data dynamically for {symbol.value} (Timeframe: {timeframe}, Period: {period})...")
-                    data = provider.get_historical_data(symbol, period=period, timeframe=timeframe)
-                    if data:
-                        self.data_buffer = data
-                        self.logger.info(f"Successfully pre-populated data buffer with {len(data)} bars for {symbol.value}")
-                    else:
-                        self.logger.warning(f"No historical data returned for {symbol.value}")
-            except Exception as e:
-                self.logger.error(f"Error pre-populating data buffer for {symbol.value}: {e}")
+    @staticmethod
+    def _buffer_refresh_seconds() -> float:
+        try:
+            return float(os.getenv("STRATEGY_BUFFER_REFRESH_SECONDS", "60"))
+        except ValueError:
+            return 60.0
 
     def bind_history_loader(self, loader):
         """Bind a caller-owned historical source; omitted Live behavior is unchanged."""
@@ -723,6 +743,7 @@ class BaseStrategyAdapter(StrategyPort):
         """
         if not hasattr(self, 'data_buffer') or self.data_buffer is None:
             self.data_buffer = []
+        self._buffer_loaded_for = None
         limit = getattr(self, 'buffer_size_limit', 1000)
         if isinstance(data, list):
             self.data_buffer.extend(data)

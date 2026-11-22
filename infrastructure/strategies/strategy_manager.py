@@ -547,7 +547,10 @@ class StrategyManager:
                 continue
 
             try:
-                intent = strategy.evaluate_fused_signal(fused_signal)
+                # Adapters keep a per-instance candle buffer; aggregation runs on worker threads,
+                # so one strategy instance must evaluate one symbol at a time.
+                with strategy.__dict__.setdefault("_evaluation_lock", threading.RLock()):
+                    intent = strategy.evaluate_fused_signal(fused_signal)
                 if intent:
                     # Calculate performance attribution score for this strategy
                     performance_score = self._calculate_performance_attribution(
