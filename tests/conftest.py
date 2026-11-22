@@ -32,6 +32,9 @@ os.environ["STRATEGY_ALLOWLIST"] = ""
 os.environ["TELEGRAM_BOT_TOKEN"] = ""
 os.environ["TELEGRAM_CHAT_ID"] = "0"   # settings parse it as int; empty token already blocks sending
 os.environ["TRADE_JOURNAL_SYMBOL_PACING_SECONDS"] = "0"  # no real-time pacing inside unit tests
+# Legacy ActivePositionManager contract tests drive stop requests through ROE triggers; the
+# R-multiple default mode reuses the same request path and has its own tests (opt in per test).
+os.environ["APM_STOP_MODE"] = "legacy"
 
 
 @pytest.fixture(autouse=True, scope="session")

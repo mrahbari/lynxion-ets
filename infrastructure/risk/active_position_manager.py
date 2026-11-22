@@ -24,6 +24,19 @@ from typing import Any, Dict, List, Optional, Tuple
 from shared.logger import logger
 
 
+def _env_float(name: str, default: Optional[float]) -> Optional[float]:
+    """Read a float tuning knob; "off"/"none" disables an optional stage."""
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    if raw.strip().lower() in ("off", "none", "disabled"):
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
 class _SnapshotUnavailable(Exception):
     """Open-order snapshot could not be read; defer stop verification."""
 
@@ -67,6 +80,20 @@ class ActivePositionManager:
         self.position_identity_store = position_identity_store
         self._evaluation_sequence = 0
         self._stop_sync_sequence = 0
+
+        # Stop management mode. "r" (default): standard risk-unit (R) management — breakeven at
+        # +BE_TRIGGER_R, then a trail TRAIL_DISTANCE_R behind the best price once +TRAIL_AFTER_R,
+        # moved only in steps >= MIN_STEP_R and at most once per MIN_AMEND_SECONDS. R is the
+        # position's initial stop distance (hydrated from the exchange stop). "legacy": the old
+        # leverage-ROE triggers with a fixed 0.5% trail amended on every tick.
+        self.stop_mode = os.getenv("APM_STOP_MODE", "r").strip().lower()
+        self.default_risk_pct = _env_float("APM_DEFAULT_RISK_PCT", 0.02)
+        self.be_trigger_r = _env_float("APM_BE_TRIGGER_R", 1.5)
+        self.be_buffer_pct = _env_float("APM_BE_BUFFER_PCT", 0.0015)
+        self.trail_after_r = _env_float("APM_TRAIL_AFTER_R", 2.0)
+        self.trail_distance_r = _env_float("APM_TRAIL_DISTANCE_R", 1.5)
+        self.min_step_r = _env_float("APM_MIN_STEP_R", 0.25)
+        self.min_amend_seconds = _env_float("APM_MIN_AMEND_SECONDS", 60.0)
 
         # symbol -> position tracking state
         self._positions_state: Dict[str, Dict[str, Any]] = {}
@@ -503,6 +530,8 @@ class ActivePositionManager:
                                     )
                                     if existing_sl > 0:
                                         state["current_sl_price"] = existing_sl
+                                        if (existing_sl < entry_price) if is_long else (existing_sl > entry_price):
+                                            state.setdefault("initial_risk", abs(entry_price - existing_sl))
                                         locked_at_breakeven = (
                                             existing_sl >= entry_price * (1.0 + self.fee_buffer_pct)
                                             if is_long else
@@ -544,6 +573,7 @@ class ActivePositionManager:
                                         observation_context=observation_context,
                                     ):
                                         state["current_sl_price"] = init_sl
+                                        state.setdefault("initial_risk", abs(entry_price - init_sl))
                                         self._emit_state_committed(observation_context, state)
                                     else:
                                         state["initial_sl_verified"] = False
@@ -552,8 +582,15 @@ class ActivePositionManager:
                             except Exception as ex:
                                 logger.error(f"Error checking/attaching initial SL for {clean_sym}: {ex}")
 
+                    legacy = self.stop_mode != "r"
+                    if not legacy and state.get("initial_sl_verified", False):
+                        self._manage_r_stop(
+                            broker, clean_sym, is_long, qty, entry_price, curr_price, peak_p,
+                            state, observation_context, actions_taken,
+                        )
+
                     # --- STAGE 1: BREAKEVEN STOP ACTIVATION (+6.0% ROE by default) ---
-                    if self._roe_threshold_reached(roe_pct, self.be_trigger_roe) and not state.get("breakeven_active", False):
+                    if legacy and self._roe_threshold_reached(roe_pct, self.be_trigger_roe) and not state.get("breakeven_active", False):
                         if is_long:
                             be_sl = entry_price * (1.0 + self.fee_buffer_pct)
                             if be_sl >= curr_price:
@@ -591,7 +628,7 @@ class ActivePositionManager:
                     elapsed_hours = (time.time() - state.get("first_seen", time.time())) / 3600.0
 
                     # 1. Stale in-profit trade (>= 3.0h open & ROE >= +3.5% fee coverage) -> Force Breakeven Lock
-                    if elapsed_hours >= 3.0 and self._roe_threshold_reached(
+                    if legacy and elapsed_hours >= 3.0 and self._roe_threshold_reached(
                         roe_pct, self.fee_buffer_pct * position_leverage * 100.0
                     ) and not state.get("breakeven_active", False):
                         if is_long:
@@ -629,7 +666,7 @@ class ActivePositionManager:
                             )
 
                     # 2. Stale stagnant trade (>= 8.0h open without hitting Breakeven) -> Tighten Stop by 30%
-                    elif elapsed_hours >= 8.0 and not state.get("breakeven_active", False) and not state.get("time_decay_tightened", False):
+                    elif legacy and elapsed_hours >= 8.0 and not state.get("breakeven_active", False) and not state.get("time_decay_tightened", False):
                         state["time_decay_tightened"] = True
                         curr_sl = state.get("current_sl_price", 0.0)
                         if is_long and curr_sl > 0 and curr_sl < entry_price:
@@ -685,7 +722,7 @@ class ActivePositionManager:
 
                     # --- STAGE 2: DYNAMIC TRAILING STOP RATCHET (+10.0% ROE) ---
                     min_locked_roe = self.fee_buffer_pct * position_leverage * 100.0
-                    if self._roe_threshold_reached(roe_pct, self.trail_trigger_roe):
+                    if legacy and self._roe_threshold_reached(roe_pct, self.trail_trigger_roe):
                         if is_long:
                             candidate_sl = min(peak_p * (1.0 - self.trail_distance_pct), curr_price * 0.997)
                             locked_roe = ((candidate_sl - entry_price) / entry_price) * position_leverage * 100.0
@@ -794,6 +831,54 @@ class ActivePositionManager:
                 logger.error(f"Error in ActivePositionManager.evaluate_open_positions: {e}", exc_info=True)
 
         return actions_taken
+
+    def _manage_r_stop(self, broker: Any, symbol: str, is_long: bool, qty: float,
+                       entry_price: float, curr_price: float, peak_price: float,
+                       state: Dict[str, Any], observation_context: Dict[str, Any],
+                       actions_taken: List[Dict[str, Any]]) -> None:
+        """Standard R-multiple stop management (breakeven, then trailing), ratchet-only."""
+        risk = state.get("initial_risk") or entry_price * self.default_risk_pct
+        if not risk or risk <= 0:
+            return
+        sgn = 1.0 if is_long else -1.0
+        mfe = sgn * (peak_price - entry_price)
+        target, kind = None, None
+        if self.be_trigger_r is not None and mfe >= self.be_trigger_r * risk:
+            target = entry_price * (1.0 + sgn * self.be_buffer_pct)
+            kind = "BREAKEVEN_ACTIVATED"
+        if self.trail_after_r is not None and self.trail_distance_r and mfe >= self.trail_after_r * risk:
+            trail = peak_price - sgn * self.trail_distance_r * risk
+            if target is None or sgn * (trail - target) > 0:
+                target, kind = trail, "TRAILING_STOP_RATCHET"
+        if target is None:
+            return
+        # Never request a stop through the market (BingX rejects it; it would fire at once).
+        target = min(target, curr_price * 0.998) if is_long else max(target, curr_price * 1.002)
+        current = state.get("current_sl_price", 0.0) or 0.0
+        improvement = sgn * (target - current) if current > 0 else float("inf")
+        if improvement < self.min_step_r * risk:
+            return
+        if time.time() - state.get("last_stop_amend_ts", 0.0) < self.min_amend_seconds:
+            return
+        if not self._sync_sl_to_exchange(broker, symbol, is_long, abs(qty), target,
+                                         observation_context=observation_context):
+            return
+        state["last_stop_amend_ts"] = time.time()
+        state["current_sl_price"] = target
+        state["trailing_sl_price"] = target
+        if (target >= entry_price) if is_long else (target <= entry_price):
+            state["breakeven_active"] = True
+        self._emit_state_committed(observation_context, state)
+        locked_r = sgn * (target - entry_price) / risk
+        actions_taken.append({
+            "type": kind, "symbol": symbol, "side": "LONG" if is_long else "SHORT",
+            "entry_price": entry_price, "peak_price": peak_price, "current_price": curr_price,
+            "new_sl_price": target, "initial_risk": risk, "mfe_r": mfe / risk, "locked_r": locked_r,
+        })
+        logger.warning(
+            f"🛡️ [ACTIVE POSITION MANAGER] {kind}: {symbol} {'LONG' if is_long else 'SHORT'} "
+            f"MFE={mfe / risk:+.2f}R -> SL ${target:.6g} (locks {locked_r:+.2f}R, R=${risk:.6g})"
+        )
 
     def _resolve_target_broker(self, broker: Any, symbol: Optional[str] = None) -> Any:
         """Resolve the active perpetual broker adapter from composite or multi-broker services."""
