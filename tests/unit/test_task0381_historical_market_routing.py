@@ -30,11 +30,11 @@ def test_binance_perpetual_route_uses_only_fapi_endpoint():
 
 
 def test_unverified_perpetual_source_does_not_fall_back_to_binance_spot():
-    provider = provider_with_sources("bingx")
+    provider = provider_with_sources("mexc")
 
     with pytest.raises(ValueError, match="unsupported historical market mapping"):
         provider._fetch_from_source(
-            "bingx", "BTCUSDT", "1d", "1m", MarketType.PERPETUAL
+            "mexc", "BTCUSDT", "1d", "1m", MarketType.PERPETUAL
         )
 
 
@@ -43,3 +43,13 @@ def test_market_type_is_required_at_provider_boundary():
         ConfigurableHistoricalDataProvider.get_historical_data(
             provider_with_sources("binance"), "BTCUSDT", "1d", "1m"
         )
+
+
+def test_bingx_perpetual_route_uses_swap_fetcher():
+    provider = provider_with_sources("bingx")
+    calls = []
+    provider._fetch_bingx_historical = lambda symbol, period, timeframe: calls.append((symbol, timeframe)) or []
+    provider._fetch_from_source("bingx", "NCCOGOLD2USDUSDT", "1d", "1h", MarketType.PERPETUAL)
+    assert calls == [("NCCOGOLD2USDUSDT", "1h")]
+    with pytest.raises(ValueError, match="unsupported historical market mapping"):
+        provider._fetch_from_source("bingx", "BTCUSDT", "1d", "1m", MarketType.SPOT)

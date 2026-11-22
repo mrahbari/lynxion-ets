@@ -536,3 +536,12 @@ def test_ports_conformance():
 
     store = DummyStorage()
     assert store.retrieve_trade_ticks(Symbol("BTC-USDT"), datetime.now(), datetime.now()) == []
+
+
+def test_symbol_accepts_numeric_and_bingx_tradfi_bases():
+    from domain.value_objects import Symbol
+    for s in ("1000PEPEUSDT", "1INCHUSDT", "NCSINASDAQ1002USDUSDT", "NCCOGOLD2USD-USDT", "NCFXEUR2USDUSDT"):
+        Symbol(s)
+    for bad in ("12345678USDT", "btcusdt", "BTC/USDT", "BTC USDT"):
+        with pytest.raises(ValueError, match="Invalid symbol format"):
+            Symbol(bad)

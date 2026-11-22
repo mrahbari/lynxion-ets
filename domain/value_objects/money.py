@@ -11,8 +11,9 @@ class Symbol:
     value: str
 
     def __post_init__(self):
-        # Validate symbol format (e.g., BTC-USDT, ETHUSDC, AUSDT)
-        if not re.match(r'^[A-Z]{1,10}[-A-Z]{0,1}[A-Z]{3,6}$', self.value):
+        # Validate symbol format (e.g., BTC-USDT, ETHUSDC, AUSDT, 1000PEPEUSDT and BingX TradFi
+        # perpetuals such as NCSINASDAQ1002USDUSDT / NCCOGOLD2USD-USDT). Uppercase letters/digits only.
+        if not re.match(r'^[A-Z0-9]{1,24}-?[A-Z]{3,6}$', self.value) or not re.search(r'[A-Z]', self.value.replace('-', '')[:-4]):
             raise ValueError(f"Invalid symbol format: {self.value}")
     
     def base_asset(self) -> str:

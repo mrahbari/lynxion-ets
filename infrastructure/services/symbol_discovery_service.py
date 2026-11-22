@@ -150,6 +150,17 @@ class SymbolDiscoveryService:
             if (s.value if hasattr(s, 'value') else str(s)).upper().replace("/", "").replace("-", "").replace("_", "") not in blacklisted
         ]
 
+        # Operator watchlist (e.g. BingX TradFi perpetuals: indices, metals, oil, FX) is always
+        # monitored in addition to discovery. EXTRA_WATCHLIST_SYMBOLS, comma-separated.
+        seen = {(x.value if hasattr(x, 'value') else str(x)).upper() for x in discovered_symbols}
+        for raw in _os.getenv("EXTRA_WATCHLIST_SYMBOLS", "").split(","):
+            sym = raw.strip().upper().replace("-", "")
+            if sym and sym not in seen and sym not in blacklisted:
+                try:
+                    discovered_symbols.append(Symbol(sym)); seen.add(sym)
+                except ValueError:
+                    self.logger.warning(f"EXTRA_WATCHLIST_SYMBOLS: invalid symbol {raw!r} ignored")
+
         # Log the combined symbol set
         self.logger.info(
             f"📊 COMBINED SYMBOLS: {len(discovered_symbols)} total symbols after combining {len(enabled_watchers)} watcher types",

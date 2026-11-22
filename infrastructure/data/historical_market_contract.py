@@ -36,6 +36,9 @@ class HistoricalMarketRequest:
 _VERIFIED_ENDPOINTS = {
     ("binance", MarketType.SPOT): "https://api.binance.com/api/v3/klines",
     ("binance", MarketType.PERPETUAL): "https://fapi.binance.com/fapi/v1/klines",
+    # BingX swap (USDT-M perpetual) klines: needed for BingX-only perpetuals such as the
+    # TradFi NCSI*/NCCO*/NCFX* contracts. BingX spot stays unsupported (no cross-market).
+    ("bingx", MarketType.PERPETUAL): "https://open-api.bingx.com/openApi/swap/v3/quote/klines",
 }
 
 

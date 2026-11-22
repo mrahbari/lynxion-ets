@@ -437,6 +437,8 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         endpoint = verified_candle_endpoint(request)
         if source == 'binance':
             return self._fetch_binance_historical(symbol, period, timeframe, endpoint)
+        if source == 'bingx' and market_type is MarketType.PERPETUAL:
+            return self._fetch_bingx_historical(symbol, period, timeframe)
         raise ValueError(f"unsupported historical market mapping: {source}/{market_type.value}")
 
     def _handle_http_error(self, e: Exception, symbol: str, source: str) -> Exception:
@@ -513,58 +515,52 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
             self.logger.debug(f"Source Binance failed for {symbol}: {detailed_e}")
             raise detailed_e
 
+    _BINGX_INTERVAL_MS = {"1m": 60_000, "3m": 180_000, "5m": 300_000, "15m": 900_000, "30m": 1_800_000,
+                          "1h": 3_600_000, "2h": 7_200_000, "4h": 14_400_000, "6h": 21_600_000,
+                          "12h": 43_200_000, "1d": 86_400_000}
+
+    @staticmethod
+    def _bingx_swap_symbol(symbol: str) -> str:
+        s = str(symbol).upper()
+        if "-" in s:
+            return s
+        for quote in ("USDT", "USDC"):
+            if s.endswith(quote):
+                return f"{s[:-len(quote)]}-{quote}"
+        return s
+
     def _fetch_bingx_historical(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
-        """Fetch historical data from BingX API directly."""
+        """Fetch closed perpetual klines from BingX (swap v3).
+
+        The former call used the spot endpoint with an undashed symbol, so BingX-only
+        perpetuals (e.g. TradFi NCSI*/NCCO*/NCFX*) never had history. Bars still open are dropped.
+        """
         try:
-            # Convert period to milliseconds
             start_time = self._convert_period_to_ms(period)
             end_time = int(datetime.now().timestamp() * 1000)
-
-            # BingX API endpoint for klines
-            url = f"https://open-api.bingx.com/openApi/quote/v1/klines"
-            params = {
-                'symbol': symbol,
-                'interval': timeframe,
-                'startTime': start_time,
-                'endTime': end_time,
-                'limit': 500  # BingX max limit
-            }
-
-            # Add API key to headers
-            headers = {
-                'X-BX-APIKEY': self._settings.broker.bingx_api_key if self._settings.broker and hasattr(self._settings.broker, 'bingx_api_key') else ''
-            }
-
-            # Use session with proper connection management
+            url = "https://open-api.bingx.com/openApi/swap/v3/quote/klines"
+            params = {'symbol': self._bingx_swap_symbol(symbol), 'interval': timeframe,
+                      'startTime': start_time, 'endTime': end_time, 'limit': 1000}
             with requests.Session() as session:
-                response = session.get(url, params=params, headers=headers, timeout=10)
+                response = session.get(url, params=params, timeout=10)
                 response.raise_for_status()
-
             data = response.json()
-
             if data.get('code') != 0:
                 raise Exception(f"BingX API error: {data.get('msg', 'Unknown error')}")
-
-            klines = data.get('data', [])
-
-            # Convert BingX kline format to our expected format
+            step = self._BINGX_INTERVAL_MS.get(timeframe)
             converted_data = []
-            for kline in klines:
-                timestamp_ms = kline[0]
-                # Convert to seconds (divide by 1000) but ensure it's a proper Unix timestamp
-                # Use integer division to avoid floating point issues
-                timestamp_s = int(timestamp_ms) // 1000 if isinstance(timestamp_ms, (int, float)) else timestamp_ms
+            for k in data.get('data') or []:
+                t_ms = int(k['time'])
+                if step and t_ms + step > end_time:
+                    continue  # bar not closed yet
                 converted_data.append({
-                    'timestamp': int(timestamp_s),  # Store as Unix timestamp integer
-                    'open': float(kline[1]),
-                    'high': float(kline[2]),
-                    'low': float(kline[3]),
-                    'close': float(kline[4]),
-                    'volume': float(kline[5])
+                    'timestamp': t_ms // 1000,
+                    'open': float(k['open']), 'high': float(k['high']),
+                    'low': float(k['low']), 'close': float(k['close']),
+                    'volume': float(k['volume']),
                 })
-
+            converted_data.sort(key=lambda r: r['timestamp'])
             return converted_data
-
         except Exception as e:
             detailed_e = self._handle_http_error(e, symbol, "BingX")
             self.logger.debug(f"Source BingX failed for {symbol}: {detailed_e}")

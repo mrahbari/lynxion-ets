@@ -28,6 +28,14 @@ def test_implicit_or_unverified_market_mapping_fails_closed():
     with pytest.raises(TypeError, match="explicit MarketType"):
         HistoricalMarketRequest("binance", "perpetual", "BTCUSDT", "1m")
 
-    bingx = HistoricalMarketRequest("bingx", MarketType.PERPETUAL, "BTCUSDT", "1m")
+    bingx_spot = HistoricalMarketRequest("bingx", MarketType.SPOT, "BTCUSDT", "1m")
     with pytest.raises(ValueError, match="unsupported historical market mapping"):
-        verified_candle_endpoint(bingx)
+        verified_candle_endpoint(bingx_spot)
+    mexc = HistoricalMarketRequest("mexc", MarketType.PERPETUAL, "BTCUSDT", "1m")
+    with pytest.raises(ValueError, match="unsupported historical market mapping"):
+        verified_candle_endpoint(mexc)
+
+
+def test_bingx_perpetual_maps_to_swap_klines_only():
+    req = HistoricalMarketRequest("bingx", MarketType.PERPETUAL, "NCSINASDAQ1002USDUSDT", "1h")
+    assert verified_candle_endpoint(req) == "https://open-api.bingx.com/openApi/swap/v3/quote/klines"
