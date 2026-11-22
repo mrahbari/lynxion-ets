@@ -65,3 +65,14 @@ def test_allowlisted_strategy_passes_the_gate(monkeypatch):
     assert m._execute_trade_from_intent(_intent("VWAPReversal"))["error"] == "DUPLICATE_LOGICAL_INTENT"
     monkeypatch.delenv("STRATEGY_ALLOWLIST")
     assert m._execute_trade_from_intent(_intent("MeanReversion"))["error"] == "DUPLICATE_LOGICAL_INTENT"
+
+
+def test_allowlist_matches_registry_adapter_and_config_names(monkeypatch):
+    from infrastructure.strategies.strategy_config import StrategyConfig
+    monkeypatch.setenv("STRATEGY_ALLOWLIST", "trend_following,TrendFollow,VWAPReversal,OIFootprint")
+    for name in ("trend_following", "TrendFollow", "vwap_reversal", "VWAPReversal", "VWAP_REVERSAL", "oi_footprint", "OIFootprint"):
+        assert StrategyConfig.get_strategy_enabled(name), name
+    for name in ("crypto_breakout", "Breakout", "mean_reversion", "SWEEP_SCALPER"):
+        assert not StrategyConfig.get_strategy_enabled(name), name
+    monkeypatch.setenv("STRATEGY_ALLOWLIST", "")
+    assert StrategyConfig.get_strategy_enabled("crypto_breakout")

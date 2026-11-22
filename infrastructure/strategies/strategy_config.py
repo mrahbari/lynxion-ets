@@ -2,8 +2,19 @@
 Standardized Configuration for Strategies
 Provides consistent access to strategy configuration through the Configs system
 """
+import os
 from typing import Union
 from bootstrap.settings.loaders import load_settings
+
+
+def _norm_strategy(name) -> str:
+    return str(name or "").lower().replace("_", "").replace("-", "").strip()
+
+
+def is_strategy_allowlisted(strategy_name) -> bool:
+    """Operator allowlist (env STRATEGY_ALLOWLIST, comma-separated). Empty/unset = all allowed."""
+    allow = {_norm_strategy(x) for x in os.getenv("STRATEGY_ALLOWLIST", "").split(",") if x.strip()}
+    return not allow or _norm_strategy(strategy_name) in allow
 
 
 class StrategyConfig:
@@ -15,10 +26,12 @@ class StrategyConfig:
     # Common strategy settings
     @staticmethod
     def get_strategy_enabled(strategy_name: str) -> bool:
-        """Get if a strategy is enabled"""
-        # For now, return True by default since we don't have dynamic strategy configs
-        # This could be extended to check for specific strategy config fields in the future
-        return True
+        """A strategy is enabled unless STRATEGY_ALLOWLIST is set and does not name it.
+
+        Names are compared case-insensitively ignoring '_' and '-', so registry keys
+        ('vwap_reversal'), adapter names ('VWAPReversal') and config keys ('VWAP_REVERSAL') match.
+        """
+        return is_strategy_allowlisted(strategy_name)
 
     @staticmethod
     def get_strategy_max_position_size(strategy_name: str, default: float = 0.05) -> float:

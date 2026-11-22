@@ -139,9 +139,9 @@ class _AutoDetectionExecutionMixin:
                 }
 
             # Optional operator allowlist (comma-separated strategy names); empty = all strategies.
-            allow = {s.strip().lower() for s in os.getenv('STRATEGY_ALLOWLIST', '').split(',') if s.strip()}
+            from infrastructure.strategies.strategy_config import is_strategy_allowlisted
             strategy_name = str(getattr(execution_intent, 'strategy_name', '') or '')
-            if allow and strategy_name.lower() not in allow:
+            if not is_strategy_allowlisted(strategy_name):
                 self._remove_pending_execution_intent(execution_intent)
                 return {'status': 'failed', 'error': f'STRATEGY_NOT_ALLOWLISTED:{strategy_name}'}
 
