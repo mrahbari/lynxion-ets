@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.lynxion.v2.xs-combo</string>
+  <key>ProgramArguments</key>
+  <array><string>/Users/mojtaba.rahbari/.pyenv/versions/3.10.13/bin/python3</string><string>-m</string><string>live.rebalancer</string><string>--mode</string><string>auto</string></array>
+  <key>WorkingDirectory</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/research/v2</string>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>2</integer><key>Minute</key><integer>15</integer></dict>
+  <key>StandardOutPath</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/logs/v2/live.log</string>
+  <key>StandardErrorPath</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/logs/v2/live.err.log</string>
+  <key>RunAtLoad</key><false/>
+</dict>
+</plist>
