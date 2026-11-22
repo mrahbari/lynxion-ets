@@ -93,3 +93,19 @@ Codex cohorts C-11/C-33/C-35, microstructure collectors, investor-release track.
 - 2026-11-22: XS-COMBO-V1 holdout PASS (Binance SR 1.39; BingX SR 0.96). See docs/v2/reports/E2_E4_RESULTS_2026-11-22.md
 - 2026-11-22: R22 extreme movers (operator idea) REJECTED on dev (best PF 1.05, SR 0.19; shorts PF 0.69). docs/v2/reports/R22_extreme_movers_dev_2026-11-22.md
 - 2026-11-22: VST book resized to .env cap (3,200 gross), 50% disaster stops, per-trade Telegram, daily launchd installed.
+
+## S1 — all platform strategies on VST (started 2026-11-22 22:15 local)
+Why: every strategy was disabled on evidence produced while all of them priced entries from one stale,
+foreign-symbol candle buffer (fixed 1f3028a). Historical per-strategy PF (e.g. VWAPReversal 0.16, MTFTrend
+0.35, TrendFollow 1.64) is therefore not evidence either way. Only post-fix trades count.
+
+Enabled (`STRATEGY_ALLOWLIST`): TrendFollow, VWAPReversal, OIFootprint, MeanReversion, MTFTrend, SweepScalper,
+Liquidity, Breakout, VolatilityBreakout. Kept off: crypto_breakout (it won nearly every StrategyManager
+ranking earlier today and crowded out the others).
+
+Pre-registered decision rule (fixed now, before any results — 9 strategies tested at once):
+- Evaluate only trades with entry >= 2026-11-22 18:50 local, per journal `strategy` label, net of fees.
+- A strategy is a candidate edge only if: n >= 40 closed trades, PF >= 1.3, mean R > 0, and positive in
+  both halves of its own trades (time-ordered). Report the number of strategies tested (9) next to any winner.
+- A strategy is switched off early if after >= 25 trades PF < 0.7.
+- Review dates: mid review 2026-11-29 (with XS-COMBO rebalance), decision 2026-12-13.
