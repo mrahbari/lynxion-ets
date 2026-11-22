@@ -42,3 +42,26 @@ def test_no_fabricated_price_fallback_left_in_execution_path():
     from infrastructure.orchestrators import _auto_detection_execution as mod
     src = inspect.getsource(mod)
     assert "random.uniform" not in src and "45000.0" not in src
+
+
+def _intent(name):
+    return N(symbol=N(value="SOLUSDT"), strategy_name=name, side=N(name="BUY"),
+             intent_confidence=N(value=0.9))
+
+
+def test_strategy_allowlist_rejects_other_strategies(monkeypatch):
+    m = _m(); m.is_running = True; removed = []
+    m._remove_pending_execution_intent = removed.append
+    m._claim_execution_intent = lambda i: (_ for _ in ()).throw(AssertionError("must not reach claim"))
+    monkeypatch.setenv("STRATEGY_ALLOWLIST", "trend_following, VWAPReversal")
+    r = m._execute_trade_from_intent(_intent("MeanReversion"))
+    assert r["error"] == "STRATEGY_NOT_ALLOWLISTED:MeanReversion" and len(removed) == 1
+
+
+def test_allowlisted_strategy_passes_the_gate(monkeypatch):
+    m = _m(); m.is_running = True
+    m._claim_execution_intent = lambda i: False   # stop right after the gate
+    monkeypatch.setenv("STRATEGY_ALLOWLIST", "trend_following,vwapreversal")
+    assert m._execute_trade_from_intent(_intent("VWAPReversal"))["error"] == "DUPLICATE_LOGICAL_INTENT"
+    monkeypatch.delenv("STRATEGY_ALLOWLIST")
+    assert m._execute_trade_from_intent(_intent("MeanReversion"))["error"] == "DUPLICATE_LOGICAL_INTENT"

@@ -138,6 +138,13 @@ class _AutoDetectionExecutionMixin:
                     'error': f"SYSTEM_SHUTDOWN: Execution rejected as system is shutting down"
                 }
 
+            # Optional operator allowlist (comma-separated strategy names); empty = all strategies.
+            allow = {s.strip().lower() for s in os.getenv('STRATEGY_ALLOWLIST', '').split(',') if s.strip()}
+            strategy_name = str(getattr(execution_intent, 'strategy_name', '') or '')
+            if allow and strategy_name.lower() not in allow:
+                self._remove_pending_execution_intent(execution_intent)
+                return {'status': 'failed', 'error': f'STRATEGY_NOT_ALLOWLISTED:{strategy_name}'}
+
             if not self._claim_execution_intent(execution_intent):
                 return {'status': 'failed', 'error': 'DUPLICATE_LOGICAL_INTENT'}
 
