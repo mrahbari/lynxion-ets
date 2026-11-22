@@ -1367,17 +1367,52 @@ class _BingXBroker:
                     try:
                         if not rows or (matching and len(matching) == len(rows) and
                                         all(Decimal(str(row['positionAmt'])) == 0 for row in matching)):
-                            self.logger.warning("Protective unwind confirmed flat on %s", formatted_sym)
+                            self.logger.warning(f"Protective unwind confirmed flat on {formatted_sym}")
                             return True
                     except (KeyError, InvalidOperation, TypeError):
                         pass
-                self.logger.error("Protective unwind accepted but flat position not verified on %s", formatted_sym)
+                self.logger.error(f"Protective unwind accepted but flat position not verified on {formatted_sym}")
                 return False
             self.logger.error(f"❌ UNWIND FAILED on {formatted_sym}: {resp.get('msg', resp)}")
             return False
         except Exception as e:
             self.logger.error(f"❌ UNWIND EXCEPTION on {symbol}: {e}")
             return False
+
+    def _cancel_superseded_stops(self, formatted_sym: str, position_side: str, keep_id) -> list:
+        """After a new stop is live, cancel older stops of the same position side (best effort)."""
+        try:
+            ev = self.get_pending_orders_evidence(formatted_sym)
+            if ev.get('status') != 'OK':
+                return []
+            old = [str(o.get('orderId')) for o in ev['orders']
+                   if str(o.get('type', '')).upper() == 'STOP_MARKET'
+                   and str(o.get('positionSide', '')).upper() == position_side
+                   and str(o.get('orderId')) != str(keep_id)]
+            return [oid for oid in old if self.cancel_order(oid, formatted_sym)]
+        except Exception as e:
+            self.logger.warning(f"Superseded stop cleanup on {formatted_sym} skipped: {e}")
+            return []
+
+    def _replace_position_stop(self, order_data: Dict[str, Any], formatted_sym: str,
+                               position_side: str, conflict_msg: str) -> Dict[str, Any]:
+        """Place-then-cancel stop replacement (see conflict branch of _place_conditional_order)."""
+        new_data = {k: v for k, v in order_data.items() if k != 'closePosition'}
+        before = self.get_pending_orders_evidence(formatted_sym)
+        if before.get('status') != 'OK':
+            return {'success': False, 'error': f"stop replace aborted: open orders {before.get('status')}"}
+        old_ids = [str(o.get('orderId')) for o in before['orders']
+                   if str(o.get('type', '')).upper() == 'STOP_MARKET'
+                   and str(o.get('positionSide', '')).upper() == position_side]
+        resp = self._make_request('POST', '/openApi/swap/v2/trade/order', params=new_data, signed=True,
+                                  request_priority=True, rate_limit_timeout=15.0)
+        if resp.get('code') != 0:
+            self.logger.error(f"Stop replace on {formatted_sym} rejected ({resp.get('msg')}); old stop kept")
+            return {'success': False, 'error': f"{conflict_msg}; replace rejected: {resp.get('msg')}"}
+        new_id = extract_bingx_order_id(resp)
+        cancelled = [oid for oid in old_ids if oid != str(new_id) and self.cancel_order(oid, formatted_sym)]
+        self.logger.info(f"Stop replaced on {formatted_sym} {position_side}: new {new_id}, cancelled {cancelled}")
+        return {'success': True, 'order_id': new_id, 'response': resp.get('data'), 'replaced_order_ids': cancelled}
 
     def _place_conditional_order(self, symbol: str, side: str, quantity: str, stop_price: str,
                                order_type: str, position_side: str) -> Dict[str, Any]:
@@ -1447,19 +1482,24 @@ class _BingXBroker:
                         or not str(conditional_order_id).strip()):
                     return {'success': False, 'order_id': None, 'unknown_submission': True,
                             'error': 'conditional acknowledgement identity unavailable'}
+                if order_type_value == 'STOP_MARKET':
+                    self._cancel_superseded_stops(formatted_sym, position_side_value, conditional_order_id)
                 return {
                     'success': True,
                     'order_id': conditional_order_id,
                     'response': response['data'],
                     'rate_limit_wait_ms': response.get('_client_rate_limit_wait_ms'),
                 }
+            elif is_conflict and order_type_value == 'STOP_MARKET':
+                # BingX allows one closePosition stop per position side, so moving a stop
+                # (breakeven / trailing) always conflicted and never happened. Replace without an
+                # unprotected window: place a quantity-based stop first, cancel the old stop(s)
+                # only after it is accepted. If placement fails, the old stop stays untouched.
+                return self._replace_position_stop(conditional_order_data, formatted_sym, position_side_value,
+                                                   response.get('msg', str(response)))
             elif is_conflict:
-                # A symbol/type match does not prove ownership of the existing
-                # protective order. Never cancel it or send another order here.
                 self.logger.error(
-                    "Conditional order conflict on %s; preserving existing protection",
-                    formatted_sym,
-                )
+                    f"Conditional order conflict on {formatted_sym}; preserving existing protection")
                 return {'success': False, 'error': response.get('msg', str(response))}
             else:
                 error_msg = response.get('msg', str(response))

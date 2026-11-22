@@ -673,7 +673,10 @@ class MultiBrokerExecutionService(ExecutionPort):
                         live_order_journal.record_failed(journal_ref, str(e))
                     except Exception:
                         pass
+                import traceback as _tb
                 self.logger.error(f"❌ FAILED TO EXECUTE ORDER ON {best_exchange.upper()}: {e}")
+                if not isinstance(e, OrderNotSentError):
+                    self.logger.debug(f"Order failure traceback: {''.join(_tb.format_exception(type(e), e, e.__traceback__))[-1500:]}")
                 # Still return None instead of raising to prevent system crashes
                 return None
         else:

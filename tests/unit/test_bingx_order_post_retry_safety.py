@@ -86,7 +86,10 @@ def test_conditional_conflict_preserves_existing_protection(monkeypatch, order_t
         "BTC-USDT", "SELL", "1", "95", order_type, "LONG",
     )
     assert result["success"] is False
-    assert len(requests_seen) == 1
+    # STOP_MARKET may attempt a place-then-cancel replacement, but only from an OK open-order
+    # snapshot; here every request fails, so exactly one protective POST and no cancellation.
+    posts = [call for call in requests_seen if call[0] and call[0][0] == "POST"]
+    assert len(posts) == 1
     assert cancelled == []
 
 
