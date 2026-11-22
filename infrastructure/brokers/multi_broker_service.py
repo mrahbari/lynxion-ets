@@ -660,8 +660,10 @@ class MultiBrokerExecutionService(ExecutionPort):
                 return order_id
             except Exception as e:
                 # A lost response after entering the broker call is not a rejection.
-                # Keep the durable INTENT available for identity-based reconciliation.
-                if journal_ref and not send_started:
+                # Keep the durable INTENT available for identity-based reconciliation —
+                # unless the adapter proved nothing was sent (pre-request rejection).
+                from infrastructure.brokers.adapters.bingx_adapter import OrderNotSentError
+                if journal_ref and (not send_started or isinstance(e, OrderNotSentError)):
                     try:
                         from infrastructure.execution.live_order_journal import live_order_journal
                         live_order_journal.record_failed(journal_ref, str(e))

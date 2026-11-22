@@ -22,6 +22,10 @@ from infrastructure.brokers.symbol_format_helper import SymbolFormatHelper
 from shared.rate_limiter import global_rate_limiter
 from shared.utils import format_price_for_api
 
+class OrderNotSentError(Exception):
+    """Deterministic rejection before any exchange request (admission / sleeve isolation)."""
+
+
 # --- v2 sleeve isolation -------------------------------------------------------------
 # The v2 XS-COMBO portfolio (research/v2/live/rebalancer.py) trades on the same VST
 # account. It publishes the symbols it owns; the platform must neither see (manage,
@@ -224,6 +228,8 @@ class BingXBrokerAdapter(BrokerPort):
             else:
                 readable_error = f"Order placement failed: {error_msg}"
 
+            if result.get('not_sent'):
+                raise OrderNotSentError(f"Failed to place order: {readable_error}")
             raise Exception(f"Failed to place order: {readable_error}")
 
     def cancel_order(self, order_id: str, symbol: Symbol) -> bool:
@@ -835,11 +841,11 @@ class _BingXBroker:
             if _norm_sym(getattr(order.symbol, "value", order.symbol)) in v2_owned_symbols():
                 reason = f"symbol {order.symbol} is owned by the v2 sleeve"
                 self.logger.warning(f"🛑 [BINGX V2 ISOLATION] Order REJECTED: {reason}")
-                return {"success": False, "order_id": None, "error": reason}
+                return {"success": False, "order_id": None, "error": reason, "not_sent": True}
             allowed, reason = self._assert_entry_admission(order)
             if not allowed:
                 self.logger.error(f"🛑 [BINGX RISK ADMISSION] Order REJECTED: {reason}")
-                return {"success": False, "order_id": None, "error": reason}
+                return {"success": False, "order_id": None, "error": reason, "not_sent": True}
             return self._execute_order_after_admission(order)
 
     def _execute_order_after_admission(self, order: Order) -> Dict[str, Any]:

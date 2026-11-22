@@ -52,3 +52,27 @@ def test_corrupt_file_without_prior_good_read_fails_closed(tmp_path, monkeypatch
     monkeypatch.setenv("V2_OWNED_SYMBOLS_FILE", str(p))
     with pytest.raises(RuntimeError, match="unreadable"):
         ba.v2_owned_symbols()
+
+
+def test_pre_request_rejection_is_reported_as_not_sent(owned):
+    b = _broker({"code": 0, "data": []})
+    r = b.execute_order(SimpleNamespace(symbol=SimpleNamespace(value="BTCUSDT")))
+    assert r["not_sent"] is True
+
+
+def test_wrapper_raises_order_not_sent_for_not_sent_results(owned, monkeypatch):
+    from infrastructure.brokers.adapters.bingx_adapter import BingXBrokerAdapter, OrderNotSentError
+    from infrastructure.risk import symbol_cooldown_gate as g
+    monkeypatch.setattr(g.symbol_cooldown_gate, "is_symbol_allowed", lambda *a, **k: (True, "ok"))
+    ad = BingXBrokerAdapter.__new__(BingXBrokerAdapter)
+    ad.connected = True; ad.logger = ba.logging.getLogger("t")
+    ad._broker = SimpleNamespace(execute_order=lambda o: {"success": False, "error": "owned", "not_sent": True})
+    from datetime import datetime, timezone
+    from decimal import Decimal
+    from domain.entities import Order, OrderSide
+    from domain.value_objects import Money, Symbol
+    order = Order(symbol=Symbol("BTC-USDT"), side=OrderSide.BUY, quantity=Decimal("0.001"),
+                  price=Money(Decimal("60000"), "USDT"), order_type="MARKET",
+                  timestamp=datetime.now(timezone.utc))
+    with pytest.raises(OrderNotSentError):
+        ad.place_order(order)
