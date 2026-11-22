@@ -11,7 +11,7 @@ def test_bingx_adapter_exposes_formatted_order_history_without_network():
     calls = []
     adapter = object.__new__(BingXBrokerAdapter)
     adapter._broker = SimpleNamespace(
-        get_order_history=lambda symbol, limit: (calls.append((symbol, limit)), [{"orderId": "OID"}])[1]
+        get_order_history=lambda symbol, limit, start_time=None: (calls.append((symbol, limit)), [{"orderId": "OID"}])[1]
     )
 
     assert adapter.get_order_history("ADAUSDT", limit=20) == [{"orderId": "OID"}]

@@ -100,7 +100,7 @@ class TradeFeatureCollector:
         ledger_path: Optional[str] = None,
         forensic_path: Optional[str] = None,
         demo_registry_path: Optional[str] = None,
-        poll_interval_seconds: float = 30.0,
+        poll_interval_seconds: Optional[float] = None,
     ):
         self.enabled = os.getenv("TRADE_JOURNAL_COLLECTOR_ENABLED", "true").lower() in ("true", "1", "yes")
         self.csv_path = csv_path or default_journal_csv_path()
@@ -109,7 +109,14 @@ class TradeFeatureCollector:
         self.ledger_path = ledger_path or default_ledger_path()
         self.forensic_path = forensic_path or default_forensic_path()
         self.demo_registry_path = demo_registry_path or default_demo_registry_path()
-        self.poll_interval_seconds = poll_interval_seconds
+        # Each poll issues ~5 + one-per-symbol allOrders calls. At 30s this tripped BingX's
+        # endpoint frequency ban (100410), which blanked the order history that position-close
+        # reconciliation depends on (exits reported as UNKNOWN). Poll less and pace calls.
+        self.poll_interval_seconds = (
+            poll_interval_seconds if poll_interval_seconds is not None
+            else float(os.getenv("TRADE_JOURNAL_POLL_SECONDS", "300"))
+        )
+        self.symbol_pacing_seconds = float(os.getenv("TRADE_JOURNAL_SYMBOL_PACING_SECONDS", "1.0"))
 
         self._lock = threading.RLock()
         self._stop_event = threading.Event()
@@ -423,6 +430,8 @@ class TradeFeatureCollector:
             # 2. Query per-symbol order history
             symbols = self._discover_all_symbols(adapter)
             for sym in symbols:
+                if self._stop_event.wait(self.symbol_pacing_seconds):
+                    break
                 try:
                     hist = adapter._broker.get_order_history(sym, limit=100) or []
                     all_orders.extend(hist)

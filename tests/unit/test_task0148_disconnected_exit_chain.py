@@ -190,7 +190,9 @@ def test_selected_closure_keeps_operational_calls_with_observer_enabled(monkeypa
     )
     service, history, trade_result, take_profit, journal_result, telegram = result
 
-    history.assert_called_once_with("BTC-USDT", limit=20)
+    history.assert_called_once()
+    assert history.call_args.args == ("BTC-USDT",) and history.call_args.kwargs["limit"] == 100
+    assert history.call_args.kwargs["start_time"] is not None  # bounded window, newest fill reachable
     trade_result.assert_called_once_with("BTC-USDT", is_profitable=True, position_closed=True)
     take_profit.assert_called_once_with("BTC-USDT")
     journal_result.assert_called_once()
@@ -211,7 +213,9 @@ def test_observer_failure_does_not_change_selected_closure_calls(monkeypatch, tm
     )
     service, history, trade_result, take_profit, journal_result, telegram = result
 
-    history.assert_called_once_with("BTC-USDT", limit=20)
+    history.assert_called_once()
+    assert history.call_args.args == ("BTC-USDT",) and history.call_args.kwargs["limit"] == 100
+    assert history.call_args.kwargs["start_time"] is not None  # bounded window, newest fill reachable
     trade_result.assert_called_once()
     take_profit.assert_called_once()
     journal_result.assert_called_once()

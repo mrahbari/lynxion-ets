@@ -224,7 +224,18 @@ class BrokerReconciliationService:
 
                 if hasattr(broker, "get_order_history"):
                     try:
-                        history = broker.get_order_history(_sym(sym), limit=20) or []
+                        # BingX returns the oldest orders of the window first: without a start
+                        # bound, positions with many stop amendments push the closing fill out
+                        # of the page and the exit is reported as UNKNOWN.
+                        seen_for_window = previously_seen_ms.get(sym)
+                        try:
+                            history = broker.get_order_history(
+                                _sym(sym), limit=100,
+                                start_time=datetime.fromtimestamp(
+                                    (seen_for_window - 60_000) / 1000.0, tz=timezone.utc),
+                            ) or []
+                        except TypeError:
+                            history = broker.get_order_history(_sym(sym), limit=20) or []
                         # Sort newest order first
                         sorted_history = sorted(
                             history,

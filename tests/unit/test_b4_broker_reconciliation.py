@@ -588,3 +588,39 @@ def test_closure_history_ignores_cancelled_protection_order(tmp_path, monkeypatc
     assert trade_results == [("ADA-USDT", False)]
     assert "ADA-USDT_FILLED_SL" in service._processed_closed_exits
     assert "ADA-USDT_CANCELLED_TP" not in service._processed_closed_exits
+
+
+def test_closing_order_is_found_beyond_the_oldest_history_page(tmp_path, monkeypatch):
+    """BingX returns the OLDEST page of a window: many trailing-stop amendments used to push the
+    closing fill out of the default 20-order page (OKBUSDT reported UNKNOWN, really +4.22)."""
+    import time as _time
+    j = _journal(tmp_path)
+    broker = _FakeBroker(positions=[_pos("ADA-USDT", 1.0)])
+    windows = []
+
+    def history(sym, limit=20, start_time=None):
+        windows.append(start_time)
+        now = int(_time.time() * 1000)
+        amendments = [{"symbol": "ADA-USDT", "orderId": str(i), "type": "STOP_MARKET",
+                       "status": "CANCELLED", "updateTime": now - 10_000_000 + i} for i in range(20)]
+        if start_time is None:
+            return amendments[:limit]
+        fill_ms = int(start_time.timestamp() * 1000) + 60_000  # inside the [last-seen, now] window
+        return [{"symbol": "ADA-USDT", "orderId": "CLOSE-1", "type": "STOP_MARKET",
+                 "status": "FILLED", "reduceOnly": True, "profit": "4.2236", "updateTime": fill_ms}]
+
+    broker.get_order_history = history
+    service = BrokerReconciliationService(halt_fn=lambda reason: None)
+    alerts = []
+    monkeypatch.setattr("infrastructure.services.risk_alerts.send_telegram", alerts.append)
+    from infrastructure.strategies.strategy_manager import strategy_manager
+    monkeypatch.setattr(strategy_manager, "record_trade_result",
+                        lambda sym, is_profitable, position_closed=True: None)
+
+    service.reconcile(broker, j)
+    broker._positions = []
+    service.reconcile(broker, j)
+
+    assert windows and windows[-1] is not None
+    assert "ADA-USDT_CLOSE-1" in service._processed_closed_exits
+    assert any("PROFITABLE EXIT" in alert and "4.2236" in alert for alert in alerts)
