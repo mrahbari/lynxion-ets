@@ -125,3 +125,7 @@ execution (next-bar entry, sanitized SL/TP, R-mode APM, SL-first, fees+slippage)
   dev trades > 0, and >= 6/10 symbols positive.
 - HOLDOUT 2026-07-01..2026-10-31 confirms, read once: mean R > 0 and PF >= 1.1. Report "8 strategies tested".
 - Only candidates that pass both go to a VST run; everything else is documented as no-edge (as implemented).
+
+### S2 result (2026-11-23): no platform strategy passes; holdout untouched
+See `docs/v2/reports/E9_strategy_backtest_2026-11-23.md`. All 8 fail on DEV (PF 0.79–1.01); 7/8 negative before
+fees. volatility_breakout (+12 bp gross) is the only redesign candidate. Holdout 2026-07..10 kept unread.
