@@ -27,6 +27,10 @@ _STATE_DIR = Path(tempfile.mkdtemp(prefix="lynxion-test-state-"))
 os.environ.setdefault("LIVE_ORDER_JOURNAL_PATH", str(_STATE_DIR / "live_order_journal.json"))
 # Operator runtime allowlist from .env must not filter test strategies (dotenv never overrides).
 os.environ["STRATEGY_ALLOWLIST"] = ""
+# Tests must never message the operator's real Telegram chat (a test run sent a fake
+# "POSITION STATE UNVERIFIED TUTUSDT" alert). Empty values block .env loading (override=False).
+os.environ["TELEGRAM_BOT_TOKEN"] = ""
+os.environ["TELEGRAM_CHAT_ID"] = "0"   # settings parse it as int; empty token already blocks sending
 
 
 @pytest.fixture(autouse=True, scope="session")
