@@ -157,8 +157,35 @@ until the exit is booked.
 - Backlog: empty-list blips in exposure checks and the `get_position` duplicate guard.
 - Symbol universe: `runner_sync_approved_symbols.py` now builds the venue's liquid universe daily (launchd 00:30 UTC, ccxt, follows `DEFAULT_BROKER`); old copy-all sync replaced. Ops: `docs/v2/LIVE_VST_OPERATIONS.md`.
 
+## S3 plan (agreed 2026-11-23): epics and tasks
+Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throughout; every position keeps a stop.
+
+| ID | Task | Acceptance | Status |
+|---|---|---|---|
+| **E6** | **Tradable universe (best symbols only)** | | |
+| E6-1 | Venue-agnostic daily liquid universe (5 M median 7d quote volume, >= 30 d), hot reload, discovery gate | 77 names, launchd 00:30 UTC | DONE (2026-11-23) |
+| E6-2 | Verify first scheduled sync run + platform picks up the list without restart | log line + validator count | TODO (2026-11-24) |
+| E6-3 | Threshold review after ~2 weeks of trades (per-band SL slippage, mean R) | report | TODO (~2026-12-07) |
+| **E7** | **Meta-labeling (Lopez de Prado) as the standard Fusion/Engine** | | |
+| E7-1 | Literature review: meta-labeling, signal fusion, calibration, purged/embargoed CV | `docs/v2/reports/E14_meta_labeling_review_*.md` | IN PROGRESS |
+| E7-2 | Pre-register E14: features = all watcher states per symbol at entry, model learned on DEV only, rule fixed before results | rule in script docstring | TODO |
+| E7-3 | Run E14 on E9 trades (DEV 2025-11-01..2026-06-30, holdout 2026-07-01..10-31) | CSV + report | TODO |
+| E7-4 | Decision: PASS -> refactor Fusion/Engine into the meta-label filter (same interfaces); FAIL -> keep interfaces, bypass in decision path | operator informed | TODO |
+| **E8** | **Execution cost: maker (limit) entries** | | |
+| E8-1 | Offline: fill rate / adverse selection of a post-only entry at signal price on E9 trades (1m data) | report: R gain net of missed winners | TODO |
+| E8-2 | If E8-1 positive: resting-order lifecycle (timeout cancel, partial fill + SL, exposure count) behind a flag | unit tests + VST trial | GATED on E8-1 |
+| **E9** | **Two strategy categories: single-symbol and portfolio** | | |
+| E9-1 | Integrate XS-COMBO as the first "portfolio strategy" on platform infra (adapter, journal, Telegram, config, reconciliation), logic frozen | weekly rebalance runs through platform | TODO |
+| E9-2 | Offline: XS-COMBO rank as a filter for single-symbol strategies (pre-registered on E9 trades) | report | TODO |
+| **E10** | **Slimming / cleanup (Fusion/Engine excluded until E7-4)** | | |
+| E10-1 | Inventory of unused modules/files with evidence | list for operator approval | TODO |
+| E10-2 | Delete only approved items | tests green vs baseline | GATED on operator |
+| **E11** | **Ops hygiene** | | |
+| E11-1 | VST empty-list blips in exposure checks and `get_position` duplicate guard | tests | TODO |
+| E11-2 | Push branch `claude/edge-v2` (operator GitHub sign-in) | pushed | GATED on operator |
+
 ## Backlog (deferred, not scheduled)
-- **Maker (post-only limit) entries.** Entries are always MARKET today; the pipeline already computes a maker
+- **Maker (post-only limit) entries** (now scheduled as E8). Entries are always MARKET today; the pipeline already computes a maker
   price + POST_ONLY that the orchestrator discards. Expected gain only ~0.02-0.03 R/trade (taker 0.05 % vs maker
   0.02 % on a ~201 USDT / 2.58 USDT-risk median trade: 0.078 R -> 0.055 R; with maker TP 0.045 R) against a
   ~-0.10 R base. Needs a resting-order lifecycle (timeout cancel, partial fill + SL, exposure counting) and risks
