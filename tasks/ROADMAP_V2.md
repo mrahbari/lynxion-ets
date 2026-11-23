@@ -141,3 +141,11 @@ See `docs/v2/reports/E10_trend_mtf_fix_and_vol_breakout_redesign_2026-11-23.md`.
 fresh window (2026-03..06): no directional watcher has an edge after the fixes; Volatility forecasts next-hour vol
 (rank corr ~0.6, all windows) -> candidate for risk sizing. XS-COMBO: BingX VST settles no funding (the strategy's
 whole edge), so the daily run now books shadow funding at real BingX/Binance rates (`data/v2_live/tracking.csv`).
+
+### S2 follow-up 3 (2026-11-23): Engine/Fusion review, role filters (E12), PROMUSDT re-entry fix
+`docs/v2/reports/E12_engine_fusion_review_and_role_filters_2026-11-23.md`. Fusion runs per single interpreted signal
+(direction rule unreachable, every fused signal NEUTRAL 0 %) and strategies ignore its output, so Engine/Fusion numbers
+cannot change PnL; trades are decided by each strategy's own setups (E9: all negative). Watcher role filters on E9 trades:
+1/79 DEV pass, fails holdout; only crowded-funding veto has a consistent (tiny) effect. No hyperopt run (nothing to fit).
+Fixed: same-symbol re-entry between two reconciliation passes after an exchange stop (PROMUSDT A-B-A); entry now held
+until the exit is booked.
