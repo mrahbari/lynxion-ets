@@ -83,8 +83,9 @@ class MakerEntryManager:
         with self._lock:
             self._pending[str(order_id)] = {"service": service, "order": order, "side": pos_side,
                                             "deadline": self.clock() + timeout_s()}
-        try:
-            service._add_pending_order(order.symbol, pos_side, str(order_id))   # hold the symbol while resting
+        try:   # hold the symbol while resting, in the tracker the service's duplicate check reads
+            add = getattr(service, "_pending_add", None) or service._add_pending_order
+            add(order.symbol, pos_side, str(order_id))
         except Exception:  # noqa: BLE001
             pass
         _log.info("MAKER ENTRY RESTING | %s %s | id=%s price=%s | timeout %.0fs", order.symbol, side, order_id,
@@ -116,13 +117,24 @@ class MakerEntryManager:
             except Exception as e:  # noqa: BLE001
                 _log.warning("maker entry check failed for %s: %s", oid, e)
 
+    @staticmethod
+    def _router(service):
+        """The multi-broker service that knows order -> exchange (the orchestrator holds a wrapper)."""
+        return service if hasattr(service, "_lookup_order") else getattr(service, "broker", service)
+
     def _fill(self, service, oid: str) -> Dict[str, Any]:
-        exchange, sym = service._lookup_order(oid)
-        return service.brokers[exchange].get_order_fill(oid, sym)
+        mb = self._router(service)
+        exchange, sym = mb._lookup_order(oid)
+        return mb.brokers[exchange].get_order_fill(oid, sym)
+
+    def _cancel(self, service, oid: str) -> bool:
+        return bool(self._router(service).cancel_order(oid))
 
     def _release(self, p: dict, oid: str) -> None:
         try:
-            p["service"]._remove_pending_order(p["order"].symbol, oid)
+            svc = p["service"]
+            remove = getattr(svc, "_pending_remove", None) or svc._remove_pending_order
+            remove(p["order"].symbol, oid)
         except Exception:  # noqa: BLE001
             pass
 
@@ -139,7 +151,7 @@ class MakerEntryManager:
         if status not in DEAD and not expired:
             return False
         if status not in DEAD:
-            if not svc.cancel_order(oid):
+            if not self._cancel(svc, oid):
                 _log.warning("MAKER ENTRY CANCEL FAILED | %s | id=%s, retry next pass", order.symbol, oid)
                 return False
             f = self._fill(svc, oid)

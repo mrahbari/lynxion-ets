@@ -147,3 +147,31 @@ def test_sell_fallback_uses_bid(setup):
     m.register(svc, _order(OrderSide.SELL, sl=105.0, tp=90.0), "L1")
     m.check_all()
     assert float(svc.sent[0].price.amount) == pytest.approx(100.0)
+
+
+class Wrapper:
+    """Live shape: orchestrator holds BrokerExecutionService (scoped pending tracker) wrapping MultiBroker."""
+
+    def __init__(self, router):
+        self.broker, self.scoped, self.sent = router, set(), []
+
+    def _pending_add(self, sym, side, oid):
+        self.scoped.add(oid)
+
+    def _pending_remove(self, sym, oid):
+        self.scoped.discard(oid)
+
+    def execute_order(self, order):
+        self.sent.append(order)
+        return "MKT1"
+
+
+def test_wrapped_service_routes_lookup_and_uses_scoped_tracker(setup):
+    make, clock = setup
+    m, router = make([{"status": "NEW", "executed_qty": 0}, {"status": "CANCELLED", "executed_qty": 0}])
+    w = Wrapper(router)
+    m.register(w, _order(), "L1")
+    assert w.scoped == {"L1"} and not router.pending          # duplicate check of the wrapper sees the hold
+    clock.t = 901
+    m.check_all()
+    assert router.cancelled == ["L1"] and len(w.sent) == 1 and not w.scoped and not m._pending
