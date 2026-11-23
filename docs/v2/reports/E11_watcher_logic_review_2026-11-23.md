@@ -16,7 +16,7 @@ what it measured.**
 | Volatility (REGIME) | volatility regime | stdev of raw price differences, last 20 min vs previous 20 min (noise); Engine read expansion as **BUY** | 1h realized vol / 24h baseline; Engine treats it as non-directional |
 | MarketPulse (REGIME) | short-term momentum pulse | MACD threshold in absolute price units (BTC always "strong", DOGE never); volume added to the signed value; confidence could not reach the gate; Engine ignored the side in the type | relative MACD; volume unsigned; confidence = agreement of evidence; Engine reads bullish/bearish |
 | FundingRate (REGIME) | crowding at extreme funding | confidence = \|rate\|·50, so extremes (0.05) were always gated out and "normal" (≈0.6) always passed | extremes 0.65/0.8, normal 0.3 |
-| CMCScreener (REGIME) | macro/symbol context from CMC | keys are `BTC` but symbols are `BTCUSDT`, so every pair got the first CMC coin's data; volatility from minutes-apart polls was ~0, always "low" | base-asset mapping; 24h move as volatility |
+| CMCScreener (REGIME) | macro/symbol context from CMC | keys are `BTC` but symbols are `BTCUSDT`, so every pair got the first CMC coin's data; volatility from minutes-apart polls was ~0, always "low"; every config profile sets all four thresholds to 0.3 (high = low) | base-asset mapping; 24h move as volatility; documented 1%/5% and 0.5x/2x bands when the config band is degenerate (176db3b) |
 | Liquidity (DIRECTION) | spread/depth state | never received an order book → never produced an observation | BingX top-20 depth every 60s |
 | OrderFlowWS | — | not touched (operator decision) | — |
 
