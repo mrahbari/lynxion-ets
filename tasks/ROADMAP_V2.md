@@ -135,3 +135,9 @@ See `docs/v2/reports/E10_trend_mtf_fix_and_vol_breakout_redesign_2026-11-23.md`.
 (5/15/30 samples of 1m bars); now real closed 15m/1h/4h bars. It works (48x more signals) but has no OOS edge
 (4h: dev +20 bp t 1.4, validation -12 bp). volatility_breakout: 4 pre-registered variants (squeeze / Donchian,
 15m/1h/4h, HTF trend filter, ATR stops) all fail DEV (PF 0.84-0.96, ~0 gross); no holdout read; strategy stays off.
+
+### S2 follow-up 2 (2026-11-23): watcher logic review (E11) and XS-COMBO shadow funding
+`docs/v2/reports/E11_watcher_logic_review_2026-11-23.md`. 8 watchers had implementation bugs (fixed, live). Re-test on a
+fresh window (2026-03..06): no directional watcher has an edge after the fixes; Volatility forecasts next-hour vol
+(rank corr ~0.6, all windows) -> candidate for risk sizing. XS-COMBO: BingX VST settles no funding (the strategy's
+whole edge), so the daily run now books shadow funding at real BingX/Binance rates (`data/v2_live/tracking.csv`).
