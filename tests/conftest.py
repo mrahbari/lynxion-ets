@@ -35,8 +35,6 @@ os.environ["TRADE_JOURNAL_SYMBOL_PACING_SECONDS"] = "0"  # no real-time pacing i
 # Legacy ActivePositionManager contract tests drive stop requests through ROE triggers; the
 # R-multiple default mode reuses the same request path and has its own tests (opt in per test).
 os.environ["APM_STOP_MODE"] = "legacy"
-# Live .env may enable maker entries / order-flow shadow; unit tests use the defaults (no network quotes).
-os.environ["ENTRY_ORDER_MODE"] = "market"
 
 
 @pytest.fixture(autouse=True, scope="session")
