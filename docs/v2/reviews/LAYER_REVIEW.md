@@ -236,3 +236,28 @@ sell). No extra API calls. Test: imbalance (3 - 1)/4 = 0.5 after two trades; rep
 | W6-4 | note | It will now emit observations live; how the Engine routes `order_flow_*` is checked in G1. |
 
 **Verdict: does its job after the feed fix** (deployed with the next runner restart).
+
+---
+
+## E15-W7 — HistoricalCandle watcher (`infrastructure/watchers/adapters/historical_candle.py`) — 2026-11-23
+
+**Role.** Reversal candlestick patterns on closed 15m candles: `candle_reversal_bullish/bearish`, else
+`candle_neutral`.
+
+**Logic (live "tf" mode).** Closed 1m bars aggregated into closed 15m candles (UTC buckets, gaps
+handled). Patterns on the last closed candle, only after a prior move of >= 1 ATR(14) over 10 candles:
+hammer / shooting star (range >= ATR, long shadow >= 2x body, small opposite shadow) and bullish /
+bearish engulfing (body >= 0.5 ATR). These are the textbook (Nison) definitions with a trend-context
+requirement; correct, no lookahead.
+
+**Live evidence.** neutral 12,794 / bearish reversal 376 / bullish reversal 178 (4 % of outputs);
+5,780 "no observation" = warm-up (16 closed 15m candles) after the many restarts today.
+
+**Findings.**
+| # | Sev | Finding |
+|---|---|---|
+| W7-1 | P2 | The same closed-candle pattern is re-emitted on every cycle for 15 minutes (~30 identical observations); downstream de-duplication is checked in G1. |
+| W7-2 | P2 | Confidence fixed (0.65 / 0.3). |
+| W7-3 | P2 | ~450 lines of legacy-mode code (1m "any pattern anywhere") still loaded. Cleanup in E10. |
+
+**Verdict: does its job.** No P1.

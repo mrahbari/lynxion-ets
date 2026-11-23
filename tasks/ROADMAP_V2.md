@@ -228,8 +228,8 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E15-W4 | MarketPulse watcher | P1 fixed: 33 % 'strong' labels on random walks -> vol-scaled 15m z-score + Wilder RSI (5 % null) | DONE |
 | E15-W5 | Liquidity watcher | does its job; P2: absolute depth scale saturates (not relative to order size); role/engine mapping issues -> F1/G1 | DONE |
 | E15-W6 | OrderFlowWS watcher (no trade feed: never emits) | P1 fixed: public trades now fed (reuses the E14 fetch); P2: 100-trade window, unscaled thresholds | DONE |
-| E15-W7 | HistoricalCandle watcher | review | IN PROGRESS |
-| E15-W8 | AnomalyML watcher | review | TODO |
+| E15-W7 | HistoricalCandle watcher | does its job (textbook patterns with ATR context on closed 15m); P2: re-emits the same pattern for 15 min, legacy code | DONE |
+| E15-W8 | AnomalyML watcher | review | IN PROGRESS |
 | E15-W9 | Not live: CMC screener (off), Tick watcher: keep / retire | review | TODO |
 | E15-F1 | Fusion: input (one signal per call), weighting, direction rule, output contract vs strategies | review | TODO |
 | E15-G1 | EngineService (watcher -> fusion -> strategy routing, gates) | review | TODO |
