@@ -117,10 +117,14 @@ class CMCScreener(WatcherPort):
 
         # Determine which coin data to analyze
         target_symbol = symbol.value
+        # CMC keys are base assets ('BTC'); platform symbols are pairs ('BTCUSDT'). The old fallback
+        # took the first CMC coin for any unmatched symbol, so every pair was described by BTC.
         if target_symbol not in self.market_data:
-            # If specific symbol not found, analyze overall market
-            target_symbol = next(iter(self.market_data.keys()), None)
-            if not target_symbol:
+            for quote in ('USDT', 'USDC', 'USD'):
+                if target_symbol.endswith(quote) and target_symbol[:-len(quote)] in self.market_data:
+                    target_symbol = target_symbol[:-len(quote)]
+                    break
+            else:
                 return None
 
         coin_data = self.market_data.get(target_symbol)
@@ -135,7 +139,8 @@ class CMCScreener(WatcherPort):
         percent_change_7d = coin_data.get('percent_change_7d', 0)
 
         # Calculate volatility based on historical data
-        volatility = self._calculate_volatility(target_symbol)
+        # 24h move magnitude; stdev of successive CMC polls (minutes apart) was ~0 -> always 'low'
+        volatility = abs(float(percent_change_24h or 0)) / 100.0
         
         # Calculate volume relative to historical average
         avg_volume = self._calculate_average_volume(target_symbol)

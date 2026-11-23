@@ -17,6 +17,7 @@ from infrastructure.replay.normalized_decision_trace import normalize_event
 
 T0 = datetime(2026, 1, 1, tzinfo=timezone.utc)
 MINUTE = timedelta(minutes=1)
+_WARM = 16 * 15 + 1
 
 
 def _bar(index, close):
@@ -53,25 +54,27 @@ def _trace(bars, through, monkeypatch):
 
 
 def test_canonical_candle_subset_decision_trace_repeats_and_is_prefix_stable(monkeypatch):
-    first, second, future = _bar(0, 100.0), _bar(1, 101.0), _bar(2, 102.0)
-    prefix = _trace((first, second), second.close_time, monkeypatch)
-    assert prefix == _trace((first, second), second.close_time, monkeypatch)
-    assert prefix == _trace((first, second, future), second.close_time, monkeypatch)
+    # the candle watcher reads closed 15m candles (ATR14 + context), so it needs >= 4h of 1m bars
+    bars = tuple(_bar(i, 100.0 + 0.01 * i) for i in range(_WARM))
+    last, future = bars[-1], _bar(_WARM, 200.0)
+    prefix = _trace(bars, last.close_time, monkeypatch)
+    assert prefix == _trace(bars, last.close_time, monkeypatch)
+    assert prefix == _trace(bars + (future,), last.close_time, monkeypatch)
     assert {row["event_type"] for row in prefix} >= {
         "market_observation", "interpreted_signal", "fused_signal"
     }
-    assert all(datetime.fromisoformat(row["timestamp"]) <= second.close_time for row in prefix)
+    assert all(datetime.fromisoformat(row["timestamp"]) <= last.close_time for row in prefix)
 
 
 def test_pre_intent_engine_fusion_two_symbol_prefix_and_fresh_scope(monkeypatch):
     """Exercise real routed Engine/Fusion outputs, not only the source iterator."""
     prefix_bars = tuple(
         _symbol_bar(symbol, index, base + index)
-        for index in range(6)
+        for index in range(_WARM)
         for symbol, base in (("BTCUSDT", 100.0), ("ETHUSDT", 200.0))
     )
-    future = (_symbol_bar("BTCUSDT", 6, 106.0),
-              _symbol_bar("ETHUSDT", 6, 206.0))
+    future = (_symbol_bar("BTCUSDT", _WARM, 106.0),
+              _symbol_bar("ETHUSDT", _WARM, 206.0))
     through = prefix_bars[-1].close_time
     first = _trace(prefix_bars, through, monkeypatch)
     assert first == _trace(prefix_bars, through, monkeypatch)

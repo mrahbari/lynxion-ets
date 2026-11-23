@@ -40,7 +40,8 @@ def test_driver_feeds_only_causal_matching_bars_before_same_time_decisions():
                             seen.append((observation.timestamp,
                                          tuple(item["close"] for item in short.data_buffer),
                                          tuple(item["close"] for item in long.data_buffer))) or ())
-    settings = SimpleNamespace(watcher=SimpleNamespace(historical_candle_watcher_enabled=True))
+    settings = SimpleNamespace(watcher=SimpleNamespace(historical_candle_watcher_enabled=True,
+                                                 historical_candle_pattern_mode="legacy"))
     # Separate source streams may have gaps; this fixture uses only the same
     # close boundary plus its contiguous next minute for the 1m stream.
     source = HistoricalClosedBarSource((minute_at_hour, hour_at_hour, future))
@@ -76,7 +77,8 @@ def test_canonical_decision_trace_with_causal_history_has_stable_prefix():
     first = bar(T0, MINUTE, 100.0)
     second = bar(T0 + MINUTE, MINUTE, 101.0)
     future = bar(T0 + 2 * MINUTE, MINUTE, 102.0)
-    settings = SimpleNamespace(watcher=SimpleNamespace(historical_candle_watcher_enabled=True))
+    settings = SimpleNamespace(watcher=SimpleNamespace(historical_candle_watcher_enabled=True,
+                                                 historical_candle_pattern_mode="legacy"))
 
     def run(bars):
         scope = ReplayDecisionRunScope(T0)

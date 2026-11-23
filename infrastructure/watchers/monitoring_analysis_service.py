@@ -190,6 +190,8 @@ class MonitoringAnalysisService:
                 # Get historical data for initializing watchers with sufficient history
                 try:
                     warm = symbol.value in getattr(self, '_last_fed_bar', {})
+                    if not warm:
+                        self._seed_higher_timeframes(symbol)
                     historical_data = self.market_data_repo.get_historical_data(
                         symbol=Symbol(symbol.value), period="30m" if warm else "6h", timeframe="1m")
                     if historical_data:
@@ -276,6 +278,29 @@ class MonitoringAnalysisService:
         except (TypeError, ValueError):
             return None
         return ts / 1000.0 if ts > 1e11 else ts
+
+    def _seed_higher_timeframes(self, symbol: Symbol) -> None:
+        """At first sight of a symbol, give watchers that need closed higher-TF bars (TrendMTF)
+        their history directly, instead of waiting days for 1m bars to accumulate."""
+        seeders = [w for w in self.watchers.get(symbol.value, {}).values()
+                   if hasattr(w, 'seed_higher_timeframes') and getattr(w, 'HTF_SEED', None)]
+        if not seeders:
+            return
+        wanted = {}
+        for w in seeders:
+            wanted.update(w.HTF_SEED)
+        fetched = {}
+        for tf, (period, timeframe) in wanted.items():
+            try:
+                fetched[tf] = self.market_data_repo.get_historical_data(
+                    symbol=Symbol(symbol.value), period=period, timeframe=timeframe) or []
+            except Exception as e:
+                self.logger.warning(f"Higher-TF seed {timeframe} failed for {symbol.value}: {e}")
+        for w in seeders:
+            try:
+                w.seed_higher_timeframes(fetched)
+            except Exception as e:
+                self.logger.warning(f"Higher-TF seed failed for {symbol.value}: {e}")
 
     def _feed_new_closed_bars(self, symbol: Symbol, bars, bar_seconds: int = 60) -> int:
         """Feed bars that are closed and not fed before, oldest first, once each."""

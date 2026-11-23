@@ -32,8 +32,10 @@ def scope():
 def test_historical_observation_and_router_preserve_source_time():
     settings = SimpleNamespace(watcher=SimpleNamespace(historical_candle_watcher_enabled=True))
     watcher = HistoricalCandleWatcherAdapter(settings, "HistoricalCandle", "BTCUSDT")
-    watcher.update_data({"candle": {"open": 100, "high": 102, "low": 99,
-                                    "close": 101, "volume": 10, "close_time": T}})
+    # the watcher reads closed 15m candles built from 1m candles: feed 20 x 15m of 1m bars ending at T
+    for k in range(300, 0, -1):
+        watcher.update_data({"candle": {"open": 100, "high": 102, "low": 99, "close": 101, "volume": 10,
+                                        "close_time": T - timedelta(minutes=k - 1)}})
     observation = watcher.analyze(Symbol("BTCUSDT"))
     assert observation.timestamp == T
     router = EventRouter()

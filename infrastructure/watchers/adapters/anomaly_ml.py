@@ -60,6 +60,15 @@ class AnomalyMLWatcher(BaseWatcher):
         # Counters for deterministic behavior
         self.data_point_counter = 0
 
+        # Robust anomaly definition (replaces the always-on weighted z-score: tanh(1.5*mean|z|-1) was
+        # > 0.1 for ordinary bars, so 'anomaly_positive/negative' was just the sign of the last 1m bar).
+        # A bar is anomalous when its log return is >= 4 robust sigmas (median/MAD over the last
+        # robust_window closed bars), or its volume is >= 4 robust sigmas with a >= 2 sigma move.
+        self.robust_window = 240
+        self.robust_z_return = 4.0
+        self.robust_z_volume = 4.0
+        self.robust_z_return_with_volume = 2.0
+
     def update_data(self, data: dict):
         """Update with new market data"""
         if not self.enabled:
@@ -67,13 +76,13 @@ class AnomalyMLWatcher(BaseWatcher):
 
         if 'close' in data:
             self.price_history.append(data['close'])
-            if len(self.price_history) > self.lookback * 3:  # Keep more data for stability
+            if len(self.price_history) > max(self.lookback * 3, self.robust_window + 2):  # Keep more data for stability
                 self.price_history.pop(0)
 
         # Handle volume data if available
         if 'volume' in data:
             self.volume_history.append(data['volume'])
-            if len(self.volume_history) > self.lookback * 3:  # Keep more data for stability
+            if len(self.volume_history) > max(self.lookback * 3, self.robust_window + 2):  # Keep more data for stability
                 self.volume_history.pop(0)
 
         # Calculate features based on available data
@@ -90,6 +99,48 @@ class AnomalyMLWatcher(BaseWatcher):
 
         if len(self.feature_history) < 2:  # Require only 2 data points to start generating observations
             return None
+
+        robust = self._robust_anomaly()
+        if robust is None:
+            return None
+        obs_type, value, conf, details = robust
+        observation = MarketObservation(
+            symbol=symbol, observation_type=obs_type, observation_value=value,
+            confidence=Percentage(Decimal(str(conf))), timestamp=datetime.now(),
+            metadata={**details, 'anomaly_source': self.name, 'mode': 'robust_z'})
+        forensic_logger.log_watcher_observation(
+            watcher=self.name, symbol=symbol.value, exchange=getattr(self, 'target_broker', 'BINANCE'),
+            observation_type=obs_type, value=value, confidence=float(conf), timestamp=observation.timestamp)
+        return observation
+
+    def _robust_anomaly(self):
+        n = self.robust_window
+        if len(self.price_history) < n + 2:
+            return None
+        px = np.asarray(self.price_history[-(n + 2):], dtype=float)
+        if np.any(px <= 0):
+            return None
+        rets = np.diff(np.log(px))
+        hist, cur = rets[:-1], rets[-1]
+        med = float(np.median(hist))
+        mad = float(np.median(np.abs(hist - med))) * 1.4826
+        z_ret = (cur - med) / mad if mad > 0 else 0.0
+        z_vol = 0.0
+        if len(self.volume_history) >= n + 1:
+            vol = np.log1p(np.maximum(np.asarray(self.volume_history[-(n + 1):], dtype=float), 0.0))
+            vh, vc = vol[:-1], vol[-1]
+            vmed = float(np.median(vh))
+            vmad = float(np.median(np.abs(vh - vmed))) * 1.4826
+            z_vol = (vc - vmed) / vmad if vmad > 0 else 0.0
+        anomalous = abs(z_ret) >= self.robust_z_return or (
+            z_vol >= self.robust_z_volume and abs(z_ret) >= self.robust_z_return_with_volume)
+        details = {'z_return': float(z_ret), 'z_volume': float(z_vol), 'last_return': float(cur),
+                   'robust_window': n}
+        if not anomalous:
+            return 'anomaly_normal', 0.0, 0.3, details
+        side = 'positive' if cur > 0 else 'negative'
+        value = float(np.sign(cur)) * min(1.0, abs(z_ret) / 10.0)
+        return f'anomaly_{side}', value, 0.75, details
 
         # Calculate anomaly score based on current features
         anomaly_score = self.calculate_anomaly_score()

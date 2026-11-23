@@ -26,6 +26,8 @@ class TrendMTFWatcher(BaseWatcher):
     MTF_TIMEFRAMES = (900, 3600, 14400)   # 15m, 1h, 4h in seconds
     MTF_LOOKBACK = 20
     MTF_T_MIN = 2.0
+    # (period, timeframe) fetched once at startup so the watcher does not need ~80h of 1m bars
+    HTF_SEED = {900: ("2d", "15m"), 3600: ("3d", "1h"), 14400: ("15d", "4h")}
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, short_period: int = 5, medium_period: int = 15, long_period: int = 30, watcher_config=None, clock=None, forensic_sink=None, mode: str = "auto"):
         # Convert symbol string to Symbol object if needed
@@ -110,6 +112,8 @@ class TrendMTFWatcher(BaseWatcher):
         keep = self.MTF_LOOKBACK * 3
         for tf, st in self._htf.items():
             bucket = opened // tf
+            if bucket <= st.get('seeded_through', -1):
+                continue  # already covered by the seeded closed higher-TF bar
             if st['bucket'] is not None and bucket < st['bucket']:
                 continue  # out-of-order bar
             if st['bucket'] is not None and bucket != st['bucket'] and not st['closed']:
@@ -120,6 +124,34 @@ class TrendMTFWatcher(BaseWatcher):
                 st['closes'].append(close)
             if len(st['closes']) > keep:
                 del st['closes'][:-keep]
+
+    def seed_higher_timeframes(self, bars_by_tf: dict, now: float = None) -> int:
+        """Seed closed 15m/1h/4h bars fetched directly at startup ({tf_seconds: [bar, ...]}).
+
+        Only bars whose close time is <= now are used; 1m bars of seeded buckets are skipped later.
+        Returns the number of timeframes seeded."""
+        import time as _time
+        now = _time.time() if now is None else now
+        seeded = 0
+        for tf, bars in (bars_by_tf or {}).items():
+            st = self._htf.get(tf)
+            if st is None or st['closes'] or not bars:
+                continue
+            rows = []
+            for bar in bars:
+                opened = self._epoch(bar.get('timestamp')) if isinstance(bar, dict) else None
+                if opened is None or bar.get('close') is None or opened + tf > now:
+                    continue
+                rows.append((opened, float(bar['close'])))
+            rows = sorted(dict(rows).items())
+            if not rows:
+                continue
+            st['closes'] = [c for _, c in rows][-self.MTF_LOOKBACK * 3:]
+            st['seeded_through'] = rows[-1][0] // tf
+            st['bucket'], st['closed'] = rows[-1][0] // tf, True
+            self._mtf_active = self.mode != "legacy"
+            seeded += 1
+        return seeded
 
     @staticmethod
     def _trend_t(closes) -> tuple:
@@ -132,8 +164,8 @@ class TrendMTFWatcher(BaseWatcher):
         slope = float(np.sum(xm * (y - y.mean())) / sxx)
         resid = y - (y.mean() + slope * xm)
         se = float(np.sqrt(np.sum(resid * resid) / (n - 2) / sxx)) if n > 2 else 0.0
-        if se <= 0:
-            return slope, 0.0
+        if se <= 0:  # perfectly linear series: infinitely significant unless flat
+            return slope, (0.0 if slope == 0 else float(np.sign(slope)) * 1e6)
         return slope, slope / se
 
     def _analyze_mtf(self, symbol: Symbol):

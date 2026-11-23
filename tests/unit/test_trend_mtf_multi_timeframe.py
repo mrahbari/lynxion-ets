@@ -65,3 +65,24 @@ def test_close_only_feed_keeps_legacy_behaviour():
     w.update_data({"close": 101.0})
     obs = w.analyze(Symbol("BTCUSDT"))
     assert obs is not None and "mode" not in obs.metadata
+
+
+def _htf_bars(tf_s, n, start, drift):
+    return [{"timestamp": start + k * tf_s, "close": 100 * (1 + drift) ** k} for k in range(n)]
+
+
+def test_seeded_history_gives_immediate_observation_without_double_counting():
+    now = 1_800_000_000 // 14400 * 14400            # aligned to a 4h boundary
+    w = _watcher()
+    bars = {tf: _htf_bars(tf, 30, now - 30 * tf, 0.002 + 0.0001 * (k % 2))
+            for tf in (900, 3600, 14400) for k in range(1)}
+    bars[14400].append({"timestamp": now, "close": 1.0})   # still forming -> must be ignored
+    assert w.seed_higher_timeframes(bars, now=now + 60) == 3
+    assert len(w._htf[14400]["closes"]) == 30 and w._htf[14400]["closes"][-1] != 1.0
+    # 1m bars of an already seeded bucket are skipped; the new bucket's bars are used
+    ts = datetime.fromtimestamp(now - 120, tz=timezone.utc)
+    w.update_data({"close": 1.0, "candle": {"close": 1.0, "timestamp": ts, "close_time": ts + timedelta(minutes=1)}})
+    assert len(w._htf[900]["closes"]) == 30
+    obs = w.analyze(Symbol("BTCUSDT"))
+    assert obs is not None and obs.metadata["mode"] == "mtf"
+    assert obs.observation_type == "trend_positive"

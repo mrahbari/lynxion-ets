@@ -88,6 +88,14 @@ class EngineService:
 
         # Handle market pulse observations (e.g., market_pulse_positive, market_pulse_negative)
         if 'market_pulse' in obs_type:
+            # Side is in the name ('..._bullish_strong'); caution / support / resistance / no-direction
+            # states are not directional.
+            if any(k in obs_type for k in ('caution', 'resistance', 'support', 'without_direction', 'neutral')):
+                return SignalType.NEUTRAL
+            if 'bullish' in obs_type:
+                return SignalType.BUY
+            if 'bearish' in obs_type:
+                return SignalType.SELL
             if 'positive' in obs_type or observation.observation_value > 0.01:  # Lowered threshold from 0.1 to 0.01
                 return SignalType.BUY
             elif 'negative' in obs_type or observation.observation_value < -0.01:  # Lowered threshold from -0.1 to -0.01
@@ -115,8 +123,8 @@ class EngineService:
 
         # Handle volatility observations (e.g., volatility_normal, volatility_high, volatility_low)
         elif 'volatility' in obs_type:
-            if 'high' in obs_type or observation.observation_value > 0.7:  # High volatility breakout
-                return SignalType.BUY  # Assuming breakout opportunity
+            if 'high' in obs_type or 'expansion' in obs_type or observation.observation_value > 0.7:
+                return SignalType.NEUTRAL  # volatility has no side (was BUY: every expansion read as a long)
             elif 'low' in obs_type or observation.observation_value < 0.3:  # Low volatility
                 return SignalType.HOLD  # Wait for higher volatility
             else:

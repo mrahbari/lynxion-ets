@@ -85,26 +85,24 @@ class FundingRateWatcher(BaseWatcher):
             else:
                 observation_type = 'funding_rate_extremely_negative'  # Shorts paying high funding
                 observation_value = -abs(current_funding_rate)
-            confidence = min(0.95, abs(current_funding_rate) * 50)  # Higher confidence for extreme rates
+            confidence = 0.8  # was |rate|*50 = 0.05 at the extreme threshold: always below the 0.60 gate
         elif current_funding_rate > self.high_funding_threshold:
             observation_type = 'funding_rate_positive'  # Longs paying funding
             observation_value = abs(current_funding_rate)
-            confidence = min(0.8, abs(current_funding_rate) * 20)
+            confidence = 0.65
         elif current_funding_rate < self.low_funding_threshold:
             observation_type = 'funding_rate_negative'  # Shorts paying funding
             observation_value = -abs(current_funding_rate)
-            confidence = min(0.8, abs(current_funding_rate) * 20)
+            confidence = 0.65
         else:
             observation_type = 'funding_rate_normal'  # Balanced market
             observation_value = 0.0
             # For neutral state, confidence is based on how close to neutral we are
             funding_magnitude = abs(current_funding_rate)
-            confidence = min(0.6, (1.0 - funding_magnitude))
+            confidence = 0.3  # balanced funding carries no information (was ~0.6, the only state that passed)
 
         # Adjust confidence based on volatility and change from average
-        if funding_rate_volatility > 0.001:  # If there's significant volatility
-            confidence = min(0.9, confidence + 0.1)
-        if abs(funding_rate_change) > 0.001:  # If there's significant change from average
+        if observation_type != 'funding_rate_normal' and abs(funding_rate_change) > self.high_funding_threshold:
             confidence = min(0.9, confidence + 0.1)
 
         # Convert confidence to Percentage object for domain compatibility

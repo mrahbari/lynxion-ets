@@ -21,7 +21,8 @@ def bar(symbol, index, close):
 def run(bars, through):
     source = HistoricalClosedBarSource(bars)
     scope = ReplayDecisionRunScope(START)
-    settings = SimpleNamespace(watcher=SimpleNamespace(historical_candle_watcher_enabled=True))
+    settings = SimpleNamespace(watcher=SimpleNamespace(historical_candle_watcher_enabled=True,
+                                                 historical_candle_pattern_mode="legacy"))
     try:
         driver = ClosedBarDecisionDriver(scope, source, settings)
         reached = driver.run_through(through)
@@ -62,7 +63,8 @@ def test_closed_bar_driver_preserves_live_watcher_identity_for_fusion():
     try:
         driver = ClosedBarDecisionDriver(
             scope, HistoricalClosedBarSource((candle,)),
-            SimpleNamespace(watcher=SimpleNamespace(historical_candle_watcher_enabled=True)),
+            SimpleNamespace(watcher=SimpleNamespace(historical_candle_watcher_enabled=True,
+                                                 historical_candle_pattern_mode="legacy")),
         )
         reached = driver.run_through(candle.close_time)
         assert reached[0][0].metadata["watcher_name"] == "historical_candle"

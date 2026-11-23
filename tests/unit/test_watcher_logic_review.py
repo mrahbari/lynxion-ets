@@ -1,0 +1,99 @@
+"""Watcher logic review (2026-11-23): each watcher does the job its name says."""
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
+from types import SimpleNamespace
+
+import numpy as np
+
+from domain.entities import MarketObservation, SignalType
+from domain.value_objects import Percentage, Symbol
+from infrastructure.engines.engine_service import EngineService
+from infrastructure.watchers.adapters.anomaly_ml import AnomalyMLWatcher
+from infrastructure.watchers.adapters.funding_rate import FundingRateWatcher
+from infrastructure.watchers.adapters.historical_candle import HistoricalCandleWatcherAdapter
+from infrastructure.watchers.adapters.volatility import VolatilityWatcher
+
+S = Symbol("BTCUSDT")
+T0 = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+
+def _obs(kind, value=0.0):
+    return MarketObservation(symbol=S, observation_type=kind, observation_value=value,
+                             confidence=Percentage(Decimal("0.7")), timestamp=T0)
+
+
+def test_anomaly_is_rare_on_ordinary_bars_and_fires_on_a_shock():
+    rng = np.random.default_rng(3)
+    w = AnomalyMLWatcher("anomaly_ml", "BTCUSDT")
+    px = 100 * np.exp(np.cumsum(rng.normal(0, 0.001, 600)))
+    flagged = 0
+    for p in px:
+        w.update_data({"close": float(p), "volume": 10.0})
+        o = w.analyze(S)
+        flagged += o is not None and o.observation_type != "anomaly_normal"
+    assert flagged <= 6                      # old score flagged most bars
+    w.update_data({"close": float(px[-1] * 1.02), "volume": 50.0})
+    o = w.analyze(S)
+    assert o.observation_type == "anomaly_positive" and float(o.confidence.value) >= 0.70
+
+
+def test_volatility_regime_compares_last_hour_with_baseline():
+    rng = np.random.default_rng(5)
+    w = VolatilityWatcher("volatility", "BTCUSDT")
+    px = list(100 * np.exp(np.cumsum(rng.normal(0, 0.001, 1400))))
+    px += list(px[-1] * np.exp(np.cumsum(rng.normal(0, 0.004, 60))))
+    for p in px:
+        w.update_data({"close": float(p), "high": float(p), "low": float(p)})
+    o = w.analyze(S)
+    assert o.observation_type == "volatility_expansion" and o.metadata["vol_ratio"] > 1.5
+
+
+def test_engine_reads_volatility_as_non_directional_and_pulse_by_side():
+    e = EngineService()
+    assert e.process_observation(_obs("volatility_expansion", 0.9)).signal_type is SignalType.NEUTRAL
+    assert e.process_observation(_obs("market_pulse_bullish_strong", 0.0)).signal_type is SignalType.BUY
+    assert e.process_observation(_obs("market_pulse_bearish_strong", 0.0)).signal_type is SignalType.SELL
+    assert e.process_observation(_obs("market_pulse_bullish_overbought_caution", 0.5)).signal_type is SignalType.NEUTRAL
+
+
+def test_funding_extremes_pass_the_gate_and_normal_does_not():
+    w = FundingRateWatcher("funding_rate", "BTCUSDT")
+    w.update_data({"funding_rate": 0.0001})
+    assert float(w.analyze(S).confidence.value) < 0.6
+    w.update_data({"funding_rate": 0.0015})
+    o = w.analyze(S)
+    assert o.observation_type == "funding_rate_extremely_positive" and float(o.confidence.value) >= 0.6
+
+
+def _candle_watcher():
+    return HistoricalCandleWatcherAdapter(SimpleNamespace(watcher=SimpleNamespace(historical_candle_watcher_enabled=True)),
+                                          "historical_candle", "BTCUSDT")
+
+
+def _feed_15m(w, bars):
+    """Feed each 15m OHLC as 15 one-minute candles."""
+    for k, (o, h, l, c) in enumerate(bars):
+        for m in range(15):
+            t = T0 + timedelta(minutes=15 * k + m)
+            px = o if m == 0 else c
+            w.update_data({"candle": {"open": px, "high": h if m == 7 else max(o, c), "low": l if m == 8 else min(o, c),
+                                      "close": c if m == 14 else px, "volume": 1, "close_time": t + timedelta(minutes=1)}})
+
+
+def test_hammer_after_downtrend_is_bullish_and_needs_closed_15m_candles():
+    w = _candle_watcher()
+    down = [(100 - k, 100.5 - k, 98.5 - k, 99 - k) for k in range(20)]
+    _feed_15m(w, down)
+    assert w.analyze(S).observation_type == "candle_neutral"
+    last = down[-1][3]
+    _feed_15m_tail = [(last, last + 0.1, last - 4.0, last + 0.05)]   # long lower shadow, tiny body
+    for m in range(15):
+        t = T0 + timedelta(minutes=15 * 20 + m)
+        o, h, l, c = _feed_15m_tail[0]
+        w.update_data({"candle": {"open": o if m == 0 else c, "high": h, "low": l if m == 5 else c, "close": c,
+                                  "volume": 1, "close_time": t + timedelta(minutes=1)}})
+        if m < 14:
+            assert w.analyze(S).observation_type == "candle_neutral"   # still forming: not used
+    o = w.analyze(S)
+    assert o.observation_type == "candle_reversal_bullish"
+    assert EngineService().process_observation(o).signal_type is SignalType.BUY

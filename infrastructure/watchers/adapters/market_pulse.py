@@ -278,7 +278,7 @@ class MarketPulseWatcher(BaseWatcher):
         # Calculate MACD-like indicator (simplified)
         ema_fast = self._ema(closes, 5)[-1] if len(closes) >= 5 else closes[-1]
         ema_slow = self._ema(closes, 10)[-1] if len(closes) >= 10 else closes[-1]
-        macd = ema_fast - ema_slow
+        macd = (ema_fast - ema_slow) / closes[-1] if closes[-1] else 0.0  # relative: comparable across price scales
 
         # Calculate Bollinger Band position
         sma = np.mean(closes[-20:]) if len(closes) >= 20 else np.mean(closes)
@@ -406,7 +406,7 @@ class MarketPulseWatcher(BaseWatcher):
         # Weight different factors
         trend_component = trend * 0.4
         momentum_component = momentum * 0.3
-        volume_component = volume_trend * 0.2
+        volume_component = 0.0  # volume has no sign; it must not push the directional value
         macd_component = macd * 0.1  # Smaller weight for MACD
 
         # Combine components
@@ -417,6 +417,17 @@ class MarketPulseWatcher(BaseWatcher):
 
     def _calculate_confidence(self, price_analysis, volume_analysis, momentum_analysis, volatility_analysis):
         """Calculate confidence based on multiple factors"""
+        # Agreement of independent directional evidence (trend slope, relative MACD, last-bar
+        # momentum, RSI side). The old formula scaled R^2*|slope| (~1e-4) and could not exceed the
+        # 0.60 Fusion threshold except through constant boosts.
+        trend = price_analysis.get('trend', 0)
+        signs = [np.sign(trend), np.sign(momentum_analysis.get('macd', 0)), np.sign(price_analysis.get('momentum', 0)),
+                 np.sign(momentum_analysis.get('rsi', 50) - 50)]
+        lead = np.sign(trend) if trend != 0 else np.sign(sum(signs))
+        if lead == 0:
+            return 0.3
+        agree = sum(1 for x in signs if x == lead)
+        return float(min(0.9, 0.4 + 0.125 * agree))
         trend_strength = price_analysis['strength']
         volume_strength = volume_analysis['strength']
         signals = momentum_analysis['signals']

@@ -50,6 +50,15 @@ class VolatilityWatcher(BaseWatcher):
         self.signal_cooldown = 0
         self.max_cooldown = 5  # Prevent signal spamming
 
+        # Regime definition: realized volatility of the last hour (60 x 1m log returns) vs the
+        # last 24h baseline. Previously it compared the stdev of raw price differences of the last
+        # 20 minutes with the 20 minutes before (noise), and the Engine read expansion as BUY.
+        self.regime_short_bars = 60
+        self.regime_baseline_bars = 1440
+        self.regime_min_baseline_bars = 240
+        self.expansion_ratio = 1.5
+        self.compression_ratio = 0.67
+
     def update_data(self, data: dict):
         """Update with new market data"""
         if not self.enabled:
@@ -57,7 +66,7 @@ class VolatilityWatcher(BaseWatcher):
 
         if 'close' in data:
             self.price_history.append(data['close'])
-            if len(self.price_history) > self.lookback * 3:  # Keep more data for stability
+            if len(self.price_history) > max(self.lookback * 3, self.regime_baseline_bars + 1):
                 self.price_history.pop(0)
 
         # Calculate ATR if we have high/low data
@@ -79,6 +88,35 @@ class VolatilityWatcher(BaseWatcher):
 
         if len(self.price_history) < 2:  # Require only 2 data points to start generating observations
             return None
+
+        if len(self.price_history) < self.regime_min_baseline_bars + 1:
+            return None
+        px = np.asarray(self.price_history[-(self.regime_baseline_bars + 1):], dtype=float)
+        if np.any(px <= 0):
+            return None
+        rets = np.diff(np.log(px))
+        short = float(np.std(rets[-self.regime_short_bars:]))
+        base = float(np.std(rets))
+        ratio = short / base if base > 0 else 1.0
+        if ratio >= self.expansion_ratio:
+            obs_type, value = 'volatility_expansion', min(1.0, ratio / 3.0)
+        elif ratio <= self.compression_ratio:
+            obs_type, value = 'volatility_compression', -min(1.0, 1.0 / max(ratio, 1e-9) / 3.0)
+        else:
+            obs_type, value = 'volatility_normal', 0.0
+        if obs_type == 'volatility_normal':
+            conf = 0.3
+        else:
+            conf = min(0.9, 0.6 + 0.3 * min(1.0, abs(np.log(ratio)) / np.log(3.0)))
+        regime = {'volatility_expansion': 'high', 'volatility_compression': 'low'}.get(obs_type, 'normal')
+        observation = MarketObservation(
+            symbol=symbol, observation_type=obs_type, observation_value=value,
+            confidence=Percentage(Decimal(str(round(conf, 6)))), timestamp=datetime.now(),
+            metadata={'realized_vol_1h': short, 'realized_vol_baseline': base, 'vol_ratio': ratio,
+                      'current_regime': regime, 'previous_regime': self.previous_regime,
+                      'baseline_bars': len(rets), 'volatility_source': self.name, 'mode': 'realized_ratio'})
+        self.previous_regime = regime
+        return observation
 
         # Calculate volatility metrics
         volatility_score = self.calculate_volatility_score()

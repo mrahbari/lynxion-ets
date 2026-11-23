@@ -46,6 +46,20 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
         self.small_body_threshold = 0.002  # For detecting indecision patterns
         self.spinning_top_threshold = 0.004  # For detecting spinning tops
 
+        # Pattern timeframe (seconds). Candlestick patterns are read on CLOSED 15m candles built
+        # from the 1m feed: the last closed candle only, sized against ATR, in the context of the
+        # prior trend. The legacy path scanned all 150 one-minute candles for any pattern anywhere,
+        # so its output was effectively the inverted sign of a 50-minute regression slope.
+        self.pattern_tf = 900
+        self.pattern_atr_period = 14
+        self.pattern_context_bars = 10
+        self._tf_candles = []      # closed pattern-timeframe candles
+        self._tf_forming = None    # (bucket, candle dict)
+        self._tf_mode = False
+        # 'legacy' keeps the per-1m-candle behaviour for frozen replay-plumbing fixtures only
+        _w = getattr(self._settings, 'watcher', None)
+        self.pattern_mode = getattr(_w, 'historical_candle_pattern_mode', 'tf') if _w is not None else 'tf'
+
     def update_data(self, data: dict):
         """Update with new candle data"""
         if not self.enabled:
@@ -66,6 +80,84 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
             # Keep history within limits
             if len(self.candles) > self.lookback * 3:
                 self.candles.pop(0)
+            self._aggregate_tf(candle)
+
+    @staticmethod
+    def _to_epoch(value):
+        if value is None:
+            return None
+        if hasattr(value, 'timestamp'):
+            return int(round(value.timestamp()))
+        try:
+            v = float(value)
+        except (TypeError, ValueError):
+            return None
+        return int(v / 1000) if v > 1e11 else int(v)
+
+    def _aggregate_tf(self, candle: dict) -> None:
+        """Build closed pattern-timeframe candles from closed 1m candles (needs close_time)."""
+        if self.pattern_mode == 'legacy':
+            return
+        closed_at = self._to_epoch(candle.get('close_time'))
+        if closed_at is None:
+            return
+        self._tf_mode = True
+        tf = self.pattern_tf
+        bucket = (closed_at - 1) // tf
+        o, h, l, c = (float(candle.get(k, 0) or 0) for k in ('open', 'high', 'low', 'close'))
+        if self._tf_forming is not None and bucket < self._tf_forming[0]:
+            return  # out-of-order
+        if self._tf_forming is not None and bucket != self._tf_forming[0]:
+            self._tf_candles.append(self._tf_forming[1])  # bucket ended without its boundary bar
+            self._tf_forming = None
+        if self._tf_forming is None:
+            self._tf_forming = (bucket, {'open': o, 'high': h, 'low': l, 'close': c})
+        else:
+            cur = self._tf_forming[1]
+            cur['high'], cur['low'], cur['close'] = max(cur['high'], h), min(cur['low'], l), c
+        if closed_at % tf == 0:
+            self._tf_candles.append(self._tf_forming[1])
+            self._tf_forming = None
+        if len(self._tf_candles) > 100:
+            del self._tf_candles[:-100]
+
+    def _tf_pattern(self):
+        """(observation_type, value, confidence, details) for the last CLOSED pattern-TF candle."""
+        bars = self._tf_candles
+        need = max(self.pattern_atr_period, self.pattern_context_bars) + 2
+        if len(bars) < need:
+            return None
+        trs = []
+        for i in range(len(bars) - self.pattern_atr_period, len(bars)):
+            b, pc = bars[i], bars[i - 1]['close']
+            trs.append(max(b['high'] - b['low'], abs(b['high'] - pc), abs(b['low'] - pc)))
+        atr = float(np.mean(trs))
+        cur, prev = bars[-1], bars[-2]
+        if atr <= 0:
+            return 'candle_neutral', 0.0, 0.3, {'atr': atr}
+        context = (prev['close'] - bars[-2 - self.pattern_context_bars]['close']) / atr
+        down, up = context <= -1.0, context >= 1.0
+        o, h, l, c = cur['open'], cur['high'], cur['low'], cur['close']
+        body, rng = abs(c - o), h - l
+        lower, upper = min(o, c) - l, h - max(o, c)
+        pattern = None
+        if down and rng >= atr and lower >= 2 * body and upper <= 0.25 * rng:
+            pattern = ('hammer', 1)
+        elif up and rng >= atr and upper >= 2 * body and lower <= 0.25 * rng:
+            pattern = ('shooting_star', -1)
+        elif (down and prev['close'] < prev['open'] and c > o and c >= prev['open'] and o <= prev['close']
+              and body >= 0.5 * atr):
+            pattern = ('bullish_engulfing', 1)
+        elif (up and prev['close'] > prev['open'] and c < o and c <= prev['open'] and o >= prev['close']
+              and body >= 0.5 * atr):
+            pattern = ('bearish_engulfing', -1)
+        details = {'atr': atr, 'context_atr': context, 'pattern': pattern[0] if pattern else None,
+                   'timeframe_seconds': self.pattern_tf}
+        if pattern is None:
+            return 'candle_neutral', 0.0, 0.3, details
+        side = 'bullish' if pattern[1] > 0 else 'bearish'
+        strength = min(1.0, abs(context) / 3.0)
+        return f'candle_reversal_{side}', float(pattern[1]) * strength, 0.65, details
 
     def _analyze_impl(self, symbol: Symbol) -> MarketObservation:
         """Analyze historical candles and return a raw market observation (no strategy selection)"""
@@ -74,6 +166,17 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
 
         if len(self.candles) < 1:  # Need at least 1 candle to generate any observation
             return None
+
+        if self._tf_mode:
+            result = self._tf_pattern()
+            if result is None:
+                return None
+            obs_type, value, conf, details = result
+            return MarketObservation(
+                symbol=symbol, observation_type=obs_type, observation_value=value,
+                confidence=Percentage(Decimal(str(conf))), timestamp=self.candles[-1]['timestamp'],
+                metadata={'pattern_analysis': details, 'candle_pattern_source': self.name,
+                          'closed_pattern_candles': len(self._tf_candles), 'mode': 'tf_pattern'})
 
         # Analyze candlestick patterns
         pattern_analysis = self._analyze_candlestick_patterns()

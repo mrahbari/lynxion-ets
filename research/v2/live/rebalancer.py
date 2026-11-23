@@ -352,6 +352,22 @@ def main():
             msgs.append(f"Account equity {r['equity']:.2f} VST (since start {r['pnl_since_start']:+.2f}, all sleeves)\n"
                         f"XS-COMBO: positions {r['positions']} | gross {r['gross_notional']:.0f} | "
                         f"unrealized {r['unrealized']:+.2f}")
+            if not a.dry_run:
+                try:  # VST settles no funding: book the funding the sleeve would have had (shadow ledger)
+                    from live import tracking
+                    mine = owned()
+                    st_t = state()
+                    sleeve = [x for x in cli.positions() if mine is None or x["symbol"].replace("-", "") in mine]
+                    opened = [int(x["createTime"]) for x in sleeve if x.get("createTime")]
+                    if opened:
+                        st_t.setdefault("tracking_start_ms", min(opened))
+                    tr = tracking.track(sleeve, st_t, STATE_DIR / "tracking.csv")
+                    save_state(st_t)
+                    msgs.append(f"Shadow funding (VST pays none): {tr['shadow_funding_bingx']:+.2f} over {tr['window_hours']:.0f}h "
+                                f"(Binance {tr['shadow_funding_binance']:+.2f}); cumulative {tr['shadow_funding_cum']:+.2f}; "
+                                f"unrealized+funding {tr['unrealized_plus_shadow_funding']:+.2f}")
+                except Exception as e:  # noqa: BLE001
+                    log({"event": "tracking_error", "error": repr(e)})
             gone = closed_since_rebalance(cli)
             if gone:
                 msgs.append(f"Closed since last rebalance (stop?): {', '.join(gone)}")
