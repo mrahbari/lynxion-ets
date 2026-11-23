@@ -349,7 +349,37 @@ class MonitoringAnalysisService:
                         watcher.update_data(book)
                     except Exception as e:
                         self.logger.warning(f"Error updating watcher {watcher_name} with order book: {e}")
+        self._record_orderflow(symbol_str)
         return len(fresh)
+
+    _ORDERFLOW_TTL_S = 60.0
+
+    def _record_orderflow(self, symbol_str: str) -> None:
+        """Real OBI (top-20 book) and CVD (last 5 min public trades) for the execution confirmation
+        stage, at most once per _ORDERFLOW_TTL_S per symbol (roadmap E14). Failures leave no value,
+        so readers see the data as missing."""
+        if os.getenv('PYTEST_CURRENT_TEST'):
+            return  # unit tests: no network
+        if not hasattr(self, '_orderflow_fetched'):
+            self._orderflow_fetched = {}
+        now = time.time()
+        if now - self._orderflow_fetched.get(symbol_str, 0.0) < self._ORDERFLOW_TTL_S:
+            return
+        self._orderflow_fetched[symbol_str] = now
+        try:
+            import requests
+            from infrastructure.execution import orderflow_snapshot
+            base = symbol_str[:-4] if symbol_str.endswith('USDT') else symbol_str
+            url = 'https://open-api.bingx.com/openApi/swap/v2/quote/'
+            book = requests.get(url + 'depth', params={'symbol': f'{base}-USDT', 'limit': 20},
+                                timeout=5).json().get('data') or {}
+            trades = requests.get(url + 'trades', params={'symbol': f'{base}-USDT', 'limit': 500},
+                                  timeout=5).json().get('data') or []
+            obi = orderflow_snapshot.book_imbalance(book.get('bids') or [], book.get('asks') or [])
+            cvd = orderflow_snapshot.trade_delta(trades, now_ms=int(now * 1000))
+            orderflow_snapshot.record(symbol_str, obi, cvd, ts=now)
+        except Exception as e:
+            self.logger.debug(f"Order-flow snapshot failed for {symbol_str}: {e}")
 
     _FUNDING_TTL_S = 600.0
     _BOOK_TTL_S = 60.0

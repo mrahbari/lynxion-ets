@@ -3,6 +3,8 @@ Unified, Strategy-Agnostic Decision Pipeline.
 Handles execution flow: CandidateSetup -> ExecutionConfirmationEngine -> ExecutionOptimizer -> ExecutionIntent.
 """
 
+import logging
+import os
 from typing import Dict, Any, Optional
 from datetime import datetime
 from decimal import Decimal
@@ -12,6 +14,9 @@ from domain.enums.order_side import OrderSide
 from domain.entities.research import CandidateSetup
 from infrastructure.execution.execution_confirmation_engine import ExecutionConfirmationEngine
 from infrastructure.execution.execution_optimizer import ExecutionOptimizer
+from infrastructure.execution import orderflow_snapshot
+
+_log = logging.getLogger("OrderFlowConfirmation")
 
 
 def calculate_dynamic_metrics(setup, struct=None, data_buffer=None):
@@ -69,6 +74,27 @@ class DecisionPipeline:
         self.confirmation_engine = confirmation_engine or ExecutionConfirmationEngine()
         self.optimizer = optimizer or ExecutionOptimizer()
 
+    def _orderflow_gate(self, setup: CandidateSetup, fused_signal: FusedSignal, strategy_name: str) -> bool:
+        """Real OBI/CVD confirmation (roadmap E14). ORDERFLOW_CONFIRMATION_MODE:
+        shadow (default): log the verdict on real values, never block;
+        enforce: block when real values are missing/stale (fail-closed) or do not confirm; off: skip."""
+        mode = os.getenv("ORDERFLOW_CONFIRMATION_MODE", "shadow").strip().lower()
+        if mode == "off":
+            return True
+        snap = orderflow_snapshot.get(fused_signal.symbol,
+                                      float(os.getenv("ORDERFLOW_MAX_AGE_S", "180")))
+        sym = orderflow_snapshot.norm(fused_signal.symbol)
+        if snap is None:
+            _log.info("ORDERFLOW_%s | %s | %s %s | no fresh order-flow data | verdict=%s",
+                      mode.upper(), sym, strategy_name, setup.direction,
+                      "BLOCK" if mode == "enforce" else "n/a")
+            return mode != "enforce"
+        ok = self.confirmation_engine.confirm_execution(setup, snap["obi"], snap["cvd"])
+        _log.info("ORDERFLOW_%s | %s | %s %s | obi=%.3f cvd=%.0f age=%.0fs | verdict=%s",
+                  mode.upper(), sym, strategy_name, setup.direction, snap["obi"], snap["cvd"], snap["age_s"],
+                  "CONFIRM" if ok else ("BLOCK" if mode == "enforce" else "WOULD_BLOCK"))
+        return ok or mode != "enforce"
+
     def process_execution_intent(self,
                                  setup: CandidateSetup,
                                  fused_signal: FusedSignal,
@@ -82,6 +108,8 @@ class DecisionPipeline:
         # 1. Execution Confirmation using OBI and CVD
         obi_ratio = latest_bar.get("obi_ratio", 0.15 if setup.direction == "BUY" else -0.15)
         cvd = latest_bar.get("cvd", 1.0 if setup.direction == "BUY" else -1.0)
+        if not self._orderflow_gate(setup, fused_signal, strategy_name):
+            return None
 
         confirmed = self.confirmation_engine.confirm_execution(setup, obi_ratio, cvd)
         if not confirmed:
