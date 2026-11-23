@@ -79,6 +79,7 @@ class MakerEntryManager:
                  clock: Callable[[], float] = time.time):
         self.poll_s, self.quotes, self.clock = poll_s, quotes, clock
         self._pending: Dict[str, dict] = {}
+        self._claimed: set = set()                 # protective order ids already assigned to an entry
         self._lock = threading.Lock()
         self._thread: Optional[threading.Thread] = None
 
@@ -136,6 +137,42 @@ class MakerEntryManager:
     def _cancel(self, service, oid: str) -> bool:
         return bool(self._router(service).cancel_order(oid))
 
+    def _record_attached_protection(self, service, order, oid: str) -> Optional[Dict[str, str]]:
+        """The exchange creates the SL/TP attached to a LIMIT entry only when it fills, so the journal has no
+        protective acknowledgement ids and reconciliation would mark the fill PROTECTION_UNKNOWN. Find the
+        created STOP_MARKET / TAKE_PROFIT_MARKET orders (closing side, entry SL/TP price) and journal their ids."""
+        try:
+            mb = self._router(service)
+            exchange, sym = mb._lookup_order(oid)
+            pending = mb.brokers[exchange].get_pending_orders(sym) or []
+            close_side = "SELL" if getattr(order.side, "name", str(order.side)).upper() == "BUY" else "BUY"
+            want = {"STOP_MARKET": _amount(order.stop_loss_price), "TAKE_PROFIT_MARKET": _amount(order.take_profit_price)}
+            ids: Dict[str, str] = {}
+            for kind, price in want.items():
+                if price is None:
+                    continue
+                cands = [o for o in pending
+                         if str(o.get("type", "")).upper() == kind and str(o.get("side", "")).upper() == close_side
+                         and str(o.get("orderId")) not in self._claimed
+                         and abs(float(o.get("stopPrice") or 0) - price) <= price * 0.01]   # tick/rounding shifts
+                if cands:
+                    best = min(cands, key=lambda o: abs(float(o.get("stopPrice") or 0) - price))
+                    ids[kind] = str(best.get("orderId"))
+                    self._claimed.add(ids[kind])
+            if set(ids) != {k for k, v in want.items() if v is not None}:
+                _log.warning("MAKER ENTRY PROTECTION NOT FOUND | %s | id=%s found=%s; reconciliation will flag it",
+                             order.symbol, oid, ids)
+                return None
+            from infrastructure.execution.live_order_journal import live_order_journal
+            ref = live_order_journal.order_ref_for_exchange_order(oid)
+            if ref:
+                live_order_journal.record_submitted(ref, oid, exchange, protective_order_ids=ids)
+            _log.info("MAKER ENTRY PROTECTED | %s | id=%s protection=%s journal_ref=%s", order.symbol, oid, ids, ref)
+            return ids
+        except Exception as e:  # noqa: BLE001
+            _log.warning("MAKER ENTRY PROTECTION LOOKUP FAILED | %s | id=%s: %s", order.symbol, oid, e)
+            return None
+
     def _release(self, p: dict, oid: str) -> None:
         try:
             svc = p["service"]
@@ -156,6 +193,7 @@ class MakerEntryManager:
         filled = float(f.get("executed_qty") or 0)
         if status in DONE:
             _log.info("MAKER ENTRY FILLED | %s | id=%s avg=%s", order.symbol, oid, f.get("avg_price"))
+            self._record_attached_protection(svc, order, oid)
             p["release_at"] = self.clock() + hold_after_fill_s()
             return False
         expired = self.clock() >= p["deadline"]

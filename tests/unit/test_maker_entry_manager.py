@@ -179,3 +179,43 @@ def test_wrapped_service_routes_lookup_and_uses_scoped_tracker(setup):
     clock.t = 901
     m.check_all()
     assert router.cancelled == ["L1"] and len(w.sent) == 1 and not w.scoped and not m._pending
+
+
+def test_fill_journals_attached_protection_ids(setup, monkeypatch):
+    import infrastructure.execution.live_order_journal as lj
+
+    class FakeJournal:
+        def __init__(self):
+            self.calls = []
+
+        def order_ref_for_exchange_order(self, oid):
+            return "REF1"
+
+        def record_submitted(self, ref, oid, exchange, protective_order_ids=None):
+            self.calls.append((ref, oid, exchange, protective_order_ids))
+
+    fj = FakeJournal()
+    monkeypatch.setattr(lj, "live_order_journal", fj)
+    make, _ = setup
+    m, svc = make([{"status": "FILLED", "executed_qty": 1, "avg_price": 100}])
+    svc.brokers["bingx"].get_pending_orders = lambda sym: [
+        {"orderId": 11, "type": "STOP_MARKET", "side": "SELL", "stopPrice": "95.0"},
+        {"orderId": 12, "type": "TAKE_PROFIT_MARKET", "side": "SELL", "stopPrice": "110.0"},
+        {"orderId": 13, "type": "STOP_MARKET", "side": "BUY", "stopPrice": "95.0"}]
+    m.register(svc, _order(), "L1")
+    m.check_all()
+    assert fj.calls == [("REF1", "L1", "bingx", {"STOP_MARKET": "11", "TAKE_PROFIT_MARKET": "12"})]
+
+
+def test_fill_without_visible_protection_does_not_journal(setup, monkeypatch):
+    import infrastructure.execution.live_order_journal as lj
+    calls = []
+    monkeypatch.setattr(lj, "live_order_journal", type("J", (), {
+        "order_ref_for_exchange_order": lambda self, o: "REF1",
+        "record_submitted": lambda self, *a, **k: calls.append(a)})())
+    make, _ = setup
+    m, svc = make([{"status": "FILLED", "executed_qty": 1, "avg_price": 100}])
+    svc.brokers["bingx"].get_pending_orders = lambda sym: []
+    m.register(svc, _order(), "L1")
+    m.check_all()
+    assert calls == [] and "L1" in svc.pending
