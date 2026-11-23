@@ -339,9 +339,44 @@ class MonitoringAnalysisService:
                     watcher.update_data(funding)
                 except Exception as e:
                     self.logger.warning(f"Error updating watcher {watcher_name} with funding: {e}")
+        book_watchers = [(n, w) for n, w in self.watchers[symbol_str].items()
+                         if hasattr(w, 'calculate_liquidity_score')]
+        if book_watchers:
+            book = self._order_book_payload(symbol_str)
+            if book is not None:
+                for watcher_name, watcher in book_watchers:
+                    try:
+                        watcher.update_data(book)
+                    except Exception as e:
+                        self.logger.warning(f"Error updating watcher {watcher_name} with order book: {e}")
         return len(fresh)
 
     _FUNDING_TTL_S = 600.0
+    _BOOK_TTL_S = 60.0
+
+    def _order_book_payload(self, symbol_str: str) -> Optional[Dict[str, Any]]:
+        """Top-20 order book snapshot (BingX public depth) for LiquidityWatcher, at most once per
+        _BOOK_TTL_S per symbol. The watcher reads 'bids'/'asks' and was never fed before."""
+        if not hasattr(self, '_book_fetched'):
+            self._book_fetched = {}
+        now = time.time()
+        if now - self._book_fetched.get(symbol_str, 0.0) < self._BOOK_TTL_S:
+            return None
+        self._book_fetched[symbol_str] = now
+        try:
+            import requests
+            base = symbol_str[:-4] if symbol_str.endswith('USDT') else symbol_str
+            data = requests.get('https://open-api.bingx.com/openApi/swap/v2/quote/depth',
+                                params={'symbol': f'{base}-USDT', 'limit': 20}, timeout=5).json().get('data') or {}
+            bids = [(float(p), float(q)) for p, q in data.get('bids') or []]
+            asks = [(float(p), float(q)) for p, q in data.get('asks') or []]
+        except Exception:
+            return None
+        if not bids or not asks:
+            return None
+        bids.sort(key=lambda x: -x[0])
+        asks.sort(key=lambda x: x[0])
+        return {'bids': bids, 'asks': asks}
 
     def _funding_payload(self, symbol_str: str) -> Optional[Dict[str, Any]]:
         """Latest settled funding rate from BingX, returned once per new funding value/period.
