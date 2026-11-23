@@ -197,6 +197,28 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E14-1 | Wire real order-flow into `DecisionPipeline.process_execution_intent` (today `latest_bar` never carries `obi_ratio`/`cvd`, defaults always pass): OrderFlowWS trade-flow imbalance (buy-sell)/total as CVD; OBI from the order book (BingX depth) if available | values present on every live intent, with timestamp | DONE (8f82cd8): `infrastructure/execution/orderflow_snapshot.py`, BingX depth top-20 + 5 min public trades, 60 s TTL |
 | E14-2 | Shadow mode first: log per intent the confirmation verdict with real values, do not block; Telegram/journal unchanged | >= 1 week of verdicts vs trade outcomes | IN PROGRESS (live since 2026-11-23 17:32 UTC, log tag `ORDERFLOW_SHADOW`) |
 | E14-3 | Fail-closed behind a flag: missing or stale (> N s) OBI/CVD -> no entry, logged with reason. Enable only after E14-2 shows coverage ~100 % and the confirmation does not cut winners (and E13-1 offline result) | unit tests; flag on in VST | GATED on E14-2 |
+| **E15** | **Layer-by-layer baseline review (operator 2026-11-23): one component at a time, until every layer does its own job** | | |
+| | Phase 1 = each component does its stated job correctly (role, live inputs, logic vs standard definition, no lookahead, reachable outputs, live output distribution, tests). Phase 2 (after all of phase 1) = fix quality gaps. Findings per component in `docs/v2/reviews/LAYER_REVIEW.md`. A defect that stops a component doing its job at all is fixed in phase 1; everything else is listed for phase 2. | | |
+| E15-W0 | Watcher data feed (MonitoringAnalysisService): which bars/timeframes/funding/book each watcher receives, closed-bar only, freshness | DONE review: mechanics OK; P1: Binance data for BingX execution, no data for BingX-only symbols, no trade feed; fix pending operator OK | DONE |
+| E15-W1 | Volatility watcher | review | TODO |
+| E15-W2 | TrendMTF watcher | review | TODO |
+| E15-W3 | FundingRate watcher | review | TODO |
+| E15-W4 | MarketPulse watcher | review | TODO |
+| E15-W5 | Liquidity watcher | review | TODO |
+| E15-W6 | OrderFlowWS watcher (no trade feed: never emits) | review | TODO |
+| E15-W7 | HistoricalCandle watcher | review | TODO |
+| E15-W8 | AnomalyML watcher | review | TODO |
+| E15-W9 | Not live: CMC screener (off), Tick watcher: keep / retire | review | TODO |
+| E15-F1 | Fusion: input (one signal per call), weighting, direction rule, output contract vs strategies | review | TODO |
+| E15-G1 | EngineService (watcher -> fusion -> strategy routing, gates) | review | TODO |
+| E15-G2 | MarketStructureEngine / setup engine (levels the strategies use) | review | TODO |
+| E15-G3 | MacroRegimeEngine / regime gate | review | TODO |
+| E15-S1..S3 | Live strategies: TrendFollow, VWAPReversal, OIFootprint (each vs its canonical definition) | review x3 | TODO |
+| E15-S4..S10 | Other strategies: breakout, donchian_breakout, liquidity, mean_reversion, mtf_trend, short_term_reversal, sweep_scalper | review x7 | TODO |
+| E15-X1 | DecisionPipeline (confirmation, optimizer, SL/TP sanitizing, confidence) | review | TODO |
+| E15-X2 | Orchestrator + execution (sizing, guards, order, journal) | review | TODO |
+| E15-X3 | Risk: APM stop management, side cap, cooldowns, reconciliation | review | TODO |
+| E15-X4 | Telegram / reporting (honest attribution) | review | TODO |
 | **E12** | **Live validation and go/no-go (VST until ~2026-12-22)** | | |
 | E12-1 | Single-symbol strategies: live vs E9 backtest parity per strategy (stop R, TP R, duration, slippage, fees) | weekly report | TODO |
 | E12-2 | XS-COMBO: live vs model tracking (= E5-3) | weekly report | IN PROGRESS |
