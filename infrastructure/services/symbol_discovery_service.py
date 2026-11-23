@@ -164,6 +164,7 @@ class SymbolDiscoveryService:
             s for s in all_discovered_symbols 
             if (s.value if hasattr(s, 'value') else str(s)).upper().replace("/", "").replace("-", "").replace("_", "") not in blacklisted
             and _tradable_on_venue((s.value if hasattr(s, 'value') else str(s)))
+            and symbol_validator.is_symbol_approved(s)   # daily BingX-liquidity gate
         ]
 
         # Operator watchlist (e.g. BingX TradFi perpetuals: indices, metals, oil, FX) is always
@@ -171,7 +172,7 @@ class SymbolDiscoveryService:
         seen = {(x.value if hasattr(x, 'value') else str(x)).upper() for x in discovered_symbols}
         for raw in _os.getenv("EXTRA_WATCHLIST_SYMBOLS", "").split(","):
             sym = raw.strip().upper().replace("-", "")
-            if sym and sym not in seen and sym not in blacklisted:
+            if sym and sym not in seen and sym not in blacklisted and symbol_validator.is_symbol_approved(sym):
                 try:
                     discovered_symbols.append(Symbol(sym)); seen.add(sym)
                 except ValueError:

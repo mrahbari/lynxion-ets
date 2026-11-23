@@ -22,6 +22,7 @@ class SymbolValidator:
         self.approved_symbols: Set[str] = set()
         self.blacklisted_symbols: Set[str] = set()
         self._blacklist_mtime_ns = None
+        self._approved_mtime_ns = None
         
         base_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
@@ -33,6 +34,7 @@ class SymbolValidator:
             blacklist_path = os.path.join(base_dir, "blacklisted_symbols.json")
             
         self.blacklist_path = blacklist_path
+        self.approved_path = config_path
         self.load_blacklisted_symbols(blacklist_path)
         self.load_approved_symbols(config_path)
 
@@ -65,6 +67,24 @@ class SymbolValidator:
         if current_mtime_ns != self._blacklist_mtime_ns:
             self.load_blacklisted_symbols(self.blacklist_path)
     
+    def _refresh_approved_if_changed(self):
+        """Hot-reload the approved list (rebuilt daily by scripts/build_tradable_universe.py).
+        A failed reload keeps the current list."""
+        path = getattr(self, "approved_path", None)
+        if not path:
+            return
+        try:
+            current_mtime_ns = os.stat(path).st_mtime_ns
+        except OSError:
+            return
+        if current_mtime_ns != self._approved_mtime_ns:
+            previous = self.approved_symbols
+            try:
+                self.load_approved_symbols(path)
+            except Exception:
+                self.approved_symbols = previous
+                self._approved_mtime_ns = current_mtime_ns
+
     def load_approved_symbols(self, config_path: str):
         """Load approved symbols from configuration file"""
         try:
@@ -80,6 +100,10 @@ class SymbolValidator:
                     normalized_symbols.add(slash_format)
             
             self.approved_symbols = normalized_symbols
+            try:
+                self._approved_mtime_ns = os.stat(config_path).st_mtime_ns
+            except OSError:
+                self._approved_mtime_ns = None
             self.logger.info(f"Loaded {len(self.approved_symbols)} approved symbols from {config_path}")
             
         except FileNotFoundError:
@@ -95,6 +119,7 @@ class SymbolValidator:
     def is_symbol_approved(self, symbol: Symbol) -> bool:
         """Check if a symbol is in the approved list and not blacklisted"""
         self._refresh_blacklist_if_changed()
+        self._refresh_approved_if_changed()
         symbol_str = str(getattr(symbol, "value", symbol)).upper()
         clean = self.normalize_symbol(symbol_str)
         if clean in self.blacklisted_symbols or symbol_str in self.blacklisted_symbols:
@@ -107,6 +132,7 @@ class SymbolValidator:
     
     def get_approved_symbols(self) -> Set[str]:
         """Get the set of approved symbols"""
+        self._refresh_approved_if_changed()
         return self.approved_symbols.copy()
 
     def get_blacklisted_symbols(self) -> Set[str]:

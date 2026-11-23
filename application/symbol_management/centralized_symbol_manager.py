@@ -153,7 +153,16 @@ class CentralizedSymbolManager:
         return self.sync_symbols.copy()
     
     def is_symbol_approved(self, symbol: str) -> bool:
-        """Check if a symbol is in the approved list."""
+        """Check if a symbol is in the approved list (hot-reloaded when the file changes)."""
+        try:
+            mtime_ns = os.stat(self.approved_symbols_path).st_mtime_ns
+        except OSError:
+            mtime_ns = None
+        if mtime_ns is not None and mtime_ns != getattr(self, "_approved_mtime_ns", None):
+            reloaded = self._load_approved_symbols()
+            if reloaded:
+                self.approved_symbols = reloaded
+            self._approved_mtime_ns = mtime_ns
         symbol_upper = symbol.upper()
         
         # Check various formats: with and without separators
