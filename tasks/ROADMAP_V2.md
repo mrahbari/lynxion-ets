@@ -176,7 +176,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E8-2 | If E8-1 positive: resting-order lifecycle (timeout cancel, partial fill + SL, exposure count) behind a flag | unit tests + VST trial | GATED on E8-1 |
 | **E9** | **Two strategy categories: single-symbol and portfolio** | | |
 | E9-1 | Integrate XS-COMBO as the first "portfolio strategy" on platform infra (adapter, journal, Telegram, config, reconciliation), logic frozen | weekly rebalance runs through platform | TODO |
-| E9-2 | Offline: XS-COMBO rank as a filter for single-symbol strategies (pre-registered on E9 trades) | report | TODO |
+| E9-2 | Offline: XS-COMBO rank as a filter for single-symbol strategies (pre-registered on E9 trades) | FAIL: DEV lift +0.08 R (t 8) reverses in holdout (-0.02 R); `E15_xs_rank_filter_2026-11-23.md` | DONE |
 | **E10** | **Slimming / cleanup (Fusion/Engine excluded until E7-4)** | | |
 | E10-1 | Inventory of unused modules/files with evidence | list for operator approval | TODO |
 | E10-2 | Delete only approved items | tests green vs baseline | GATED on operator |

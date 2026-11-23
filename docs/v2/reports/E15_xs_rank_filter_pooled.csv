@@ -1,0 +1,9 @@
+period,filter,state,n,lift_R,t
+DEV,xs,aligned,14131,0.084,7.97
+DEV,xs,opposed,14430,-0.082,-8.16
+DEV,xs_strict,extreme_aligned,7196,0.115,7.75
+DEV,xs_strict,other,21365,-0.039,-4.63
+HOLDOUT,xs,aligned,6123,-0.024,-1.55
+HOLDOUT,xs,opposed,6465,0.023,1.49
+HOLDOUT,xs_strict,extreme_aligned,2109,-0.036,-1.34
+HOLDOUT,xs_strict,other,10479,0.007,0.59
