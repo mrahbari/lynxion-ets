@@ -172,8 +172,8 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E7-3 | Run E14 on E9 trades (DEV 2025-11-01..2026-06-30, holdout 2026-07-01..10-31) | FAIL: OOF AUC 0.47-0.50, holdout lift -0.01 R | DONE |
 | E7-4 | Decision: PASS -> refactor Fusion/Engine into the meta-label filter (same interfaces); FAIL -> keep interfaces, bypass in decision path | FAIL: kept as is, re-open when an input has AUC >= 0.55 | DONE |
 | **E8** | **Execution cost: maker (limit) entries** | | |
-| E8-1 | Offline: fill rate / adverse selection of a post-only entry at signal price on E9 trades (1m data) | report: R gain net of missed winners | TODO |
-| E8-2 | If E8-1 positive: resting-order lifecycle (timeout cancel, partial fill + SL, exposure count) behind a flag | unit tests + VST trial | GATED on E8-1 |
+| E8-1 | Offline: fill rate / adverse selection of a post-only entry at signal price on E9 trades (1m data) | PASS: +0.04 R/signal (+0.03 R edge-neutral), DEV and holdout; `E16_maker_entry_2026-11-23.md` | DONE |
+| E8-2 | If E8-1 positive: resting-order lifecycle (timeout cancel, partial fill + SL, exposure count) behind a flag | unit tests + VST trial (post-only, fallback to market after 15 min) | TODO (unblocked by E8-1) |
 | **E9** | **Two strategy categories: single-symbol and portfolio** | | |
 | E9-1 | Integrate XS-COMBO as the first "portfolio strategy" on platform infra (adapter, journal, Telegram, config, reconciliation), logic frozen | weekly rebalance runs through platform | TODO |
 | E9-2 | Offline: XS-COMBO rank as a filter for single-symbol strategies (pre-registered on E9 trades) | FAIL: DEV lift +0.08 R (t 8) reverses in holdout (-0.02 R); `E15_xs_rank_filter_2026-11-23.md` | DONE |

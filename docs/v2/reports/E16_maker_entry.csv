@@ -1,0 +1,5 @@
+W_min,period,n,fill_rate,market_R,cancel_R,fallback_R,cancel_gain,fallback_gain,cancel_neutral_gain,fallback_neutral_gain,filled_E9_R,missed_E9_R,missed_win_rate,filled_win_rate,cancel_pass,fallback_pass
+5,DEV,28561,0.874,-0.101,-0.0581,-0.0645,0.0429,0.0365,0.0301,0.0311,-0.1,-0.106,0.384,0.392,True,True
+5,HOLDOUT,12588,0.881,-0.0921,-0.0473,-0.0549,0.0449,0.0372,0.0339,0.0334,-0.088,-0.123,0.379,0.396,True,True
+15,DEV,28561,0.904,-0.101,-0.0593,-0.0632,0.0417,0.0378,0.0321,0.0323,-0.099,-0.117,0.378,0.392,True,True
+15,HOLDOUT,12588,0.913,-0.0921,-0.0504,-0.053,0.0417,0.0391,0.0337,0.0353,-0.09,-0.119,0.381,0.395,True,True
