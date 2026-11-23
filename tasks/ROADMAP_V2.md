@@ -165,6 +165,9 @@ until the exit is booked.
   adverse selection (winners don't fill). Revisit after the symbol-universe change is measured.
 - **Approved-symbols refresh interval.** Daily 00:30 UTC (rule uses 7 completed daily candles; more often adds
   nothing). Revisit only if the list churns too much (then weekly) or misses fast-rising names.
+  Operator idea (2026-11-23): refresh after the London and New York sessions. 00:30 UTC already runs after the
+  NY close and the daily candle; a post-London run only helps if the rule used intraday (rolling 24h hourly)
+  volume, not a 7-day median of daily candles. Test that variant only if fast-rising names are being missed.
 - **Universe threshold.** 5 M USDT median 7-day quote volume (77 BingX names; 10 M gave 47). Compare per-band SL
   slippage and mean R after ~2 weeks of trades.
 - **CMC screener watcher off** (`CMC_SCREENER_ENABLED=false` in .env, 2026-11-23): duplicate trigger, not used
