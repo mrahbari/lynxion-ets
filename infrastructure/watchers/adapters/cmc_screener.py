@@ -84,6 +84,12 @@ class CMCScreener(WatcherPort):
         self.volatility_threshold_low = self._settings.data.cmc_volatility_low_threshold if self._settings.data and hasattr(self._settings.data, 'cmc_volatility_low_threshold') else 0.01  # 1%
         self.volume_threshold_high = self._settings.data.cmc_volume_high_threshold if self._settings.data and hasattr(self._settings.data, 'cmc_volume_high_threshold') else 2.0  # 2x average
         self.volume_threshold_low = self._settings.data.cmc_volume_low_threshold if self._settings.data and hasattr(self._settings.data, 'cmc_volume_low_threshold') else 0.5  # 0.5x average
+        # Every config profile sets all four thresholds to the same placeholder (0.3), which makes
+        # every coin 'low volatility'. A band needs high > low; fall back to the documented defaults.
+        if self.volatility_threshold_high <= self.volatility_threshold_low:
+            self.volatility_threshold_high, self.volatility_threshold_low = 0.05, 0.01
+        if self.volume_threshold_high <= self.volume_threshold_low:
+            self.volume_threshold_high, self.volume_threshold_low = 2.0, 0.5
 
     def analyze(self, symbol: Symbol) -> Optional[MarketObservation]:
         """Analyze market conditions and return a raw market observation (no strategy selection)"""
