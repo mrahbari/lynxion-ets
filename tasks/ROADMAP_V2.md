@@ -188,10 +188,14 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E11-5 | Observe the closure debounce and the same-side cap on real events | log evidence | TODO (passive) |
 | E11-6 | Old backup copies in `data/approved-symbols/` (14 files): delete or keep | operator decision | GATED on operator |
 | **E13** | **New edge inputs (profitability queue, each pre-registered, DEV then holdout)** | | |
-| E13-1 | CVD (taker buy - sell volume, from Binance kline taker volume) as an entry confirmation on E9 trades; OBI not testable offline (no historical book). If PASS: wire into the OBI/CVD confirmation stage (OrderFlowWS change needs operator OK) | report | TODO |
+| E13-1 | CVD (taker buy - sell volume, from Binance kline taker volume) as an entry confirmation on E9 trades; OBI not testable offline (no historical book). Feeds the E14-3 go decision | report | TODO |
 | E13-2 | XS-COMBO rebalance frequency / turnover, cost-aware (= E3-3), the only measured edge | report | TODO |
 | E13-3 | OI / long-short ratio metrics for the liquid subset (= E3-4) as a cross-sectional factor | report | TODO |
 | E13-4 | Listing-age and regime conditioning (= E2-5, E2-6) | report | TODO |
+| **E14** | **OBI/CVD confirmation: real data, then fail-closed (operator approved 2026-11-23, incl. OrderFlowWS change)** | | |
+| E14-1 | Wire real order-flow into `DecisionPipeline.process_execution_intent` (today `latest_bar` never carries `obi_ratio`/`cvd`, defaults always pass): OrderFlowWS trade-flow imbalance (buy-sell)/total as CVD; OBI from the order book (BingX depth) if available | values present on every live intent, with timestamp | TODO |
+| E14-2 | Shadow mode first: log per intent the confirmation verdict with real values, do not block; Telegram/journal unchanged | >= 1 week of verdicts vs trade outcomes | TODO |
+| E14-3 | Fail-closed behind a flag: missing or stale (> N s) OBI/CVD -> no entry, logged with reason. Enable only after E14-2 shows coverage ~100 % and the confirmation does not cut winners (and E13-1 offline result) | unit tests; flag on in VST | GATED on E14-2 |
 | **E12** | **Live validation and go/no-go (VST until ~2026-12-22)** | | |
 | E12-1 | Single-symbol strategies: live vs E9 backtest parity per strategy (stop R, TP R, duration, slippage, fees) | weekly report | TODO |
 | E12-2 | XS-COMBO: live vs model tracking (= E5-3) | weekly report | IN PROGRESS |
