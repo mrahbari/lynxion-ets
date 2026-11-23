@@ -336,6 +336,11 @@ class BrokerExecutionService(ExecutionPort):
                     # Return a failure status instead of raising an exception to prevent system crashes
                     return None  # Indicate that the order was not placed due to duplicate prevention
 
+                # Per-side cap (SafetyConfig.max_long_positions / max_short_positions): loaded but never
+                # enforced before 2026-11-23. Counts the exchange's open platform positions on that side.
+                if intended_position_side and self._side_cap_reached(intended_position_side, symbol_str):
+                    return None
+
             # Check if stop loss and take profit are set (these should be set by the Strategy layer)
             has_stop_loss = hasattr(order, 'stop_loss_price') and order.stop_loss_price is not None
             has_take_profit = hasattr(order, 'take_profit_price') and order.take_profit_price is not None
@@ -510,6 +515,32 @@ class BrokerExecutionService(ExecutionPort):
         finally:
             # No temporary cleanup needed since we only add to pending tracker after successful broker confirmation
             pass
+
+    def _side_cap_reached(self, side: str, symbol_str: str) -> bool:
+        """True when the open platform positions on `side` (LONG/SHORT) already reach the safety cap.
+        A failed position read does not block (the total-position cap and exchange stops still apply)."""
+        safety = getattr(self._settings, "safety", None)
+        cap = getattr(safety, "max_long_positions" if side == "LONG" else "max_short_positions", None)
+        if not isinstance(cap, int) or cap <= 0:
+            return False
+        try:
+            brokers = list(getattr(self.broker, "brokers", {}).values()) or [self.broker]
+            positions = []
+            for b in brokers:
+                if hasattr(b, "get_all_positions"):
+                    positions += list(b.get_all_positions() or [])
+        except Exception as exc:
+            self.logger.warning(f"⚠️ Side-cap position read failed for {symbol_str}: {exc}")
+            return False
+        def _side(p):
+            s = getattr(p, "side", None)
+            s = str(getattr(s, "name", None) or getattr(s, "value", None) or s or "").upper()
+            return "LONG" if s in ("LONG", "BUY") else "SHORT" if s in ("SHORT", "SELL") else ""
+        open_same = sum(1 for p in positions if _side(p) == side)
+        if open_same >= cap:
+            self.logger.info(f"🚧 SIDE CAP: {open_same} open {side} positions >= {cap}; {symbol_str} entry skipped.")
+            return True
+        return False
 
     def _enhance_order_with_risk_parameters(self, order: Order) -> Order:
         """Enhance order with risk parameters if they're missing"""

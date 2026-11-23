@@ -172,5 +172,8 @@ until the exit is booked.
   slippage and mean R after ~2 weeks of trades.
 - **CMC screener watcher off** (`CMC_SCREENER_ENABLED=false` in .env, 2026-11-23): duplicate trigger, not used
   in trade decisions. Re-enable only with evidence of a role.
+- **Same-side cap** now enforced (2026-11-23): `SafetyConfig.max_long/short_positions` (15 / 15 in the live
+  settings) was loaded but never checked. Kept at 15: post-fix maximum seen was 9 longs, so it does not reduce the
+  sample; it only stops a correlated pile-up. Lower it only if same-side clusters dominate losses.
 - Empty-list blips (BingX VST) in exposure checks and the `get_position` duplicate guard.
 - Old backup copies in `data/approved-symbols/` from the replaced downloader (operator decision to delete).

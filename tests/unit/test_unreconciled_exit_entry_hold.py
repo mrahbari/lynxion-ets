@@ -131,3 +131,23 @@ def test_real_exit_is_booked_after_confirmation(tmp_path, monkeypatch):
     svc._process_position_closures(SimpleNamespace(), {"LINK-USDT"})
     assert svc._previous_active_symbols == {"LINK-USDT"}                          # booked on 2nd pass
     assert not rec.exit_unreconciled("ONDOUSDT")
+
+
+def test_side_cap_blocks_entry_when_open_side_positions_reach_cap(monkeypatch):
+    svc, broker = _service(monkeypatch)
+    svc._settings.safety = SimpleNamespace(max_long_positions=2, max_short_positions=2)
+    longs = [SimpleNamespace(side=SimpleNamespace(name="LONG")) for _ in range(2)]
+    monkeypatch.setattr(broker, "get_all_positions", lambda: longs, raising=False)
+    assert svc._side_cap_reached("LONG", "XUSDT") is True
+    assert svc._side_cap_reached("SHORT", "XUSDT") is False
+    monkeypatch.setattr(broker, "get_all_positions", lambda: longs[:1], raising=False)
+    assert svc._side_cap_reached("LONG", "XUSDT") is False
+
+
+def test_side_cap_fails_open_on_position_read_error(monkeypatch):
+    svc, broker = _service(monkeypatch)
+    svc._settings.safety = SimpleNamespace(max_long_positions=1, max_short_positions=1)
+    def boom():
+        raise RuntimeError("api")
+    monkeypatch.setattr(broker, "get_all_positions", boom, raising=False)
+    assert svc._side_cap_reached("LONG", "XUSDT") is False
