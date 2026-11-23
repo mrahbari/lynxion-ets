@@ -157,6 +157,28 @@ until the exit is booked.
 - Backlog: empty-list blips in exposure checks and the `get_position` duplicate guard.
 - Symbol universe: `runner_sync_approved_symbols.py` now builds the venue's liquid universe daily (launchd 00:30 UTC, ccxt, follows `DEFAULT_BROKER`); old copy-all sync replaced. Ops: `docs/v2/LIVE_VST_OPERATIONS.md`.
 
+## S4 working plan (agreed 2026-11-23): time-boxed, every task ends in a decision
+Rules (no open-ended research): each task has a time box; it ends either with a fix running on VST or a
+pre-registered pass/fail number; a task that cannot change what or how we trade is dropped.
+
+| Week | Days | Task (time box) | Done when |
+|---|---|---|---|
+| W1 | 11-24 | E15-W0 fix: execution venue (DEFAULT_BROKER = BingX) as primary bar source for watchers and strategies, Binance fallback; measure the Binance-vs-BingX bar gap first (1 day) | live log shows BingX bars for all symbols, BingX-only symbols fed |
+| W1 | 11-24..26 | E15-W1..W9 watcher reviews (max half a day each; fix P1 only) | each watcher: verdict + P1 fixed |
+| W1 | 11-27 | E13-2 XS-COMBO rebalance frequency / cost (1 day, offline, existing harness) | pass/fail vs live parameters; adopt only on pass |
+| W1 | 11-29 | XS-COMBO 2nd rebalance (scheduled) | done |
+| W2 | 11-30..12-02 | E15-F1 Fusion, E15-G1..G3 engines (max 1 day each) | verdict + P1 fixed |
+| W2 | 12-03..05 | E15-S1..S3 live strategies, entry logic vs canonical definition + E11-4 signal-to-order latency (1 day each); re-run E9 for any fixed strategy (same rule) | per strategy: bug list, E9 rerun result |
+| W2 | 12-06 | E9-1 XS-COMBO as the first portfolio strategy on platform infra (2 days, into W3) | weekly rebalance through the platform |
+| W3 | 12-07..10 | E15-S4..S10 other strategies (half a day each; rerun E9 only if a bug is found) | verdicts |
+| W3 | 12-07..13 | E13-3 OI factor (2 days); E6-3 universe threshold review; E14-3 decision from one week of shadow | pass/fail each |
+| W4 | 12-14..17 | E15-X1..X4 execution/risk/reporting review; phase-2 fixes ranked by expected PnL impact | fixes live on VST |
+| W4 | 12-18..20 | E12-3 final report + real-capital go/no-go package | operator decision |
+
+Entry problem (gross edge ~0 R before costs, E9): handled inside the plan, not as separate research:
+data venue (W0), entry logic per strategy vs its definition (S1..S10), signal-to-order latency (E11-4),
+then E9 rerun of every changed strategy with the unchanged pass rule.
+
 ## S3 plan (agreed 2026-11-23): epics and tasks
 Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throughout; every position keeps a stop.
 
