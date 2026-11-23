@@ -187,6 +187,11 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E11-4 | Signal-to-order latency measured from live logs (candidate -> order sent) | p50/p95 in report | TODO |
 | E11-5 | Observe the closure debounce and the same-side cap on real events | log evidence | TODO (passive) |
 | E11-6 | Old backup copies in `data/approved-symbols/` (14 files): delete or keep | operator decision | GATED on operator |
+| **E13** | **New edge inputs (profitability queue, each pre-registered, DEV then holdout)** | | |
+| E13-1 | CVD (taker buy - sell volume, from Binance kline taker volume) as an entry confirmation on E9 trades; OBI not testable offline (no historical book). If PASS: wire into the OBI/CVD confirmation stage (OrderFlowWS change needs operator OK) | report | TODO |
+| E13-2 | XS-COMBO rebalance frequency / turnover, cost-aware (= E3-3), the only measured edge | report | TODO |
+| E13-3 | OI / long-short ratio metrics for the liquid subset (= E3-4) as a cross-sectional factor | report | TODO |
+| E13-4 | Listing-age and regime conditioning (= E2-5, E2-6) | report | TODO |
 | **E12** | **Live validation and go/no-go (VST until ~2026-12-22)** | | |
 | E12-1 | Single-symbol strategies: live vs E9 backtest parity per strategy (stop R, TP R, duration, slippage, fees) | weekly report | TODO |
 | E12-2 | XS-COMBO: live vs model tracking (= E5-3) | weekly report | IN PROGRESS |
