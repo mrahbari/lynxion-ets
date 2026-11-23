@@ -2,14 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key><string>com.lynxion.tradable-universe</string>
+  <key>Label</key><string>com.lynxion.approved-symbols-sync</string>
   <key>ProgramArguments</key>
-  <array><string>/Users/mojtaba.rahbari/.pyenv/versions/3.10.13/bin/python3</string><string>scripts/build_tradable_universe.py</string></array>
+  <array><string>/Users/mojtaba.rahbari/.pyenv/versions/3.10.13/bin/python3</string><string>interface/cli/sync_approved_symbols.py</string></array>
   <key>WorkingDirectory</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets</string>
   <!-- daily 01:30 local (00:30 UTC), after the BingX daily candle closes -->
   <key>StartCalendarInterval</key><dict><key>Hour</key><integer>1</integer><key>Minute</key><integer>30</integer></dict>
-  <key>StandardOutPath</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/logs/universe/universe.log</string>
-  <key>StandardErrorPath</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/logs/universe/universe.err.log</string>
+  <key>StandardOutPath</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/logs/approved_symbols_sync.log</string>
+  <key>StandardErrorPath</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/logs/approved_symbols_sync.err.log</string>
   <key>RunAtLoad</key><false/>
 </dict>
 </plist>

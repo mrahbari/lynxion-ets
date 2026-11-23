@@ -1,164 +1,160 @@
 #!/usr/bin/env python3
-"""
-BingX Perpetual Futures Symbol Updater
-Fetches BingX perpetual futures symbols (USDT-margined only)
-and updates approved_symbols.json safely.
-Note: COIN-margined futures endpoint not available in current BingX API.
-"""
+"""Approved-symbols sync: the daily tradable universe of the execution venue.
 
-import os
+approved_symbols.json is the platform's symbol gate (execution, runtime discovery, data availability).
+It used to be every listed BingX contract (866 names, refreshed by hand). Since 2026-11-23 it holds only
+symbols liquid enough to trade on the venue the platform executes on.
+
+Venue: UNIVERSE_EXCHANGE, else DEFAULT_BROKER, else "bingx" (any ccxt exchange id: bingx, binance, mexc,
+phemex, ...). Moving the platform to another exchange needs no change here; if the new venue cannot be
+read, the previous list stays in place.
+
+Rule (pre-registered, not fitted to trades):
+  linear USDT-margined perpetual, active, base not a stablecoin,
+  >= UNIVERSE_MIN_LISTING_DAYS (30) completed daily candles (listing age),
+  median daily quote volume over the last 7 completed days >= UNIVERSE_MIN_MEDIAN_QUOTE_VOLUME_USDT (10 M);
+  quote volume = base volume x (high + low + close) / 3.
+  Always kept: symbols with an open platform position (data/active_positions_journal.json).
+Safety: files are replaced atomically and only when >= MIN_SYMBOLS names pass; any failure keeps the previous
+list (exit code 1). The blacklist is a separate file and is not touched.
+
+Outputs: application/configs/approved_symbols.json (SymbolValidator), data/approved-symbols/approved_symbols.json
+(CentralizedSymbolManager), data/approved-symbols/universe_report.json (per-symbol audit).
+Both readers hot-reload the file, so the running platform picks up the new list without a restart.
+
+Usage: python interface/cli/sync_approved_symbols.py [--dry-run]
+Scheduled daily 00:30 UTC by scripts/launchd/com.lynxion.approved-symbols-sync.plist.
+"""
+from __future__ import annotations
+
 import json
-import requests
-import shutil
-from datetime import datetime
+import os
+import statistics
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+TARGETS = [ROOT / "application" / "configs" / "approved_symbols.json",
+           ROOT / "data" / "approved-symbols" / "approved_symbols.json"]
+REPORT = ROOT / "data" / "approved-symbols" / "universe_report.json"
+ACTIVE = ROOT / "data" / "active_positions_journal.json"
+MIN_SYMBOLS = 20
+DAY_MS = 86_400_000
+STABLE = {"USDT", "USDC", "USD1", "USDG", "USDD", "USDE", "PYUSD", "RLUSD", "FDUSD", "TUSD", "BUSD", "DAI",
+          "PAX", "USDP", "USDS", "GUSD", "LUSD", "FRAX", "EURC", "EURT"}
 
 
-BINGX_SWAP_ENDPOINTS = [
-    # USDT-margined perpetuals (v2 endpoint) - WORKING
-    "https://open-api.bingx.com/openApi/swap/v2/quote/contracts",
-
-    # NOTE: COIN-margined (inverse) perpetuals endpoint appears to not exist in BingX API
-    # Tried: https://open-api.bingx.com/openApi/swap/v2/quote/coin/contracts (not exist)
-    # Tried: https://open-api.bingx.com/openApi/swap/v1/public/coin/contracts (not exist)
-    # Current BingX API only appears to provide USDT-margined futures via the v2 endpoint
-]
+def settings() -> dict:
+    return {"exchange": (os.getenv("UNIVERSE_EXCHANGE") or os.getenv("DEFAULT_BROKER") or "bingx").strip().lower(),
+            "min_median_qv": float(os.getenv("UNIVERSE_MIN_MEDIAN_QUOTE_VOLUME_USDT", "10000000")),
+            "min_age_days": int(os.getenv("UNIVERSE_MIN_LISTING_DAYS", "30"))}
 
 
-def fetch_available_symbols(allowed_quote_currencies: list = None):
-    """
-    Fetch BingX perpetual futures symbols filtered optionally by quote currency.
-    If allowed_quote_currencies is specified (e.g. ['USDT']), only symbols ending
-    with those quote currencies are included.
-    """
-    if allowed_quote_currencies is None:
-        env_quote = os.environ.get("ALLOWED_QUOTE_CURRENCIES") or os.environ.get("QUOTE_CURRENCY")
-        if env_quote:
-            allowed_quote_currencies = [q.strip().upper() for q in env_quote.split(",") if q.strip()]
-
-    symbols = set()
-
-    for url in BINGX_SWAP_ENDPOINTS:
-        try:
-            print(f"🔍 Fetching: {url}")
-            response = requests.get(url, timeout=30)
-            response.raise_for_status()
-
-            payload = response.json()
-
-            if payload.get("code") != 0:
-                print(f"⚠️ Non-zero response code from {url}: {payload.get('msg', 'Unknown error')}")
-                # Skip this endpoint if it's not available
-                if "not exist" in payload.get('msg', ''):
-                    print(f"   📝 Endpoint not available - skipping")
-                    continue
-                continue
-
-            for contract in payload.get("data", []):
-                if not isinstance(contract, dict):
-                    continue
-
-                # status == 1 means tradable (from working code in task70)
-                if contract.get("status") == 1:
-                    raw_symbol = contract.get("symbol")
-                    if raw_symbol:
-                        # Convert BTC-USDT -> BTCUSDT
-                        symbol = raw_symbol.replace('-', '')
-                        
-                        # Apply quote currency filter if configured
-                        if allowed_quote_currencies:
-                            if not any(symbol.upper().endswith(q) for q in allowed_quote_currencies):
-                                continue
-
-                        symbols.add(symbol)
-
-            print(f"✅ Collected so far: {len(symbols)} symbols")
-
-        except Exception as e:
-            print(f"❌ Failed fetching {url}: {e}")
-
-    return sorted(symbols)
+def norm(market_id: str) -> str:
+    return str(market_id).upper().replace("-", "").replace("_", "").replace("/", "")
 
 
-def backup_current_symbols(file_path):
-    if os.path.exists(file_path):
-        ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-        # Create backup in the archive directory
-        filename = os.path.basename(file_path)
-        archive_dir = os.path.join(os.path.dirname(__file__), "data", "approved-symbols")
-        os.makedirs(archive_dir, exist_ok=True)
-        backup_path = os.path.join(archive_dir, f"{filename}.backup_{ts}")
-        shutil.copy2(file_path, backup_path)
-        print(f"📦 Backup created: {backup_path}")
-        return backup_path
-    return None
-
-
-def update_approved_symbols_file(symbols, file_path):
+def active_symbols() -> set[str]:
     try:
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        d = json.loads(ACTIVE.read_text())
+        return {norm(s) for s in (d.get("active_symbols", []) if isinstance(d, dict) else d)}
+    except Exception:  # noqa: BLE001
+        return set()
 
-        backup_path = backup_current_symbols(file_path)
 
-        existing_symbols = set()
-        if os.path.exists(file_path):
-            with open(file_path, "r") as f:
-                existing_symbols = set(json.load(f))
+def _retry(fn, *a, **k):
+    for i in range(4):
+        try:
+            return fn(*a, **k)
+        except Exception:  # noqa: BLE001
+            if i == 3:
+                raise
+            time.sleep(1 + 2 * i)
 
-        new_symbols = set(symbols)
 
-        added = new_symbols - existing_symbols
-        removed = existing_symbols - new_symbols
+def make_exchange(name: str):
+    import ccxt
+    return getattr(ccxt, name)({"enableRateLimit": True, "options": {"defaultType": "swap"}})
 
-        print("\n📊 Symbol Update Summary")
-        print(f"Previously approved : {len(existing_symbols)}")
-        print(f"Newly fetched       : {len(new_symbols)}")
-        print(f"Added               : {len(added)}")
-        print(f"Removed             : {len(removed)}")
 
-        if added:
-            print(f"➕ Added (sample): {list(added)[:10]}")
-        if removed:
-            print(f"➖ Removed (sample): {list(removed)[:10]}")
+def build(ex=None, now_ms: int | None = None, cfg: dict | None = None) -> tuple[list[str], list[dict]]:
+    cfg = cfg or settings()
+    ex = ex or make_exchange(cfg["exchange"])
+    now_ms = now_ms or int(time.time() * 1000)
+    day0 = now_ms // DAY_MS * DAY_MS                       # start of the current, incomplete UTC day
+    markets = _retry(ex.load_markets)
+    perps = {s: m for s, m in markets.items()
+             if m.get("swap") and m.get("linear") and m.get("quote") == "USDT" and m.get("settle") == "USDT"}
+    tickers = _retry(ex.fetch_tickers, list(perps))
+    rows = []
+    for s, m in perps.items():
+        qv24 = float((tickers.get(s) or {}).get("quoteVolume") or 0)
+        row = {"symbol": norm(m["id"]), "qv_24h": round(qv24), "median_qv_7d": None, "days": None,
+               "approved": False, "reason": ""}
+        if m.get("active") is False or str(m.get("base", "")).upper() in STABLE:
+            row["reason"] = "state"
+        elif qv24 < cfg["min_median_qv"] * 0.25:          # pre-filter only, limits candle requests
+            row["reason"] = "qv_24h"
+        else:
+            bars = _retry(ex.fetch_ohlcv, s, "1d", limit=cfg["min_age_days"] + 5)
+            done = sorted((b for b in bars if int(b[0]) < day0), key=lambda b: int(b[0]))
+            row["days"] = len(done)
+            qv = [b[5] * (b[2] + b[3] + b[4]) / 3 for b in done[-7:] if None not in b[2:6]]
+            row["median_qv_7d"] = round(statistics.median(qv)) if len(qv) == 7 else None
+            if len(done) < cfg["min_age_days"]:
+                row["reason"] = "age"
+            elif row["median_qv_7d"] is None or row["median_qv_7d"] < cfg["min_median_qv"]:
+                row["reason"] = "median_qv_7d"
+            else:
+                row["approved"], row["reason"] = True, "liquid"
+        rows.append(row)
+    held = active_symbols()
+    for r in rows:
+        if not r["approved"] and r["symbol"] in held:
+            r["approved"], r["reason"] = True, "open_position"
+    return sorted({r["symbol"] for r in rows if r["approved"]}), rows
 
-        with open(file_path, "w") as f:
-            json.dump(sorted(new_symbols), f, indent=2)
 
-        print(f"\n✅ Main config updated: {file_path}")
-        print(f"📄 Total symbols saved: {len(new_symbols)}")
+def _atomic_write(path: Path, payload) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + f".tmp.{os.getpid()}")
+    tmp.write_text(json.dumps(payload, indent=2))
+    os.replace(tmp, path)
 
-        # Also save to archive location
-        archive_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "data", "approved-symbols", "approved_symbols.json"
-        )
-        os.makedirs(os.path.dirname(archive_file_path), exist_ok=True)
 
-        with open(archive_file_path, "w") as f:
-            json.dump(sorted(new_symbols), f, indent=2)
-
-        print(f"📦 Archive updated: {archive_file_path}")
-
-        return True
-
-    except Exception as e:
-        print(f"❌ Update failed: {e}")
-        if backup_path and os.path.exists(backup_path):
-            shutil.copy2(backup_path, file_path)
-            print("♻️ Restored from backup")
-        return False
+def sync(dry_run: bool = False) -> int:
+    cfg = settings()
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    try:
+        approved, rows = build(cfg=cfg)
+    except Exception as exc:  # noqa: BLE001
+        print(f"{stamp} approved-symbols sync FAILED on {cfg['exchange']}, previous list kept: {exc}")
+        return 1
+    if len(approved) < MIN_SYMBOLS:
+        print(f"{stamp} only {len(approved)} symbols passed on {cfg['exchange']} (< {MIN_SYMBOLS}); previous list kept")
+        return 1
+    previous = set()
+    try:
+        previous = set(json.loads(TARGETS[0].read_text()))
+    except Exception:  # noqa: BLE001
+        pass
+    print(f"{stamp} {cfg['exchange']}: approved {len(approved)} of {len(rows)} USDT perps "
+          f"(median 7d quote volume >= {cfg['min_median_qv']:,.0f}, >= {cfg['min_age_days']} d) | "
+          f"added {sorted(set(approved) - previous)} removed {len(previous - set(approved))}")
+    if dry_run:
+        print(", ".join(approved))
+        return 0
+    for target in TARGETS:
+        _atomic_write(target, approved)
+    _atomic_write(REPORT, {"built_utc": stamp, **cfg, "approved": len(approved), "rows": rows})
+    return 0
 
 
 def main():
-    """Backward-compatible entry point.
-
-    E2.T3: process I/O now lives in :mod:`interface.cli.sync_approved_symbols`.
-    This job has no domain ports to inject, so there is no container wiring;
-    the shim simply delegates. The fetch/update helpers above are consumed by
-    the CLI.
-    """
     from interface.cli.sync_approved_symbols import main as cli_main
     return cli_main()
 
 
 if __name__ == "__main__":
-    exit(main())
+    raise SystemExit(main())

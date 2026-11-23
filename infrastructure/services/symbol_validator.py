@@ -68,7 +68,7 @@ class SymbolValidator:
             self.load_blacklisted_symbols(self.blacklist_path)
     
     def _refresh_approved_if_changed(self):
-        """Hot-reload the approved list (rebuilt daily by scripts/build_tradable_universe.py).
+        """Hot-reload the approved list (rebuilt daily by interface/cli/sync_approved_symbols.py).
         A failed reload keeps the current list."""
         path = getattr(self, "approved_path", None)
         if not path:

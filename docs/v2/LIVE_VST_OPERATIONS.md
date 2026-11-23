@@ -44,3 +44,27 @@ The old runner (`run_trading_system.py`) must not run on the same account at the
 - **Exit alerts:** the closing order is searched from the time the position was last seen open (BingX returns the
   oldest page first), and the trade-journal collector polls every `TRADE_JOURNAL_POLL_SECONDS` (300) so it no longer
   trips BingX's allOrders ban (100410), which used to turn exits into "UNKNOWN — closing order not identified".
+
+## Platform symbol universe (approved symbols), since 2026-11-23
+`approved_symbols.json` is the platform's symbol gate: execution, runtime discovery (including
+`EXTRA_WATCHLIST_SYMBOLS`) and data availability only use symbols on it. It is rebuilt daily from the
+execution venue's own liquidity by the approved-symbols sync (it replaces the old copy-every-contract sync).
+
+| Action | Command (from repo root) |
+|---|---|
+| Install daily job (00:30 UTC) | `cp scripts/launchd/com.lynxion.approved-symbols-sync.plist ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/com.lynxion.approved-symbols-sync.plist` |
+| Run now / preview without writing | `python3 interface/cli/sync_approved_symbols.py` / `... --dry-run` |
+| Remove the daily job | `launchctl unload ~/Library/LaunchAgents/com.lynxion.approved-symbols-sync.plist` |
+
+Rule: linear USDT perpetual, active, not a stablecoin, >= 30 completed daily candles, median daily quote volume of
+the last 7 completed days >= 10 M USDT; symbols with an open platform position are always kept. Env overrides:
+`UNIVERSE_MIN_MEDIAN_QUOTE_VOLUME_USDT`, `UNIVERSE_MIN_LISTING_DAYS`.
+Output: `application/configs/approved_symbols.json` and `data/approved-symbols/approved_symbols.json` (same list,
+one per reader), `data/approved-symbols/universe_report.json` (why each symbol passed or failed), log
+`logs/approved_symbols_sync.log`. The running platform hot-reloads the list; no restart needed.
+Failure safety: if the venue cannot be read or fewer than 20 symbols pass, the previous list is kept.
+
+Exchange migration: the venue is `UNIVERSE_EXCHANGE`, else `DEFAULT_BROKER` (any ccxt id). Switching the platform's
+`DEFAULT_BROKER` switches the universe on the next run, no code change (checked 2026-11-23: bingx 47, binance 176,
+mexc 71 symbols). Symbol names are the venue's contract id without separators (BTC-USDT / BTC_USDT -> BTCUSDT),
+which is the platform's internal format. Run the sync once by hand right after a switch.

@@ -155,3 +155,4 @@ until the exit is booked.
 - Post-fix trades: 17, +8.0 USDT; OIFootprint 7/7 SL (4 from pre-fix A-B-A re-entries). Too few to tune.
 - Fixed: BingX VST empty position lists booked 12 open positions as UNKNOWN closures; exits now confirmed on consecutive passes (704c73c).
 - Backlog: empty-list blips in exposure checks and the `get_position` duplicate guard.
+- Symbol universe: `runner_sync_approved_symbols.py` now builds the venue's liquid universe daily (launchd 00:30 UTC, ccxt, follows `DEFAULT_BROKER`); old copy-all sync replaced. Ops: `docs/v2/LIVE_VST_OPERATIONS.md`.
