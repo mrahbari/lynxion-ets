@@ -219,3 +219,20 @@ def test_fill_without_visible_protection_does_not_journal(setup, monkeypatch):
     m.register(svc, _order(), "L1")
     m.check_all()
     assert calls == [] and "L1" in svc.pending
+
+
+def test_holds_symbol_while_resting_and_after_fill(setup):
+    make, clock = setup
+    m, svc = make([{"status": "NEW", "executed_qty": 0}])
+    assert not m.holds("DOTUSDT")
+    m.register(svc, _order(), "L1")                         # order symbol BTCUSDT
+    assert m.holds("BTCUSDT") and m.holds("BTC-USDT") and not m.holds("DOTUSDT")
+    clock.t = 600                                            # far beyond the shared tracker's 30 s expiry
+    m.check_all()
+    assert m.holds("BTCUSDT")
+    svc.brokers["bingx"].fills = [{"status": "FILLED", "executed_qty": 1, "avg_price": 100}]
+    m.check_all()
+    assert m.holds("BTCUSDT")                                # held after the fill
+    clock.t = 600 + 181
+    m.check_all()
+    assert not m.holds("BTCUSDT")

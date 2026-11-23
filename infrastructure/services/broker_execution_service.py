@@ -312,6 +312,12 @@ class BrokerExecutionService(ExecutionPort):
 
                 # Check for pending orders on the symbol
                 pending_duplicate = self._pending_has_any(order.symbol)
+                if not pending_duplicate:   # resting maker entry (E8-2); the shared tracker expires after 30 s
+                    try:
+                        from infrastructure.execution.maker_entry_manager import maker_entry_manager
+                        pending_duplicate = maker_entry_manager.holds(order.symbol)
+                    except Exception as hold_error:
+                        self.logger.warning(f"⚠️ Maker-entry hold check failed for {symbol_str}: {hold_error}")
 
                 # A position seen open at the last reconciliation pass but flat now has exited
                 # (e.g. exchange stop) without being processed yet: its loss cooldown is not set.

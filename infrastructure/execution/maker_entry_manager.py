@@ -83,6 +83,14 @@ class MakerEntryManager:
         self._lock = threading.Lock()
         self._thread: Optional[threading.Thread] = None
 
+    def holds(self, symbol) -> bool:
+        """True while a maker entry on this symbol rests or was filled < hold_after_fill_s ago. The shared
+        PendingOrdersTracker drops entries after 30 s, so it cannot hold a 15-minute resting order."""
+        key = str(getattr(symbol, "value", symbol)).upper().replace("-", "")
+        with self._lock:
+            return any(str(getattr(p["order"].symbol, "value", p["order"].symbol)).upper().replace("-", "") == key
+                       for p in self._pending.values())
+
     # registration ------------------------------------------------------------------------------
     def register(self, service, order, order_id: str) -> None:
         side = getattr(order.side, "name", str(order.side)).upper()
