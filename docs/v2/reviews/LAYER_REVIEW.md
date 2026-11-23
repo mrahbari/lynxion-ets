@@ -261,3 +261,40 @@ requirement; correct, no lookahead.
 | W7-3 | P2 | ~450 lines of legacy-mode code (1m "any pattern anywhere") still loaded. Cleanup in E10. |
 
 **Verdict: does its job.** No P1.
+
+---
+
+## E15-W8 — AnomalyML watcher (`infrastructure/watchers/adapters/anomaly_ml.py`) — 2026-11-23
+
+**Role.** Flag an abnormal last 1m bar (outlier return, or outlier volume with a large return):
+`anomaly_positive / anomaly_negative / anomaly_normal`.
+
+**Logic (live "robust_z" mode).** Robust z-score of the last 1m log return against the median and
+MAD x 1.4826 of the preceding window; volume z on log volume the same way; anomalous if |z_ret| is above
+its threshold, or z_vol is high and |z_ret| above a lower threshold. MAD-based outlier detection is the
+standard robust method; correct, no lookahead. Not machine learning despite the name.
+
+**Live evidence.** normal 12,994 / negative 186 / positive 166 (2.6 %); 5,780 warm-up.
+
+**Findings.**
+| # | Sev | Finding |
+|---|---|---|
+| W8-1 | note | The Engine maps `anomaly_positive` to SELL and `anomaly_negative` to BUY (assumes 1m outliers revert); that is a trading hypothesis, not the watcher's job, and is untested -> G1. |
+| W8-2 | P2 | ~250 lines of the former feature/score path remain after `return` (dead). Name "ML" is misleading. Cleanup in E10. |
+| W8-3 | P2 | Confidence fixed (0.75 / 0.3). |
+
+**Verdict: does its job.** No P1.
+
+---
+
+## E15-W9 — Watchers not running live — 2026-11-23
+
+- **CMCScreener**: disabled since 2026-11-23 (`CMC_SCREENER_ENABLED=false`): duplicate trigger, not used in
+  decisions. Keep disabled; retire in E10 unless a role is found.
+- **TickWatcher** (`tick.py`): not instantiated by the live watcher set (8 watchers started per symbol).
+  Retire candidate in E10.
+
+**Watcher layer summary (W0-W9).** Feed mechanics correct; venue gap negligible (0.2-3.9 bp).
+P1 defects found and fixed: TrendMTF spurious-regression trend statistic, FundingRate per-period vs
+per-8h units, MarketPulse noise-level "strong" labels, OrderFlowWS never fed. Volatility, Liquidity,
+HistoricalCandle and AnomalyML do their jobs. Phase-2 items listed per watcher. Next layer: Fusion (F1).
