@@ -187,7 +187,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E11-4 | Signal-to-order latency measured from live logs (candidate -> order sent) | p50/p95 in report | TODO |
 | E11-5 | Observe the closure debounce and the same-side cap on real events | log evidence | TODO (passive) |
 | E11-7 | Triage the 24 remaining pre-existing test failures: fix config-drift expectations, investigate stop-path (14) and BingX LIMIT protection (2) failures, delete only tests with no use | 0 unexplained failures | TODO |
-| E11-6 | Old backup copies in `data/approved-symbols/` (14 files): delete or keep | operator decision | GATED on operator |
+| E11-6 | Old backup copies in `data/approved-symbols/` (14 files): delete or keep | operator decision | DONE (deleted 2026-11-23, operator approved) |
 | **E13** | **New edge inputs (profitability queue, each pre-registered, DEV then holdout)** | | |
 | E13-1 | CVD (taker buy - sell volume, from Binance kline taker volume) as an entry confirmation on E9 trades; OBI not testable offline (no historical book). Feeds the E14-3 go decision | report | TODO |
 | E13-2 | XS-COMBO rebalance frequency / turnover, cost-aware (= E3-3), the only measured edge | report | TODO |
@@ -223,4 +223,3 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 - Empty-list blips (BingX VST) in exposure checks and the `get_position` duplicate guard.
 - Orchestrator LIQUIDITY DEPTH GUARD never runs: it calls `broker.fetch_order_book`, which no broker implements (found 2026-11-23).
 - Maker entries resting across a runner restart are no longer tracked (they keep their attached SL/TP; a later fill becomes a protected position).
-- Old backup copies in `data/approved-symbols/` from the replaced downloader (operator decision to delete).
