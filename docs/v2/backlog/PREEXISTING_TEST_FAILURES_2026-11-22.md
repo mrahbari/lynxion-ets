@@ -37,3 +37,15 @@ Recorded before/after the v2 sleeve-isolation change; identical set (no new fail
 - FAILED tests/unit/test_task0399_bingx_final_numeric_gate.py::test_conditional_conflict_recovery_uses_client_identity_and_current_response
 - FAILED tests/unit/test_task0399_bingx_final_numeric_gate.py::test_limit_protection_uses_official_nested_json_fields
 - FAILED tests/unit/test_telegram_notification_service.py::test_missing_chat_id_fails_before_network
+
+## Update 2026-11-23
+Removed (operator: delete tests with no use): 6 test files of retired Codex research tracks whose artifacts
+were archived (conditional-setup v2 capture/feasibility, exit-shadow manifest/activation/static readiness,
+C-35 aggregate evaluator); 11 of the 35 failures, 16 tests in total. Code under test untouched.
+Remaining 24 failures, triage task E11-7 (roadmap):
+- config drift vs current .env/settings: test_risk_enforcement (4, VST hard caps), test_settings_loader (2,
+  committed snapshot), test_execution_truth_ledger (1, BLOCKED vs LIVE mode)
+- stop management / APM observers (14): test_task0137, test_task0139, test_task0153, test_task0154,
+  test_task0182, test_symbol_cooldown_gate — cover the stop path, investigate before any removal
+- BingX adapter protection format (2): test_task0399 (incl. LIMIT protection fields, relevant to maker entries)
+- test_telegram_notification_service (1)
