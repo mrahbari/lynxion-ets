@@ -48,6 +48,9 @@ ACTIVE_POSITIONS_JOURNAL_PATH = os.path.join(_project_root(), "data", "active_po
 # cooldown never set, no close notification sent. The entry gate asks exit_unreconciled() when
 # the broker shows NO position: if the last snapshot still had one, its exit is unprocessed.
 _LAST_OBSERVED_OPEN: set[str] = set()
+# A closure is booked after this many consecutive absent passes (+1 when the whole snapshot is empty).
+CLOSURE_CONFIRM_PASSES = 2
+EMPTY_SNAPSHOT_EXTRA_PASSES = 1
 
 
 def _norm(symbol) -> str:
@@ -82,6 +85,8 @@ class BrokerReconciliationService:
         # Only a fill newer than an observed open position can explain its exit.
         # Symbols restored from the journal have no safe timestamp until seen open.
         self._active_seen_ms: dict[str, int] = {}
+        # symbol -> [consecutive absent passes, any of those passes had a non-empty snapshot]
+        self._absent_passes: dict[str, list] = {}
         self._processed_closed_exits: set[str] = set()
         self._unknown_exit_sequence = 0
 
@@ -199,15 +204,38 @@ class BrokerReconciliationService:
     def _process_position_closures(self, broker, current_active_symbols: set[str]) -> None:
         """Detect exchange position closures (transition to positionAmt == 0) and propagate trade result."""
         # Find symbols that were active in the previous cycle but are absent in current cycle
-        closed_symbols = self._previous_active_symbols - current_active_symbols
+        absent = self._previous_active_symbols - current_active_symbols
+        # BingX VST intermittently answers the positions endpoint with code 0 and an EMPTY list
+        # (2026-11-23: 7 empty replies in ~14 s, then the full 51). One snapshot is not evidence
+        # of an exit: book a closure only after CLOSURE_CONFIRM_PASSES consecutive absent passes,
+        # one more when every absent pass saw an empty snapshot. Pending symbols stay "open" (entries held, journal kept).
+        nonempty = bool(current_active_symbols)
+        absent_passes = getattr(self, "_absent_passes", {})
+        closed_symbols = set()
+        pending = set()
+        for sym in absent:
+            n, seen_nonempty = absent_passes.get(sym, [0, False])
+            n, seen_nonempty = n + 1, seen_nonempty or nonempty
+            if n >= CLOSURE_CONFIRM_PASSES + (0 if seen_nonempty else EMPTY_SNAPSHOT_EXTRA_PASSES):
+                closed_symbols.add(sym)
+            else:
+                absent_passes[sym] = [n, seen_nonempty]
+                pending.add(sym)
+        for sym in list(absent_passes):
+            if sym not in pending:
+                del absent_passes[sym]
+        self._absent_passes = absent_passes
+        if pending:
+            self.logger.info(f"Position absent from broker snapshot, awaiting confirmation: {sorted(pending)}")
         previously_seen_ms = self._active_seen_ms
         observed_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
         self._active_seen_ms = {sym: observed_ms for sym in current_active_symbols}
+        self._active_seen_ms.update({sym: previously_seen_ms[sym] for sym in pending if sym in previously_seen_ms})
         # Update active symbols for next cycle and persist atomically across process restarts
-        self._previous_active_symbols = set(current_active_symbols)
+        self._previous_active_symbols = set(current_active_symbols) | pending
         self._save_active_symbols()
         _LAST_OBSERVED_OPEN.clear()
-        _LAST_OBSERVED_OPEN.update(_norm(x) for x in current_active_symbols)
+        _LAST_OBSERVED_OPEN.update(_norm(x) for x in self._previous_active_symbols)
 
         if not closed_symbols:
             return
@@ -365,12 +393,16 @@ class BrokerReconciliationService:
                 try:
                     from infrastructure.services.risk_alerts import send_telegram
                     # An absent closing order is not evidence of a stop-loss fill.
-                    outcome_str = ("UNKNOWN — closing order not identified" if closing_order_id == "UNKNOWN"
-                                   else "UNKNOWN — realized PnL unavailable" if is_profitable is None
+                    outcome_str = ("UNKNOWN — position gone from the exchange, but no closing SL/TP/market order "
+                                   "was found in order history; PnL not booked, check the position on BingX"
+                                   if closing_order_id == "UNKNOWN"
+                                   else "UNKNOWN — closing order found, realized PnL unavailable" if is_profitable is None
                                    else "PROFITABLE EXIT" if is_profitable else "LOSS")
                     emoji = "⚠️" if is_profitable is None else "✅" if is_profitable else "🛑"
                     cooldown_str = ("Safety cooldown pending exit verification" if is_profitable is None
                                     else "None" if is_profitable else "Loss cooldown active")
+                    if closing_order_id == "UNKNOWN":
+                        cooldown_str = "60 min safety cooldown on this symbol (no new entry)"
                     msg = (
                         f"{emoji} <b>EXCHANGE POSITION CLOSED</b>\n\n"
                         f"• <b>Symbol:</b> <code>{sym}</code>\n"

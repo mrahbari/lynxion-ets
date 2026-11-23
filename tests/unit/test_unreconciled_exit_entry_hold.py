@@ -25,6 +25,14 @@ T = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
 
 @pytest.fixture(autouse=True)
+def _single_pass_closure(monkeypatch):
+    """These tests describe closure handling itself; confirmation debounce is tested separately."""
+    import infrastructure.execution.broker_reconciliation as br
+    monkeypatch.setattr(br, "CLOSURE_CONFIRM_PASSES", 1)
+    monkeypatch.setattr(br, "EMPTY_SNAPSHOT_EXTRA_PASSES", 0)
+
+
+@pytest.fixture(autouse=True)
 def _clean():
     rec._LAST_OBSERVED_OPEN.clear()
     yield
@@ -87,3 +95,39 @@ def test_entry_allowed_once_exit_is_reconciled_or_symbol_never_open(monkeypatch)
     svc, broker = _service(monkeypatch)
     rec._LAST_OBSERVED_OPEN.add("OTHERUSDT")
     assert svc.execute_order(_order()) is not None
+
+
+def _recon(tmp_path):
+    return rec.BrokerReconciliationService(halt_fn=lambda r: None,
+                                           active_positions_journal_path=str(tmp_path / "a.json"))
+
+
+def _debounce(monkeypatch):
+    monkeypatch.setattr(rec, "CLOSURE_CONFIRM_PASSES", 2)
+    monkeypatch.setattr(rec, "EMPTY_SNAPSHOT_EXTRA_PASSES", 1)
+
+
+def test_empty_snapshot_blip_does_not_book_closures(tmp_path, monkeypatch):
+    """BingX VST 2026-11-23: positions endpoint returned code 0 with an empty list for ~14 s; the
+    reconciler booked 12 open positions as closed (UNKNOWN) twice. A blip must book nothing."""
+    _debounce(monkeypatch)
+    svc = _recon(tmp_path)
+    svc._process_position_closures(SimpleNamespace(), {"LINK-USDT", "ONDO-USDT"})
+    svc._process_position_closures(SimpleNamespace(), set())                      # empty blip
+    assert svc._previous_active_symbols == {"LINK-USDT", "ONDO-USDT"}
+    assert rec.exit_unreconciled("LINKUSDT")                                      # entries still held
+    svc._process_position_closures(SimpleNamespace(), set())                      # second empty pass
+    assert svc._previous_active_symbols == {"LINK-USDT", "ONDO-USDT"}
+    svc._process_position_closures(SimpleNamespace(), {"LINK-USDT", "ONDO-USDT"})  # read recovers
+    assert svc._absent_passes == {}
+
+
+def test_real_exit_is_booked_after_confirmation(tmp_path, monkeypatch):
+    _debounce(monkeypatch)
+    svc = _recon(tmp_path)
+    svc._process_position_closures(SimpleNamespace(), {"LINK-USDT", "ONDO-USDT"})
+    svc._process_position_closures(SimpleNamespace(), {"LINK-USDT"})
+    assert "ONDO-USDT" in svc._previous_active_symbols                            # pending, not booked
+    svc._process_position_closures(SimpleNamespace(), {"LINK-USDT"})
+    assert svc._previous_active_symbols == {"LINK-USDT"}                          # booked on 2nd pass
+    assert not rec.exit_unreconciled("ONDOUSDT")

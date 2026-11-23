@@ -12,6 +12,14 @@ from infrastructure.observability.position_identity_snapshot import (
 
 
 @pytest.fixture(autouse=True)
+def _single_pass_closure(monkeypatch):
+    """These tests describe closure handling itself; confirmation debounce is tested separately."""
+    import infrastructure.execution.broker_reconciliation as br
+    monkeypatch.setattr(br, "CLOSURE_CONFIRM_PASSES", 1)
+    monkeypatch.setattr(br, "EMPTY_SNAPSHOT_EXTRA_PASSES", 0)
+
+
+@pytest.fixture(autouse=True)
 def _isolate_operational_state(tmp_path, monkeypatch):
     from infrastructure.risk.symbol_cooldown_gate import SymbolCooldownGate
 

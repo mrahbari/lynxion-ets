@@ -9,6 +9,14 @@ from infrastructure.execution.live_order_journal import LiveOrderJournal
 from infrastructure.execution.broker_reconciliation import BrokerReconciliationService
 
 
+@pytest.fixture(autouse=True)
+def _single_pass_closure(monkeypatch):
+    """These tests describe closure handling itself; confirmation debounce is tested separately."""
+    import infrastructure.execution.broker_reconciliation as br
+    monkeypatch.setattr(br, "CLOSURE_CONFIRM_PASSES", 1)
+    monkeypatch.setattr(br, "EMPTY_SNAPSHOT_EXTRA_PASSES", 0)
+
+
 def test_complete_initial_ack_evidence_does_not_create_unknown_marker(tmp_path):
     journal = _journal(tmp_path)
     ref = journal.record_intent("BTC-USDT", "BUY", "1", "bingx", stop_loss="90", take_profit="110")
@@ -354,7 +362,7 @@ def test_filled_stop_without_pnl_does_not_invent_a_loss(tmp_path, monkeypatch):
     assert results == []
     assert symbol_cooldown_gate._symbol_loss_history.get("ADAUSDT") in (None, [])
     assert symbol_cooldown_gate.is_symbol_allowed("ADAUSDT")[0] is False
-    assert "UNKNOWN — realized PnL unavailable" in alerts[0]
+    assert "UNKNOWN — closing order found, realized PnL unavailable" in alerts[0]
 
 
 def test_idempotent_closed_position_event(tmp_path, monkeypatch):
@@ -423,7 +431,7 @@ def test_separate_unknown_closures_for_same_symbol_are_not_collapsed(tmp_path, m
         "ADA-USDT_UNKNOWN_2",
     }
     assert len(alerts) == 2
-    assert all("UNKNOWN — closing order not identified" in alert for alert in alerts)
+    assert all("no closing SL/TP/market order was found" in alert for alert in alerts)
     assert all("<b>Outcome:</b> STOP LOSS" not in alert for alert in alerts)
 
 
@@ -446,7 +454,7 @@ def test_unknown_exit_holds_reentry_without_inventing_a_loss(tmp_path, monkeypat
     assert results == []
     assert symbol_cooldown_gate._symbol_loss_history.get("ADAUSDT") in (None, [])
     assert symbol_cooldown_gate.is_symbol_allowed("ADAUSDT")[0] is False
-    assert "Safety cooldown pending exit verification" in alerts[0]
+    assert "60 min safety cooldown" in alerts[0]
 
 
 def test_restored_active_symbol_absent_on_first_snapshot_is_not_new_confirmed_exit(

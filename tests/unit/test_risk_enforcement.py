@@ -6,6 +6,14 @@ from decimal import Decimal
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _single_pass_closure(monkeypatch):
+    """These tests describe closure handling itself; confirmation debounce is tested separately."""
+    import infrastructure.execution.broker_reconciliation as br
+    monkeypatch.setattr(br, "CLOSURE_CONFIRM_PASSES", 1)
+    monkeypatch.setattr(br, "EMPTY_SNAPSHOT_EXTRA_PASSES", 0)
+
+
 def _broker_admission_order(symbol="NEWUSDT"):
     from decimal import Decimal
     from domain.entities import Order, OrderSide
