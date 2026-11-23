@@ -384,3 +384,12 @@ isolation, class-name mapping, mode switch. Full suite 1,400 passed.
 **Grade (E16).** Contract and correctness: pass. Validity of the fused direction: not supported (inputs
 unvalidated, E18) -> recorded. Validity of the fused regime: inherits the validated volatility/anomaly
 claims. Grade **B+** (A for regime, B for direction).
+
+**Live verification (2026-11-23, after two deployment fixes).** (1) The live orchestrators resolve the
+module-level `fusion_service` accessor, not the container builder, so the first deployment still ran the
+hierarchical path; the accessor now uses `FUSION_MODE` (default `state`). (2) The second deployment raised
+`'>' not supported between str and float` on ~1,800 signals in 10 minutes: a downstream consumer reads
+`metadata['contributors']` as numeric weights; contributors are now `{watcher: confidence}` and the labels
+moved to `contributor_labels`; the event system now logs the file:line of such errors. Third deployment:
+480 fused signals in the first minutes, 0 errors; bias BUY 79 / NEUTRAL 125 / SELL 36; regime `normal` and
+`ranging` (volatility compression) appear; execution intents continue as before (333).
