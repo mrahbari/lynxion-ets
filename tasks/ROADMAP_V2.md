@@ -227,8 +227,8 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E15-W3 | FundingRate watcher | P1 fixed: per-period rate vs per-8h thresholds (4h contracts) -> 8h-normalised; 'normal' today is correct (calm market) | DONE |
 | E15-W4 | MarketPulse watcher | P1 fixed: 33 % 'strong' labels on random walks -> vol-scaled 15m z-score + Wilder RSI (5 % null) | DONE |
 | E15-W5 | Liquidity watcher | does its job; P2: absolute depth scale saturates (not relative to order size); role/engine mapping issues -> F1/G1 | DONE |
-| E15-W6 | OrderFlowWS watcher (no trade feed: never emits) | review | IN PROGRESS |
-| E15-W7 | HistoricalCandle watcher | review | TODO |
+| E15-W6 | OrderFlowWS watcher (no trade feed: never emits) | P1 fixed: public trades now fed (reuses the E14 fetch); P2: 100-trade window, unscaled thresholds | DONE |
+| E15-W7 | HistoricalCandle watcher | review | IN PROGRESS |
 | E15-W8 | AnomalyML watcher | review | TODO |
 | E15-W9 | Not live: CMC screener (off), Tick watcher: keep / retire | review | TODO |
 | E15-F1 | Fusion: input (one signal per call), weighting, direction rule, output contract vs strategies | review | TODO |

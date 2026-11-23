@@ -378,8 +378,33 @@ class MonitoringAnalysisService:
             obi = orderflow_snapshot.book_imbalance(book.get('bids') or [], book.get('asks') or [])
             cvd = orderflow_snapshot.trade_delta(trades, now_ms=int(now * 1000))
             orderflow_snapshot.record(symbol_str, obi, cvd, ts=now)
+            self._feed_trades(symbol_str, trades)
         except Exception as e:
             self.logger.debug(f"Order-flow snapshot failed for {symbol_str}: {e}")
+
+    def _feed_trades(self, symbol_str: str, trades) -> int:
+        """Give order-flow watchers (OrderFlowWS) the public trades they were designed for (E15-W6):
+        only trades newer than the last fed one, oldest first, as {price, quantity, side}. BingX
+        isBuyerMaker=True means the seller was the aggressor."""
+        flow_watchers = [w for w in self.watchers.get(symbol_str, {}).values()
+                         if hasattr(w, 'order_flow_imbalance_history')]
+        if not flow_watchers or not trades:
+            return 0
+        if not hasattr(self, '_last_trade_ms'):
+            self._last_trade_ms = {}
+        last = self._last_trade_ms.get(symbol_str, 0)
+        fresh = sorted((t for t in trades if int(t.get('time', 0)) > last), key=lambda t: int(t.get('time', 0)))
+        if not fresh:
+            return 0
+        payload = {'trades': [{'price': float(t['price']), 'quantity': float(t['qty']),
+                               'side': 'sell' if t.get('isBuyerMaker') else 'buy'} for t in fresh]}
+        for w in flow_watchers:
+            try:
+                w.update_data(payload)
+            except Exception as e:
+                self.logger.warning(f"Error updating order-flow watcher with trades for {symbol_str}: {e}")
+        self._last_trade_ms[symbol_str] = int(fresh[-1].get('time', 0))
+        return len(fresh)
 
     _FUNDING_TTL_S = 600.0
     _BOOK_TTL_S = 60.0

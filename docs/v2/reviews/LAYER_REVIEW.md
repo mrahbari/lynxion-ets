@@ -210,3 +210,29 @@ liquid (E6: >= 5 M USDT median daily volume).
 | W5-3 | note | Fusion's classifier gives it `WatcherRole.DIRECTION` (should be execution/regime) -> F1. Engine maps `liquidity_normal` (value 0) to HOLD and `high` to NEUTRAL -> G1. |
 
 **Verdict: does its job** (correct measurement; low information inside an already-liquid universe). No P1.
+
+---
+
+## E15-W6 — OrderFlowWS watcher (`infrastructure/watchers/adapters/orderflow_ws.py`) — 2026-11-23
+
+**Role.** Trade-flow pressure: imbalance of aggressive buy vs sell volume over the last trades
+(`order_flow_buy_pressure / moderate_buy / neutral / moderate_sell / sell_pressure`).
+
+**Defect (P1, fixed in the feed; watcher code untouched).** It was never given trades (W0-3): every one
+of its ~5,000 checks today ended "No Observation Generated". The monitoring loop already fetches BingX
+public trades every 60 s for the E14 order-flow snapshot; `_feed_trades` now passes only trades newer
+than the last fed one, oldest first, as `{price, quantity, side}` (BingX `isBuyerMaker=True` = aggressive
+sell). No extra API calls. Test: imbalance (3 - 1)/4 = 0.5 after two trades; repeated trades not re-fed.
+
+**Logic.** imbalance = (buy - sell) / (buy + sell) base volume over the last 100 trades; |x| < 0.1 neutral,
+0.1-0.3 moderate, > 0.3 pressure. Standard volume-delta ratio; correct.
+
+**Other findings.**
+| # | Sev | Finding |
+|---|---|---|
+| W6-1 | P1 | No trade feed (fixed above). |
+| W6-2 | P2 | Window is "last 100 trades": seconds on BTC, possibly hours on thin names — not time-consistent. A fixed time window (as in the E14 snapshot, 5 min) is standard. |
+| W6-3 | P2 | Thresholds are not scaled to normal imbalance noise. E17: the CVD sign carries no information about the strategies' trade outcomes (no lift on 5/15/60 min windows). |
+| W6-4 | note | It will now emit observations live; how the Engine routes `order_flow_*` is checked in G1. |
+
+**Verdict: does its job after the feed fix** (deployed with the next runner restart).

@@ -139,3 +139,19 @@ def test_market_pulse_flags_a_real_15_minute_move_by_side():
     assert "bullish" in _pulse(up).observation_type
     assert "bearish" in _pulse(down).observation_type
     assert _pulse(base[:40]) is None                                         # warm-up: 61 closes needed
+
+
+def test_orderflow_watcher_receives_new_public_trades_once():
+    from infrastructure.watchers.adapters.orderflow_ws import OrderFlowWSWatcher
+    from infrastructure.watchers.monitoring_analysis_service import MonitoringAnalysisService
+    svc = object.__new__(MonitoringAnalysisService)
+    import logging
+    svc.logger = logging.getLogger("t")
+    w = OrderFlowWSWatcher("orderflow_ws", "BTCUSDT")
+    svc.watchers = {"BTCUSDT": {"orderflow_ws": w}}
+    trades = [{"time": 1, "price": "100", "qty": "3", "isBuyerMaker": False},
+              {"time": 2, "price": "100", "qty": "1", "isBuyerMaker": True}]
+    assert svc._feed_trades("BTCUSDT", trades) == 2
+    assert svc._feed_trades("BTCUSDT", trades) == 0                  # already fed
+    assert w.order_flow_imbalance_history[-1] == pytest.approx(0.5)  # (3 - 1) / 4
+    assert w.analyze(w.symbol) is not None
