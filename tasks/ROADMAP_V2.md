@@ -183,6 +183,14 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | **E11** | **Ops hygiene** | | |
 | E11-1 | VST empty-list blips in exposure checks and `get_position` duplicate guard | tests | TODO |
 | E11-2 | Push branch `claude/edge-v2` (operator GitHub sign-in) | pushed | GATED on operator |
+| E11-3 | Telegram trade messages name the real deciding component (strategy setup), not Fusion/Engine numbers that do not affect the trade | message text + test | TODO |
+| E11-4 | Signal-to-order latency measured from live logs (candidate -> order sent) | p50/p95 in report | TODO |
+| E11-5 | Observe the closure debounce and the same-side cap on real events | log evidence | TODO (passive) |
+| E11-6 | Old backup copies in `data/approved-symbols/` (14 files): delete or keep | operator decision | GATED on operator |
+| **E12** | **Live validation and go/no-go (VST until ~2026-12-22)** | | |
+| E12-1 | Single-symbol strategies: live vs E9 backtest parity per strategy (stop R, TP R, duration, slippage, fees) | weekly report | TODO |
+| E12-2 | XS-COMBO: live vs model tracking (= E5-3) | weekly report | IN PROGRESS |
+| E12-3 | Final report + real-capital go/no-go package (sizing, limits, kill switch) | report; decision by operator (E5-4) | TODO (~2026-12-20) |
 
 ## Backlog (deferred, not scheduled)
 - **Maker (post-only limit) entries** (now scheduled as E8). Entries are always MARKET today; the pipeline already computes a maker
