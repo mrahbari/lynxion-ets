@@ -186,3 +186,27 @@ The old tree is kept as `_analyze_impl_legacy` until the E10 cleanup.
 | W4-4 | note | Expect far fewer BUY/SELL pulse signals live; effect on strategy triggering checked in G1. |
 
 **Verdict: does its job after the fix** (deployed with the next runner restart).
+
+---
+
+## E15-W5 — Liquidity watcher (`infrastructure/watchers/adapters/liquidity.py`) — 2026-11-23
+
+**Role.** Execution context: is the order book of this symbol liquid enough right now (spread, depth).
+Not directional.
+
+**Inputs.** BingX production top-20 order book every 60 s (W0). **Logic.** spread = (ask - bid)/bid;
+depth = top-5 bid+ask notional, scored log1p(depth/10,000)/5 capped at 1; score = 0.4 x (1 - 100 x spread)
++ 0.6 x depth; < 0.3 low, > 0.7 high. Arithmetic checked; correct.
+
+**Live evidence.** high 12,560 / normal 2,826 / none yet 3,708 (before the first book). "normal" only on
+the thinner books (OKB, XAUT, BNB, HYPE, PIEVERSE, CRO ...); "low" never — the universe is already
+liquid (E6: >= 5 M USDT median daily volume).
+
+**Findings.**
+| # | Sev | Finding |
+|---|---|---|
+| W5-1 | P2 | Depth is scored on an absolute dollar scale that saturates around 1.5 M of top-5 depth; the standard question is depth relative to the intended order (our orders ~200 USDT: every listed book absorbs them). A slippage-for-order-size estimate would make it informative. |
+| W5-2 | P2 | Production book, not VST's (W0-5). |
+| W5-3 | note | Fusion's classifier gives it `WatcherRole.DIRECTION` (should be execution/regime) -> F1. Engine maps `liquidity_normal` (value 0) to HOLD and `high` to NEUTRAL -> G1. |
+
+**Verdict: does its job** (correct measurement; low information inside an already-liquid universe). No P1.
