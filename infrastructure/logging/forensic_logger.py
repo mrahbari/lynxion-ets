@@ -47,7 +47,9 @@ class ForensicLogger(_ForensicObservationLoggingMixin, _ForensicDecisionLoggingM
         log_dir.mkdir(parents=True, exist_ok=True)
 
         # Create file handler for forensic logs
-        self.file_handler = logging.FileHandler(log_file)
+        # Size-bounded (was unbounded: 6.7 GB on 2026-11-23). 200 MB x 3 backups.
+        from logging.handlers import RotatingFileHandler
+        self.file_handler = RotatingFileHandler(log_file, maxBytes=200_000_000, backupCount=3)
         self.file_handler.setLevel(logging.INFO)
 
         # Use JSON formatter for structured logging
@@ -57,7 +59,11 @@ class ForensicLogger(_ForensicObservationLoggingMixin, _ForensicDecisionLoggingM
         # Create logger
         self.logger = logging.getLogger("EnhancedForensicLogger")
         self.logger.setLevel(logging.INFO)
-        self.logger.addHandler(self.file_handler)
+        if any(isinstance(h, logging.FileHandler) for h in self.logger.handlers):
+            self.file_handler.close()          # another instance already writes this log: one handler only
+            self.file_handler = next(h for h in self.logger.handlers if isinstance(h, logging.FileHandler))
+        else:
+            self.logger.addHandler(self.file_handler)
 
         # Enhanced logger for human-readable logs
         self.enhanced_logger = EnhancedLogger("EnhancedForensic")

@@ -37,6 +37,9 @@ def get_configured_log_level() -> str:
     return os.environ.get("LOG_LEVEL", "INFO").upper()
 
 
+_SHARED_SYSTEM_HANDLER = None
+
+
 def create_logger(name: str):
     """Create a basic logger with rotating file handler and colored console output."""
     from shared.log_paths import logs_dir, log_path
@@ -83,11 +86,16 @@ def create_logger(name: str):
     # Create the rotating file handler
     # The backupCount specifies how many backup files to keep, but the rotation
     # mechanism can sometimes fail if intermediate files are missing
-    handler = RotatingFileHandler(log_file_path, maxBytes=1_000_000, backupCount=5)
-    handler.setLevel(log_level)
-
+    # One shared handler for every named logger: each logger used to get its own
+    # RotatingFileHandler on the same file, so concurrent rollovers renamed each other's
+    # backups and raised FileNotFoundError on every rotation.
+    global _SHARED_SYSTEM_HANDLER
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
-    handler.setFormatter(formatter)
+    if _SHARED_SYSTEM_HANDLER is None:
+        _SHARED_SYSTEM_HANDLER = RotatingFileHandler(log_file_path, maxBytes=1_000_000, backupCount=5)
+        _SHARED_SYSTEM_HANDLER.setFormatter(formatter)
+    handler = _SHARED_SYSTEM_HANDLER
+    handler.setLevel(min(handler.level or log_level, log_level))
     logger.addHandler(handler)
 
     console = logging.StreamHandler()
