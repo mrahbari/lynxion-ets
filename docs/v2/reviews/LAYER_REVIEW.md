@@ -524,3 +524,20 @@ lines) and run on their design timeframe; six distinct setups:
 implementing its design). Upgrade tasks (E16-U9..): (1) OIFootprint with real OI or retire;
 (2) each setup rebuilt to its canonical definition on standard levels (after U8), tested with E9 on DEV
 then HOLDOUT once; (3) cost-aware design: fewer, wider-stop entries on 1h-4h where costs are < 0.05 R.
+
+---
+
+## E15-X — Execution, risk, reporting (first evaluation) — 2026-11-23
+
+Mostly from evidence gathered during this session (incidents, fixes and probes listed in the roadmap).
+
+| Component | Does its job? | Findings |
+|---|---|---|
+| **X1 DecisionPipeline** (confirmation, optimizer, SL/TP sanitize, confidence) | Partly | OBI/CVD confirmation used fake defaults until E14; now real data in shadow; E17: CVD has no outcome information. Optimizer computes a maker limit price that the orchestrator ignores (market entries; maker attempt E8-2 dropped). Displayed "confidence" is partly a hash of the symbol name and price (E11-3). SL/TP sanitizing and the stop-ROE gate work (tests + live). |
+| **X2 Orchestrator + execution** | Yes, with waste | Sizing, notional cap, duplicate guards, side cap (since b89a661), stop-ROE gate work. **978 of 1,073 journal FAILED records are intents for symbols owned by the XS-COMBO sleeve**, generated every minute and refused at the broker: watchers/strategies should skip sleeve-owned symbols upstream (P2, journal and log noise). Liquidity-depth guard never runs (`fetch_order_book` missing on every broker). Pending-order tracker expires after 30 s (fine for market entries, would break any resting order). Signal-to-order latency not yet measured (E11-4). |
+| **X3 Risk** (APM stops, reconciliation, cooldowns, journal recovery) | Yes | Every live position has an exchange stop (verified on OKB double position, ONDO/XLM recoveries). False "POSITION CLOSED UNKNOWN" from VST empty lists fixed by 2-pass debounce (704c73c); same-symbol A-B-A re-entry fixed (E12). Residual: empty-list blips in exposure checks and the `get_position` duplicate guard (E11-1). |
+| **X4 Telegram / reporting** | Partly | Messages show the synthetic confidence and a "watcher" label that is not the decision maker (E11-3). |
+| **Ops** | Risk | `logs/` is 10.2 GB (forensic.log 6.7 GB) on a disk 93 % full (31 GB free); log rotation raises `FileNotFoundError` on every rollover (pre-existing). P1 for operations: rotate/compress forensic logs. |
+
+**Grade (first evaluation): B-** — protection and safety work; waste (sleeve-owned intents), dead guard,
+synthetic confidence, log growth to fix.

@@ -237,10 +237,10 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E15-G3 | MacroRegimeEngine / regime gate | not in the live path (dead code); live regime = fused regime_context (ranking + intent-queue order only) | DONE |
 | E15-S1..S3 | Live strategies: TrendFollow, VWAPReversal, OIFootprint (each vs its canonical definition) | first evaluation DONE (layer grade D): OIFootprint has no OI data (P1); gross edge ~0 all setups | DONE |
 | E15-S4..S10 | Other strategies: breakout, donchian_breakout, liquidity, mean_reversion, mtf_trend, short_term_reversal, sweep_scalper | first evaluation DONE (6 distinct setups; 3 duplicated pairs) | DONE |
-| E15-X1 | DecisionPipeline (confirmation, optimizer, SL/TP sanitizing, confidence) | review | TODO |
-| E15-X2 | Orchestrator + execution (sizing, guards, order, journal) | review | TODO |
-| E15-X3 | Risk: APM stop management, side cap, cooldowns, reconciliation | review | TODO |
-| E15-X4 | Telegram / reporting (honest attribution) | review | TODO |
+| E15-X1 | DecisionPipeline (confirmation, optimizer, SL/TP sanitizing, confidence) | first evaluation DONE (partly) | DONE |
+| E15-X2 | Orchestrator + execution (sizing, guards, order, journal) | first evaluation DONE: 978/1,073 FAILED journal rows are sleeve-owned symbol intents; dead liquidity guard | DONE |
+| E15-X3 | Risk: APM stop management, side cap, cooldowns, reconciliation | first evaluation DONE: protection works | DONE |
+| E15-X4 | Telegram / reporting (honest attribution) | first evaluation DONE (synthetic confidence shown) | DONE |
 | **E16** | **Architect review: make every component better without losing what works (operator 2026-11-23)** | | |
 | | Pass grade per component (all five): (1) declared contract: role, labels, horizon, claim; (2) correct and causal, unit-tested; (3) null calibration: non-neutral rate on a random walk documented and <= ~10 %; (4) validity: its claim holds on its own target out of sample (pre-registered, DEV then HOLDOUT once); (5) confidence calibrated (reported ~ empirical rate). Grade A = all five with a validated predictive claim; B = correct and calibrated but descriptive only (claim downgraded honestly, confidence = base rate); F = otherwise. Iterate designs on DEV only; HOLDOUT read once per final design. Never remove a working capability: new behaviour behind the same labels/interfaces, old paths kept until E10. | | |
 | E16-W0 | Watcher validity harness: replay historical 1m bars through the live watcher classes exactly as the feed does, collect observations, score contract/null/validity/calibration | `e18_watcher_validity.py`, results `E18_watcher_validity.csv` | DONE |
@@ -257,6 +257,8 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E16-U8 | MarketStructureEngine -> standard volume profile (volume over bar range, lower-TF bars), swing-pivot S/R, ATR-scaled bias; E9 rerun of level-based strategies | E9 rerun | TODO |
 | E16-U9 | OIFootprint: real open-interest input (history + live) or retire | E9 rerun | TODO |
 | E16-U10 | Each setup rebuilt to its canonical definition on standard levels (after U8); cost-aware timeframe/stop design | E9 DEV then HOLDOUT | TODO |
+| E16-U11 | Skip XS-COMBO sleeve-owned symbols upstream (no intents for them) | journal FAILED rate | TODO |
+| E16-U12 | Ops: rotate/compress forensic.log (6.7 GB), fix log-rotation FileNotFoundError; disk 93 % full | logs < 2 GB | TODO |
 | E16-U6 | OrderFlowWS -> time-window order-flow imbalance (OFI, Cont-Kukanov-Stoikov) incl. book changes; claim: OFI -> next-minutes return (needs recorded live trades/book) | recorder + grade | TODO |
 | **E12** | **Live validation and go/no-go (VST until ~2026-12-22)** | | |
 | E12-1 | Single-symbol strategies: live vs E9 backtest parity per strategy (stop R, TP R, duration, slippage, fees) | weekly report | TODO |
