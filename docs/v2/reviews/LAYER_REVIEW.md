@@ -60,3 +60,31 @@ fetches vs 226-372 failed or skipped (BingX "retry later" plus the provider's 30
 30-bar request window backfills missed bars, so their watchers lag by up to ~5 min rather than starve:
 W0-2 downgraded to P2. Revised verdict: the feed does its job for all live watchers except OrderFlowWS
 (W0-3, decided in W6).
+
+---
+
+## E15-W1 — Volatility watcher (`infrastructure/watchers/adapters/volatility.py`) — 2026-11-23
+
+**Role.** Regime, not direction: is the market in volatility expansion, compression or normal right now.
+(Fusion's classifier maps it to `WatcherRole.REGIME`; the Engine reads it as non-directional.)
+
+**Logic.** On each closed 1m bar: realized vol of the last 60 one-minute log returns divided by the std of
+all returns kept (up to 1,440 = 24 h; at least 240 = 4 h before any output). Ratio >= 1.5 -> expansion,
+<= 0.67 -> compression, else normal. Standard definition: realized-volatility ratio (short window vs
+baseline); this is a correct, conventional form. No lookahead (closed bars only).
+
+**Live evidence (all runner logs 2026-11-23).** Outputs: normal 8,866 / compression 3,132 / expansion
+1,348 (66 / 23 / 10 %). All three states are produced; warm-up met at first sight (6 h seed = 360 bars).
+Unit test exists (`tests/unit/test_watcher_logic_review.py::test_volatility_regime_compares_last_hour_with_baseline`).
+
+**Findings.**
+| # | Sev | Finding |
+|---|---|---|
+| W1-1 | P2 | Baseline includes the last hour itself, which pulls the ratio towards 1 (standard: baseline excludes the short window, or EWMA). |
+| W1-2 | P2 | No intraday seasonality: a quiet hour is compared with a 24 h baseline that contains the US session, so compression is over-reported in quiet hours (23 % compression vs 10 % expansion). Standard fix: compare with the same hour of previous days. |
+| W1-3 | P2 | Confidence (0.3 normal; 0.6-0.9 otherwise) is a fixed mapping of the ratio, not a calibrated probability. |
+| W1-4 | P2 | ~110 lines of unreachable legacy code after `return` (old score, regime, ATR); ATR is computed every bar and never used. Cleanup in E10. |
+| W1-5 | note | Observation timestamp is `datetime.now()`, not the bar's close time. |
+| W1-6 | note | Its value to trades is a separate question: as a regime filter on E9 trades it separated nothing (E12). How Fusion/Engine/strategies consume it is reviewed in F1/G1. |
+
+**Verdict: does its job** (phase 1 OK, no P1). Phase-2 list: W1-1..W1-4.

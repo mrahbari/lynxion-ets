@@ -222,8 +222,8 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | **E15** | **Layer-by-layer baseline review (operator 2026-11-23): one component at a time, until every layer does its own job** | | |
 | | Phase 1 = each component does its stated job correctly (role, live inputs, logic vs standard definition, no lookahead, reachable outputs, live output distribution, tests). Phase 2 (after all of phase 1) = fix quality gaps. Findings per component in `docs/v2/reviews/LAYER_REVIEW.md`. A defect that stops a component doing its job at all is fixed in phase 1; everything else is listed for phase 2. | | |
 | E15-W0 | Watcher data feed (MonitoringAnalysisService): which bars/timeframes/funding/book each watcher receives, closed-bar only, freshness | DONE review: does its job; venue gap measured 0.2-3.9 bp (no switch); BingX-only symbols lag up to 5 min (P2); no trade feed (W6) | DONE |
-| E15-W1 | Volatility watcher | review | TODO |
-| E15-W2 | TrendMTF watcher | review | TODO |
+| E15-W1 | Volatility watcher | does its job; P2: baseline overlap, no intraday seasonality, uncalibrated confidence, dead code | DONE |
+| E15-W2 | TrendMTF watcher | review | IN PROGRESS |
 | E15-W3 | FundingRate watcher | review | TODO |
 | E15-W4 | MarketPulse watcher | review | TODO |
 | E15-W5 | Liquidity watcher | review | TODO |
