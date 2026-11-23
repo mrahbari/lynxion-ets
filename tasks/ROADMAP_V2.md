@@ -183,7 +183,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | **E11** | **Ops hygiene** | | |
 | E11-1 | VST empty-list blips in exposure checks and `get_position` duplicate guard | tests | TODO |
 | E11-2 | Push branch `claude/edge-v2` (operator GitHub sign-in) | pushed | GATED on operator |
-| E11-3 | Telegram trade messages name the real deciding component (strategy setup), not Fusion/Engine numbers that do not affect the trade | message text + test | TODO |
+| E11-3 | Telegram trade messages name the real deciding component (strategy setup), not Fusion/Engine numbers that do not affect the trade. Note: `calculate_dynamic_metrics` (decision_pipeline.py) builds the displayed confidence partly from a hash of the symbol name and price, i.e. not a probability | message text + test | TODO |
 | E11-4 | Signal-to-order latency measured from live logs (candidate -> order sent) | p50/p95 in report | TODO |
 | E11-5 | Observe the closure debounce and the same-side cap on real events | log evidence | TODO (passive) |
 | E11-6 | Old backup copies in `data/approved-symbols/` (14 files): delete or keep | operator decision | GATED on operator |
@@ -193,8 +193,8 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E13-3 | OI / long-short ratio metrics for the liquid subset (= E3-4) as a cross-sectional factor | report | TODO |
 | E13-4 | Listing-age and regime conditioning (= E2-5, E2-6) | report | TODO |
 | **E14** | **OBI/CVD confirmation: real data, then fail-closed (operator approved 2026-11-23, incl. OrderFlowWS change)** | | |
-| E14-1 | Wire real order-flow into `DecisionPipeline.process_execution_intent` (today `latest_bar` never carries `obi_ratio`/`cvd`, defaults always pass): OrderFlowWS trade-flow imbalance (buy-sell)/total as CVD; OBI from the order book (BingX depth) if available | values present on every live intent, with timestamp | TODO |
-| E14-2 | Shadow mode first: log per intent the confirmation verdict with real values, do not block; Telegram/journal unchanged | >= 1 week of verdicts vs trade outcomes | TODO |
+| E14-1 | Wire real order-flow into `DecisionPipeline.process_execution_intent` (today `latest_bar` never carries `obi_ratio`/`cvd`, defaults always pass): OrderFlowWS trade-flow imbalance (buy-sell)/total as CVD; OBI from the order book (BingX depth) if available | values present on every live intent, with timestamp | DONE (8f82cd8): `infrastructure/execution/orderflow_snapshot.py`, BingX depth top-20 + 5 min public trades, 60 s TTL |
+| E14-2 | Shadow mode first: log per intent the confirmation verdict with real values, do not block; Telegram/journal unchanged | >= 1 week of verdicts vs trade outcomes | IN PROGRESS (live since 2026-11-23 17:32 UTC, log tag `ORDERFLOW_SHADOW`) |
 | E14-3 | Fail-closed behind a flag: missing or stale (> N s) OBI/CVD -> no entry, logged with reason. Enable only after E14-2 shows coverage ~100 % and the confirmation does not cut winners (and E13-1 offline result) | unit tests; flag on in VST | GATED on E14-2 |
 | **E12** | **Live validation and go/no-go (VST until ~2026-12-22)** | | |
 | E12-1 | Single-symbol strategies: live vs E9 backtest parity per strategy (stop R, TP R, duration, slippage, fees) | weekly report | TODO |
