@@ -1,0 +1,17 @@
+model,strategy,base_n,base_mean_R,sel_n,sel_mean_R,sel_PF
+logit,breakout,1382,-0.124,282,-0.271,0.63
+logit,liquidity,1634,-0.12,1107,-0.113,0.83
+logit,mean_reversion,1036,-0.014,552,-0.058,0.91
+logit,mtf_trend,1329,-0.035,518,-0.059,0.91
+logit,oi_footprint,1949,-0.103,838,-0.017,0.97
+logit,trend_following,740,-0.016,401,-0.09,0.86
+logit,volatility_breakout,510,-0.067,432,-0.054,0.91
+logit,vwap_reversal,4008,-0.121,2175,-0.133,0.8
+gbm,breakout,1382,-0.124,1368,-0.129,0.81
+gbm,liquidity,1634,-0.12,1628,-0.118,0.82
+gbm,mean_reversion,1036,-0.014,1030,-0.016,0.97
+gbm,mtf_trend,1329,-0.035,1309,-0.045,0.93
+gbm,oi_footprint,1949,-0.103,1940,-0.106,0.84
+gbm,trend_following,740,-0.016,722,-0.026,0.96
+gbm,volatility_breakout,510,-0.067,501,-0.07,0.89
+gbm,vwap_reversal,4008,-0.121,3985,-0.119,0.82

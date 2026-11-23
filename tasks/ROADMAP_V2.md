@@ -167,10 +167,10 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E6-2 | Verify first scheduled sync run + platform picks up the list without restart | log line + validator count | TODO (2026-11-24) |
 | E6-3 | Threshold review after ~2 weeks of trades (per-band SL slippage, mean R) | report | TODO (~2026-12-07) |
 | **E7** | **Meta-labeling (Lopez de Prado) as the standard Fusion/Engine** | | |
-| E7-1 | Literature review: meta-labeling, signal fusion, calibration, purged/embargoed CV | `docs/v2/reports/E14_meta_labeling_review_*.md` | IN PROGRESS |
-| E7-2 | Pre-register E14: features = all watcher states per symbol at entry, model learned on DEV only, rule fixed before results | rule in script docstring | TODO |
-| E7-3 | Run E14 on E9 trades (DEV 2025-11-01..2026-06-30, holdout 2026-07-01..10-31) | CSV + report | TODO |
-| E7-4 | Decision: PASS -> refactor Fusion/Engine into the meta-label filter (same interfaces); FAIL -> keep interfaces, bypass in decision path | operator informed | TODO |
+| E7-1 | Literature review: meta-labeling, signal fusion, calibration, purged/embargoed CV | `docs/v2/reports/E14_meta_labeling_2026-11-23.md` §1 | DONE |
+| E7-2 | Pre-register E14: features = all watcher states per symbol at entry, model learned on DEV only, rule fixed before results | rule in script docstring, committed a54c372 before run | DONE |
+| E7-3 | Run E14 on E9 trades (DEV 2025-11-01..2026-06-30, holdout 2026-07-01..10-31) | FAIL: OOF AUC 0.47-0.50, holdout lift -0.01 R | DONE |
+| E7-4 | Decision: PASS -> refactor Fusion/Engine into the meta-label filter (same interfaces); FAIL -> keep interfaces, bypass in decision path | FAIL: kept as is, re-open when an input has AUC >= 0.55 | DONE |
 | **E8** | **Execution cost: maker (limit) entries** | | |
 | E8-1 | Offline: fill rate / adverse selection of a post-only entry at signal price on E9 trades (1m data) | report: R gain net of missed winners | TODO |
 | E8-2 | If E8-1 positive: resting-order lifecycle (timeout cancel, partial fill + SL, exposure count) behind a flag | unit tests + VST trial | GATED on E8-1 |
