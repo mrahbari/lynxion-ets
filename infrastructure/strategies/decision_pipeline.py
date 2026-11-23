@@ -17,6 +17,7 @@ from infrastructure.execution.execution_optimizer import ExecutionOptimizer
 from infrastructure.execution import orderflow_snapshot
 
 _log = logging.getLogger("OrderFlowConfirmation")
+_log.setLevel(logging.INFO)  # root logger is WARNING; these audit lines must reach the runner log
 
 
 def calculate_dynamic_metrics(setup, struct=None, data_buffer=None):

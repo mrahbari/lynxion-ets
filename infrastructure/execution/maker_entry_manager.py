@@ -21,6 +21,7 @@ import time
 from typing import Any, Callable, Dict, Optional, Tuple
 
 _log = logging.getLogger("MakerEntry")
+_log.setLevel(logging.INFO)  # root logger is WARNING; these audit lines must reach the runner log
 DONE = {"FILLED"}
 DEAD = {"CANCELED", "CANCELLED", "EXPIRED", "REJECTED", "FAILED"}
 
