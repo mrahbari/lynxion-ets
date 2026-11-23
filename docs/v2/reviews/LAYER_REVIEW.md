@@ -541,3 +541,15 @@ Mostly from evidence gathered during this session (incidents, fixes and probes l
 
 **Grade (first evaluation): B-** — protection and safety work; waste (sleeve-owned intents), dead guard,
 synthetic confidence, log growth to fix.
+
+**G3 cleanup decision (2026-11-23).** Useful ideas found and carried into the TrendMTF upgrade (E16-U1),
+re-implemented to the standard definitions: Choppiness Index (here computed from close-to-close moves
+instead of true range — non-standard), trend consistency across sub-windows, and regime smoothing
+(hysteresis against flip-flopping). Removed: `advanced_regime_classifier.py` (595 lines, no importer
+anywhere, duplicate of `_regime_classifiers.py`). Kept: `RegimeType`, `regime_detector`,
+`MacroRegimeEngine` (imported by the risk manager, backtests, application services and tests; not in the
+live decision path). **Found while checking:** live position sizing passes the fused `regime_context` to
+`EnterpriseRiskManager.calculate_position_size`, whose untested multipliers would have raised risk 1.2x
+for `ranging` (a label that only exists since F1). The multiplier is now capped at 1.0 (regime may
+reduce, never raise risk); in practice every live order is set by the 201 USDT notional cap (sizing audit:
+pre-cap sizes 89-14,000 units), so no order size changed. Test: `test_regime_risk_multiplier_cap.py`.

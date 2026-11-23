@@ -183,8 +183,10 @@ class EnterpriseRiskManager:
         risk_pct = risk_percentage or self.max_risk_per_trade
 
         # Apply regime-based risk multiplier if regime context is provided
+        # Regime may only REDUCE risk (multiplier capped at 1.0): the multipliers are untested, and
+        # since E15-F1 the fused regime is live ('ranging' would otherwise raise risk by 1.2x).
         if regime_context and regime_context in self.regime_risk_multipliers:
-            risk_pct *= self.regime_risk_multipliers[regime_context]
+            risk_pct *= min(1.0, float(self.regime_risk_multipliers[regime_context]))
 
         # Apply drawdown factor to reduce risk during drawdown periods
         risk_pct *= drawdown_factor
