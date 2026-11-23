@@ -37,7 +37,7 @@ def test_fuses_state_of_several_watchers_not_only_the_triggering_one(fx):
     f.update(sig("trend_mtf", "trend_positive", 0.6))
     out = f.update(sig("market_pulse", "market_pulse_bullish_strong", 0.7))
     assert out.dominant_bias is SignalType.BUY and out.direction == pytest.approx(1.0)
-    assert set(out.metadata["contributors"]) == {"trend_mtf", "market_pulse"}
+    assert set(out.metadata["contributor_labels"]) == {"trend_mtf", "market_pulse"}
     assert out.regime_context == "bullish_trending"
 
 
@@ -55,7 +55,7 @@ def test_stale_state_expires(fx):
     f.update(sig("trend_mtf", "trend_positive", 0.6))
     c.t += 301
     out = f.update(sig("volatility", "volatility_normal", 0.3))
-    assert "trend_mtf" not in out.metadata["contributors"] and out.dominant_bias is SignalType.NEUTRAL
+    assert "trend_mtf" not in out.metadata["contributor_labels"] and out.dominant_bias is SignalType.NEUTRAL
 
 
 def test_liquidity_is_execution_not_direction_and_contract_role_wins(fx):
@@ -79,9 +79,9 @@ def test_symbols_are_independent_and_class_names_are_mapped(fx):
     f, _ = fx
     f.update(sig("TrendMTFWatcher", "trend_positive", 0.6, sym="ETHUSDT"))
     out = f.update(sig("volatility", "volatility_normal", 0.3, sym="BTCUSDT"))
-    assert "trend_mtf" not in out.metadata["contributors"]
+    assert "trend_mtf" not in out.metadata["contributor_labels"]
     out = f.update(sig("volatility", "volatility_normal", 0.3, sym="ETHUSDT"))
-    assert "trend_mtf" in out.metadata["contributors"]
+    assert "trend_mtf" in out.metadata["contributor_labels"]
 
 
 def test_fusion_service_mode_switch(monkeypatch):
@@ -91,3 +91,9 @@ def test_fusion_service_mode_switch(monkeypatch):
     monkeypatch.delenv("FUSION_MODE", raising=False)
     out = FusionService().fuse_signals([sig("volatility", "volatility_expansion", 0.85, sym="SOLUSDT")])
     assert out is None or not (out.metadata or {}).get("state_fusion")
+
+
+def test_contributors_stay_numeric_for_the_forensic_contract(fx):
+    f, _ = fx
+    out = f.update(sig("volatility", "volatility_expansion", 0.85))
+    assert all(isinstance(v, float) for v in out.metadata["contributors"].values())

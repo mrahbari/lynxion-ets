@@ -115,7 +115,8 @@ class SymbolStateFusion:
             timestamp=getattr(signal, 'timestamp', None) or __import__('datetime').datetime.now(),
             metadata={
                 'state_fusion': True,
-                'contributors': {w: e['label'] for w, e in fresh.items()},
+                'contributors': {w: round(e['conf'], 4) for w, e in fresh.items()},   # forensic contract: weights
+                'contributor_labels': {w: e['label'] for w, e in fresh.items()},
                 'roles': {w: e['role'] for w, e in fresh.items()},
                 'direction_voters': {w: _side(e['label']) for w, e in voters.items()},
                 'validated_direction': False,

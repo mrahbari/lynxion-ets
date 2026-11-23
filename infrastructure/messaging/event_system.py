@@ -287,7 +287,10 @@ class SignalProcessor:
                     self.logger.info(f"Published fused signal: {fused_signal.dominant_bias.value} for {fused_signal.symbol.value}")
         except Exception as e:
             if self.logger:
-                self.logger.error(f"Error processing interpreted signal: {e}")
+                import traceback as _tb
+                where = _tb.extract_tb(e.__traceback__)[-1] if e.__traceback__ else None
+                at = f" at {where.filename.rsplit('/', 1)[-1]}:{where.lineno}" if where else ""
+                self.logger.error(f"Error processing interpreted signal: {e}{at}")
 
     def _process_fused_signal(self, event: SignalEvent, strategy_manager):
         """Process fused signal through strategy layer"""
