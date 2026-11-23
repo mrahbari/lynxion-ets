@@ -241,6 +241,12 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E15-X2 | Orchestrator + execution (sizing, guards, order, journal) | review | TODO |
 | E15-X3 | Risk: APM stop management, side cap, cooldowns, reconciliation | review | TODO |
 | E15-X4 | Telegram / reporting (honest attribution) | review | TODO |
+| **E16** | **Architect review: make every component better without losing what works (operator 2026-11-23)** | | |
+| | Pass grade per component (all five): (1) declared contract: role, labels, horizon, claim; (2) correct and causal, unit-tested; (3) null calibration: non-neutral rate on a random walk documented and <= ~10 %; (4) validity: its claim holds on its own target out of sample (pre-registered, DEV then HOLDOUT once); (5) confidence calibrated (reported ~ empirical rate). Grade A = all five with a validated predictive claim; B = correct and calibrated but descriptive only (claim downgraded honestly, confidence = base rate); F = otherwise. Iterate designs on DEV only; HOLDOUT read once per final design. Never remove a working capability: new behaviour behind the same labels/interfaces, old paths kept until E10. | | |
+| E16-W0 | Watcher validity harness: replay historical 1m bars through the live watcher classes exactly as the feed does, collect observations, score contract/null/validity/calibration | harness + tests | IN PROGRESS |
+| E16-W1..W8 | Grade and improve each watcher (Volatility, TrendMTF, FundingRate, MarketPulse, Liquidity, OrderFlowWS, HistoricalCandle, AnomalyML) until A or B | grade per watcher | TODO |
+| E16-WB | Watcher base design: contract attributes, as-of bar time and warm-up flag in metadata, calibrated confidence hook (non-breaking) | tests | TODO |
+| E16-F/G/S/X | Same method for Fusion, Engines, Strategies, Execution/Risk after E15 phase 1 of each layer | grades | TODO |
 | **E12** | **Live validation and go/no-go (VST until ~2026-12-22)** | | |
 | E12-1 | Single-symbol strategies: live vs E9 backtest parity per strategy (stop R, TP R, duration, slippage, fees) | weekly report | TODO |
 | E12-2 | XS-COMBO: live vs model tracking (= E5-3) | weekly report | IN PROGRESS |
