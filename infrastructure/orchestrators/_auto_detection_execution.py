@@ -408,12 +408,22 @@ class _AutoDetectionExecutionMixin:
 
             # Create order with risk parameters from the execution intent (set by Strategy layer)
             # The Strategy layer should have already calculated all risk parameters including SL/TP
+            # E8-2: ENTRY_ORDER_MODE=maker -> post-only limit at the best bid/ask, managed by
+            # maker_entry_manager (timeout cancel + market fallback). Default: MARKET as before.
+            from infrastructure.execution.maker_entry_manager import maker_mode, best_quotes
+            entry_type, entry_tif, entry_px = "MARKET", "GTC", current_price
+            if maker_mode():
+                quotes = best_quotes(symbol_value)
+                if quotes:
+                    entry_type, entry_tif = "LIMIT", "POST_ONLY"
+                    entry_px = quotes[0] if order_side.name == 'BUY' else quotes[1]
             order = Order(
                 symbol=symbol_value,  # Use string value instead of Symbol object
                 side=order_side,
-                order_type="MARKET",  # Using string instead of enum
+                order_type=entry_type,  # MARKET, or LIMIT POST_ONLY in maker mode
+                time_in_force=entry_tif,
                 quantity=quantity,
-                price=Money(amount=float(current_price), currency='USDT') if current_price else None,
+                price=Money(amount=float(entry_px), currency='USDT') if entry_px else None,
                 strategy_name=execution_intent.strategy_name,  # Strategy name comes from intent
                 timestamp=self._execution_now(),
                 position_side=position_side,  # Add position side for futures trading
@@ -487,6 +497,9 @@ class _AutoDetectionExecutionMixin:
             # If execution_id is valid, continue with successful execution
             # Remove from pending intents after successful execution
             self._remove_pending_execution_intent(execution_intent)
+            if entry_type == "LIMIT":
+                from infrastructure.execution.maker_entry_manager import maker_entry_manager
+                maker_entry_manager.register(self.execution_service, order, str(execution_id))
 
             # Log successful execution
             confidence = float(execution_intent.intent_confidence.value) if hasattr(execution_intent.intent_confidence, 'value') else 0.5
