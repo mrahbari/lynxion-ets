@@ -156,9 +156,6 @@ class TickWatcherAdapter(BaseWatcher):
 
         return observation
 
-    def analyze(self, symbol: Symbol) -> MarketObservation:
-        """Analyze market conditions and return a raw market observation"""
-        return self._analyze_impl(symbol)
 
     def _calculate_tick_intensity(self) -> float:
         """Calculate tick intensity (ticks per unit time)"""

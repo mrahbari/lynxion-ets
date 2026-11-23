@@ -10,6 +10,10 @@ from decimal import Decimal
 class OrderFlowWSWatcher(BaseWatcher):
     """Order Flow Watcher - analyzes order flow data from WebSocket streams, returns raw market observations"""
 
+    ROLE = "direction"
+    HORIZON = "minutes"
+    CLAIM = "aggressive buy/sell imbalance of recent trades"
+
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 100, watcher_config=None):
         # Convert symbol string to Symbol object if needed
         symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
@@ -154,9 +158,6 @@ class OrderFlowWSWatcher(BaseWatcher):
 
         return observation
 
-    def analyze(self, symbol: Symbol) -> MarketObservation:
-        """Analyze market conditions and return a raw market observation"""
-        return self._analyze_impl(symbol)
 
     def _calculate_order_flow_metrics(self):
         """Calculate order flow metrics from trade and order book data"""

@@ -12,6 +12,10 @@ from infrastructure.logging.forensic_logger import forensic_logger
 class AnomalyMLWatcher(BaseWatcher):
     """ML-based Anomaly Detection Watcher - detects unusual market patterns, returns raw market observations"""
 
+    ROLE = "regime"
+    HORIZON = "15m"
+    CLAIM = "anomaly_*: an outlier 1m bar marks abnormal activity in the next 15 minutes"
+
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 50,
                  contamination: float = 0.1, watcher_config=None):
         # Convert symbol string to Symbol object if needed
@@ -241,9 +245,6 @@ class AnomalyMLWatcher(BaseWatcher):
 
         return observation
 
-    def analyze(self, symbol: Symbol) -> MarketObservation:
-        """Analyze market conditions and return a raw market observation"""
-        return self._analyze_impl(symbol)
 
     def calculate_features(self) -> List[float]:
         """Calculate features for anomaly detection with enhanced momentum spike detection"""

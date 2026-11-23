@@ -10,6 +10,10 @@ from decimal import Decimal
 class MarketPulseWatcher(BaseWatcher):
     """Market PulseWatcher - analyzes market sentiment and momentum, returns raw market observations"""
 
+    ROLE = "direction"
+    HORIZON = "15m"
+    CLAIM = "*_strong: a significant 15m move continues; *_caution: the move is exhausted"
+
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 15, watcher_config=None):  # Reduced for more responsive signals
         # Convert symbol string to Symbol object if needed
         symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
@@ -165,9 +169,6 @@ class MarketPulseWatcher(BaseWatcher):
 
         return observation
 
-    def analyze(self, symbol: Symbol) -> MarketObservation:
-        """Analyze market conditions and return a raw market observation"""
-        return self._analyze_impl(symbol)
 
     def _generate_basic_pulse_observation(self, symbol: Symbol) -> MarketObservation:
         """Generate a basic pulse observation when we have limited data"""

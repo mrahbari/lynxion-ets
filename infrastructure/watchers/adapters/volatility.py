@@ -10,6 +10,10 @@ from decimal import Decimal
 class VolatilityWatcher(BaseWatcher):
     """Volatility Watcher - analyzes market volatility patterns, returns raw market observations"""
 
+    ROLE = "regime"
+    HORIZON = "1h"
+    CLAIM = "expansion/compression: realized volatility of the coming hour is above/below normal"
+
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 20, period: int = 14, watcher_config=None):
         # Convert symbol string to Symbol object if needed
         symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
@@ -171,9 +175,6 @@ class VolatilityWatcher(BaseWatcher):
 
         return observation
 
-    def analyze(self, symbol: Symbol) -> MarketObservation:
-        """Analyze market conditions and return a raw market observation"""
-        return self._analyze_impl(symbol)
 
     def calculate_volatility_score(self) -> float:
         """Calculate a normalized volatility score"""

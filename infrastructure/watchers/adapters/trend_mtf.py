@@ -25,6 +25,10 @@ class TrendMTFWatcher(BaseWatcher):
       * "auto" (default) — "mtf" as soon as a timestamped candle arrives, "legacy" for close-only feeds.
     """
 
+    ROLE = "direction"
+    HORIZON = "4h"
+    CLAIM = "trend_positive/negative: a drift aligned on 15m, 1h and 4h continues"
+
     MTF_TIMEFRAMES = (900, 3600, 14400)   # 15m, 1h, 4h in seconds
     MTF_LOOKBACK = 20
     # |drift t| per timeframe; 1.0 makes the 3-timeframe joint rule fire on 5 % of random walks
@@ -319,9 +323,6 @@ class TrendMTFWatcher(BaseWatcher):
 
         return observation
 
-    def analyze(self, symbol: Symbol) -> MarketObservation:
-        """Analyze market conditions and return a raw market observation"""
-        return self._analyze_impl(symbol)
 
     def calculate_trend(self, prices):
         """Calculate trend direction and strength using linear regression"""

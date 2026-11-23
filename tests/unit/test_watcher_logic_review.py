@@ -155,3 +155,23 @@ def test_orderflow_watcher_receives_new_public_trades_once():
     assert svc._feed_trades("BTCUSDT", trades) == 0                  # already fed
     assert w.order_flow_imbalance_history[-1] == pytest.approx(0.5)  # (3 - 1) / 4
     assert w.analyze(w.symbol) is not None
+
+
+def test_every_live_watcher_declares_a_contract_and_stamps_it():
+    from infrastructure.watchers.adapters.volatility import VolatilityWatcher
+    from infrastructure.watchers.adapters.trend_mtf import TrendMTFWatcher
+    from infrastructure.watchers.adapters.funding_rate import FundingRateWatcher
+    from infrastructure.watchers.adapters.market_pulse import MarketPulseWatcher
+    from infrastructure.watchers.adapters.liquidity import LiquidityWatcher
+    from infrastructure.watchers.adapters.orderflow_ws import OrderFlowWSWatcher
+    from infrastructure.watchers.adapters.historical_candle import HistoricalCandleWatcherAdapter
+    from infrastructure.watchers.adapters.anomaly_ml import AnomalyMLWatcher
+    for cls in (VolatilityWatcher, TrendMTFWatcher, FundingRateWatcher, MarketPulseWatcher, LiquidityWatcher,
+                OrderFlowWSWatcher, HistoricalCandleWatcherAdapter, AnomalyMLWatcher):
+        assert cls.ROLE in {"regime", "direction", "positioning", "execution"} and cls.HORIZON and cls.CLAIM
+    w = FundingRateWatcher("funding_rate", "BTCUSDT")
+    w._last_bar_close = 1_700_000_060
+    w.update_data({"funding_rate": 0.0001, "funding_interval_hours": 8})
+    obs = w.analyze(w.symbol)
+    assert obs.metadata["contract"]["role"] == "positioning"
+    assert obs.metadata["as_of_bar_close"] == 1_700_000_060

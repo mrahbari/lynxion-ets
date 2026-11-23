@@ -9,6 +9,10 @@ from decimal import Decimal
 class FundingRateWatcher(BaseWatcher):
     """Funding Rate Watcher - analyzes funding rates for perpetual contracts, returns raw market observations"""
 
+    ROLE = "positioning"
+    HORIZON = "8h"
+    CLAIM = "funding (8h basis) above/below thresholds: longs/shorts pay, the crowded side"
+
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 24, watcher_config=None):
         # Convert symbol string to Symbol object if needed
         symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
@@ -138,9 +142,6 @@ class FundingRateWatcher(BaseWatcher):
 
         return observation
 
-    def analyze(self, symbol: Symbol) -> MarketObservation:
-        """Analyze market conditions and return a raw market observation"""
-        return self._analyze_impl(symbol)
 
     def _calculate_funding_rate_volatility(self) -> float:
         """Calculate volatility of funding rates"""

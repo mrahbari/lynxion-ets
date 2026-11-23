@@ -329,6 +329,7 @@ class MonitoringAnalysisService:
             }
             for watcher_name, watcher in self.watchers[symbol_str].items():
                 try:
+                    watcher._last_bar_close = opened + bar_seconds   # as-of time for observations (E16-WB)
                     watcher.update_data(payload)
                 except Exception as e:
                     self.logger.warning(f"Error updating watcher {watcher_name} with bar: {e}")

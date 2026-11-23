@@ -12,6 +12,13 @@ from decimal import Decimal
 class BaseWatcher(ABC):
     """Base class for all watchers - produces only raw market observations, not trading signals"""
 
+    # Declared contract (E16-WB). Subclasses state what they describe; copied into every
+    # observation's metadata['contract'] so Fusion/Engine/strategies and the validity harness
+    # (research/v2/experiments/e18_watcher_validity.py) read the same definition.
+    ROLE: Optional[str] = None       # regime | direction | positioning | execution
+    HORIZON: Optional[str] = None    # time span the label refers to
+    CLAIM: Optional[str] = None      # what the label asserts (tested in E18)
+
     def __init__(self, name: str, symbol: str, broker_service: BrokerManager = None, target_broker: str = None):
         self.name = name
         self.symbol = symbol
@@ -54,6 +61,8 @@ class BaseWatcher(ABC):
         start_time = time.time()
         try:
             observation = self._analyze_impl(symbol)
+            if observation is not None:
+                self._stamp_contract(observation)
             processing_time = time.time() - start_time
 
             # Update performance metrics
@@ -88,6 +97,19 @@ class BaseWatcher(ABC):
             # Log the error
             logger.error(f"Error in watcher {self.name}: {e}")
             raise
+
+    def _stamp_contract(self, observation: MarketObservation) -> None:
+        """Add the declared contract and the close time of the last bar the watcher saw (set by the
+        feed in ``_last_bar_close``, epoch seconds). Never overwrites keys a watcher set itself."""
+        try:
+            if observation.metadata is None:
+                observation.metadata = {}
+            if isinstance(observation.metadata, dict):
+                observation.metadata.setdefault('contract', {'role': self.ROLE, 'horizon': self.HORIZON,
+                                                             'claim': self.CLAIM})
+                observation.metadata.setdefault('as_of_bar_close', getattr(self, '_last_bar_close', None))
+        except Exception:  # metadata stamping must never break an observation
+            pass
 
     @abstractmethod
     def _analyze_impl(self, symbol: Symbol) -> Optional[MarketObservation]:

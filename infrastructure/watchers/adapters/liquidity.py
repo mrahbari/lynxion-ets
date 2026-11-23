@@ -11,6 +11,10 @@ from decimal import Decimal
 class LiquidityWatcher(BaseWatcher):
     """Liquidity Watcher - analyzes market liquidity conditions, returns raw market observations"""
 
+    ROLE = "execution"
+    HORIZON = "now"
+    CLAIM = "spread and top-of-book depth can absorb orders"
+
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 20, watcher_config=None):
         # Convert symbol string to Symbol object if needed
         symbol_obj = Symbol(symbol) if isinstance(symbol, str) else symbol
@@ -148,9 +152,6 @@ class LiquidityWatcher(BaseWatcher):
 
         return observation
 
-    def analyze(self, symbol: Symbol) -> MarketObservation:
-        """Analyze market conditions and return a raw market observation"""
-        return self._analyze_impl(symbol)
 
     def calculate_spread(self) -> float:
         """Calculate bid-ask spread as percentage"""

@@ -10,6 +10,10 @@ from decimal import Decimal
 class HistoricalCandleWatcherAdapter(BaseWatcher):
     """Historical Candle Watcher - analyzes historical candlestick patterns, returns raw market observations"""
 
+    ROLE = "direction"
+    HORIZON = "1h"
+    CLAIM = "candle_reversal_*: a reversal pattern after a 1-ATR move reverses it"
+
     def __init__(self, settings, name: str, symbol: str, broker_service=None, lookback: int = 50):
         # Settings injected by the watcher factory (E1.T4); read the same fields off
         # self._settings instead of importing bootstrap.settings.loaders.
@@ -269,9 +273,6 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
 
         return observation
 
-    def analyze(self, symbol: Symbol) -> MarketObservation:
-        """Analyze market conditions and return a raw market observation"""
-        return self._analyze_impl(symbol)
 
     def _analyze_candlestick_patterns(self):
         """Analyze candlestick patterns in the historical data"""
