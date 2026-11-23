@@ -29,7 +29,7 @@ def trace(bars):
     clock = ReplayClock(START)
     watchers = {symbol: TrendMTFWatcher("TrendMTFWatcher", symbol, clock=clock,
                                         forensic_sink=MemorySink()) for symbol in SYMBOLS}
-    structure = {symbol: MarketStructureEngine() for symbol in SYMBOLS}
+    structure = {symbol: MarketStructureEngine(method="legacy_close") for symbol in SYMBOLS}
     history = {symbol: [] for symbol in SYMBOLS}
     engine = EngineService()
     output = []

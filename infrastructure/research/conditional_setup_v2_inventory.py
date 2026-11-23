@@ -35,7 +35,7 @@ def inventory(bars):
     watchers = {symbol: TrendMTFWatcher("TrendMTFWatcher", symbol, clock=clock,
                                         forensic_sink=sink)
                 for symbol in ("BTCUSDT", "ETHUSDT")}
-    structure = {symbol: MarketStructureEngine() for symbol in watchers}
+    structure = {symbol: MarketStructureEngine(method="legacy_close") for symbol in watchers}
     history = {symbol: [] for symbol in watchers}
     engine = EngineService()
     rows = []

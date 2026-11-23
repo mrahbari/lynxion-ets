@@ -34,9 +34,35 @@ def test_market_structure_calculations_and_invariants():
     result = engine.calculate_market_structure(prices, highs, lows, volumes)
 
     # Check that contract is satisfied
-    assert set(result) == {"bias", "poc", "vah", "val", "support", "resistance"}
+    assert {"bias", "poc", "vah", "val", "support", "resistance"} <= set(result)
     assert result["val"] <= result["poc"] <= result["vah"]
     assert result["val"] <= result["vah"]
     assert result["support"] == 104.0  # min of recent 10 lows: range(5, 15) -> 99.0 + 5 = 104.0
-    assert result["resistance"] == 115.0  # max of recent 10 highs: range(5, 15) -> 101.0 + 14 = 115.0
+    # No confirmed swing high above price in a straight rise: fallback = highest high of the PREVIOUS
+    # bars (current bar excluded since E16-U8): 101 + 13 = 114.
+    assert result["resistance"] == 114.0
     assert result["bias"] in ["LONG", "SHORT", "NEUTRAL"]
+
+
+
+@pytest.mark.unit
+def test_volume_is_spread_over_each_bar_range():
+    eng = MarketStructureEngine(swing_lookback=20, volume_profile_bins=20)
+    # 19 bars trading 100-101 with volume 10, one bar 101-110 with volume 10: POC must stay in 100-101.
+    lows = [100.0] * 19 + [101.0]
+    highs = [101.0] * 19 + [110.0]
+    closes = [100.5] * 19 + [109.0]
+    r = eng.calculate_market_structure(closes, highs, lows, [10.0] * 20)
+    assert 100.0 <= r["poc"] <= 101.0
+    assert r["method"] == "range_volume_profile"
+
+
+@pytest.mark.unit
+def test_swing_support_and_resistance_are_confirmed_pivots():
+    eng = MarketStructureEngine(swing_lookback=20, pivot_bars=2)
+    highs = [10, 11, 12, 15, 12, 11, 10, 11, 12, 11, 10.5]
+    lows = [9, 8, 9, 10, 9, 6, 7, 8, 9, 9.5, 10]
+    closes = [h - 0.5 for h in highs]
+    r = eng.calculate_market_structure(closes, highs, lows, [1.0] * len(highs))
+    assert r["resistance"] == 12        # most recent confirmed pivot high above price (index 8; index 3 is older)
+    assert r["support"] == 6            # pivot low at index 5 (most recent confirmed below price)

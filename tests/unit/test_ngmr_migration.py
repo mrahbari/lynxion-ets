@@ -28,6 +28,10 @@ def _bar(p, hi=None, lo=None, v=1.0, t=None):
 def test_ngmr_path_creates_candidate_setup_at_val_boundary_and_gating():
     adapter = MeanReversionStrategyAdapter({})
     symbol = Symbol("BTCUSDT")
+    # The pipeline is under test, not the profile: pin the levels (since E16-U8 the profile spreads
+    # each bar's volume over its range, so flat closes no longer collapse VAL/POC/VAH onto the close).
+    adapter.market_structure_engine.calculate_market_structure = lambda *a, **k: {
+        "bias": "NEUTRAL", "poc": 101.0, "vah": 102.0, "val": 100.0, "support": 99.0, "resistance": 102.0}
 
     # Feed enough bars to establish a baseline
     base_time = datetime(2026, 1, 1, 0, 0)
