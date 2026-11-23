@@ -79,6 +79,10 @@ def test_filled_releases_symbol_no_fallback(setup):
     m.register(svc, _order(), "L1")
     assert "L1" in svc.pending
     m.check_all()
+    assert "L1" in svc.pending and not svc.sent              # still held right after the fill
+    setup_clock = m.clock
+    setup_clock.t = 181
+    m.check_all()
     assert not svc.pending and not svc.sent and not m._pending
 
 

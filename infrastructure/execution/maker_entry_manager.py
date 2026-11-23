@@ -34,6 +34,11 @@ def timeout_s() -> float:
     return float(os.getenv("ENTRY_MAKER_TIMEOUT_S", "900"))
 
 
+def hold_after_fill_s() -> float:
+    """Keep the symbol held after a fill until reconciliation/positions show it (VST lags; 2026-11-23 OKB double)."""
+    return float(os.getenv("ENTRY_MAKER_HOLD_AFTER_FILL_S", "180"))
+
+
 _exchange = None
 _exchange_lock = threading.Lock()
 
@@ -141,13 +146,18 @@ class MakerEntryManager:
 
     def _check(self, oid: str, p: dict) -> bool:
         svc, order = p["service"], p["order"]
+        if "release_at" in p:
+            if self.clock() < p["release_at"]:
+                return False
+            self._release(p, oid)
+            return True
         f = self._fill(svc, oid)
         status = str(f.get("status", "UNKNOWN")).upper()
         filled = float(f.get("executed_qty") or 0)
         if status in DONE:
             _log.info("MAKER ENTRY FILLED | %s | id=%s avg=%s", order.symbol, oid, f.get("avg_price"))
-            self._release(p, oid)
-            return True
+            p["release_at"] = self.clock() + hold_after_fill_s()
+            return False
         expired = self.clock() >= p["deadline"]
         if status not in DEAD and not expired:
             return False
