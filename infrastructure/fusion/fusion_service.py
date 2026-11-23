@@ -844,6 +844,9 @@ def __getattr__(name):
     global _fusion_service_singleton
     if name == "fusion_service":
         if _fusion_service_singleton is None:
-            _fusion_service_singleton = FusionService()
+            import os
+            # The live orchestrators resolve this accessor (not the container builder): symbol-state
+            # fusion by default (E15-F1); FUSION_MODE=hierarchical restores the former path.
+            _fusion_service_singleton = FusionService(mode=os.getenv("FUSION_MODE", "state"))
         return _fusion_service_singleton
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
