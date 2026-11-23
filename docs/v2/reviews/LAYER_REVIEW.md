@@ -88,3 +88,39 @@ Unit test exists (`tests/unit/test_watcher_logic_review.py::test_volatility_regi
 | W1-6 | note | Its value to trades is a separate question: as a regime filter on E9 trades it separated nothing (E12). How Fusion/Engine/strategies consume it is reviewed in F1/G1. |
 
 **Verdict: does its job** (phase 1 OK, no P1). Phase-2 list: W1-1..W1-4.
+
+---
+
+## E15-W2 — TrendMTF watcher (`infrastructure/watchers/adapters/trend_mtf.py`) — 2026-11-23
+
+**Role.** Directional context: is there a trend aligned across 15m, 1h and 4h (positive / negative /
+neutral). The Engine maps `trend_positive` to BUY and `trend_negative` to SELL.
+
+**Inputs and mechanics (OK).** Closed 1m bars are downsampled into closed 15m/1h/4h bars; at first sight
+the higher timeframes are seeded with real closed bars (15m 2d, 1h 3d, 4h 15d) and 1m bars of seeded
+buckets are skipped. Buckets align to UTC like Binance candles; gaps close the bucket with its last close;
+partial higher-TF bars are never used. No lookahead.
+
+**Logic defect (P1, fixed).** Each timeframe's trend was the t-statistic of a regression of log price on
+time over 20 bars, called significant at |t| >= 2. That statistic is invalid on prices (spurious
+regression): on a simulated **random walk it exceeds 2 in 72 % of windows** instead of ~5 %. So "trend"
+mostly labelled noise (live today: 30 % positive, 2 % negative). Standard definition: a trend is a drift
+whose mean return is significant against bar noise, t = mean(r) / (sd(r)/sqrt(n)) (6 % on a random walk).
+- Fix: `_drift_t` replaces `_trend_t` in MTF mode. The joint threshold is calibrated on the null only (no
+  outcome data): with nested 15m/1h/4h windows, |t| >= 1.0 on all three fires on 5.0 % of random walks
+  (2.0 would fire on 0.1 %). `MTF_T_MIN = 1.0`.
+- Effect on 2025-26 Binance history (10 symbols, 4h steps): old rule 6.0 % positive / 7.1 % negative;
+  new rule 1.6 % / 2.0 % — i.e. aligned trends occur about as often as in a random walk at these
+  horizons. Expect far fewer trend observations live (from ~32 % to a few %).
+- Tests: random-walk false-positive rate of `_drift_t` (< 10 %) and of the joint rule (2-9 %).
+  Legacy mode (frozen research feeds) unchanged.
+
+**Other findings.**
+| # | Sev | Finding |
+|---|---|---|
+| W2-1 | P1 | Spurious-regression trend statistic (fixed above). |
+| W2-2 | P2 | Confidence (0.55 + 0.05 x (t - threshold)) is a mapping, not a calibrated probability. |
+| W2-3 | P2 | ~150 lines of legacy-mode code still loaded in live (needed only by frozen research studies). |
+| W2-4 | note | Live effect of fewer BUY/SELL trend signals on strategy triggering is checked in G1 (Engine). |
+
+**Verdict: does its job after the fix** (deployed with the next runner restart).

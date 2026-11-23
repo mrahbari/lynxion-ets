@@ -14,8 +14,10 @@ class TrendMTFWatcher(BaseWatcher):
 
     Modes:
       * "mtf" — real multi-timeframe: closed 1m bars (payload ``candle`` with ``timestamp``) are
-        downsampled into closed 15m / 1h / 4h bars; each timeframe's trend is the t-statistic of a
-        log-price regression over its last ``MTF_LOOKBACK`` closed bars. trend_positive/negative only
+        downsampled into closed 15m / 1h / 4h bars; each timeframe's trend is the t-statistic of the
+        mean log return (drift) over its last ``MTF_LOOKBACK`` closed bars. (Until 2026-11-23 it was the
+        t-statistic of a log-price-on-time regression, which on a pure random walk exceeds 2 in ~72 % of
+        20-bar windows — spurious regression — instead of the nominal ~5 %.) trend_positive/negative only
         when all three timeframes agree with |t| >= ``MTF_T_MIN``; otherwise trend_neutral. No
         observation until every timeframe has enough closed bars (no partial higher-TF bars used).
       * "legacy" — the original 5/15/30-sample regression on whatever cadence is fed (kept for the
@@ -25,7 +27,9 @@ class TrendMTFWatcher(BaseWatcher):
 
     MTF_TIMEFRAMES = (900, 3600, 14400)   # 15m, 1h, 4h in seconds
     MTF_LOOKBACK = 20
-    MTF_T_MIN = 2.0
+    # |drift t| per timeframe; 1.0 makes the 3-timeframe joint rule fire on 5 % of random walks
+    # (simulated with nested 15m/1h/4h windows, 2026-11-23); 2.0 would make it fire on 0.1 %.
+    MTF_T_MIN = 1.0
     # (period, timeframe) fetched once at startup so the watcher does not need ~80h of 1m bars
     HTF_SEED = {900: ("2d", "15m"), 3600: ("3d", "1h"), 14400: ("15d", "4h")}
 
@@ -168,11 +172,23 @@ class TrendMTFWatcher(BaseWatcher):
             return slope, (0.0 if slope == 0 else float(np.sign(slope)) * 1e6)
         return slope, slope / se
 
+    @staticmethod
+    def _drift_t(closes) -> tuple:
+        """(mean log return per bar, t-statistic of that mean): a trend is a drift that is
+        significant against the bar-to-bar noise. Valid on a random walk (nominal false-positive rate)."""
+        r = np.diff(np.log(np.asarray(closes, dtype=float)))
+        m = len(r)
+        mean = float(r.mean()) if m else 0.0
+        sd = float(r.std(ddof=1)) if m > 1 else 0.0
+        if sd <= 0:
+            return mean, (0.0 if mean == 0 else float(np.sign(mean)) * 1e6)
+        return mean, mean / (sd / np.sqrt(m))
+
     def _analyze_mtf(self, symbol: Symbol):
         n = self.MTF_LOOKBACK
         if any(len(st['closes']) < n for st in self._htf.values()):
             return None
-        trends = [self._trend_t(self._htf[tf]['closes'][-n:]) for tf in self.MTF_TIMEFRAMES]
+        trends = [self._drift_t(self._htf[tf]['closes'][-n:]) for tf in self.MTF_TIMEFRAMES]
         dirs = [0 if abs(t) < self.MTF_T_MIN else (1 if t > 0 else -1) for _, t in trends]
         now = self.clock.now()
         for state, (slope, t) in zip(('short_trend_state', 'medium_trend_state', 'long_trend_state'), trends):

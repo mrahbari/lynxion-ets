@@ -86,3 +86,25 @@ def test_seeded_history_gives_immediate_observation_without_double_counting():
     obs = w.analyze(Symbol("BTCUSDT"))
     assert obs is not None and obs.metadata["mode"] == "mtf"
     assert obs.observation_type == "trend_positive"
+
+
+def test_drift_t_has_nominal_false_positive_rate_on_random_walk():
+    """A 20-bar random walk must rarely be called a trend (|t| >= 2): ~5 %, not ~72 % (old regression t)."""
+    import numpy as np
+    rng = np.random.default_rng(7)
+    hits = 0
+    for _ in range(4000):
+        closes = np.exp(np.cumsum(rng.normal(0, 0.01, 20)))
+        hits += abs(TrendMTFWatcher._drift_t(closes)[1]) >= 2
+    assert hits / 4000 < 0.10
+
+
+def test_joint_three_timeframe_rule_fires_on_about_5_percent_of_random_walks():
+    import numpy as np
+    rng = np.random.default_rng(11)
+    k, hits, n = TrendMTFWatcher.MTF_T_MIN, 0, 3000
+    for _ in range(n):
+        p = np.exp(np.cumsum(rng.normal(0, 0.003, 320)))          # 320 x 15m
+        t = [TrendMTFWatcher._drift_t(x)[1] for x in (p[-20:], p[3::4][-20:], p[15::16][-20:])]
+        hits += all(v >= k for v in t) or all(v <= -k for v in t)
+    assert 0.02 < hits / n < 0.09
