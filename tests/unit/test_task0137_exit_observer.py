@@ -37,8 +37,10 @@ def test_enabled_observer_records_position_and_explicit_no_action():
     assert events[1]["decision"] == "NO_ACTION"
     assert events[0]["exchange_leverage"] == 5.0
     assert events[0]["evaluation_id"] == events[1]["evaluation_id"]
+    from bootstrap.settings.loaders import load_settings
+    configured_breakeven = load_settings().risk.breakeven_trigger_roe_pct   # live .env sets it (7.0)
     assert events[0]["manager_thresholds"] == {
-        "breakeven_trigger_roe_pct": 6.0,
+        "breakeven_trigger_roe_pct": configured_breakeven,
         "trailing_trigger_roe_pct": 10.0,
         "trailing_distance_price_pct": 0.005,
         "fee_buffer_price_pct": 0.0035,
@@ -144,7 +146,7 @@ def test_each_existing_stop_attempt_emits_one_request_and_response(monkeypatch):
         def get_pending_orders(self, symbol):
             self.pending_calls += 1
             return [{
-                "type": "STOP_MARKET",
+                "symbol": symbol, "type": "STOP_MARKET",
                 "side": "SELL",
                 "positionSide": "LONG",
                 "stopPrice": "101.0",
@@ -187,7 +189,7 @@ def test_stop_observer_failure_does_not_generate_broker_retry():
 
         def get_pending_orders(self, symbol):
             return [{
-                "type": "STOP_MARKET",
+                "symbol": symbol, "type": "STOP_MARKET",
                 "side": "SELL",
                 "positionSide": "LONG",
                 "stopPrice": "101.0",

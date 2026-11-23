@@ -55,7 +55,7 @@ def test_stop_response_preserves_exchange_order_identity(monkeypatch):
 
         def get_pending_orders(self, symbol):
             return [{
-                "type": "STOP_MARKET", "side": "SELL", "positionSide": "LONG",
+                "symbol": symbol, "type": "STOP_MARKET", "side": "SELL", "positionSide": "LONG",
                 "stopPrice": "101", "orderId": 12345,
             }]
 
@@ -175,10 +175,10 @@ def test_query_failure_is_emitted_without_false_success_or_extra_attempts(monkey
     assert manager._sync_sl_to_exchange(
         broker, "BTCUSDT", True, 1.0, 101.0, observation_context=context,
     ) is False
-    assert broker.place_calls == 3
-    assert broker.query_calls == 9
+    assert broker.place_calls == 1          # no re-submit on uncertain visibility (8be94cd)
+    assert broker.query_calls == 3
     failed = [event for event in events if event["event_type"] == "STOP_VISIBILITY_FAILED"]
-    assert len(failed) == 3
+    assert len(failed) == 1
     assert all(event["query_status"] == "API_ERROR" for event in failed)
     assert all(event["query_error"] == "exchange_code:100001" for event in failed)
     assert not any(event["event_type"] == "STATE_COMMITTED" for event in events)

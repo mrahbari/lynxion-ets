@@ -13,6 +13,7 @@ def test_credentials_have_no_source_default(monkeypatch):
 
 
 def test_missing_chat_id_fails_before_network(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "")   # tests/conftest.py sets "0"; an empty argument falls back to it
     service = TelegramNotificationService(bot_token="test-token", chat_id="")
     calls = []
     monkeypatch.setattr(

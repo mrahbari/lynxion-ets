@@ -130,7 +130,9 @@ def test_limit_protection_uses_official_nested_json_fields():
         {"code": 0, "data": {"orderID": "LIMIT2"}},
     )[1]
 
-    result = broker._execute_order_after_admission(_order(order_type="LIMIT"))
+    from bootstrap.settings.loaders import load_settings
+    leverage = Decimal(str(load_settings().risk.max_leverage))   # the stop-ROE gate requires the configured leverage
+    result = broker._execute_order_after_admission(_order(order_type="LIMIT", requested_leverage=leverage))
 
     assert result["success"] is True, result
     payload = sent[0]
@@ -152,16 +154,17 @@ def test_limit_protection_uses_official_nested_json_fields():
     assert isinstance(take_profit["stopPrice"], float)
 
 
-def test_conditional_conflict_recovery_uses_client_identity_and_current_response(monkeypatch):
+def test_conditional_conflict_replaces_stop_place_then_cancel(monkeypatch):
+    """Position-stop conflict: place the new stop first, cancel the old one only after it is accepted
+    (current design; the old cancel-first-by-client-id flow could leave the position unprotected)."""
     broker = _broker()
     responses = [
         {"code": 110406, "msg": "position sl already exists"},
         {"code": 0, "data": {"orderID": "NEWSTOP"}},
     ]
     broker._make_request = lambda *_args, **_kwargs: responses.pop(0)
-    broker.get_pending_orders = lambda _symbol: [
-        {"type": "STOP_MARKET", "orderId": None, "clientOrderId": "xoldstop"}
-    ]
+    broker.get_pending_orders_evidence = lambda _symbol: {"status": "OK", "orders": [
+        {"type": "STOP_MARKET", "orderId": "OLDSTOP", "positionSide": "LONG"}]}
     cancelled = []
     broker.cancel_order = lambda order_id, symbol: cancelled.append((order_id, symbol)) or True
     monkeypatch.setattr("infrastructure.brokers.adapters.bingx_adapter.time.sleep", lambda _delay: None)
@@ -175,9 +178,9 @@ def test_conditional_conflict_recovery_uses_client_identity_and_current_response
         position_side="LONG",
     )
 
-    assert result["success"] is True
+    assert result["success"] is True, result
     assert result["order_id"] == "NEWSTOP"
-    assert cancelled == [("xoldstop", "BTC-USDT")]
+    assert cancelled == [("OLDSTOP", "BTC-USDT")]
 
 
 @pytest.mark.parametrize(

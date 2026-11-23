@@ -17,14 +17,14 @@ def test_pending_stop_verification_preserves_matching_exchange_evidence():
             return [
                 {
                     "orderId": "wrong-side",
-                    "type": "STOP_MARKET",
+                    "symbol": symbol, "type": "STOP_MARKET",
                     "side": "BUY",
                     "positionSide": "SHORT",
                     "stopPrice": "101.0",
                 },
                 {
                     "orderId": "visible-stop-7",
-                    "type": "STOP_MARKET",
+                    "symbol": symbol, "type": "STOP_MARKET",
                     "side": "SELL",
                     "positionSide": "LONG",
                     "stopPrice": "101.0",
@@ -85,7 +85,7 @@ def test_visible_stop_event_is_linked_after_broker_response():
             self.pending_calls += 1
             return [{
                 "orderId": "visible-stop-7",
-                "type": "STOP_MARKET",
+                "symbol": symbol, "type": "STOP_MARKET",
                 "side": "SELL",
                 "positionSide": "LONG",
                 "stopPrice": "101.0",
@@ -143,9 +143,11 @@ def test_invisible_accepted_stop_emits_one_failed_visibility_per_existing_attemp
     failures = [event for event in events if event["event_type"] == "STOP_VISIBILITY_FAILED"]
     responses = [event for event in events if event["event_type"] == "STOP_REPLACE_RESPONDED"]
     assert result is False
-    assert broker.place_calls == 3
-    assert broker.pending_calls == 9
-    assert len(failures) == 3
+    # Since 8be94cd an accepted-but-invisible stop is not re-submitted in the same pass
+    # ("uncertain visibility is not permission to submit another stop"): one attempt, 3 queries.
+    assert broker.place_calls == 1
+    assert broker.pending_calls == 3
+    assert len(failures) == 1
     assert [event["causal_event_id"] for event in failures] == [
         event["event_id"] for event in responses
     ]
@@ -173,7 +175,7 @@ def test_manager_emits_state_commit_only_after_existing_state_mutation():
             self.pending_calls += 1
             return [{
                 "orderId": "be-stop-1",
-                "type": "STOP_MARKET",
+                "symbol": symbol, "type": "STOP_MARKET",
                 "side": "SELL",
                 "positionSide": "LONG",
                 "stopPrice": self.stop_price,

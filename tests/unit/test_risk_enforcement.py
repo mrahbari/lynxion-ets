@@ -455,6 +455,19 @@ def test_enforce_denies_when_position_too_large():
     assert enf.denials == 1
 
 
+@pytest.fixture
+def _vst_default_caps(monkeypatch):
+    """The live .env raises the VST caps (MAX_ORDER_NOTIONAL_AMOUNT, RISK_VST_MAX_PORTFOLIO_NOTIONAL_USDT);
+    these tests check the enforcement logic against the built-in defaults."""
+    from application.configs.env_loader import EnvLoader
+    loader = EnvLoader()
+    if not loader._loaded:
+        loader.load()
+    monkeypatch.setitem(loader._env_vars, "MAX_ORDER_NOTIONAL_AMOUNT", str(VST_MAX_ORDER_NOTIONAL))
+    monkeypatch.setitem(loader._env_vars, "RISK_VST_MAX_PORTFOLIO_NOTIONAL_USDT", str(VST_MAX_PORTFOLIO_EXPOSURE))
+
+
+@pytest.mark.usefixtures("_vst_default_caps")
 def test_vst_execution_risk_enforcer_rejects_notional_above_hard_cap():
     enf = build_vst_risk_enforcement()
 
@@ -466,6 +479,7 @@ def test_vst_execution_risk_enforcer_rejects_notional_above_hard_cap():
     assert "exceeds max position limit" in reason
 
 
+@pytest.mark.usefixtures("_vst_default_caps")
 def test_vst_execution_risk_enforcer_accepts_decimal_exact_cap_without_float_drift():
     order = _order(Decimal("300"), Decimal("0.07"))
     assert float(order.quantity) * float(order.price.amount) > VST_MAX_ORDER_NOTIONAL
@@ -477,6 +491,7 @@ def test_vst_execution_risk_enforcer_accepts_decimal_exact_cap_without_float_dri
     assert float(order.quantity) * float(order.price.amount) <= VST_MAX_ORDER_NOTIONAL
 
 
+@pytest.mark.usefixtures("_vst_default_caps")
 def test_vst_execution_risk_enforcer_rejects_portfolio_exposure_above_hard_cap():
     enf = build_vst_risk_enforcement()
     enf._rm.positions["ETHUSDT"] = Position(
@@ -495,6 +510,7 @@ def test_vst_execution_risk_enforcer_rejects_portfolio_exposure_above_hard_cap()
     assert "Portfolio exposure would exceed limit" in reason
 
 
+@pytest.mark.usefixtures("_vst_default_caps")
 def test_guard_fallback_uses_vst_hard_cap():
     guard = LiveExecutionGuard()
     settings = type("S", (), {"broker": type("B", (), {

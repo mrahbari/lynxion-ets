@@ -11,13 +11,15 @@ def _broker():
     return broker
 
 
-def test_code_zero_without_order_identity_is_reported_as_success():
+def test_code_zero_without_order_identity_is_unknown_not_success():
+    """Since 958dbd7 an acknowledgement without an order id is not proof of protection."""
     broker = _broker()
     broker._make_request = lambda *args, **kwargs: {"code": 0, "data": {}}
     result = broker._place_conditional_order(
         "BTC-USDT", "SELL", "1", "99", "STOP_MARKET", "LONG"
     )
-    assert result["success"] is True
+    assert result["success"] is False
+    assert result["unknown_submission"] is True
     assert result["order_id"] is None
 
 

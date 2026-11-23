@@ -114,7 +114,10 @@ def test_decision_record_written_before_send(guard, ledger, monkeypatch):
         order_state["sent"] = True
         return "OID-1"
 
-    dec, oid = guard.authorize_and_send("bingx", _settings(False, True, False), _order(), send_fn, ledger=ledger)
+    # BingX mainnet is blocked by design until a real-account risk policy exists, so the
+    # written-before-send property is checked on another live venue.
+    dec, oid = guard.authorize_and_send("binance", _settings(False, True, False, broker="binance"), _order(),
+                                        send_fn, ledger=ledger)
     assert dec.mode is ExecutionMode.LIVE and oid == "OID-1"
     assert order_state["sent"] and order_state["decision_seen_at_send"] is True
     events = [r["event"] for r in ledger.read_all()]

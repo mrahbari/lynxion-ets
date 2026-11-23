@@ -186,7 +186,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E11-3 | Telegram trade messages name the real deciding component (strategy setup), not Fusion/Engine numbers that do not affect the trade. Note: `calculate_dynamic_metrics` (decision_pipeline.py) builds the displayed confidence partly from a hash of the symbol name and price, i.e. not a probability | message text + test | TODO |
 | E11-4 | Signal-to-order latency measured from live logs (candidate -> order sent) | p50/p95 in report | TODO |
 | E11-5 | Observe the closure debounce and the same-side cap on real events | log evidence | TODO (passive) |
-| E11-7 | Triage the 24 remaining pre-existing test failures: fix config-drift expectations, investigate stop-path (14) and BingX LIMIT protection (2) failures, delete only tests with no use | 0 unexplained failures | TODO |
+| E11-7 | Triage the 24 remaining pre-existing test failures: fix config-drift expectations, investigate stop-path (14) and BingX LIMIT protection (2) failures, delete only tests with no use | DONE 2026-11-23: 0 failures, 1386 passed (11 obsolete removed, 24 stale tests fixed; no code defect) |
 | E11-6 | Old backup copies in `data/approved-symbols/` (14 files): delete or keep | operator decision | DONE (deleted 2026-11-23, operator approved) |
 | **E13** | **New edge inputs (profitability queue, each pre-registered, DEV then holdout)** | | |
 | E13-1 | CVD (taker buy - sell volume, from Binance kline taker volume) as an entry confirmation on E9 trades; OBI not testable offline (no historical book). Feeds the E14-3 go decision | report | TODO |

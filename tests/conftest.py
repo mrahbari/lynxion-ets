@@ -37,6 +37,16 @@ os.environ["TRADE_JOURNAL_SYMBOL_PACING_SECONDS"] = "0"  # no real-time pacing i
 os.environ["APM_STOP_MODE"] = "legacy"
 
 
+@pytest.fixture(autouse=True)
+def _fresh_live_order_journal(tmp_path, monkeypatch):
+    """Each test gets its own order journal: a PROTECTION_UNKNOWN left by one test made the stop-path
+    (ActivePositionManager._sync_sl_to_exchange) return early in later tests."""
+    import infrastructure.execution.live_order_journal as journal_mod
+    path = str(tmp_path / "live_order_journal.json")
+    monkeypatch.setenv("LIVE_ORDER_JOURNAL_PATH", path)
+    monkeypatch.setattr(journal_mod, "live_order_journal", journal_mod.LiveOrderJournal(path))
+
+
 @pytest.fixture(autouse=True, scope="session")
 def _isolate_runtime_state_files():
     import infrastructure.risk.symbol_cooldown_gate as gate_mod

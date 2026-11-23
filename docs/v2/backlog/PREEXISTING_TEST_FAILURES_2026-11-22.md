@@ -49,3 +49,16 @@ Remaining 24 failures, triage task E11-7 (roadmap):
   test_task0182, test_symbol_cooldown_gate — cover the stop path, investigate before any removal
 - BingX adapter protection format (2): test_task0399 (incl. LIMIT protection fields, relevant to maker entries)
 - test_telegram_notification_service (1)
+
+## Resolved 2026-11-23: 0 failures (1386 passed)
+The remaining 24 were all stale tests, none was a code defect:
+- Shared test journal: one test's PROTECTION_UNKNOWN made the stop path return early in later tests
+  (10 failures). Fix: tests/conftest.py gives each test a fresh order journal.
+- Config drift vs live .env: VST caps (4, pinned to the built-in defaults inside the tests), breakeven ROE
+  threshold (1, now read from settings), committed settings snapshot (2, removed with its fixture: it
+  compared live .env values with values baked months earlier).
+- Intended safety changes the tests predated: stop orders must carry a symbol (fakes updated); no re-submit
+  after an accepted-but-invisible stop (2, expectations 3 -> 1); code-0 without order id is UNKNOWN, not
+  success (1); conflict replacement is place-then-cancel (1, rewritten); BingX mainnet blocked until a real
+  risk policy exists (ledger test moved to a live-capable venue); stop-ROE gate needs leverage (1).
+- Telegram test: conftest's TELEGRAM_CHAT_ID="0" was used as fallback (1, env cleared in the test).
