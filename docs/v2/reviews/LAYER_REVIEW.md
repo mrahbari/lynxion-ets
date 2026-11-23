@@ -480,3 +480,47 @@ opportunity score (+0.1 trending, -0.05 volatile), which orders queued intents, 
 
 **Grade: n/a (not live).** Decision in the upgrade phase: either a validated regime gate built on the A-grade
 watchers (Volatility, AnomalyML) and the upgraded TrendMTF, or retire.
+
+---
+
+## E15-S — Strategies (first evaluation, all ten) — 2026-11-23
+
+**Structure.** Ten adapters share one `SetupEngine` (`infrastructure/strategies/setup_engine.py`, 573
+lines) and run on their design timeframe; six distinct setups:
+| setup | adapters (timeframe) | rule in code | canonical reference / deviation |
+|---|---|---|---|
+| NGLS_SWEEP (liquidity sweep) | sweep_scalper (1m), liquidity (5m) | wick below/above the prior 20-bar low/high and close back inside | stop-hunt reclaim; canonical versions require a swing (pivot) level and a market-structure shift; here any 20-bar extreme |
+| NGMR_REVERSION | vwap_reversal (5m), mean_reversion (1h) | rejection at value-area / VWAP 2.5 sigma, target POC/VWAP | VWAP is a rolling 20-bar VWAP, not session-anchored; value area from the G2 profile (POC > 1 ATR off a standard profile in 23 % of windows) |
+| NGTREND_FOLLOW | mtf_trend (15m), trend_follow (1h) | price beyond VAH/VAL with SMA10 vs SMA20 +/- 0.2 % | trend filter is a fixed 0.2 % gap (not volatility-scaled, not multi-timeframe despite the "mtf" name) |
+| NGBREAKOUT / NGVOLATILITY_BREAKOUT | breakout, volatility_breakout (15m) | range compression (hist/recent > 1.5) + volume surge, close beyond range | standard squeeze-breakout; reasonable |
+| NGDONCHIAN_BREAKOUT | donchian_breakout (1h) | close beyond prior N-bar high/low (N up to 125) | standard Donchian/turtle |
+| NGOI_SETUP | oi_footprint (1h) | **no open-interest data reaches it** -> always the fallback: volume spike (1.5x) + 5-bar momentum, fixed SL 1 % / TP 2 % | **P1: the strategy is not what its name and design say** (an OI-divergence strategy running as a momentum chase) |
+| (none) | short_term_reversal (15m) | own logic, no SetupEngine setup | not in E9 |
+
+**Results (E9, live-equivalent execution, R per trade).**
+| strategy | n DEV/HOLD | net R DEV/HOLD | gross R (before costs) DEV/HOLD | median stop |
+|---|---|---|---|---|
+| vwap_reversal | 9,755 / 4,008 | -0.109 / -0.121 | -0.005 / -0.017 | 1.2 % |
+| oi_footprint | 4,578 / 1,949 | -0.110 / -0.103 | -0.000 / +0.007 | 1.2 % |
+| liquidity | 3,522 / 1,634 | -0.092 / -0.120 | +0.011 / -0.016 | 1.2 % |
+| breakout | 2,894 / 1,382 | -0.137 / -0.124 | -0.058 / -0.040 | 1.6 % |
+| mtf_trend | 2,896 / 1,329 | -0.091 / -0.035 | -0.025 / +0.036 | 2.2 % |
+| mean_reversion | 2,215 / 1,036 | -0.087 / -0.014 | -0.023 / +0.055 | 2.2 % |
+| trend_following | 1,703 / 740 | -0.078 / -0.016 | -0.027 / +0.037 | 3.0 % |
+| volatility_breakout | 998 / 510 | -0.010 / -0.067 | +0.045 / -0.007 | 3.0 % |
+(donchian_breakout, sweep_scalper, short_term_reversal: not in E9.)
+
+**Findings.**
+| # | Sev | Finding |
+|---|---|---|
+| S-1 | P1 | OIFootprint has no OI input; it is a volume-spike momentum chase with fixed 1 %/2 % levels. Either feed real OI (BingX/Binance OI history and live endpoint) or rename/retire. |
+| S-2 | P1-candidate | Gross edge before costs is ~0 for every setup; the tight-stop 5m/1m setups pay ~0.10 R per trade in costs (1.2 % stops), the 1h setups ~0.05-0.07 R. The 1h setups (mean_reversion, trend_following, mtf_trend) are slightly positive gross on HOLDOUT (+0.04-0.06 R) but negative on DEV: no stable edge. |
+| S-3 | P2 | Setups depend on G2 levels (volume profile, rolling VWAP) that deviate from standard definitions; NGMR/NGTREND are directly affected. |
+| S-4 | P2 | Trend filter inside setups is a fixed 0.2 % SMA gap; "mtf_trend" uses one timeframe. |
+| S-5 | P2 | Fixed SL/TP percentages in NGOI; R:R filter `min_reward_risk_ratio` shared across very different setups. |
+| S-6 | note | Duplicate strategies: three pairs run the same setup on two timeframes (counts as six setups, not ten strategies). |
+
+**Grade (first evaluation): D for the layer** (no setup with a stable gross edge; one strategy not
+implementing its design). Upgrade tasks (E16-U9..): (1) OIFootprint with real OI or retire;
+(2) each setup rebuilt to its canonical definition on standard levels (after U8), tested with E9 on DEV
+then HOLDOUT once; (3) cost-aware design: fewer, wider-stop entries on 1h-4h where costs are < 0.05 R.

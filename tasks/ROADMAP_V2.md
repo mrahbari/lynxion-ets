@@ -235,8 +235,8 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E15-G1 | EngineService (watcher -> fusion -> strategy routing, gates) | grade C: type/direction inconsistent for non-directional watchers, untested contrarian rules (anomaly reversion not supported); no live decision impact since F1 | DONE |
 | E15-G2 | MarketStructureEngine / setup engine (levels the strategies use) | grade C: volume profile from 20 closes/10 bins, POC > 1 ATR off a standard profile in 23 % of windows; setup engine reviewed with strategies (S) | DONE |
 | E15-G3 | MacroRegimeEngine / regime gate | not in the live path (dead code); live regime = fused regime_context (ranking + intent-queue order only) | DONE |
-| E15-S1..S3 | Live strategies: TrendFollow, VWAPReversal, OIFootprint (each vs its canonical definition) | review x3 | TODO |
-| E15-S4..S10 | Other strategies: breakout, donchian_breakout, liquidity, mean_reversion, mtf_trend, short_term_reversal, sweep_scalper | review x7 | TODO |
+| E15-S1..S3 | Live strategies: TrendFollow, VWAPReversal, OIFootprint (each vs its canonical definition) | first evaluation DONE (layer grade D): OIFootprint has no OI data (P1); gross edge ~0 all setups | DONE |
+| E15-S4..S10 | Other strategies: breakout, donchian_breakout, liquidity, mean_reversion, mtf_trend, short_term_reversal, sweep_scalper | first evaluation DONE (6 distinct setups; 3 duplicated pairs) | DONE |
 | E15-X1 | DecisionPipeline (confirmation, optimizer, SL/TP sanitizing, confidence) | review | TODO |
 | E15-X2 | Orchestrator + execution (sizing, guards, order, journal) | review | TODO |
 | E15-X3 | Risk: APM stop management, side cap, cooldowns, reconciliation | review | TODO |
@@ -255,6 +255,8 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E16-U5 | Liquidity -> slippage estimate for the actual order size (book walk) and spread vs its own norm; claim: predicts realised slippage of live fills | live-fill check | TODO |
 | E16-U7 | EngineService -> role-aware translation from watcher contracts; contrarian rules out until validated | tests | TODO |
 | E16-U8 | MarketStructureEngine -> standard volume profile (volume over bar range, lower-TF bars), swing-pivot S/R, ATR-scaled bias; E9 rerun of level-based strategies | E9 rerun | TODO |
+| E16-U9 | OIFootprint: real open-interest input (history + live) or retire | E9 rerun | TODO |
+| E16-U10 | Each setup rebuilt to its canonical definition on standard levels (after U8); cost-aware timeframe/stop design | E9 DEV then HOLDOUT | TODO |
 | E16-U6 | OrderFlowWS -> time-window order-flow imbalance (OFI, Cont-Kukanov-Stoikov) incl. book changes; claim: OFI -> next-minutes return (needs recorded live trades/book) | recorder + grade | TODO |
 | **E12** | **Live validation and go/no-go (VST until ~2026-12-22)** | | |
 | E12-1 | Single-symbol strategies: live vs E9 backtest parity per strategy (stop R, TP R, duration, slippage, fees) | weekly report | TODO |
