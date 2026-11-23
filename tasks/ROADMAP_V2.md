@@ -149,3 +149,9 @@ cannot change PnL; trades are decided by each strategy's own setups (E9: all neg
 1/79 DEV pass, fails holdout; only crowded-funding veto has a consistent (tiny) effect. No hyperopt run (nothing to fit).
 Fixed: same-symbol re-entry between two reconciliation passes after an exchange stop (PROMUSDT A-B-A); entry now held
 until the exit is booked.
+
+### S2 follow-up 4 (2026-11-23) — E13 XS-COMBO leg risk, post-fix trades, false closures
+- E13: no per-leg stop / equal-risk variant passes the pre-registered rule; XS-COMBO keeps the 50 % stop, risk is bounded by book size. Report `docs/v2/reports/E13_xs_combo_risk_and_false_closures_2026-11-23.md`.
+- Post-fix trades: 17, +8.0 USDT; OIFootprint 7/7 SL (4 from pre-fix A-B-A re-entries). Too few to tune.
+- Fixed: BingX VST empty position lists booked 12 open positions as UNKNOWN closures; exits now confirmed on consecutive passes (704c73c).
+- Backlog: empty-list blips in exposure checks and the `get_position` duplicate guard.
