@@ -70,8 +70,60 @@ class MarketPulseWatcher(BaseWatcher):
             if len(self.candles) > self.lookback * 5:  # Increased buffer
                 self.candles = self.candles[-(self.lookback * 5):]
 
+    # Standard short-term momentum (E15-W4, 2026-11-23). The former decision tree (5/10 EMA "MACD"
+    # > 5 bp, raw-price slope, 15-bar RSI) called 33 % of random-walk minutes "strong" (45 % live).
+    PULSE_BARS = 15           # momentum horizon: last 15 one-minute returns
+    SIGMA_BARS = 60           # volatility estimate: last 60 one-minute returns
+    Z_STRONG = 2.0            # |z| >= 2 -> strong (two-sided ~5 % on a random walk)
+    RSI_PERIOD = 14           # Wilder RSI
+    RSI_HIGH, RSI_LOW = 70.0, 30.0
+
+    @staticmethod
+    def _wilder_rsi(closes, period: int = 14) -> float:
+        d = np.diff(np.asarray(closes, dtype=float))
+        if len(d) < period:
+            return 50.0
+        gain, loss = np.where(d > 0, d, 0.0), np.where(d < 0, -d, 0.0)
+        ag, al = gain[:period].mean(), loss[:period].mean()
+        for g, l in zip(gain[period:], loss[period:]):
+            ag = (ag * (period - 1) + g) / period
+            al = (al * (period - 1) + l) / period
+        if al == 0:
+            return 100.0 if ag > 0 else 50.0
+        return float(100.0 - 100.0 / (1.0 + ag / al))
+
     def _analyze_impl(self, symbol: Symbol) -> MarketObservation:
-        """Analyze market pulse and return a raw market observation (no strategy selection)"""
+        """Momentum of the last 15 minutes measured against 1m volatility (z-score), with a Wilder RSI
+        exhaustion check. Labels kept from the former version so Engine/Fusion read them unchanged:
+        bullish/bearish_strong (|z| >= 2), *_overbought/oversold_caution (strong move with RSI >= 70 / <= 30),
+        neutral_low_momentum otherwise."""
+        if not self.enabled:
+            return None
+        closes = [float(c['close']) for c in self.candles if c.get('close')]
+        if len(closes) < self.SIGMA_BARS + 1 or min(closes) <= 0:
+            return None
+        r = np.diff(np.log(np.asarray(closes[-(self.SIGMA_BARS + 1):])))
+        sigma = float(np.std(r, ddof=1))
+        move = float(np.sum(r[-self.PULSE_BARS:]))
+        z = move / (sigma * np.sqrt(self.PULSE_BARS)) if sigma > 0 else 0.0
+        rsi = self._wilder_rsi(closes[-(self.SIGMA_BARS + 1):], self.RSI_PERIOD)
+        if z >= self.Z_STRONG:
+            obs = 'market_pulse_bullish_overbought_caution' if rsi >= self.RSI_HIGH else 'market_pulse_bullish_strong'
+        elif z <= -self.Z_STRONG:
+            obs = 'market_pulse_bearish_oversold_caution' if rsi <= self.RSI_LOW else 'market_pulse_bearish_strong'
+        else:
+            obs = 'market_pulse_neutral_low_momentum'
+        strong = obs.endswith('_strong')
+        confidence = 0.7 if strong else (0.5 if 'caution' in obs else 0.3)
+        return MarketObservation(
+            symbol=symbol, observation_type=obs,
+            observation_value=float(max(-1.0, min(1.0, z / 4.0))) if strong else 0.0,
+            confidence=Percentage(Decimal(str(confidence))), timestamp=datetime.now(),
+            metadata={'mode': 'zscore', 'z': z, 'move_15m': move, 'sigma_1m': sigma, 'rsi_wilder': rsi,
+                      'candle_history_length': len(self.candles), 'market_pulse_source': self.name})
+
+    def _analyze_impl_legacy(self, symbol: Symbol) -> MarketObservation:
+        """Former decision tree, kept only for reference until the E10 cleanup."""
         if not self.enabled:
             return None
 

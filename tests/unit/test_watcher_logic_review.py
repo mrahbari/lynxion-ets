@@ -113,3 +113,29 @@ def test_funding_rate_is_normalised_to_8h_before_thresholds():
     legacy = FundingRateWatcher("funding_rate", "BTCUSDT")
     legacy.update_data({"funding_rate": 0.0003})                              # no interval: unchanged
     assert legacy.analyze(legacy.symbol).metadata["current_funding_rate"] == pytest.approx(0.0003)
+
+
+def _pulse(closes):
+    from infrastructure.watchers.adapters.market_pulse import MarketPulseWatcher
+    w = MarketPulseWatcher("market_pulse", "BTCUSDT")
+    for c in closes:
+        w.update_data({"candle": {"open": c, "high": c, "low": c, "close": c, "volume": 1}})
+    return w.analyze(w.symbol)
+
+
+def test_market_pulse_random_walk_is_mostly_neutral():
+    import numpy as np
+    rng = np.random.default_rng(5)
+    labels = [_pulse(100 * np.exp(np.cumsum(rng.normal(0, 0.0008, 75)))).observation_type for _ in range(1500)]
+    assert sum(lbl != "market_pulse_neutral_low_momentum" for lbl in labels) / len(labels) < 0.10
+
+
+def test_market_pulse_flags_a_real_15_minute_move_by_side():
+    import numpy as np
+    rng = np.random.default_rng(6)
+    base = list(100 * np.exp(np.cumsum(rng.normal(0, 0.0005, 60))))
+    up = base + [base[-1] * np.exp(0.002 * k) for k in range(1, 16)]           # +3 % in 15 min
+    down = base + [base[-1] * np.exp(-0.002 * k) for k in range(1, 16)]
+    assert "bullish" in _pulse(up).observation_type
+    assert "bearish" in _pulse(down).observation_type
+    assert _pulse(base[:40]) is None                                         # warm-up: 61 closes needed

@@ -151,3 +151,38 @@ the 77 approved symbols (8 h-normalised) shows why: median 0.007 %, 95th percent
 | W3-4 | note | E12: on the strategies' trades, entries on the side that pays funding (crowded) were slightly worse (-0.05 R, t -2.3) at a 0.01 % threshold — the only watcher state with a consistent sign. Use as a veto is a phase-2 candidate. |
 
 **Verdict: does its job after the units fix** (deployed with the next runner restart).
+
+---
+
+## E15-W4 — MarketPulse watcher (`infrastructure/watchers/adapters/market_pulse.py`) — 2026-11-23
+
+**Role.** Short-term momentum context on 1m bars: is the last few minutes' move a real push up/down, or
+exhausted (overbought/oversold), or nothing. Engine maps `*bullish*` -> BUY, `*bearish*` -> SELL,
+`caution/neutral/...` -> NEUTRAL; Fusion classifies it as REGIME.
+
+**Former logic.** A 16-label decision tree on the last 15 1m candles: "MACD" from 5/10 EMAs above 5 bp
+plus any positive raw-price slope -> `bullish_strong`; 15-bar simple RSI at 65/35; Bollinger position;
+volume spike; fixed slope/momentum cut-offs. None of these thresholds was scaled to the symbol's
+volatility.
+
+**Defect (P1, fixed).** On simulated random walks (8 bp/min) the old tree labelled **33 %** of minutes
+`bullish_strong`/`bearish_strong` (live today: 45 % of 15,250 outputs), i.e. the "strong" labels were
+mostly noise and fed the Engine as BUY/SELL signals.
+
+**Fix (standard definitions).** Momentum z-score: sum of the last 15 one-minute log returns divided by
+(1m volatility of the last 60 returns x sqrt(15)); |z| >= 2 -> strong (two-sided ~5 % on a random walk).
+Wilder RSI(14): a strong up-move with RSI >= 70 -> `bullish_overbought_caution`, a strong down-move with
+RSI <= 30 -> `bearish_oversold_caution`; otherwise `neutral_low_momentum`. Labels kept so Engine/Fusion read
+them unchanged; warm-up 61 closes (the 6 h seed covers it). Random-walk check: 94.5 % neutral, 4.4 %
+caution, 1.0 % strong. Tests: random walk < 10 % non-neutral; a +/-3 % 15-minute move is flagged by side.
+The old tree is kept as `_analyze_impl_legacy` until the E10 cleanup.
+
+**Other findings.**
+| # | Sev | Finding |
+|---|---|---|
+| W4-1 | P1 | Noise-level "strong" labels (fixed above). |
+| W4-2 | P2 | Volume no longer used (OHLCV volume without taker split says little); revisit if the feed gains taker volume (W0-4). |
+| W4-3 | P2 | Confidence fixed (0.3 / 0.5 / 0.7), not calibrated. |
+| W4-4 | note | Expect far fewer BUY/SELL pulse signals live; effect on strategy triggering checked in G1. |
+
+**Verdict: does its job after the fix** (deployed with the next runner restart).

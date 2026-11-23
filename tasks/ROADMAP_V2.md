@@ -225,8 +225,8 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E15-W1 | Volatility watcher | does its job; P2: baseline overlap, no intraday seasonality, uncalibrated confidence, dead code | DONE |
 | E15-W2 | TrendMTF watcher | P1 fixed: spurious regression t (72 % false trends on random walks) -> drift t, joint threshold calibrated to 5 % null rate | DONE |
 | E15-W3 | FundingRate watcher | P1 fixed: per-period rate vs per-8h thresholds (4h contracts) -> 8h-normalised; 'normal' today is correct (calm market) | DONE |
-| E15-W4 | MarketPulse watcher | review | IN PROGRESS |
-| E15-W5 | Liquidity watcher | review | TODO |
+| E15-W4 | MarketPulse watcher | P1 fixed: 33 % 'strong' labels on random walks -> vol-scaled 15m z-score + Wilder RSI (5 % null) | DONE |
+| E15-W5 | Liquidity watcher | review | IN PROGRESS |
 | E15-W6 | OrderFlowWS watcher (no trade feed: never emits) | review | TODO |
 | E15-W7 | HistoricalCandle watcher | review | TODO |
 | E15-W8 | AnomalyML watcher | review | TODO |
