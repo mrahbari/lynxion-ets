@@ -189,7 +189,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E11-7 | Triage the 24 remaining pre-existing test failures: fix config-drift expectations, investigate stop-path (14) and BingX LIMIT protection (2) failures, delete only tests with no use | DONE 2026-11-23: 0 failures, 1386 passed (11 obsolete removed, 24 stale tests fixed; no code defect) |
 | E11-6 | Old backup copies in `data/approved-symbols/` (14 files): delete or keep | operator decision | DONE (deleted 2026-11-23, operator approved) |
 | **E13** | **New edge inputs (profitability queue, each pre-registered, DEV then holdout)** | | |
-| E13-1 | CVD (taker buy - sell volume, from Binance kline taker volume) as an entry confirmation on E9 trades; OBI not testable offline (no historical book). Feeds the E14-3 go decision | report | TODO |
+| E13-1 | CVD (taker buy - sell volume) as an entry confirmation on E9 trades | FAIL: pooled lift ~0 R (t < 1) for 5/15/60 min, 0/48 DEV cells; `E17_cvd_confirmation_2026-11-23.md` | DONE |
 | E13-2 | XS-COMBO rebalance frequency / turnover, cost-aware (= E3-3), the only measured edge | report | TODO |
 | E13-3 | OI / long-short ratio metrics for the liquid subset (= E3-4) as a cross-sectional factor | report | TODO |
 | E13-4 | Listing-age and regime conditioning (= E2-5, E2-6) | report | TODO |

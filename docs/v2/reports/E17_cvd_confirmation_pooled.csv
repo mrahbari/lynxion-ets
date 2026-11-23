@@ -1,0 +1,13 @@
+period,window_min,state,n,lift_R,t
+DEV,5,confirm,14724,-0.0031,-0.3
+DEV,5,oppose,13837,0.0033,0.31
+DEV,15,confirm,13704,0.0022,0.21
+DEV,15,oppose,14857,-0.002,-0.2
+DEV,60,confirm,14015,0.0082,0.78
+DEV,60,oppose,14546,-0.0079,-0.77
+HOLDOUT,5,confirm,6682,-0.0038,-0.25
+HOLDOUT,5,oppose,5906,0.0043,0.27
+HOLDOUT,15,confirm,6177,-0.0014,-0.09
+HOLDOUT,15,oppose,6411,0.0014,0.09
+HOLDOUT,60,confirm,6226,-0.0053,-0.34
+HOLDOUT,60,oppose,6362,0.0052,0.33
