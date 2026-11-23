@@ -247,6 +247,13 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E16-W1..W8 | Grade and improve each watcher (Volatility, TrendMTF, FundingRate, MarketPulse, Liquidity, OrderFlowWS, HistoricalCandle, AnomalyML) until A or B | A: Volatility, AnomalyML (validated, calibrated). B: TrendMTF, MarketPulse, HistoricalCandle, FundingRate, Liquidity, OrderFlowWS (descriptive; directional confidence use decided in F1/G1) | DONE |
 | E16-WB | Watcher base design: contract attributes, as-of bar time and warm-up flag in metadata, calibrated confidence hook (non-breaking) | contract + as-of stamped on every observation; base analyze applied to all watchers | DONE |
 | E16-F/G/S/X | Same method for Fusion, Engines, Strategies, Execution/Risk after E15 phase 1 of each layer | grades | TODO |
+| E16-U | **Upgrade phase (after the first evaluation of every layer)**: one task per B-grade component, each to a standard reference design, re-graded with E18 (DEV iterations, HOLDOUT once) | grade A, or B with a documented standard design and a role that is used | TODO |
+| E16-U1 | TrendMTF -> standard MTF trend state: per-TF direction vote (drift, EMA/HMA cross, HH/HL structure), strength (ADX, Kaufman ER), trending vs ranging, `trend_conflict` state; claim to test: aligned+trending -> next hours more directional (ER) than conflict | E18 grade | TODO |
+| E16-U2 | MarketPulse -> standard short-term momentum/exhaustion (z-score done; add volume participation from taker volume, VWAP distance); claim to test: exhaustion -> next 15-60 min mean reversion | E18 grade | TODO |
+| E16-U3 | HistoricalCandle -> pattern quality (volume, location vs swing/VWAP/levels, multi-TF); claim to test with location filter | E18 grade | TODO |
+| E16-U4 | FundingRate -> funding z-score vs own history, OI change, basis; claim to test: extreme funding -> crowding unwind (next 8-24 h) on the E9 universe with Binance funding history | E18 grade | TODO |
+| E16-U5 | Liquidity -> slippage estimate for the actual order size (book walk) and spread vs its own norm; claim: predicts realised slippage of live fills | live-fill check | TODO |
+| E16-U6 | OrderFlowWS -> time-window order-flow imbalance (OFI, Cont-Kukanov-Stoikov) incl. book changes; claim: OFI -> next-minutes return (needs recorded live trades/book) | recorder + grade | TODO |
 | **E12** | **Live validation and go/no-go (VST until ~2026-12-22)** | | |
 | E12-1 | Single-symbol strategies: live vs E9 backtest parity per strategy (stop R, TP R, duration, slippage, fees) | weekly report | TODO |
 | E12-2 | XS-COMBO: live vs model tracking (= E5-3) | weekly report | IN PROGRESS |
