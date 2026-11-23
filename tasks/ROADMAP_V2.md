@@ -163,7 +163,7 @@ pre-registered pass/fail number; a task that cannot change what or how we trade 
 
 | Week | Days | Task (time box) | Done when |
 |---|---|---|---|
-| W1 | 11-24 | E15-W0 fix: execution venue (DEFAULT_BROKER = BingX) as primary bar source for watchers and strategies, Binance fallback; measure the Binance-vs-BingX bar gap first (1 day) | live log shows BingX bars for all symbols, BingX-only symbols fed |
+| W1 | 11-23 | E15-W0 fix: CANCELLED after measurement (Binance vs BingX/VST 1m closes differ 0.2-3.9 bp; not worth changing every strategy's input) | done |
 | W1 | 11-24..26 | E15-W1..W9 watcher reviews (max half a day each; fix P1 only) | each watcher: verdict + P1 fixed |
 | W1 | 11-27 | E13-2 XS-COMBO rebalance frequency / cost (1 day, offline, existing harness) | pass/fail vs live parameters; adopt only on pass |
 | W1 | 11-29 | XS-COMBO 2nd rebalance (scheduled) | done |
@@ -221,7 +221,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E14-3 | Fail-closed behind a flag: missing or stale (> N s) OBI/CVD -> no entry, logged with reason. Enable only after E14-2 shows coverage ~100 % and the confirmation does not cut winners (and E13-1 offline result) | unit tests; flag on in VST | GATED on E14-2 |
 | **E15** | **Layer-by-layer baseline review (operator 2026-11-23): one component at a time, until every layer does its own job** | | |
 | | Phase 1 = each component does its stated job correctly (role, live inputs, logic vs standard definition, no lookahead, reachable outputs, live output distribution, tests). Phase 2 (after all of phase 1) = fix quality gaps. Findings per component in `docs/v2/reviews/LAYER_REVIEW.md`. A defect that stops a component doing its job at all is fixed in phase 1; everything else is listed for phase 2. | | |
-| E15-W0 | Watcher data feed (MonitoringAnalysisService): which bars/timeframes/funding/book each watcher receives, closed-bar only, freshness | DONE review: mechanics OK; P1: Binance data for BingX execution, no data for BingX-only symbols, no trade feed; fix pending operator OK | DONE |
+| E15-W0 | Watcher data feed (MonitoringAnalysisService): which bars/timeframes/funding/book each watcher receives, closed-bar only, freshness | DONE review: does its job; venue gap measured 0.2-3.9 bp (no switch); BingX-only symbols lag up to 5 min (P2); no trade feed (W6) | DONE |
 | E15-W1 | Volatility watcher | review | TODO |
 | E15-W2 | TrendMTF watcher | review | TODO |
 | E15-W3 | FundingRate watcher | review | TODO |

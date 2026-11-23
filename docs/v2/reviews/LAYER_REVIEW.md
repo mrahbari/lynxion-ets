@@ -35,8 +35,8 @@ market the platform trades, plus the auxiliary inputs each watcher needs (fundin
 **Findings.**
 | # | Sev | Finding |
 |---|---|---|
-| W0-1 | P1 | **Wrong market for most symbols.** Watchers (and strategies) read Binance prices while orders execute on BingX (VST). Signals, levels and stops are computed on a different book; on VST the gap is large (VST spread ~27 bp vs ~0.1 bp). The feed should come from the execution venue, Binance only as fallback. |
-| W0-2 | P1 | **No data for BingX-only symbols.** OKB and the NC* commodity/index contracts get intermittent or no bars (hundreds of failures per session), yet they are in the approved universe and are traded. Their watchers cannot do their job. |
+| W0-1 | note (was P1) | **Watchers read Binance, orders go to BingX — measured, negligible.**  Watchers (and strategies) read Binance prices while orders execute on BingX (VST). Signals, levels and stops are computed on a different book; on VST the gap is large (VST spread ~27 bp vs ~0.1 bp). The feed should come from the execution venue, Binance only as fallback. |
+| W0-2 | P2 (was P1) | **Gappy data for BingX-only symbols.** OKB and the NC* commodity/index contracts get intermittent or no bars (hundreds of failures per session), yet they are in the approved universe and are traded. Their watchers cannot do their job. |
 | W0-3 | P1 | **No trade feed.** `update_data` never receives `trades`, so OrderFlowWS can never emit (see W6). |
 | W0-4 | P2 | Bars carry only OHLCV: no quote volume, no taker-buy volume, no trade count, so no watcher can measure flow/participation even though both venues provide it. |
 | W0-5 | P2 | Order book only reaches Liquidity-type watchers and is the BingX production book, not VST's. |
@@ -50,3 +50,13 @@ symbols (W0-2), and no trades (W0-3). Phase-1 fix proposal: make the execution v
 the primary bar source for watchers and strategies, with Binance as fallback, and either supply public
 trades to OrderFlowWS or retire it (decided in W6). To be confirmed with the operator before changing,
 because it changes every strategy's input data.
+
+**Follow-up measurement (same day, before any change).** Last 120 closed 1m bars, median |close difference|:
+BingX prod vs Binance 0.2-3.3 bp, VST vs Binance 0.4-3.9 bp (BTC, ETH, SOL, DOT, XRP, ENA, NEAR, HYPE);
+1m return correlation Binance/VST 0.46-0.99 (VST adds noise on thin names). Against ~120 bp median stops
+this is negligible, so W0-1 is downgraded to a note and **no source switch is made** (it would change every
+strategy's input for no measurable gain). BingX-only symbols: one session had 111-128 successful BingX
+fetches vs 226-372 failed or skipped (BingX "retry later" plus the provider's 300 s failure cache); the
+30-bar request window backfills missed bars, so their watchers lag by up to ~5 min rather than starve:
+W0-2 downgraded to P2. Revised verdict: the feed does its job for all live watchers except OrderFlowWS
+(W0-3, decided in W6).
