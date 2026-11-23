@@ -313,6 +313,19 @@ class BrokerExecutionService(ExecutionPort):
                 # Check for pending orders on the symbol
                 pending_duplicate = self._pending_has_any(order.symbol)
 
+                # A position seen open at the last reconciliation pass but flat now has exited
+                # (e.g. exchange stop) without being processed yet: its loss cooldown is not set.
+                # Hold the entry until the next pass books that exit (no same-symbol A-B-A re-entry).
+                if not position_duplicate and not pending_duplicate:
+                    try:
+                        from infrastructure.execution.broker_reconciliation import exit_unreconciled
+                        if exit_unreconciled(order.symbol):
+                            self.logger.info(f"⏳ ENTRY HELD: {symbol_str} closed on the exchange since the last "
+                                             f"reconciliation pass; waiting for that exit to be booked.")
+                            return None
+                    except Exception as gate_error:
+                        self.logger.warning(f"⚠️ Unreconciled-exit check failed for {symbol_str}: {gate_error}")
+
                 # If either condition is true, prevent the trade
                 if position_duplicate or pending_duplicate:
                     if position_duplicate:

@@ -42,6 +42,23 @@ def _project_root() -> str:
 ACTIVE_POSITIONS_JOURNAL_PATH = os.path.join(_project_root(), "data", "active_positions_journal.json")
 
 
+# Symbols the running reconciler last observed OPEN on the exchange (normalized, in-process only).
+# Closures are detected by diffing snapshots, so a stop-out followed by a re-entry on the same
+# symbol before the next pass is invisible (A-B-A): the old exit is never processed, its loss
+# cooldown never set, no close notification sent. The entry gate asks exit_unreconciled() when
+# the broker shows NO position: if the last snapshot still had one, its exit is unprocessed.
+_LAST_OBSERVED_OPEN: set[str] = set()
+
+
+def _norm(symbol) -> str:
+    return _sym(symbol).upper().replace("-", "").replace("/", "").replace("_", "")
+
+
+def exit_unreconciled(symbol) -> bool:
+    """True if `symbol` was open at the last reconciliation pass (caller has seen it flat since)."""
+    return _norm(symbol) in _LAST_OBSERVED_OPEN
+
+
 _OPEN_ORDER_STATES = {"NEW", "PENDING", "PARTIALLY_FILLED", "PARTIAL", "OPEN", "WORKING"}
 _TERMINAL_ORDER_STATES = {"FILLED", "CANCELLED", "CANCELED", "REJECTED", "EXPIRED"}
 
@@ -189,6 +206,8 @@ class BrokerReconciliationService:
         # Update active symbols for next cycle and persist atomically across process restarts
         self._previous_active_symbols = set(current_active_symbols)
         self._save_active_symbols()
+        _LAST_OBSERVED_OPEN.clear()
+        _LAST_OBSERVED_OPEN.update(_norm(x) for x in current_active_symbols)
 
         if not closed_symbols:
             return

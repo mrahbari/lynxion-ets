@@ -1,0 +1,11 @@
+filter,state,n,mean_R,lift_R,lift_se,lift_t
+funding,crowded,2855,-0.153,-0.052,0.023,-2.26
+funding,not_crowded,25706,-0.095,0.006,0.008,0.75
+pulse,against,13915,-0.102,0.0,0.01,0.0
+pulse,with,14646,-0.1,-0.0,0.01,-0.0
+trend,against,4824,-0.097,0.006,0.018,0.33
+trend,none,18880,-0.091,0.01,0.009,1.11
+trend,with,4857,-0.143,-0.043,0.018,-2.39
+vol,compression,8038,-0.106,-0.007,0.014,-0.5
+vol,expansion,5436,-0.102,0.001,0.017,0.06
+vol,normal,15087,-0.098,0.003,0.01,0.3
