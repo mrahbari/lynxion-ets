@@ -12,7 +12,8 @@ class MarketPulseWatcher(BaseWatcher):
 
     ROLE = "direction"
     HORIZON = "15m"
-    CLAIM = "*_strong: a significant 15m move continues; *_caution: the move is exhausted"
+    CLAIM = "*_strong / *_caution: describes a significant 15m move (with / without RSI exhaustion); continuation NOT supported (E18: next-15m hit rate 37 % DEV / 44 % HOLDOUT)"
+    VALIDATED = False
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 15, watcher_config=None):  # Reduced for more responsive signals
         # Convert symbol string to Symbol object if needed

@@ -12,7 +12,8 @@ class HistoricalCandleWatcherAdapter(BaseWatcher):
 
     ROLE = "direction"
     HORIZON = "1h"
-    CLAIM = "candle_reversal_*: a reversal pattern after a 1-ATR move reverses it"
+    CLAIM = "candle_reversal_*: describes a textbook reversal pattern after a 1-ATR move; reversal NOT supported (E18: next-1h hit rate 49 % DEV / 50 % HOLDOUT)"
+    VALIDATED = False
 
     def __init__(self, settings, name: str, symbol: str, broker_service=None, lookback: int = 50):
         # Settings injected by the watcher factory (E1.T4); read the same fields off

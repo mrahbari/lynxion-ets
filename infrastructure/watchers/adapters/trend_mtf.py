@@ -27,7 +27,8 @@ class TrendMTFWatcher(BaseWatcher):
 
     ROLE = "direction"
     HORIZON = "4h"
-    CLAIM = "trend_positive/negative: a drift aligned on 15m, 1h and 4h continues"
+    CLAIM = "trend_positive/negative: describes a drift aligned on 15m, 1h and 4h over the last 20 bars of each; continuation NOT supported (E18: next-4h hit rate 43 % DEV / 51 % HOLDOUT)"
+    VALIDATED = False
 
     MTF_TIMEFRAMES = (900, 3600, 14400)   # 15m, 1h, 4h in seconds
     MTF_LOOKBACK = 20

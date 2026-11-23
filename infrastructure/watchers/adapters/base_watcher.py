@@ -18,6 +18,7 @@ class BaseWatcher(ABC):
     ROLE: Optional[str] = None       # regime | direction | positioning | execution
     HORIZON: Optional[str] = None    # time span the label refers to
     CLAIM: Optional[str] = None      # what the label asserts (tested in E18)
+    VALIDATED: Optional[bool] = None # E18 verdict on the claim; None = not testable offline
 
     def __init__(self, name: str, symbol: str, broker_service: BrokerManager = None, target_broker: str = None):
         self.name = name
@@ -106,7 +107,7 @@ class BaseWatcher(ABC):
                 observation.metadata = {}
             if isinstance(observation.metadata, dict):
                 observation.metadata.setdefault('contract', {'role': self.ROLE, 'horizon': self.HORIZON,
-                                                             'claim': self.CLAIM})
+                                                             'claim': self.CLAIM, 'validated': self.VALIDATED})
                 observation.metadata.setdefault('as_of_bar_close', getattr(self, '_last_bar_close', None))
         except Exception:  # metadata stamping must never break an observation
             pass

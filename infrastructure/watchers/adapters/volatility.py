@@ -12,7 +12,8 @@ class VolatilityWatcher(BaseWatcher):
 
     ROLE = "regime"
     HORIZON = "1h"
-    CLAIM = "expansion/compression: realized volatility of the coming hour is above/below normal"
+    CLAIM = "expansion/compression: realized volatility of the coming hour is above/below normal (validated E18: 85 % / 92 % DEV, 83 % / 92 % HOLDOUT)"
+    VALIDATED = True
 
     def __init__(self, name: str, symbol: str, broker_service=None, target_broker=None, lookback: int = 20, period: int = 14, watcher_config=None):
         # Convert symbol string to Symbol object if needed
@@ -108,17 +109,20 @@ class VolatilityWatcher(BaseWatcher):
             obs_type, value = 'volatility_compression', -min(1.0, 1.0 / max(ratio, 1e-9) / 3.0)
         else:
             obs_type, value = 'volatility_normal', 0.0
-        if obs_type == 'volatility_normal':
-            conf = 0.3
-        else:
-            conf = min(0.9, 0.6 + 0.3 * min(1.0, abs(np.log(ratio)) / np.log(3.0)))
+        # Calibrated (E18, 2026-11-23): share of DEV observations (Nov 2025 - Jun 2026, BTC/ETH/SOL/DOGE)
+        # where the claim held, i.e. next-hour realized vol above (expansion) / below (compression) the
+        # baseline; HOLDOUT (Jul-Oct 2026) 0.83 / 0.92. 'normal' carries no claim and keeps 0.3.
+        conf = {'volatility_expansion': 0.85, 'volatility_compression': 0.92}.get(obs_type, 0.3)
         regime = {'volatility_expansion': 'high', 'volatility_compression': 'low'}.get(obs_type, 'normal')
         observation = MarketObservation(
             symbol=symbol, observation_type=obs_type, observation_value=value,
             confidence=Percentage(Decimal(str(round(conf, 6)))), timestamp=datetime.now(),
             metadata={'realized_vol_1h': short, 'realized_vol_baseline': base, 'vol_ratio': ratio,
                       'current_regime': regime, 'previous_regime': self.previous_regime,
-                      'baseline_bars': len(rets), 'volatility_source': self.name, 'mode': 'realized_ratio'})
+                      'baseline_bars': len(rets), 'volatility_source': self.name, 'mode': 'realized_ratio',
+                      'validated_claim': True,
+                      'claim_probability': {'volatility_expansion': 0.85, 'volatility_compression': 0.92,
+                                            'volatility_normal': 0.73}[obs_type]})
         self.previous_regime = regime
         return observation
 

@@ -1,0 +1,11 @@
+watcher,period,n_obs,labels,fwd_vol,passed,n_events,mean_signed_bp,t,hit,caution_n,caution_mean_signed_bp,caution_t,n_anomaly,fwd_vol15_anomaly,fwd_vol15_normal
+volatility,DEV,92928,"{'volatility_normal': 57437, 'volatility_compression': 27035, 'volatility_expansion': 8456}","{'volatility_compression': 0.664, 'volatility_expansion': 1.493, 'volatility_normal': 0.992}",True,,,,,,,,,,
+volatility,HOLDOUT,47232,"{'volatility_normal': 30290, 'volatility_compression': 12776, 'volatility_expansion': 4166}","{'volatility_compression': 0.661, 'volatility_expansion': 1.519, 'volatility_normal': 0.984}",True,,,,,,,,,,
+trend_mtf,DEV,92928,"{'trend_neutral': 90069, 'trend_negative': 1825, 'trend_positive': 1034}",,False,2859.0,-2.35,-0.67,0.427,,,,,,
+trend_mtf,HOLDOUT,47232,"{'trend_neutral': 45922, 'trend_positive': 957, 'trend_negative': 353}",,False,1310.0,25.49,4.98,0.505,,,,,,
+market_pulse,DEV,92928,"{'market_pulse_neutral_low_momentum': 89104, 'market_pulse_bearish_oversold_caution': 1504, 'market_pulse_bullish_overbought_caution': 1251, 'market_pulse_bullish_strong': 544, 'market_pulse_bearish_strong': 525}",,False,1069.0,-4.72,-3.91,0.37,2755.0,1.1,1.14,,,
+market_pulse,HOLDOUT,47232,"{'market_pulse_neutral_low_momentum': 45326, 'market_pulse_bullish_overbought_caution': 711, 'market_pulse_bearish_oversold_caution': 676, 'market_pulse_bullish_strong': 266, 'market_pulse_bearish_strong': 253}",,False,519.0,0.26,0.14,0.439,1387.0,1.4,1.22,,,
+anomaly_ml,DEV,92928,"{'anomaly_normal': 91907, 'anomaly_negative': 537, 'anomaly_positive': 484}",,True,,,,,,,,1021.0,1.583,0.957
+anomaly_ml,HOLDOUT,47232,"{'anomaly_normal': 46563, 'anomaly_negative': 340, 'anomaly_positive': 329}",,True,,,,,,,,669.0,1.504,0.955
+historical_candle,DEV,92928,"{'candle_neutral': 87414, 'candle_reversal_bullish': 2909, 'candle_reversal_bearish': 2605}",,False,5514.0,-2.96,-3.09,0.489,,,,,,
+historical_candle,HOLDOUT,47232,"{'candle_neutral': 44337, 'candle_reversal_bearish': 1476, 'candle_reversal_bullish': 1419}",,False,2895.0,0.32,0.32,0.503,,,,,,

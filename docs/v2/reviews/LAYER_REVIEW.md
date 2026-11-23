@@ -298,3 +298,45 @@ standard robust method; correct, no lookahead. Not machine learning despite the 
 P1 defects found and fixed: TrendMTF spurious-regression trend statistic, FundingRate per-period vs
 per-8h units, MarketPulse noise-level "strong" labels, OrderFlowWS never fed. Volatility, Liquidity,
 HistoricalCandle and AnomalyML do their jobs. Phase-2 items listed per watcher. Next layer: Fusion (F1).
+
+---
+
+## E16 — Architect review of the watcher layer (2026-11-23)
+
+**Design assessment.** The layer's architecture is sound: one interface (`update_data` / `analyze`), raw
+observations only (no trading decisions), a base class with health tracking, closed-bar feed. What was
+missing, and is now added without changing any label or interface:
+1. **Declared contract** (`ROLE`, `HORIZON`, `CLAIM`, `VALIDATED` class attributes) stamped into every
+   observation's `metadata['contract']`, plus `as_of_bar_close` (the bar the label was computed from).
+   Downstream layers no longer need hard-coded guesses about what a watcher means.
+2. **Base behaviour actually applied**: eight watchers overrode `analyze()` with a pass-through, so the
+   base class's health tracking never ran; removed (behaviour otherwise identical).
+3. **A validity harness** (`research/v2/experiments/e18_watcher_validity.py`): replays 13 months of closed
+   1m bars (BTC, ETH, SOL, DOGE) through the live classes exactly as the feed does and tests each
+   watcher's own claim on its own target, pre-registered, DEV then HOLDOUT.
+4. **Calibrated confidence** where a claim is validated (confidence = DEV hit rate, checked on HOLDOUT).
+
+**Pass grade** (roadmap E16): contract, correct and causal, null-calibrated, claim valid out of sample,
+confidence calibrated. A = predictive claim validated; B = correct, honest descriptive claim.
+
+| Watcher | Claim tested (E18) | DEV | HOLDOUT | Null (random walk) | Grade |
+|---|---|---|---|---|---|
+| Volatility | expansion/compression -> next-hour vol above/below baseline | 1.49x / 0.66x of normal, PASS | 1.52x / 0.66x, PASS | 0.2 % non-normal | **A** (confidence 0.85 / 0.92 = DEV hit rate; HOLDOUT 0.83 / 0.92) |
+| AnomalyML | outlier bar -> abnormal next 15 min | 1.58x vs 0.96x, PASS | 1.50x vs 0.96x, PASS | 0 % | **A** (confidence 0.74; HOLDOUT 0.69) |
+| TrendMTF | aligned trend continues 4 h | -2.4 bp, t -0.7, hit 43 %, FAIL | +25 bp, t 5.0, hit 51 %, FAIL | 5 % | **B** (descriptive; continuation not supported) |
+| MarketPulse | strong 15m move continues | -4.7 bp, t -3.9 (reverses), FAIL | +0.3 bp, t 0.1, FAIL | ~5 % | **B** (descriptive) |
+| HistoricalCandle | reversal pattern reverses 1 h | -3.0 bp, t -3.1, FAIL | +0.3 bp, t 0.3, FAIL | n/a | **B** (descriptive) |
+| FundingRate | crowded side pays (definitional) | — | — | — | **B** (correct after W3 units fix; E12: crowded-side entries slightly worse) |
+| Liquidity | book absorbs orders | not testable offline (no historical book) | | | **B** |
+| OrderFlowWS | aggressor imbalance | E17: CVD sign carries no outcome information | | | **B** |
+
+Directional claims were not "fixed until they pass": a design iterated on DEV until it passes would be
+fitted noise (MarketPulse's DEV reversal and TrendMTF's HOLDOUT continuation point in opposite
+directions across periods). Their labels stay (descriptive, honest `CLAIM`, `VALIDATED=False`); their
+confidence values are left unchanged for now because Engine/Fusion gate on them — how those layers should
+consume an unvalidated directional label is decided in F1/G1, so no live behaviour is removed here.
+
+**Use for the next layers.** The two validated watchers give real information: Volatility predicts the
+next hour's volatility (useful for sizing, stop width and regime gating), AnomalyML predicts abnormal
+activity (useful as an entry-caution / execution-risk input). Directional watchers should not be read as
+predictions.
