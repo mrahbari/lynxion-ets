@@ -578,7 +578,8 @@ class Container:
 
     def _build_fusion_service(self):
         from infrastructure.fusion.fusion_service import FusionService
-        return FusionService()
+        import os
+        return FusionService(mode=os.getenv("FUSION_MODE", "state"))  # E15-F1: symbol-state fusion live
 
     def _build_regime_detector(self):
         from infrastructure.market_regime.regime_detector import RegimeDetector

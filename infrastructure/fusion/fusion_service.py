@@ -311,8 +311,15 @@ class FusionService:
                  correlation_consensus_weight: float = 0.6,
                  correlation_confidence_weight: float = 0.4,
                  hierarchical_service=None,
-                 clock=None):
+                 clock=None,
+                 mode: Optional[str] = None):
         self.logger = None  # Will be set by the calling component if needed
+        # E15-F1: 'state' fuses the latest state of all watchers of a symbol (live default, set by the
+        # container); 'hierarchical' is the former per-call path (default here, kept for replays/research).
+        import os as _os
+        self.mode = (mode or _os.getenv("FUSION_MODE") or "hierarchical").strip().lower()
+        from .symbol_state_fusion import SymbolStateFusion
+        self.state_fusion = SymbolStateFusion(clock=clock)
         self.hierarchical_service = hierarchical_service if hierarchical_service is not None else hierarchical_fusion_service
         self.clock = clock if clock is not None else LiveClock()
         self.watcher_classifier = WatcherClassifier()
@@ -334,6 +341,13 @@ class FusionService:
             if self.logger:
                 self.logger.info("No interpreted signals to fuse")
             return None
+
+        # E15-F1: fuse the latest state of every watcher of the symbol (mode 'state', live default).
+        if self.mode == "state":
+            fused = None
+            for signal in interpreted_signals:
+                fused = self.state_fusion.update(signal)
+            return fused
 
         # Check if we have observation-based signals that can use hierarchical fusion
         if hasattr(interpreted_signals[0], 'source_watcher') and interpreted_signals[0].source_watcher:

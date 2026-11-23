@@ -340,3 +340,47 @@ consume an unvalidated directional label is decided in F1/G1, so no live behavio
 next hour's volatility (useful for sizing, stop width and regime gating), AnomalyML predicts abnormal
 activity (useful as an entry-caution / execution-risk input). Directional watchers should not be read as
 predictions.
+
+---
+
+## E15-F1 + E16 — Fusion layer — 2026-11-23
+
+**Role.** Combine what all watchers say about a symbol into one state: regime, directional bias,
+execution context (design: DISCOVERY -> REGIME -> DIRECTION -> EXECUTION, hierarchical).
+
+**Live behaviour before the fix (runner log).** 100 % of watcher observations were discarded before
+fusion: `DISCARDED_INVALID_CLASSIFICATION` (liquidity, historical_candle) or `DISCARDED_BELOW_THRESHOLD`
+(trend_mtf, funding_rate, anomaly_ml, market_pulse, volatility, orderflow_ws); every DIRECTION ANALYSIS
+ended `no_direction_observations`; regime NEUTRAL 3,582 times vs RISK_ON twice.
+
+**Defects (P1).**
+| # | Defect |
+|---|---|
+| F1-1 | Called once per interpreted signal (`fuse_signals([signal])`) and stateless: two watchers are never fused together, so the hierarchical design could never run (E12). |
+| F1-2 | Role table filed Liquidity as DIRECTION (it has no side) and anomaly as DISCOVERY; class names sent by the Engine were not recognised by the table at all. |
+| F1-3 | Regime mapping read directional words (bullish -> RISK_ON, bearish -> OVERHEATED) and ignored the validated regime evidence (volatility, anomaly); `WEAK_RISK_ON` unreachable (`> 0.3` then `> 0.1`). |
+| F1-4 | Hand-set confidence gates (0.45-0.70) discarded the validated volatility/anomaly evidence's neutral states and most others. |
+
+**Fix (architecture kept, made executable).** `infrastructure/fusion/symbol_state_fusion.py`: per symbol,
+the latest observation of every watcher is kept until stale (5 min; funding 20 min) and the whole state is
+fused on every call; roles come from each watcher's declared contract (E16-WB), with a corrected fallback
+table (liquidity = execution). Regime from validated evidence first: anomaly or volatility expansion ->
+`volatile`; aligned TrendMTF -> `bullish_trending` / `bearish_trending` (descriptive); volatility
+compression -> `ranging`; else `normal` — the vocabulary StrategyManager and the strategy adapters
+already use. Direction = confidence-weighted vote of fresh direction watchers (neutral votes 0), marked
+`validated_direction: False` (E18). One fused signal per incoming signal, as before (no change in how
+often strategies are evaluated). Live container uses `mode='state'`; `FusionService()` without a mode
+keeps the former hierarchical path, so frozen replays and research harnesses are unchanged
+(`FUSION_MODE=hierarchical` restores it live).
+
+**Effect on trading.** None on entries today: live strategy adapters do not gate on fused bias,
+confidence or regime (E12); the fused regime feeds strategy ranking (0.7-1.2) and attribution only.
+The gain is a correct, inspectable symbol state for the next layers (E16 strategy/risk use).
+
+**Tests.** `tests/unit/test_symbol_state_fusion.py` (7): multi-watcher fusion, conflict cancelling, stale
+expiry, liquidity never votes direction, contract role wins, regime from volatility/anomaly, symbol
+isolation, class-name mapping, mode switch. Full suite 1,400 passed.
+
+**Grade (E16).** Contract and correctness: pass. Validity of the fused direction: not supported (inputs
+unvalidated, E18) -> recorded. Validity of the fused regime: inherits the validated volatility/anomaly
+claims. Grade **B+** (A for regime, B for direction).

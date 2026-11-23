@@ -231,8 +231,8 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E15-W7 | HistoricalCandle watcher | does its job (textbook patterns with ATR context on closed 15m); P2: re-emits the same pattern for 15 min, legacy code | DONE |
 | E15-W8 | AnomalyML watcher | does its job (robust MAD z of last 1m bar); engine maps anomalies to contrarian BUY/SELL -> G1 | DONE |
 | E15-W9 | Not live: CMC screener (off), Tick watcher: keep / retire | both retire candidates (E10) | DONE |
-| E15-F1 | Fusion: input (one signal per call), weighting, direction rule, output contract vs strategies | review | TODO |
-| E15-G1 | EngineService (watcher -> fusion -> strategy routing, gates) | review | TODO |
+| E15-F1 | Fusion: input (one signal per call), weighting, direction rule, output contract vs strategies | P1 fixed: symbol-state fusion (all watchers' latest state, contract roles, regime from validated evidence); hierarchical path kept for replays | DONE |
+| E15-G1 | EngineService (watcher -> fusion -> strategy routing, gates) | review | IN PROGRESS |
 | E15-G2 | MarketStructureEngine / setup engine (levels the strategies use) | review | TODO |
 | E15-G3 | MacroRegimeEngine / regime gate | review | TODO |
 | E15-S1..S3 | Live strategies: TrendFollow, VWAPReversal, OIFootprint (each vs its canonical definition) | review x3 | TODO |
