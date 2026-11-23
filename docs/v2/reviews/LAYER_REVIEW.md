@@ -393,3 +393,36 @@ hierarchical path; the accessor now uses `FUSION_MODE` (default `state`). (2) Th
 moved to `contributor_labels`; the event system now logs the file:line of such errors. Third deployment:
 480 fused signals in the first minutes, 0 errors; bias BUY 79 / NEUTRAL 125 / SELL 36; regime `normal` and
 `ranging` (volatility compression) appear; execution intents continue as before (333).
+
+---
+
+## E15-G1 — EngineService (`infrastructure/engines/engine_service.py`) — first evaluation 2026-11-23
+
+**Role.** Translate each raw watcher observation into an `InterpretedSignal` (type BUY / SELL / NEUTRAL /
+HOLD, direction -1..1, strength) for Fusion.
+
+**Mapping of every live label (probe).**
+| label | -> type | direction | issue |
+|---|---|---|---|
+| volatility_normal / compression | HOLD | 0 / -0.5 | value rule `< 0.3` hits labels whose value is 0 or negative: normal volatility becomes HOLD |
+| volatility_expansion | NEUTRAL | +0.5 | non-directional watcher gets a positive direction |
+| liquidity_normal / high | HOLD / NEUTRAL | 0 / +0.9 | normal liquidity becomes HOLD; high liquidity gets a "bullish" direction |
+| trend_positive, market_pulse_*_strong, candle_reversal_* | BUY / SELL | by side | consistent |
+| anomaly_positive / negative | SELL / BUY | inverted | contrarian hypothesis embedded in a translation layer; tested on E18 data: next 15 min -1.5 / -1.2 bp (t -0.9), next 60 min +0.5 / +3.4 bp: **not supported** |
+| funding_rate_positive / negative | SELL / BUY | 0 | contrarian, untested; direction field contradicts the type |
+| order_flow_* | NEUTRAL | +/-value | side present in the label is never mapped to a type |
+
+Live (current run): 606 NEUTRAL, 110 HOLD, 4 SELL interpreted signals.
+
+**Findings.**
+| # | Sev | Finding |
+|---|---|---|
+| G1-1 | P2 | Type and direction are inconsistent for non-directional watchers (HOLD for normal volatility/liquidity; positive direction for volatility expansion and high liquidity). |
+| G1-2 | P2 | Two trading hypotheses (anomaly reversion, funding contrarian) live inside the translation layer; anomaly reversion is not supported by data (E18 probe). |
+| G1-3 | P2 | Order-flow sides are not mapped; source watcher is guessed by substring when metadata lacks it (candle patterns -> None). |
+| G1-4 | note | Since F1 the live fusion reads labels, roles and confidence, not the Engine's type/direction, so these defects do not change any decision today. |
+
+**Grade (first evaluation): C** — works as a pass-through, but its own output (type/direction) is not
+reliable. Upgrade task (E16-U7): role-aware translation from the watcher contract (direction only from
+direction-role watchers; regime/positioning/execution -> NEUTRAL with direction 0 and the role attached);
+hypotheses (anomaly/funding contrarian) moved out of the Engine until validated.
