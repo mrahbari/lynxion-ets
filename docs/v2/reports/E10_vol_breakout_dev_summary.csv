@@ -1,0 +1,5 @@
+variant,name,trades,trades_per_month,win_rate,PF,mean_R,mean_ret_bps,gross_bps,first_half_R,second_half_R,symbols_positive,long_share,mean_R_long,mean_R_short,median_sl_pct,exits,dev_rule_pass
+A,squeeze_1h,308,38.6,0.406,0.88,-0.026,-12.5,-2.5,-0.01,-0.042,3,0.27,0.05,-0.054,1.44,"{'SL': 182, 'TP': 106, 'BE/TRAIL': 20}",False
+B,donchian_1h,1645,205.2,0.404,0.96,-0.027,-5.8,4.2,0.057,-0.111,5,0.37,-0.081,0.004,2.03,"{'SL': 976, 'TP': 530, 'BE/TRAIL': 139}",False
+C,donchian_4h,771,96.4,0.367,0.84,-0.103,-31.2,-21.2,0.023,-0.229,2,0.39,-0.305,0.026,3.0,"{'SL': 481, 'TP': 233, 'BE/TRAIL': 57}",False
+D,squeeze_15m,957,119.3,0.402,0.85,-0.089,-11.7,-1.7,-0.164,-0.015,2,0.35,-0.235,-0.01,1.2,"{'SL': 571, 'TP': 370, 'BE/TRAIL': 16}",False

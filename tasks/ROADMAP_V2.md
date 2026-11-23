@@ -129,3 +129,9 @@ execution (next-bar entry, sanitized SL/TP, R-mode APM, SL-first, fees+slippage)
 ### S2 result (2026-11-23): no platform strategy passes; holdout untouched
 See `docs/v2/reports/E9_strategy_backtest_2026-11-23.md`. All 8 fail on DEV (PF 0.79–1.01); 7/8 negative before
 fees. volatility_breakout (+12 bp gross) is the only redesign candidate. Holdout 2026-07..10 kept unread.
+
+### S2 follow-up (2026-11-23): TrendMTF fixed; volatility_breakout redesign fails DEV
+See `docs/v2/reports/E10_trend_mtf_fix_and_vol_breakout_redesign_2026-11-23.md`. TrendMTF was not multi-timeframe
+(5/15/30 samples of 1m bars); now real closed 15m/1h/4h bars. It works (48x more signals) but has no OOS edge
+(4h: dev +20 bp t 1.4, validation -12 bp). volatility_breakout: 4 pre-registered variants (squeeze / Donchian,
+15m/1h/4h, HTF trend filter, ATR stops) all fail DEV (PF 0.84-0.96, ~0 gross); no holdout read; strategy stays off.

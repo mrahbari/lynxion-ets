@@ -1,0 +1,13 @@
+rule,horizon,window,n,long_share,mean_bps,demeaned_bps,t_stat,hit_rate,symbols_positive
+engine,15m,dev,4802,0.623,0.84,0.66,1.12,0.48,6/8
+engine,1h,dev,1247,0.619,3.59,2.91,1.18,0.452,7/8
+engine,4h,dev,313,0.629,19.73,16.79,1.42,0.47,8/8
+engine,15m,validation,5865,0.473,-0.11,-0.12,-0.2,0.485,5/8
+engine,1h,validation,1521,0.469,-1.39,-1.43,-0.63,0.475,2/8
+engine,4h,validation,386,0.461,-12.35,-12.55,-1.61,0.466,2/8
+fusion,15m,dev,4802,0.623,0.84,0.66,1.12,0.48,6/8
+fusion,1h,dev,1247,0.619,3.59,2.91,1.18,0.452,7/8
+fusion,4h,dev,313,0.629,19.73,16.79,1.42,0.47,8/8
+fusion,15m,validation,5865,0.473,-0.11,-0.12,-0.2,0.485,5/8
+fusion,1h,validation,1521,0.469,-1.39,-1.43,-0.63,0.475,2/8
+fusion,4h,validation,386,0.461,-12.35,-12.55,-1.61,0.466,2/8

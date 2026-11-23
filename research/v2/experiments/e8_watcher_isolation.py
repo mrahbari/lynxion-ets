@@ -101,7 +101,11 @@ def make_watcher(kind: str, sym: str):
 
 def payload(kind: str, row, fund_now):
     if kind in ("trend_mtf", "volatility", "anomaly_ml"):
-        return {"close": row.c, "open": row.o, "high": row.h, "low": row.l, "volume": row.v}
+        flat = {"close": row.c, "open": row.o, "high": row.h, "low": row.l, "volume": row.v}
+        if kind == "trend_mtf":  # live also attaches the closed candle (monitoring_analysis_service)
+            flat["candle"] = {**flat, "timestamp": pd.Timestamp(row.t, unit="ms", tz="UTC").to_pydatetime(),
+                              "close_time": pd.Timestamp(row.t + 60_000, unit="ms", tz="UTC").to_pydatetime()}
+        return flat
     if kind in ("market_pulse", "historical_candle"):
         return {"candle": {"open": row.o, "high": row.h, "low": row.l, "close": row.c, "volume": row.v,
                            "close_time": pd.Timestamp(row.ct, unit="ms", tz="UTC").to_pydatetime(),
