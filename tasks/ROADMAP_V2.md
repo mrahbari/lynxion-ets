@@ -248,13 +248,13 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E16-WB | Watcher base design: contract attributes, as-of bar time and warm-up flag in metadata, calibrated confidence hook (non-breaking) | contract + as-of stamped on every observation; base analyze applied to all watchers | DONE |
 | E16-F/G/S/X | Same method for Fusion, Engines, Strategies, Execution/Risk after E15 phase 1 of each layer | grades | TODO |
 | E16-U | **Upgrade phase (after the first evaluation of every layer)**: one task per B-grade component, each to a standard reference design, re-graded with E18 (DEV iterations, HOLDOUT once) | grade A, or B with a documented standard design and a role that is used | TODO |
-| E16-U1 | TrendMTF -> standard MTF trend state: per-TF direction vote (drift, EMA/HMA cross, HH/HL structure), strength (ADX, Kaufman ER), trending vs ranging, `trend_conflict` state; claim to test: aligned+trending -> next hours more directional (ER) than conflict | E18 grade | TODO |
+| E16-U1 | TrendMTF redesign from reviewed indicators (HMA 14/50 identityKa, SMMA, EMA/majority, ADX) | E19: no design passes (alignment -> next-4h directionality ratio 0.91-1.10); stays B, no live change; reopen for daily/multi-day claim | DONE (no change) |
 | E16-U2 | MarketPulse -> standard short-term momentum/exhaustion (z-score done; add volume participation from taker volume, VWAP distance); claim to test: exhaustion -> next 15-60 min mean reversion | E18 grade | TODO |
 | E16-U3 | HistoricalCandle -> pattern quality (volume, location vs swing/VWAP/levels, multi-TF); claim to test with location filter | E18 grade | TODO |
 | E16-U4 | FundingRate -> funding z-score vs own history, OI change, basis; claim to test: extreme funding -> crowding unwind (next 8-24 h) on the E9 universe with Binance funding history | E18 grade | TODO |
 | E16-U5 | Liquidity -> slippage estimate for the actual order size (book walk) and spread vs its own norm; claim: predicts realised slippage of live fills | live-fill check | TODO |
 | E16-U7 | EngineService -> role-aware translation from watcher contracts; contrarian rules out until validated | tests | TODO |
-| E16-U8 | MarketStructureEngine -> standard volume profile (volume over bar range, lower-TF bars), swing-pivot S/R, ATR-scaled bias; E9 rerun of level-based strategies | E9 rerun | TODO |
+| E16-U8 | MarketStructureEngine -> standard volume profile (volume over bar range, lower-TF bars), swing-pivot S/R, ATR-scaled bias; E9 rerun of level-based strategies | DONE: grade A (HOLDOUT POC/VAL/VAH error 0.14/0.10/0.12 ATR); E9 effect within noise | DONE |
 | E16-U9 | OIFootprint: real open-interest input (history + live) or retire | E9 rerun | TODO |
 | E16-U10 | Each setup rebuilt to its canonical definition on standard levels (after U8); cost-aware timeframe/stop design | E9 DEV then HOLDOUT | TODO |
 | E16-U11 | Skip XS-COMBO sleeve-owned symbols upstream (no intents for them) | journal FAILED rate | TODO |

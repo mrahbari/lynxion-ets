@@ -553,3 +553,51 @@ live decision path). **Found while checking:** live position sizing passes the f
 for `ranging` (a label that only exists since F1). The multiplier is now capped at 1.0 (regime may
 reduce, never raise risk); in practice every live order is set by the 201 USDT notional cap (sizing audit:
 pre-cap sizes 89-14,000 units), so no order size changed. Test: `test_regime_risk_multiplier_cap.py`.
+
+---
+
+## E16-U8 — MarketStructureEngine upgrade (2026-11-24): grade A on its own claim
+
+**Claim:** POC / VAL / VAH equal a standard volume profile of the same window. Reference: 1m bars of the
+same 20 hours, volume spread over each 1m bar's range, 50 bins. Accuracy thresholds fixed before the
+HOLDOUT read: median POC <= 0.20 ATR, median VAL/VAH <= 0.15 ATR, POC > 1 ATR in <= 12 % of windows.
+
+| version | median POC / VAL / VAH error (hourly ATR) | POC > 1 ATR |
+|---|---|---|
+| old (volume at close, 10 bins) | 0.32 / 0.27 / 0.33 | 23 % |
+| new, DEV (volume over bar range, 24 bins) | 0.15 / 0.11 / 0.11 | 8 % |
+| new, **HOLDOUT** (588 windows) | **0.14 / 0.10 / 0.12** | **10 %** |
+(50 bins and a close-weighted triangular spread were tried on DEV: no material gain; the simpler
+uniform spread with 24 bins was kept.) Support/resistance are now confirmed swing pivots (fractal, 2 bars
+each side), current bar excluded from the fallback; bias uses 0.25 ATR. Tests added. The former algorithm
+is kept as `method='legacy_close'` for the frozen research replays.
+
+**Effect on the strategies (E9 rerun, R per trade, old -> new):** trend_following DEV -0.078 -> -0.028,
+HOLDOUT -0.016 -> -0.055; mean_reversion -0.087 -> -0.080 / -0.014 -> -0.028; vwap_reversal -0.109 ->
+-0.124 / -0.121 -> -0.123; mtf_trend -0.091 -> -0.093 / -0.035 -> -0.043; others unchanged (do not use
+the levels). Differences are within ~1-2 standard errors and of mixed sign: correct levels do not create
+an edge for these setups (consistent with gross edge ~0, E9). Deployed because it is the correct
+definition; the strategies' own rebuild is U10. (`E9_strategy_backtest_trades.csv` now holds the rerun;
+the pre-U8 trades are in `data/research_cache/e9/E9_trades_before_U8.csv`.)
+
+---
+
+## E16-U1 — TrendMTF redesign attempt (2026-11-24): E19, no design passes
+
+Ideas from the reviewed indicators (identityKa HMA 14/50 on 15m/1h/4h/1D with "Dangerous" on conflict,
+lost_sol SMMA close vs open, DaHarley EMA/majority, SuperTrend/ADX dashboards) were tested on the claim
+dashboards use them for: aligned timeframes -> the next 4 h are more directional than on conflict
+(forward efficiency ratio of 48 five-minute returns). 6 symbols, 4 h steps, pre-registered (7039c76).
+
+| variant | aligned share | ER aligned / conflict, DEV | HOLDOUT | signed fwd 4h (DEV / HOLD) |
+|---|---|---|---|---|
+| V0 current drift-t | 4 % | 0.91 | 1.10 | +1 / +10 bp |
+| V1 HMA 14/50 x 4 TF (identityKa) | 8 % | 1.01 | 0.95 | +17 / -14 bp |
+| V2 V1 + ADX >= 20 | 4 % | 0.96 | 1.06 | +24 / -33 bp |
+| V3 vote (HMA, SMMA, drift) + ADX | 16 % | 1.01 | 1.08 | +4 / +1 bp |
+
+**Verdict: none passes (needed >= 1.15 on both).** Multi-timeframe alignment, in any of the standard
+forms, carries no information about the next 4 h on these majors. TrendMTF stays grade B (statistically
+valid descriptive label, drift t with a calibrated null rate). No live change: replacing it with an
+equally uninformative design would add complexity without benefit. Open for a different claim/horizon
+(e.g. daily trend for multi-day holding, where time-series momentum is documented) in the upgrade phase.
