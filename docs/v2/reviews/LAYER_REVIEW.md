@@ -426,3 +426,32 @@ Live (current run): 606 NEUTRAL, 110 HOLD, 4 SELL interpreted signals.
 reliable. Upgrade task (E16-U7): role-aware translation from the watcher contract (direction only from
 direction-role watchers; regime/positioning/execution -> NEUTRAL with direction 0 and the role attached);
 hypotheses (anomaly/funding contrarian) moved out of the Engine until validated.
+
+---
+
+## E15-G2 — MarketStructureEngine (`infrastructure/market_structure/market_structure_engine.py`) — first evaluation 2026-11-23
+
+**Role.** Levels the strategies trade from: volume profile POC / VAH / VAL, support / resistance, bias.
+Used by all 9 strategy adapters (VWAPReversal enters on rejections at VAL/VAH and targets POC).
+
+**Logic.** On the strategy's bar buffer (last 20 bars): support/resistance = min low / max high of the 20
+bars (Donchian, including the current bar — not swing structure despite the name); volume profile = each
+bar's whole volume assigned to the bin of its **close**, 10 bins; value area grown to 70 %; bias = price
+vs POC +/- 0.1 %.
+
+**Check against the standard definition.** Standard volume profile spreads each bar's volume over its
+high-low range on a finer grid (here: 1m bars, 50 bins, same 20 hours). 600 random 20-hour windows (BTC,
+ETH, SOL, DOGE): median difference POC 0.32, VAL 0.27, VAH 0.33 hourly ATRs; **POC more than 1 ATR away
+in 23 %** of windows. Strategy entries and targets placed on these levels are therefore often placed on
+noise-level levels.
+
+**Findings.**
+| # | Sev | Finding |
+|---|---|---|
+| G2-1 | P1-candidate | Volume profile from 20 closes in 10 bins is far from a standard profile (above). Directly affects VWAPReversal / NGMR entries and targets. |
+| G2-2 | P2 | "Support/resistance" are 20-bar extremes including the current bar, not swing pivots. |
+| G2-3 | P2 | Bias = price vs a noisy POC +/- 0.1 %, no volatility scaling. |
+
+**Grade: C.** Upgrade task (E16-U8): standard volume profile (volume spread over each bar's range,
+from 1m/5m bars, adaptive bin count, session or rolling 24 h window), swing-pivot S/R (fractals,
+confirmed bars only), ATR-scaled bias; then re-run E9 for the strategies that use the levels.
