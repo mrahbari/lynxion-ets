@@ -156,3 +156,18 @@ until the exit is booked.
 - Fixed: BingX VST empty position lists booked 12 open positions as UNKNOWN closures; exits now confirmed on consecutive passes (704c73c).
 - Backlog: empty-list blips in exposure checks and the `get_position` duplicate guard.
 - Symbol universe: `runner_sync_approved_symbols.py` now builds the venue's liquid universe daily (launchd 00:30 UTC, ccxt, follows `DEFAULT_BROKER`); old copy-all sync replaced. Ops: `docs/v2/LIVE_VST_OPERATIONS.md`.
+
+## Backlog (deferred, not scheduled)
+- **Maker (post-only limit) entries.** Entries are always MARKET today; the pipeline already computes a maker
+  price + POST_ONLY that the orchestrator discards. Expected gain only ~0.02-0.03 R/trade (taker 0.05 % vs maker
+  0.02 % on a ~201 USDT / 2.58 USDT-risk median trade: 0.078 R -> 0.055 R; with maker TP 0.045 R) against a
+  ~-0.10 R base. Needs a resting-order lifecycle (timeout cancel, partial fill + SL, exposure counting) and risks
+  adverse selection (winners don't fill). Revisit after the symbol-universe change is measured.
+- **Approved-symbols refresh interval.** Daily 00:30 UTC (rule uses 7 completed daily candles; more often adds
+  nothing). Revisit only if the list churns too much (then weekly) or misses fast-rising names.
+- **Universe threshold.** 5 M USDT median 7-day quote volume (77 BingX names; 10 M gave 47). Compare per-band SL
+  slippage and mean R after ~2 weeks of trades.
+- **CMC screener watcher off** (`CMC_SCREENER_ENABLED=false` in .env, 2026-11-23): duplicate trigger, not used
+  in trade decisions. Re-enable only with evidence of a role.
+- Empty-list blips (BingX VST) in exposure checks and the `get_position` duplicate guard.
+- Old backup copies in `data/approved-symbols/` from the replaced downloader (operator decision to delete).

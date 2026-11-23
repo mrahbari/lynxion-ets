@@ -12,7 +12,7 @@ read, the previous list stays in place.
 Rule (pre-registered, not fitted to trades):
   linear USDT-margined perpetual, active, base not a stablecoin,
   >= UNIVERSE_MIN_LISTING_DAYS (30) completed daily candles (listing age),
-  median daily quote volume over the last 7 completed days >= UNIVERSE_MIN_MEDIAN_QUOTE_VOLUME_USDT (10 M);
+  median daily quote volume over the last 7 completed days >= UNIVERSE_MIN_MEDIAN_QUOTE_VOLUME_USDT (5 M);
   quote volume = base volume x (high + low + close) / 3.
   Always kept: symbols with an open platform position (data/active_positions_journal.json).
 Safety: files are replaced atomically and only when >= MIN_SYMBOLS names pass; any failure keeps the previous
@@ -47,7 +47,7 @@ STABLE = {"USDT", "USDC", "USD1", "USDG", "USDD", "USDE", "PYUSD", "RLUSD", "FDU
 
 def settings() -> dict:
     return {"exchange": (os.getenv("UNIVERSE_EXCHANGE") or os.getenv("DEFAULT_BROKER") or "bingx").strip().lower(),
-            "min_median_qv": float(os.getenv("UNIVERSE_MIN_MEDIAN_QUOTE_VOLUME_USDT", "10000000")),
+            "min_median_qv": float(os.getenv("UNIVERSE_MIN_MEDIAN_QUOTE_VOLUME_USDT", "5000000")),
             "min_age_days": int(os.getenv("UNIVERSE_MIN_LISTING_DAYS", "30"))}
 
 

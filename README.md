@@ -4,6 +4,11 @@
 > [docs/reviews/CLAUDE_PROJECT_REVIEW_2026-11-22.md](docs/reviews/CLAUDE_PROJECT_REVIEW_2026-11-22.md).
 > Research code: `research/v2/` (tests: `cd research/v2 && python3 -m pytest -q tests`).
 > Journal epoch 1 retired 2026-11-22 (archive in `data/journal_archive/`). The text below is the pre-v2 state.
+>
+> **v2 operations (BingX VST):** platform runner via `scripts/lynxion_safe_testnet_launcher.py`; runbook
+> [docs/v2/LIVE_VST_OPERATIONS.md](docs/v2/LIVE_VST_OPERATIONS.md). Daily launchd jobs: approved-symbols sync
+> (00:30 UTC, the venue's liquid universe, follows `DEFAULT_BROKER`) and the XS-COMBO sleeve (02:15 local).
+> Experiment reports: `docs/v2/reports/`.
 
 Lynxion is a cryptocurrency trading and research codebase. Economic Edge is **not established**;
 the current trading runtime is **blocked**, and real-money deployment is not approved.
