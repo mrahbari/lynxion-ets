@@ -173,7 +173,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E7-4 | Decision: PASS -> refactor Fusion/Engine into the meta-label filter (same interfaces); FAIL -> keep interfaces, bypass in decision path | FAIL: kept as is, re-open when an input has AUC >= 0.55 | DONE |
 | **E8** | **Execution cost: maker (limit) entries** | | |
 | E8-1 | Offline: fill rate / adverse selection of a post-only entry at signal price on E9 trades (1m data) | PASS: +0.04 R/signal (+0.03 R edge-neutral), DEV and holdout; `E16_maker_entry_2026-11-23.md` | DONE |
-| E8-2 | If E8-1 positive: resting-order lifecycle (timeout cancel, partial fill + SL, exposure count) behind a flag | unit tests + VST trial (post-only, fallback to market after 15 min) | TODO (unblocked by E8-1) |
+| E8-2 | If E8-1 positive: resting-order lifecycle (timeout cancel, partial fill + SL, exposure count) behind a flag | unit tests + VST trial (post-only, fallback to market after 15 min) | IN PROGRESS: code 2461d55, `ENTRY_ORDER_MODE=maker` on VST since 2026-11-23 18:05 UTC; measure fill rate, fallback share, realised entry cost. Note: VST book spread ~27 bp (prod ~0.1 bp), so VST cost numbers do not transfer to prod |
 | **E9** | **Two strategy categories: single-symbol and portfolio** | | |
 | E9-1 | Integrate XS-COMBO as the first "portfolio strategy" on platform infra (adapter, journal, Telegram, config, reconciliation), logic frozen | weekly rebalance runs through platform | TODO |
 | E9-2 | Offline: XS-COMBO rank as a filter for single-symbol strategies (pre-registered on E9 trades) | FAIL: DEV lift +0.08 R (t 8) reverses in holdout (-0.02 R); `E15_xs_rank_filter_2026-11-23.md` | DONE |
@@ -220,4 +220,6 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
   settings) was loaded but never checked. Kept at 15: post-fix maximum seen was 9 longs, so it does not reduce the
   sample; it only stops a correlated pile-up. Lower it only if same-side clusters dominate losses.
 - Empty-list blips (BingX VST) in exposure checks and the `get_position` duplicate guard.
+- Orchestrator LIQUIDITY DEPTH GUARD never runs: it calls `broker.fetch_order_book`, which no broker implements (found 2026-11-23).
+- Maker entries resting across a runner restart are no longer tracked (they keep their attached SL/TP; a later fill becomes a protected position).
 - Old backup copies in `data/approved-symbols/` from the replaced downloader (operator decision to delete).
