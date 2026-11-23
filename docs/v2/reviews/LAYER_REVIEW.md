@@ -455,3 +455,28 @@ noise-level levels.
 **Grade: C.** Upgrade task (E16-U8): standard volume profile (volume spread over each bar's range,
 from 1m/5m bars, adaptive bin count, session or rolling 24 h window), swing-pivot S/R (fractals,
 confirmed bars only), ATR-scaled bias; then re-run E9 for the strategies that use the levels.
+
+---
+
+## E15-G3 — MacroRegimeEngine / regime use — first evaluation 2026-11-23
+
+**Role.** A 4h macro regime classifier (trend / ranging / volatility, with a veto) for risk and strategy
+selection (`infrastructure/market_regime/`, ~1,200 lines incl. classifiers).
+
+**Live use.** Not in the live trade path: it is reached only through `RegimeDetector` (container) and
+`application/services/strategy_services.MarketRegimeDetector`, neither of which the live orchestrator or
+strategy adapters call; no regime gate/veto appears in the live logs. The regime that the live path does
+use is the fused `regime_context` (since F1: `volatile` / `bullish_trending` / `bearish_trending` /
+`ranging` / `normal`), consumed by (a) StrategyManager ranking (0.7-1.2), (b) the orchestrator's
+opportunity score (+0.1 trending, -0.05 volatile), which orders queued intents, and (c) strategy-adapter
+`should_execute`, which live adapters do not call.
+
+**Findings.**
+| # | Sev | Finding |
+|---|---|---|
+| G3-1 | note | MacroRegimeEngine is dead code for live trading (retire or integrate in E10/E16). |
+| G3-2 | P2 | `detect_regime_from_indicators` uses fixed absolute cut-offs (vol > 0.3, |trend| > 0.1) without units/scaling. |
+| G3-3 | note | Since F1 the fused regime is meaningful, so the opportunity score now changes the ORDER of queued intents (not whether they trade). Watch in live: the intent queue order is the only behavioural effect of F1. |
+
+**Grade: n/a (not live).** Decision in the upgrade phase: either a validated regime gate built on the A-grade
+watchers (Volatility, AnomalyML) and the upgraded TrendMTF, or retire.

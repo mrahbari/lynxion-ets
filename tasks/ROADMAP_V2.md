@@ -234,7 +234,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E15-F1 | Fusion: input (one signal per call), weighting, direction rule, output contract vs strategies | P1 fixed: symbol-state fusion (all watchers' latest state, contract roles, regime from validated evidence); hierarchical path kept for replays | DONE |
 | E15-G1 | EngineService (watcher -> fusion -> strategy routing, gates) | grade C: type/direction inconsistent for non-directional watchers, untested contrarian rules (anomaly reversion not supported); no live decision impact since F1 | DONE |
 | E15-G2 | MarketStructureEngine / setup engine (levels the strategies use) | grade C: volume profile from 20 closes/10 bins, POC > 1 ATR off a standard profile in 23 % of windows; setup engine reviewed with strategies (S) | DONE |
-| E15-G3 | MacroRegimeEngine / regime gate | review | IN PROGRESS |
+| E15-G3 | MacroRegimeEngine / regime gate | not in the live path (dead code); live regime = fused regime_context (ranking + intent-queue order only) | DONE |
 | E15-S1..S3 | Live strategies: TrendFollow, VWAPReversal, OIFootprint (each vs its canonical definition) | review x3 | TODO |
 | E15-S4..S10 | Other strategies: breakout, donchian_breakout, liquidity, mean_reversion, mtf_trend, short_term_reversal, sweep_scalper | review x7 | TODO |
 | E15-X1 | DecisionPipeline (confirmation, optimizer, SL/TP sanitizing, confidence) | review | TODO |
