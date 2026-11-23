@@ -430,6 +430,7 @@ class MonitoringAnalysisService:
                 data = data[0] if data else {}
             rate = float(data.get('lastFundingRate'))
             period_key = data.get('nextFundingTime')
+            interval_h = data.get('fundingIntervalHours')
         except Exception:
             self._funding_cache[symbol_str] = {'fetched': now, 'key': cached and cached.get('key')}
             return None
@@ -437,7 +438,13 @@ class MonitoringAnalysisService:
         self._funding_cache[symbol_str] = {'fetched': now, 'key': (period_key, rate)}
         if previous_key == (period_key, rate):
             return None
-        return {'funding_rate': rate}
+        payload = {'funding_rate': rate}
+        try:
+            if interval_h is not None and float(interval_h) > 0:
+                payload['funding_interval_hours'] = float(interval_h)   # 1h / 4h / 8h contracts differ
+        except (TypeError, ValueError):
+            pass
+        return payload
 
     def _format_market_data_for_watcher(self, market_data):
         """Format market data to the structure expected by watchers."""

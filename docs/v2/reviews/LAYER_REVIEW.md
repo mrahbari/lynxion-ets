@@ -124,3 +124,30 @@ whose mean return is significant against bar noise, t = mean(r) / (sd(r)/sqrt(n)
 | W2-4 | note | Live effect of fewer BUY/SELL trend signals on strategy triggering is checked in G1 (Engine). |
 
 **Verdict: does its job after the fix** (deployed with the next runner restart).
+
+---
+
+## E15-W3 — FundingRate watcher (`infrastructure/watchers/adapters/funding_rate.py`) — 2026-11-23
+
+**Role.** Positioning / crowding context: funding normal, positive (longs pay), negative (shorts pay),
+or extreme. Fusion classifies it as REGIME.
+
+**Inputs.** BingX public `premiumIndex` `lastFundingRate` (the rate for the running period), fetched at
+most every 10 min, delivered only when the value or period changes.
+
+**Logic.** Current rate vs fixed thresholds: |rate| > 0.05 % -> positive/negative, > 0.10 % -> extreme
+(5x and 10x the 0.01 % base rate). Conventional.
+
+**Live evidence.** All 14,280 observations today were `funding_rate_normal`. A same-day cross-section of
+the 77 approved symbols (8 h-normalised) shows why: median 0.007 %, 95th percentile 0.010 %, none above
+0.05 %, 18 negative. So "normal" is the correct answer in this calm market, not a defect.
+
+**Findings.**
+| # | Sev | Finding |
+|---|---|---|
+| W3-1 | P1 | **Units bug (fixed).** BingX contracts settle every 4 h or 8 h (1 h also exists); the per-period rate was compared with per-8 h thresholds, so a 4 h contract needed twice the real crowding to register. The feed now passes `fundingIntervalHours` and the watcher normalises to 8 h (metadata: `rate_basis`, `funding_interval_hours`); feeds without the interval are unchanged. Test added. |
+| W3-2 | P2 | History is appended only when the value changes, so "average funding" is an average of changes, not of time. |
+| W3-3 | P2 | Confidence is a fixed table (0.3 / 0.65 / 0.8), not calibrated. |
+| W3-4 | note | E12: on the strategies' trades, entries on the side that pays funding (crowded) were slightly worse (-0.05 R, t -2.3) at a 0.01 % threshold — the only watcher state with a consistent sign. Use as a veto is a phase-2 candidate. |
+
+**Verdict: does its job after the units fix** (deployed with the next runner restart).

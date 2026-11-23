@@ -224,8 +224,8 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E15-W0 | Watcher data feed (MonitoringAnalysisService): which bars/timeframes/funding/book each watcher receives, closed-bar only, freshness | DONE review: does its job; venue gap measured 0.2-3.9 bp (no switch); BingX-only symbols lag up to 5 min (P2); no trade feed (W6) | DONE |
 | E15-W1 | Volatility watcher | does its job; P2: baseline overlap, no intraday seasonality, uncalibrated confidence, dead code | DONE |
 | E15-W2 | TrendMTF watcher | P1 fixed: spurious regression t (72 % false trends on random walks) -> drift t, joint threshold calibrated to 5 % null rate | DONE |
-| E15-W3 | FundingRate watcher | review | IN PROGRESS |
-| E15-W4 | MarketPulse watcher | review | TODO |
+| E15-W3 | FundingRate watcher | P1 fixed: per-period rate vs per-8h thresholds (4h contracts) -> 8h-normalised; 'normal' today is correct (calm market) | DONE |
+| E15-W4 | MarketPulse watcher | review | IN PROGRESS |
 | E15-W5 | Liquidity watcher | review | TODO |
 | E15-W6 | OrderFlowWS watcher (no trade feed: never emits) | review | TODO |
 | E15-W7 | HistoricalCandle watcher | review | TODO |

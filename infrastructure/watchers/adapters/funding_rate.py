@@ -52,8 +52,14 @@ class FundingRateWatcher(BaseWatcher):
             return
 
         if 'funding_rate' in data:
-            # Add new funding rate with timestamp
-            self.funding_rates_history.append(data['funding_rate'])
+            # Thresholds are per 8 h. BingX contracts settle every 1, 4 or 8 h, so a per-period rate is
+            # normalised to its 8 h equivalent (a 4 h contract at 0.05 % = 0.10 % per 8 h).
+            interval_h = data.get('funding_interval_hours')
+            rate = float(data['funding_rate'])
+            if interval_h:
+                rate *= 8.0 / float(interval_h)
+            self.last_interval_hours = interval_h
+            self.funding_rates_history.append(rate)
             self.funding_rate_timestamps.append(datetime.now())
 
             # Keep history within limits
@@ -124,6 +130,8 @@ class FundingRateWatcher(BaseWatcher):
                 'latest_funding_timestamp': self.funding_rate_timestamps[-1].isoformat() if self.funding_rate_timestamps else None,
                 'funding_regime': self._get_funding_regime(current_funding_rate),
                 'funding_source': self.name,
+                'rate_basis': '8h',
+                'funding_interval_hours': getattr(self, 'last_interval_hours', None),
                 'lookback_period': self.lookback
             }
         )

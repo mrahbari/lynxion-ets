@@ -1,3 +1,4 @@
+import pytest
 """Watcher logic review (2026-11-23): each watcher does the job its name says."""
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -97,3 +98,18 @@ def test_hammer_after_downtrend_is_bullish_and_needs_closed_15m_candles():
     o = w.analyze(S)
     assert o.observation_type == "candle_reversal_bullish"
     assert EngineService().process_observation(o).signal_type is SignalType.BUY
+
+
+def test_funding_rate_is_normalised_to_8h_before_thresholds():
+    from infrastructure.watchers.adapters.funding_rate import FundingRateWatcher
+    w4 = FundingRateWatcher("funding_rate", "ENAUSDT")
+    w4.update_data({"funding_rate": 0.0003, "funding_interval_hours": 4})    # = 0.06 % per 8 h
+    obs = w4.analyze(w4.symbol)
+    assert obs.observation_type == "funding_rate_positive"
+    assert obs.metadata["current_funding_rate"] == pytest.approx(0.0006)
+    w8 = FundingRateWatcher("funding_rate", "BTCUSDT")
+    w8.update_data({"funding_rate": 0.0003, "funding_interval_hours": 8})
+    assert w8.analyze(w8.symbol).observation_type == "funding_rate_normal"
+    legacy = FundingRateWatcher("funding_rate", "BTCUSDT")
+    legacy.update_data({"funding_rate": 0.0003})                              # no interval: unchanged
+    assert legacy.analyze(legacy.symbol).metadata["current_funding_rate"] == pytest.approx(0.0003)
