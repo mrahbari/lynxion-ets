@@ -60,7 +60,9 @@ def test_late_reconstructed_loss_uses_its_exit_time(tmp_path, monkeypatch):
 
 
 def test_signal_price_comes_from_the_intent_when_order_has_its_own_risk_dict():
-    intent = SimpleNamespace(fused_signal=None, metadata={}, risk_parameters={"trigger_price": 2.5},
+    # as built by DecisionPipeline: trigger price in metadata, SL/TP in risk_parameters
+    intent = SimpleNamespace(fused_signal=None, metadata={"trigger_price": 2.5},
+                             risk_parameters={"stop_loss": 2.4, "take_profit": 2.8},
                              strategy_name="TrendFollow", intent_confidence=None, timestamp=None)
     order = SimpleNamespace(parent_execution_intent=intent, metadata=None,
                             risk_parameters={"stop_loss": 2.4, "take_profit": 2.8})

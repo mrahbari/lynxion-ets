@@ -69,7 +69,8 @@ def extract_order_journal_metadata(order: Any) -> Dict[str, Any]:
         "signal_ts": signal_time.astimezone().isoformat() if hasattr(signal_time, "astimezone") else None,
         # E11-4/X: price the setup was computed at -> entry slippage = side * (fill / signal_price - 1)
         # the strategy's own parameters (the order may carry an enhanced risk dict without the trigger)
-        "signal_price": ((getattr(parent_intent, "risk_parameters", None) or {}).get("trigger_price")
+        "signal_price": ((getattr(parent_intent, "metadata", None) or {}).get("trigger_price")   # DecisionPipeline
+                         or (getattr(parent_intent, "risk_parameters", None) or {}).get("trigger_price")
                          or risk_parameters.get("trigger_price")),
     }
 
