@@ -1,0 +1,5 @@
+arm,window,n,mean_bp,t,win,funding_bp,long_share,symbols_pos
+FUNDING,DEV,1398,-61.7,-2.91,0.523,18.3,0.5,3
+FUNDING,HOLDOUT,562,-25.8,-1.16,0.548,0.6,1.0,1
+CONTROL,DEV,4768,-54.8,-5.59,0.525,5.0,0.48,1
+CONTROL,HOLDOUT,1937,-13.7,-1.2,0.55,0.9,0.52,2

@@ -303,4 +303,6 @@ adopt only if it beats what is live. Ideas already rejected by our own tests are
 | R9 | Cross-sectional skewness premium (Fernandez-Perez 2018; Baltas 2019; rolling-panda-san/notebooks) | E32 FAIL: -0.31 / -0.38; dilutes XS-COMBO |
 | R10 | Pairs trading, rolling-OLS z-score (Chan 2013; orangepineapple/mean_reversion_strategies) | E33 FAIL: -1.62 / -0.18 net, negative even gross on DEV (spreads trend) |
 | R11 | LLM indicator-composite bot (moss-site/moss-trade-bot-skills) | not tested: no results/OOS/costs; same family as failed E9-E28, E14 |
+| R12 | EMA-gap reversion MT5 bot (Xtley001/Mean-Reversion-Gap-Strategy-Trading-Bot) | E34 FAIL: -0.087 / -0.148 R, 0/10 symbols |
+| R13 | MeanReversion 4h + funding crowding condition (operator request) | E35 FAIL: -61.7 / -25.8 bp; funding condition worse than control |
 | R8 | Funding-extreme reversal on BTC only, 24 h (AIJMR 2026: extreme negative funding -> +0.5 %) | covered by E23 (10 symbols) FAIL; BTC-only would be a small-n re-slice -> not run |
