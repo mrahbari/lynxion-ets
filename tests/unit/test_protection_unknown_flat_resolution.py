@@ -39,3 +39,28 @@ def test_open_position_keeps_the_record(journal):
     open_pos = SimpleNamespace(quantity=0.266)
     assert _apm()._resolve_protection_if_flat(Broker([None, open_pos]), "ZECUSDT", ref) is False   # blip then open
     assert any(o["order_ref"] == ref for o in journal.in_flight())
+
+
+class BrokerWithStops(Broker):
+    def __init__(self, positions, pending):
+        super().__init__(positions)
+        self.pending = pending
+
+    def get_pending_orders(self, symbol):
+        return self.pending
+
+
+def test_open_position_with_an_exchange_stop_closes_the_record(journal):
+    ref = journal.record_protection_unknown("LDOUSDT", "BUY", 100, "bingx", stop_price=0.5)
+    open_pos = SimpleNamespace(quantity=100)
+    b = BrokerWithStops([open_pos], [{"type": "STOP_MARKET", "side": "BUY", "stopPrice": "0.52"}])
+    assert _apm()._resolve_protection_if_flat(b, "LDOUSDT", ref, formatted_symbol="LDO-USDT", close_side="BUY") is True
+    assert not any(o["order_ref"] == ref for o in journal.in_flight())
+    assert journal.record_intent("BTCUSDT", "BUY", 1, "bingx", "x3")
+
+
+def test_open_position_without_any_stop_keeps_blocking(journal):
+    ref = journal.record_protection_unknown("LDOUSDT", "BUY", 100, "bingx", stop_price=0.5)
+    b = BrokerWithStops([SimpleNamespace(quantity=100)], [{"type": "TAKE_PROFIT_MARKET", "side": "BUY"}])
+    assert _apm()._resolve_protection_if_flat(b, "LDOUSDT", ref, formatted_symbol="LDO-USDT", close_side="BUY") is False
+    assert any(o["order_ref"] == ref for o in journal.in_flight())

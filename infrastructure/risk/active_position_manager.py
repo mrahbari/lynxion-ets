@@ -1107,7 +1107,8 @@ class ActivePositionManager:
 
             if not placed:
                 logger.error(f"❌ Failed to update Broker Stop Loss on exchange for {symbol} after {max_sl_attempts} attempts")
-                self._resolve_protection_if_flat(target_broker, normalized_symbol, locals().get("protection_ref"))
+                self._resolve_protection_if_flat(target_broker, normalized_symbol, locals().get("protection_ref"),
+                                                 formatted_symbol=formatted_symbol, close_side=close_side)
             return placed
         except Exception as e:
             logger.warning(f"Could not sync updated SL order on exchange for {symbol}: {e}")
@@ -1119,7 +1120,8 @@ class ActivePositionManager:
     # position is really open, its previous stop is still on the exchange and the next loop retries.
     FLAT_CONFIRM_DELAY_S = 1.0
 
-    def _resolve_protection_if_flat(self, target_broker: Any, symbol: str, protection_ref: Optional[str]) -> bool:
+    def _resolve_protection_if_flat(self, target_broker: Any, symbol: str, protection_ref: Optional[str],
+                                    formatted_symbol: Optional[str] = None, close_side: Optional[str] = None) -> bool:
         if not protection_ref or not hasattr(target_broker, "get_position"):
             return False
         try:
@@ -1131,10 +1133,18 @@ class ActivePositionManager:
                 qty = getattr(pos, "quantity", None) if pos is not None else 0
                 qty = getattr(qty, "value", qty)
                 return pos is None or float(qty or 0) == 0.0
-            if not flat():
-                return False
-            time.sleep(self.FLAT_CONFIRM_DELAY_S)
-            if not flat():
+            if not flat() or (time.sleep(self.FLAT_CONFIRM_DELAY_S) or not flat()):
+                # 2026-11-24 (LDO): the update was accepted but not seen in time while the position is open.
+                # If a position-closing stop is still on the exchange, the position is protected: close the
+                # record as FAILED (the next loop retries the update) so one symbol cannot block every order.
+                # No visible stop -> keep PROTECTION_UNKNOWN (real risk; the global block is intended).
+                if self._closing_stop_visible(target_broker, formatted_symbol or symbol, close_side):
+                    live_order_journal.record_terminal(
+                        protection_ref, "FAILED",
+                        reason="stop update not verified; an existing exchange stop protects the position")
+                    logger.warning(f"🧹 Protection record for {symbol} closed: update unverified but an exchange stop "
+                                   f"is in place (will retry)")
+                    return True
                 return False
             live_order_journal.record_terminal(protection_ref, "CANCELLED",
                                                reason="position flat before stop update was verified")
@@ -1143,6 +1153,19 @@ class ActivePositionManager:
         except Exception as e:
             logger.warning(f"Could not resolve protection record for {symbol}: {e}")
             return False
+
+    @staticmethod
+    def _closing_stop_visible(target_broker: Any, symbol: str, close_side: Optional[str]) -> bool:
+        if not close_side or not hasattr(target_broker, "get_pending_orders"):
+            return False
+        try:
+            for o in target_broker.get_pending_orders(symbol) or []:
+                kind = str(o.get("type", "")).upper()
+                if "STOP" in kind and "TAKE" not in kind and str(o.get("side", "")).upper() == close_side.upper():
+                    return True
+        except Exception:
+            return False
+        return False
 
     @staticmethod
     def _verify_pending_stop(target_broker: Any, formatted_symbol: str, close_side: str,

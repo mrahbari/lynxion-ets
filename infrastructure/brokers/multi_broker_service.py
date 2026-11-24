@@ -567,9 +567,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                             **journal_metadata)
                     except Exception as journal_error:
                         self.logger.error(
-                            "Order blocked before send: INTENT persistence failed (%s)",
-                            type(journal_error).__name__,
-                        )
+                            f"Order blocked before send: INTENT persistence failed ({type(journal_error).__name__}: {journal_error})")
                         return None
 
                 # === LIVE_EXECUTION_GUARD — single, race-free execution-safety enforcement point (Phase-9) ===

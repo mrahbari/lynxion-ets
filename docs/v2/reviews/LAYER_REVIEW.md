@@ -761,3 +761,8 @@ loaded; Codex-era scripts (phase10 burst, strategy_deployment_revalidation) stil
   Living docs updated (`docs/system_components_catalog.md` strategy section, `docs/architecture_flow.md`,
   roadmap S1 order). Dated reports (Codex phase reports, E9-E22) are records of what was tested and are not
   rewritten. All 1,590 tests (unit, e2e, contract) pass.
+* **P0 follow-up (LDO, 2026-11-24 17:30 UTC):** a stop update accepted but not visible in time while the position
+  stayed OPEN left `PROTECTION_UNKNOWN` and blocked every new order for ~45 min (12 orders failed; the error path
+  also raised a logger TypeError). Fix: when the position is open but a position-closing stop is visible on the
+  exchange, the record closes as FAILED (update retried next loop); no visible stop keeps the block (real risk).
+  Logger call fixed. LDO record resolved after checking its exchange stop (0.2296). Found by the detailed live check.
