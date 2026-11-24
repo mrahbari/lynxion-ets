@@ -697,4 +697,21 @@ Evidence (live, 66 platform trades since 11-10; 28 with signal time):
 | X-5 | Synthetic confidence in Telegram (E11-3), empty-list blips (E11-1) | next round |
 | X-6 | Maker entries (+0.04 R/trade offline) | revisit as a simple post-only-then-market variant only after X-1 data |
 
-**Grade after round 1: B+** (A needs X-5 and one week of slippage/latency evidence).
+**Grade after round 1: B** (corrected from B+ in the end-of-day scorecard; A needs X-5 and one clean week of slippage/latency evidence).
+
+## Realistic scorecard (2026-11-24, end of day)
+
+Grade = quality of the component for ITS job (rubric E16). It is not a profit forecast: a system of A
+components with no predictive edge still makes no money.
+
+| Layer | Grade | Why (realistic) |
+|---|---|---|
+| Watchers — Volatility, AnomalyML | A | regime claims validated out-of-sample, calibrated confidence |
+| Watchers — TrendMTF, MarketPulse, HistoricalCandle | B | correct and causal; directional claims FAIL (E18, E19): descriptive only |
+| Watchers — Funding, Liquidity, OrderFlow | B | correct; no tested claim (U4-U6) |
+| Engine | A (contract) | translation correct and tested; adds no information by design |
+| Fusion | B | regime from validated watchers; direction descriptive; state completeness (F-1) and order regime (F-2) unverified |
+| MarketStructure | A (levels) | level accuracy validated; better levels did not improve strategy results |
+| Strategies | D | no net edge after costs (E9, E20, E21); live +20 USDT / 66 trades is not significant |
+| Execution / risk | B (was rated B+ this afternoon; corrected) | protection works, but two P0/P1 defects (24 h lockout, spot discovery) ran unnoticed for a day; B until one clean week of evidence |
+| Platform overall | C+ | runs, observable, trades at capacity; profitability unproven (strategies D) |
