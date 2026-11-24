@@ -766,3 +766,17 @@ loaded; Codex-era scripts (phase10 burst, strategy_deployment_revalidation) stil
   also raised a logger TypeError). Fix: when the position is open but a position-closing stop is visible on the
   exchange, the record closes as FAILED (update retried next loop); no visible stop keeps the block (real risk).
   Logger call fixed. LDO record resolved after checking its exchange stop (0.2296). Found by the detailed live check.
+
+## XS-COMBO-V1 sleeve — review (2026-11-24): grade B (A needs forward evidence)
+* Evidence: frozen holdout SR 1.39 (2025-01..2026-10), return ~all funding carry. Live (VST, since 11-22): shadow
+  funding +6.8 USDT / 48 h on 3,031 gross = ~40 %/yr (backtest +39.8 %/yr); price P&L -66 USDT (~1.4 sigma of
+  2-day book vol); daily stop/TP checks and tracking ran on 11-23 and 11-24; every position has a 50 % stop and
+  40 % TP. The -179.6 USDT realised on 11-22 came from resizing the book 20,000 -> 3,200 on day one, not from
+  the strategy.
+* Defects: (1) **sizing coupled to the platform cap** (`RISK_VST_MAX_PORTFOLIO_NOTIONAL_USDT`, raised to 10,300 for
+  the platform today) -> the next rebalance would have tripled the sleeve. FIXED: `V2_BOOK_USDT=3200` (own
+  variable, value the sleeve has run with). (2) VST does not settle funding, so VST equity hides the edge;
+  the shadow-funding ledger (`tracking.csv`) is the measure — keep. (3) Host hard-coded to VST: real capital is
+  operator-gated by design.
+* Grade **B**: correct, validated out-of-sample, live consistent so far. A = 8-12 weeks of live returns
+  (price + shadow funding) consistent with the backtest (+~0.5 %/week, weekly vol ~3 %), per the evaluation plan.
