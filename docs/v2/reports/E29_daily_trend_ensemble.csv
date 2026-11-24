@@ -1,0 +1,5 @@
+variant,window,sharpe,cagr,vol,max_dd,btc_sharpe,btc_max_dd,beta,alpha_ann,gross_sharpe,turnover_per_yr
+LONG_ONLY,DEV,1.24,0.11,0.087,-0.112,1.12,-0.767,0.08,0.053,1.49,2.7
+LONG_ONLY,HOLDOUT,-0.38,-0.033,0.08,-0.117,-0.02,-0.53,0.1,-0.029,-0.26,4.1
+LONG_SHORT,DEV,0.72,0.069,0.101,-0.192,1.12,-0.767,0.0,0.069,0.94,5.3
+LONG_SHORT,HOLDOUT,-0.16,-0.03,0.135,-0.132,-0.02,-0.53,-0.16,-0.023,-0.07,8.6
