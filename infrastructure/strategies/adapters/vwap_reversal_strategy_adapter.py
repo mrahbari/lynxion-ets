@@ -60,27 +60,15 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
             lows = [float(item.get('low', item['close'])) for item in self.data_buffer]
             volumes = [float(item.get('volume', 0.0)) for item in self.data_buffer]
 
-            struct = self.market_structure_engine.calculate_market_structure(closes, highs, lows, volumes)
-            setups = self.setup_engine.scan_for_setups(
-                symbol=symbol,
-                prices=closes,
-                highs=highs,
-                lows=lows,
-                val=struct["val"],
-                vah=struct["vah"],
-                poc=struct["poc"],
-                config=self.config,
-                data_buffer=self.data_buffer
-            )
-
-            # Filter setups to only match NGMR_REVERSION setups
-            setup = next((s for s in setups if s.setup_type == "NGMR_REVERSION"), None)
+            # E16-U10 (2026-11-24): canonical session-VWAP 2-sigma re-entry on closed 15m bars (E21 VR1).
+            from infrastructure.strategies.vwap_session import session_vwap_setup, closed_bars
+            setup = session_vwap_setup(self.data_buffer, symbol)
             if not setup:
                 return None
+            done = closed_bars(self.data_buffer)
+            struct = {"method": "session_vwap", "vwap": float(setup.take_profit_level)}
 
-            latest_bar = self.data_buffer[-1] if self.data_buffer else {}
-            if not self._is_setup_fresh(setup, latest_bar):
-                return None
+            latest_bar = done[-1]
 
 
             from infrastructure.strategies.decision_pipeline import calculate_dynamic_metrics
@@ -124,27 +112,16 @@ class VWAPReversalStrategyAdapter(BaseStrategyAdapter):
         lows = [float(item.get('low', item['close'])) for item in self.data_buffer]
         volumes = [float(item.get('volume', 0.0)) for item in self.data_buffer]
 
-        if not setup:
-            struct = self.market_structure_engine.calculate_market_structure(closes, highs, lows, volumes)
-            setups = self.setup_engine.scan_for_setups(
-                symbol=fused_signal.symbol,
-                prices=closes,
-                highs=highs,
-                lows=lows,
-                val=struct["val"],
-                vah=struct["vah"],
-                poc=struct["poc"],
-                config=self.config,
-                data_buffer=self.data_buffer
-            )
-            setup = next((s for s in setups if s.setup_type == "NGMR_REVERSION"), None)
-
+        from infrastructure.strategies.vwap_session import session_vwap_setup, closed_bars, SETUP_TYPE
+        if not setup or getattr(setup, "setup_type", None) != SETUP_TYPE:
+            setup = session_vwap_setup(self.data_buffer, fused_signal.symbol)
         if not setup:
             return None
-
-        latest_bar = self.data_buffer[-1] if self.data_buffer else {}
-        if not self._is_setup_fresh(setup, latest_bar):
+        done = closed_bars(self.data_buffer)
+        if not done:
             return None
+        latest_bar = done[-1]
+        closes = [float(x['close']) for x in done]
 
         current_price = closes[-1]
         max_position_size = float(self.config.get("max_position_size", 0.05))

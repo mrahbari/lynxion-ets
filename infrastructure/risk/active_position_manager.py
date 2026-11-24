@@ -1107,9 +1107,41 @@ class ActivePositionManager:
 
             if not placed:
                 logger.error(f"❌ Failed to update Broker Stop Loss on exchange for {symbol} after {max_sl_attempts} attempts")
+                self._resolve_protection_if_flat(target_broker, normalized_symbol, locals().get("protection_ref"))
             return placed
         except Exception as e:
             logger.warning(f"Could not sync updated SL order on exchange for {symbol}: {e}")
+            return False
+
+    # 2026-11-24: a stop update racing the position's own exit (NATGAS: trail sent 14:30:25, TP filled
+    # 14:31:06) left PROTECTION_UNKNOWN, which blocks every new order (journal) and every restart (launcher).
+    # Resolve it only when the position is flat on two reads 1 s apart (VST empty-list blips); if the
+    # position is really open, its previous stop is still on the exchange and the next loop retries.
+    FLAT_CONFIRM_DELAY_S = 1.0
+
+    def _resolve_protection_if_flat(self, target_broker: Any, symbol: str, protection_ref: Optional[str]) -> bool:
+        if not protection_ref or not hasattr(target_broker, "get_position"):
+            return False
+        try:
+            from domain.value_objects import Symbol
+            from infrastructure.execution.live_order_journal import live_order_journal
+
+            def flat() -> bool:
+                pos = target_broker.get_position(Symbol(symbol))
+                qty = getattr(pos, "quantity", None) if pos is not None else 0
+                qty = getattr(qty, "value", qty)
+                return pos is None or float(qty or 0) == 0.0
+            if not flat():
+                return False
+            time.sleep(self.FLAT_CONFIRM_DELAY_S)
+            if not flat():
+                return False
+            live_order_journal.record_terminal(protection_ref, "CANCELLED",
+                                               reason="position flat before stop update was verified")
+            logger.warning(f"🧹 Protection record for {symbol} resolved: position already closed (stop update not needed)")
+            return True
+        except Exception as e:
+            logger.warning(f"Could not resolve protection record for {symbol}: {e}")
             return False
 
     @staticmethod

@@ -715,3 +715,16 @@ components with no predictive edge still makes no money.
 | Strategies | D | no net edge after costs (E9, E20, E21); live +20 USDT / 66 trades is not significant |
 | Execution / risk | B (was rated B+ this afternoon; corrected) | protection works, but two P0/P1 defects (24 h lockout, spot discovery) ran unnoticed for a day; B until one clean week of evidence |
 | Platform overall | C+ | runs, observable, trades at capacity; profitability unproven (strategies D) |
+
+## 2026-11-24 evening — VWAPReversal rebuilt (E16-U10) and a protection-record race (P0)
+* **VWAPReversal now runs the canonical session-VWAP 2-sigma re-entry setup** (E21 VR1) on closed 15m bars
+  (`infrastructure/strategies/vwap_session.py`; parity test: identical signals to the research version).
+  E21: DEV -0.017 R / HOLDOUT -0.062 R vs the old rolling-VWAP setup -0.124 / -0.123 R. Still no proven
+  edge; adopted as the correct definition with smaller losses (operator decision). Old NGMR setup remains in
+  SetupEngine (MeanReversion uses it).
+* **P0 race:** a trailing-stop update sent seconds before the position closed at TP could not be verified
+  and left `PROTECTION_UNKNOWN`; that status blocks every new order (journal) and every restart (launcher).
+  Fix: after a failed stop update the manager re-reads the position twice (1 s apart); flat both times ->
+  the record is closed as CANCELLED with the reason. Open position -> record kept, previous stop still on
+  the exchange, next loop retries. Stale NATGAS record resolved by hand (backup in data/journal_archive).
+* Research E23 (funding-extreme) and E24 (OI flush): both FAIL (see E23_E24 report).

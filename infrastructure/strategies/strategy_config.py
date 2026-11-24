@@ -119,7 +119,7 @@ class StrategyConfig:
     # table, not a parameter change — values are the strategies' existing declared TFs.
     DESIGN_TIMEFRAMES = {
         'sweep_scalper': '1m',
-        'liquidity': '5m', 'vwap_reversal': '5m',
+        'liquidity': '5m', 'vwap_reversal': '15m',   # session-VWAP 2-sigma setup (E21, 2026-11-24)
         'breakout': '15m', 'crypto_breakout': '15m', 'volatility_breakout': '15m', 'mtf_trend': '15m',
         'trend_following': '1h', 'trend_follow': '1h', 'mean_reversion': '1h',
         'oi_footprint': '1h',
@@ -419,7 +419,7 @@ def get_vwap_reversal_config() -> dict:
         'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('VWAP_REVERSAL', 1.0),
         'take_profit_multiplier': StrategyConfig.get_strategy_take_profit_multiplier('VWAP_REVERSAL', 1.8),
         'lookback_period': StrategyConfig.get_strategy_lookback_period('VWAP_REVERSAL', 89),
-        'timeframe': StrategyConfig.get_strategy_timeframe('VWAP_REVERSAL', '5m'),
+        'timeframe': StrategyConfig.get_strategy_timeframe('VWAP_REVERSAL', '15m'),
         'parameters': {
             'vwap_period': 89,
             'std_dev_multiplier': 1.5,
