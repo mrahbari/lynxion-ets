@@ -298,6 +298,6 @@ adopt only if it beats what is live. Ideas already rejected by our own tests are
 | R3 | Intraday predictability of perps (J. Chinese Econ. & Business Studies 2026; Dashyan, SSRN 2026) | literature says none out-of-sample — consistent with E9-E28; no more intraday price-setup research |
 | R4 | Quarter-hour effect (arXiv 2607.09426) | gross ~0.5 bp/trade vs 5 bp fee: not tradable for us — rejected without test |
 | R5 | Cross-sectional funding carry decay (arXiv 2510.14435: carry Sharpe negative in 2025; other OOS reports 1.13) | TODO: XS-COMBO decay monitor — rolling 8-week shadow-funding carry vs backtest, alert if below half |
-| R6 | Short-term cross-sectional reversal (four-factor crypto model 2025; 15-min reversal measurement 2026) | TODO: 1-day reversal leg, market-neutral, as a standalone daily test (distinct from Codex C-06 extreme movers) |
+| R6 | Short-term cross-sectional reversal (four-factor crypto model 2025; 15-min reversal measurement 2026) | E31 FAIL net (-1.86 / -2.08) although gross +0.67 / +0.39: costs at daily turnover. R6b TODO: use it only to time XS-COMBO rebalance trades (no extra turnover) |
 | R7 | Daily trend with a PRE-DEFINED regime filter (only if a regime definition is fixed from outside these windows) | parked |
 | R8 | Funding-extreme reversal on BTC only, 24 h (AIJMR 2026: extreme negative funding -> +0.5 %) | covered by E23 (10 symbols) FAIL; BTC-only would be a small-n re-slice -> not run |
