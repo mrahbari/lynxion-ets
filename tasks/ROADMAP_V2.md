@@ -300,4 +300,5 @@ adopt only if it beats what is live. Ideas already rejected by our own tests are
 | R5 | Cross-sectional funding carry decay (arXiv 2510.14435: carry Sharpe negative in 2025; other OOS reports 1.13) | TODO: XS-COMBO decay monitor — rolling 8-week shadow-funding carry vs backtest, alert if below half |
 | R6 | Short-term cross-sectional reversal (four-factor crypto model 2025; 15-min reversal measurement 2026) | E31 FAIL net (-1.86 / -2.08) although gross +0.67 / +0.39: costs at daily turnover. R6b TODO: use it only to time XS-COMBO rebalance trades (no extra turnover) |
 | R7 | Daily trend with a PRE-DEFINED regime filter (only if a regime definition is fixed from outside these windows) | parked |
+| R9 | Cross-sectional skewness premium (Fernandez-Perez 2018; Baltas 2019; rolling-panda-san/notebooks) | E32 FAIL: -0.31 / -0.38; dilutes XS-COMBO |
 | R8 | Funding-extreme reversal on BTC only, 24 h (AIJMR 2026: extreme negative funding -> +0.5 %) | covered by E23 (10 symbols) FAIL; BTC-only would be a small-n re-slice -> not run |
