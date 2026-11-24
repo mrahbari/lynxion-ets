@@ -669,3 +669,8 @@ Routine: grade -> defects -> solutions -> decision -> fix.
 * Fix: swap tickers (`defaultType: swap`, `BASE/USDT:USDT` normalised) and `percentage`. Live probe:
   65 tradable symbols discovered (trend 22, volatility 30, momentum 24, anomaly 14), all approved and
   not sleeve-owned. The approved list itself (5 M median daily volume, age >= 30 d, 88 names) unchanged.
+* Live check after the discovery fix (20 min): 63 symbols discovered, 62 evaluated (was 8-20), 192 intents
+  queued, 8 orders, 11 BingX throttles all recovered (0 data gaps), CPU 9 %, 420 MB. Book reached the side
+  cap (15 LONG + 15 SHORT = 30 positions); further entries are skipped by `SIDE CAP` as designed.
+* Backlog B4: the orchestrator labels every `execute_order -> None` as `DUPLICATE:` (side-cap skips appear as
+  duplicates in logs/Telegram reasons). Label only; no behaviour change.
