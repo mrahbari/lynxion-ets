@@ -32,29 +32,9 @@ class EngineService:
             direction = self._calculate_direction(observation)
             strength = self._calculate_strength(observation)
 
-            source_watcher = observation.metadata.get('watcher_name') if observation.metadata else None
-            if not source_watcher and observation.observation_type:
-                obs_type_lower = str(observation.observation_type).lower()
-                if 'trend' in obs_type_lower:
-                    source_watcher = 'TrendMTFWatcher'
-                elif 'pulse' in obs_type_lower or 'momentum' in obs_type_lower:
-                    source_watcher = 'MarketPulseWatcher'
-                elif 'volatility' in obs_type_lower:
-                    source_watcher = 'VolatilityWatcher'
-                elif 'pattern' in obs_type_lower or 'doji' in obs_type_lower or 'engulfing' in obs_type_lower or 'hammer' in obs_type_lower:
-                    source_watcher = 'HistoricalCandleWatcherAdapter'
-                elif 'anomaly' in obs_type_lower:
-                    source_watcher = 'AnomalyMLWatcher'
-                elif 'order_flow' in obs_type_lower:
-                    source_watcher = 'OrderFlowWSWatcher'
-                elif 'liquidity' in obs_type_lower:
-                    source_watcher = 'LiquidityWatcher'
-                elif 'tick' in obs_type_lower:
-                    source_watcher = 'TickWatcherAdapter'
-                elif 'funding' in obs_type_lower:
-                    source_watcher = 'FundingRateWatcher'
-                elif 'screening' in obs_type_lower or 'cmc' in obs_type_lower:
-                    source_watcher = 'CMCScreener'
+            source_watcher = (observation.metadata.get('watcher_name') if observation.metadata else None) \
+                or self._guess_watcher(observation)
+            role = self.role_of(observation, source_watcher)
 
             # Create interpreted signal
             interpreted_signal = InterpretedSignal(
@@ -65,7 +45,8 @@ class EngineService:
                 confidence=observation.confidence,
                 timestamp=observation.timestamp,
                 source_watcher=source_watcher,
-                metadata={**(observation.metadata or {}), 'observation_type': observation.observation_type, 'watcher_name': source_watcher}
+                metadata={**(observation.metadata or {}), 'observation_type': observation.observation_type,
+                          'watcher_name': source_watcher, 'engine_role': role}
             )
 
             if self.logger:
@@ -80,111 +61,53 @@ class EngineService:
                 self.logger.error(f"Error processing observation in engine: {e}")
             return None
 
+    @staticmethod
+    def _guess_watcher(observation: MarketObservation) -> Optional[str]:
+        """Fallback when metadata lacks the watcher name (order matters: 'market_pulse' before 'trend')."""
+        o = str(observation.observation_type or '').lower()
+        for keys, name in ((('pulse', 'momentum'), 'MarketPulseWatcher'), (('trend',), 'TrendMTFWatcher'),
+                           (('volatility',), 'VolatilityWatcher'), (('anomaly',), 'AnomalyMLWatcher'),
+                           (('order_flow',), 'OrderFlowWSWatcher'), (('liquidity',), 'LiquidityWatcher'),
+                           (('funding',), 'FundingRateWatcher'), (('tick',), 'TickWatcherAdapter'),
+                           (('screening', 'cmc'), 'CMCScreener'),
+                           (('candle', 'pattern', 'doji', 'engulfing', 'hammer'), 'HistoricalCandleWatcherAdapter')):
+            if any(k in o for k in keys):
+                return name
+        return None
+
+    # E16-U7 (2026-11-24): role-aware translation from the watcher contract. Only DIRECTION-role
+    # watchers get a side (from their label, the same rule Fusion uses); regime / positioning /
+    # execution observations are NEUTRAL with direction 0 (they were HOLD / "bullish" / contrarian
+    # before). The anomaly-reversion and funding-contrarian hypotheses were removed from this layer:
+    # anomaly reversion is not supported by data (E18 probe), funding contrarian is untested (E16-U4).
+    @staticmethod
+    def role_of(observation: MarketObservation, watcher: Optional[str] = None) -> str:
+        from infrastructure.fusion.symbol_state_fusion import CLASS_TO_WATCHER, FALLBACK_ROLE
+        meta = observation.metadata or {}
+        contract = meta.get('contract') if isinstance(meta.get('contract'), dict) else {}
+        if contract.get('role'):
+            return str(contract['role'])
+        key = CLASS_TO_WATCHER.get(watcher or '', watcher or '')
+        return FALLBACK_ROLE.get(key, 'direction')
+
+    def _side(self, observation: MarketObservation) -> int:
+        from infrastructure.fusion.symbol_state_fusion import _side
+        if 'single_candle' in str(observation.observation_type).lower():
+            return 0
+        meta = observation.metadata or {}
+        if self.role_of(observation, meta.get('watcher_name') or self._guess_watcher(observation)) != 'direction':
+            return 0
+        return _side(str(observation.observation_type))
+
     def _determine_signal_type(self, observation: MarketObservation):
-        """Determine signal type based on observation type"""
+        """BUY / SELL for a directional observation with a side, otherwise NEUTRAL."""
         from domain.entities import SignalType
-
-        obs_type = observation.observation_type.lower()
-
-        # Handle market pulse observations (e.g., market_pulse_positive, market_pulse_negative)
-        if 'market_pulse' in obs_type:
-            # Side is in the name ('..._bullish_strong'); caution / support / resistance / no-direction
-            # states are not directional.
-            if any(k in obs_type for k in ('caution', 'resistance', 'support', 'without_direction', 'neutral')):
-                return SignalType.NEUTRAL
-            if 'bullish' in obs_type:
-                return SignalType.BUY
-            if 'bearish' in obs_type:
-                return SignalType.SELL
-            if 'positive' in obs_type or observation.observation_value > 0.01:  # Lowered threshold from 0.1 to 0.01
-                return SignalType.BUY
-            elif 'negative' in obs_type or observation.observation_value < -0.01:  # Lowered threshold from -0.1 to -0.01
-                return SignalType.SELL
-            else:
-                return SignalType.NEUTRAL
-
-        # Handle trend observations (e.g., trend_neutral, trend_bullish, trend_bearish)
-        elif 'trend' in obs_type:
-            if 'bullish' in obs_type or 'positive' in obs_type or observation.observation_value > 0.01:  # Lowered threshold from 0.1 to 0.01
-                return SignalType.BUY
-            elif 'bearish' in obs_type or 'negative' in obs_type or observation.observation_value < -0.01:  # Lowered threshold from -0.1 to -0.01
-                return SignalType.SELL
-            else:
-                return SignalType.NEUTRAL
-
-        # Handle momentum observations
-        elif 'momentum' in obs_type:
-            if observation.observation_value > 0.01:  # Lowered threshold from 0.1 to 0.01
-                return SignalType.BUY
-            elif observation.observation_value < -0.01:  # Lowered threshold from -0.1 to -0.01
-                return SignalType.SELL
-            else:
-                return SignalType.NEUTRAL
-
-        # Handle volatility observations (e.g., volatility_normal, volatility_high, volatility_low)
-        elif 'volatility' in obs_type:
-            if 'high' in obs_type or 'expansion' in obs_type or observation.observation_value > 0.7:
-                return SignalType.NEUTRAL  # volatility has no side (was BUY: every expansion read as a long)
-            elif 'low' in obs_type or observation.observation_value < 0.3:  # Low volatility
-                return SignalType.HOLD  # Wait for higher volatility
-            else:
-                return SignalType.NEUTRAL  # Normal volatility
-
-        # Handle liquidity observations
-        elif 'liquidity' in obs_type:
-            if observation.observation_value > 0.7:  # High liquidity
-                return SignalType.NEUTRAL  # Good for execution but not directional
-            else:
-                return SignalType.HOLD  # Low liquidity might be risky
-
-        # Handle anomaly observations
-        elif 'anomaly' in obs_type:
-            if 'positive' in obs_type or observation.observation_value > 0.01:  # Lowered threshold from 0.1 to 0.01
-                return SignalType.SELL  # Positive anomaly might revert down
-            elif 'negative' in obs_type or observation.observation_value < -0.01:  # Lowered threshold from -0.1 to -0.01
-                return SignalType.BUY   # Negative anomaly might revert up
-            else:
-                return SignalType.NEUTRAL
-
-        # Funding: crowded side pays. Extreme/high positive funding (crowded longs) is read
-        # contrarian (SELL), negative funding contrarian (BUY). Previously always NEUTRAL.
-        elif 'funding' in obs_type:
-            if 'positive' in obs_type:
-                return SignalType.SELL
-            elif 'negative' in obs_type:
-                return SignalType.BUY
-            return SignalType.NEUTRAL
-
-        # Candle-pattern observations (historical_candle) carry their side in the name, e.g.
-        # 'candle_reversal_bullish_emerging'. Previously no rule matched -> always NEUTRAL,
-        # while Fusion read the same names as BUY/SELL.
-        elif 'candle' in obs_type and ('bullish' in obs_type or 'bearish' in obs_type):
-            return SignalType.BUY if 'bullish' in obs_type else SignalType.SELL
-
-        # Handle single candle observations (our new observation type)
-        elif 'single_candle' in obs_type:
-            # For single candle observations, we can't determine direction from just price
-            # So we'll return NEUTRAL to indicate we need more data
-            return SignalType.NEUTRAL
-
-        # Default to neutral for unknown observation types
-        else:
-            return SignalType.NEUTRAL
+        side = self._side(observation)
+        return SignalType.BUY if side > 0 else SignalType.SELL if side < 0 else SignalType.NEUTRAL
 
     def _calculate_direction(self, observation: MarketObservation) -> float:
-        """Calculate direction based on observation value"""
-        # Normalize observation value to range [-1, 1] based on its nature
-        obs_value = observation.observation_value
-
-        # For single candle observations, we can't determine direction from absolute price
-        # So we'll return 0.0 (neutral) for single candle observations
-        if 'single_candle' in observation.observation_type.lower():
-            return 0.0
-
-        normalized_value = max(-1.0, min(1.0, float(obs_value)))
-        if 'anomaly' in observation.observation_type.lower():
-            return -normalized_value
-        return normalized_value
+        """Side of a directional observation (-1 / 0 / +1); magnitude lives in strength/confidence."""
+        return float(self._side(observation))
 
     def _calculate_strength(self, observation: MarketObservation) -> float:
         """Calculate strength based on observation confidence and value"""

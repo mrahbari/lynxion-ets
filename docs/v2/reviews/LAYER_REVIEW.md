@@ -641,3 +641,31 @@ Evidence: trade_journal (102 trades since 11-10), live_order_journal, runner log
      load); persisted journal repaired (backup in data/journal_archive). Distinct losses still trip 24 h.
   2. **Monitoring slots filled by sleeve-owned symbols** (12 of ~33). Discovery now skips them
      (`_platform_candidate`); the 88-symbol approved list is unchanged.
+
+## E16-U7 — EngineService upgrade (2026-11-24): grade C -> A (translation contract)
+
+Routine: grade -> defects -> solutions -> decision -> fix.
+* **Grade before: C.** Defects G1-1..G1-3 (HOLD/positive direction for non-directional watchers; anomaly
+  and funding contrarian hypotheses inside the translation layer; order-flow sides unmapped; watcher
+  guessed by substring, candle patterns unrecognised).
+* **Solutions considered.** (a) patch each rule; (b) translate from the watcher contract (role) with the
+  same side rule Fusion uses. Chosen: (b) — one source of truth, no new hypotheses.
+* **Fix.** Role from `metadata.contract.role`, fallback = Fusion's role table. Direction-role watchers:
+  type BUY/SELL/NEUTRAL and direction -1/0/+1 from the label (Fusion's `_side`); regime / positioning /
+  execution: NEUTRAL, direction 0. Contrarian mappings removed (anomaly reversion not supported, E18;
+  funding contrarian untested -> E16-U4). `engine_role` added to metadata; watcher-name fallback covers
+  candle patterns. Tests: every live label (`tests/unit/test_engine_role_aware.py`); two tests that
+  encoded the removed contrarian mapping deleted.
+* **Live effect.** None on decisions (state fusion reads labels/roles/confidence); the Engine's own output
+  is now consistent for logs, attribution and the hierarchical fusion fallback.
+* **Grade after: A** for its role (a translation layer has no predictive claim; contract correct, tested,
+  no embedded hypotheses).
+
+## Platform review, part 3 (2026-11-24): symbol discovery read the wrong market and the wrong unit — P1
+* Discovery used BingX **spot** tickers (643 spot pairs; the platform trades USDT-M perps; perp-only
+  contracts never appeared) and the ccxt `change` field (absolute price) as a percentage: "> 3 %" was
+  "> 3 USDT", so only high-priced coins passed (trend source: ETH, AAVE, ZEC, TAO). With ~23 approved
+  names moving > 3 % in 24 h, the monitored list held 21 symbols and looked "stuck".
+* Fix: swap tickers (`defaultType: swap`, `BASE/USDT:USDT` normalised) and `percentage`. Live probe:
+  65 tradable symbols discovered (trend 22, volatility 30, momentum 24, anomaly 14), all approved and
+  not sleeve-owned. The approved list itself (5 M median daily volume, age >= 30 d, 88 names) unchanged.

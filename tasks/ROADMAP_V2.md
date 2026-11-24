@@ -253,7 +253,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E16-U3 | HistoricalCandle -> pattern quality (volume, location vs swing/VWAP/levels, multi-TF); claim to test with location filter | E18 grade | TODO |
 | E16-U4 | FundingRate -> funding z-score vs own history, OI change, basis; claim to test: extreme funding -> crowding unwind (next 8-24 h) on the E9 universe with Binance funding history | E18 grade | TODO |
 | E16-U5 | Liquidity -> slippage estimate for the actual order size (book walk) and spread vs its own norm; claim: predicts realised slippage of live fills | live-fill check | TODO |
-| E16-U7 | EngineService -> role-aware translation from watcher contracts; contrarian rules out until validated | tests | TODO |
+| E16-U7 | EngineService -> role-aware translation from watcher contracts; contrarian rules out until validated | tests | DONE (grade A) |
 | E16-U8 | MarketStructureEngine -> standard volume profile (volume over bar range, lower-TF bars), swing-pivot S/R, ATR-scaled bias; E9 rerun of level-based strategies | DONE: grade A (HOLDOUT POC/VAL/VAH error 0.14/0.10/0.12 ATR); E9 effect within noise | DONE |
 | E16-U9 | OIFootprint: real open-interest input (history + live) or retire | E20: real-OI replay FAIL on DEV (-0.107 R, n=846); kept live on VST for data (operator 11-24) | DONE |
 | E16-U10 | Each setup rebuilt to its canonical definition on standard levels (after U8); cost-aware timeframe/stop design | E21: TF1/TF2/VR1 all FAIL (best -0.01..-0.06 R); kept live on VST for data (operator 11-24) | DONE |

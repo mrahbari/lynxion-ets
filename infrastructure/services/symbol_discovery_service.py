@@ -64,10 +64,11 @@ class SymbolDiscoveryService:
             
             if hasattr(ccxt, ccxt_name):
                 self.logger.info(f"Using dynamic exchange CCXT.{ccxt_name} for symbol discovery")
-                return getattr(ccxt, ccxt_name)({'enableRateLimit': True})
+                # perpetual (swap) tickers: the platform trades USDT-M perps, not spot (review 2026-11-24)
+                return getattr(ccxt, ccxt_name)({'enableRateLimit': True, 'options': {'defaultType': 'swap'}})
         except Exception as e:
             self.logger.warning(f"Error resolving dynamic exchange, falling back to CCXT.binance: {e}")
-        return ccxt.binance({'enableRateLimit': True})
+        return ccxt.binance({'enableRateLimit': True, 'options': {'defaultType': 'swap'}})
 
     def discover_symbols_automatically(self) -> List[Symbol]:
         """Dynamically discover symbols to monitor based on market conditions or other criteria."""
@@ -282,12 +283,12 @@ class SymbolDiscoveryService:
             from .symbol_validator import symbol_validator
             trending_symbols = []
             for symbol, ticker in tickers.items():
-                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                formatted_symbol = symbol.split(':')[0].replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
                     if _platform_candidate(valid_symbol):
-                        if 'change' in ticker and ticker['change'] is not None:
-                            change_abs = abs(ticker['change'])
+                        if ticker.get('percentage') is not None:   # % (ccxt 'change' is absolute price)
+                            change_abs = abs(ticker['percentage'])
                             if change_abs > 3.0 and ticker.get('quoteVolume') and ticker['quoteVolume'] > 1000000:
                                 trending_symbols.append(valid_symbol)
                                 if len(trending_symbols) >= _per_source():
@@ -309,7 +310,7 @@ class SymbolDiscoveryService:
             from .symbol_validator import symbol_validator
             volatile_symbols = []
             for symbol, ticker in tickers.items():
-                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                formatted_symbol = symbol.split(':')[0].replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
                     if _platform_candidate(valid_symbol):
@@ -340,13 +341,13 @@ class SymbolDiscoveryService:
             from .symbol_validator import symbol_validator
             momentum_symbols = []
             for symbol, ticker in tickers.items():
-                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                formatted_symbol = symbol.split(':')[0].replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
                     if _platform_candidate(valid_symbol):
-                        if ('change' in ticker and ticker['change'] is not None and
+                        if (ticker.get('percentage') is not None and
                                 'quoteVolume' in ticker and ticker['quoteVolume'] is not None):
-                            if abs(ticker['change']) > 2.5 and ticker['quoteVolume'] > 2000000:
+                            if abs(ticker['percentage']) > 2.5 and ticker['quoteVolume'] > 2000000:
                                 momentum_symbols.append(valid_symbol)
                                 if len(momentum_symbols) >= _per_source():
                                     break
@@ -367,16 +368,16 @@ class SymbolDiscoveryService:
             from .symbol_validator import symbol_validator
             anomaly_symbols = []
             for symbol, ticker in tickers.items():
-                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                formatted_symbol = symbol.split(':')[0].replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
                     if _platform_candidate(valid_symbol):
-                        if ('change' in ticker and ticker['change'] is not None and
+                        if (ticker.get('percentage') is not None and
                                 'high' in ticker and ticker['high'] is not None and
                                 'low' in ticker and ticker['low'] is not None and
                                 'open' in ticker and ticker['open'] is not None and
                                 'quoteVolume' in ticker and ticker['quoteVolume'] is not None):
-                            change_abs = abs(ticker['change'])
+                            change_abs = abs(ticker['percentage'])
                             volatility = abs((ticker['high'] - ticker['low']) / ticker['open']) * 100 if ticker['open'] != 0 else 0
                             if change_abs > 4.0 and volatility > 6.0 and ticker['quoteVolume'] > 1000000:
                                 anomaly_symbols.append(valid_symbol)
@@ -399,7 +400,7 @@ class SymbolDiscoveryService:
             from .symbol_validator import symbol_validator
             high_volume_symbols = []
             for symbol, ticker in tickers.items():
-                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                formatted_symbol = symbol.split(':')[0].replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
                     if _platform_candidate(valid_symbol):
@@ -425,7 +426,7 @@ class SymbolDiscoveryService:
             from .symbol_validator import symbol_validator
             liquid_symbols = []
             for symbol, ticker in tickers.items():
-                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                formatted_symbol = symbol.split(':')[0].replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
                     if _platform_candidate(valid_symbol):
@@ -455,7 +456,7 @@ class SymbolDiscoveryService:
             from .symbol_validator import symbol_validator
             perp_symbols = []
             for symbol, market in markets.items():
-                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                formatted_symbol = symbol.split(':')[0].replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
                     if _platform_candidate(valid_symbol):
@@ -566,7 +567,7 @@ class SymbolDiscoveryService:
             from .symbol_validator import symbol_validator
             usdt_pairs = {}
             for symbol, ticker in tickers.items():
-                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                formatted_symbol = symbol.split(':')[0].replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
                     if _platform_candidate(valid_symbol):
@@ -591,7 +592,7 @@ class SymbolDiscoveryService:
             from .symbol_validator import symbol_validator
             historical_oriented_symbols = []
             for symbol, ticker in tickers.items():
-                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                formatted_symbol = symbol.split(':')[0].replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
                     if _platform_candidate(valid_symbol):
@@ -627,7 +628,7 @@ class SymbolDiscoveryService:
             from .symbol_validator import symbol_validator
             tick_oriented_symbols = []
             for symbol, ticker in tickers.items():
-                formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                formatted_symbol = symbol.split(':')[0].replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
                     if _platform_candidate(valid_symbol):
@@ -645,7 +646,7 @@ class SymbolDiscoveryService:
             if len(tick_oriented_symbols) < 5:
                 high_volume_symbols = []
                 for symbol, ticker in tickers.items():
-                    formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
+                    formatted_symbol = symbol.split(':')[0].replace('/', '').replace('-', '').upper()
                     try:
                         valid_symbol = Symbol(formatted_symbol)
                         if _platform_candidate(valid_symbol):

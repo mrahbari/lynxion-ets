@@ -20,81 +20,8 @@ from infrastructure.fusion.fusion_service import FusionService
 from infrastructure.strategies.adapters.mean_reversion_strategy_adapter import MeanReversionStrategyAdapter
 
 
-@pytest.mark.unit
-def test_positive_anomaly_observation_reversion_sell_standard_fusion():
-    # 1. Test positive anomaly -> SELL interpreted signal with negative direction
-    engine = EngineService()
-    
-    positive_anomaly_obs = MarketObservation(
-        symbol=Symbol("ZECUSDT"),
-        observation_type="anomaly_ml",
-        observation_value=0.994,
-        confidence=Percentage(Decimal("0.76")),
-        timestamp=datetime.now(),
-        metadata={"watcher_name": "anomaly_ml"}
-    )
-    
-    interpreted = engine.process_observation(positive_anomaly_obs)
-    assert interpreted is not None
-    assert interpreted.signal_type == SignalType.SELL
-    # The direction must be negative for positive anomaly
-    assert interpreted.direction == -0.994
-    assert interpreted.strength > 0.0
-    
-    # Force standard fusion by clearing source_watcher
-    interpreted.source_watcher = None
-    
-    # 2. Trace fusion (single signal case)
-    fusion = FusionService()
-    fused = fusion.fuse_signals([interpreted])
-    assert fused is not None
-    assert fused.dominant_bias == SignalType.SELL
-    assert fused.direction == -0.994
-    
-    # 3. Trace strategy adapter determine_side
-    strategy = MeanReversionStrategyAdapter()
-    strategy.logger = logging.getLogger("test")
-    
-    side = strategy._determine_side(fused)
-    assert side == OrderSide.SELL
-
-
-@pytest.mark.unit
-def test_negative_anomaly_observation_reversion_buy_standard_fusion():
-    # 1. Test negative anomaly -> BUY interpreted signal with positive direction
-    engine = EngineService()
-    
-    negative_anomaly_obs = MarketObservation(
-        symbol=Symbol("ZECUSDT"),
-        observation_type="anomaly_ml",
-        observation_value=-0.994,
-        confidence=Percentage(Decimal("0.76")),
-        timestamp=datetime.now(),
-        metadata={"watcher_name": "anomaly_ml"}
-    )
-    
-    interpreted = engine.process_observation(negative_anomaly_obs)
-    assert interpreted is not None
-    assert interpreted.signal_type == SignalType.BUY
-    # The direction must be positive for negative anomaly
-    assert interpreted.direction == 0.994
-    
-    # Force standard fusion by clearing source_watcher
-    interpreted.source_watcher = None
-    
-    # 2. Trace fusion (single signal case)
-    fusion = FusionService()
-    fused = fusion.fuse_signals([interpreted])
-    assert fused is not None
-    assert fused.dominant_bias == SignalType.BUY
-    assert fused.direction == 0.994
-    
-    # 3. Trace strategy adapter determine_side
-    strategy = MeanReversionStrategyAdapter()
-    strategy.logger = logging.getLogger("test")
-    
-    side = strategy._determine_side(fused)
-    assert side == OrderSide.BUY
+# E16-U7: the anomaly-reversion (contrarian) mapping was removed from the Engine (not supported by
+# data, E18); anomaly is a regime observation -> NEUTRAL, direction 0 (tests/unit/test_engine_role_aware.py).
 
 
 @pytest.mark.unit
