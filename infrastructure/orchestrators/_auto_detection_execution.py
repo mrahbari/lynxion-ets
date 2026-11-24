@@ -476,12 +476,14 @@ class _AutoDetectionExecutionMixin:
                 self._remove_pending_execution_intent(execution_intent)
 
                 # Log the duplicate prevention with clear reason
+                # B4 (2026-11-24): None means "not sent" for ANY pre-send guard (open position, side cap,
+                # risk/parameter validation); the guard's own log line names the reason.
                 self.logger.info(
-                    f"❌ DUPLICATE PREVENTION: {symbol_value} | Reason: Duplicate same-direction trade prevented | Strategy: {execution_intent.strategy_name} | Intent Confidence: {float(execution_intent.intent_confidence.value):.2%}")
+                    f"⏭️ NOT SENT: {symbol_value} | Reason: blocked by a pre-send execution guard (see BrokerExecutionService/MultiBroker log) | Strategy: {execution_intent.strategy_name} | Intent Confidence: {float(execution_intent.intent_confidence.value):.2%}")
 
                 return {
                     'status': 'failed',
-                    'error': f"DUPLICATE:{symbol_value}:{position_side}"
+                    'error': f"NOT_SENT:{symbol_value}:{position_side} (pre-send guard: position/side cap/risk)"
                 }
 
             # If execution_id is valid, continue with successful execution

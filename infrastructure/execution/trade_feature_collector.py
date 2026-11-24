@@ -682,7 +682,13 @@ class TradeFeatureCollector:
                 is_unwind = str(row.get("is_execution_unwind", "")).lower() == "true"
                 if sym:
                     if pnl < 0 or is_unwind:
-                        symbol_cooldown_gate.record_stop_loss_exit(sym)
+                        # the real exit time: a row reconstructed hours later must not count as a new loss
+                        exit_dt = None
+                        try:
+                            exit_dt = datetime.fromisoformat(str(row.get("exit_timestamp") or "").replace("Z", "+00:00"))
+                        except ValueError:
+                            exit_dt = None
+                        symbol_cooldown_gate.record_stop_loss_exit(sym, exit_dt)
                     elif pnl > 0:
                         symbol_cooldown_gate.record_take_profit_exit(sym)
             except Exception as e:

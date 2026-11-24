@@ -274,6 +274,7 @@ def test_order_journal_metadata_uses_canonical_execution_order_fields():
 
     meta = extract_order_journal_metadata(order)
     meta.pop("signal_ts")
+    meta.pop("signal_price")
     assert meta == {
         "stop_loss": Decimal("62000"),
         "take_profit": Decimal("65000"),

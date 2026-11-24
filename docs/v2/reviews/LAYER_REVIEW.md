@@ -674,3 +674,27 @@ Routine: grade -> defects -> solutions -> decision -> fix.
   cap (15 LONG + 15 SHORT = 30 positions); further entries are skipped by `SIDE CAP` as designed.
 * Backlog B4: the orchestrator labels every `execute_order -> None` as `DUPLICATE:` (side-cap skips appear as
   duplicates in logs/Telegram reasons). Label only; no behaviour change.
+
+## E16-X — Execution layer upgrade, round 1 (2026-11-24)
+
+Routine: grade -> defects -> solutions -> decision -> fix. **Grade before: B-.**
+
+Evidence (live, 66 platform trades since 11-10; 28 with signal time):
+* Profit structure: 22 TP exits +140.3 USDT (+6.38 avg), 44 SL/trail exits -119.5 (-2.71 avg); win rate 33 %,
+  payoff 2.4. Closing winners early would remove the edge (operator question, answered: no).
+* Fees: median 0.022 R per trade on VST (4.9 bp of notional recorded); SL median 1.25 %.
+* Signal -> fill latency: median 58 s, p90 70 s. Breakdown (RUNE): watcher -> fused 2 s; fused -> INTENT 18 s
+  (the minute's ~65 symbols are processed in sequence); INTENT -> sent 2.4 s; sent -> fill confirmed 10 s
+  (bookkeeping; market fill itself is immediate). Adverse slippage vs last closed 1m close (Binance, n=7):
+  median 1.8 bp, mean 6.7 bp -> not enough data to justify re-architecting the queue.
+
+| # | Defect | Decision |
+|---|---|---|
+| X-1 | No per-order slippage measurement | INTENT now records `signal_price` (setup trigger); slippage = side*(fill/signal_price-1). Decide on queue/latency work after one week of data |
+| X-2 | Collector recorded losses at "now": a trade reconstructed hours later counted as a 2nd loss -> 24 h lockout could return | real exit time passed — FIXED |
+| X-3 | Every pre-send guard (side cap, open position, risk) logged as `DUPLICATE` | relabelled `NOT_SENT` with pointer to the guard's own reason — FIXED (B4) |
+| X-4 | Liquidity-depth guard never runs (no `fetch_order_book`) | deferred to real-money readiness: VST book is synthetic; at 201 USDT on >= 5 M/day symbols it cannot bind |
+| X-5 | Synthetic confidence in Telegram (E11-3), empty-list blips (E11-1) | next round |
+| X-6 | Maker entries (+0.04 R/trade offline) | revisit as a simple post-only-then-market variant only after X-1 data |
+
+**Grade after round 1: B+** (A needs X-5 and one week of slippage/latency evidence).

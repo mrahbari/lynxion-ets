@@ -68,7 +68,8 @@ class LiveOrderJournal:
                       confidence: Optional[Any] = None,
                       regime: Optional[Any] = None,
                       strategy: Optional[Any] = None,
-                      signal_ts: Optional[str] = None) -> str:
+                      signal_ts: Optional[str] = None,
+                      signal_price: Optional[Any] = None) -> str:
         """Write an INTENT record BEFORE the send; returns an order_ref linking the lifecycle."""
         order_ref = uuid.uuid4().hex
         rec = {
@@ -91,6 +92,8 @@ class LiveOrderJournal:
             rec["strategy_name"] = str(strategy)
         if signal_ts:
             rec["signal_ts"] = str(signal_ts)   # E11-4: signal -> fill latency in the trade journal
+        if signal_price is not None:
+            rec["signal_price"] = str(signal_price)
 
         with self._lock:
             if any(order.get("status") in {"INTENT", "PROTECTION_UNKNOWN"} for order in self._orders.values()):
