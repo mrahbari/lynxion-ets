@@ -12,7 +12,8 @@ def test_regime_and_signal_time_come_from_the_fused_signal():
                              intent_confidence=None)
     order = SimpleNamespace(parent_execution_intent=intent, metadata=None, risk_parameters=None)
     meta = extract_order_journal_metadata(order)
-    assert meta["regime"] == "ranging" and meta["signal_ts"] == "2026-11-24T10:00:00"
+    assert meta["regime"] == "ranging" and meta["signal_ts"].startswith("2026-11-24T10:00:00")
+    assert datetime.fromisoformat(meta["signal_ts"]).tzinfo is not None
 
 
 def test_record_intent_keeps_signal_ts(tmp_path):

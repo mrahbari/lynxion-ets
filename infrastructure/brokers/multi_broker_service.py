@@ -65,7 +65,8 @@ def extract_order_journal_metadata(order: Any) -> Dict[str, Any]:
         "confidence": scalar(confidence),
         "regime": regime,
         "strategy": strategy,
-        "signal_ts": signal_time.isoformat() if hasattr(signal_time, "isoformat") else None,
+        # tz-aware (naive datetimes are local wall time) so signal->fill latency is unambiguous
+        "signal_ts": signal_time.astimezone().isoformat() if hasattr(signal_time, "astimezone") else None,
     }
 
 
