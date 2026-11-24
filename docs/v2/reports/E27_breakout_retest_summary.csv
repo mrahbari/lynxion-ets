@@ -1,0 +1,3 @@
+strategy,window,trades,trades_per_month,win_rate,PF,mean_R,mean_ret_bps,first_half_R,second_half_R,symbols_positive,long_share,mean_R_long,mean_R_short,median_sl_pct
+BRK_RETEST,dev,913,114.2,0.371,0.77,-0.147,-23.5,-0.187,-0.106,1/10,0.29,-0.098,-0.167,1.2
+BRK_RETEST,holdout,427,106.3,0.436,1.06,0.026,5.1,-0.053,0.105,4/10,0.58,0.076,-0.043,1.2
