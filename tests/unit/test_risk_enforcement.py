@@ -812,3 +812,19 @@ def test_reconciliation_active_positions_persistence_restart():
     recon2._process_position_closures(broker=MockBroker(), current_active_symbols=set())
     # TUTUSDT close is detected, and SL cooldown registered
     assert "TUTUSDT" in symbol_cooldown_gate._sl_cooldowns
+
+
+@pytest.mark.usefixtures("_vst_default_caps")
+def test_vst_enforcer_accepts_float_quantity_a_hair_above_the_cap_and_moves_it_below():
+    # live 2026-11-24: "$201.00 exceeds max position limit $201.0" (float->str 17 digits)
+    order = _order(300 * (1 + 1e-12), Decimal("0.07"))
+    allowed, reason = build_vst_risk_enforcement().enforce(order)
+    assert allowed, reason
+    assert float(order.quantity) * 0.07 <= VST_MAX_ORDER_NOTIONAL
+
+
+@pytest.mark.usefixtures("_vst_default_caps")
+def test_vst_enforcer_still_rejects_a_real_overflow():
+    order = _order(300 * (1 + 1e-6), Decimal("0.07"))
+    allowed, reason = build_vst_risk_enforcement().enforce(order)
+    assert not allowed and "exceeds max position limit" in reason

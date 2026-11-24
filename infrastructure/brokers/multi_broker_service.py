@@ -68,7 +68,9 @@ def extract_order_journal_metadata(order: Any) -> Dict[str, Any]:
         # tz-aware (naive datetimes are local wall time) so signal->fill latency is unambiguous
         "signal_ts": signal_time.astimezone().isoformat() if hasattr(signal_time, "astimezone") else None,
         # E11-4/X: price the setup was computed at -> entry slippage = side * (fill / signal_price - 1)
-        "signal_price": risk_parameters.get("trigger_price"),
+        # the strategy's own parameters (the order may carry an enhanced risk dict without the trigger)
+        "signal_price": ((getattr(parent_intent, "risk_parameters", None) or {}).get("trigger_price")
+                         or risk_parameters.get("trigger_price")),
     }
 
 

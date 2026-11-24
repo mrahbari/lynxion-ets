@@ -57,3 +57,11 @@ def test_late_reconstructed_loss_uses_its_exit_time(tmp_path, monkeypatch):
     c._append_row({"trade_id": "1", "symbol": "AVAXUSDT", "pnl_usdt": "-2.5",
                    "exit_timestamp": old.isoformat(), "is_execution_unwind": "False"})
     assert len(gate._symbol_loss_history["AVAXUSDT"]) == 1     # same exit, not a 2nd loss -> no 24 h lockout
+
+
+def test_signal_price_comes_from_the_intent_when_order_has_its_own_risk_dict():
+    intent = SimpleNamespace(fused_signal=None, metadata={}, risk_parameters={"trigger_price": 2.5},
+                             strategy_name="TrendFollow", intent_confidence=None, timestamp=None)
+    order = SimpleNamespace(parent_execution_intent=intent, metadata=None,
+                            risk_parameters={"stop_loss": 2.4, "take_profit": 2.8})
+    assert extract_order_journal_metadata(order)["signal_price"] == 2.5

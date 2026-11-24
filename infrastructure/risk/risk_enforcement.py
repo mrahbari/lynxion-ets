@@ -316,7 +316,10 @@ class RiskEnforcement:
                         raw_price = getattr(getattr(order, 'price', None), 'amount', entry)
                         try:
                             exact_notional = Decimal(str(raw_size)) * Decimal(str(raw_price))
-                            if exact_notional <= Decimal(str(max_exposure)):
+                            # 2026-11-24: a quantity sized to exactly the cap can print as a few 1e-12 above it
+                            # through float->str (live: "$201.00 exceeds $201.0"); within 1e-9 relative it is
+                            # the cap itself, and the quantity is still moved strictly below the cap here.
+                            if exact_notional <= Decimal(str(max_exposure)) * Decimal("1.000000001"):
                                 size = math.nextafter(max_exposure / entry, 0.0)
                                 if isinstance(raw_size, Decimal):
                                     order.quantity = Decimal(str(size))
