@@ -22,9 +22,8 @@ _log.setLevel(logging.INFO)  # root logger is WARNING; these audit lines must re
 
 def calculate_dynamic_metrics(setup, struct=None, data_buffer=None):
     """
-    Computes fine-grained, dynamic confidence (58.2% - 96.8%), performance scores (0.850 - 2.450),
-    and risk-adjusted priority scores (0.750 - 1.950) using setup R:R geometry, market structure,
-    and symbol micro-dispersion.
+    Computes a setup score (0.60 - 0.92; NOT a probability), performance scores (0.850 - 2.450) and
+    risk-adjusted priority scores (0.750 - 1.950) from setup R:R geometry and recent movement only.
     """
     trigger_price = float(getattr(setup, 'trigger_price', 100.0))
     sl_price = float(getattr(setup, 'stop_loss_level', 98.0))
@@ -37,10 +36,10 @@ def calculate_dynamic_metrics(setup, struct=None, data_buffer=None):
     # 1. Setup Geometry (R:R ratio contribution: 0.05 to 0.25)
     rr_contrib = min(0.25, max(0.05, 0.10 * (rr_ratio - 1.0)))
 
-    # 2. Symbol & Price Micro-Dispersion Factor (0.02 to 0.18)
-    sym_str = str(getattr(setup, 'symbol', 'BTCUSDT'))
-    sym_hash = (sum(ord(c) for c in sym_str) + int(trigger_price * 10000)) % 1000
-    dispersion_factor = (sym_hash / 1000.0) * 0.20
+    # 2. (removed 2026-11-24, E11-3) a "micro-dispersion" term derived from a hash of the symbol name and
+    #    price added up to 0.20 of fabricated "confidence". The score below is a SETUP SCORE (geometry +
+    #    recent movement), not a calibrated probability — no setup has a validated hit-rate model.
+    dispersion_factor = 0.0
 
     # 3. Market Structure / Buffer Momentum (0.03 to 0.15)
     struct_contrib = 0.08

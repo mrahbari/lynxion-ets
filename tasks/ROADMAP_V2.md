@@ -205,7 +205,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | **E11** | **Ops hygiene** | | |
 | E11-1 | VST empty-list blips in exposure checks and `get_position` duplicate guard | tests | TODO |
 | E11-2 | Push branch `claude/edge-v2` (operator GitHub sign-in) | pushed | GATED on operator |
-| E11-3 | Telegram trade messages name the real deciding component (strategy setup), not Fusion/Engine numbers that do not affect the trade. Note: `calculate_dynamic_metrics` (decision_pipeline.py) builds the displayed confidence partly from a hash of the symbol name and price, i.e. not a probability | message text + test | TODO |
+| E11-3 | Telegram trade messages name the real deciding component (strategy setup), not Fusion/Engine numbers that do not affect the trade. Note: `calculate_dynamic_metrics` (decision_pipeline.py) builds the displayed confidence partly from a hash of the symbol name and price, i.e. not a probability | message text + test | DONE 2026-11-24: hash term removed from the setup score; Telegram shows "Setup score (not a probability)" and "Evaluation trigger"; no fabricated 80 % fallback |
 | E11-4 | Signal-to-order latency measured from live logs (candidate -> order sent) | p50/p95 in report | TODO |
 | E11-5 | Observe the closure debounce and the same-side cap on real events | log evidence | TODO (passive) |
 | E11-7 | Triage the 24 remaining pre-existing test failures: fix config-drift expectations, investigate stop-path (14) and BingX LIMIT protection (2) failures, delete only tests with no use | DONE 2026-11-23: 0 failures, 1386 passed (11 obsolete removed, 24 stale tests fixed; no code defect) |

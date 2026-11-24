@@ -1130,7 +1130,7 @@ class MultiBrokerExecutionService(ExecutionPort):
                 else:
                     confidence_str = f"{numeric_conf * 100:.1f}%"
             except (ValueError, TypeError):
-                confidence_str = "80.0%"
+                confidence_str = "n/a"
 
             # 2. Performance Score Resolution
             raw_perf = metadata.get('performance_score') if metadata else None
@@ -1236,10 +1236,10 @@ class MultiBrokerExecutionService(ExecutionPort):
                        f" ├ <b>Exchange:</b> <code>{exchange_esc}</code>\n" +
                        size_lines +
                        f"⚙️ <b>Execution Details:</b>\n"
-                       f" ├ <b>Watcher:</b> <code>{watcher_name_esc}</code>\n"
+                       f" ├ <b>Evaluation trigger:</b> <code>{watcher_name_esc}</code>\n"
                        f" ├ <b>Strategy:</b> <code>{strategy_name_esc}</code>\n"
                        f" ├ <b>Regime:</b> <code>{regime_context_esc}</code>\n"
-                       f" ├ <b>Confidence:</b> <code>{confidence_esc}</code>\n"
+                       f" ├ <b>Setup score (not a probability):</b> <code>{confidence_esc}</code>\n"
                        f" ├ <b>Performance Score:</b> <code>{perf_score_esc}</code>\n"
                        f" └ <b>Risk-Adjusted Priority:</b> <code>{risk_adj_score_esc}</code>\n\n"
                        f"🛡️ <b>Risk Parameters:</b>\n"
