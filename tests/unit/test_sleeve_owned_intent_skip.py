@@ -6,6 +6,8 @@ from infrastructure.orchestrators._auto_detection_intent import _AutoDetectionIn
 
 
 class Stub(_AutoDetectionIntentMixin):
+    _position_snapshot_path = "/nonexistent/active_positions_journal.json"   # never the live file
+
     def __init__(self):
         self.opportunity_queue = []
         self.broker_checked = False
@@ -43,3 +45,19 @@ def test_sleeve_owned_symbol_is_skipped_before_broker_checks(tmp_path, monkeypat
 def test_missing_file_skips_nothing(tmp_path, monkeypatch):
     monkeypatch.setenv("V2_OWNED_SYMBOLS_FILE", str(tmp_path / "absent.json"))
     assert Stub._is_sleeve_owned("BTCUSDT") is False
+
+
+def test_open_position_symbol_is_skipped_only_with_fresh_snapshot(tmp_path, monkeypatch):
+    import os
+    import time
+    monkeypatch.setenv("V2_OWNED_SYMBOLS_FILE", str(tmp_path / "absent.json"))
+    snap = tmp_path / "active.json"
+    snap.write_text(json.dumps({"active_symbols": ["SOLUSDT"]}))
+    monkeypatch.setattr(Stub, "_position_snapshot_path", str(snap), raising=False)
+    o = Stub()
+    o._handle_execution_intent_event(SimpleNamespace(data=intent("SOLUSDT")))
+    assert o.opportunity_queue == [] and not o.broker_checked
+    old = time.time() - 600
+    os.utime(snap, (old, old))                       # stale snapshot -> broker gate decides
+    o._handle_execution_intent_event(SimpleNamespace(data=intent("SOLUSDT")))
+    assert len(o.opportunity_queue) == 1

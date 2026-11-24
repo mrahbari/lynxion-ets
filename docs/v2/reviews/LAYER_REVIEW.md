@@ -630,4 +630,4 @@ Evidence: trade_journal (102 trades since 11-10), live_order_journal, runner log
 | P4 | strategy failures/losses: OIFootprint, TrendFollow, VWAPReversal net <= 0 (E9/E20/E21) | no proven edge | kept LIVE on VST for data (operator 11-24), labelled no-edge; improvement continues per layer |
 | B1 | trade_journal `timeframe` always "1m" (label only; live uses design TF) | misleading report column | backlog |
 | B2 | XS-COMBO sleeve: 39 trades, -179.6 USDT since 11-10 | separate system | backlog: review sleeve on its own |
-| B3 | ~1,300 DUPLICATE rejections / 5 h (intent for a symbol already in a position) | correct behaviour, log noise | backlog |
+| B3 | ~1,300 DUPLICATE rejections / 5 h, each after a BingX get_position call (rate-limit budget) | wasted API calls | intents for symbols in the reconciler snapshot (< 180 s old) dropped before the queue; broker gate kept. 20 min live: 0 broker duplicate rejections (was ~3.3/min) — FIXED |

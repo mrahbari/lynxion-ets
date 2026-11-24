@@ -77,3 +77,12 @@ def approved_symbols_config(tmp_path):
         path.write_text(json.dumps(symbols), encoding="utf-8")
         return str(path)
     return _make
+
+
+@pytest.fixture(autouse=True)
+def _no_live_position_snapshot(monkeypatch):
+    """The orchestrator's open-position skip must never read the live reconciler snapshot in tests."""
+    from infrastructure.orchestrators._auto_detection_intent import _AutoDetectionIntentMixin
+    if "_position_snapshot_path" not in _AutoDetectionIntentMixin.__dict__:
+        monkeypatch.setattr(_AutoDetectionIntentMixin, "_position_snapshot_path",
+                            "/nonexistent/active_positions_journal.json", raising=False)

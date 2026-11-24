@@ -13,6 +13,26 @@ import traceback
 class _AutoDetectionIntentMixin:
     """Execution-intent event handling + risk-acceptance gate (no order placement)."""
 
+    POSITION_SNAPSHOT_MAX_AGE_S = 180.0
+
+    @classmethod
+    def _has_reconciled_position(cls, symbol: str) -> bool:
+        try:
+            import json
+            import os
+            import time
+            from infrastructure.execution import broker_reconciliation as br
+            path = getattr(cls, "_position_snapshot_path", None) or br.ACTIVE_POSITIONS_JOURNAL_PATH
+            if time.time() - os.path.getmtime(path) > cls.POSITION_SNAPSHOT_MAX_AGE_S:
+                return False
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            active = data.get("active_symbols", []) if isinstance(data, dict) else data
+            norm = lambda s: str(s).upper().replace("-", "").replace("/", "").replace("_", "")
+            return norm(symbol) in {norm(s) for s in active}
+        except Exception:
+            return False
+
     @staticmethod
     def _is_sleeve_owned(symbol: str) -> bool:
         try:
@@ -55,6 +75,12 @@ class _AutoDetectionIntentMixin:
             # checks, queue slots and a FAILED journal row per signal. Empty/absent file -> no-op.
             if self._is_sleeve_owned(execution_intent.symbol.value):
                 self.logger.debug(f"⏭️ SLEEVE-OWNED SKIP: {execution_intent.symbol.value} ({execution_intent.strategy_name})")
+                return
+            # Platform review 2026-11-24: a symbol that already holds a position is rejected at the
+            # broker gate after a get_position call (~1,300 per 5 h, spending the BingX rate limit).
+            # Use the reconciler's fresh position snapshot instead; stale/missing -> broker gate decides.
+            if self._has_reconciled_position(execution_intent.symbol.value):
+                self.logger.debug(f"⏭️ OPEN-POSITION SKIP: {execution_intent.symbol.value} ({execution_intent.strategy_name})")
                 return
 
             # Check for active orders on the broker before processing the intent
