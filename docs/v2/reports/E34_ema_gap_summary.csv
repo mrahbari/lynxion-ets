@@ -1,0 +1,3 @@
+strategy,window,trades,trades_per_month,win_rate,PF,mean_R,mean_ret_bps,first_half_R,second_half_R,symbols_positive,long_share,mean_R_long,mean_R_short,median_sl_pct
+EMA_GAP,dev,2909,361.9,0.406,0.86,-0.087,-11.0,-0.116,-0.058,0/10,0.61,-0.235,0.143,1.2
+EMA_GAP,holdout,1339,328.6,0.365,0.79,-0.148,-18.2,-0.125,-0.171,0/10,0.5,-0.213,-0.083,1.2
