@@ -165,6 +165,8 @@ class BaseStrategyAdapter(StrategyPort):
             
             if provider:
                 timeframe = self.config.get('timeframe', '1h')
+                # a strategy may need a longer history than the per-timeframe default (TrendFollow: 400 x 1h)
+                history_period = self.config.get('history_period')
                 
                 # Determine period based on timeframe to get at least 100-200 bars
                 if timeframe == '1m':
@@ -181,6 +183,8 @@ class BaseStrategyAdapter(StrategyPort):
                     period = '100d'
                 else:
                     period = '10d'
+                if history_period:
+                    period = history_period
 
                 self.logger.info(f"Fetching historical data dynamically for {symbol.value} (Timeframe: {timeframe}, Period: {period})...")
                 data = provider.get_historical_data(symbol, period=period, timeframe=timeframe)

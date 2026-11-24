@@ -22,6 +22,8 @@ class TrendFollowStrategyAdapter(BaseStrategyAdapter):
         top_level = {k: v for k, v in system_config.items() if k != 'parameters'}
         self.config = {**top_level, **params, **(config or {})}
 
+        from infrastructure.strategies.trend_donchian import HISTORY_PERIOD
+        self.config.setdefault('history_period', HISTORY_PERIOD)
         from infrastructure.market_structure.market_structure_engine import MarketStructureEngine
         from infrastructure.strategies.setup_engine import SetupEngine
         from infrastructure.strategies.decision_pipeline import DecisionPipeline
@@ -45,26 +47,12 @@ class TrendFollowStrategyAdapter(BaseStrategyAdapter):
             lows = [float(item.get('low', item['close'])) for item in self.data_buffer]
             volumes = [float(item.get('volume', 0.0)) for item in self.data_buffer]
 
-            struct = self.market_structure_engine.calculate_market_structure(closes, highs, lows, volumes)
-            setups = self.setup_engine.scan_for_setups(
-                symbol=symbol,
-                prices=closes,
-                highs=highs,
-                lows=lows,
-                val=struct["val"],
-                vah=struct["vah"],
-                poc=struct["poc"]
-            )
-
-            # Filter setups to only match NGTREND_FOLLOW setups
-            setup = next((s for s in setups if s.setup_type == "NGTREND_FOLLOW"), None)
+            # E16-U10 (2026-11-24): canonical Donchian-20 + EMA50/200 trend setup on closed 1h bars (E21 TF1).
+            from infrastructure.strategies.trend_donchian import donchian_trend_setup
+            setup = donchian_trend_setup(self.data_buffer, symbol)
             if not setup:
                 return None
-
-            latest_bar = self.data_buffer[-1] if self.data_buffer else {}
-            if not self._is_setup_fresh(setup, latest_bar):
-                return None
-
+            struct = {"method": "donchian_ema"}
 
             from infrastructure.strategies.decision_pipeline import calculate_dynamic_metrics
             dyn_conf_float, perf_score_float, risk_adj_score_float = calculate_dynamic_metrics(setup, struct, self.data_buffer)
@@ -102,40 +90,16 @@ class TrendFollowStrategyAdapter(BaseStrategyAdapter):
         self.ensure_data_buffer(fused_signal.symbol)
         setup = fused_signal.metadata.get("setup") if fused_signal.metadata else None
 
-        if not self.data_buffer and not setup:
-            return None
-
-        if not self.data_buffer and setup:
-            trigger_price = float(setup.trigger_price)
-            closes = [trigger_price]
-            highs = [trigger_price]
-            lows = [trigger_price]
-            volumes = [0.0]
-        else:
-            closes = [float(item['close']) for item in self.data_buffer]
-            highs = [float(item.get('high', item['close'])) for item in self.data_buffer]
-            lows = [float(item.get('low', item['close'])) for item in self.data_buffer]
-            volumes = [float(item.get('volume', 0.0)) for item in self.data_buffer]
-
-        if not setup:
-            struct = self.market_structure_engine.calculate_market_structure(closes, highs, lows, volumes)
-            setups = self.setup_engine.scan_for_setups(
-                symbol=fused_signal.symbol,
-                prices=closes,
-                highs=highs,
-                lows=lows,
-                val=struct["val"],
-                vah=struct["vah"],
-                poc=struct["poc"]
-            )
-            setup = next((s for s in setups if s.setup_type == "NGTREND_FOLLOW"), None)
-
+        from infrastructure.strategies.trend_donchian import donchian_trend_setup, closed_bars, SETUP_TYPE
+        if not setup or getattr(setup, "setup_type", None) != SETUP_TYPE:
+            setup = donchian_trend_setup(self.data_buffer, fused_signal.symbol)
         if not setup:
             return None
-
-        latest_bar = self.data_buffer[-1] if self.data_buffer else {}
-        if not self._is_setup_fresh(setup, latest_bar):
+        done = closed_bars(self.data_buffer)
+        if not done:
             return None
+        latest_bar = done[-1]
+        closes = [float(x['close']) for x in done]
 
         current_price = closes[-1]
         max_position_size = float(self.config.get("max_position_size", 0.05))

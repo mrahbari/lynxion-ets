@@ -28,28 +28,26 @@ def test_ngtrend_path_creates_candidate_setup_and_gating():
     adapter = TrendFollowStrategyAdapter({})
     symbol = Symbol("BTCUSDT")
 
-    # Feed enough bars to establish a baseline
+    # E16-U10 (2026-11-24): TrendFollow runs the canonical Donchian-20 + EMA50/200 setup on closed 1h bars.
     base_time = datetime(2026, 1, 1, 0, 0)
-    for i in range(24):
-        adapter.update_with_market_data(_bar(100.0, hi=101.0, lo=99.0, t=base_time + timedelta(minutes=i)))
+    p = 100.0
+    for i in range(260):                       # steady uptrend: EMA50 > EMA200
+        p *= 1.001
+        adapter.update_with_market_data(_bar(p, hi=p * 1.002, lo=p * 0.998, t=base_time + timedelta(hours=i)))
 
-    # The 25th bar moves above VAH (VAH will be close to 100.0, so 105.0 is trending up).
-    trend_time = base_time + timedelta(minutes=24)
-    trend_bar = _bar(105.0, hi=106.0, lo=104.0, t=trend_time)
-    trend_bar["obi_ratio"] = 0.20  # Confirms BUY setup
-    trend_bar["cvd"] = 5.0        # Confirms BUY setup
-    trend_bar["best_bid"] = 104.95
-    trend_bar["best_ask"] = 105.05
+    trend_time = base_time + timedelta(hours=260)
+    trend_bar = _bar(p * 1.03, hi=p * 1.035, lo=p * 1.0, t=trend_time)   # breaks the 20-bar high
+    trend_bar["obi_ratio"] = 0.20
+    trend_bar["cvd"] = 5.0
+    trend_bar["best_bid"] = round(p * 1.03 - 0.05, 6)
+    trend_bar["best_ask"] = round(p * 1.03 + 0.05, 6)
     adapter.update_with_market_data(trend_bar)
 
-    # 1. Verify NGTrend path creates a Signal with setup metadata (containing CandidateSetup)
     sig = adapter.generate_signal(symbol)
     assert sig is not None
     assert sig.signal_type == SignalType.BUY
-    assert "setup" in sig.metadata
-    
     setup = sig.metadata["setup"]
-    assert setup.setup_type == "NGTREND_FOLLOW"
+    assert setup.setup_type == "DONCHIAN20_EMA_TREND"
     assert setup.direction == "BUY"
 
     # 2. Verify confirmation rejects invalid order-flow conditions
@@ -75,7 +73,7 @@ def test_ngtrend_path_creates_candidate_setup_and_gating():
     assert intent.side == OrderSide.BUY
 
     # 3. Verify optimizer produces maker execution parameters
-    assert intent.risk_parameters["limit_price"] == 104.95  # best bid (from lo of trend_bar)
+    assert intent.risk_parameters["limit_price"] == trend_bar["best_bid"]
     assert intent.risk_parameters["time_in_force"] == "POST_ONLY"
 
 

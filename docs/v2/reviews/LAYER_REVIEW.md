@@ -728,3 +728,12 @@ components with no predictive edge still makes no money.
   the record is closed as CANCELLED with the reason. Open position -> record kept, previous stop still on
   the exchange, next loop retries. Stale NATGAS record resolved by hand (backup in data/journal_archive).
 * Research E23 (funding-extreme) and E24 (OI flush): both FAIL (see E23_E24 report).
+* **TrendFollow rebuilt** on the canonical Donchian-20 breakout + EMA50/200 filter, closed 1h bars, last 400 bars
+  (`infrastructure/strategies/trend_donchian.py`; strategies can now request a longer history via
+  `history_period`, TrendFollow 18d = 432 bars; parity test identical to E21 TF1). E21: DEV -0.027 R (old
+  -0.028), HOLDOUT -0.010 R (old -0.055). No proven edge; correct definition, smaller holdout loss.
+  The NGTREND integration test was rewritten for the new setup (same order-flow gate and maker-price checks).
+* **OIFootprint**: reviewed, unchanged. No better definition exists (E20: real OI -0.107 R on DEV); stays live on
+  VST for data, labelled no proven edge.
+* Strategy layer after this round: still **D** on profitability (no setup with a net edge); C on correctness
+  (both live price setups now follow their canonical definitions).
