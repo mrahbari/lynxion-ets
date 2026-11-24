@@ -39,8 +39,8 @@ def create_parser() -> argparse.ArgumentParser:
         default="optimize",
         help="Operation mode to run (default: optimize)"
     )
-    parser.add_argument("--strategy", default="crypto_breakout",
-                        help="Trading strategy to use (default: crypto_breakout)")
+    parser.add_argument("--strategy", default="breakout",
+                        help="Trading strategy to use (default: breakout)")
     parser.add_argument("--symbol", help="Trading pair symbol (e.g., BTC/USDT)")
     parser.add_argument("--symbols", help="Comma-separated list of symbols (e.g., BTC/USDT,ETH/USDT)")
     parser.add_argument("--timeframe", default="1h", help="Timeframe for data (default: 1h)")

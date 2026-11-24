@@ -90,7 +90,7 @@ class _ConfigExtractorsMixin:
     def _extract_strategy_config_data(self) -> Dict[str, Any]:
         """Extract strategy configuration data from environment variables."""
         strategy_data = {
-            'strategy_name': self.env_loader.get_env_var('DEFAULT_STRATEGY', 'crypto_breakout'),
+            'strategy_name': self.env_loader.get_env_var('DEFAULT_STRATEGY', 'breakout'),
             'risk_per_trade': self.env_loader.get_float_env_var('STRATEGY_RISK_PER_TRADE', 0.02),
             'max_position_size': self.env_loader.get_float_env_var('STRATEGY_MAX_POSITION_SIZE', 0.05),
             'min_volume_filter': self.env_loader.get_float_env_var('STRATEGY_MIN_VOLUME_FILTER', 10000.0),

@@ -386,9 +386,6 @@ class StrategyManager:
             'liquidity': LiquidityStrategyAdapter,
             'vwap_reversal': VWAPReversalStrategyAdapter,
             'oi_footprint': OIFootprintStrategyAdapter,
-            # 2026-11-24 consolidation: mtf_trend, donchian_breakout -> trend_following;
-            # volatility_breakout, crypto_breakout -> breakout; sweep_scalper -> liquidity;
-            # short_term_reversal retired (six platform strategies).
         }
 
         # Register strategies based on their configuration-enabled status

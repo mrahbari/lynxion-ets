@@ -17,7 +17,7 @@ class HyperoptRunner:
     def __init__(self,
                  trials_file: str = "data/hyperopt_trials.pkl",
                  best_params_file: str = "data/best_params.json",
-                 strategy_name: str = "crypto_breakout"):
+                 strategy_name: str = "breakout"):
         self.trials_file = Path(trials_file)
         self.best_params_file = Path(best_params_file)
         self.strategy_name = strategy_name
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     runner = HyperoptRunner(
         trials_file="data/hyperopt_trials.pkl",
         best_params_file="data/best_params.json",
-        strategy_name="crypto_breakout"
+        strategy_name="breakout"
     )
 
     print("📊 Loading sample data...")

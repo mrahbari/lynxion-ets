@@ -94,13 +94,13 @@ def test_walkforward_use_case_drives_injected_orchestrator():
         return _FakeOrchestrator(config)
 
     use_case = RunWalkforwardUseCase(settings=load_settings(), wfo_orchestrator_factory=factory)
-    results = use_case.execute(WalkforwardRequest(symbols=["BTCUSDT"], strategy_name="crypto_breakout",
+    results = use_case.execute(WalkforwardRequest(symbols=["BTCUSDT"], strategy_name="breakout",
                                                   train_size=60, test_size=20, step_size=20,
                                                   max_evals=5, cv_splits=3))
 
     assert results["status"] == "completed"
     assert calls["symbols"] == ["BTCUSDT"]
-    assert calls["strategy_name"] == "crypto_breakout"
+    assert calls["strategy_name"] == "breakout"
     # Request params flow through into the orchestrator config.
     assert calls["config"]["train_size"] == 60
     assert calls["config"]["cv_n_splits"] == 3
@@ -179,7 +179,7 @@ def test_optimize_strategy_use_case_drives_injected_ports():
         hyperopt_optimizer_factory=_optimizer_factory,
     )
 
-    results = use_case.execute(OptimizeStrategyRequest(symbols=["BTCUSDT"], strategy_name="crypto_breakout",
+    results = use_case.execute(OptimizeStrategyRequest(symbols=["BTCUSDT"], strategy_name="breakout",
                                                        max_evals=5, days_back=30))
 
     # Download port + factories were all driven through injection.

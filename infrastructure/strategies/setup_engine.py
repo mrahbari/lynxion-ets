@@ -265,47 +265,7 @@ class SetupEngine:
                     else:
                         self.rejected_low_rr_count[str(symbol)] = self.rejected_low_rr_count.get(str(symbol), 0) + 1
 
-        # 3. NGTREND_FOLLOW Setup detection (Multi-Timeframe Trend Following with Retest Alignment)
-        if vah > 0 and current_price > vah and is_bull_trend:
-            # Bullish trend following with momentum confirmation and overextension limit (max +6.0% from VAH)
-            is_not_overextended = current_price <= vah * 1.060
-            is_momentum_green = current_price >= open_price or (candle_range > 0 and (lower_wick / candle_range) >= 0.20) if 'lower_wick' in locals() else (current_price >= open_price)
-
-            if is_not_overextended and is_momentum_green:
-                sl_structural = val if (0 < val < current_price and val >= current_price * 0.90) else (current_price - atr_sl_multiplier * atr)
-                sl_limit = current_price * (1.0 - min_stop_distance_percent)
-                sl = min(sl_structural, sl_limit)
-                tp = current_price + min_reward_risk_ratio * (current_price - sl)
-                setups.append(CandidateSetup(
-                    symbol=symbol,
-                    timestamp=ts,
-                    setup_type="NGTREND_FOLLOW",
-                    direction="BUY",
-                    trigger_price=Decimal(str(current_price)),
-                    stop_loss_level=Decimal(str(sl)),
-                    take_profit_level=Decimal(str(tp))
-                ))
-        elif val > 0 and current_price < val and is_bear_trend:
-            # Bearish trend following with momentum confirmation and overextension limit (max -6.0% from VAL)
-            is_not_overextended = current_price >= val * 0.940
-            is_momentum_red = current_price <= open_price or (candle_range > 0 and (upper_wick / candle_range) >= 0.20) if 'upper_wick' in locals() else (current_price <= open_price)
-
-            if is_not_overextended and is_momentum_red:
-                sl_structural = vah if (vah > current_price and vah <= current_price * 1.10) else (current_price + atr_sl_multiplier * atr)
-                sl_limit = current_price * (1.0 + min_stop_distance_percent)
-                sl = max(sl_structural, sl_limit)
-                tp = max(0.0, current_price - min_reward_risk_ratio * (sl - current_price))
-                setups.append(CandidateSetup(
-                    symbol=symbol,
-                    timestamp=ts,
-                    setup_type="NGTREND_FOLLOW",
-                    direction="SELL",
-                    trigger_price=Decimal(str(current_price)),
-                    stop_loss_level=Decimal(str(sl)),
-                    take_profit_level=Decimal(str(tp))
-                ))
-
-        # 4. NGBREAKOUT Setup detection (consolidation range compression with volume expansion)
+        # 3. NGBREAKOUT Setup detection (consolidation range compression with volume expansion)
         if n >= 22:
             recent_highs = highs[-11:-1]
             recent_lows = lows[-11:-1]
@@ -360,90 +320,7 @@ class SetupEngine:
                         take_profit_level=Decimal(str(tp))
                     ))
 
-        # 5. NGDONCHIAN_BREAKOUT Setup detection (prior N-bar channel break under expanding volatility)
-        if n >= 125:
-            prior_high = max(highs[-21:-1])
-            prior_low = min(lows[-21:-1])
-
-            # Calculate True Ranges
-            tr_list = []
-            for i in range(1, n):
-                tr_list.append(max(
-                    highs[i] - lows[i],
-                    abs(highs[i] - prices[i - 1]),
-                    abs(lows[i] - prices[i - 1])
-                ))
-            
-            # ATR over atr_window = 14
-            atr = sum(tr_list[-14:]) / 14.0
-            
-            # Median ATR over atr_med_window = 100
-            import numpy as np
-            atr_med = float(np.median(tr_list[-100:]))
-            expanding = atr_med > 0 and atr > 1.1 * atr_med
-
-            if expanding:
-                if current_price > prior_high:
-                    sl = prior_low
-                    tp = current_price + 0.02 * current_price
-                    setups.append(CandidateSetup(
-                        symbol=symbol,
-                        timestamp=ts,
-                        setup_type="NGDONCHIAN_BREAKOUT",
-                        direction="BUY",
-                        trigger_price=Decimal(str(current_price)),
-                        stop_loss_level=Decimal(str(sl)),
-                        take_profit_level=Decimal(str(tp))
-                    ))
-                elif current_price < prior_low:
-                    sl = prior_high
-                    tp = current_price - 0.02 * current_price
-                    setups.append(CandidateSetup(
-                        symbol=symbol,
-                        timestamp=ts,
-                        setup_type="NGDONCHIAN_BREAKOUT",
-                        direction="SELL",
-                        trigger_price=Decimal(str(current_price)),
-                        stop_loss_level=Decimal(str(sl)),
-                        take_profit_level=Decimal(str(tp))
-                    ))
-
-        # 6. NGVOLATILITY_BREAKOUT Setup detection (ATR expansion breakout)
-        if n >= 35:
-            atr_val = self._calculate_atr(highs, lows, prices, period=14)
-            if atr_val > 0:
-                prior_high = max(highs[-21:-1])
-                prior_low = min(lows[-21:-1])
-
-                up_break = current_price - prior_high
-                dn_break = prior_low - current_price
-                
-                if up_break > 1.5 * atr_val:
-                    sl = prior_low
-                    tp = current_price + 0.02 * current_price
-                    setups.append(CandidateSetup(
-                        symbol=symbol,
-                        timestamp=ts,
-                        setup_type="NGVOLATILITY_BREAKOUT",
-                        direction="BUY",
-                        trigger_price=Decimal(str(current_price)),
-                        stop_loss_level=Decimal(str(sl)),
-                        take_profit_level=Decimal(str(tp))
-                    ))
-                elif dn_break > 1.5 * atr_val:
-                    sl = prior_high
-                    tp = current_price - 0.02 * current_price
-                    setups.append(CandidateSetup(
-                        symbol=symbol,
-                        timestamp=ts,
-                        setup_type="NGVOLATILITY_BREAKOUT",
-                        direction="SELL",
-                        trigger_price=Decimal(str(current_price)),
-                        stop_loss_level=Decimal(str(sl)),
-                        take_profit_level=Decimal(str(tp))
-                    ))
-
-        # 7. NGOI_SETUP Setup detection (Open Interest divergence with Volume/RSI fallback)
+        # 4. NGOI_SETUP Setup detection (Open Interest divergence with Volume/RSI fallback)
         if n >= 25 and data_buffer is not None:
             closes = prices
             current_volume = float(data_buffer[-1].get('volume', 0.0))

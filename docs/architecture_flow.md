@@ -85,7 +85,7 @@ graph TD
 
 ### 2.4 Strategy Layer
 * **Responsibility**: Assess setup eligibility and define protective bounds (Stop Loss / Take Profit).
-* **Component**: [StrategyManager](file:///Users/mojtaba.rahbari/Sites/python/lynxion-ets/infrastructure/strategies/strategy_manager.py) and strategy adapters (e.g., [MTFTrendStrategyAdapter](file:///Users/mojtaba.rahbari/Sites/python/lynxion-ets/infrastructure/strategies/adapters/mtf_trend_strategy_adapter.py)).
+* **Component**: [StrategyManager](file:///Users/mojtaba.rahbari/Sites/python/lynxion-ets/infrastructure/strategies/strategy_manager.py) and strategy adapters (e.g., [TrendFollowStrategyAdapter](infrastructure/strategies/adapters/trend_follow_strategy_adapter.py)).
 * **Action**: Evaluates the `FusedSignal` against specific trading strategies. When a setup (such as `NGTREND_FOLLOW` or `NGMR_REVERSION`) is matched, it generates an `ExecutionIntent` with target parameters.
 
 ### 2.5 Execution & Risk Layer

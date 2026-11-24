@@ -27,7 +27,7 @@ class BaseStrategyAdapter(StrategyPort):
     # were never defined on the base class → AttributeError at runtime (BROKEN:
     # trend_following, mean_reversion, scalping, oi_footprint). Implemented here as
     # standard textbook indicators (NO optimization/tuning) to restore the intended
-    # behavior. Signatures match the existing call sites and mtf_trend's local EMA.
+    # behavior. Signatures match the existing call sites.
     @staticmethod
     def calculate_ema(prices: List[float], period: int) -> Optional[float]:
         """Exponential moving average over `prices` (None if insufficient data)."""

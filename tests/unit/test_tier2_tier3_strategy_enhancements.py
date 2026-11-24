@@ -32,8 +32,8 @@ def test_vwap_2_5_sigma_extreme_deviation_reversion():
     assert float(mr_setups[0].take_profit_level) >= 100.0
 
 
-def test_sweep_scalper_requires_mss_midpoint_confirmation():
-    """Verify SweepScalper requires closing beyond previous bar midpoint for MSS confirmation."""
+def test_liquidity_sweep_requires_mss_midpoint_confirmation():
+    """Verify the liquidity sweep setup (NGLS) requires closing beyond the previous bar midpoint (MSS)."""
     engine = SetupEngine()
     sym = Symbol("ETH-USDT")
 
@@ -72,34 +72,6 @@ def test_sweep_scalper_requires_mss_midpoint_confirmation():
     sweep_sells = [s for s in setups_mss if s.setup_type == "NGLS_SWEEP" and s.direction == "SELL"]
     assert len(sweep_sells) == 1
     assert sweep_sells[0].direction == "SELL"
-
-
-def test_mtf_trend_requires_momentum_alignment():
-    """Verify MTFTrend requires EMA/SMA trend momentum alignment before breakout entry."""
-    engine = SetupEngine()
-    sym = Symbol("SOL-USDT")
-
-    # Bullish trend (SMA10 > SMA20) above VAH
-    prices = [100.0 + i * 2.0 for i in range(25)]
-    highs = [p + 1.0 for p in prices]
-    lows = [p - 1.0 for p in prices]
-    vah = 145.0
-    val = 110.0
-    poc = 130.0
-
-    setups = engine.scan_for_setups(
-        symbol=sym,
-        prices=prices,
-        highs=highs,
-        lows=lows,
-        val=val,
-        vah=vah,
-        poc=poc
-    )
-
-    trend_buys = [s for s in setups if s.setup_type == "NGTREND_FOLLOW" and s.direction == "BUY"]
-    assert len(trend_buys) == 1
-    assert trend_buys[0].direction == "BUY"
 
 
 def test_active_position_manager_enforces_3_5_pct_minimum_locked_roe():

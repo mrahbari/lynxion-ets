@@ -56,7 +56,7 @@ class LiveExecutionEngine:
 
     def run_live_execution_with_auto_retune(self,
                                           data_fetcher: Callable[[], Dict[str, Any]],
-                                          strategy_name: str = "crypto_breakout",
+                                          strategy_name: str = "breakout",
                                           risk_config: Dict[str, Any] = None):
         """Main execution loop with auto-retune capability."""
         if risk_config is None:

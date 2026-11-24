@@ -148,7 +148,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             symbols = load_symbols_from_env()
 
         if args.all_strategies:
-            strategies = [s.value for s in StrategyType] + ["crypto_breakout"]
+            strategies = [s.value for s in StrategyType]
         elif args.strategies:
             strategies = args.strategies
         else:

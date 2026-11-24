@@ -606,7 +606,7 @@ def run_improved_hyperopt_example():
     
     # Create and run optimization
     hyperopt_service = ImprovedHyperoptService(
-        strategy_name="crypto_breakout",
+        strategy_name="breakout",
         base_dir="data/hyperopt_results"
     )
     

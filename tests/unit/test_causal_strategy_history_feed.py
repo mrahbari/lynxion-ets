@@ -21,7 +21,7 @@ def bar(opened, timeframe, close, symbol="BTCUSDT"):
 
 
 def adapters():
-    short = BaseStrategyAdapter("SweepScalper")
+    short = BaseStrategyAdapter("Liquidity")
     long = BaseStrategyAdapter("TrendFollow")
     short.config["timeframe"] = "1m"
     long.config["timeframe"] = "1h"

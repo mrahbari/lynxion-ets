@@ -71,12 +71,12 @@ def test_backtest_mode_uses_injected_pipeline(capsys):
         return _StubBacktestUseCase()
 
     use_case = TradingModesUseCase(backtest_use_case_factory=_factory)
-    rc = use_case.run_backtest("crypto_breakout", "BTC/USDT", 30)
+    rc = use_case.run_backtest("breakout", "BTC/USDT", 30)
 
     out = capsys.readouterr().out
     assert rc == 0
     assert factory_calls["count"] == 1
-    assert captured["factory_strategy"] == "crypto_breakout"
+    assert captured["factory_strategy"] == "breakout"
     assert "BTCUSDT" in str(captured["symbol"])  # BTC/USDT -> BTCUSDT
     assert captured["initial_capital"] == 10000
     assert "Backtest completed" in out
@@ -100,11 +100,11 @@ def test_optimize_mode_uses_injected_optimizer(capsys):
         hyperopt_config_factory=lambda strategy_name: {"cfg": strategy_name},
         hyperopt_optimizer_factory=lambda cfg, strategy_name: _StubOptimizer(),
     )
-    rc = use_case.run_optimize("crypto_breakout", "BTCUSDT", 5)
+    rc = use_case.run_optimize("breakout", "BTCUSDT", 5)
 
     out = capsys.readouterr().out
     assert rc == 0
-    assert captured["strategy_name"] == "crypto_breakout"
+    assert captured["strategy_name"] == "breakout"
     assert captured["symbol"] == "BTCUSDT"
     assert captured["custom_config"] == {"max_evals": 5}
     assert "Optimization completed" in out
@@ -123,11 +123,11 @@ def test_retune_mode_uses_injected_factory(capsys):
     use_case = TradingModesUseCase(
         auto_retune_optimizer_factory=lambda strategy_name, threshold: _StubAutoRetune(),
     )
-    rc = use_case.run_retune("crypto_breakout", None, "BTC/USDT,ETH/USDT")
+    rc = use_case.run_retune("breakout", None, "BTC/USDT,ETH/USDT")
 
     out = capsys.readouterr().out
     assert rc == 0
-    assert calls == [("crypto_breakout", ("BTC/USDT",)), ("crypto_breakout", ("ETH/USDT",))]
+    assert calls == [("breakout", ("BTC/USDT",)), ("breakout", ("ETH/USDT",))]
     assert "All auto-retune processes completed" in out
 
 

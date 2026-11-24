@@ -34,13 +34,13 @@ def create_parser():
         epilog="""
 Examples:
   # Run optimization for a specific strategy/symbol
-  python run_trading_system.py --mode optimize --strategy crypto_breakout --symbol BTC/USDT
+  python run_trading_system.py --mode optimize --strategy breakout --symbol BTC/USDT
 
   # Run backtest with optimized parameters
-  python run_trading_system.py --mode backtest --strategy crypto_breakout --symbol BTC/USDT --use-optimized-params
+  python run_trading_system.py --mode backtest --strategy breakout --symbol BTC/USDT --use-optimized-params
 
   # Run auto-retune on multiple symbols
-  python run_trading_system.py --mode retune --strategy crypto_breakout --symbols BTC/USDT,ETH/USDT,SOL/USDT
+  python run_trading_system.py --mode retune --strategy breakout --symbols BTC/USDT,ETH/USDT,SOL/USDT
 
   # Monitor system performance
   python run_trading_system.py --mode monitor
@@ -65,8 +65,8 @@ Examples:
 
     parser.add_argument(
         "--strategy",
-        default="crypto_breakout",
-        help="Trading strategy to use (default: crypto_breakout)"
+        default="breakout",
+        help="Trading strategy to use (default: breakout)"
     )
 
     parser.add_argument(

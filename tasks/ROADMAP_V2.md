@@ -102,8 +102,8 @@ foreign-symbol candle buffer (fixed 1f3028a). Historical per-strategy PF (e.g. V
 Operator decision: test strategies one by one, not all together. `scripts/s1_strategy_rotation.py`
 (launchd `com.lynxion.s1-rotation`, hourly) runs one strategy alone until 40 closed trades or 48h, sends
 its result to Telegram, switches `STRATEGY_ALLOWLIST` and restarts the runner via the safe launcher.
-Order: VWAPReversal, OIFootprint, TrendFollow, MeanReversion, MTFTrend, SweepScalper, Breakout,
-volatility_breakout, Liquidity (<= 18 days). crypto_breakout excluded. Progress: `--status`.
+Order: VWAPReversal, OIFootprint, TrendFollow, MeanReversion, Breakout, Liquidity (six strategies since the
+2026-11-24 consolidation). Progress: `--status`.
 
 Pre-registered decision rule (fixed before any results; 9 strategies tested):
 - Per strategy, only trades entered during its own window, journal label, net of fees.

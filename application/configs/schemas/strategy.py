@@ -15,7 +15,7 @@ class StrategyConfig(BaseModel):
     lookback_period: int = Field(default=50, ge=1, description="Number of periods to look back")
 
     # Additional strategy fields from .env
-    default_strategy: str = Field(default="crypto_breakout", description="Default strategy")
+    default_strategy: str = Field(default="breakout", description="Default strategy")
     risk_per_trade: float = Field(default=0.02, description="Risk per trade")
     max_position_size: float = Field(default=0.05, description="Maximum position size")
     min_volume_filter: float = Field(default=10000.0, description="Minimum volume filter")

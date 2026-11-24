@@ -1,7 +1,7 @@
 """Donchian-20 breakout with EMA(50/200) trend filter (E16-U10 / E21 "TF1", adopted live 2026-11-24).
 
 Canonical trend-following (Donchian / turtle breakout with a moving-average regime filter) replacing the
-NGTREND_FOLLOW setup (price beyond the value area + fixed 0.2 % SMA gap; defect S-4). E21 on the E9
+former value-area trend setup (fixed 0.2 % SMA gap; defect S-4). E21 on the E9
 universe: DEV -0.027 R (old -0.028), HOLDOUT -0.010 R (old -0.055), 33 % fewer trades. No proven edge;
 adopted as the correct definition with smaller holdout losses (operator decision 2026-11-24).
   * 1h CLOSED bars, the last 400 (EMA initialisation identical to the research replay).

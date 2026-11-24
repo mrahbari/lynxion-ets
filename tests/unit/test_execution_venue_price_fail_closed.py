@@ -72,7 +72,7 @@ def test_allowlist_matches_registry_adapter_and_config_names(monkeypatch):
     monkeypatch.setenv("STRATEGY_ALLOWLIST", "trend_following,TrendFollow,VWAPReversal,OIFootprint")
     for name in ("trend_following", "TrendFollow", "vwap_reversal", "VWAPReversal", "VWAP_REVERSAL", "oi_footprint", "OIFootprint"):
         assert StrategyConfig.get_strategy_enabled(name), name
-    for name in ("crypto_breakout", "Breakout", "mean_reversion", "SWEEP_SCALPER"):
+    for name in ("breakout", "Breakout", "mean_reversion", "LIQUIDITY"):
         assert not StrategyConfig.get_strategy_enabled(name), name
     monkeypatch.setenv("STRATEGY_ALLOWLIST", "")
-    assert StrategyConfig.get_strategy_enabled("crypto_breakout")
+    assert StrategyConfig.get_strategy_enabled("breakout")

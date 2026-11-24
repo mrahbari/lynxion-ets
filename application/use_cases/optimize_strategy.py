@@ -20,7 +20,7 @@ from shared.logger import EnhancedLogger
 @dataclass
 class OptimizeStrategyRequest:
     symbols: List[str]
-    strategy_name: str = "crypto_breakout"
+    strategy_name: str = "breakout"
     max_evals: int = 50
     days_back: int = 90
 
@@ -109,7 +109,7 @@ class OptimizeStrategyUseCase:
 
     def _run_retune_process(self,
                             symbols: List[str],
-                            strategy_name: str = "crypto_breakout",
+                            strategy_name: str = "breakout",
                             max_evals: int = 50,
                             days_back: int = 90) -> Dict[str, Any]:
         """Run the retune process for specified symbols and strategy."""

@@ -48,8 +48,7 @@ FEE, SLIP = 0.0005, 0.0002
 BE_R, BE_BUF, TRAIL_AFTER_R, TRAIL_R = 1.5, 0.0015, 2.0, 1.5
 TF_MS = {"1m": 60_000, "5m": 300_000, "15m": 900_000, "1h": 3_600_000}
 
-STRATEGIES = {  # name -> (adapter import path, class, design timeframe); mtf_trend / volatility_breakout
-    # removed in the 2026-11-24 consolidation (their E9 results remain in the reports)
+STRATEGIES = {  # name -> (adapter import path, class, design timeframe)
     "trend_following": ("infrastructure.strategies.adapters.trend_follow_strategy_adapter", "TrendFollowStrategyAdapter", "1h"),
     "vwap_reversal": ("infrastructure.strategies.adapters.vwap_reversal_strategy_adapter", "VWAPReversalStrategyAdapter", "5m"),
     "oi_footprint": ("infrastructure.strategies.adapters.oi_footprint_strategy_adapter", "OIFootprintStrategyAdapter", "1h"),

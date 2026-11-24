@@ -369,7 +369,7 @@ def run_time_series_hyperopt_example():
     
     # Create and run optimization
     runner = TimeSeriesHyperoptRunner(
-        strategy_name="crypto_breakout",
+        strategy_name="breakout",
         base_dir="data/ts_hyperopt_results"
     )
     

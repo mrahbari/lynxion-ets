@@ -39,12 +39,12 @@ INITIAL_CAPITAL = 10000.0
 RISK_PER_TRADE = 0.002    # 0.2% keeps each demo order below the $21 VST hard cap
 
 # Live auto-detect roster (infrastructure/strategies/strategy_manager.py)
-STRATEGIES = ["trend_following", "mean_reversion", "volatility_breakout"]
+STRATEGIES = ["trend_following", "mean_reversion", "breakout"]
 SYMBOLS = {"BTC/USDT": 64000.0, "ETH/USDT": 3400.0, "SOL/USDT": 145.0}
 
 # Parametric signal rates per strategy (signals/day) for a 72h-equivalent window.
 # Labelled as assumptions for a cost-sensitivity model — NOT measured live frequency.
-SIGNALS_PER_DAY = {"trend_following": 6, "mean_reversion": 14, "volatility_breakout": 9}
+SIGNALS_PER_DAY = {"trend_following": 6, "mean_reversion": 14, "breakout": 9}
 WINDOW_HOURS = 72
 
 

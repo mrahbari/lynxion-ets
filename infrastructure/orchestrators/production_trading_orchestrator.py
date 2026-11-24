@@ -46,7 +46,7 @@ class ProductionTradingOrchestrator:
 
         # Initialize core components
         self.auto_retune_optimizer = AutoRetuneOptimizer(
-            strategy_name="crypto_breakout",
+            strategy_name="breakout",
             performance_threshold=-5.0
         )
         # Initialize execution engine with proper parameters
@@ -283,7 +283,7 @@ class ProductionTradingOrchestrator:
 
     def run_production_trading(self,
                                data_fetcher: Callable[[], Dict[str, Any]],
-                               strategy_name: str = "crypto_breakout",
+                               strategy_name: str = "breakout",
                                risk_config: Dict[str, Any] = None):
         """Main production trading loop with auto-retune capability."""
         if risk_config is None:

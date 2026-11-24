@@ -48,7 +48,7 @@ class LiveAutoRetuneEngine:
 
     def run_live_auto_retune(self,
                            data_fetcher: Callable[[], Dict[str, Any]],
-                           strategy_name: str = "crypto_breakout",
+                           strategy_name: str = "breakout",
                            risk_config: Dict[str, Any] = None,
                            sleep_seconds: int = 60):
         """Main auto-retune loop with live execution capability."""

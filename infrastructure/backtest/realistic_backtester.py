@@ -101,7 +101,7 @@ class RealisticBacktester:
         self.min_trades_threshold = 5  # Minimum trades expected over multi-month period
         self.min_duration_months = 3  # Minimum duration for validation
         self.valid_strategy_types = [
-            'rsi_strategy', 'ma_crossover_strategy', 'crypto_breakout',
+            'rsi_strategy', 'ma_crossover_strategy',
             'trend_following', 'mean_reversion', 'breakout', 'liquidity',
             'oi_footprint', 'vwap_reversal'
         ]
@@ -116,7 +116,7 @@ class RealisticBacktester:
         Returns:
             bool: True if strategy is valid, False otherwise
         """
-        if strategy_name in self.valid_strategy_types or strategy_name == 'crypto_breakout':
+        if strategy_name in self.valid_strategy_types:
             self.logger.info(f"Strategy '{strategy_name}' is valid and in system strategies list")
             return True
         else:

@@ -60,7 +60,7 @@ def load_sample_strategy(strategy_name: str, raw_signal: bool = False):
             # each strategy's internal regime assessment, so the redundant external
             # regime gate in should_execute must not veto the strategy's own signal.
             # Default regime_context to the strategy name (which contains its regime
-            # keyword, e.g. 'mean_reversion' -> 'mean', 'volatility_breakout' ->
+            # keyword, e.g. 'mean_reversion' -> 'mean', 'trend_following' ->
             # 'breakout'), so a signal the strategy chose to emit is honored.
             mock_regime = params.get('regime_context') or strategy_name
 
@@ -495,7 +495,6 @@ def load_sample_strategy(strategy_name: str, raw_signal: bool = False):
         strategies = {
             'rsi_strategy': simple_rsi_strategy,
             'ma_crossover_strategy': simple_ma_crossover_strategy,
-            'crypto_breakout': simple_rsi_strategy,  # Default fallback
             'trend_following': trend_following_strategy,
             'mean_reversion': mean_reversion_strategy,
             'momentum': momentum_strategy,

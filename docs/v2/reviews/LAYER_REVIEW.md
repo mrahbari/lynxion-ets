@@ -749,3 +749,15 @@ uses the 5m strategy. Kept: TrendFollow, VWAPReversal, OIFootprint (live), MeanR
 Liquidity (in code, not in the allowlist). Git history keeps every removed file.
 Backlog: `com.lynxion.microstructure-pilot2-7d` LaunchAgent (finished Codex pilot, RunAtLoad) still
 loaded; Codex-era scripts (phase10 burst, strategy_deployment_revalidation) still name removed strategies.
+* **Cleanup, round 2 (same day):** no trace of the removed strategies left in code (0 references outside dated
+  docs): `crypto_breakout` default replaced by `breakout` across config, CLI, use cases and optimisers; enum
+  members removed; dead SetupEngine blocks (old value-area trend, Donchian, volatility breakout setups) removed;
+  the demo portfolio backtester's volatility-breakout function removed. Dead code deleted (unimportable or
+  unused): `research/profitability_diagnostics/` (12 Codex diagnostics), `e10_vol_breakout_redesign.py`,
+  `scripts/strategy_deployment_revalidation.py` + `universe_validation.py` + `phase15_long_history_validation.py`
+  (imported a non-existent momentum adapter), `application/services/auto_retune_service.py` +
+  `multi_strategy_optimizer.py` (missing `shared.auto_drop`), `application/use_cases/optimization_use_cases.py`
+  (no users), `infrastructure/validation/comprehensive_backtest_validator.py` (unimportable, no users).
+  Living docs updated (`docs/system_components_catalog.md` strategy section, `docs/architecture_flow.md`,
+  roadmap S1 order). Dated reports (Codex phase reports, E9-E22) are records of what was tested and are not
+  rewritten. All 1,590 tests (unit, e2e, contract) pass.

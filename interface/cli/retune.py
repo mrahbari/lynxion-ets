@@ -34,15 +34,15 @@ def build_parser() -> argparse.ArgumentParser:
         epilog="""
 Examples:
   %(prog)s --all                         # Retune all strategies for all symbols
-  %(prog)s --strategy crypto_breakout    # Retune specific strategy for all symbols
+  %(prog)s --strategy breakout    # Retune specific strategy for all symbols
   %(prog)s --symbols BTCUSDT ETHUSDT     # Retune all strategies for specific symbols
-  %(prog)s --strategy crypto_breakout --symbols BTCUSDT --evals 100 --days 60
+  %(prog)s --strategy breakout --symbols BTCUSDT --evals 100 --days 60
         """
     )
 
     parser.add_argument('--strategy', type=str,
-                        default='crypto_breakout',
-                        help='Strategy name to retune (default: crypto_breakout)')
+                        default='breakout',
+                        help='Strategy name to retune (default: breakout)')
 
     parser.add_argument('--symbols', nargs='+', type=str,
                         help='Specific symbols to retune (default: from WFO_COINS env var)')

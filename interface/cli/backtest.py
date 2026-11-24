@@ -31,7 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
 Examples:
   %(prog)s --strategy rsi_strategy --start 2023-01-01 --end 2023-12-31
   %(prog)s --strategy ma_crossover_strategy --start 90d --end today --symbols BTCUSDT
-  %(prog)s --strategy crypto_breakout --start 2023-01-01 --end 2023-06-30 --capital 50000
+  %(prog)s --strategy breakout --start 2023-01-01 --end 2023-06-30 --capital 50000
   %(prog)s --all-strategies --start 180d --end today --symbols BTCUSDT
         """
     )
@@ -105,7 +105,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     # Determine which strategies to run
     if args.all_strategies:
         all_available_strategies = [strategy.value for strategy in StrategyType]
-        all_available_strategies.append('crypto_breakout')
         strategy_names = all_available_strategies
         print(f"🚀 Multi-Strategy Backtest Runner Started")
         print(f"   Strategies: {strategy_names}")

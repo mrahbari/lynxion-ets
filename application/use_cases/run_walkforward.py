@@ -17,7 +17,7 @@ from shared.logger import EnhancedLogger
 @dataclass
 class WalkforwardRequest:
     symbols: List[str]
-    strategy_name: str = "crypto_breakout"
+    strategy_name: str = "breakout"
     train_size: int = 90
     test_size: int = 30
     step_size: int = 30

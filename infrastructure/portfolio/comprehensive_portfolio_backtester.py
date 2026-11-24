@@ -1307,53 +1307,12 @@ def load_sample_strategies():
         else:
             return 0  # Hold
 
-    def volatility_breakout_strategy(row, params):
-        """Regime-aware volatility breakout strategy with increased signal density."""
-        atr = row.get('atr', 0)
-        high = row.get('high', 0)
-        low = row.get('low', 0)
-        close = row.get('close', 0)
-        sma_5 = row.get('sma_5', 0)  # Use shorter MA
-        volume = row.get('volume', 0)
-        sma_volume = row.get('sma_volume_5', 0)  # Use shorter MA for volume
-        adx = row.get('adx', 20)  # ADX for trend strength
-
-        if any(pd.isna(x) for x in [atr, high, low, close, sma_5]):
-            return 0
-
-        # Define breakout thresholds based on ATR - make extremely sensitive
-        breakout_threshold = atr * 0.1  # Extremely sensitive
-
-        # Bullish breakout: price moves above recent range
-        bullish_breakout = close > max(high, sma_5) + breakout_threshold
-        bearish_breakout = close < min(low, sma_5) - breakout_threshold
-
-        # Volume confirmation with very loose requirements
-        volume_confirmation = True
-        if pd.notna(volume) and pd.notna(sma_volume):
-            volume_confirmation = volume > sma_volume * 0.3  # Very loose volume requirement
-
-        # Use scoring approach
-        score = 0
-        if bullish_breakout and volume_confirmation:
-            score += 1.0
-        if bearish_breakout and volume_confirmation:
-            score -= 1.0
-
-        if score > 0.5:  # Threshold for buy signal
-            return 1  # Buy
-        elif score < -0.5:  # Threshold for sell signal
-            return -1  # Sell
-        else:
-            return 0  # Hold
-
     # Strategy version mapping
     strategy_versions = {
         'rsi_strategy': '1.0.0',
         'ma_crossover_strategy': '1.0.0',
         'trend_following': '1.1.0',
-        'mean_reversion': '1.0.2',
-        'volatility_breakout': '1.0.1'
+        'mean_reversion': '1.0.2'
     }
 
     # Create strategy objects with version information
@@ -1362,8 +1321,7 @@ def load_sample_strategies():
         'rsi_strategy': simple_rsi_strategy,
         'ma_crossover_strategy': simple_ma_crossover_strategy,
         'trend_following': trend_following_strategy,
-        'mean_reversion': mean_reversion_strategy,
-        'volatility_breakout': volatility_breakout_strategy
+        'mean_reversion': mean_reversion_strategy
     }.items():
         # Create a wrapper that includes version information
         def make_versioned_strategy(strategy_func, version):

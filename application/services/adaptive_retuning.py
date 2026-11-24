@@ -521,4 +521,4 @@ class AdaptiveRetuningManager:
         """Get all strategy/symbol pairs that are being tracked."""
         # This would normally query the results tracker for all unique pairs
         # For mock purposes:
-        return [("crypto_breakout", "BTC/USDT"), ("mean_reversion", "ETH/USDT")]
+        return [("breakout", "BTC/USDT"), ("mean_reversion", "ETH/USDT")]

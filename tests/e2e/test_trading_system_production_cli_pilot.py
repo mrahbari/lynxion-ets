@@ -75,14 +75,14 @@ def test_live_trading_use_case_drives_lifecycle(capsys):
         return _StubOrchestrator()
 
     use_case = RunLiveTradingUseCase(orchestrator_factory=_factory)
-    rc = use_case.run(strategy_name="crypto_breakout", symbol="ETH/USDT")
+    rc = use_case.run(strategy_name="breakout", symbol="ETH/USDT")
 
     out = capsys.readouterr().out
     assert rc == 0
     assert factory_calls["count"] == 1
     assert events[0] == "init"
     assert events[1][0] == "run"
-    assert events[1][1] == "crypto_breakout"
+    assert events[1][1] == "breakout"
     assert events[1][2] == {"max_risk": 0.02, "atr_multiplier": 1.5, "use_dynamic_position": True}
     data = events[2][1]
     assert list(data.keys()) == ["ETH/USDT"]  # symbol routed into the fetcher

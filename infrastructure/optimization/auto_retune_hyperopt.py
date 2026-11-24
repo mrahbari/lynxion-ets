@@ -18,7 +18,7 @@ class AutoRetuneOptimizer:
     def __init__(self,
                  trials_file: str = "data/hyperopt_auto_trials.pkl",
                  best_params_file: str = "data/best_params_auto.json",
-                 strategy_name: str = "crypto_breakout",
+                 strategy_name: str = "breakout",
                  performance_threshold: float = -5.0):
         self.trials_file = Path(trials_file)
         self.best_params_file = Path(best_params_file)
@@ -255,7 +255,7 @@ if __name__ == "__main__":
     optimizer = AutoRetuneOptimizer(
         trials_file="data/hyperopt_auto_trials.pkl",
         best_params_file="data/best_params_auto.json",
-        strategy_name="crypto_breakout",
+        strategy_name="breakout",
         performance_threshold=-5.0
     )
 

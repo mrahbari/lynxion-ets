@@ -20,7 +20,7 @@ class RunLiveTradingUseCase:
     def __init__(self, orchestrator_factory=None):
         self._orchestrator_factory = orchestrator_factory
 
-    def run(self, strategy_name: str = "crypto_breakout", symbol=None) -> int:
+    def run(self, strategy_name: str = "breakout", symbol=None) -> int:
         # Run in original production mode with manual strategy selection
         def sample_data_fetcher():
             """Sample data fetcher for testing."""

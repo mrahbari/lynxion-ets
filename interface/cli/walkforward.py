@@ -32,15 +32,15 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --strategy crypto_breakout --symbols BTCUSDT ETHUSDT
+  %(prog)s --strategy breakout --symbols BTCUSDT ETHUSDT
   %(prog)s --strategy rsi_strategy --train 60 --test 20 --step 20 --evals 25
   %(prog)s --strategy ma_crossover_strategy --all --train 120 --test 30 --cv-splits 3
         """
     )
 
     parser.add_argument('--strategy', type=str,
-                       default='crypto_breakout',
-                       help='Strategy name to use for WFO (default: crypto_breakout)')
+                       default='breakout',
+                       help='Strategy name to use for WFO (default: breakout)')
 
     parser.add_argument('--symbols', nargs='+', type=str,
                        help='Specific symbols to analyze (default: from WFO_COINS env var)')
