@@ -255,8 +255,8 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E16-U5 | Liquidity -> slippage estimate for the actual order size (book walk) and spread vs its own norm; claim: predicts realised slippage of live fills | live-fill check | TODO |
 | E16-U7 | EngineService -> role-aware translation from watcher contracts; contrarian rules out until validated | tests | TODO |
 | E16-U8 | MarketStructureEngine -> standard volume profile (volume over bar range, lower-TF bars), swing-pivot S/R, ATR-scaled bias; E9 rerun of level-based strategies | DONE: grade A (HOLDOUT POC/VAL/VAH error 0.14/0.10/0.12 ATR); E9 effect within noise | DONE |
-| E16-U9 | OIFootprint: real open-interest input (history + live) or retire | E20: real-OI replay FAIL on DEV (-0.107 R, n=846) -> RETIRED (removed from STRATEGY_ALLOWLIST, code kept) | DONE |
-| E16-U10 | Each setup rebuilt to its canonical definition on standard levels (after U8); cost-aware timeframe/stop design | E21: TF1/TF2/VR1 all FAIL (best -0.01..-0.06 R); retire-or-keep decision with operator | DONE (decision pending) |
+| E16-U9 | OIFootprint: real open-interest input (history + live) or retire | E20: real-OI replay FAIL on DEV (-0.107 R, n=846); kept live on VST for data (operator 11-24) | DONE |
+| E16-U10 | Each setup rebuilt to its canonical definition on standard levels (after U8); cost-aware timeframe/stop design | E21: TF1/TF2/VR1 all FAIL (best -0.01..-0.06 R); kept live on VST for data (operator 11-24) | DONE |
 | E16-U11 | Skip XS-COMBO sleeve-owned symbols upstream (no intents for them) | orchestrator drops them before queue; adapter rejection kept (fail-closed) | DONE |
 | E16-U12 | Ops: rotate/compress forensic.log (6.7 GB), fix log-rotation FileNotFoundError; disk 93 % full | logs < 2 GB | TODO |
 | E16-U6 | OrderFlowWS -> time-window order-flow imbalance (OFI, Cont-Kukanov-Stoikov) incl. book changes; claim: OFI -> next-minutes return (needs recorded live trades/book) | recorder + grade | TODO |

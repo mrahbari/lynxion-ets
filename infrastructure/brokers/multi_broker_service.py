@@ -50,7 +50,10 @@ def extract_order_journal_metadata(order: Any) -> Dict[str, Any]:
         or metadata.get("confidence")
         or metadata.get("fused_confidence")
     )
-    regime = getattr(order, "regime", None) or metadata.get("regime") or metadata.get("regime_context")
+    fused = getattr(parent_intent, "fused_signal", None)
+    regime = (getattr(order, "regime", None) or metadata.get("regime") or metadata.get("regime_context")
+              or getattr(fused, "regime_context", None))
+    signal_time = getattr(fused, "timestamp", None) or getattr(parent_intent, "timestamp", None)
     strategy = (
         getattr(order, "strategy_name", None)
         or getattr(order, "strategy", None)
@@ -62,6 +65,7 @@ def extract_order_journal_metadata(order: Any) -> Dict[str, Any]:
         "confidence": scalar(confidence),
         "regime": regime,
         "strategy": strategy,
+        "signal_ts": signal_time.isoformat() if hasattr(signal_time, "isoformat") else None,
     }
 
 

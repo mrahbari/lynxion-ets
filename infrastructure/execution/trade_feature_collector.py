@@ -282,6 +282,22 @@ class TradeFeatureCollector:
     # -- Intent Metadata Cross-Referencing --------------------------------------
 
     @staticmethod
+    def _protection_levels_plausible(entry_price: Any, sl: Any, tp: Any, side: str) -> bool:
+        """SL/TP must sit on the correct side of the entry and within 50 % of it."""
+        try:
+            ep = float(entry_price)
+            for lvl, sign in ((sl, -1.0), (tp, 1.0)):
+                if lvl in (None, ""):
+                    continue
+                v = float(lvl)
+                s = sign if str(side).upper() in ("BUY", "LONG") else -sign
+                if ep <= 0 or v <= 0 or abs(v / ep - 1) > 0.5 or (v - ep) * s <= 0:
+                    return False
+            return True
+        except (TypeError, ValueError):
+            return True
+
+    @staticmethod
     def _merge_intent_metadata(
         existing: Optional[Dict[str, Any]], incoming: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -344,6 +360,9 @@ class TradeFeatureCollector:
                                     "confidence": str(conf) if conf is not None else "",
                                     "regime": str(reg) if reg is not None else "",
                                     "strategy": str(strat) if strat is not None else "",
+                                    # E11-4: signal time (fallback: INTENT write time) for latency
+                                    "signal_ts": str(entry.get("signal_ts") or (
+                                        entry.get("ts") if entry.get("status") == "INTENT" else "") or ""),
                                 }
                                 # The journal's order_ref, broker client order ID, and exchange
                                 # order ID are distinct identities.  Index all of them so a later
@@ -500,6 +519,16 @@ class TradeFeatureCollector:
 
                     sl_val = meta.get("initial_stop_loss", "")
                     tp_val = meta.get("initial_take_profit", "")
+                    if not self._protection_levels_plausible(entry_price, sl_val, tp_val, side):
+                        sl_val = tp_val = ""   # corrupt intent levels (e.g. 2026-11-22 cross-symbol P0)
+                    latency_ms = ""
+                    try:
+                        sig_ts = meta.get("signal_ts") or ""
+                        if sig_ts and e_ms:
+                            lat = e_ms - datetime.fromisoformat(sig_ts).timestamp() * 1000.0
+                            latency_ms = f"{lat:.0f}" if 0 <= lat < 3_600_000 else ""
+                    except Exception:
+                        latency_ms = ""
                     conf_val = meta.get("confidence", "")
                     reg_val = meta.get("regime", "")
                     is_technical_demo = order_ref in demo_order_ids or order_id in demo_order_ids
@@ -569,7 +598,7 @@ class TradeFeatureCollector:
                         "order_ref": order_ref,
                         "client_order_id": order_ref,
                         "exchange": "bingx",
-                        "execution_latency_ms": "",
+                        "execution_latency_ms": latency_ms,
                         "is_execution_unwind": "True" if is_unwind else "False",
                         "status": "FILLED",
                     }

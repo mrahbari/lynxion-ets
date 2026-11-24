@@ -20,7 +20,7 @@ PASS = net mean R > 0 with n >= 30 on DEV and HOLDOUT.
 **Result: FAIL** (DEV negative over 846 trades; the short holdout is not enough to overturn it).
 Real OI does not rescue the setup and the proxy has no edge either.
 
-**Decision (pre-registered).** OIFootprint retired from live: removed from `STRATEGY_ALLOWLIST`. Code,
+**Decision (pre-registered): retire. Operator decision 2026-11-24: keep it LIVE on VST for trade data (labelled no proven edge).** Code,
 config and the real-OI branch are kept, so it can be re-enabled by the allowlist if a future OI factor
 (E13-3, cross-sectional) passes.
 

@@ -209,10 +209,16 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         # Check if this symbol has recently failed to fetch data
         import time
         current_time = time.time()
-        failed_key = (market_type.value, symbol_str)
+        # Platform review 2026-11-24: keyed per timeframe (a 5m failure no longer blocks 1h) and a
+        # rate-limited miss is retried after 30 s instead of 300 s (BingX-only symbols lost ~25 % of
+        # strategy evaluations to one throttled request).
+        failed_key = (market_type.value, symbol_str, timeframe)
         if failed_key in self.failed_symbols_cache:
             last_failure = self.failed_symbols_cache[failed_key]
-            if current_time - last_failure < self.failed_symbols_cache_duration:
+            hold = self.failed_symbols_cache_duration
+            if failed_key in getattr(self, '_transient_failures', set()):
+                hold = self.TRANSIENT_FAILURE_HOLD_S
+            if current_time - last_failure < hold:
                 self.logger.debug(f"Skipping data fetch for {symbol_str} - recently failed (less than {self.failed_symbols_cache_duration}s ago)")
 
                 # Try to get data from local CSV cache as a fallback
@@ -225,6 +231,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
         self.logger.info(f"Fetching historical data for {symbol_str} from sources: {data_sources}")
 
         current_time_sec = time.time()
+        rate_limited = False
         for source in data_sources:
             key = (source.lower(), market_type.value, symbol_str)
             if key in self.unsupported_exchange_symbols:
@@ -244,7 +251,14 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
                     self.usage_stats[source]['requests'] += 1
 
                 # Try to get historical data from the current source
-                data = self._fetch_from_source(source, symbol_str, period, timeframe, market_type)
+                try:
+                    data = self._fetch_from_source(source, symbol_str, period, timeframe, market_type)
+                except Exception as first_error:
+                    if not self._is_rate_limited(first_error):
+                        raise
+                    rate_limited = True
+                    time.sleep(self.RATE_LIMIT_RETRY_S)   # one bounded retry on venue throttling
+                    data = self._fetch_from_source(source, symbol_str, period, timeframe, market_type)
 
                 if data and self._has_acceptable_coverage(
                     data, period, timeframe, current_time_sec
@@ -262,6 +276,7 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
             except Exception as e:
                 error_str = str(e).lower()
+                rate_limited = rate_limited or self._is_rate_limited(e)
                 if 'invalid symbol' in error_str or '-1121' in error_str or 'invalid_symbol' in error_str:
                     self.unsupported_exchange_symbols[key] = time.time()
                     self.logger.debug(f"Cached {symbol_str} as unsupported on {source} (24-hour TTL)")
@@ -294,7 +309,20 @@ class ConfigurableHistoricalDataProvider(DataProviderPort):
 
         # Add to failed symbols cache to prevent repeated attempts
         self.failed_symbols_cache[failed_key] = current_time
+        transient = self.__dict__.setdefault('_transient_failures', set())
+        if rate_limited:
+            transient.add(failed_key)
+        else:
+            transient.discard(failed_key)
         return []  # Return empty list instead of raising exception
+
+    RATE_LIMIT_RETRY_S = 1.0
+    TRANSIENT_FAILURE_HOLD_S = 30.0
+
+    @staticmethod
+    def _is_rate_limited(error: Exception) -> bool:
+        text = str(error).lower()
+        return any(k in text for k in ('请稍后重试', '100410', 'too many', 'rate limit', 'frequency', '429'))
 
     def _get_cached_data_fallback(self, symbol: str, period: str, timeframe: str) -> List[Dict[str, Any]]:
         """

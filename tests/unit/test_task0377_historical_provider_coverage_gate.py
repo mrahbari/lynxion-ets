@@ -123,4 +123,4 @@ def test_failed_request_is_cached_by_market_and_symbol(monkeypatch):
     )
 
     assert result == []
-    assert provider.failed_symbols_cache == {('perpetual', 'BTCUSDT'): NOW}
+    assert provider.failed_symbols_cache == {('perpetual', 'BTCUSDT', '1m'): NOW}

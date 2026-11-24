@@ -609,7 +609,7 @@ equally uninformative design would add complexity without benefit. Open for a di
   drops them before the queue (`_AutoDetectionIntentMixin._is_sleeve_owned`, same owned-symbols file).
   The adapter rejection stays as the fail-closed boundary; an absent/empty file skips nothing
   (exchange-migration safe). Test: `tests/unit/test_sleeve_owned_intent_skip.py`.
-* **U9.** E20: OIFootprint replayed with real Binance open interest. DEV -0.107 R (n=846), HOLDOUT
+* **U9.** (kept live on VST for data, operator 11-24) E20: OIFootprint replayed with real Binance open interest. DEV -0.107 R (n=846), HOLDOUT
   +0.113 R (n=121, 2 months) -> FAIL by the pre-registered rule. Retired from live via
   `STRATEGY_ALLOWLIST` (code kept). Strategies layer: OIFootprint P1 (no OI input) closed by retirement.
 
@@ -617,3 +617,17 @@ equally uninformative design would add complexity without benefit. Open for a di
 TrendFollow (Donchian/EMA, 1h and 4h) and VWAPReversal (session VWAP 2-sigma re-entry, cost filter) rebuilt to
 textbook definitions: all net negative or ~0. Live baselines are negative on HOLDOUT (-0.055 R, -0.123 R).
 Strategies layer stays D. Retirement of both is an operator decision (it stops platform trading on VST).
+
+## Platform-wide review (2026-11-24): issues that hurt behaviour / profitability measurement
+
+Evidence: trade_journal (102 trades since 11-10), live_order_journal, runner log of 11-24.
+
+| # | Finding | Impact | Action |
+|---|---|---|---|
+| P1 | Strategies lost all candles for the 8 BingX-only symbols (OKB, NC* commodity/index contracts) for 5 min after any BingX throttle ("请稍后重试"); negative cache keyed without timeframe | ~25 % of their evaluations skipped (1,439 warnings / 5 h) | one bounded retry (1 s), transient hold 30 s, cache key per timeframe — FIXED |
+| P2 | 9 of 31 intents on 2026-11-22 carried another symbol's SL/TP (shared-buffer race) | signals computed on wrong data; reports polluted (fake risk, R=0) | root cause already fixed 11-22 18:41 (per-strategy evaluation lock; 0 cases since); collector now drops implausible SL/TP — FIXED |
+| P3 | `regime` empty on every trade; `execution_latency_ms` hard-coded empty | no per-regime analysis, no signal->fill latency (E11-4) | INTENT records fused regime + signal time; collector computes signal->fill ms — FIXED |
+| P4 | strategy failures/losses: OIFootprint, TrendFollow, VWAPReversal net <= 0 (E9/E20/E21) | no proven edge | kept LIVE on VST for data (operator 11-24), labelled no-edge; improvement continues per layer |
+| B1 | trade_journal `timeframe` always "1m" (label only; live uses design TF) | misleading report column | backlog |
+| B2 | XS-COMBO sleeve: 39 trades, -179.6 USDT since 11-10 | separate system | backlog: review sleeve on its own |
+| B3 | ~1,300 DUPLICATE rejections / 5 h (intent for a symbol already in a position) | correct behaviour, log noise | backlog |

@@ -234,6 +234,7 @@ def test_metadata_is_retained_when_submitted_record_adds_exchange_order_id():
         meta = TradeFeatureCollector(journal_path=journal_p)._load_intent_metadata_map()[
             "exchange-order-id"
         ]
+        assert meta.pop("signal_ts")  # INTENT write time (latency fallback)
         assert meta == {
             "initial_stop_loss": "62000.0",
             "initial_take_profit": "65000.0",
@@ -271,7 +272,9 @@ def test_order_journal_metadata_uses_canonical_execution_order_fields():
         take_profit_price=Money(Decimal("65000"), "USDT"),
     )
 
-    assert extract_order_journal_metadata(order) == {
+    meta = extract_order_journal_metadata(order)
+    meta.pop("signal_ts")
+    assert meta == {
         "stop_loss": Decimal("62000"),
         "take_profit": Decimal("65000"),
         "confidence": Decimal("0.85"),
