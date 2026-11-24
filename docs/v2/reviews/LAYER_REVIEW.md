@@ -612,3 +612,8 @@ equally uninformative design would add complexity without benefit. Open for a di
 * **U9.** E20: OIFootprint replayed with real Binance open interest. DEV -0.107 R (n=846), HOLDOUT
   +0.113 R (n=121, 2 months) -> FAIL by the pre-registered rule. Retired from live via
   `STRATEGY_ALLOWLIST` (code kept). Strategies layer: OIFootprint P1 (no OI input) closed by retirement.
+
+## E16-U10 — canonical setups (2026-11-24): E21, no design passes
+TrendFollow (Donchian/EMA, 1h and 4h) and VWAPReversal (session VWAP 2-sigma re-entry, cost filter) rebuilt to
+textbook definitions: all net negative or ~0. Live baselines are negative on HOLDOUT (-0.055 R, -0.123 R).
+Strategies layer stays D. Retirement of both is an operator decision (it stops platform trading on VST).

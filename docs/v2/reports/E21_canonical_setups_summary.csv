@@ -1,0 +1,7 @@
+strategy,window,trades,trades_per_month,win_rate,PF,mean_R,mean_ret_bps,first_half_R,second_half_R,symbols_positive,long_share,mean_R_long,mean_R_short,median_sl_pct
+TF1_trend_canonical,dev,1235,154.4,0.402,0.94,-0.027,-8.3,0.048,-0.103,4/10,0.3,-0.075,-0.007,2.05
+TF1_trend_canonical,holdout,583,145.1,0.415,1.02,-0.01,2.6,-0.055,0.036,5/10,0.56,0.144,-0.203,1.87
+TF2_trend_canonical_4h,dev,453,59.1,0.4,0.92,-0.056,-13.6,0.064,-0.175,3/10,0.19,-0.367,0.015,3.0
+TF2_trend_canonical_4h,holdout,200,50.4,0.39,1.03,0.01,6.2,0.221,-0.2,4/10,0.68,0.284,-0.585,3.0
+VR1_vwap_canonical,dev,3351,417.6,0.423,0.96,-0.017,-3.3,-0.025,-0.009,2/10,0.51,-0.109,0.078,1.2
+VR1_vwap_canonical,holdout,1575,386.2,0.413,0.89,-0.062,-9.1,-0.059,-0.065,3/10,0.43,-0.057,-0.065,1.2
