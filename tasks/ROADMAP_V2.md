@@ -285,3 +285,19 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
   sample; it only stops a correlated pile-up. Lower it only if same-side clusters dominate losses.
 - Empty-list blips (BingX VST) in exposure checks and the `get_position` duplicate guard.
 - Orchestrator LIQUIDITY DEPTH GUARD never runs: it calls `broker.fetch_order_book`, which no broker implements (found 2026-11-23).
+
+## E17 — Strategy research from external sources (started 2026-11-24)
+
+Rule for every idea: source -> pre-registered test (committed before running) -> DEV, then HOLDOUT once ->
+adopt only if it beats what is live. Ideas already rejected by our own tests are not re-run without a new reason.
+
+| ID | Idea (source) | Status / result |
+|---|---|---|
+| R1 | Daily Donchian-ensemble trend, vol-targeted (Zarattini, Pagani, Barbon 2025, SFI RP 25-80) | E29 FAIL: DEV Sharpe 1.24, HOLDOUT -0.38 (works in trending years only) |
+| R2 | Low-volatility cross-sectional premium (Finance Research Letters 2026) | E30 FAIL: -0.21 / -0.71; hurts XS-COMBO |
+| R3 | Intraday predictability of perps (J. Chinese Econ. & Business Studies 2026; Dashyan, SSRN 2026) | literature says none out-of-sample — consistent with E9-E28; no more intraday price-setup research |
+| R4 | Quarter-hour effect (arXiv 2607.09426) | gross ~0.5 bp/trade vs 5 bp fee: not tradable for us — rejected without test |
+| R5 | Cross-sectional funding carry decay (arXiv 2510.14435: carry Sharpe negative in 2025; other OOS reports 1.13) | TODO: XS-COMBO decay monitor — rolling 8-week shadow-funding carry vs backtest, alert if below half |
+| R6 | Short-term cross-sectional reversal (four-factor crypto model 2025; 15-min reversal measurement 2026) | TODO: 1-day reversal leg, market-neutral, as a standalone daily test (distinct from Codex C-06 extreme movers) |
+| R7 | Daily trend with a PRE-DEFINED regime filter (only if a regime definition is fixed from outside these windows) | parked |
+| R8 | Funding-extreme reversal on BTC only, 24 h (AIJMR 2026: extreme negative funding -> +0.5 %) | covered by E23 (10 symbols) FAIL; BTC-only would be a small-n re-slice -> not run |
