@@ -8,15 +8,13 @@ from typing import Dict, List, Optional, Callable, Any
 from datetime import datetime
 from domain.value_objects import Symbol
 from domain.entities import FusedSignal, ExecutionIntent
-from infrastructure.strategies.strategy_adapters import BaseStrategyAdapter, VolatilityBreakoutStrategy
+from infrastructure.strategies.strategy_adapters import BaseStrategyAdapter
 from infrastructure.strategies.adapters.trend_follow_strategy_adapter import TrendFollowStrategyAdapter
 from infrastructure.strategies.adapters.mean_reversion_strategy_adapter import MeanReversionStrategyAdapter
 from infrastructure.strategies.adapters.breakout_strategy_adapter import BreakoutStrategyAdapter
 from infrastructure.strategies.adapters.liquidity_strategy_adapter import LiquidityStrategyAdapter
 from infrastructure.strategies.adapters.vwap_reversal_strategy_adapter import VWAPReversalStrategyAdapter
-from infrastructure.strategies.adapters.mtf_trend_strategy_adapter import MTFTrendStrategyAdapter
 from infrastructure.strategies.adapters.oi_footprint_strategy_adapter import OIFootprintStrategyAdapter
-from infrastructure.strategies.adapters.sweep_scalper_strategy_adapter import SweepScalperAdapter
 import numpy as np
 from scipy import stats
 from shared.logger import EnhancedLogger
@@ -387,11 +385,10 @@ class StrategyManager:
             'breakout': BreakoutStrategyAdapter,
             'liquidity': LiquidityStrategyAdapter,
             'vwap_reversal': VWAPReversalStrategyAdapter,
-            'mtf_trend': MTFTrendStrategyAdapter,
             'oi_footprint': OIFootprintStrategyAdapter,
-            'sweep_scalper': SweepScalperAdapter,
-            'crypto_breakout': BreakoutStrategyAdapter,
-            'volatility_breakout': VolatilityBreakoutStrategy
+            # 2026-11-24 consolidation: mtf_trend, donchian_breakout -> trend_following;
+            # volatility_breakout, crypto_breakout -> breakout; sweep_scalper -> liquidity;
+            # short_term_reversal retired (six platform strategies).
         }
 
         # Register strategies based on their configuration-enabled status
@@ -619,7 +616,7 @@ class StrategyManager:
         
         # Different strategies perform differently in different regimes
         if 'trending' in regime or 'trend' in regime:
-            if "trend" in strat or "momentum" in strat or "mtf_trend" in strat:
+            if "trend" in strat or "momentum" in strat:
                 return 1.2  # Boost trend-following/momentum strategies in trending regime
             elif "mean" in strat or "reversion" in strat or "scalp" in strat or "reversal" in strat:
                 return 0.7  # Reduce mean reversion / scalping / counter-trend in trending regime
@@ -634,7 +631,7 @@ class StrategyManager:
                 return 1.0  # Neutral
         elif 'volatile' in regime or 'breakout' in regime:
             # In volatile or breakout markets, breakout strategies perform better
-            if "breakout" in strat or "sweep_scalper" in strat:
+            if "breakout" in strat:
                 return 1.2  # Breakout strategies work well
             elif "mean" in strat or "reversion" in strat:
                 return 0.7  # Reduce mean reversion in high volatility/breakout
@@ -642,7 +639,7 @@ class StrategyManager:
                 return 1.0  # Neutral
         elif 'choppy' in regime:
             # In choppy markets, range-bound and scalping strategies might work better
-            if "scalp" in strat or "sweep_scalper" in strat or "liquidity" in strat:
+            if "scalp" in strat or "liquidity" in strat:
                 return 1.1
             elif "trend" in strat or "momentum" in strat:
                 return 0.8  # Reduce trend-following in choppy markets
@@ -812,16 +809,10 @@ class StrategyManager:
                 strategy_class_map = {
                     'trend_following': TrendFollowStrategyAdapter,
                     'mean_reversion': MeanReversionStrategyAdapter,
-                    'scalping': ScalpingStrategyAdapter,
                     'breakout': BreakoutStrategyAdapter,
                     'liquidity': LiquidityStrategyAdapter,
                     'vwap_reversal': VWAPReversalStrategyAdapter,
-                    'momentum': MomentumStrategyAdapter,
-                    'mtf_trend': MTFTrendStrategyAdapter,
                     'oi_footprint': OIFootprintStrategyAdapter,
-                    'sweep_scalper': SweepScalperAdapter,
-                    'crypto_breakout': BreakoutStrategyAdapter,
-                    'volatility_breakout': VolatilityBreakoutStrategy
                 }
                 
                 if strategy_name in strategy_class_map:
@@ -894,10 +885,7 @@ class StrategyManager:
     def get_all_strategies_status(self) -> Dict[str, Dict[str, Any]]:
         """Get status of all strategies (enabled/disabled)."""
         all_strategy_names = [
-            'trend_following', 'mean_reversion', 'volatility_breakout',
-            'scalping', 'breakout', 'liquidity', 'vwap_reversal',
-            'momentum', 'mtf_trend', 'oi_footprint', 'sweep_scalper',
-            'crypto_breakout'
+            'trend_following', 'mean_reversion', 'breakout', 'liquidity', 'vwap_reversal', 'oi_footprint',
         ]
         status_report = {}
         

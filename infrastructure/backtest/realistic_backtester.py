@@ -102,9 +102,8 @@ class RealisticBacktester:
         self.min_duration_months = 3  # Minimum duration for validation
         self.valid_strategy_types = [
             'rsi_strategy', 'ma_crossover_strategy', 'crypto_breakout',
-            'trend_following', 'mean_reversion', 'volatility_breakout',
-            'momentum', 'scalping', 'breakout', 'liquidity', 'mtf_trend',
-            'oi_footprint', 'sweep_scalper', 'vwap_reversal'
+            'trend_following', 'mean_reversion', 'breakout', 'liquidity',
+            'oi_footprint', 'vwap_reversal'
         ]
 
     def validate_strategy_selection(self, strategy_name: str) -> bool:

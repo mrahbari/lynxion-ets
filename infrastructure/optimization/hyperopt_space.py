@@ -31,14 +31,10 @@ class StrategyRegistry(IStrategyRegistry):
             # Return specific space based on strategy name
             if strategy_name == "CryptoLiquidity":
                 return cls._get_crypto_liquidity_space()
-            elif strategy_name == "CryptoMTFTrend":
-                return cls._get_crypto_mtf_trend_space()
             elif strategy_name == "CryptoVWAPReversal":
                 return cls._get_crypto_vwap_reversal_space()
             elif strategy_name == "CryptoOIFootprint":
                 return cls._get_crypto_oi_footprint_space()
-            elif strategy_name == "CryptoSweepScalper":
-                return cls._get_crypto_sweep_scalper_space()
             else:
                 # Fallback to generic space if strategy not found or doesn't support optimization
                 return cls._get_generic_space()
@@ -50,13 +46,6 @@ class StrategyRegistry(IStrategyRegistry):
             "min_oi_trend": hp.uniform("min_oi_trend", 0.01, 0.10),
             "max_funding_bias": hp.uniform("max_funding_bias", 0.001, 0.01),
             "cvd_divergence_strength": hp.uniform("cvd_divergence_strength", 1.0, 6.0)
-        }
-
-    @classmethod
-    def _get_crypto_mtf_trend_space(cls) -> Dict[str, Any]:
-        """Get parameter space for CryptoMTFTrend strategy."""
-        return {
-            "trend_period": hp.choice("trend_period", [30, 50, 80]),
         }
 
     @classmethod
@@ -73,13 +62,6 @@ class StrategyRegistry(IStrategyRegistry):
         return {
             "oi_expansion": hp.uniform("oi_expansion", 0.02, 0.10),
             "delta_strength": hp.uniform("delta_strength", 2, 10),
-        }
-
-    @classmethod
-    def _get_crypto_sweep_scalper_space(cls) -> Dict[str, Any]:
-        """Get parameter space for CryptoSweepScalper strategy."""
-        return {
-            "lookback": hp.choice("lookback", [3, 4, 5]),
         }
 
     @classmethod
@@ -108,16 +90,12 @@ class HyperoptParameterSpace(IParameterSpace):
 
         # Register all crypto strategies with the registry
         from infrastructure.strategies.adapters.liquidity_strategy_adapter import LiquidityStrategyAdapter
-        from infrastructure.strategies.adapters.mtf_trend_strategy_adapter import MTFTrendStrategyAdapter
         from infrastructure.strategies.adapters.vwap_reversal_strategy_adapter import VWAPReversalStrategyAdapter
         from infrastructure.strategies.adapters.oi_footprint_strategy_adapter import OIFootprintStrategyAdapter
-        from infrastructure.strategies.adapters.sweep_scalper_strategy_adapter import SweepScalperAdapter
 
         self.strategy_registry.register_strategy("CryptoLiquidity", LiquidityStrategyAdapter)
-        self.strategy_registry.register_strategy("CryptoMTFTrend", MTFTrendStrategyAdapter)
         self.strategy_registry.register_strategy("CryptoVWAPReversal", VWAPReversalStrategyAdapter)
         self.strategy_registry.register_strategy("CryptoOIFootprint", OIFootprintStrategyAdapter)
-        self.strategy_registry.register_strategy("CryptoSweepScalper", SweepScalperAdapter)
 
     def get_space(self, strategy_name: str) -> Dict[str, Any]:
         """Get parameter space for a given strategy via registry."""

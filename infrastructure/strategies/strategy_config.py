@@ -118,13 +118,10 @@ class StrategyConfig:
     # and documented in docs/reports/strategy_architecture_review.md). This is a routing
     # table, not a parameter change — values are the strategies' existing declared TFs.
     DESIGN_TIMEFRAMES = {
-        'sweep_scalper': '1m',
         'liquidity': '5m', 'vwap_reversal': '15m',   # session-VWAP 2-sigma setup (E21, 2026-11-24)
-        'breakout': '15m', 'crypto_breakout': '15m', 'volatility_breakout': '15m', 'mtf_trend': '15m',
+        'breakout': '15m',
         'trend_following': '1h', 'trend_follow': '1h', 'mean_reversion': '1h',
         'oi_footprint': '1h',
-        # RETIRED-slot replacement candidates (E11 strategy-replacement program)
-        'short_term_reversal': '15m', 'donchian_breakout': '1h',
     }
 
     @staticmethod
@@ -288,26 +285,6 @@ def get_mean_reversion_config() -> dict:
     }
 
 
-def get_volatility_breakout_config() -> dict:
-    """Get configuration for VolatilityBreakoutStrategy"""
-    return {
-        'enabled': True,  # Use static value since we don't have dynamic strategy configs
-        'max_position_size': StrategyConfig.get_strategy_max_position_size('VOLATILITY_BREAKOUT', 0.03),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('VOLATILITY_BREAKOUT', 0.5),
-        'max_confidence': StrategyConfig.get_strategy_max_confidence('VOLATILITY_BREAKOUT', 0.95),
-        'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('VOLATILITY_BREAKOUT', 0.015),
-        'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('VOLATILITY_BREAKOUT', 1.0),
-        'take_profit_multiplier': StrategyConfig.get_strategy_take_profit_multiplier('VOLATILITY_BREAKOUT', 2.5),
-        'lookback_period': StrategyConfig.get_strategy_lookback_period('VOLATILITY_BREAKOUT', 30),
-        'timeframe': StrategyConfig.get_strategy_timeframe('VOLATILITY_BREAKOUT', '15m'),
-        'parameters': {
-            'atr_period': 14,
-            'atr_multiplier': 1.5,
-            'volatility_threshold': 0.02
-        }
-    }
-
-
 def get_breakout_config() -> dict:
     """Get configuration for BreakoutStrategy"""
     return {
@@ -346,27 +323,6 @@ def get_liquidity_config() -> dict:
     }
 
 
-def get_mtf_trend_config() -> dict:
-    """Get configuration for MTFTrendStrategy"""
-    return {
-        'enabled': StrategyConfig.get_strategy_enabled('MTF_TREND'),
-        'max_position_size': StrategyConfig.get_strategy_max_position_size('MTF_TREND', 0.06),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('MTF_TREND', 0.5),
-        'max_confidence': StrategyConfig.get_strategy_max_confidence('MTF_TREND', 0.95),
-        'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('MTF_TREND', 0.025),
-        'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('MTF_TREND', 1.6),
-        'take_profit_multiplier': StrategyConfig.get_strategy_take_profit_multiplier('MTF_TREND', 2.4),
-        'lookback_period': StrategyConfig.get_strategy_lookback_period('MTF_TREND', 50),
-        'timeframe': StrategyConfig.get_strategy_timeframe('MTF_TREND', '15m'),
-        'parameters': {
-            'short_timeframe': '5m',
-            'medium_timeframe': '15m',
-            'long_timeframe': '1h',
-            'alignment_threshold': 0.7
-        }
-    }
-
-
 def get_oi_footprint_config() -> dict:
     """Get configuration for OIFootprintStrategy (FROZEN PRODUCTION BASELINE)"""
     return {
@@ -385,25 +341,6 @@ def get_oi_footprint_config() -> dict:
         'parameters': {
             'oi_change_threshold': 0.05,
             'price_correlation_threshold': 0.6
-        }
-    }
-
-
-def get_sweep_scalper_config() -> dict:
-    """Get configuration for SweepScalperStrategy"""
-    return {
-        'enabled': StrategyConfig.get_strategy_enabled('SWEEP_SCALPER'),
-        'max_position_size': StrategyConfig.get_strategy_max_position_size('SWEEP_SCALPER', 0.01),
-        'min_confidence': StrategyConfig.get_strategy_min_confidence('SWEEP_SCALPER', 0.6),
-        'max_confidence': StrategyConfig.get_strategy_max_confidence('SWEEP_SCALPER', 0.95),
-        'risk_per_trade': StrategyConfig.get_strategy_risk_per_trade('SWEEP_SCALPER', 0.01),
-        'stop_loss_multiplier': StrategyConfig.get_strategy_stop_loss_multiplier('SWEEP_SCALPER', 0.7),
-        'take_profit_multiplier': StrategyConfig.get_strategy_take_profit_multiplier('SWEEP_SCALPER', 1.3),
-        'lookback_period': StrategyConfig.get_strategy_lookback_period('SWEEP_SCALPER', 10),
-        'timeframe': StrategyConfig.get_strategy_timeframe('SWEEP_SCALPER', '1m'),
-        'parameters': {
-            'volume_threshold': 50000,
-            'spread_threshold': 0.001
         }
     }
 

@@ -74,9 +74,11 @@ def test_strategy_history_rejects_cross_symbol_future_and_duplicate():
 def test_canonical_decision_trace_with_causal_history_has_stable_prefix():
     from infrastructure.replay.decision_run_scope import ReplayDecisionRunScope
 
-    first = bar(T0, MINUTE, 100.0)
-    second = bar(T0 + MINUTE, MINUTE, 101.0)
-    future = bar(T0 + 2 * MINUTE, MINUTE, 102.0)
+    # 2026-11-24: no 1m strategy after the consolidation; the 5m strategy (liquidity) is the shortest.
+    FIVE = 5 * MINUTE
+    first = bar(T0, FIVE, 100.0)
+    second = bar(T0 + FIVE, FIVE, 101.0)
+    future = bar(T0 + 2 * FIVE, FIVE, 102.0)
     settings = SimpleNamespace(watcher=SimpleNamespace(historical_candle_watcher_enabled=True,
                                                  historical_candle_pattern_mode="legacy"))
 
@@ -88,7 +90,7 @@ def test_canonical_decision_trace_with_causal_history_has_stable_prefix():
                 scope, HistoricalClosedBarSource(bars), settings, feed)
             driver.run_through(second.close_time)
             buffer = next(adapter.data_buffer for adapter in scope.strategies.strategies.values()
-                          if adapter.config.get("timeframe") == "1m")
+                          if adapter.config.get("timeframe") == "5m")
             return tuple(scope.decision_trace), tuple(item["close"] for item in buffer)
         finally:
             scope.close()

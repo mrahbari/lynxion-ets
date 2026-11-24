@@ -737,3 +737,15 @@ components with no predictive edge still makes no money.
   VST for data, labelled no proven edge.
 * Strategy layer after this round: still **D** on profitability (no setup with a net edge); C on correctness
   (both live price setups now follow their canonical definitions).
+
+## Strategy consolidation (2026-11-24): twelve names -> six platform strategies
+Removed (duplicates of a kept setup or retired): MTFTrend and DonchianBreakout (-> TrendFollow, now the
+canonical Donchian-20 + EMA trend), VolatilityBreakout and the `crypto_breakout` alias (-> Breakout),
+SweepScalper (-> Liquidity: same sweep setup on 1m, where costs dominate), ShortTermReversal (never
+evaluated; reversal covered by VWAPReversal / MeanReversion). Registrations, configs, hyperopt spaces and
+legacy backtest functions removed; obsolete Codex scripts/tests for the retired candidates
+(validate_replacement_candidates, evaluate_edge_candidates_c01_c03) removed; the causal-history test now
+uses the 5m strategy. Kept: TrendFollow, VWAPReversal, OIFootprint (live), MeanReversion, Breakout,
+Liquidity (in code, not in the allowlist). Git history keeps every removed file.
+Backlog: `com.lynxion.microstructure-pilot2-7d` LaunchAgent (finished Codex pilot, RunAtLoad) still
+loaded; Codex-era scripts (phase10 burst, strategy_deployment_revalidation) still name removed strategies.

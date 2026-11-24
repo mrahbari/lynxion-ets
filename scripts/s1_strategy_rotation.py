@@ -40,10 +40,7 @@ ORDER = [
     ("OIFootprint", "OIFootprint"),
     ("TrendFollow", "trend_following,TrendFollow"),
     ("MeanReversion", "mean_reversion"),
-    ("MTFTrend", "mtf_trend"),
-    ("SweepScalper", "sweep_scalper"),
     ("Breakout", "breakout"),
-    ("volatility_breakout", "volatility_breakout"),
     ("Liquidity", "liquidity"),
 ]
 

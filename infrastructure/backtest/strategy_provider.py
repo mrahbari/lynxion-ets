@@ -27,10 +27,7 @@ def load_sample_strategy(strategy_name: str, raw_signal: bool = False):
     from infrastructure.strategies.adapters.breakout_strategy_adapter import BreakoutStrategyAdapter
     from infrastructure.strategies.adapters.liquidity_strategy_adapter import LiquidityStrategyAdapter
     from infrastructure.strategies.adapters.vwap_reversal_strategy_adapter import VWAPReversalStrategyAdapter
-    from infrastructure.strategies.adapters.mtf_trend_strategy_adapter import MTFTrendStrategyAdapter
     from infrastructure.strategies.adapters.oi_footprint_strategy_adapter import OIFootprintStrategyAdapter
-    from infrastructure.strategies.adapters.sweep_scalper_strategy_adapter import SweepScalperAdapter
-    from infrastructure.strategies.strategy_adapters import VolatilityBreakoutStrategy
 
     # Create a mapping from strategy names to adapter classes
     strategy_adapters = {
@@ -39,11 +36,7 @@ def load_sample_strategy(strategy_name: str, raw_signal: bool = False):
         'breakout': BreakoutStrategyAdapter,
         'liquidity': LiquidityStrategyAdapter,
         'vwap_reversal': VWAPReversalStrategyAdapter,
-        'mtf_trend': MTFTrendStrategyAdapter,
         'oi_footprint': OIFootprintStrategyAdapter,
-        'sweep_scalper': SweepScalperAdapter,
-        'crypto_breakout': BreakoutStrategyAdapter,  # Alias for crypto breakout
-        'volatility_breakout': VolatilityBreakoutStrategy,  # ATR breakout (real generate_signal)
     }
 
     # If the strategy name corresponds to an adapter, return a function that uses it
@@ -252,54 +245,6 @@ def load_sample_strategy(strategy_name: str, raw_signal: bool = False):
             else:
                 return 0  # Hold
 
-        def volatility_breakout_strategy(row, params):
-            """Regime-aware volatility breakout strategy using ATR and price movement."""
-            atr = row.get('atr', 0)
-            high = row.get('high', 0)
-            low = row.get('low', 0)
-            close = row.get('close', 0)
-            sma_20 = row.get('sma_20', 0)
-            volume = row.get('volume', 0)
-            sma_volume = row.get('sma_volume_20', 0)
-            adx = row.get('adx', 20)  # ADX for trend strength
-            volatility_percentile = row.get('volatility_percentile', 0.5)  # Volatility regime
-
-            if any(pd.isna(x) for x in [atr, high, low, close, sma_20]):
-                return 0
-
-            # Define breakout thresholds based on ATR - made less sensitive
-            breakout_threshold = atr * 0.2  # Even more sensitive
-
-            # Bullish/bearish breakout: close breaks beyond the moving average by
-            # an ATR-scaled threshold. NOTE: the prior logic compared close to the
-            # SAME bar's high/low (`close > max(high, sma_20)`), which can never be
-            # true (close <= high, close >= low by definition), so this strategy
-            # never produced a signal. Use sma_20 as the recent-range reference.
-            bullish_breakout = close > sma_20 + breakout_threshold
-            bearish_breakout = close < sma_20 - breakout_threshold
-
-            # Volume confirmation (only if volume data available) - made less strict
-            volume_confirmation = True
-            if pd.notna(volume) and pd.notna(sma_volume):
-                volume_confirmation = volume > sma_volume * 0.7  # Much less strict volume requirement
-
-            # Regime: Less restrictive volatility conditions
-            high_volatility = pd.isna(volatility_percentile) or volatility_percentile > 0.3  # Lower threshold
-
-            # Multiple conditions to increase trade frequency
-            if bullish_breakout and (volume_confirmation or high_volatility):
-                return 1  # Buy
-            elif bearish_breakout and (volume_confirmation or high_volatility):
-                return -1  # Sell
-            # Additional breakout vs the moving average (the prior `close > high`
-            # / `close < low` checks compared within a single bar and never fired).
-            elif close > sma_20 * 1.001:  # Simple price breakout above SMA
-                return 1
-            elif close < sma_20 * 0.999:  # Simple price breakdown below SMA
-                return -1
-            else:
-                return 0  # Hold
-
         def momentum_strategy(row, params):
             """Regime-aware momentum strategy using rate of change and volume."""
             roc = row.get('roc_10', 0)  # Rate of change over 10 periods
@@ -459,44 +404,6 @@ def load_sample_strategy(strategy_name: str, raw_signal: bool = False):
             else:
                 return 0  # Hold if not high liquidity
 
-        def mtf_trend_strategy(row, params):
-            """Regime-aware multi-timeframe trend strategy combining different timeframes."""
-            sma_20_short = row.get('sma_20_short', 0)  # Short-term trend
-            sma_50_short = row.get('sma_50_short', 0)
-            sma_20_long = row.get('sma_20_long', 0)  # Long-term trend
-            sma_50_long = row.get('sma_50_long', 0)
-            close = row.get('close', 0)
-            roc_short = row.get('roc_10', 0)  # Short-term momentum
-            adx = row.get('adx', 20)  # ADX for trend strength
-            volatility_regime = row.get('volatility_regime', 0)
-
-            if any(pd.isna(x) for x in [sma_20_short, sma_50_short, sma_20_long, sma_50_long, close]):
-                return 0
-
-            # Align trends across timeframes - made less strict
-            short_trend_bullish = sma_20_short > sma_50_short * 0.999  # Much less strict
-            long_trend_bullish = sma_20_long > sma_50_long * 0.999  # Much less strict
-
-            # Momentum confirmation - made less strict
-            mom_bullish = pd.isna(roc_short) or roc_short > -0.0001  # Allow slightly negative momentum
-            mom_bearish = pd.isna(roc_short) or roc_short < 0.0001  # Allow slightly positive momentum
-
-            # Regime: Less restrictive trend conditions
-            strong_trend = pd.isna(adx) or adx > 15  # Lower threshold
-
-            # Multiple conditions to increase trade frequency
-            if (short_trend_bullish or long_trend_bullish) and (mom_bullish or strong_trend):
-                return 1  # Buy
-            elif (not short_trend_bullish or not long_trend_bullish) and (mom_bearish or strong_trend):
-                return -1  # Sell
-            # Additional conditions to increase trade frequency
-            elif short_trend_bullish and close > sma_20_short:
-                return 1
-            elif not short_trend_bullish and close < sma_20_short:
-                return -1
-            else:
-                return 0  # Hold
-
         def oi_footprint_strategy(row, params):
             """Regime-aware OI (Open Interest) footprint strategy - using volume/volatility as proxy."""
             # Using volume and volatility as proxies for open interest
@@ -540,49 +447,6 @@ def load_sample_strategy(strategy_name: str, raw_signal: bool = False):
                     return -1
             else:
                 return 0  # Hold if no clear OI signal
-
-        def sweep_scalper_strategy(row, params):
-            """Regime-aware sweep scalper strategy targeting liquidity."""
-            high = row.get('high', 0)
-            low = row.get('low', 0)
-            close = row.get('close', 0)
-            volume = row.get('volume', 0)
-            sma_volume = row.get('sma_volume_20', 0)
-            high_5 = row.get('high_5', 0)
-            low_5 = row.get('low_5', 0)
-            atr = row.get('atr', 0)
-            adx = row.get('adx', 20)  # ADX for trend strength
-            volatility_regime = row.get('volatility_regime', 0)
-
-            if any(pd.isna(x) for x in [high, low, close, volume, high_5, low_5]):
-                return 0
-
-            # Look for high volume near recent highs/lows (potential liquidity sweeps) - made less strict
-            volume_spike = pd.notna(volume) and pd.notna(sma_volume) and volume > sma_volume * 1.05  # Much less strict threshold
-
-            # Check if price is near recent extremes - made less strict
-            near_high = high >= high_5 * 0.995  # Within 0.5% of 5-period high
-            near_low = low <= low_5 * 1.005  # Within 0.5% of 5-period low
-
-            # Check for potential sweep scenarios
-            bullish_sweep = volume_spike and near_low and close > low  # Price moved away from low
-            bearish_sweep = volume_spike and near_high and close < high  # Price moved away from high
-
-            # Regime: Less restrictive volatility conditions
-            high_volatility = pd.isna(volatility_regime) or volatility_regime > 0.001  # Much lower threshold
-
-            # Multiple conditions to increase trade frequency
-            if (bullish_sweep or volume_spike) and (high_volatility or close < low_5 * 0.999):  # Additional condition
-                return 1  # Buy - potential bullish sweep completed
-            elif (bearish_sweep or volume_spike) and (high_volatility or close > high_5 * 1.001):  # Additional condition
-                return -1  # Sell - potential bearish sweep completed
-            # Additional conditions to increase trade frequency
-            elif volume_spike and close < (high_5 + low_5) / 2:  # Volume spike and price is in lower half
-                return 1
-            elif volume_spike and close > (high_5 + low_5) / 2:  # Volume spike and price is in upper half
-                return -1
-            else:
-                return 0  # Hold
 
         def vwap_reversal_strategy(row, params):
             """Regime-aware VWAP reversal strategy."""
@@ -634,14 +498,11 @@ def load_sample_strategy(strategy_name: str, raw_signal: bool = False):
             'crypto_breakout': simple_rsi_strategy,  # Default fallback
             'trend_following': trend_following_strategy,
             'mean_reversion': mean_reversion_strategy,
-            'volatility_breakout': volatility_breakout_strategy,
             'momentum': momentum_strategy,
             'scalping': scalping_strategy,
             'breakout': breakout_strategy,
             'liquidity': liquidity_strategy,
-            'mtf_trend': mtf_trend_strategy,
             'oi_footprint': oi_footprint_strategy,
-            'sweep_scalper': sweep_scalper_strategy,
             'vwap_reversal': vwap_reversal_strategy
         }
 
