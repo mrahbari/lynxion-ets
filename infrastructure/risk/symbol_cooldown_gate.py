@@ -87,14 +87,15 @@ class SymbolCooldownGate:
                                     dt = datetime.fromisoformat(exit_ts_str.replace("Z", "+00:00"))
                                     exit_ts = dt.timestamp()
                                     if now_ts - exit_ts <= 86400.0:  # Within last 24h
-                                        if sym not in self._symbol_loss_history:
-                                            self._symbol_loss_history[sym] = []
-                                        if exit_ts not in self._symbol_loss_history[sym]:
-                                            self._symbol_loss_history[sym].append(exit_ts)
+                                        self._add_loss_event(sym, exit_ts)
                                 except Exception:
                                     pass
+                        for sym in list(self._symbol_loss_history):
+                            # one exit recorded by several paths (adapter, manager, collector, risk) and
+                            # by the exit-vs-record clock = one loss event
+                            self._symbol_loss_history[sym] = self._merge_loss_events(self._symbol_loss_history[sym])
                         for sym, losses in self._symbol_loss_history.items():
-                            if len(losses) >= 2:
+                            if len(losses) >= 2 and max(losses) - min(losses) <= 7200.0:
                                 latest_loss = max(losses)
                                 expiry = latest_loss + 86400.0
                                 if expiry > now_ts:
@@ -133,9 +134,11 @@ class SymbolCooldownGate:
             ts = (exit_time or self._clock.now()).timestamp()
 
             # Track loss events in the last 2 hours (7200s)
-            if clean_sym not in self._symbol_loss_history:
-                self._symbol_loss_history[clean_sym] = []
-            self._symbol_loss_history[clean_sym].append(ts)
+            if not self._add_loss_event(clean_sym, ts):
+                # Same exit already recorded by another path: keep the existing cooldown.
+                self._sl_cooldowns[clean_sym] = max(self._sl_cooldowns.get(clean_sym, 0.0), ts + 3600.0)
+                self._save_cooldown_journal()
+                return
             # Prune events older than 2 hours
             self._symbol_loss_history[clean_sym] = [t for t in self._symbol_loss_history[clean_sym] if ts - t <= 7200.0]
 
@@ -149,6 +152,27 @@ class SymbolCooldownGate:
                 self._sl_cooldowns[clean_sym] = ts + 3600.0
                 self._save_cooldown_journal()
                 logger.warning(f"🛑 SYMBOL COOLDOWN GATE: Activated 60m Stop Loss Cooldown for {symbol} ({clean_sym})")
+
+    # Platform review 2026-11-24: one stop-loss was recorded 2-3 times (4 callers; exit time vs record
+    # time), so the 2-losses-in-2h rule put every symbol with ONE loss on a 24 h lockout (15 of 15
+    # tradable symbols blocked). Loss records closer than this are one exit event.
+    LOSS_EVENT_MERGE_S = 900.0
+
+    @classmethod
+    def _merge_loss_events(cls, losses):
+        merged = []
+        for t in sorted(float(x) for x in losses):
+            if merged and t - merged[-1] <= cls.LOSS_EVENT_MERGE_S:
+                continue
+            merged.append(t)
+        return merged
+
+    def _add_loss_event(self, sym: str, ts: float) -> bool:
+        hist = self._symbol_loss_history.setdefault(sym, [])
+        if any(abs(ts - t) <= self.LOSS_EVENT_MERGE_S for t in hist):
+            return False
+        hist.append(ts)
+        return True
 
     def record_unverified_exit(self, symbol: Any, exit_time: Optional[datetime] = None) -> None:
         """Hold re-entry for an unverified close without inventing a loss event."""

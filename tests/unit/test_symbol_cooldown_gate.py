@@ -106,12 +106,14 @@ def test_symbol_health_gate_24h_circuit_breaker(tmp_path):
     gate._sl_cooldowns.clear()
     gate._symbol_loss_history.clear()
 
-    # First loss -> standard 60m cooldown
-    gate.record_stop_loss_exit("SOLUSDT")
+    # First loss -> standard 60m cooldown (exit 30 min ago)
+    from datetime import datetime, timedelta
+    gate.record_stop_loss_exit("SOLUSDT", datetime.now() - timedelta(minutes=30))
     rem_ts_1 = gate._sl_cooldowns.get("SOLUSDT", 0) - time.time()
     assert rem_ts_1 <= 3605.0  # Approx 60 minutes
 
-    # Second loss 10 minutes later -> triggers 24-hour circuit breaker
+    # Second, distinct loss 30 minutes later -> triggers 24-hour circuit breaker
+    # (records of the SAME exit within 15 min are merged: platform review 2026-11-24)
     gate.record_stop_loss_exit("SOLUSDT")
     rem_ts_2 = gate._sl_cooldowns.get("SOLUSDT", 0) - time.time()
     assert rem_ts_2 > 22 * 3600.0  # > 22 hours remaining (24h lockout)

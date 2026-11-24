@@ -61,3 +61,16 @@ def test_open_position_symbol_is_skipped_only_with_fresh_snapshot(tmp_path, monk
     os.utime(snap, (old, old))                       # stale snapshot -> broker gate decides
     o._handle_execution_intent_event(SimpleNamespace(data=intent("SOLUSDT")))
     assert len(o.opportunity_queue) == 1
+
+
+def test_discovery_gives_slots_only_to_platform_tradable_symbols(tmp_path, monkeypatch):
+    from infrastructure.services import symbol_discovery_service as sds
+    from infrastructure.services.symbol_validator import symbol_validator
+    f = tmp_path / "owned.json"
+    f.write_text(json.dumps({"symbols": ["BTCUSDT"]}))
+    monkeypatch.setenv("V2_OWNED_SYMBOLS_FILE", str(f))
+    monkeypatch.setattr(symbol_validator, "is_symbol_approved", lambda s: True)
+    assert sds._platform_candidate("BTCUSDT") is False
+    assert sds._platform_candidate("SUIUSDT") is True
+    monkeypatch.setenv("V2_OWNED_SYMBOLS_FILE", str(tmp_path / "absent.json"))
+    assert sds._platform_candidate("BTCUSDT") is True

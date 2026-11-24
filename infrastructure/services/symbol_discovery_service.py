@@ -26,6 +26,23 @@ def _tradable_on_venue(symbol: str) -> bool:
     return sym.endswith("USDT") and sym[:-4] not in _STABLECOIN_BASES
 
 
+def _platform_candidate(symbol) -> bool:
+    """Approved for the platform AND not owned by the v2 sleeve (platform review 2026-11-24).
+
+    Each discovery source keeps only its first N symbols; sleeve-owned majors (BTC, ETH, XRP, ...)
+    filled those slots although the platform can never trade them (U11), so 0-7 of ~33 monitored
+    symbols were tradable. Skipping them here gives the slots to tradable symbols. Absent/empty
+    owned-symbols file -> no effect (exchange-migration safe)."""
+    from infrastructure.services.symbol_validator import symbol_validator
+    if not symbol_validator.is_symbol_approved(symbol):
+        return False
+    try:
+        from infrastructure.brokers.adapters.bingx_adapter import _norm_sym, v2_owned_symbols
+        return _norm_sym(getattr(symbol, "value", symbol)) not in v2_owned_symbols()
+    except Exception:
+        return True
+
+
 def _per_source() -> int:
     return max(1, int(_os.getenv("WATCHER_SYMBOLS_PER_SOURCE", "10") or 10))
 
@@ -164,7 +181,7 @@ class SymbolDiscoveryService:
             s for s in all_discovered_symbols 
             if (s.value if hasattr(s, 'value') else str(s)).upper().replace("/", "").replace("-", "").replace("_", "") not in blacklisted
             and _tradable_on_venue((s.value if hasattr(s, 'value') else str(s)))
-            and symbol_validator.is_symbol_approved(s)   # daily BingX-liquidity gate
+            and _platform_candidate(s)   # daily BingX-liquidity gate
         ]
 
         # Operator watchlist (e.g. BingX TradFi perpetuals: indices, metals, oil, FX) is always
@@ -172,7 +189,7 @@ class SymbolDiscoveryService:
         seen = {(x.value if hasattr(x, 'value') else str(x)).upper() for x in discovered_symbols}
         for raw in _os.getenv("EXTRA_WATCHLIST_SYMBOLS", "").split(","):
             sym = raw.strip().upper().replace("-", "")
-            if sym and sym not in seen and sym not in blacklisted and symbol_validator.is_symbol_approved(sym):
+            if sym and sym not in seen and sym not in blacklisted and _platform_candidate(sym):
                 try:
                     discovered_symbols.append(Symbol(sym)); seen.add(sym)
                 except ValueError:
@@ -268,7 +285,7 @@ class SymbolDiscoveryService:
                 formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
-                    if symbol_validator.is_symbol_approved(valid_symbol):
+                    if _platform_candidate(valid_symbol):
                         if 'change' in ticker and ticker['change'] is not None:
                             change_abs = abs(ticker['change'])
                             if change_abs > 3.0 and ticker.get('quoteVolume') and ticker['quoteVolume'] > 1000000:
@@ -295,7 +312,7 @@ class SymbolDiscoveryService:
                 formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
-                    if symbol_validator.is_symbol_approved(valid_symbol):
+                    if _platform_candidate(valid_symbol):
                         if ('high' in ticker and ticker['high'] is not None and
                                 'low' in ticker and ticker['low'] is not None and
                                 'open' in ticker and ticker['open'] is not None and
@@ -326,7 +343,7 @@ class SymbolDiscoveryService:
                 formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
-                    if symbol_validator.is_symbol_approved(valid_symbol):
+                    if _platform_candidate(valid_symbol):
                         if ('change' in ticker and ticker['change'] is not None and
                                 'quoteVolume' in ticker and ticker['quoteVolume'] is not None):
                             if abs(ticker['change']) > 2.5 and ticker['quoteVolume'] > 2000000:
@@ -353,7 +370,7 @@ class SymbolDiscoveryService:
                 formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
-                    if symbol_validator.is_symbol_approved(valid_symbol):
+                    if _platform_candidate(valid_symbol):
                         if ('change' in ticker and ticker['change'] is not None and
                                 'high' in ticker and ticker['high'] is not None and
                                 'low' in ticker and ticker['low'] is not None and
@@ -385,7 +402,7 @@ class SymbolDiscoveryService:
                 formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
-                    if symbol_validator.is_symbol_approved(valid_symbol):
+                    if _platform_candidate(valid_symbol):
                         if 'quoteVolume' in ticker and ticker['quoteVolume'] is not None:
                             if ticker['quoteVolume'] > 50000000:
                                 high_volume_symbols.append(valid_symbol)
@@ -411,7 +428,7 @@ class SymbolDiscoveryService:
                 formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
-                    if symbol_validator.is_symbol_approved(valid_symbol):
+                    if _platform_candidate(valid_symbol):
                         if ('quoteVolume' in ticker and ticker['quoteVolume'] is not None and
                                 'high' in ticker and ticker['high'] is not None and
                                 'low' in ticker and ticker['low'] is not None):
@@ -441,7 +458,7 @@ class SymbolDiscoveryService:
                 formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
-                    if symbol_validator.is_symbol_approved(valid_symbol):
+                    if _platform_candidate(valid_symbol):
                         if market.get('swap', False) and market.get('active', True):
                             perp_symbols.append(valid_symbol)
                             if len(perp_symbols) >= 2 * _per_source():
@@ -552,7 +569,7 @@ class SymbolDiscoveryService:
                 formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
-                    if symbol_validator.is_symbol_approved(valid_symbol):
+                    if _platform_candidate(valid_symbol):
                         if 'quoteVolume' in ticker and ticker['quoteVolume'] is not None:
                             usdt_pairs[valid_symbol] = ticker['quoteVolume']
                 except ValueError:
@@ -577,7 +594,7 @@ class SymbolDiscoveryService:
                 formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
-                    if symbol_validator.is_symbol_approved(valid_symbol):
+                    if _platform_candidate(valid_symbol):
                         if ('quoteVolume' in ticker and ticker['quoteVolume'] is not None and
                                 'count' in ticker and ticker['count'] is not None and
                                 'high' in ticker and ticker['high'] is not None and
@@ -594,7 +611,7 @@ class SymbolDiscoveryService:
             if len(historical_oriented_symbols) < 5:
                 major_symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT',
                                  'ADAUSDT', 'DOGEUSDT', 'AVAXUSDT', 'MATICUSDT', 'DOTUSDT']
-                historical_oriented_symbols = [Symbol(sym) for sym in major_symbols if symbol_validator.is_symbol_approved(Symbol(sym))]
+                historical_oriented_symbols = [Symbol(sym) for sym in major_symbols if _platform_candidate(Symbol(sym))]
 
             return historical_oriented_symbols
         except Exception as e:
@@ -613,7 +630,7 @@ class SymbolDiscoveryService:
                 formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
                 try:
                     valid_symbol = Symbol(formatted_symbol)
-                    if symbol_validator.is_symbol_approved(valid_symbol):
+                    if _platform_candidate(valid_symbol):
                         if ('quoteVolume' in ticker and ticker['quoteVolume'] is not None and
                                 'count' in ticker and ticker['count'] is not None):
                             volume = ticker['quoteVolume']
@@ -631,7 +648,7 @@ class SymbolDiscoveryService:
                     formatted_symbol = symbol.replace('/', '').replace('-', '').upper()
                     try:
                         valid_symbol = Symbol(formatted_symbol)
-                        if symbol_validator.is_symbol_approved(valid_symbol):
+                        if _platform_candidate(valid_symbol):
                             if 'quoteVolume' in ticker and ticker['quoteVolume'] is not None:
                                 if ticker['quoteVolume'] > 20000000:
                                     high_volume_symbols.append(valid_symbol)

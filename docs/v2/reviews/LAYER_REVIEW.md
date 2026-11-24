@@ -631,3 +631,13 @@ Evidence: trade_journal (102 trades since 11-10), live_order_journal, runner log
 | B1 | trade_journal `timeframe` always "1m" (label only; live uses design TF) | misleading report column | backlog |
 | B2 | XS-COMBO sleeve: 39 trades, -179.6 USDT since 11-10 | separate system | backlog: review sleeve on its own |
 | B3 | ~1,300 DUPLICATE rejections / 5 h, each after a BingX get_position call (rate-limit budget) | wasted API calls | intents for symbols in the reconciler snapshot (< 180 s old) dropped before the queue; broker gate kept. 20 min live: 0 broker duplicate rejections (was ~3.3/min) — FIXED |
+
+## Platform review, part 2 (2026-11-24): why trading nearly stopped — P0
+
+* Filled platform orders fell from ~1.3/h to 2 in 6 h. Two causes, both measured:
+  1. **Stop-loss cooldown counted one exit 2-3 times** (adapter, StrategyManager, collector, risk
+     enforcement; exit time vs record time), and 2 losses in 2 h = 24 h lockout. All 15 tradable monitored
+     symbols had ONE real loss and a 24 h block. Fix: records within 15 min = one loss event (live and on
+     load); persisted journal repaired (backup in data/journal_archive). Distinct losses still trip 24 h.
+  2. **Monitoring slots filled by sleeve-owned symbols** (12 of ~33). Discovery now skips them
+     (`_platform_candidate`); the 88-symbol approved list is unchanged.
