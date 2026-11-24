@@ -601,3 +601,14 @@ forms, carries no information about the next 4 h on these majors. TrendMTF stays
 valid descriptive label, drift t with a calibrated null rate). No live change: replacing it with an
 equally uninformative design would add complexity without benefit. Open for a different claim/horizon
 (e.g. daily trend for multi-day holding, where time-series momentum is documented) in the upgrade phase.
+
+## E16-U11 / U9 — sleeve-owned intents and OIFootprint (2026-11-24)
+
+* **U11.** 978 of 1,073 FAILED journal rows were intents for symbols owned by the XS-COMBO v2 sleeve,
+  rejected at the BingX adapter after broker duplicate checks and an INTENT write. The orchestrator now
+  drops them before the queue (`_AutoDetectionIntentMixin._is_sleeve_owned`, same owned-symbols file).
+  The adapter rejection stays as the fail-closed boundary; an absent/empty file skips nothing
+  (exchange-migration safe). Test: `tests/unit/test_sleeve_owned_intent_skip.py`.
+* **U9.** E20: OIFootprint replayed with real Binance open interest. DEV -0.107 R (n=846), HOLDOUT
+  +0.113 R (n=121, 2 months) -> FAIL by the pre-registered rule. Retired from live via
+  `STRATEGY_ALLOWLIST` (code kept). Strategies layer: OIFootprint P1 (no OI input) closed by retirement.

@@ -1,0 +1,5 @@
+variant,window,trades,mean_R,win_rate,mean_ret_bps,long_share
+real_oi,DEV,846,-0.107,0.4,-12.8,0.43
+real_oi,HOLDOUT,121,0.113,0.479,13.6,0.6
+proxy_E9,DEV,2179,-0.105,0.391,-12.6,0.44
+proxy_E9,HOLDOUT,416,-0.021,0.43,-2.6,0.59

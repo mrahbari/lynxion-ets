@@ -13,6 +13,14 @@ import traceback
 class _AutoDetectionIntentMixin:
     """Execution-intent event handling + risk-acceptance gate (no order placement)."""
 
+    @staticmethod
+    def _is_sleeve_owned(symbol: str) -> bool:
+        try:
+            from infrastructure.brokers.adapters.bingx_adapter import _norm_sym, v2_owned_symbols
+            return _norm_sym(symbol) in v2_owned_symbols()
+        except Exception:
+            return False  # unreadable file: the adapter still rejects fail-closed
+
     def _handle_execution_intent_event(self, event):
         """Handle execution intent events from the event system."""
         try:
@@ -41,6 +49,13 @@ class _AutoDetectionIntentMixin:
                     'opportunity_score': opportunity_score
                 }
             )
+
+            # E16-U11: symbols owned by the v2 sleeve are rejected at the BingX adapter anyway
+            # (isolation stays there, fail-closed); dropping them here avoids broker duplicate
+            # checks, queue slots and a FAILED journal row per signal. Empty/absent file -> no-op.
+            if self._is_sleeve_owned(execution_intent.symbol.value):
+                self.logger.debug(f"⏭️ SLEEVE-OWNED SKIP: {execution_intent.symbol.value} ({execution_intent.strategy_name})")
+                return
 
             # Check for active orders on the broker before processing the intent
             if not self._check_broker_active_orders_for_duplicate(execution_intent):
