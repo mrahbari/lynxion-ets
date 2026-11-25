@@ -261,7 +261,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E16-U12 | Ops: rotate/compress forensic.log (6.7 GB), fix log-rotation FileNotFoundError; disk 93 % full | logs < 2 GB | TODO |
 | E16-U6 | OrderFlowWS -> time-window order-flow imbalance (OFI, Cont-Kukanov-Stoikov) incl. book changes; claim: OFI -> next-minutes return (needs recorded live trades/book) | recorder + grade | TODO |
 | **E12** | **Live validation and go/no-go (VST until ~2026-12-22)** | | |
-| E12-1 | Single-symbol strategies: live vs E9 backtest parity per strategy (stop R, TP R, duration, slippage, fees) | weekly report | TODO |
+| E12-1 | Single-symbol strategies: live vs E9 backtest parity per strategy (stop R, TP R, duration, slippage, fees) | weekly report | IN PROGRESS: report #1 2026-11-25 (114 trades, +0.27 R, one clustered day; NC* contracts negative in all strategies — watch); next 2026-12-02 |
 | E12-2 | XS-COMBO: live vs model tracking (= E5-3) | weekly report | IN PROGRESS |
 | E12-3 | Final report + real-capital go/no-go package (sizing, limits, kill switch) | report; decision by operator (E5-4) | TODO (~2026-12-20) |
 
