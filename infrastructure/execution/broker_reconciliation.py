@@ -51,6 +51,7 @@ _LAST_OBSERVED_OPEN: set[str] = set()
 # A closure is booked after this many consecutive absent passes (+1 when the whole snapshot is empty).
 CLOSURE_CONFIRM_PASSES = 2
 EMPTY_SNAPSHOT_EXTRA_PASSES = 1
+ORPHAN_PROTECTION_AGE_S = 120.0
 
 
 def _norm(symbol) -> str:
@@ -493,6 +494,36 @@ class BrokerReconciliationService:
         ]
         return report
 
+    @staticmethod
+    def _resolve_orphan_protection(journal, open_positions, report, now: Optional[datetime] = None) -> None:
+        """2026-11-25: a stop-UPDATE record left PROTECTION_UNKNOWN after its position closed protects nothing, yet it
+        blocked every new order for ~6 h (IMX, SOXL). On a successful (blip-guarded) snapshot, close such records
+        when the symbol is flat and the record is older than ORPHAN_PROTECTION_AGE_S. Entry-protection records
+        (entry_order_ref set) are left alone: their entry may still fill."""
+        now = now or datetime.now(timezone.utc)
+        open_syms = {_norm(getattr(p, "symbol", "")) for p in open_positions}
+        try:
+            records = journal.in_flight()
+        except Exception:
+            return
+        for rec in records:
+            if rec.get("status") != "PROTECTION_UNKNOWN" or rec.get("entry_order_ref"):
+                continue
+            if _norm(rec.get("symbol")) in open_syms:
+                continue
+            try:
+                age = (now - datetime.fromisoformat(str(rec.get("ts")))).total_seconds()
+            except Exception:
+                continue
+            if age < ORPHAN_PROTECTION_AGE_S:
+                continue
+            try:
+                journal.record_terminal(rec["order_ref"], "CANCELLED",
+                                        reason="position flat at reconciliation (orphan stop-update record)")
+                report.setdefault("orphan_protection_resolved", []).append(rec.get("symbol"))
+            except Exception as exc:
+                report["errors"].append(f"orphan protection resolution failed ({type(exc).__name__})")
+
     def reconcile(self, broker, journal, halt_on_unrecoverable: bool = True) -> Dict[str, Any]:
         """One reconciliation pass. Returns a structured drift report."""
         report: Dict[str, Any] = {
@@ -528,6 +559,7 @@ class BrokerReconciliationService:
              "side": getattr(getattr(p, "side", None), "value", str(getattr(p, "side", "")))}
             for p in open_positions
         ]
+        self._resolve_orphan_protection(journal, open_positions, report)
 
         # Detect position closures based on exchange position transitions
         current_active_symbols = {b_pos["symbol"] for b_pos in report["broker_positions"] if b_pos.get("symbol")}
