@@ -86,3 +86,12 @@ def _no_live_position_snapshot(monkeypatch):
     if "_position_snapshot_path" not in _AutoDetectionIntentMixin.__dict__:
         monkeypatch.setattr(_AutoDetectionIntentMixin, "_position_snapshot_path",
                             "/nonexistent/active_positions_journal.json", raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _fresh_position_snapshot_guard():
+    """E11-1 empty-snapshot guard keeps process state; every test starts with none."""
+    from infrastructure.brokers.adapters import bingx_adapter as bx
+    bx._snapshot_state.update(last_nonempty=None, first_empty=None)
+    yield
+    bx._snapshot_state.update(last_nonempty=None, first_empty=None)

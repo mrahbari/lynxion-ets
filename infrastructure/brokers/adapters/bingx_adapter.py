@@ -64,6 +64,38 @@ def v2_owned_symbols() -> frozenset:
 
 _BINGX_ENTRY_ADMISSION_LOCK = threading.RLock()
 
+# E11-1: BingX VST sometimes answers /user/positions with code 0 and an EMPTY list for ~15 s while positions are
+# open (2026-11-23: 7 empty replies in 14 s). An unfiltered empty snapshot is trusted only if it persists
+# EMPTY_CONFIRM_S, or if no non-empty snapshot was seen in the last NONEMPTY_MEMORY_S (fresh start / flat account).
+EMPTY_CONFIRM_S = 30.0
+NONEMPTY_MEMORY_S = 600.0
+_snapshot_state = {"last_nonempty": None, "first_empty": None}
+_snapshot_lock = threading.Lock()
+
+
+class EmptySnapshotUnconfirmed(RuntimeError):
+    """An empty position snapshot that may be a VST blip; callers must not treat it as a flat account."""
+
+
+def check_position_snapshot(raw: Any, now: Optional[float] = None) -> None:
+    """Raise EmptySnapshotUnconfirmed for an unconfirmed empty account-wide snapshot (see E11-1 above)."""
+    now = time.time() if now is None else now
+    rows = raw if isinstance(raw, list) else []
+    with _snapshot_lock:
+        if any(isinstance(p, dict) and float(p.get("positionAmt") or 0) != 0 for p in rows):
+            _snapshot_state["last_nonempty"], _snapshot_state["first_empty"] = now, None
+            return
+        last = _snapshot_state["last_nonempty"]
+        if last is None or now - last > NONEMPTY_MEMORY_S:
+            return
+        if _snapshot_state["first_empty"] is None:
+            _snapshot_state["first_empty"] = now
+        waited = now - _snapshot_state["first_empty"]
+        if waited < EMPTY_CONFIRM_S:
+            raise EmptySnapshotUnconfirmed(
+                f"empty position snapshot not yet confirmed ({waited:.0f}s < {EMPTY_CONFIRM_S:.0f}s; VST blip?)")
+        _snapshot_state["last_nonempty"] = None          # confirmed flat: trust empty snapshots from now on
+
 
 class RateLimitAdmissionTimeout(TimeoutError):
     """A local request was not admitted before its bounded queue deadline."""
@@ -748,6 +780,10 @@ class _BingXBroker:
             )
             if response.get('code') != 0 or not isinstance(response.get('data'), list):
                 return False, "broker position snapshot unavailable or malformed"
+            try:
+                check_position_snapshot(response['data'])
+            except EmptySnapshotUnconfirmed as blip:
+                return False, f"broker position snapshot {blip}"
 
             open_positions = []
             open_position_exposures = []
@@ -1777,6 +1813,8 @@ class _BingXBroker:
         positions = response.get('data')
         if not isinstance(positions, list):
             raise RuntimeError('BingX positions response has no position list')
+        if not symbol:
+            check_position_snapshot(positions)       # E11-1: never present a VST empty blip as a flat account
         owned = v2_owned_symbols()
         return [p for p in positions if not (isinstance(p, dict) and _norm_sym(p.get("symbol")) in owned)]
 

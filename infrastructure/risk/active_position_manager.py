@@ -1220,16 +1220,18 @@ class ActivePositionManager:
                         continue
                     if str(order.get("positionSide", "")).upper() != position_side:
                         continue
-                    actual = ActivePositionManager._extract_float(
-                        order.get("stopPrice", order.get("stop_price", order.get("triggerPrice")))
-                    )
+                    raw_stop = order.get("stopPrice", order.get("stop_price", order.get("triggerPrice")))
+                    actual = ActivePositionManager._extract_float(raw_stop)
                     order_id = order.get("orderId", order.get("order_id"))
                     if order_id in (None, ""):
                         continue
                     actual_order_id = str(order_id)
                     if expected_order_id is not None and actual_order_id != str(expected_order_id):
                         continue
-                    tolerance = max(abs(expected_stop_price) * 0.0001, 1e-8)
+                    # The exchange rounds the trigger to its price tick (NOT: 0.000285571 -> 0.0002856 = 1.02e-4 rel),
+                    # so allow one tick of the returned price's precision as well as the relative tolerance.
+                    tolerance = max(abs(expected_stop_price) * 0.0001, 1e-8,
+                                    ActivePositionManager._price_tick(raw_stop))
                     if abs(actual - expected_stop_price) <= tolerance:
                         return {
                             "verified": True,
@@ -1253,6 +1255,15 @@ class ActivePositionManager:
             "match_mode": "EXACT_ORDER_ID" if expected_order_id is not None else "ATTRIBUTE_FALLBACK",
             "mismatch_reason": "requested stop identity and attributes not visible after existing verification polls",
         }
+
+    @staticmethod
+    def _price_tick(raw: Any) -> float:
+        """One unit of the last decimal place of an exchange-returned price ('0.0002856' -> 1e-7); 0 if unknown."""
+        text = str(raw or "").strip()
+        if "e" in text.lower() or "." not in text:
+            return 0.0
+        decimals = len(text.split(".", 1)[1])
+        return 10.0 ** -decimals if 0 < decimals <= 12 else 0.0
 
     def _execute_market_close(self, broker: Any, symbol: str, is_long: bool, quantity: float) -> None:
         """Execute a market close order for the position."""
