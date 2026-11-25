@@ -64,4 +64,7 @@ def test_render_flags_and_disclaimer():
     df = SC.rank_table(feat)
     longs, shorts = SC.pick(df)
     text, rows = SC.render(longs, shorts, SC.market_view(df, {}), {"UPUSDT": 0.001}, {}, "t")
-    assert "💸" in text and "Entry" in text and "Stop" in text and {r["side"] for r in rows} == {"LONG", "SHORT"}
+    assert "💸" in text and "Entry" in text and "Stop loss" in text
+    for x in rows:                                   # targets on the profit side of the limit, stop on the loss side
+        sgn = 1 if x["side"] == "LONG" else -1
+        assert sgn * (x["target2"] - x["target1"]) > 0 and sgn * (x["target1"] - x["limit"]) > 0 > sgn * (x["stop"] - x["limit"]) and {r["side"] for r in rows} == {"LONG", "SHORT"}

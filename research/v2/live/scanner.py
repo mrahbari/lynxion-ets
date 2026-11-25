@@ -12,8 +12,8 @@ Components (cross-sectional percentile ranks, 0..1):
   short-term (4h close - EMA20 of 4h) / ATR14 of 4h                       (recent direction, reduces lag)
 Score = 100 x mean of the three ranks. LONG list: highest scores with all three components positive; SHORT list:
 lowest scores with all three negative. Extension = (close - EMA20_4h) / ATR_4h; |ext| > 2 is flagged as late.
-Limit suggestion (mechanical, NOT validated): long limit = max(EMA20_4h, close - 1 ATR_4h), stop = limit - 1.5 ATR_4h;
-short mirror. Funding shown per coin; flagged when your side pays >= 0.03 %/8h (3x the base rate).
+Levels (mechanical, NOT validated): entry zone = current price .. limit, long limit = max(EMA20_4h, close - 1 ATR_4h),
+stop = limit - 1.5 ATR_4h, Target1/Target2 = limit + 1R / 2R (R = limit-stop distance); short mirror. Funding shown per coin; flagged when your side pays >= 0.03 %/8h (3x the base rate).
 Market view: BTC vs daily EMA50 and 28-day return; breadth = share of the universe above daily EMA50; median funding;
   dashboard: sentiment (mean signed score), confidence (share of coins with all three components agreeing), energy
   (median 24h / 30-day volume). Displayed score = score - 50 (range -50..+50).
@@ -146,7 +146,7 @@ def fmt_px(x: float) -> str:
 
 
 def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
-    """Tree layout matching the platform's trade notifications (three lines per coin)."""
+    """Tree layout: per coin an entry zone (current price .. limit), Target1/Target2 at 1R/2R from the limit, stop."""
     def c(x):
         return f"<code>{html.escape(str(x))}</code>"
     btc = f"{'above' if mv['btc_above_ema50'] else 'below'} EMA50 · 28d {mv['btc_ret28']:+.0%}"
@@ -173,10 +173,17 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
             score = format(float(r["score"]) - 50, "+.0f")
             out.append(f" {'└' if last else '├'} <b>{html.escape(sym[:-4])}</b> {c(score)} {_dots(r)}{flags}")
             bar = " " if last else "│"
-            out.append(f" {bar}    🎯 <b>Entry:</b> {c(fmt_px(lim))} ({lim / r['close'] - 1:+.1%} from now)")
-            out.append(f" {bar}    🛑 <b>Stop:</b> {c(fmt_px(stop))} (risk {abs(stop / lim - 1):.1%})")
+            risk = abs(stop - lim)
+            sgn = 1 if side == "LONG" else -1
+            t1, t2 = round(lim + sgn * risk, prec), round(lim + sgn * 2 * risk, prec)
+            lo, hi = sorted((r["close"], lim))
+            out.append(f" {bar}    Entry ➡️ {c(fmt_px(lo) + ' - ' + fmt_px(hi))}")
+            out.append(f" {bar}    🎯 Target1: {c(fmt_px(t1))}")
+            out.append(f" {bar}    🎯 Target2: {c(fmt_px(t2))}")
+            out.append(f" {bar}    ❌ Stop loss: {c(fmt_px(stop))}")
             rows.append({"side": side, "symbol": sym, "score": round(float(r["score"]) - 50, 1), "close": r["close"],
-                         "limit": lim, "stop": stop, "ext_atr": round(float(ext), 2), "funding": f})
+                         "limit": lim, "stop": stop, "target1": t1, "target2": t2, "ext_atr": round(float(ext), 2),
+                         "funding": f})
         out.append("")
     return "\n".join(out).rstrip(), rows
 
