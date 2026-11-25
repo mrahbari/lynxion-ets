@@ -146,7 +146,7 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
     def c(x):
         return f"<code>{html.escape(str(x))}</code>"
     # BTC trend = price vs its 50-day average; change = last 28 days
-    btc = f"{'Rising' if mv['btc_above_ema50'] else 'Falling'} · {mv['btc_ret28']:+.0%} over the last 4 weeks"
+    btc = f"{'Rising' if mv['btc_above_ema50'] else 'Falling'} {mv['btc_ret28']:+.0%} over the last 4 weeks"
     out = ["📊 <b>Coins overview (4h)</b>", f" └ <b>Time:</b> {c(ts + ' UTC')}", "",
            "🌐 <b>Market:</b>",
            f" ├ <b>Sentiment:</b> {c(mv['sentiment'] + ' (' + format(mv['sentiment_score'], '+.0f') + ')')}",
@@ -170,7 +170,7 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
             last = i == len(items) - 1
             score = f"{'▲' if side == 'LONG' else '▼'}{abs(float(r['score']) - 50):.0f}"
             out.append(f" {'└' if last else '├'} <b>{html.escape(sym[:-4])}</b>  {score}{flags}")
-            bar = " " if last else "│"
+            bar = "│"
             risk = abs(stop - lim)
             sgn = 1 if side == "LONG" else -1
             t1, t2 = round(lim + sgn * risk, prec), round(lim + sgn * 2 * risk, prec)
@@ -185,7 +185,7 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
                          "limit": lim, "stop": stop, "target1": t1, "target2": t2, "ext_atr": round(float(ext), 2),
                          "funding": f})
         out.append("")
-    return "\n".join(out).rstrip(), rows
+    return "\n".join(out).rstrip() + "\n\u2800", rows        # U+2800 keeps a blank last line in Telegram
 
 
 def scan(now_ms: int | None = None) -> dict:
