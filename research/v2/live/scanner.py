@@ -251,7 +251,7 @@ def main():
     LOG.parent.mkdir(parents=True, exist_ok=True)
     with open(LOG, "a") as fh:
         fh.write(json.dumps({"ts": r["ts"], "universe": r["universe"], "market": r["market"], "picks": r["rows"]}) + "\n")
-    telegram("Lynxion", r["text"])
+    telegram("📡 Lynxion Radar · 4H", r["text"])
 
 
 if __name__ == "__main__":
