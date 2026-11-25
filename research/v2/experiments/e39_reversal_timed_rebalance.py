@@ -43,7 +43,7 @@ from lib import backtest as bt  # noqa: E402
 WINDOWS = {"DEV": ("2020-01-01", "2024-12-31"), "HOLDOUT_USED": ("2025-01-01", "2026-10-31")}
 
 
-def run_timed(weights, fwd_ret, p, defer_up, defer_dn, cost=None, rebalance_every=7):
+def run_timed(weights, fwd_ret, p, defer_up, defer_dn, cost=None, rebalance_every=7, extra=None):
     """bt.run with one-day deferral of flagged trades. defer_up/defer_dn: bool frames (row D known at D).
     With no flags it must equal bt.run exactly (checked by --selfcheck)."""
     cost = cost or bt.CostModel()
@@ -57,6 +57,8 @@ def run_timed(weights, fwd_ret, p, defer_up, defer_dn, cost=None, rebalance_ever
     DN = defer_dn.reindex(index=idx, columns=cols).fillna(False).values
     n, m = W.shape
     net, turn = np.zeros(n), np.zeros(n)
+    xg, xf, xc, xe, xn, xd = (np.zeros(n) for _ in range(6))   # reporting only (added 2026-11-25)
+    defer = np.zeros(m, bool)
     held = np.zeros(m)
     pending = None                                   # (mask, weights) to execute on the next day
     for t in range(n):
@@ -82,8 +84,13 @@ def run_timed(weights, fwd_ret, p, defer_up, defer_dn, cost=None, rebalance_ever
         r0 = np.where(bad, 0.0, r)
         g, f = float(np.sum(target * r0)), -float(np.sum(target * F[t]))
         net[t], turn[t] = g + f - c, float(d.sum())
+        xg[t], xf[t], xc[t], xe[t], xn[t] = g, f, c, float(np.abs(target).sum()), abs(float(target.sum()))
+        xd[t] = float(defer.sum()) / max(1, int((np.abs(W[t] - held) > 0).sum())) if t % rebalance_every == 0 else np.nan
         denom = 1.0 + g + f - c
         held = target * (1.0 + r0) / denom if denom > 0 else np.zeros(m)
+    if extra is not None:
+        for k, v in zip(("price", "funding", "cost", "gross_exp", "net_exp", "defer_share"), (xg, xf, xc, xe, xn, xd)):
+            extra[k] = pd.Series(v, index=idx)
     return pd.Series(net, index=idx), pd.Series(turn, index=idx)
 
 
@@ -127,11 +134,17 @@ def main():
             none = pd.DataFrame(False, ww.index, ww.columns)
             out = {}
             for arm, (u, d) in {"BASE": (none, none), "E39": (up, dn)}.items():
-                net, turn = run_timed(ww, fr.reindex(ww.index), p, u, d, rebalance_every=P["rebalance_every"])
+                ex = {}
+                net, turn = run_timed(ww, fr.reindex(ww.index), p, u, d, rebalance_every=P["rebalance_every"], extra=ex)
                 y = net.iloc[:-1]
                 eq = (1 + y).cumprod()
                 out[arm] = {"ann": float(y.mean() * 365), "turn": float(turn.mean() * 365),
-                            "mdd": float((eq / eq.cummax() - 1).min()), "sharpe": float(y.mean() / y.std() * np.sqrt(365))}
+                            "mdd": float((eq / eq.cummax() - 1).min()), "sharpe": float(y.mean() / y.std() * np.sqrt(365)),
+                            # reporting only, not part of the registered criteria (added 2026-11-25 before --run)
+                            "price": float(ex["price"].iloc[:-1].mean() * 365), "carry": float(ex["funding"].iloc[:-1].mean() * 365),
+                            "cost": float(ex["cost"].iloc[:-1].mean() * 365), "gross_exp": float(ex["gross_exp"].mean()),
+                            "net_exp": float(ex["net_exp"].mean()), "net_exp_max": float(ex["net_exp"].max()),
+                            "defer_share": float(ex["defer_share"].mean())}
             rows.append({"window": win, "phase": k, **{f"{a}_{kk}": round(v, 4) for a, o in out.items() for kk, v in o.items()},
                          "delta_ann": round(out["E39"]["ann"] - out["BASE"]["ann"], 4)})
     r = pd.DataFrame(rows)
