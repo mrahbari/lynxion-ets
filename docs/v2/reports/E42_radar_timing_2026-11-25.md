@@ -64,3 +64,31 @@
 - BingX listing history is not available. The universe is Binance-liquid coins.
 - The 15m stop buffer is approximated from 1h data (0.25 × ATR1h). Funding is not included over the 72h hold (small).
 - Manual trading (discretionary entries, partial exits, skipped trades) can differ from this mechanical replay.
+
+## Prospective stage for the B-short hint (pre-registered 2026-11-25, before any data is collected)
+
+**Why.** Variant B was near break-even on shorts in the replay (−0.005 R). That was found on data already
+searched, so it can only be tested on new data.
+
+**Logging (shadow only).**
+- Every live Radar run (4-hourly) also computes the B short list. Definitions are exactly as in this report:
+  - 7-day momentum (28-day volatility), signed efficiency (20d), short-term 4h, acceleration;
+  - a fresh 4h breakout-with-volume or compression → expansion trigger, in the last 2 bars;
+  - lowest 7 by mean rank.
+- Universe: the live Radar universe (Binance ∩ BingX, $10M). Levels: the live Radar levels.
+- Every qualifying coin is appended to `data/v2_live/radar_shadow_b_short.jsonl`, with a flag for a coin newly entering the list.
+- It never reaches Telegram, ranking, orders or the live Radar.
+
+**Evaluation (fixed now).**
+- An event is a coin entering the B-short list.
+- The outcome uses the E42 rules on Binance 1h data afterwards:
+  - limit fill within 24h; SL is checked first;
+  - TP1 at 1.5R; exit at 72h;
+  - minus 2 × (5 bp + 2 bp).
+- The comparison set is the live Radar's own short new entries over the same period, evaluated the same way (this is also R23-a).
+
+**Decision.**
+- Taken at the first of: 150 filled B-short events, or 2027-02-28.
+- **PASS:** mean net R > 0 with day-clustered t ≥ 2.0, AND above the live Radar shorts' mean net R.
+- **FAIL:** otherwise. Logging stops and the result is recorded.
+- Interim looks report counts only. No early decision, no definition changes.
