@@ -40,6 +40,8 @@ from live import binance_live_panel as lp  # noqa: E402
 from live.bingx_vst import BingXVST  # noqa: E402
 
 LOG = ROOT / "data" / "v2_live" / "scanner_log.jsonl"
+SHADOW_B = ROOT / "data" / "v2_live" / "radar_shadow_b_short.jsonl"     # R25: E42 B-short, shadow only
+WIDE_SL = 0.08                                                          # flag stops wider than 8 %
 N_PICK = 7
 MIN_ADV = 10e6
 H4 = 4 * 3_600_000
@@ -79,7 +81,51 @@ def features(daily: list, h4: list) -> dict | None:
             "momentum": float(np.log(dc[-1] / dc[-29]) / (vol * np.sqrt(28))),
             "strength": float(abs(ch20) / path * np.sign(ch20)),
             "short_term": float((c4[-1] - e20) / a4), "ema20_4h": float(e20), "atr_4h": a4,
-            "above_ema50d": bool(dc[-1] > ema(dc, 50)[-1])}
+            "above_ema50d": bool(dc[-1] > ema(dc, 50)[-1]), **b_inputs(daily, h4, dc)}
+
+
+def b_trigger(o, h, l, c, v) -> int:
+    """E42 variant-B trigger, fresh on the last or previous closed 4h bar: +1 / -1 / 0.
+    Breakout: close beyond the previous 20 bars' high/low with volume >= 1.5 x their mean;
+    compression -> expansion: ATR5/ATR50 < 0.7 on the previous bar and true range >= 1.5 x ATR14 (previous bar)."""
+    pc = np.r_[c[0], c[:-1]]
+    tr = np.maximum(h - l, np.maximum(np.abs(h - pc), np.abs(l - pc)))
+
+    def at(k):
+        if k < 51:
+            return 0
+        hh, ll, vm = h[k - 20:k].max(), l[k - 20:k].min(), v[k - 20:k].mean()
+        if c[k] > hh and v[k] >= 1.5 * vm:
+            return 1
+        if c[k] < ll and v[k] >= 1.5 * vm:
+            return -1
+        a5, a50, a14 = tr[k - 5:k].mean(), tr[k - 50:k].mean(), tr[k - 14:k].mean()
+        if a50 > 0 and a5 / a50 < 0.7 and tr[k] >= 1.5 * a14:
+            return int(np.sign(c[k] - o[k]))
+        return 0
+    n = len(c) - 1
+    return at(n) or at(n - 1)
+
+
+def b_inputs(daily: list, h4: list, dc: np.ndarray) -> dict:
+    """Inputs of the E42 variant B (shadow logging only; never used by the live Radar ranking)."""
+    o = np.array([float(r[1]) for r in h4]); h = np.array([float(r[2]) for r in h4])
+    l = np.array([float(r[3]) for r in h4]); c = np.array([float(r[4]) for r in h4])
+    v = np.array([float(r[7]) for r in h4])
+    vol28 = np.diff(np.log(dc))[-28:].std(ddof=1)
+    ret7 = dc[-1] / dc[-8] - 1
+    ret24 = c[-1] / c[-7] - 1 if len(c) > 7 else np.nan
+    return {"mom7": float(np.log(dc[-1] / dc[-8]) / (vol28 * np.sqrt(7))) if vol28 > 0 else np.nan,
+            "accel": float(ret24 - ret7 / 7), "trig": b_trigger(o, h, l, c, v) if len(c) >= 53 else 0}
+
+
+def b_short_list(df: pd.DataFrame, n: int = N_PICK) -> list:
+    """E42 variant B, SHORT side: mom7 < 0, short-term < 0, fresh bearish trigger; lowest mean rank of
+    (mom7, efficiency, short-term, acceleration)."""
+    d = df.dropna(subset=["mom7", "accel"])
+    q = sum(d[k].astype(float).rank(pct=True) for k in ("mom7", "strength", "short_term", "accel")) / 4
+    cand = d[(d.mom7 < 0) & (d.short_term < 0) & (d.trig == -1)].index
+    return list(q[cand].sort_values().index[:n])
 
 
 def rank_table(feat: dict[str, dict]) -> pd.DataFrame:
@@ -157,7 +203,8 @@ def fmt_px(x: float) -> str:
     return f"{x:.6g}"
 
 
-def render(longs, shorts, mv, funding, contracts, ts: str, universe: int | None = None) -> tuple[str, list]:
+def render(longs, shorts, mv, funding, contracts, ts: str, universe: int | None = None,
+           held: set | None = None) -> tuple[str, list]:
     """Layout in the style of the platform's order notifications: header block, market block, one block per coin
     (nested tree: entry zone, TP1/TP2 at 1.5R/3R, SL), time at the end."""
     def c(x):
@@ -187,6 +234,8 @@ def render(longs, shorts, mv, funding, contracts, ts: str, universe: int | None 
             ext = r["short_term"]
             # late = price already > 2 ATR(4h) away from its 4h EMA20: most of the move is done, bounce risk
             flags = (" ⚠️ late" if abs(ext) > 2 else "") + (" 💸 funding" if pays else "")
+            flags += " · in position" if sym in (held or set()) else ""
+            flags += " · wide SL" if abs(lv["sl"] / lv["limit"] - 1) > WIDE_SL else ""
             last = i == len(items) - 1
             score = f"{'▲' if side == 'LONG' else '▼'}{abs(float(r['score']) - 50):.0f}"
             t1, t2 = round(lv["tp1"], prec), round(lv["tp2"], prec)
@@ -237,8 +286,45 @@ def scan(now_ms: int | None = None) -> dict:
     longs, shorts = longs[longs.levels.notna()], shorts[shorts.levels.notna()]
     mv = market_view(df, prem)
     ts = datetime.fromtimestamp(now_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d %H:%M")
-    text, rows = render(longs, shorts, mv, prem, contracts, ts, universe=len(df))
-    return {"text": text, "rows": rows, "market": mv, "universe": len(df), "ts": ts}
+    text, rows = render(longs, shorts, mv, prem, contracts, ts, universe=len(df), held=held_symbols())
+    shadow = []
+    try:   # R25 shadow: computed after the live Radar, never feeds it
+        for s_ in b_short_list(df):
+            lv_ = lv(s_, "SHORT")
+            if lv_:
+                shadow.append({"symbol": s_, "close": float(df.loc[s_, "close"]), "limit": lv_["limit"], "sl": lv_["sl"],
+                               "tp1": lv_["tp1"], "tp2": lv_["tp2"], "mom7": float(df.loc[s_, "mom7"]),
+                               "accel": float(df.loc[s_, "accel"]), "short_term": float(df.loc[s_, "short_term"])})
+    except Exception as e:  # noqa: BLE001
+        shadow = [{"error": repr(e)}]
+    return {"text": text, "rows": rows, "market": mv, "universe": len(df), "ts": ts, "shadow_b_short": shadow}
+
+
+def held_symbols() -> set:
+    """Symbols currently held by the platform (fresh reconciler snapshot) or owned by the XS-COMBO sleeve."""
+    out = set()
+    for path, key in ((ROOT / "data" / "active_positions_journal.json", "active_symbols"),
+                      (ROOT / "data" / "v2_live" / "owned_symbols.json", "symbols")):
+        try:
+            if path.name.startswith("active") and time.time() - path.stat().st_mtime > 600:
+                continue
+            out |= {str(x).replace("-", "").upper() for x in json.loads(path.read_text()).get(key, [])}
+        except Exception:  # noqa: BLE001
+            pass
+    return out
+
+
+def log_shadow(r: dict, path: Path = SHADOW_B) -> None:
+    prev = set()
+    try:
+        last = path.read_text().strip().splitlines()[-1]
+        prev = {x.get("symbol") for x in json.loads(last).get("picks", [])}
+    except Exception:  # noqa: BLE001
+        pass
+    picks = [{**x, "new": x.get("symbol") not in prev} for x in r["shadow_b_short"]]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a") as fh:
+        fh.write(json.dumps({"ts": r["ts"], "universe": r["universe"], "market": r["market"], "picks": picks}) + "\n")
 
 
 def main():
@@ -254,6 +340,7 @@ def main():
     LOG.parent.mkdir(parents=True, exist_ok=True)
     with open(LOG, "a") as fh:
         fh.write(json.dumps({"ts": r["ts"], "universe": r["universe"], "market": r["market"], "picks": r["rows"]}) + "\n")
+    log_shadow(r)
     telegram("📡 Lynxion Radar · 4H", r["text"])
 
 

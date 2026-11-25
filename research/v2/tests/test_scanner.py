@@ -81,3 +81,32 @@ def test_render_flags_and_disclaimer():
     for x in rows:                                   # targets on the profit side of the limit, stop on the loss side
         sgn = 1 if x["side"] == "LONG" else -1
         assert sgn * (x["target2"] - x["target1"]) > 0 and sgn * (x["target1"] - x["limit"]) > 0 > sgn * (x["stop"] - x["limit"]) and {r["side"] for r in rows} == {"LONG", "SHORT"}
+
+
+def test_b_trigger_breakout_and_compression_expansion():
+    n = 60
+    c = np.full(n, 100.0); o = c.copy(); h = c + 1; l = c - 1; v = np.full(n, 10.0)
+    c2, l2, o2 = c.copy(), l.copy(), o.copy()
+    c2[-1], l2[-1], o2[-1] = 95.0, 94.0, 100.0          # close below the 20-bar low ...
+    assert SC.b_trigger(o2, h, l2, c2, np.r_[v[:-1], 20.0]) == -1      # ... with 2x volume
+    assert SC.b_trigger(o2, h, l2, c2, v) == 0           # no volume and no prior compression -> no trigger
+    h3, l3 = h.copy(), l2.copy()
+    h3[-6:-1], l3[-6:-1] = 100.1, 99.9                    # five quiet bars (ATR5/ATR50 < 0.7) ...
+    assert SC.b_trigger(o2, h3, l3, c2, v) == -1         # ... then a wide bearish bar: compression -> expansion
+    assert SC.b_trigger(o, h, l, c, v) == 0
+
+
+def test_b_short_list_needs_bearish_trigger():
+    df = pd.DataFrame({"mom7": [-1.0, -1.0, 1.0], "accel": [-0.1, -0.2, 0.1], "strength": [-0.5, -0.4, 0.5],
+                       "short_term": [-1.0, -1.5, 1.0], "trig": [-1, 0, -1]}, index=["AUSDT", "BUSDT", "CUSDT"])
+    assert SC.b_short_list(df) == ["AUSDT"]
+
+
+def test_log_shadow_marks_new_entries(tmp_path):
+    p = tmp_path / "b.jsonl"
+    r = {"ts": "t1", "universe": 1, "market": {}, "shadow_b_short": [{"symbol": "AUSDT"}]}
+    SC.log_shadow(r, p)
+    SC.log_shadow({**r, "ts": "t2", "shadow_b_short": [{"symbol": "AUSDT"}, {"symbol": "BUSDT"}]}, p)
+    import json
+    last = json.loads(p.read_text().splitlines()[-1])["picks"]
+    assert [(x["symbol"], x["new"]) for x in last] == [("AUSDT", False), ("BUSDT", True)]

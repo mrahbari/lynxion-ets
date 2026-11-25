@@ -87,3 +87,8 @@ funding flags) with a mechanical limit and stop per coin. Universe: Binance perp
 volume >= $10M (not limited to the approved list). Not a watcher: it never feeds the engine or places orders;
 cross-sectional trend ranking has no proven edge (E2). Every run is logged to `data/v2_live/scanner_log.jsonl` for
 forward evaluation. Stop: `launchctl bootout gui/$(id -u)/com.lynxion.v2.scanner`.
+
+Radar additions (2026-11-25): coins already held by the platform or the XS-COMBO sleeve are marked "in position";
+stops wider than 8 % are marked "wide SL". R25 shadow: each run also logs the E42 variant-B short list to
+`data/v2_live/radar_shadow_b_short.jsonl` (never shown in Telegram, never used by the Radar ranking); evaluation rule
+pre-registered in `docs/v2/reports/E42_radar_timing_2026-11-25.md`.
