@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.lynxion.v2.scanner</string>
+  <key>ProgramArguments</key>
+  <array><string>/Users/mojtaba.rahbari/.pyenv/versions/3.10.13/bin/python3</string><string>-m</string><string>live.scanner</string></array>
+  <key>WorkingDirectory</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/research/v2</string>
+  <!-- 4h bars close at 00/04/08/12/16/20 UTC = 01/05/09/13/17/21 local (UTC+1); run 3 minutes later -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Hour</key><integer>1</integer><key>Minute</key><integer>3</integer></dict>
+    <dict><key>Hour</key><integer>5</integer><key>Minute</key><integer>3</integer></dict>
+    <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>3</integer></dict>
+    <dict><key>Hour</key><integer>13</integer><key>Minute</key><integer>3</integer></dict>
+    <dict><key>Hour</key><integer>17</integer><key>Minute</key><integer>3</integer></dict>
+    <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>3</integer></dict>
+  </array>
+  <key>StandardOutPath</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/logs/v2/scanner.log</string>
+  <key>StandardErrorPath</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/logs/v2/scanner.err.log</string>
+  <key>RunAtLoad</key><false/>
+</dict>
+</plist>

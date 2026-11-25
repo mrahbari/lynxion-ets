@@ -77,3 +77,13 @@ ALERT (p2.5) for validated alarms; INFO for return, drawdown and beta (not valid
 sample is short (realized carry needs 28 days). It never acts: WARN/ALERT lines carry a review proposal for the
 operator only. Thresholds: `research/v2/results/xs_combo_monitor_thresholds.json` (rebuild with
 `experiments/e38_xs_combo_monitor_baseline.py`). Details: `docs/v2/reports/R5_xs_combo_degradation_monitor_2026-11-25.md`.
+
+## Coins overview scanner (since 2026-11-25, information only)
+
+`research/v2/live/scanner.py`, LaunchAgent `com.lynxion.v2.scanner` (every 4 h, 3 minutes after the 4h close:
+01/05/09/13/17/21 local, UTC+1). Telegram: sentiment / confidence / energy, market regime (BTC vs EMA50d, breadth,
+median funding), top 7 longs and 7 shorts (score -50..+50, strength / momentum / short-term dots, extension and
+funding flags) with a mechanical limit and stop per coin. Universe: Binance perps also listed on BingX, 30-day median
+volume >= $10M (not limited to the approved list). Not a watcher: it never feeds the engine or places orders;
+cross-sectional trend ranking has no proven edge (E2). Every run is logged to `data/v2_live/scanner_log.jsonl` for
+forward evaluation. Stop: `launchctl bootout gui/$(id -u)/com.lynxion.v2.scanner`.
