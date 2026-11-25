@@ -23,7 +23,7 @@ import io
 import json
 import sys
 import zipfile
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import pandas as pd
@@ -128,7 +128,7 @@ def main() -> int:
     syms = pick_symbols(a)
     print(f"{a.dataset}: {len(syms)} symbols", flush=True)
     tot = bad = n = 0
-    with ThreadPoolExecutor(a.workers) as ex:
+    with ProcessPoolExecutor(a.workers) as ex:      # processes: CSV parsing is CPU-bound (GIL)
         futs = {ex.submit(fetch, s, a.dataset): s for s in syms}
         for f in as_completed(futs):
             n += 1
