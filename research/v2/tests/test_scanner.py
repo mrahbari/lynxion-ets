@@ -64,4 +64,4 @@ def test_render_flags_and_disclaimer():
     df = SC.rank_table(feat)
     longs, shorts = SC.pick(df)
     text, rows = SC.render(longs, shorts, SC.market_view(df, {}), {"UPUSDT": 0.001}, {}, "t")
-    assert "💸" in text and "no proven edge" in text and {r["side"] for r in rows} == {"LONG", "SHORT"}
+    assert "💸" in text and "Entry" in text and "Stop" in text and {r["side"] for r in rows} == {"LONG", "SHORT"}

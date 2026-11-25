@@ -178,8 +178,7 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
             rows.append({"side": side, "symbol": sym, "score": round(float(r["score"]) - 50, 1), "close": r["close"],
                          "limit": lim, "stop": stop, "ext_atr": round(float(ext), 2), "funding": f})
         out.append("")
-    out.append("<i>Info only · no proven edge · ⚠️ late entry · 💸 you pay funding</i>")
-    return "\n".join(out), rows
+    return "\n".join(out).rstrip(), rows
 
 
 def scan(now_ms: int | None = None) -> dict:
