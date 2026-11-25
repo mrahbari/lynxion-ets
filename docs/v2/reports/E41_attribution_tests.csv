@@ -1,0 +1,19 @@
+window,test,mean_ann,t_weekly,p,jaccard_long,jaccard_short,coef_A_I_T_SZ,r2,p_holm
+DEV,T1_integration_D_minus_EQ3,0.0128,0.36,0.7193003841528156,,,,,1.0
+DEV,T2_market_component,0.0451,1.64,0.10324378263515001,,,,,0.5162
+DEV,T3_selection,0.249,2.97,0.003252418919667965,,,,,0.0195
+DEV,T4_funding,0.1003,15.42,1.500235138580769e-38,,,,,0.0
+DEV,overlap_A_I,,,,0.104,0.073,,,
+DEV,overlap_A_T,,,,0.188,0.183,,,
+DEV,overlap_I_T,,,,0.078,0.045,,,
+DEV,overlap_D_A,,,,0.369,0.368,,,
+DEV,regress_D_on_A_I_T_SZ,0.0059,,,,,"[0.52, 0.39, 0.54, 0.15]",0.845,
+HOLDOUT_USED,T1_integration_D_minus_EQ3,0.0483,0.76,0.4493459794406829,,,,,1.0
+HOLDOUT_USED,T2_market_component,0.0656,1.44,0.1539126533729071,,,,,0.6157
+HOLDOUT_USED,T3_selection,-0.106,-0.74,0.46250336842154316,,,,,1.0
+HOLDOUT_USED,T4_funding,0.4057,11.17,5.486992568324264e-19,,,,,0.0
+HOLDOUT_USED,overlap_A_I,,,,0.167,0.031,,,
+HOLDOUT_USED,overlap_A_T,,,,0.13,0.162,,,
+HOLDOUT_USED,overlap_I_T,,,,0.116,0.056,,,
+HOLDOUT_USED,overlap_D_A,,,,0.418,0.216,,,
+HOLDOUT_USED,regress_D_on_A_I_T_SZ,0.094,,,,,"[0.48, 0.5, 0.55, 0.08]",0.848,
