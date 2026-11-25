@@ -38,13 +38,21 @@ def test_pick_requires_all_components_to_agree():
     assert list(longs.index) == ["UPUSDT"] and list(shorts.index) == ["DNUSDT"]
 
 
-def test_limit_levels_long_and_short():
-    r = {"atr_4h": 2.0, "close": 100.0, "ema20_4h": 99.0}
-    assert SC.limit_levels(r, "LONG", 2) == (99.0, 96.0)            # EMA closer than 1 ATR
-    r = {"atr_4h": 2.0, "close": 100.0, "ema20_4h": 90.0}
-    assert SC.limit_levels(r, "LONG", 2) == (98.0, 95.0)            # 1 ATR pullback
-    r = {"atr_4h": 2.0, "close": 100.0, "ema20_4h": 103.0}
-    assert SC.limit_levels(r, "SHORT", 2) == (102.0, 105.0)
+def _k(closes, step, rng=0.01):
+    return [[i * step, c, c * (1 + rng), c * (1 - rng), c, 0, (i + 1) * step - 1, 1e7] for i, c in enumerate(closes)]
+
+
+def test_trade_levels_long_short_geometry_and_caps():
+    up = list(np.linspace(90, 100, 60))
+    lv = SC.trade_levels("LONG", 100.0, 5.0, _k(up, 3_600_000), _k(up[-60:], 900_000, 0.002))
+    d = lv["limit"] - lv["sl"]
+    assert lv["limit"] <= 100 and lv["sl"] < lv["limit"] < lv["tp1"] < lv["tp2"]
+    assert abs((lv["tp1"] - lv["limit"]) - 1.5 * d) < 1e-9 and abs((lv["tp2"] - lv["limit"]) - 3 * d) < 1e-9
+    assert lv["atr_1h"] - 1e-9 <= d <= 5.0 + 1e-9                     # between 1 ATR(1h) and 1 ATR(4h)
+    dn = up[::-1]
+    sv = SC.trade_levels("SHORT", 90.0, 0.5, _k(dn, 3_600_000), _k(dn, 900_000, 0.002))
+    assert sv["tp2"] < sv["tp1"] < sv["limit"] < sv["sl"] and abs((sv["sl"] - sv["limit"]) - 0.5) < 1e-9   # 4h cap
+    assert SC.trade_levels("LONG", 1.0, 1.0, _k([1.0] * 10, 3_600_000), _k([1.0] * 10, 900_000)) is None
 
 
 def test_market_view_labels():
@@ -63,6 +71,11 @@ def test_render_flags_and_disclaimer():
     feat = {"UPUSDT": _feat(0.02), "DNUSDT": _feat(-0.02), "BTCUSDT": _feat(0.01)}
     df = SC.rank_table(feat)
     longs, shorts = SC.pick(df)
+    lvl = lambda side, px: SC.trade_levels(side, px, 5.0, _k(list(np.linspace(px * 0.9, px, 60)) if side == "LONG" else  # noqa: E731
+                                                            list(np.linspace(px * 1.1, px, 60)), 3_600_000),
+                                           _k([px] * 30, 900_000, 0.002))
+    longs = longs.assign(levels=[lvl("LONG", float(longs.loc[x, "close"])) for x in longs.index])
+    shorts = shorts.assign(levels=[lvl("SHORT", float(shorts.loc[x, "close"])) for x in shorts.index])
     text, rows = SC.render(longs, shorts, SC.market_view(df, {}), {"UPUSDT": 0.001}, {}, "t")
     assert "💸" in text and "Entry" in text and "TP1" in text and "SL" in text
     for x in rows:                                   # targets on the profit side of the limit, stop on the loss side

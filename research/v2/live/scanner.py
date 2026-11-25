@@ -12,8 +12,8 @@ Components (cross-sectional percentile ranks, 0..1):
   short-term (4h close - EMA20 of 4h) / ATR14 of 4h                       (recent direction, reduces lag)
 Score = 100 x mean of the three ranks. LONG list: highest scores with all three components positive; SHORT list:
 lowest scores with all three negative. Extension = (close - EMA20_4h) / ATR_4h; |ext| > 2 is flagged as late.
-Levels (mechanical, NOT validated): entry zone = current price .. limit, long limit = max(EMA20_4h, close - 1 ATR_4h),
-stop = limit - 1.5 ATR_4h, Target1/Target2 = limit + 1R / 2R (R = limit-stop distance); short mirror. Funding shown per coin; flagged when your side pays >= 0.03 %/8h (3x the base rate).
+Levels (mechanical, NOT validated): multi-timeframe, see trade_levels() — 1h pullback limit, stop beyond the 1h swing
++ 15m buffer, stop distance between 1 ATR(1h) and 1 ATR(4h), TP1 = 1.5 R, TP2 = 3 R. Funding shown per coin; flagged when your side pays >= 0.03 %/8h (3x the base rate).
 Market view: BTC vs daily EMA50 and 28-day return; breadth = share of the universe above daily EMA50; median funding;
   dashboard: sentiment (mean signed score), confidence (share of coins with all three components agreeing), energy
   (median 24h / 30-day volume). Displayed score = score - 50 (range -50..+50).
@@ -97,15 +97,31 @@ def pick(df: pd.DataFrame, n: int = N_PICK) -> tuple[pd.DataFrame, pd.DataFrame]
     return df[bull].head(n), df[bear].sort_values("score").head(n)
 
 
-def limit_levels(row, side: str, prec: int) -> tuple[float, float]:
-    a, c, e = row["atr_4h"], row["close"], row["ema20_4h"]
+def trade_levels(side: str, close: float, atr_4h: float, k1h: list, k15: list) -> dict | None:
+    """Multi-timeframe levels (mechanical, NOT validated; replaces the 4h-only ATR levels, 2026-11-25).
+    1h  : limit = pullback to EMA20(1h) or 1 ATR(1h), whichever is closer; stop beyond the 12-hour 1h swing.
+    15m : 0.5 ATR(15m) buffer behind the swing (avoids stops exactly on the obvious level).
+    4h  : caps the stop distance at 1 ATR(4h); the floor is 1 ATR(1h) (noise).
+    R = |limit - stop|; TP1 = 1.5 R (partial), TP2 = 3 R. Entry zone = current price .. limit."""
+    if len(k1h) < 30 or len(k15) < 20:
+        return None
+    c1 = np.array([float(r[4]) for r in k1h]); h1 = np.array([float(r[2]) for r in k1h]); l1 = np.array([float(r[3]) for r in k1h])
+    c15 = np.array([float(r[4]) for r in k15]); h15 = np.array([float(r[2]) for r in k15]); l15 = np.array([float(r[3]) for r in k15])
+    a1, a15 = atr(h1, l1, c1), atr(h15, l15, c15)
+    e1 = float(ema(c1, 20)[-1])
     if side == "LONG":
-        lim = max(e, c - a)
-        stop = lim - 1.5 * a
+        lim = max(e1, close - a1) if e1 < close else close
+        sl = min(float(l1[-12:].min()), lim - a1) - 0.5 * a15
+        d = min(max(lim - sl, a1), atr_4h)
+        sl = lim - d
     else:
-        lim = min(e, c + a)
-        stop = lim + 1.5 * a
-    return round(lim, prec), round(stop, prec)
+        lim = min(e1, close + a1) if e1 > close else close
+        sl = max(float(h1[-12:].max()), lim + a1) + 0.5 * a15
+        d = min(max(sl - lim, a1), atr_4h)
+        sl = lim + d
+    sgn = 1 if side == "LONG" else -1
+    return {"limit": lim, "sl": sl, "tp1": lim + sgn * 1.5 * d, "tp2": lim + sgn * 3 * d,
+            "zone": tuple(sorted((close, lim))), "atr_1h": a1, "atr_15m": a15}
 
 
 def market_view(df: pd.DataFrame, funding: dict) -> dict:
@@ -161,7 +177,8 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
             out.append(" └ none")
         for i, (sym, r) in enumerate(items):
             prec = int(contracts.get(sym, {}).get("pricePrecision", 6))
-            lim, stop = limit_levels(r, side, prec)
+            lv = r["levels"]
+            lim, stop = round(lv["limit"], prec), round(lv["sl"], prec)
             f = funding.get(sym, 0.0)
             pays = (side == "LONG" and f >= FUND_CROWDED) or (side == "SHORT" and f <= -FUND_CROWDED)
             ext = r["short_term"]
@@ -171,18 +188,18 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
             score = f"{'▲' if side == 'LONG' else '▼'}{abs(float(r['score']) - 50):.0f}"
             out.append(f" {'└' if last else '├'} <b>{html.escape(sym[:-4])}</b>  {score}{flags}")
             bar = "│"
-            risk = abs(stop - lim)
-            sgn = 1 if side == "LONG" else -1
-            t1, t2 = round(lim + sgn * risk, prec), round(lim + sgn * 2 * risk, prec)
-            lo, hi = sorted((r["close"], lim))
+            t1, t2 = round(lv["tp1"], prec), round(lv["tp2"], prec)
+            lo, hi = (round(x, prec) for x in lv["zone"])
+            pct = lambda x: f"{x / lim - 1:+.1%}"  # noqa: E731
             out.append(f" {bar}    ▸ Entry  {c(fmt_px(lo) + ' – ' + fmt_px(hi))}")
-            out.append(f" {bar}    ▸ TP1  {c(fmt_px(t1))}")
-            out.append(f" {bar}    ▸ TP2  {c(fmt_px(t2))}")
-            out.append(f" {bar}    ▸ SL  {c(fmt_px(stop))}")
+            out.append(f" {bar}    ▸ TP1  {c(fmt_px(t1))} ({pct(t1)})")
+            out.append(f" {bar}    ▸ TP2  {c(fmt_px(t2))} ({pct(t2)})")
+            out.append(f" {bar}    ▸ SL  {c(fmt_px(stop))} ({pct(stop)})")
             if not last:
                 out.append(" │")
             rows.append({"side": side, "symbol": sym, "score": round(float(r["score"]) - 50, 1), "close": r["close"],
-                         "limit": lim, "stop": stop, "target1": t1, "target2": t2, "ext_atr": round(float(ext), 2),
+                         "limit": lim, "stop": stop, "target1": t1, "target2": t2,
+                         "zone": [lo, hi], "ext_atr": round(float(ext), 2),
                          "funding": f})
         out.append("")
     return "\n".join(out).rstrip() + "\n\u2800", rows        # U+2800 keeps a blank last line in Telegram
@@ -207,6 +224,14 @@ def scan(now_ms: int | None = None) -> dict:
         feat = {s: f for s, f in ex.map(one, syms) if f and f["adv30"] >= MIN_ADV}
     df = rank_table(feat)
     longs, shorts = pick(df)
+
+    def lv(sym, side):
+        k1 = closed(lp._get(f"/fapi/v1/klines?symbol={sym}&interval=1h&limit=60"), 3_600_000, now_ms)
+        k15 = closed(lp._get(f"/fapi/v1/klines?symbol={sym}&interval=15m&limit=60"), 900_000, now_ms)
+        return trade_levels(side, float(df.loc[sym, "close"]), float(df.loc[sym, "atr_4h"]), k1, k15)
+    longs = longs.assign(levels=[lv(s_, "LONG") for s_ in longs.index])
+    shorts = shorts.assign(levels=[lv(s_, "SHORT") for s_ in shorts.index])
+    longs, shorts = longs[longs.levels.notna()], shorts[shorts.levels.notna()]
     mv = market_view(df, prem)
     ts = datetime.fromtimestamp(now_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d %H:%M")
     text, rows = render(longs, shorts, mv, prem, contracts, ts)
