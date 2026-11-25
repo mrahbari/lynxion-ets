@@ -186,7 +186,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 |---|---|---|---|
 | **E6** | **Tradable universe (best symbols only)** | | |
 | E6-1 | Venue-agnostic daily liquid universe (5 M median 7d quote volume, >= 30 d), hot reload, discovery gate | 77 names, launchd 00:30 UTC | DONE (2026-11-23) |
-| E6-2 | Verify first scheduled sync run + platform picks up the list without restart | log line + validator count | TODO (2026-11-24) |
+| E6-2 | Verify first scheduled sync run + platform picks up the list without restart | log line + validator count | DONE 2026-11-25: daily 00:30 UTC runs on 11-24 (88) and 11-25 (87, OKB removed); the running process rejected OKB at 01:53 without restart. Open: the list holds 12 non-crypto NC* contracts (stocks, indices, commodities; W0-2) |
 | E6-3 | Threshold review after ~2 weeks of trades (per-band SL slippage, mean R) | report | TODO (~2026-12-07) |
 | **E7** | **Meta-labeling (Lopez de Prado) as the standard Fusion/Engine** | | |
 | E7-1 | Literature review: meta-labeling, signal fusion, calibration, purged/embargoed CV | `docs/v2/reports/E14_meta_labeling_2026-11-23.md` §1 | DONE |
@@ -203,7 +203,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
 | E10-1 | Inventory of unused modules/files with evidence | list for operator approval | TODO |
 | E10-2 | Delete only approved items | tests green vs baseline | GATED on operator |
 | **E11** | **Ops hygiene** | | |
-| E11-1 | VST empty-list blips in exposure checks and `get_position` duplicate guard | tests | TODO |
+| E11-1 | VST empty-list blips in exposure checks and `get_position` duplicate guard | tests | DONE 2026-11-25: an unfiltered empty snapshot after recent positions is EmptySnapshotUnconfirmed for 30 s (adapter `check_position_snapshot`); the broker-backed entry admission refuses during it, so capacity/side caps and duplicate checks never see a fake flat account. Same day: stop verification now accepts one exchange tick (coarse-tick coins were never verified: ~3,400 stop re-submissions, transient PROTECTION_UNKNOWN), and the reconciler closes orphan stop-update PROTECTION_UNKNOWN records once the symbol is flat (two such records blocked every new order 07:31-13:33 UTC) |
 | E11-2 | Push branch `claude/edge-v2` (operator GitHub sign-in) | pushed | GATED on operator |
 | E11-3 | Telegram trade messages name the real deciding component (strategy setup), not Fusion/Engine numbers that do not affect the trade. Note: `calculate_dynamic_metrics` (decision_pipeline.py) builds the displayed confidence partly from a hash of the symbol name and price, i.e. not a probability | message text + test | DONE 2026-11-24: hash term removed from the setup score; Telegram shows "Setup score (not a probability)" and "Evaluation trigger"; no fabricated 80 % fallback |
 | E11-4 | Signal-to-order latency measured from live logs (candidate -> order sent) | p50/p95 in report | TODO |
