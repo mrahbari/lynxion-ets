@@ -146,7 +146,7 @@ def fmt_px(x: float) -> str:
 
 
 def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
-    """Tree layout matching the platform's trade notifications (simple, two lines per coin)."""
+    """Tree layout matching the platform's trade notifications (three lines per coin)."""
     def c(x):
         return f"<code>{html.escape(str(x))}</code>"
     btc = f"{'above' if mv['btc_above_ema50'] else 'below'} EMA50 · 28d {mv['btc_ret28']:+.0%}"
@@ -172,7 +172,9 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
             last = i == len(items) - 1
             score = format(float(r["score"]) - 50, "+.0f")
             out.append(f" {'└' if last else '├'} <b>{html.escape(sym[:-4])}</b> {c(score)} {_dots(r)}{flags}")
-            out.append(f" {' ' if last else '│'}    limit {c(fmt_px(lim))} · stop {c(fmt_px(stop))} ({stop / lim - 1:+.0%})")
+            bar = " " if last else "│"
+            out.append(f" {bar}    🎯 <b>Entry:</b> {c(fmt_px(lim))} ({lim / r['close'] - 1:+.1%} from now)")
+            out.append(f" {bar}    🛑 <b>Stop:</b> {c(fmt_px(stop))} (risk {abs(stop / lim - 1):.1%})")
             rows.append({"side": side, "symbol": sym, "score": round(float(r["score"]) - 50, 1), "close": r["close"],
                          "limit": lim, "stop": stop, "ext_atr": round(float(ext), 2), "funding": f})
         out.append("")
