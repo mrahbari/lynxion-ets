@@ -1239,7 +1239,6 @@ class MultiBrokerExecutionService(ExecutionPort):
                        f" ├ <b>Evaluation trigger:</b> <code>{watcher_name_esc}</code>\n"
                        f" ├ <b>Strategy:</b> <code>{strategy_name_esc}</code>\n"
                        f" ├ <b>Regime:</b> <code>{regime_context_esc}</code>\n"
-                       f" ├ <b>Setup score (not a probability):</b> <code>{confidence_esc}</code>\n"
                        f" ├ <b>Performance Score:</b> <code>{perf_score_esc}</code>\n"
                        f" └ <b>Risk-Adjusted Priority:</b> <code>{risk_adj_score_esc}</code>\n\n"
                        f"🛡️ <b>Risk Parameters:</b>\n"
