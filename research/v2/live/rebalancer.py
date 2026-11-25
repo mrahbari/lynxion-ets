@@ -388,6 +388,14 @@ def main():
                 if s.get("stops"):
                     msgs.append(f"Stops ({lim['stop_pct']:.0%}): placed {s['stops']['placed']} kept {s['stops']['kept']} "
                                 f"failed {s['stops']['failed']}")
+        if not a.dry_run:
+            try:  # R5 degradation monitor: read-only, never changes orders/schedule/parameters
+                from live import monitor
+                mine = owned()
+                sleeve = [x for x in cli.positions() if mine is None or x["symbol"].replace("-", "") in mine]
+                msgs += monitor.run(sleeve, BingXVST.prices(), book)["lines"]
+            except Exception as e:  # noqa: BLE001
+                log({"event": "monitor_error", "error": repr(e)})
         text = "\n".join(msgs)
         print(text)
         if not a.dry_run:

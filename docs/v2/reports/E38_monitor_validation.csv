@@ -1,0 +1,10 @@
+indicator,oos_days,alert_rate,warn_or_worse_rate,usable_alarm,n_warn_weeks,fwd28_after_warn,fwd28_after_ok,welch_t,leading
+ex_ante_carry,1400,0.0,0.0,True,0.0,,0.0158,,False
+adverse_share,1400,0.0,0.025,True,,,,,
+realized_carry,1399,0.046,0.059,True,11.0,0.0123,0.016,-0.63,False
+ret_56d,1399,0.115,0.203,False,41.0,0.0339,0.011,2.14,False
+drawdown,1399,0.218,0.331,False,,,,,
+abs_beta_btc,1399,0.186,0.299,False,,,,,
+max_share,1400,0.001,0.004,True,,,,,
+top5_share,1400,0.0,0.0,True,,,,,
+abs_net_exposure,1400,0.016,0.098,True,,,,,

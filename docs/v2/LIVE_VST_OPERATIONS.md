@@ -68,3 +68,12 @@ Exchange migration: the venue is `UNIVERSE_EXCHANGE`, else `DEFAULT_BROKER` (any
 `DEFAULT_BROKER` switches the universe on the next run, no code change (checked 2026-11-23 at 10 M: bingx 47, binance 176,
 mexc 71 symbols). Symbol names are the venue's contract id without separators (BTC-USDT / BTC_USDT -> BTCUSDT),
 which is the platform's internal format. Run the sync once by hand right after a switch.
+
+## R5 degradation monitor (since 2026-11-25)
+
+The daily job ends with `live/monitor.py` (read-only). It appends `data/v2_live/monitor.csv`, keeps
+`monitor_state.json`, and adds an "R5 monitor" block to the daily Telegram report. Statuses: OK / WARN (backtest p10) /
+ALERT (p2.5) for validated alarms; INFO for return, drawdown and beta (not validated as alarms); NA while the live
+sample is short (realized carry needs 28 days). It never acts: WARN/ALERT lines carry a review proposal for the
+operator only. Thresholds: `research/v2/results/xs_combo_monitor_thresholds.json` (rebuild with
+`experiments/e38_xs_combo_monitor_baseline.py`). Details: `docs/v2/reports/R5_xs_combo_degradation_monitor_2026-11-25.md`.

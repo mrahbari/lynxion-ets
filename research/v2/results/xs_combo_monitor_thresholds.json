@@ -1,0 +1,103 @@
+{
+ "ex_ante_carry": {
+  "warn": 0.04602240520112606,
+  "alert": 0.0,
+  "bad": "low",
+  "median": 0.14481122676518884,
+  "n": 2495,
+  "validated_alarm": true,
+  "leading": false
+ },
+ "realized_carry": {
+  "warn": 0.05271479838558228,
+  "alert": 0.03505980980148298,
+  "bad": "low",
+  "median": 0.10908246077952925,
+  "n": 2229,
+  "validated_alarm": true,
+  "leading": false
+ },
+ "ret_56d": {
+  "warn": -0.24957343543408458,
+  "alert": -0.9459403629426212,
+  "bad": "low",
+  "median": 0.257860415963025,
+  "n": 2439,
+  "validated_alarm": false,
+  "leading": false
+ },
+ "drawdown": {
+  "warn": -0.11993154609396985,
+  "alert": -0.1852397939709611,
+  "bad": "low",
+  "median": -0.03140195913824445,
+  "n": 2494,
+  "validated_alarm": false
+ },
+ "adverse_share": {
+  "warn": 0.4700854700854701,
+  "alert": 0.5098039215686274,
+  "bad": "high",
+  "median": 0.24096385542168675,
+  "n": 2257,
+  "validated_alarm": true
+ },
+ "turnover": {
+  "warn": 1.0146493888429373,
+  "alert": 1.0973076923076925,
+  "bad": "high",
+  "median": 0.8099137931034484,
+  "n": 356
+ },
+ "max_share": {
+  "warn": 0.046621845568313496,
+  "alert": 0.07916503003231301,
+  "bad": "high",
+  "median": 0.02322457572193504,
+  "n": 2257,
+  "validated_alarm": true
+ },
+ "top5_share": {
+  "warn": 0.1649324504051138,
+  "alert": 0.3678332969328751,
+  "bad": "high",
+  "median": 0.10399113811701857,
+  "n": 2495,
+  "validated_alarm": true
+ },
+ "abs_net_exposure": {
+  "warn": 0.030605978159571594,
+  "alert": 0.04953961474606802,
+  "bad": "high",
+  "median": 0.007144367922500477,
+  "n": 2257,
+  "validated_alarm": true
+ },
+ "abs_beta_btc": {
+  "warn": 0.21229689157725268,
+  "alert": 0.38656106826656017,
+  "bad": "high",
+  "median": 0.06000568916370053,
+  "n": 2467,
+  "validated_alarm": false
+ },
+ "slippage_bp": {
+  "warn": 6.293146060078512,
+  "alert": 12.586292120157024,
+  "bad": "high",
+  "median": null,
+  "n": 323
+ },
+ "_meta": {
+  "source": "e38_xs_combo_monitor_baseline.py",
+  "window": [
+   "2020-01-01",
+   "2026-10-31"
+  ],
+  "rule": "WARN p10 / ALERT p2.5 on the bad side; slippage WARN > model cost, ALERT > 2x",
+  "holdout_summary": {
+   "ann_net": 0.1308,
+   "ann_funding_on_gross_median": 0.3427
+  }
+ }
+}
