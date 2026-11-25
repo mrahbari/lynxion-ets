@@ -284,6 +284,9 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
   settings) was loaded but never checked. Kept at 15: post-fix maximum seen was 9 longs, so it does not reduce the
   sample; it only stops a correlated pile-up. Lower it only if same-side clusters dominate losses.
 - Empty-list blips (BingX VST) in exposure checks and the `get_position` duplicate guard.
+- Restart burst: right after a runner start, BingX rate limits ("Please try again later") can fail SL/TP placement, so the
+  entry is unwound (2 cases on 2026-11-25, 0 in the previous 15 h run). Option: no new entries in the first ~2 minutes
+  after start, or retry SL/TP with backoff before unwinding.
 - Orchestrator LIQUIDITY DEPTH GUARD never runs: it calls `broker.fetch_order_book`, which no broker implements (found 2026-11-23).
 
 ## E17 — Strategy research from external sources (started 2026-11-24)
@@ -314,4 +317,5 @@ adopt only if it beats what is live. Ideas already rejected by our own tests are
 | R20 | Price-risk-neutral carry construction (carry ranked within volatility/beta buckets) suggested by E40 | recorded only, not started; would need its own pre-registration + prospective validation |
 | R21 | XS-COMBO attribution (E41: funding / price legs, market vs selection, size, factor books, integration vs diversification) | DONE: 2020-24 return mainly selection (+25 %/yr, Holm 0.02), 2025-26 mainly funding (+41 %/yr, long-leg); funding the only component significant in both; beta ~0; value comes from diversifying three weakly related books (integration gain n.s.); illiquidity ~ size premium in DEV. No change. Follow-up recorded only: live long/short-leg funding split |
 | R22 | Coins-overview Telegram scanner (operator request; ScoreX-style 7 longs / 7 shorts, sentiment, confidence, energy, limit suggestions) | DONE 2026-11-25, information only (not a watcher, no orders); picks logged to scanner_log.jsonl — forward evaluation after 4-8 weeks |
+| R23 | Radar ideas (operator uses Radar manually, 2026-11-25), none started: (a) weekly scorecard from scanner_log.jsonl — entry reached %, TP1-before-SL %, mean R, per side and per market label; (b) 2-hourly change-only alert (coin enters/leaves the list, price reaches the entry zone, a logged pick hits TP1/SL); (c) mark coins already held by the platform or XS-COMBO (avoid doubling exposure); (d) per-coin risk hint when SL > 8 % (size down) | backlog; (a) first after ~2 weeks of logs |
 | R8 | Funding-extreme reversal on BTC only, 24 h (AIJMR 2026: extreme negative funding -> +0.5 %) | covered by E23 (10 symbols) FAIL; BTC-only would be a small-n re-slice -> not run |
