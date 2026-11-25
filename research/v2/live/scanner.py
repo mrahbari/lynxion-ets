@@ -137,10 +137,6 @@ def market_view(df: pd.DataFrame, funding: dict) -> dict:
             "btc_ret28": float(btc.ret28) if btc is not None else None, "btc_close": float(btc.close) if btc is not None else None}
 
 
-def _dots(r) -> str:
-    return "".join("🟢" if r[k] > 0 else "🔴" for k in ("strength", "momentum", "short_term"))
-
-
 def fmt_px(x: float) -> str:
     return f"{x:.6g}"
 
@@ -149,7 +145,8 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
     """Tree layout: per coin an entry zone (current price .. limit), Target1/Target2 at 1R/2R from the limit, stop."""
     def c(x):
         return f"<code>{html.escape(str(x))}</code>"
-    btc = f"{'above' if mv['btc_above_ema50'] else 'below'} EMA50 · 28d {mv['btc_ret28']:+.0%}"
+    # BTC trend = price vs its 50-day average; change = last 28 days
+    btc = f"{'Uptrend' if mv['btc_above_ema50'] else 'Downtrend'} · {mv['btc_ret28']:+.0%} in 28d"
     out = ["📊 <b>Coins overview (4h)</b>", f" └ <b>Time:</b> {c(ts + ' UTC')}", "",
            "🌐 <b>Market:</b>",
            f" ├ <b>Sentiment:</b> {c(mv['sentiment'] + ' (' + format(mv['sentiment_score'], '+.0f') + ')')}",
@@ -170,17 +167,19 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
             ext = r["short_term"]
             flags = (" ⚠️" if abs(ext) > 2 else "") + (" 💸" if pays else "")
             last = i == len(items) - 1
-            score = format(float(r["score"]) - 50, "+.0f")
-            out.append(f" {'└' if last else '├'} <b>{html.escape(sym[:-4])}</b> {c(score)} {_dots(r)}{flags}")
+            score = f"{'▲' if side == 'LONG' else '▼'}{abs(float(r['score']) - 50):.0f}"
+            out.append(f" {'└' if last else '├'} <b>{html.escape(sym[:-4])}</b>  {score}{flags}")
             bar = " " if last else "│"
             risk = abs(stop - lim)
             sgn = 1 if side == "LONG" else -1
             t1, t2 = round(lim + sgn * risk, prec), round(lim + sgn * 2 * risk, prec)
             lo, hi = sorted((r["close"], lim))
-            out.append(f" {bar}    Entry ➡️ {c(fmt_px(lo) + ' - ' + fmt_px(hi))}")
-            out.append(f" {bar}    🎯 Target1: {c(fmt_px(t1))}")
-            out.append(f" {bar}    🎯 Target2: {c(fmt_px(t2))}")
-            out.append(f" {bar}    ❌ Stop loss: {c(fmt_px(stop))}")
+            out.append(f" {bar}    ▸ Entry  {c(fmt_px(lo) + ' – ' + fmt_px(hi))}")
+            out.append(f" {bar}    ▸ TP1  {c(fmt_px(t1))}")
+            out.append(f" {bar}    ▸ TP2  {c(fmt_px(t2))}")
+            out.append(f" {bar}    ▸ SL  {c(fmt_px(stop))}")
+            if not last:
+                out.append(" │")
             rows.append({"side": side, "symbol": sym, "score": round(float(r["score"]) - 50, 1), "close": r["close"],
                          "limit": lim, "stop": stop, "target1": t1, "target2": t2, "ext_atr": round(float(ext), 2),
                          "funding": f})
@@ -226,7 +225,7 @@ def main():
     LOG.parent.mkdir(parents=True, exist_ok=True)
     with open(LOG, "a") as fh:
         fh.write(json.dumps({"ts": r["ts"], "universe": r["universe"], "market": r["market"], "picks": r["rows"]}) + "\n")
-    telegram("Lynxion coins overview (info only)", r["text"])
+    telegram("Lynxion", r["text"])
 
 
 if __name__ == "__main__":
