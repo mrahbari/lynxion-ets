@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from data.binance_um_lake import DL, ROOT, _get, s3_list  # noqa: E402
 
 H, M5 = 3_600_000, 300_000
+INNER = 16
 OUT = {"metrics": ROOT / "metrics_1h", "bookDepth": ROOT / "bookdepth_5m"}
 EXCLUDE = {"USDCUSDT", "BUSDUSDT", "TUSDUSDT", "FDUSDUSDT", "USDPUSDT", "DAIUSDT", "EURUSDT", "XAUTUSDT", "PAXGUSDT"}
 
@@ -80,13 +81,18 @@ def fetch(sym: str, dataset: str) -> tuple[str, int, int]:
     if not todo:
         return sym, 0, 0
     frames, ok, bad = [], [], 0
-    for k in todo:
-        try:
-            with zipfile.ZipFile(io.BytesIO(_get(DL + k))) as z:
-                frames.append(PARSE[dataset](z.read(z.namelist()[0])))
-            ok.append(k)
-        except Exception:  # noqa: BLE001 - retried next run
-            bad += 1
+
+    def one(k):
+        with zipfile.ZipFile(io.BytesIO(_get(DL + k))) as z:
+            return k, PARSE[dataset](z.read(z.namelist()[0]))
+    with ThreadPoolExecutor(INNER) as ex:          # files of one symbol in parallel (request latency bound)
+        futs = [ex.submit(one, k) for k in todo]
+        for f in as_completed(futs):
+            try:
+                k, df = f.result()
+                frames.append(df); ok.append(k)
+            except Exception:  # noqa: BLE001 - retried next run
+                bad += 1
     if frames:
         new = pd.concat(frames, ignore_index=True)
         if pq.exists():
