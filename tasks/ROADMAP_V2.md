@@ -284,9 +284,7 @@ Order: E6 -> E7 (parallel offline) -> E8 -> E9. Platform runs live on VST throug
   settings) was loaded but never checked. Kept at 15: post-fix maximum seen was 9 longs, so it does not reduce the
   sample; it only stops a correlated pile-up. Lower it only if same-side clusters dominate losses.
 - Empty-list blips (BingX VST) in exposure checks and the `get_position` duplicate guard.
-- Restart burst: right after a runner start, BingX rate limits ("Please try again later") can fail SL/TP placement, so the
-  entry is unwound (2 cases on 2026-11-25, 0 in the previous 15 h run). Option: no new entries in the first ~2 minutes
-  after start, or retry SL/TP with backoff before unwinding.
+- Restart burst: DONE 2026-11-25 — entry admission refuses new entries for 120 s after start (exits/stops unaffected).
 - Orchestrator LIQUIDITY DEPTH GUARD never runs: it calls `broker.fetch_order_book`, which no broker implements (found 2026-11-23).
 
 ## E17 — Strategy research from external sources (started 2026-11-24)
