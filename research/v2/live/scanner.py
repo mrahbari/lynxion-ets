@@ -146,7 +146,7 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
     def c(x):
         return f"<code>{html.escape(str(x))}</code>"
     # BTC trend = price vs its 50-day average; change = last 28 days
-    btc = f"{'Uptrend' if mv['btc_above_ema50'] else 'Downtrend'} · {mv['btc_ret28']:+.0%} in 28d"
+    btc = f"{'Rising' if mv['btc_above_ema50'] else 'Falling'} · {mv['btc_ret28']:+.0%} over the last 4 weeks"
     out = ["📊 <b>Coins overview (4h)</b>", f" └ <b>Time:</b> {c(ts + ' UTC')}", "",
            "🌐 <b>Market:</b>",
            f" ├ <b>Sentiment:</b> {c(mv['sentiment'] + ' (' + format(mv['sentiment_score'], '+.0f') + ')')}",
@@ -165,7 +165,8 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
             f = funding.get(sym, 0.0)
             pays = (side == "LONG" and f >= FUND_CROWDED) or (side == "SHORT" and f <= -FUND_CROWDED)
             ext = r["short_term"]
-            flags = (" ⚠️" if abs(ext) > 2 else "") + (" 💸" if pays else "")
+            # late = price already > 2 ATR(4h) away from its 4h EMA20: most of the move is done, bounce risk
+            flags = (" ⚠️ late" if abs(ext) > 2 else "") + (" 💸 funding" if pays else "")
             last = i == len(items) - 1
             score = f"{'▲' if side == 'LONG' else '▼'}{abs(float(r['score']) - 50):.0f}"
             out.append(f" {'└' if last else '├'} <b>{html.escape(sym[:-4])}</b>  {score}{flags}")
