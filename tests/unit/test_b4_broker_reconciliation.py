@@ -314,7 +314,7 @@ def test_profitable_stop_fill_is_not_a_loss_or_cooldown(tmp_path, monkeypatch):
     assert symbol_cooldown_gate.is_symbol_allowed("ADAUSDT")[0] is True
     assert symbol_cooldown_gate._symbol_loss_history.get("ADAUSDT") in (None, [])
     assert "PROFITABLE EXIT" in alerts[0]
-    assert "<b>Cooldown:</b> None" in alerts[0]
+    assert "Cooldown" not in alerts[0]                      # no cooldown after a profitable exit: line omitted
 
 
 def test_stale_filled_order_cannot_explain_new_position_close(tmp_path, monkeypatch):

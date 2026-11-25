@@ -408,8 +408,8 @@ class BrokerReconciliationService:
                         f"{emoji} <b>EXCHANGE POSITION CLOSED</b>\n\n"
                         f"• <b>Symbol:</b> <code>{sym}</code>\n"
                         f"• <b>Outcome:</b> {outcome_str}\n"
-                        f"• <b>Realized PnL:</b> <code>{realized_pnl if realized_pnl is not None else 'N/A'} USDT</code>\n"
-                        f"• <b>Cooldown:</b> {cooldown_str}"
+                        f"• <b>Realized PnL:</b> <code>{realized_pnl if realized_pnl is not None else 'N/A'} USDT</code>"
+                        + (f"\n• <b>Cooldown:</b> {cooldown_str}" if cooldown_str != "None" else "")
                     )
                     send_telegram(msg)
                 except Exception as tel_err:
