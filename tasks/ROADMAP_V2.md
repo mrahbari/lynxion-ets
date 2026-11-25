@@ -305,4 +305,6 @@ adopt only if it beats what is live. Ideas already rejected by our own tests are
 | R11 | LLM indicator-composite bot (moss-site/moss-trade-bot-skills) | not tested: no results/OOS/costs; same family as failed E9-E28, E14 |
 | R12 | EMA-gap reversion MT5 bot (Xtley001/Mean-Reversion-Gap-Strategy-Trading-Bot) | E34 FAIL: -0.087 / -0.148 R, 0/10 symbols |
 | R13 | MeanReversion 4h + funding crowding condition (operator request) | E35 FAIL: -61.7 / -25.8 bp; funding condition worse than control |
+| R14 | Conditional reversal event study: regime, timing, sweeps, failed breakouts, absorption, CVD divergence, capitulation (operator brief 2026-11-25) | E36 FAIL: 0/48 DEV cells pass; deviation carries no reversal information; exits not the cause |
+| R15 | Continuation after stretch / CVD-divergence / capitulation, 72 h (E36 DEV pattern) | E37 FAIL: DEV +24/+98/+58 bp, HOLDOUT -51/-49/-84 bp — the sign flips with the market era |
 | R8 | Funding-extreme reversal on BTC only, 24 h (AIJMR 2026: extreme negative funding -> +0.5 %) | covered by E23 (10 symbols) FAIL; BTC-only would be a small-n re-slice -> not run |
