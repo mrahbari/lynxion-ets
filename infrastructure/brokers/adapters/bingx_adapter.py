@@ -64,6 +64,12 @@ def v2_owned_symbols() -> frozenset:
 
 _BINGX_ENTRY_ADMISSION_LOCK = threading.RLock()
 
+# Restart burst (2026-11-25): in the first minutes after a runner start, stop re-checks and data warm-up saturate the
+# BingX rate limit; two entries filled but their SL/TP placement got "Please try again later" and were unwound.
+# New entries are refused for ENTRY_WARMUP_S after the adapter module loads (exits and stops are unaffected).
+ENTRY_WARMUP_S = 120.0
+_PROCESS_START = time.time()
+
 # E11-1: BingX VST sometimes answers /user/positions with code 0 and an EMPTY list for ~15 s while positions are
 # open (2026-11-23: 7 empty replies in 14 s). An unfiltered empty snapshot is trusted only if it persists
 # EMPTY_CONFIRM_S, or if no non-empty snapshot was seen in the last NONEMPTY_MEMORY_S (fresh start / flat account).
@@ -758,6 +764,9 @@ class _BingXBroker:
         """Fail-closed final risk check against the authoritative broker snapshot."""
         if getattr(self, 'testnet', True) is False:
             return False, "BingX live risk policy is not configured; VST limits cannot authorize real orders"
+        warm = time.time() - _PROCESS_START
+        if warm < ENTRY_WARMUP_S:
+            return False, f"entry warm-up after start ({warm:.0f}s < {ENTRY_WARMUP_S:.0f}s; rate-limit burst)"
         try:
             from infrastructure.risk.risk_enforcement import build_vst_risk_enforcement
 

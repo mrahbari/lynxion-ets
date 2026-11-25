@@ -95,3 +95,10 @@ def _fresh_position_snapshot_guard():
     bx._snapshot_state.update(last_nonempty=None, first_empty=None)
     yield
     bx._snapshot_state.update(last_nonempty=None, first_empty=None)
+
+
+@pytest.fixture(autouse=True)
+def _no_entry_warmup(monkeypatch):
+    """The post-start entry warm-up is a live-runtime guard; unit tests start 'warm'."""
+    from infrastructure.brokers.adapters import bingx_adapter as bx
+    monkeypatch.setattr(bx, "ENTRY_WARMUP_S", 0.0)

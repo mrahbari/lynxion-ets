@@ -45,3 +45,12 @@ def test_get_open_positions_raises_on_blip_but_not_for_symbol_queries(monkeypatc
     with pytest.raises(bx.EmptySnapshotUnconfirmed):
         _broker([]).get_open_positions()
     assert _broker([]).get_open_positions(symbol="ETH-USDT") == []       # per-symbol empty is normal
+
+
+def test_entry_warmup_refuses_entries_right_after_start(monkeypatch):
+    monkeypatch.setattr(bx, "ENTRY_WARMUP_S", 120.0)
+    monkeypatch.setattr(bx, "_PROCESS_START", bx.time.time())
+    b = bx._BingXBroker.__new__(bx._BingXBroker)
+    b.testnet = True
+    ok, reason = b._assert_entry_admission(object())
+    assert ok is False and "warm-up" in reason
