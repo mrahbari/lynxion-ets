@@ -113,3 +113,14 @@ A WARN or ALERT line names the indicator, the value, the backtest band and a rev
 ## R6b
 
 Pre-registered as E39 (`research/v2/experiments/e39_reversal_timed_rebalance.py`, mechanics self-check only). Not run; no live change.
+
+## Addition 2026-11-25: leg correlation (R18) and the E40 finding
+
+- New INFO indicator: average pairwise 30-day daily-return correlation inside the long leg and inside the short leg
+  (Binance daily closes). Backtest band per weekly book (2020-01..2026-10, 323 books): long median 0.50 (p90 0.70,
+  p97.5 0.79); short median 0.56 (p90 0.75, p97.5 0.83). High values mean the legs act as one cluster (squeeze risk).
+  Built by `e38_xs_combo_monitor_baseline.py --cluster-baseline`; not validated as an alarm, so INFO only.
+- First reading 2026-11-25: long 0.18, short 0.46 (both below the backtest median).
+- E40 showed that the carry factor alone lost −78 %/yr on price in 2025-26; the combination's price leg is near zero
+  only because the illiquidity and taker factors offset it. The monitor's realized P&L, drawdown and leg-correlation
+  lines are therefore the relevant view of the main tail risk; funding indicators alone cannot show it.

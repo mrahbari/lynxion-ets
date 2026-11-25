@@ -13,6 +13,7 @@ TH = {k: {"warn": w, "alert": a, "bad": b, "median": 0.0, "validated_alarm": v} 
     ("ret_56d", -0.25, -0.95, "low", False), ("drawdown", -0.12, -0.19, "low", False),
     ("abs_beta_btc", 0.21, 0.39, "high", False)]}
 DAY = 86_400_000
+NOCLOSE = lambda s, now: None  # noqa: E731  (no network in tests)
 T0 = 1_795_000_000_000 - (1_795_000_000_000 % DAY) + 3_600_000   # 01:00 UTC
 
 
@@ -81,11 +82,11 @@ def test_run_is_read_only_and_books_daily_pnl(tmp_path):
     (tmp_path / "state.json").write_text(json.dumps({"last_rebalance": "2026-11-22"}))
     pos = [_pos("A-USDT", "LONG", 50, 10.0), _pos("B-USDT", "SHORT", 50, 10.0)]
     f21 = lambda s, now: {"AUSDT": -0.002, "BUSDT": 0.004}[s]  # noqa: E731
-    r1 = M.run(pos, {"AUSDT": 10.0, "BUSDT": 10.0, "BTCUSDT": 100.0}, 1000, tmp_path, T0, f21, TH)
+    r1 = M.run(pos, {"AUSDT": 10.0, "BUSDT": 10.0, "BTCUSDT": 100.0}, 1000, tmp_path, T0, f21, TH, NOCLOSE)
     assert r1["values"]["live_days"] == 0 and r1["status"]["ex_ante_carry"] == "OK"
     assert r1["status"]["abs_net_exposure"] == "OK" and r1["status"]["fail_rate"] == "NA"
     # next day: A +2 %, B -2 % -> long +10, short +10 = +20 on a 1000 book
-    r2 = M.run(pos, {"AUSDT": 10.2, "BUSDT": 9.8, "BTCUSDT": 101.0}, 1000, tmp_path, T0 + DAY, f21, TH)
+    r2 = M.run(pos, {"AUSDT": 10.2, "BUSDT": 9.8, "BTCUSDT": 101.0}, 1000, tmp_path, T0 + DAY, f21, TH, NOCLOSE)
     assert abs(r2["values"]["cum_ret"] - 0.02) < 1e-12 and r2["values"]["live_days"] == 1
     assert r2["status"]["drawdown"] == "INFO"
     assert len((tmp_path / "monitor.csv").read_text().splitlines()) == 3
@@ -97,6 +98,19 @@ def test_alert_lines_carry_a_review_not_an_action(tmp_path):
     (tmp_path / "targets" / "2026-11-22.json").write_text(json.dumps({"AUSDT": 0.5, "BUSDT": -0.5}))
     pos = [_pos("A-USDT", "LONG", 90, 10.0), _pos("B-USDT", "SHORT", 10, 10.0)]
     f21 = lambda s, now: {"AUSDT": 0.01, "BUSDT": -0.01}[s]  # noqa: E731  (book pays funding)
-    r = M.run(pos, {"AUSDT": 10.0, "BUSDT": 10.0}, 1000, tmp_path, T0, f21, TH)
+    r = M.run(pos, {"AUSDT": 10.0, "BUSDT": 10.0}, 1000, tmp_path, T0, f21, TH, NOCLOSE)
     assert r["status"]["ex_ante_carry"] == "ALERT" and r["status"]["abs_net_exposure"] == "ALERT"
     assert any(line.startswith("ALERT ex_ante_carry") for line in r["lines"])
+
+
+def test_leg_correlation_info():
+    import numpy as np
+    rng = np.random.default_rng(1)
+    common = np.cumsum(rng.normal(0, 0.03, 31))
+    same = {s: list(np.exp(common + rng.normal(0, 0.001, 31))) for s in ("AUSDT", "BUSDT", "CUSDT")}
+    indep = {s: list(np.exp(np.cumsum(rng.normal(0, 0.03, 31)))) for s in ("DUSDT", "EUSDT", "FUSDT")}
+    closes = {**same, **indep}
+    pos = [_pos(s[:-4] + "-USDT", "LONG", 1, 1.0) for s in same] + [_pos(s[:-4] + "-USDT", "SHORT", 1, 1.0) for s in indep]
+    c = M.cluster(pos, lambda s, now: closes[s], T0)
+    assert c["corr_long"] > 0.95 and abs(c["corr_short"]) < 0.5
+    assert M.cluster(pos[:2], lambda s, now: closes[s], T0)["corr_long"] is None    # < 3 names

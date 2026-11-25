@@ -8,7 +8,7 @@ changes schedules or parameters: any ALERT carries a proposed review for the ope
 
 Status per indicator: OK / WARN (beyond the backtest p10 on the bad side) / ALERT (beyond p2.5) for indicators that
 passed the E38 walk-forward false-alarm check; INFO (value + historical percentile) for those that did not
-(ret_56d, drawdown, beta); NA when the live sample is still too short.
+(ret_56d, drawdown, beta, leg correlation); NA when the live sample is still too short.
 """
 from __future__ import annotations
 
@@ -59,6 +59,35 @@ def funding_21d(sym: str, now_ms: int) -> float | None:
     if not isinstance(d, list):
         return None
     return float(sum(float(x["fundingRate"]) for x in d))
+
+
+def daily_closes(sym: str, now_ms: int) -> list[float] | None:
+    """Last 31 completed Binance daily closes (same basis as the backtest panel)."""
+    d = tracking._get(f"{tracking.BINANCE}/fapi/v1/klines?symbol={sym}&interval=1d&endTime={now_ms - DAY_MS}&limit=31")
+    if not isinstance(d, list) or len(d) < 31:
+        return None
+    return [float(x[4]) for x in d]
+
+
+def avg_pair_corr(series: list[list[float]]) -> float | None:
+    """Mean off-diagonal correlation of daily log returns; None if fewer than 3 names (same as E38 baseline)."""
+    if len(series) < 3:
+        return None
+    r = np.diff(np.log(np.array(series)), axis=1)
+    c = np.corrcoef(r)
+    return float(c[np.triu_indices_from(c, 1)].mean())
+
+
+def cluster(positions: list[dict], closes_fn, now_ms: int) -> dict:
+    """Average pairwise 30-day return correlation inside the long leg and inside the short leg (INFO)."""
+    legs = {"LONG": [], "SHORT": []}
+    for p in positions:
+        side = str(p.get("positionSide")).upper()
+        if side in legs and float(p.get("positionAmt") or 0) != 0:
+            c = closes_fn(p["symbol"].replace("-", ""), now_ms)
+            if c:
+                legs[side].append(c)
+    return {"corr_long": avg_pair_corr(legs["LONG"]), "corr_short": avg_pair_corr(legs["SHORT"])}
 
 
 def ex_ante(targets: dict, f21: dict) -> dict:
@@ -159,7 +188,7 @@ def realized_carry(tracking_csv: Path) -> dict:
 
 
 def run(positions: list[dict], prices: dict, book: float, state_dir: Path = STATE_DIR,
-        now_ms: int | None = None, f21_fn=funding_21d, thresholds: dict | None = None) -> dict:
+        now_ms: int | None = None, f21_fn=funding_21d, thresholds: dict | None = None, closes_fn=daily_closes) -> dict:
     now_ms = now_ms or int(time.time() * 1000)
     th = thresholds or load_thresholds()
     st_path = state_dir / "monitor_state.json"
@@ -199,6 +228,7 @@ def run(positions: list[dict], prices: dict, book: float, state_dir: Path = STAT
     v = {}
     v.update(ex_ante(cur or {}, {s: f21_fn(s, now_ms) for s in (cur or {})}))
     v.update(concentration(pos))
+    v.update(cluster(pos, closes_fn, now_ms))
     v["turnover"] = turnover(prev, cur)
     v.update(execution(state_dir / "orders.jsonl", rb_state.get("last_rebalance")))
     v.update(realized_carry(state_dir / "tracking.csv"))
@@ -209,8 +239,11 @@ def run(positions: list[dict], prices: dict, book: float, state_dir: Path = STAT
 
     stat = {}
     for k in ("ex_ante_carry", "adverse_share", "realized_carry", "turnover", "slippage_bp", "max_share",
-              "top5_share", "abs_net_exposure", "ret_56d", "drawdown", "abs_beta_btc"):
-        t = th[k]
+              "top5_share", "abs_net_exposure", "ret_56d", "drawdown", "abs_beta_btc", "corr_long", "corr_short"):
+        t = th.get(k)
+        if t is None:
+            stat[k] = "NA"
+            continue
         stat[k] = status(v.get(k), t, t.get("validated_alarm", True))
     fr = v.get("fail_rate")
     stat["fail_rate"] = "NA" if fr is None else ("WARN" if fr > 0 else "OK")
@@ -243,6 +276,9 @@ def run(positions: list[dict], prices: dict, book: float, state_dir: Path = STAT
         f"net {f('abs_net_exposure', fmt='{:.1%}')} [{stat['max_share']}/{stat['top5_share']}/{stat['abs_net_exposure']}]",
         f"last rebalance: slippage {f('slippage_bp', fmt='{:+.1f} bp')} [{stat['slippage_bp']}], "
         f"failed {f('fail_rate', fmt='{:.0%}')}, turnover {f('turnover', fmt='{:.2f}')} [{stat['turnover']}]",
+        f"leg correlation 30d long {f('corr_long', fmt='{:.2f}')} short {f('corr_short', fmt='{:.2f}')} "
+        f"(backtest median {th.get('corr_long', {}).get('median', float('nan')):.2f}/"
+        f"{th.get('corr_short', {}).get('median', float('nan')):.2f}) [INFO]",
         f"sleeve since monitor start {f('cum_ret')} (DD {f('drawdown')}, {v['live_days']} d) [INFO]",
     ]
     for k in bad:

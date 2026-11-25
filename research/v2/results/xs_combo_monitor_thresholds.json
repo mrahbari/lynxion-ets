@@ -99,5 +99,21 @@
    "ann_net": 0.1308,
    "ann_funding_on_gross_median": 0.3427
   }
+ },
+ "corr_long": {
+  "warn": 0.6967609095821433,
+  "alert": 0.7896804222347727,
+  "bad": "high",
+  "median": 0.5023799697160942,
+  "n": 323,
+  "validated_alarm": false
+ },
+ "corr_short": {
+  "warn": 0.7460204614829031,
+  "alert": 0.834155312612328,
+  "bad": "high",
+  "median": 0.5648877352019135,
+  "n": 323,
+  "validated_alarm": false
  }
 }

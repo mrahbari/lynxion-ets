@@ -27,7 +27,7 @@ OOS 2023-01..2026-10):
       for ex_ante_carry, realized_carry, ret_56d. Called "leading" only if lower after WARN with Welch t <= -2.0.
       Otherwise the indicator is reported as descriptive only (it states what happened, not what will happen).
 Output: research/v2/results/xs_combo_monitor_thresholds.json (used live), docs/v2/reports/E38_monitor_validation.csv.
-Usage: cd research/v2 && python experiments/e38_xs_combo_monitor_baseline.py
+Usage: cd research/v2 && python experiments/e38_xs_combo_monitor_baseline.py [--cluster-baseline]
 """
 from __future__ import annotations
 
@@ -160,5 +160,41 @@ def main():
     print(full["_meta"])
 
 
+def avg_pair_corr(rets: pd.DataFrame) -> float:
+    """Mean off-diagonal correlation of the columns (names with a full window only); NaN if < 3 names."""
+    r = rets.dropna(axis=1)
+    if r.shape[1] < 3:
+        return float("nan")
+    c = np.corrcoef(r.values.T)
+    return float(c[np.triu_indices_from(c, 1)].mean())
+
+
+def cluster_baseline():
+    """Added 2026-11-25 (after E40, operator-approved R5 addition): distribution of the average pairwise 30-day
+    daily-return correlation inside the long leg and inside the short leg of each weekly target book. INFO only in
+    the live monitor (not validated as an alarm); appended to the thresholds file without touching other keys."""
+    p = pn.load_daily(start="2019-10-01", end=END)
+    mask = pn.universe_mask(p, min_adv_usd=P["min_adv_usd"], min_age_days=P["min_age_days"])
+    nps = set(json.load(open(pn.LAKE / "non_perpetual_symbols.json")))
+    mask.loc[:, [c for c in mask.columns if c in nps]] = False
+    w = bt.rank_long_short(S.signal(p, mask), mask, frac=P["frac"], gross=P["gross"], min_names=P["min_names"])
+    w = w[(w.index >= START) & (w.index <= END)]
+    lr = np.log(p["close"]).diff()
+    rows = []
+    for d in w.index[::P["rebalance_every"]]:
+        win = lr.loc[:d].iloc[-30:]
+        row = w.loc[d]
+        rows.append({"date": d, "corr_long": avg_pair_corr(win[row[row > 0].index]),
+                     "corr_short": avg_pair_corr(win[row[row < 0].index])})
+    c = pd.DataFrame(rows).set_index("date")
+    th = json.loads(THRESH.read_text())
+    for k in ("corr_long", "corr_short"):
+        x = c[k].dropna()
+        th[k] = {"warn": float(x.quantile(0.90)), "alert": float(x.quantile(0.975)), "bad": "high",
+                 "median": float(x.median()), "n": int(len(x)), "validated_alarm": False}
+        print(k, {kk: round(v, 3) if isinstance(v, float) else v for kk, v in th[k].items()})
+    THRESH.write_text(json.dumps(th, indent=1))
+
+
 if __name__ == "__main__":
-    main()
+    cluster_baseline() if "--cluster-baseline" in sys.argv else main()
