@@ -404,12 +404,7 @@ class BrokerReconciliationService:
                                     else "None" if is_profitable else "Loss cooldown active")
                     if closing_order_id == "UNKNOWN":
                         cooldown_str = "60 min safety cooldown on this symbol (no new entry)"
-                    # Telegram cannot colour text: a coloured marker carries the sign instead
-                    try:
-                        pnl_val = float(realized_pnl)
-                        pnl_str = f"{'🟢' if pnl_val > 0 else '🔴' if pnl_val < 0 else '⚪'} <code>{pnl_val:+.4f} USDT</code>"
-                    except (TypeError, ValueError):
-                        pnl_str = "<code>N/A</code>"
+                    pnl_str = f"<code>{realized_pnl if realized_pnl is not None else 'N/A'} USDT</code>"
                     msg = (
                         f"{emoji} <b>EXCHANGE POSITION CLOSED</b>\n\n"
                         f"• <b>Symbol:</b> <b>{sym}</b>\n"
