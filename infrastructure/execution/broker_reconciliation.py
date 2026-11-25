@@ -495,11 +495,15 @@ class BrokerReconciliationService:
         return report
 
     @staticmethod
-    def _resolve_orphan_protection(journal, open_positions, report, now: Optional[datetime] = None) -> None:
+    def _resolve_orphan_protection(journal, open_positions, report, now: Optional[datetime] = None,
+                                   broker: Any = None) -> None:
         """2026-11-25: a stop-UPDATE record left PROTECTION_UNKNOWN after its position closed protects nothing, yet it
         blocked every new order for ~6 h (IMX, SOXL). On a successful (blip-guarded) snapshot, close such records
         when the symbol is flat and the record is older than ORPHAN_PROTECTION_AGE_S. Entry-protection records
-        (entry_order_ref set) are left alone: their entry may still fill."""
+        (entry_order_ref set) are left alone: their entry may still fill.
+        Same day: an entry INTENT with no exchange order id (send raised, e.g. "TP order failed: network timeout;
+        unwound=True") blocked every order. It is closed as FAILED only when the symbol is flat AND the broker
+        confirms no pending orders for it (nothing can still fill)."""
         now = now or datetime.now(timezone.utc)
         open_syms = {_norm(getattr(p, "symbol", "")) for p in open_positions}
         try:
@@ -507,7 +511,8 @@ class BrokerReconciliationService:
         except Exception:
             return
         for rec in records:
-            if rec.get("status") != "PROTECTION_UNKNOWN" or rec.get("entry_order_ref"):
+            is_orphan_intent = rec.get("status") == "INTENT" and not rec.get("order_id") and broker is not None
+            if not is_orphan_intent and (rec.get("status") != "PROTECTION_UNKNOWN" or rec.get("entry_order_ref")):
                 continue
             if _norm(rec.get("symbol")) in open_syms:
                 continue
@@ -516,6 +521,17 @@ class BrokerReconciliationService:
             except Exception:
                 continue
             if age < ORPHAN_PROTECTION_AGE_S:
+                continue
+            if is_orphan_intent:
+                try:
+                    ev = broker.get_pending_orders_evidence(_mk_symbol(rec.get("symbol")))
+                    if ev.get("status") != "OK" or ev.get("orders"):
+                        continue
+                    journal.record_failed(rec["order_ref"], "no exchange order id; symbol flat and no pending "
+                                                            "orders at reconciliation (send failed or unwound)")
+                    report.setdefault("orphan_intent_resolved", []).append(rec.get("symbol"))
+                except Exception as exc:
+                    report["errors"].append(f"orphan intent resolution failed ({type(exc).__name__})")
                 continue
             try:
                 journal.record_terminal(rec["order_ref"], "CANCELLED",
@@ -559,7 +575,7 @@ class BrokerReconciliationService:
              "side": getattr(getattr(p, "side", None), "value", str(getattr(p, "side", "")))}
             for p in open_positions
         ]
-        self._resolve_orphan_protection(journal, open_positions, report)
+        self._resolve_orphan_protection(journal, open_positions, report, broker=broker)
 
         # Detect position closures based on exchange position transitions
         current_active_symbols = {b_pos["symbol"] for b_pos in report["broker_positions"] if b_pos.get("symbol")}

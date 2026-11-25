@@ -31,3 +31,29 @@ def test_flat_old_stop_update_record_is_closed_others_kept():
         j, [SimpleNamespace(symbol="NOT-USDT")], report, now=NOW)
     assert j.closed == [("a", "CANCELLED")]                 # NOT open, ADA too recent, XRP entry-protection, SOL intent
     assert report["orphan_protection_resolved"] == ["IMXUSDT"]
+
+
+class _Broker:
+    def __init__(self, status="OK", orders=()):
+        self.ev = {"status": status, "orders": list(orders)}
+
+    def get_pending_orders_evidence(self, symbol):
+        return self.ev
+
+
+class _J2(_Journal):
+    def record_failed(self, ref, reason=""):
+        self.closed.append((ref, "FAILED"))
+
+
+def test_orphan_intent_closed_only_when_flat_and_no_pending_orders():
+    def run(broker, positions=()):
+        j = _J2([{**_r("i", "PEOPLEUSDT", 600, status="INTENT"), "order_id": None}])
+        rec.BrokerReconciliationService._resolve_orphan_protection(j, list(positions), {"errors": []}, now=NOW,
+                                                                   broker=broker)
+        return j.closed
+    assert run(_Broker()) == [("i", "FAILED")]
+    assert run(_Broker(orders=[{"orderId": 1}])) == []                      # a pending order could still fill
+    assert run(_Broker(status="API_ERROR")) == []                          # no evidence -> keep blocking
+    assert run(_Broker(), [SimpleNamespace(symbol="PEOPLE-USDT")]) == []   # position open
+    assert run(None) == []                                                 # no broker -> unchanged behaviour
