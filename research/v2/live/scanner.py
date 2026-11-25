@@ -146,36 +146,37 @@ def fmt_px(x: float) -> str:
 
 
 def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
+    """Tree layout matching the platform's trade notifications (simple, two lines per coin)."""
+    def c(x):
+        return f"<code>{html.escape(str(x))}</code>"
+    btc = f"{'above' if mv['btc_above_ema50'] else 'below'} EMA50 · 28d {mv['btc_ret28']:+.0%}"
+    out = ["📊 <b>Coins overview (4h)</b>", f" └ <b>Time:</b> {c(ts + ' UTC')}", "",
+           "🌐 <b>Market:</b>",
+           f" ├ <b>Sentiment:</b> {c(mv['sentiment'] + ' (' + format(mv['sentiment_score'], '+.0f') + ')')}",
+           f" ├ <b>Confidence:</b> {c(format(mv['confidence'], '.1f') + '/10')}",
+           f" ├ <b>Energy:</b> {c(mv['energy'])}",
+           f" └ <b>BTC:</b> {c(btc)}", ""]
     rows = []
-    bar = "▰" * int(round(mv["confidence"])) + "▱" * (10 - int(round(mv["confidence"])))
-    out = [f"<b>Coins overview</b> (4h) — {ts} UTC",
-           f"Sentiment <b>{mv['sentiment']}</b> ({mv['sentiment_score']:+.0f}) | Confidence {bar} {mv['confidence']:.1f}/10 | "
-           f"Energy <b>{mv['energy']}</b> (volume x{mv['volume_ratio']:.2f})",
-           f"Market: <b>{mv['label']}</b> | BTC {'above' if mv['btc_above_ema50'] else 'below'} EMA50d, 28d "
-           f"{mv['btc_ret28']:+.1%} | breadth {mv['breadth']:.0%} above EMA50d | median funding {mv['median_funding']*100:+.4f}%",
-           "Score -50..+50. Dots: strength / momentum / short-term. ⚠️ = extended (late). 💸 = your side pays funding.",
-           ""]
-    for title, tab, side in (("TOP LONGS", longs, "LONG"), ("TOP SHORTS", shorts, "SHORT")):
-        out.append(f"<b>{title}</b>")
-        if tab.empty:
-            out.append("none qualify (all three components must agree)")
-        for sym, r in tab.iterrows():
+    for title, tab, side in (("🟢 <b>Top Longs:</b>", longs, "LONG"), ("🔴 <b>Top Shorts:</b>", shorts, "SHORT")):
+        out.append(title)
+        items = list(tab.iterrows())
+        if not items:
+            out.append(" └ none")
+        for i, (sym, r) in enumerate(items):
             prec = int(contracts.get(sym, {}).get("pricePrecision", 6))
             lim, stop = limit_levels(r, side, prec)
             f = funding.get(sym, 0.0)
             pays = (side == "LONG" and f >= FUND_CROWDED) or (side == "SHORT" and f <= -FUND_CROWDED)
             ext = r["short_term"]
-            late = abs(ext) > 2
-            out.append(f"<b>{html.escape(sym[:-4])}</b> {r['score'] - 50:+.0f} {_dots(r)}{' ⚠️' if late else ''}{' 💸' if pays else ''}"
-                       f" | px {fmt_px(r['close'])} | 1d {r['ret1d']:+.1%} 28d {r['ret28']:+.1%}"
-                       f" | fund {f*100:+.4f}% | vol ${r['vol24h']/1e6:.0f}M")
-            out.append(f"   limit {fmt_px(lim)} ({lim / r['close'] - 1:+.1%}) | stop {fmt_px(stop)} "
-                       f"({stop / lim - 1:+.1%} from limit) | ext {ext:+.1f} ATR")
+            flags = (" ⚠️" if abs(ext) > 2 else "") + (" 💸" if pays else "")
+            last = i == len(items) - 1
+            score = format(float(r["score"]) - 50, "+.0f")
+            out.append(f" {'└' if last else '├'} <b>{html.escape(sym[:-4])}</b> {c(score)} {_dots(r)}{flags}")
+            out.append(f" {' ' if last else '│'}    limit {c(fmt_px(lim))} · stop {c(fmt_px(stop))} ({stop / lim - 1:+.0%})")
             rows.append({"side": side, "symbol": sym, "score": round(float(r["score"]) - 50, 1), "close": r["close"],
                          "limit": lim, "stop": stop, "ext_atr": round(float(ext), 2), "funding": f})
         out.append("")
-    out.append("<i>Information only — cross-sectional trend ranking has no proven edge (E2). Limits are mechanical "
-               "(EMA20 4h or 1 ATR pullback, stop 1.5 ATR), not validated. Always use a stop.</i>")
+    out.append("<i>Info only · no proven edge · ⚠️ late entry · 💸 you pay funding</i>")
     return "\n".join(out), rows
 
 
