@@ -157,20 +157,23 @@ def fmt_px(x: float) -> str:
     return f"{x:.6g}"
 
 
-def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
-    """Tree layout: per coin an entry zone (current price .. limit), Target1/Target2 at 1R/2R from the limit, stop."""
+def render(longs, shorts, mv, funding, contracts, ts: str, universe: int | None = None) -> tuple[str, list]:
+    """Layout in the style of the platform's order notifications: header block, market block, one block per coin
+    (nested tree: entry zone, TP1/TP2 at 1.5R/3R, SL), time at the end."""
     def c(x):
         return f"<code>{html.escape(str(x))}</code>"
+    mood = {"Bullish": "🟢", "Bearish": "🔴"}.get(mv["sentiment"], "🟡")
     # BTC trend = price vs its 50-day average; change = last 28 days
     btc = f"{'Rising' if mv['btc_above_ema50'] else 'Falling'} {mv['btc_ret28']:+.0%} over the last 4 weeks"
-    out = ["📊 <b>Coins overview (4h)</b>", f" └ <b>Time:</b> {c(ts + ' UTC')}", "",
-           "🌐 <b>Market:</b>",
+    out = ["✅ <b>Radar scan complete</b>",
+           f" └ <b>Scanned:</b> {c(f'{universe} coins · 4H' if universe else '4H')}", "",
+           f"{mood} <b>Market:</b>",
            f" ├ <b>Sentiment:</b> {c(mv['sentiment'] + ' (' + format(mv['sentiment_score'], '+.0f') + ')')}",
            f" ├ <b>Confidence:</b> {c(format(mv['confidence'], '.1f') + '/10')}",
            f" ├ <b>Energy:</b> {c(mv['energy'])}",
            f" └ <b>BTC:</b> {c(btc)}", ""]
     rows = []
-    for title, tab, side in (("🟢 <b>Top Longs:</b>", longs, "LONG"), ("🔴 <b>Top Shorts:</b>", shorts, "SHORT")):
+    for title, tab, side in (("🟩 <b>Top Longs:</b>", longs, "LONG"), ("🟥 <b>Top Shorts:</b>", shorts, "SHORT")):
         out.append(title)
         items = list(tab.iterrows())
         if not items:
@@ -186,15 +189,14 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
             flags = (" ⚠️ late" if abs(ext) > 2 else "") + (" 💸 funding" if pays else "")
             last = i == len(items) - 1
             score = f"{'▲' if side == 'LONG' else '▼'}{abs(float(r['score']) - 50):.0f}"
-            out.append(f" {'└' if last else '├'} <b>{html.escape(sym[:-4])}</b>  {score}{flags}")
-            bar = "│"
             t1, t2 = round(lv["tp1"], prec), round(lv["tp2"], prec)
             lo, hi = (round(x, prec) for x in lv["zone"])
             pct = lambda x: f"{x / lim - 1:+.1%}"  # noqa: E731
-            out.append(f" {bar}    ▸ Entry  {c(fmt_px(lo) + ' – ' + fmt_px(hi))}")
-            out.append(f" {bar}    ▸ TP1  {c(fmt_px(t1))} ({pct(t1)})")
-            out.append(f" {bar}    ▸ TP2  {c(fmt_px(t2))} ({pct(t2)})")
-            out.append(f" {bar}    ▸ SL  {c(fmt_px(stop))} ({pct(stop)})")
+            out.append(f" {'└' if last else '├'} <b>{html.escape(sym[:-4])}</b> · {score}{flags}")
+            out.append(f" │   ├ <b>Entry:</b> {c(fmt_px(lo) + ' – ' + fmt_px(hi))}")
+            out.append(f" │   ├ <b>TP1:</b> {c(fmt_px(t1))} {pct(t1)}")
+            out.append(f" │   ├ <b>TP2:</b> {c(fmt_px(t2))} {pct(t2)}")
+            out.append(f" │   └ <b>SL:</b> {c(fmt_px(stop))} {pct(stop)}")
             if not last:
                 out.append(" │")
             rows.append({"side": side, "symbol": sym, "score": round(float(r["score"]) - 50, 1), "close": r["close"],
@@ -202,7 +204,8 @@ def render(longs, shorts, mv, funding, contracts, ts: str) -> tuple[str, list]:
                          "zone": [lo, hi], "ext_atr": round(float(ext), 2),
                          "funding": f})
         out.append("")
-    return "\n".join(out).rstrip() + "\n\u2800", rows        # U+2800 keeps a blank last line in Telegram
+    out.append(f"🕒 <b>Time:</b> {c(ts + ' UTC')}")
+    return "\n".join(out) + "\n⠀", rows        # U+2800 keeps a blank last line in Telegram
 
 
 def scan(now_ms: int | None = None) -> dict:
@@ -234,7 +237,7 @@ def scan(now_ms: int | None = None) -> dict:
     longs, shorts = longs[longs.levels.notna()], shorts[shorts.levels.notna()]
     mv = market_view(df, prem)
     ts = datetime.fromtimestamp(now_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d %H:%M")
-    text, rows = render(longs, shorts, mv, prem, contracts, ts)
+    text, rows = render(longs, shorts, mv, prem, contracts, ts, universe=len(df))
     return {"text": text, "rows": rows, "market": mv, "universe": len(df), "ts": ts}
 
 
