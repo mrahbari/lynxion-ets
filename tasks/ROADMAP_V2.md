@@ -340,4 +340,6 @@ adopt only if it beats what is live. Ideas already rejected by our own tests are
 | R31 | Prospective calendar shadow of unlock shorts WITH a pre-registered stop (log only) | STARTED 2026-11-26 (operator approved): 20 % hard stop, BTC/ETH hedge; pre-registered in `R31_unlock_shadow_prereg_2026-11-26.md`; decision at 40 events or 2027-06-30 |
 | R32 | Short new Binance perp listings (30 d, +30 % stop, BTC/ETH hedge) | E48 FAIL: median listing -23..-25 % vs BTC/ETH and ~75 % fall in both eras, but squeezes: mean +9.9 % (2021-24) -> +0.9 % (2025-26); 30 % stop hurts. Same 'new supply' family as R31 |
 | R33 | H1 funding-settlement flow (pressure into / after the funding stamp) | E49 REJECT: stamp hour = control hour (difference < 1 bp); side note: high-funding names +9 bp/h vs low in 2025-26 in any hour (same as E40 carry price loss) |
+| R34 | H3 DVOL stress overlay for XS-COMBO (half gross 7 d after IV shocks) | E51 REJECT: DD -2..3 pts but Sharpe lower in both windows (recovery after stress, as E38) |
+| R35 | H4 stablecoin-supply impulse -> long market basket | E52 REJECT: worse than 28-day momentum timing in both windows; TEST negative |
 | R8 | Funding-extreme reversal on BTC only, 24 h (AIJMR 2026: extreme negative funding -> +0.5 %) | covered by E23 (10 symbols) FAIL; BTC-only would be a small-n re-slice -> not run |
