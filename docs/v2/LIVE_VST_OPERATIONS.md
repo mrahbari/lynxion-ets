@@ -92,3 +92,12 @@ Radar additions (2026-11-25): coins already held by the platform or the XS-COMBO
 stops wider than 8 % are marked "wide SL". R25 shadow: each run also logs the E42 variant-B short list to
 `data/v2_live/radar_shadow_b_short.jsonl` (never shown in Telegram, never used by the Radar ranking); evaluation rule
 pre-registered in `docs/v2/reports/E42_radar_timing_2026-11-25.md`.
+
+## Research shadows (log only, never trade)
+
+- R25 Radar B-short: inside the Radar run -> `data/v2_live/radar_shadow_b_short.jsonl`.
+- R28 XS-COMBO + retail fade: inside the weekly rebalance -> `data/v2_live/shadow_r28/<date>.json`.
+- R31 unlock shorts: LaunchAgent `com.lynxion.v2.unlock-shadow` (03:30 local daily) -> `data/v2_live/unlock_shadow.jsonl`;
+  evaluation `research/v2/experiments/r31_unlock_shadow_eval.py` (counts only until 40 events or 2027-06-30).
+Pre-registrations: `docs/v2/reports/E42_radar_timing_2026-11-25.md`, `R28_retail_fade_shadow_prereg_2026-11-26.md`,
+`R31_unlock_shadow_prereg_2026-11-26.md`.

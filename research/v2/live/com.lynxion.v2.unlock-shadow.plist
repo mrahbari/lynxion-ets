@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.lynxion.v2.unlock-shadow</string>
+  <key>ProgramArguments</key>
+  <array><string>/Users/mojtaba.rahbari/.pyenv/versions/3.10.13/bin/python3</string><string>-m</string><string>live.unlock_shadow</string></array>
+  <key>WorkingDirectory</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/research/v2</string>
+  <!-- R31 shadow (log only): daily after the UTC day close -->
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>3</integer><key>Minute</key><integer>30</integer></dict>
+  <key>StandardOutPath</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/logs/v2/unlock_shadow.log</string>
+  <key>StandardErrorPath</key><string>/Users/mojtaba.rahbari/Sites/python/lynxion-ets/logs/v2/unlock_shadow.err.log</string>
+  <key>RunAtLoad</key><false/>
+</dict>
+</plist>
