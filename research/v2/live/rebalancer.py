@@ -19,6 +19,7 @@ import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -178,15 +179,53 @@ def log(rec: dict):
         fh.write(json.dumps(rec, default=str) + "\n")
 
 
-def target_weights(asof: pd.Timestamp, contracts: dict) -> pd.Series:
+def target_weights(asof: pd.Timestamp, contracts: dict, keep: dict | None = None) -> pd.Series:
     syms = lp.universe_symbols()["symbol"].tolist()          # crypto PERPETUAL, TRADING
     p = lp.build(asof, days=60, symbols=syms)
     m = pn.universe_mask(p)
     m.loc[:, [c for c in m.columns if c not in contracts]] = False   # tradable on BingX
     w = bt.rank_long_short(S.signal(p, m), m, frac=S.PARAMS["frac"], gross=S.PARAMS["gross"],
                            min_names=S.PARAMS["min_names"])
+    if keep is not None:                                             # read-only reuse by the R28 shadow
+        keep.update(p=p, m=m)
     row = w.loc[asof]
     return row[row != 0].sort_values()
+
+
+def retail_ratio_signal(symbols, asof: pd.Timestamp) -> pd.Series:
+    """R28: -mean(log all-account long/short ratio) over the last 3 completed daily values before `asof`."""
+    end = int(asof.value // 10**6)
+    out = {}
+    for s in symbols:
+        try:
+            d = lp._get(f"/futures/data/globalLongShortAccountRatio?symbol={s}&period=1d&limit=5")
+            vals = [float(x["longShortRatio"]) for x in d if int(x["timestamp"]) + 86_400_000 <= end]
+            if len(vals) >= 2 and min(vals[-3:]) > 0:
+                out[s] = -float(np.mean(np.log(vals[-3:])))
+        except Exception:  # noqa: BLE001
+            continue
+        time.sleep(0.05)
+    return pd.Series(out, dtype=float)
+
+
+def shadow_r28(asof: pd.Timestamp, keep: dict) -> dict:
+    """R28 shadow (pre-registered 2026-11-26): V1 + F_RETAIL target book. Writes a file, never trades."""
+    p, m = keep["p"], keep["m"]
+    elig = [c for c in m.columns if bool(m.loc[asof, c])]
+    f = retail_ratio_signal(elig, asof)
+    fr = pd.DataFrame(np.nan, index=m.index, columns=m.columns)
+    fr.loc[asof, f.index] = f.values
+    m2 = m.copy()
+    m2.loc[asof] = m.loc[asof] & fr.loc[asof].notna()
+    sig = S.signal(p, m2) + S._rk(fr, m2)
+    w = bt.rank_long_short(sig, m2, frac=S.PARAMS["frac"], gross=S.PARAMS["gross"], min_names=S.PARAMS["min_names"])
+    row = w.loc[asof]
+    row = row[row != 0].sort_values()
+    d = STATE_DIR / "shadow_r28"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / f"{asof.date()}.json").write_text(json.dumps({"targets": row.round(6).to_dict(), "ratio_coverage": len(f),
+                                                        "eligible": len(elig)}, indent=1))
+    return {"names": int((row != 0).sum()), "coverage": len(f), "eligible": len(elig)}
 
 
 def _round_qty(q: float, prec: int) -> float:
@@ -245,7 +284,8 @@ def rebalance(cli: BingXVST, book: float, dry: bool, asof: pd.Timestamp, lim: di
     if mine is None:                      # first run with isolation: every open position is ours
         mine = set(allpos)
     foreign = set(allpos) - mine          # platform positions: never trade these symbols
-    targets = target_weights(asof, {k: v for k, v in contracts.items() if k not in foreign})
+    keep: dict = {}
+    targets = target_weights(asof, {k: v for k, v in contracts.items() if k not in foreign}, keep)
     pos = {k: v for k, v in allpos.items() if k in mine}
     publish_owned(set(targets.index) | set(pos))   # before any order: platform keeps out
     orders = plan_orders(targets, book, pos, prices, contracts)
@@ -289,6 +329,10 @@ def rebalance(cli: BingXVST, book: float, dry: bool, asof: pd.Timestamp, lim: di
     if not dry:
         publish_owned(set(targets.index) | set(current_positions(cli, mine | set(targets.index))))
     stops = ensure_stops(cli, contracts, lim["stop_pct"], lim["tp_pct"]) if not dry else {}
+    try:   # R28 shadow book, after all orders: written to a file only
+        log({"event": "shadow_r28", **shadow_r28(asof, keep)})
+    except Exception as e:  # noqa: BLE001
+        log({"event": "shadow_r28_error", "error": repr(e)})
     nL = int((targets > 0).sum()); nS = int((targets < 0).sum())
     summary = {"asof": str(asof.date()), "dry": dry, "longs": nL, "shorts": nS, "orders": len(orders), "ok": ok,
                "fail": fail, "book": book, "stops": stops, "top_long": list(targets.tail(5).index), "top_short": list(targets.head(5).index)}
