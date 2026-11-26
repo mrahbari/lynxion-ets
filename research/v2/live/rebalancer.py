@@ -221,10 +221,13 @@ def shadow_r28(asof: pd.Timestamp, keep: dict) -> dict:
     w = bt.rank_long_short(sig, m2, frac=S.PARAMS["frac"], gross=S.PARAMS["gross"], min_names=S.PARAMS["min_names"])
     row = w.loc[asof]
     row = row[row != 0].sort_values()
+    v1 = bt.rank_long_short(S.signal(p, m), m, frac=S.PARAMS["frac"], gross=S.PARAMS["gross"],
+                            min_names=S.PARAMS["min_names"]).loc[asof]
+    v1 = v1[v1 != 0].sort_values()
     d = STATE_DIR / "shadow_r28"
     d.mkdir(parents=True, exist_ok=True)
-    (d / f"{asof.date()}.json").write_text(json.dumps({"targets": row.round(6).to_dict(), "ratio_coverage": len(f),
-                                                        "eligible": len(elig)}, indent=1))
+    (d / f"{asof.date()}.json").write_text(json.dumps({"targets": row.round(6).to_dict(), "v1_targets": v1.round(6).to_dict(),
+                                                        "ratio_coverage": len(f), "eligible": len(elig)}, indent=1))
     return {"names": int((row != 0).sum()), "coverage": len(f), "eligible": len(elig)}
 
 
@@ -525,6 +528,16 @@ def main():
         print(text)
         if not a.dry_run:
             telegram("📊 XS-COMBO · Daily (VST)", text)
+        if not a.dry_run and not due:   # after the report: the panel build takes ~10 min
+            try:  # R28 (amended): daily shadow books for the 7-phase comparison; file only, never trades
+                contracts = BingXVST.contracts()
+                mine_all = owned() or set()
+                foreign = set(current_positions(cli)) - mine_all
+                keep: dict = {}
+                target_weights(asof, {k: v for k, v in contracts.items() if k not in foreign}, keep)
+                log({"event": "shadow_r28", "daily": True, **shadow_r28(asof, keep)})
+            except Exception as e:  # noqa: BLE001
+                log({"event": "shadow_r28_error", "daily": True, "error": repr(e)})
     except Exception as e:  # noqa: BLE001
         log({"event": "error", "error": repr(e), "tb": traceback.format_exc()})
         telegram("Lynxion XS-COMBO-V1 ERROR", f"{type(e).__name__}: {e}")
