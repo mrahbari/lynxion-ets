@@ -52,3 +52,24 @@ def test_ensure_stops_places_sl_and_tp_on_correct_sides(monkeypatch, tmp_path):
     assert ("BBB-USDT", "BUY", "STOP_MARKET", "SHORT", 15.0) in placed
     assert ("BBB-USDT", "BUY", "TAKE_PROFIT_MARKET", "SHORT", 6.0) in placed
     assert not any(p[0] == "CCC-USDT" for p in placed)       # platform symbol untouched
+
+
+def test_render_daily_tree_sections_and_status_icons():
+    from live.rebalancer import render_daily
+    th = {"ex_ante_carry": {"median": 0.145}, "corr_long": {"median": 0.5}, "corr_short": {"median": 0.56}}
+    v = {"ex_ante_carry": 0.8, "adverse_share": 0.08, "realized_carry": None, "carry_days": 4, "max_share": 0.035,
+         "top5_share": 0.15, "abs_net_exposure": 0.02, "slippage_bp": 5.1, "fail_rate": 0.0, "corr_long": 0.19,
+         "corr_short": 0.47}
+    st = {"ex_ante_carry": "OK", "adverse_share": "WARN", "realized_carry": "NA", "max_share": "OK", "top5_share": "OK",
+          "abs_net_exposure": "ALERT", "slippage_bp": "OK"}
+    rep = {"time": "t", "next_rebalance": "2026-11-29",
+           "account": {"equity": 73624.2, "pnl_since_start": 4.86, "positions": 38, "gross_notional": 2996, "unrealized": -59.83},
+           "funding": {"window_hours": 24, "shadow_funding_bingx": 1.31, "shadow_funding_binance": 1.55,
+                       "shadow_funding_cum": 9.49, "unrealized_plus_shadow_funding": -50.23},
+           "protection": {"in_place": 76, "expected": 76, "failed": 0, "closed": []},
+           "health": {"values": v, "status": st, "thresholds": th, "reviews": ["abs_net_exposure ALERT: review"]}}
+    t = render_daily(rep)
+    assert "💼 <b>Account:</b>" in t and "73,624.20 VST" in t and "└ <b>Next rebalance:</b>" in t
+    assert "<b>Adverse names:</b> <code>8%</code> ⚠️" in t and "net 2.0%</code> 🚨" in t
+    assert "building 4/28 days" in t and "⚠️ <b>Review:</b> abs_net_exposure ALERT" in t
+    assert "Closed since rebalance" not in t and t.endswith("<code>t</code>")

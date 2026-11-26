@@ -377,6 +377,82 @@ def closed_since_rebalance(cli: BingXVST) -> list[str]:
     return sorted(out)
 
 
+ICON = {"OK": " ✅", "WARN": " ⚠️", "ALERT": " 🚨"}
+_SEV = ["NA", "INFO", "OK", "WARN", "ALERT"]
+
+
+def _c(x) -> str:
+    return f"<code>{x}</code>"
+
+
+def _tree(title: str, items: list) -> list:
+    items = [i for i in items if i]
+    return [title] + [f" {'└' if k == len(items) - 1 else '├'} {it}" for k, it in enumerate(items)] + [""]
+
+
+def render_daily(rep: dict) -> str:
+    """Daily Telegram report in the tree style of the platform's order notifications."""
+    out = []
+    a = rep.get("account")
+    if a:
+        equity = f"{a['equity']:,.2f} VST"
+        sleeve = f"{a['positions']} positions · gross {a['gross_notional']:,.0f} · uPnL {a['unrealized']:+.2f}"
+        out += _tree("💼 <b>Account:</b>", [
+            f"<b>Equity:</b> {_c(equity)} ({a['pnl_since_start']:+.2f} since start, all sleeves)",
+            f"<b>XS-COMBO:</b> {_c(sleeve)}",
+            f"<b>Next rebalance:</b> {_c(rep['next_rebalance'])}" if rep.get("next_rebalance") else None])
+    f = rep.get("funding")
+    if f:
+        out += _tree("💰 <b>Funding</b> <i>(shadow, VST pays none)</i>:", [
+            f"<b>Last {f['window_hours']:.0f}h:</b> {_c(format(f['shadow_funding_bingx'], '+.2f'))} "
+            f"(Binance {f['shadow_funding_binance']:+.2f})",
+            f"<b>Cumulative:</b> {_c(format(f['shadow_funding_cum'], '+.2f'))}",
+            f"<b>uPnL + funding:</b> {_c(format(f['unrealized_plus_shadow_funding'], '+.2f'))}"])
+    p = rep.get("protection")
+    if p:
+        orders = f"{p['in_place']}/{p['expected']} in place" + (f" · failed {p['failed']}" if p.get("failed") else "")
+        out += _tree("🛡️ <b>Protection:</b>", [
+            f"<b>SL/TP orders:</b> {_c(orders)}",
+            f"<b>Closed since rebalance:</b> {_c(', '.join(p['closed']))}" if p.get("closed") else None])
+    if rep.get("rebalance"):
+        out += _tree("🔄 <b>Rebalance:</b>", rep["rebalance"])
+    h = rep.get("health")
+    if h:
+        v, s, th = h["values"], h["status"], h["thresholds"]
+
+        def fmt(k, f):
+            x = v.get(k)
+            return None if x is None else format(x, f)
+        items = []
+        if fmt("ex_ante_carry", "+.1%"):
+            items.append(f"<b>Expected carry:</b> {_c(fmt('ex_ante_carry', '+.1%') + '/yr')}{ICON.get(s['ex_ante_carry'], '')} "
+                         f"(typical {th['ex_ante_carry']['median']:+.1%})")
+        if fmt("adverse_share", ".0%"):
+            items.append(f"<b>Adverse names:</b> {_c(fmt('adverse_share', '.0%'))}{ICON.get(s['adverse_share'], '')}")
+        if fmt("realized_carry", "+.1%"):
+            items.append(f"<b>Realized carry:</b> {_c(fmt('realized_carry', '+.1%') + '/yr')}{ICON.get(s['realized_carry'], '')}")
+        else:
+            items.append(f"<b>Realized carry:</b> {_c('building ' + format(v.get('carry_days') or 0, '.0f') + '/28 days')}")
+        if fmt("max_share", ".1%"):
+            worst = max((s["max_share"], s["top5_share"], s["abs_net_exposure"]), key=_SEV.index)
+            conc = f"max {fmt('max_share', '.1%')} · top5 {fmt('top5_share', '.1%')} · net {fmt('abs_net_exposure', '.1%')}"
+            items.append(f"<b>Concentration:</b> {_c(conc)}{ICON.get(worst, '')}")
+        if fmt("slippage_bp", "+.1f") and fmt("fail_rate", ".0%"):
+            ex = f"slip {fmt('slippage_bp', '+.1f')} bp · {fmt('fail_rate', '.0%')} failed"
+            items.append(f"<b>Last rebalance:</b> {_c(ex)}{ICON.get(s['slippage_bp'], '')}")
+        if fmt("corr_long", ".2f") and fmt("corr_short", ".2f"):
+            corr = f"long {fmt('corr_long', '.2f')} · short {fmt('corr_short', '.2f')}"
+            items.append(f"<b>Leg correlation:</b> {_c(corr)} (typical {th.get('corr_long', {}).get('median', 0):.2f}"
+                         f"/{th.get('corr_short', {}).get('median', 0):.2f})")
+        out += _tree("📡 <b>Health monitor</b> <i>(observational)</i>:", items)
+        for line in h.get("reviews", []):
+            out.append(f"⚠️ <b>Review:</b> {line}")
+        if h.get("reviews"):
+            out.append("")
+    out.append(f"🕒 <b>Time:</b> {_c(rep['time'])}")
+    return "\n".join(out)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["auto", "rebalance", "report"], default="auto")
@@ -390,12 +466,12 @@ def main():
     now = pd.Timestamp.now(tz="UTC")
     asof = now.normalize()
     try:
-        msgs = []
+        rep: dict = {"time": now.strftime("%Y-%m-%d %H:%M UTC")}
+        last_rb = state().get("last_rebalance")
+        if last_rb:
+            rep["next_rebalance"] = str((pd.Timestamp(last_rb) + pd.Timedelta(days=S.PARAMS["rebalance_every"])).date())
         if a.mode in ("auto", "report"):
-            r = report(cli)
-            msgs.append(f"Account equity {r['equity']:.2f} VST (since start {r['pnl_since_start']:+.2f}, all sleeves)\n"
-                        f"XS-COMBO: positions {r['positions']} | gross {r['gross_notional']:.0f} | "
-                        f"unrealized {r['unrealized']:+.2f}")
+            rep["account"] = report(cli)
             if not a.dry_run:
                 try:  # VST settles no funding: book the funding the sleeve would have had (shadow ledger)
                     from live import tracking
@@ -407,43 +483,48 @@ def main():
                         st_t.setdefault("tracking_start_ms", min(opened))
                     tr = tracking.track(sleeve, st_t, STATE_DIR / "tracking.csv")
                     save_state(st_t)
-                    msgs.append(f"Shadow funding (VST pays none): {tr['shadow_funding_bingx']:+.2f} over {tr['window_hours']:.0f}h "
-                                f"(Binance {tr['shadow_funding_binance']:+.2f}); cumulative {tr['shadow_funding_cum']:+.2f}; "
-                                f"unrealized+funding {tr['unrealized_plus_shadow_funding']:+.2f}")
+                    rep["funding"] = tr
                 except Exception as e:  # noqa: BLE001
                     log({"event": "tracking_error", "error": repr(e)})
-            gone = closed_since_rebalance(cli)
-            if gone:
-                msgs.append(f"Closed since last rebalance (stop?): {', '.join(gone)}")
+            gone = [g.replace("USDT ", " ") for g in closed_since_rebalance(cli)]
+            prot = {"closed": gone}
             if not a.dry_run:
                 st = ensure_stops(cli, BingXVST.contracts(), lim["stop_pct"], lim["tp_pct"])
-                msgs.append(f"SL/TP orders: {st['placed'] + st['kept']}/{st['orders_expected']} in place ({st['positions']} positions), failed {st['failed']}")
+                prot.update(in_place=st["placed"] + st["kept"], expected=st["orders_expected"], failed=st["failed"])
+            if "expected" in prot or gone:
+                prot.setdefault("in_place", "n/a")
+                prot.setdefault("expected", "n/a")
+                rep["protection"] = prot
         due = a.mode == "rebalance"
         if a.mode == "auto":
             last = state().get("last_rebalance")
             due = last is None or (asof.date() - pd.Timestamp(last).date()).days >= S.PARAMS["rebalance_every"]
         if due:
             if STOP.exists():
-                msgs.append("STOP file present: rebalance skipped")
+                rep["rebalance"] = ["<b>Skipped:</b> STOP file present"]
             else:
                 s = rebalance(cli, book, a.dry_run, asof, lim)
-                msgs.append(f"Rebalance {s['asof']}{' (dry-run)' if s['dry'] else ''}: {s['longs']} long / "
-                            f"{s['shorts']} short, book {book:.0f}, orders ok {s['ok']} fail {s['fail']} of {s['orders']}")
+                book_txt = f"{s['longs']} long / {s['shorts']} short · {book:,.0f}"
+                orders_txt = f"{s['ok']} ok · {s['fail']} failed of {s['orders']}"
+                rows = [f"<b>Date:</b> {_c(s['asof'] + (' (dry-run)' if s['dry'] else ''))}",
+                        f"<b>Book:</b> {_c(book_txt)}", f"<b>Orders:</b> {_c(orders_txt)}"]
                 if s.get("stops"):
-                    msgs.append(f"Stops ({lim['stop_pct']:.0%}): placed {s['stops']['placed']} kept {s['stops']['kept']} "
-                                f"failed {s['stops']['failed']}")
+                    stops_txt = f"placed {s['stops']['placed']} · kept {s['stops']['kept']} · failed {s['stops']['failed']}"
+                    rows.append(f"<b>Stops ({lim['stop_pct']:.0%}):</b> {_c(stops_txt)}")
+                rep["rebalance"] = rows
+                rep["next_rebalance"] = str((asof + pd.Timedelta(days=S.PARAMS["rebalance_every"])).date())
         if not a.dry_run:
             try:  # R5 degradation monitor: read-only, never changes orders/schedule/parameters
                 from live import monitor
                 mine = owned()
                 sleeve = [x for x in cli.positions() if mine is None or x["symbol"].replace("-", "") in mine]
-                msgs += monitor.run(sleeve, BingXVST.prices(), book)["lines"]
+                rep["health"] = monitor.run(sleeve, BingXVST.prices(), book)
             except Exception as e:  # noqa: BLE001
                 log({"event": "monitor_error", "error": repr(e)})
-        text = "\n".join(msgs)
+        text = render_daily(rep)
         print(text)
         if not a.dry_run:
-            telegram("Lynxion XS-COMBO-V1 (VST)", text)
+            telegram("📊 XS-COMBO · Daily (VST)", text)
     except Exception as e:  # noqa: BLE001
         log({"event": "error", "error": repr(e), "tb": traceback.format_exc()})
         telegram("Lynxion XS-COMBO-V1 ERROR", f"{type(e).__name__}: {e}")

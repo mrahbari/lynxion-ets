@@ -283,4 +283,5 @@ def run(positions: list[dict], prices: dict, book: float, state_dir: Path = STAT
     ]
     for k in bad:
         lines.append(f"{stat[k]} {k}: {REVIEW.get(k, 'review')}")
-    return {"values": v, "status": stat, "lines": lines, "row": row}
+    reviews = [f"{k} {stat[k]}: {REVIEW.get(k, 'review')}" for k in bad]
+    return {"values": v, "status": stat, "lines": lines, "row": row, "thresholds": th, "reviews": reviews}
