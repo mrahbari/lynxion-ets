@@ -80,7 +80,8 @@ def binance() -> list:
         out, page = [], 1
         while True:
             d = _json(f"https://www.binance.com/bapi/composite/v1/public/cms/article/list/query?type=1&catalogId=48&pageNo={page}&pageSize=50")
-            arts = d["data"]["catalogs"][0]["articles"]
+            cats = (d.get("data") or {}).get("catalogs") or []
+            arts = cats[0]["articles"] if cats else []
             if not arts:
                 break
             out += arts
