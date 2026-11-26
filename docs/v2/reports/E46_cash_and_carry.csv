@@ -1,0 +1,5 @@
+variant,window,ann_net,sharpe,max_dd,funding,basis,cost,avg_names,days_invested,pos_days,worst_up,share_up_gt_20pct
+CC_TOP,DEV,0.1195,8.59,-0.0041,0.1211,0.002,0.0036,4.4,0.657,8004,2.027,0.0311
+CC_TOP,HOLDOUT,0.0159,5.47,-0.001,0.0163,0.0012,0.0016,1.3,0.679,886,1.102,0.0395
+CC_MAJORS,DEV,0.1187,10.23,-0.0063,0.1191,-0.0002,0.0003,2.0,1.0,3652,2.027,0.0033
+CC_MAJORS,HOLDOUT,0.0295,11.16,-0.0037,0.0294,0.0001,0.0,2.0,1.0,1336,0.23,0.0015
