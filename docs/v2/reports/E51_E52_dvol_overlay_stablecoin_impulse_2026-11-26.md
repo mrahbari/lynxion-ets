@@ -1,6 +1,6 @@
 # E51 / E52 — DVOL stress overlay for XS-COMBO; stablecoin-supply impulse (2026-11-26)
 
-Both experiments were pre-registered in commit ed87f09+1, before they were run.
+Both experiments were pre-registered in commit cacaba3, before they were run.
 
 ## E51 — H3: halve XS-COMBO after implied-vol shocks
 
