@@ -22,3 +22,23 @@
 - **CANDIDATE:** mean weekly difference > 0, t ≥ 2.0 on the weekly differences, and ≥ 8 of 12 weeks positive.
   Adoption into the live strategy remains an operator decision.
 - **Otherwise:** R28 closed, V1 unchanged.
+
+## Amendment 2026-11-26 (before any shadow data existed; operator focus decision)
+
+**Change.** The shadow is computed **every day**, not only on the live rebalance day.
+- Each day, the daily job builds the live panel and writes both the V1 target book and the V1 + F_RETAIL target book to
+  `data/v2_live/shadow_r28/<date>.json`.
+- Day D serves the weekly phase "D mod 7". This gives 7 paired phases per week.
+
+**Why.**
+- E38 showed the weekly rebalance phase alone moves the holdout Sharpe between 0.50 and 1.77.
+- A single-phase comparison would mostly measure phase luck.
+- It also gives 7× more paired observations.
+
+**Evaluation.**
+- For each phase k and week w, compute the 7-day model net return of both books from day D = phase-k rebalance day:
+  same daily close-to-close, real funding, `lib.backtest` cost model on the turnover vs the previous target of that phase.
+- The weekly difference is averaged over the 7 phases. The t-test runs on these weekly phase-averaged differences.
+
+**Decision.** Unchanged: 12 weeks or 2027-03-01.
+- **CANDIDATE:** mean > 0, t ≥ 2, and ≥ 8 of 12 weeks positive.

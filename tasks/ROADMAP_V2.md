@@ -4,6 +4,20 @@ Codex-era tasks (task0077–task0457 and older) are archived under `tasks/archiv
 They are reference only; their negative results tell us where NOT to search
 (six majors, 15m–24h horizons, taker execution). v2 starts from a different premise.
 
+## FOCUS LIST (operator decision 2026-11-26) — the three strategies we work on
+
+The six single-symbol platform strategies are FROZEN for research: no edge after E9-E48. TrendFollow, VWAPReversal and
+OIFootprint stay live on VST only as execution/infrastructure data sources ("no proven edge"); MeanReversion, Breakout
+and Liquidity stay off. All research effort goes to:
+
+| # | Strategy | Edge source | Status | Next milestone |
+|---|---|---|---|---|
+| F1 | **XS-COMBO-V1** | cross-sectional funding carry + illiquidity + taker flow (diversified) | LIVE on VST, R5 monitor | 8-12 weeks live evidence; E12-3 go/no-go ~2026-12-20 |
+| F2 | **XS-COMBO-V1 + Retail-Fade** (R28) | adds "fade crowded retail long/short accounts" (E44: +12 %/yr in 2024-26, 7/7 phases) | SHADOW, daily x 7 phases from 2026-11-27 | decision at 12 weeks or 2027-03-01 |
+| F3 | **Supply-Shock Short** (R31) | short large insider token unlocks with a 20 % stop, BTC/ETH hedge (E47: 65 % winners, tail risk) | SHADOW, daily calendar | decision at 40 events (~6-7 weeks) or 2027-06-30 |
+
+Rule: any new idea must either strengthen F1-F3 or replace one of them through the same pre-registered path.
+
 ## Thesis
 
 Crypto edges that survive costs are most likely **cross-sectional** (ranking hundreds of
