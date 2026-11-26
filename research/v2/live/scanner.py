@@ -81,7 +81,28 @@ def features(daily: list, h4: list) -> dict | None:
             "momentum": float(np.log(dc[-1] / dc[-29]) / (vol * np.sqrt(28))),
             "strength": float(abs(ch20) / path * np.sign(ch20)),
             "short_term": float((c4[-1] - e20) / a4), "ema20_4h": float(e20), "atr_4h": a4,
-            "above_ema50d": bool(dc[-1] > ema(dc, 50)[-1]), **b_inputs(daily, h4, dc)}
+            "above_ema50d": bool(dc[-1] > ema(dc, 50)[-1]), **b_inputs(daily, h4, dc), **h4_inputs(c4, a4)}
+
+
+def h4_inputs(c4: np.ndarray, a4: float) -> dict:
+    """4H View inputs (info only, operator request 2026-11-26): RSI14 - 50 and MACD(12,26,9) histogram / ATR14,
+    both on closed 4h bars; together with the short-term term (close - EMA20)/ATR they form an all-4h score."""
+    d = np.diff(c4)
+    up = pd.Series(np.where(d > 0, d, 0.0)).ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
+    dn = pd.Series(np.where(d < 0, -d, 0.0)).ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
+    rsi = 100 - 100 / (1 + up / dn) if dn > 0 else 100.0
+    macd = ema(c4, 12) - ema(c4, 26)
+    return {"rsi4": float(rsi - 50), "macd4": float((macd - ema(macd, 9))[-1] / a4)}
+
+
+def h4_view(df: pd.DataFrame, n: int = 5) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """All-4h ranking: longs need RSI>50, MACD hist>0 and close>EMA20 (4h); shorts the mirror; mean percentile rank."""
+    cols = ["rsi4", "macd4", "short_term"]
+    d = df.dropna(subset=cols)
+    q = sum(d[k].astype(float).rank(pct=True) for k in cols) / 3
+    d = d.assign(score=100 * q)
+    bull, bear = (d[cols] > 0).all(1), (d[cols] < 0).all(1)
+    return d[bull].sort_values("score", ascending=False).head(n), d[bear].sort_values("score").head(n)
 
 
 def b_trigger(o, h, l, c, v) -> int:
@@ -204,7 +225,7 @@ def fmt_px(x: float) -> str:
 
 
 def render(longs, shorts, mv, funding, contracts, ts: str, universe: int | None = None,
-           held: set | None = None) -> tuple[str, list]:
+           held: set | None = None, view: str = "main") -> tuple[str, list]:
     """Layout in the style of the platform's order notifications: header block, market block, one block per coin
     (nested tree: entry zone, TP1/TP2 at 1.5R/3R, SL), time at the end."""
     def c(x):
@@ -212,13 +233,17 @@ def render(longs, shorts, mv, funding, contracts, ts: str, universe: int | None 
     mood = {"Bullish": "🟢", "Bearish": "🔴"}.get(mv["sentiment"], "🟡")
     # BTC trend = price vs its 50-day average; change = last 28 days
     btc = f"{'Rising' if mv['btc_above_ema50'] else 'Falling'} {mv['btc_ret28']:+.0%} over the last 4 weeks"
-    out = ["✅ <b>Radar scan complete</b>",
-           f" └ <b>Scanned:</b> {c(f'{universe} coins · 4H' if universe else '4H')}", "",
-           f"{mood} <b>Market:</b>",
-           f" ├ <b>Sentiment:</b> {c(mv['sentiment'] + ' (' + format(mv['sentiment_score'], '+.0f') + ')')}",
-           f" ├ <b>Confidence:</b> {c(format(mv['confidence'], '.1f') + '/10')}",
-           f" ├ <b>Energy:</b> {c(mv['energy'])}",
-           f" └ <b>BTC:</b> {c(btc)}", ""]
+    if view == "4h":
+        out = ["🕓 <b>4H View</b> <i>(short-term: RSI · MACD · EMA20 on 4h)</i>",
+               f" └ <b>Scanned:</b> {c(f'{universe} coins · 4H' if universe else '4H')}", ""]
+    else:
+        out = ["✅ <b>Radar scan complete</b>",
+               f" └ <b>Scanned:</b> {c(f'{universe} coins · 4H' if universe else '4H')}", "",
+               f"{mood} <b>Market:</b>",
+               f" ├ <b>Sentiment:</b> {c(mv['sentiment'] + ' (' + format(mv['sentiment_score'], '+.0f') + ')')}",
+               f" ├ <b>Confidence:</b> {c(format(mv['confidence'], '.1f') + '/10')}",
+               f" ├ <b>Energy:</b> {c(mv['energy'])}",
+               f" └ <b>BTC:</b> {c(btc)}", ""]
     rows = []
     for title, tab, side in (("🟩 <b>Top Longs:</b>", longs, "LONG"), ("🟥 <b>Top Shorts:</b>", shorts, "SHORT")):
         out.append(title)
@@ -251,7 +276,7 @@ def render(longs, shorts, mv, funding, contracts, ts: str, universe: int | None 
             rows.append({"side": side, "symbol": sym, "score": round(float(r["score"]) - 50, 1), "close": r["close"],
                          "limit": lim, "stop": stop, "target1": t1, "target2": t2,
                          "zone": [lo, hi], "ext_atr": round(float(ext), 2),
-                         "funding": f})
+                         "funding": f, "view": view})
         out.append("")
     out.append(f"🕒 <b>Time:</b> {c(ts + ' UTC')}")
     return "\n".join(out) + "\n⠀", rows        # U+2800 keeps a blank last line in Telegram
@@ -297,7 +322,13 @@ def scan(now_ms: int | None = None) -> dict:
                                "accel": float(df.loc[s_, "accel"]), "short_term": float(df.loc[s_, "short_term"])})
     except Exception as e:  # noqa: BLE001
         shadow = [{"error": repr(e)}]
-    return {"text": text, "rows": rows, "market": mv, "universe": len(df), "ts": ts, "shadow_b_short": shadow}
+    l4, s4 = h4_view(df)
+    l4 = l4.assign(levels=[lv(s_, "LONG") for s_ in l4.index])
+    s4 = s4.assign(levels=[lv(s_, "SHORT") for s_ in s4.index])
+    l4, s4 = l4[l4.levels.notna()], s4[s4.levels.notna()]
+    text4, rows4 = render(l4, s4, mv, prem, contracts, ts, universe=len(df), held=held_symbols(), view="4h")
+    return {"text": text, "rows": rows, "market": mv, "universe": len(df), "ts": ts, "shadow_b_short": shadow,
+            "text_4h": text4, "rows_4h": rows4}
 
 
 def held_symbols() -> set:
@@ -334,14 +365,16 @@ def main():
     from live.rebalancer import load_env, telegram
     load_env()
     r = scan()
-    print(r["text"])
+    print(r["text"]); print(r["text_4h"])
     if a.dry_run:
         return
     LOG.parent.mkdir(parents=True, exist_ok=True)
     with open(LOG, "a") as fh:
-        fh.write(json.dumps({"ts": r["ts"], "universe": r["universe"], "market": r["market"], "picks": r["rows"]}) + "\n")
+        fh.write(json.dumps({"ts": r["ts"], "universe": r["universe"], "market": r["market"], "picks": r["rows"],
+                             "picks_4h": r["rows_4h"]}) + "\n")
     log_shadow(r)
     telegram("📡 Lynxion Radar · 4H", r["text"])
+    telegram("📡 Lynxion Radar · 4H View", r["text_4h"])
 
 
 if __name__ == "__main__":

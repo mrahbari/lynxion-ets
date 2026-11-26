@@ -110,3 +110,10 @@ def test_log_shadow_marks_new_entries(tmp_path):
     import json
     last = json.loads(p.read_text().splitlines()[-1])["picks"]
     assert [(x["symbol"], x["new"]) for x in last] == [("AUSDT", False), ("BUSDT", True)]
+
+
+def test_h4_view_requires_all_three_and_ranks():
+    df = pd.DataFrame({"rsi4": [10.0, 5.0, -5.0, -10.0, 3.0], "macd4": [0.5, 0.2, -0.3, -0.6, -0.1],
+                       "short_term": [1.0, 0.5, -0.5, -1.2, 0.4]}, index=["A", "B", "C", "D", "E"])
+    l4, s4 = SC.h4_view(df, n=5)
+    assert list(l4.index) == ["A", "B"] and list(s4.index) == ["D", "C"]      # E: MACD disagrees -> excluded
