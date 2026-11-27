@@ -343,4 +343,6 @@ adopt only if it beats what is live. Ideas already rejected by our own tests are
 | R34 | H3 DVOL stress overlay for XS-COMBO (half gross 7 d after IV shocks) | E51 REJECT: DD -2..3 pts but Sharpe lower in both windows (recovery after stress, as E38) |
 | R35 | H4 stablecoin-supply impulse -> long market basket | E52 REJECT: worse than 28-day momentum timing in both windows; TEST negative |
 | R36 | H2 cross-venue funding Binance vs Bybit (7 d pairs when 3-day spread >= 20 %/yr) | E50 FAIL: spread real and persistent (ac1 0.80) but ~0.23 % funding vs 0.28 % taker costs per trade; ~3 %/yr even with maker fills; no second venue |
+| R37 | Smoothed XS-COMBO targets (repo study, EWM idea) | E54 FAIL: costs -35 % but 2025-26 Sharpe 1.23 -> 1.08 (signal decays within a week) |
+| R38 | Staggered 7-tranche XS-COMBO (repo study, overlapping desks) | E55: robustness confirmed (TEST tranche Sharpe 1.44 vs worst phase 0.49) but infeasible at 3.2k book (32 % notional below 6 USDT min); feasible from ~10k gross -> E12-3 real-capital recommendation |
 | R8 | Funding-extreme reversal on BTC only, 24 h (AIJMR 2026: extreme negative funding -> +0.5 %) | covered by E23 (10 symbols) FAIL; BTC-only would be a small-n re-slice -> not run |

@@ -1,0 +1,3 @@
+,tranche_sharpe,single_median,single_min,single_max,rolling_sharpe_dispersion_across_phases,tranche_rolling_sharpe_std_over_time,small_orders_share,small_orders_notional_share
+DEV,1.94,1.794,1.64,2.11,0.479,1.42,0.427,0.1158
+TEST,1.444,1.161,0.487,1.774,0.858,0.991,0.607,0.3221
