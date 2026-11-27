@@ -101,3 +101,15 @@ pre-registered in `docs/v2/reports/E42_radar_timing_2026-11-25.md`.
   evaluation `research/v2/experiments/r31_unlock_shadow_eval.py` (counts only until 40 events or 2027-06-30).
 Pre-registrations: `docs/v2/reports/E42_radar_timing_2026-11-25.md`, `R28_retail_fade_shadow_prereg_2026-11-26.md`,
 `R31_unlock_shadow_prereg_2026-11-26.md`.
+
+## Runner watchdog (since 2026-11-27)
+
+The platform runner stopped silently on 2026-11-26 ~13:58 UTC (no traceback) and was not restarted after the
+2026-11-27 reboot, so no entries or close messages were sent for ~30 h.
+- LaunchAgent `com.lynxion.runner-watchdog` (`~/Library/LaunchAgents/com.lynxion.runner-watchdog.plist`) runs
+  `scripts/lynxion_safe_testnet_launcher.py` every 5 min and at login.
+- The launcher refuses when a runner already exists (`EXISTING_RUNNER`) or the journal is blocked by INTENT /
+  PROTECTION_UNKNOWN (`JOURNAL_RECOVERY_BLOCKED`); otherwise it starts a new runner with journal recovery.
+- Output: `logs/runner_watchdog.log` (one JSON line per check). A blocked journal is NOT auto-resolved: it needs the
+  manual procedure.
+- Disable: `launchctl unload ~/Library/LaunchAgents/com.lynxion.runner-watchdog.plist`.
