@@ -345,4 +345,6 @@ adopt only if it beats what is live. Ideas already rejected by our own tests are
 | R36 | H2 cross-venue funding Binance vs Bybit (7 d pairs when 3-day spread >= 20 %/yr) | E50 FAIL: spread real and persistent (ac1 0.80) but ~0.23 % funding vs 0.28 % taker costs per trade; ~3 %/yr even with maker fills; no second venue |
 | R37 | Smoothed XS-COMBO targets (repo study, EWM idea) | E54 FAIL: costs -35 % but 2025-26 Sharpe 1.23 -> 1.08 (signal decays within a week) |
 | R38 | Staggered 7-tranche XS-COMBO (repo study, overlapping desks) | E55: robustness confirmed (TEST tranche Sharpe 1.44 vs worst phase 0.49) but infeasible at 3.2k book (32 % notional below 6 USDT min); feasible from ~10k gross -> E12-3 real-capital recommendation |
+| R39 | H2b cross-venue funding Binance vs Hyperliquid, state-based exit (repo study) | E56 FAIL: DEV 12.3 %/yr while invested (t 7.3) but TEST 2.9 %/yr; yield decays 15.9 % (2023H2) -> 1.4 % (2026H2), arbitraged away |
+| R40 | H5 listing-announcement shock (Upbit KRW + Binance spot) | E53 FAIL: 11-16 % repricing done within 60 s; +15 min net -148 bp DEV / -15 bp TEST; latency race, not for us |
 | R8 | Funding-extreme reversal on BTC only, 24 h (AIJMR 2026: extreme negative funding -> +0.5 %) | covered by E23 (10 symbols) FAIL; BTC-only would be a small-n re-slice -> not run |
